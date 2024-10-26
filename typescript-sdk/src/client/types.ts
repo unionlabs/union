@@ -1,9 +1,14 @@
+import type {
+  aptosChainId,
+  AptosChainId,
+  AptosAccount,
+  AptosBrowserWallet,
+  AptosPublicAccountInfo
+} from "./aptos.ts"
 import type { OfflineSigner } from "../types.ts"
 import type { evmChainId, EvmChainId } from "./evm.ts"
 import type { Account as ViemAccount, Address } from "viem"
-import type { aptosChainId, AptosChainId } from "./aptos.ts"
 import type { cosmosChainId, CosmosChainId } from "./cosmos.ts"
-import type { Account as AptosAccount } from "@aptos-labs/ts-sdk"
 
 export type { evmChainId, EvmChainId, cosmosChainId, CosmosChainId, aptosChainId, AptosChainId }
 
@@ -29,15 +34,25 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
     ? {
         simulate?: boolean
         denomAddress: Address
-        account?: ViemAccount | undefined
         relayContractAddress?: Address
+        account?: ViemAccount | undefined
       }
     : CHAIN_ID extends AptosChainId
       ? {
+          simulate?: boolean
           denomAddress: string
           account?: AptosAccount
           relayContractAddress?: string
           gasPrice?: { amount: string; denom: string }
-          simulate?: boolean
-        }
+        } & (
+          | {
+              authAccess: "key"
+              account?: AptosAccount
+            }
+          | {
+              authAccess: "wallet"
+              account?: AptosPublicAccountInfo
+              sign: AptosBrowserWallet["signTransaction"]
+            }
+        )
       : undefined)

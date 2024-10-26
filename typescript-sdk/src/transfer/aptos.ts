@@ -1,27 +1,98 @@
+import {
+  type Aptos,
+  Ed25519PublicKey,
+  SimpleTransaction,
+  type RawTransaction,
+  type AccountAuthenticator,
+  type Account as AptosAccount,
+  type InputGenerateTransactionOptions,
+  type InputGenerateTransactionPayloadData
+} from "@aptos-labs/ts-sdk"
 import { err, ok, type Result } from "neverthrow"
+import type { Prettify, KeysToSnakeCase } from "../types.ts"
 import { isValidBech32Address } from "../utilities/address.ts"
 import { bech32ToBytes, hexStringToUint8Array } from "../convert.ts"
-import { Aptos, Network, AptosConfig, type Account } from "@aptos-labs/ts-sdk"
 
-export type TransferAssetFromAptosParams = {
+export type {
+  AuthAccess,
+  AptosAccount,
+  AptosBrowserWallet,
+  AptosTransferParams,
+  AptosPublicAccountInfo,
+  AuthAccess as AptosAuthAccess
+}
+
+const aptosNetworks = ["mainnet", "testnet", "devnet", "local", "custom"] as const
+type AptosNetwork = (typeof aptosNetworks)[number]
+
+type AptosPublicAccountInfo = { address: string; publicKey: string }
+type AptosNetworkInfo = { chainId: string; name: Capitalize<AptosNetwork>; url: string }
+
+interface AptosBrowserWallet {
+  onDisconnect: () => void
+  disconnect: () => Promise<void>
+  isConnected: () => Promise<boolean>
+  connect: () => Promise<AptosPublicAccountInfo>
+  account: () => Promise<AptosPublicAccountInfo>
+  getAccount: () => Promise<AptosPublicAccountInfo>
+  network: () => Promise<Capitalize<AptosNetwork>>
+  getNetwork: () => Promise<AptosNetworkInfo>
+  onAccountChange: (
+    callback: (account: AptosPublicAccountInfo & { type?: unknown }) => void
+  ) => void
+  onNetworkChange: (callback: (network: AptosNetworkInfo) => void) => void
+
+  /**
+   * @note
+   * for some resaon, aptos wallets use snake case for tx payload params
+   * whereas aptos sdk uses camel case
+   */
+  signTransaction: (transactionParameters: {
+    payload: Prettify<KeysToSnakeCase<InputGenerateTransactionPayloadData>>
+    options?: Prettify<KeysToSnakeCase<InputGenerateTransactionOptions>>
+  }) => Promise<{ accountAuthenticator: AccountAuthenticator; rawTxn: RawTransaction }>
+}
+
+type AuthAccess = "key" | "wallet"
+
+type AptosTransferBaseParams = {
+  aptos: Aptos
   memo?: string
   amount: bigint
-  baseUrl: string
   receiver: string
-  account: Account
   simulate?: boolean
   denomAddress: string
+  destinationChainId?: string
+} & (
+  | {
+      authAccess: "key"
+      account?: AptosAccount
+    }
+  | {
+      authAccess: "wallet"
+      account?: AptosPublicAccountInfo
+      sign: AptosBrowserWallet["signTransaction"]
+    }
+)
+
+type AptosTransferParams = AptosTransferBaseParams & {
   sourceChannel: string
   relayContractAddress: string
 }
 
-export type SameChainTransferParams = {
-  amount: bigint
-  baseUrl: string
-  account: Account
-  receiver: string
-  simulate?: boolean
-  denomAddress: string
+export async function waitForTransactionReceipt({
+  aptos,
+  hash
+}: { aptos: Aptos; hash: string }): Promise<Result<string, Error>> {
+  const transactionResult = await aptos.waitForTransaction({
+    transactionHash: hash,
+    options: { checkSuccess: false }
+  })
+  if (!transactionResult.success) {
+    return err(new Error(transactionResult.vm_status || "waiting for transaction failed"))
+  }
+
+  return ok(transactionResult.hash)
 }
 
 /**
@@ -42,58 +113,89 @@ export type SameChainTransferParams = {
  * });
  * ```
  */
-export async function transferAssetFromAptos({
-  memo = "transfer",
-  amount,
-  account,
-  baseUrl,
-  receiver,
-  denomAddress,
-  sourceChannel,
-  simulate = false,
-  relayContractAddress
-}: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
+export async function transferAssetFromAptos(
+  parameters: AptosTransferParams
+): Promise<Result<string, Error>> {
+  let transaction: SimpleTransaction
+  let accountAuthenticator: AccountAuthenticator
+
   try {
-    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
+    const transactionPayload = {
+      typeArguments: [],
+      function: `${parameters.relayContractAddress}::ibc::send`,
+      functionArguments: [
+        parameters.sourceChannel,
+        isValidBech32Address(parameters.receiver)
+          ? bech32ToBytes(parameters.receiver)
+          : hexStringToUint8Array(parameters.receiver),
+        [parameters.denomAddress],
+        [parameters.amount],
+        parameters.memo,
+        9n,
+        BigInt(999_999_999) + 100n,
+        0n
+      ]
+    } satisfies InputGenerateTransactionPayloadData
 
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
-    const aptos = new Aptos(config)
+    if (!parameters.account) return err(new Error("no `account` passed"))
 
-    const transaction = await aptos.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
-        function: `${relayContractAddress}::ibc::send`,
-        functionArguments: [
-          sourceChannel,
-          isValidBech32Address(receiver)
-            ? bech32ToBytes(receiver)
-            : hexStringToUint8Array(receiver),
-          [denomAddress],
-          [amount],
-          memo,
-          9n,
-          BigInt(999_999_999) + 100n,
-          0n
-        ]
-      }
-    })
+    const { signerPublicKey, signerAddress } =
+      parameters.authAccess === "key"
+        ? {
+            signerPublicKey: parameters.account.publicKey,
+            signerAddress: parameters.account.accountAddress
+          }
+        : {
+            signerAddress: parameters.account.address,
+            signerPublicKey: new Ed25519PublicKey(parameters.account.publicKey)
+          }
 
-    if (simulate) {
-      const simulationResult = await aptos.transaction.simulate.simple({
+    if (parameters.simulate) {
+      transaction = await parameters.aptos.transaction.build.simple({
+        sender: signerAddress,
+        data: transactionPayload
+      })
+
+      const simulationResult = await parameters.aptos.transaction.simulate.simple({
         transaction,
-        signerPublicKey: account.publicKey
+        signerPublicKey
       })
 
       const resultItem = simulationResult.at(0)
-
       if (!resultItem?.success) return err(new Error(`Simulation failed: ${simulationResult}`))
     }
 
-    const senderAuthenticator = aptos.transaction.sign({ signer: account, transaction })
+    // transfer submitted with direct private key
+    if (parameters.authAccess === "key") {
+      transaction ??= await parameters.aptos.transaction.build.simple({
+        sender: signerAddress,
+        data: transactionPayload
+      })
 
-    const pendingTransaction = await aptos.transaction.submit.simple({
+      accountAuthenticator = parameters.aptos.transaction.sign({
+        transaction,
+        signer: parameters.account
+      })
+
+      // transfer submitted with browser extension wallet or mobile app wallet
+    } else if (parameters.authAccess === "wallet") {
+      const signTransactionResponse = await parameters.sign({
+        payload: {
+          function: transactionPayload.function,
+          type_arguments: transactionPayload.typeArguments,
+          function_arguments: transactionPayload.functionArguments
+        }
+      })
+
+      accountAuthenticator = signTransactionResponse.accountAuthenticator
+      transaction = new SimpleTransaction(signTransactionResponse.rawTxn)
+
+      // opsy
+    } else return err(new Error("opsy"))
+
+    const pendingTransaction = await parameters.aptos.transaction.submit.simple({
       transaction,
-      senderAuthenticator
+      senderAuthenticator: accountAuthenticator
     })
 
     return ok(pendingTransaction.hash)
@@ -102,91 +204,145 @@ export async function transferAssetFromAptos({
   }
 }
 
-export async function aptosSameChainTransfer({
-  amount,
-  account,
-  baseUrl,
-  receiver,
-  denomAddress,
-  simulate = false
-}: SameChainTransferParams): Promise<Result<string, Error>> {
+export async function aptosSameChainTransfer(
+  parameters: AptosTransferBaseParams
+): Promise<Result<string, Error>> {
+  let transaction: SimpleTransaction
+  let accountAuthenticator: AccountAuthenticator
+
   try {
-    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
+    const transactionPayload = {
+      function: "0x1::primary_fungible_store::transfer",
+      typeArguments: ["0x1::fungible_asset::Metadata"],
+      functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
+    } satisfies InputGenerateTransactionPayloadData
 
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
-    const aptos = new Aptos(config)
+    if (!parameters.account) return err(new Error("no `account` passed"))
 
-    const transaction = await aptos.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
-        function: "0x1::primary_fungible_store::transfer",
-        typeArguments: ["0x1::fungible_asset::Metadata"],
-        functionArguments: [denomAddress, receiver, amount]
-      }
-    })
+    const { signerPublicKey, signerAddress } =
+      parameters.authAccess === "key"
+        ? {
+            signerPublicKey: parameters.account.publicKey,
+            signerAddress: parameters.account.accountAddress
+          }
+        : {
+            signerAddress: parameters.account.address,
+            signerPublicKey: new Ed25519PublicKey(parameters.account.publicKey)
+          }
 
-    if (simulate) {
-      const simulationResult = await aptos.transaction.simulate.simple({
+    if (parameters.simulate) {
+      transaction = await parameters.aptos.transaction.build.simple({
+        sender: signerAddress,
+        data: transactionPayload
+      })
+
+      const simulationResult = await parameters.aptos.transaction.simulate.simple({
         transaction,
-        signerPublicKey: account.publicKey
+        signerPublicKey
       })
 
       const resultItem = simulationResult.at(0)
-
       if (!resultItem?.success) return err(new Error(`Simulation failed: ${simulationResult}`))
     }
 
-    const senderAuthenticator = aptos.transaction.sign({ signer: account, transaction })
+    // transfer submitted with direct private key
+    if (parameters.authAccess === "key") {
+      transaction ??= await parameters.aptos.transaction.build.simple({
+        sender: signerAddress,
+        data: transactionPayload
+      })
 
-    const pendingTransaction = await aptos.transaction.submit.simple({
+      accountAuthenticator = parameters.aptos.transaction.sign({
+        transaction,
+        signer: parameters.account
+      })
+
+      // transfer submitted with browser extension wallet or mobile app wallet
+    } else if (parameters.authAccess === "wallet") {
+      const signTransactionResponse = await parameters.sign({
+        payload: {
+          function: transactionPayload.function,
+          type_arguments: transactionPayload.typeArguments,
+          function_arguments: transactionPayload.functionArguments
+        }
+      })
+
+      accountAuthenticator = signTransactionResponse.accountAuthenticator
+      transaction = new SimpleTransaction(signTransactionResponse.rawTxn)
+
+      // opsy TODO: actually
+    } else return err(new Error("opsy"))
+
+    const pendingTransaction = await parameters.aptos.transaction.submit.simple({
       transaction,
-      senderAuthenticator
+      senderAuthenticator: accountAuthenticator
     })
 
     return ok(pendingTransaction.hash)
   } catch (error) {
-    return err(new Error(`Transfer failed ${error instanceof Error ? error.message : error}`))
+    return err(new Error(`Transfer failed: ${error}`))
   }
 }
 
-export async function transferAssetFromAptosSimulate({
-  memo = "transfer",
-  amount,
-  account,
-  baseUrl,
-  receiver,
-  denomAddress,
-  sourceChannel,
-  relayContractAddress
-}: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
+type AptosTransferSimulateParams =
+  | (AptosTransferBaseParams & {
+      path: "SAME_CHAIN"
+    })
+  | (AptosTransferParams & {
+      path: "CROSS_CHAIN"
+    })
+
+export async function aptosTransferSimulate(
+  parameters: AptosTransferSimulateParams
+): Promise<Result<string, Error>> {
   try {
-    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
+    let transactionPayload: InputGenerateTransactionPayloadData
 
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
-    const aptos = new Aptos(config)
-
-    const transaction = await aptos.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
-        function: `${relayContractAddress}::ibc::send`,
+    if (parameters.path === "SAME_CHAIN") {
+      transactionPayload = {
+        typeArguments: ["0x1::fungible_asset::Metadata"],
+        function: "0x1::primary_fungible_store::transfer",
+        functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
+      }
+    } else {
+      transactionPayload = {
+        function: `${parameters.relayContractAddress}::ibc::send`,
         functionArguments: [
-          sourceChannel,
-          isValidBech32Address(receiver)
-            ? bech32ToBytes(receiver)
-            : hexStringToUint8Array(receiver),
-          [denomAddress],
-          [amount],
-          memo,
+          parameters.sourceChannel,
+          isValidBech32Address(parameters.receiver)
+            ? bech32ToBytes(parameters.receiver)
+            : hexStringToUint8Array(parameters.receiver),
+          [parameters.denomAddress],
+          [parameters.amount],
+          parameters.memo,
           9n,
           BigInt(999_999_999) + 100n,
           0n
         ]
       }
+    }
+
+    if (!parameters.account) return err(new Error("no `account` passed"))
+
+    const { signerPublicKey, signerAddress } =
+      parameters.authAccess === "wallet"
+        ? {
+            signerAddress: parameters.account.address,
+            signerPublicKey: new Ed25519PublicKey(parameters.account.publicKey)
+          }
+        : {
+            signerPublicKey: parameters.account.publicKey,
+            signerAddress: parameters.account.accountAddress
+          }
+
+    const transaction = await parameters.aptos.transaction.build.simple({
+      sender: signerAddress,
+      data: transactionPayload
     })
 
-    const simulationResult = await aptos.transaction.simulate.simple({
+    const simulationResult = await parameters.aptos.transaction.simulate.simple({
       transaction,
-      signerPublicKey: account.publicKey
+      signerPublicKey: signerPublicKey
     })
     const resultItem = simulationResult.at(0)
 
@@ -195,63 +351,5 @@ export async function transferAssetFromAptosSimulate({
     return err(new Error(resultItem?.vm_status || "Simulation failed."))
   } catch (error) {
     return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
-  }
-}
-
-export async function aptosSameChainTransferSimulate({
-  amount,
-  account,
-  baseUrl,
-  receiver,
-  denomAddress
-}: SameChainTransferParams): Promise<Result<string, Error>> {
-  try {
-    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
-
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
-    const aptos = new Aptos(config)
-
-    const transaction = await aptos.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
-        function: "0x1::primary_fungible_store::transfer",
-        typeArguments: ["0x1::fungible_asset::Metadata"],
-        functionArguments: [denomAddress, receiver, amount]
-      }
-    })
-
-    const simulationResult = await aptos.transaction.simulate.simple({
-      transaction,
-      signerPublicKey: account.publicKey
-    })
-    const resultItem = simulationResult.at(0)
-
-    if (resultItem?.success) return ok(resultItem.vm_status || "Simulation succeeded.")
-
-    return err(new Error(resultItem?.vm_status || "Simulation failed."))
-  } catch (error) {
-    return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
-  }
-}
-
-async function getBalance(
-  aptos: Aptos,
-  denomAddress: string,
-  accountAddress: string
-): Promise<Result<number, Error>> {
-  try {
-    const [balanceString] = await aptos.view<[string]>({
-      payload: {
-        function: "0x1::primary_fungible_store::balance",
-        typeArguments: ["0x1::object::ObjectCore"],
-        functionArguments: [accountAddress, denomAddress]
-      }
-    })
-
-    const balance = Number.parseInt(balanceString, 10)
-
-    return ok(balance)
-  } catch (error) {
-    return err(new Error(`Failed to fetch balance for account ${accountAddress}`))
   }
 }

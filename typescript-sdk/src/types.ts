@@ -1,3 +1,13 @@
+export type CamelToSnakeCase<S extends string> = S extends `${infer T}${infer U}`
+  ? `${T extends Capitalize<T> ? "_" : ""}${Lowercase<T>}${CamelToSnakeCase<U>}`
+  : S
+
+export type KeysToSnakeCase<T extends object> = {
+  [K in keyof T as CamelToSnakeCase<K & string>]: T[K]
+}
+
+export type Prettify<T> = { [K in keyof T]: T[K] } & {}
+
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 /** Currently supported networks. */

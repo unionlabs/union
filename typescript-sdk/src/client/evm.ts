@@ -114,7 +114,6 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           autoApprove,
           denomAddress,
           sourceChannel,
-          destinationChainId,
           relayContractAddress
         })
       },

@@ -10,7 +10,6 @@ import {
 import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { err, ok, type Result } from "neverthrow"
-import type { ChainId } from "../client/types.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import { simulateTransaction } from "../query/offchain/tenderly.ts"
 
@@ -24,7 +23,6 @@ export type TransferAssetFromEvmParams = {
   denomAddress: Address
   sourceChannel: string
   relayContractAddress: Address
-  destinationChainId: ChainId | (string & {})
 }
 
 /**
@@ -38,8 +36,7 @@ export type TransferAssetFromEvmParams = {
  *   sourceChannel: "channel-1",
  *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
- *   relayContractAddress: "0x2222222222222222222222222222222222222222",
- *   destinationChainId: "stride-internal-1",
+ *   relayContractAddress: "0x2222222222222222222222222222222222222222"
  * })
  * ```
  */
@@ -180,7 +177,7 @@ export async function evmSameChainTransfer(
     simulate = true
   }: Omit<
     TransferAssetFromEvmParams,
-    "memo" | "sourceChannel" | "relayContractAddress" | "destinationChainId" | "autoApprove"
+    "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove"
   >
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
@@ -230,7 +227,6 @@ export async function evmSameChainTransfer(
  *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
- *   destinationChainId: "stride-internal-1",
  * })
  * ```
  */

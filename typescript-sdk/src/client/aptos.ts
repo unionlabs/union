@@ -1,58 +1,86 @@
 import {
+  type AptosAccount,
+  type AptosAuthAccess,
+  aptosTransferSimulate,
   aptosSameChainTransfer,
   transferAssetFromAptos,
-  aptosSameChainTransferSimulate,
-  transferAssetFromAptosSimulate
+  type AptosBrowserWallet,
+  type AptosTransferParams,
+  waitForTransactionReceipt,
+  type AptosPublicAccountInfo
 } from "../transfer/aptos.ts"
 import { cosmosChainId } from "./cosmos.ts"
 import { err, type Result } from "neverthrow"
-import type { Account } from "@aptos-labs/ts-sdk"
 import { bech32AddressToHex } from "../convert.ts"
 import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
+import { Aptos, Network, AptosConfig } from "@aptos-labs/ts-sdk"
 import { createClient, fallback, type HttpTransport } from "viem"
+
+export type {
+  AptosAccount,
+  AptosAuthAccess,
+  AptosBrowserWallet,
+  AptosTransferParams,
+  AptosPublicAccountInfo
+}
 
 export const aptosChainId = ["2"] as const
 
 export type AptosChainId = `${(typeof aptosChainId)[number]}`
 
 export interface AptosClientParameters {
-  account?: Account
+  account?: AptosAccount
   chainId: AptosChainId
   transport: HttpTransport
 }
 
-export const createAptosClient = (parameters: AptosClientParameters) =>
-  createClient({ transport: fallback([]) }).extend(_ => ({
-    transferAsset: async ({
-      memo,
-      amount,
-      receiver,
-      simulate,
-      denomAddress,
-      destinationChainId,
-      relayContractAddress,
-      account = parameters.account
-    }: TransferAssetsParameters<AptosChainId>): Promise<Result<string, Error>> => {
-      const rpcUrl = parameters.transport({}).value?.url
+export const createAptosClient = (clientParameters: AptosClientParameters) => {
+  const rpcUrl = clientParameters.transport({}).value?.url
 
-      if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
-      if (!account) return err(new Error("No Aptos account found"))
+  if (!rpcUrl) throw new Error("No Aptos RPC URL found")
 
-      if (parameters.chainId === destinationChainId) {
+  const config = new AptosConfig({ fullnode: rpcUrl, network: Network.TESTNET })
+  const aptos = new Aptos(config)
+
+  return createClient({ transport: fallback([]) }).extend(_ => ({
+    waitForTransactionReceipt: async ({ hash }: { hash: string }) =>
+      waitForTransactionReceipt({ aptos, hash }),
+    transferAsset: async (
+      transferParameters: TransferAssetsParameters<AptosChainId>
+    ): Promise<Result<string, Error>> => {
+      let {
+        memo,
+        amount,
+        simulate,
+        receiver,
+        denomAddress,
+        destinationChainId,
+        relayContractAddress
+      } = transferParameters
+
+      if (!transferParameters.account) return err(new Error("No Aptos account found"))
+      if (!destinationChainId) return err(new Error("destinationChainId missing"))
+
+      const account = transferParameters.account || clientParameters.account
+
+      if (clientParameters.chainId === destinationChainId) {
+        // @ts-expect-error TODO: fix account type
         const transfer = await aptosSameChainTransfer({
+          ...transferParameters,
+          aptos,
           amount,
           account,
+          simulate,
           receiver,
-          denomAddress,
-          baseUrl: rpcUrl
+          denomAddress
         })
         return transfer
       }
 
       const chainDetails = await getHubbleChainDetails({
         destinationChainId,
-        sourceChainId: parameters.chainId
+        sourceChainId: clientParameters.chainId
       })
       if (chainDetails.isErr()) return err(chainDetails.error)
 
@@ -76,50 +104,49 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      const result = await transferAssetFromAptos({
+      // @ts-expect-error TODO: fix account type
+      return await transferAssetFromAptos({
+        ...transferParameters,
         memo,
+        aptos,
         amount,
         account,
-        receiver,
         simulate,
+        receiver,
         denomAddress,
         sourceChannel,
-        baseUrl: rpcUrl,
+        destinationChainId,
         relayContractAddress
       })
-      if (result.isErr()) return err(new Error(`Aptos transfer failed: ${result.error.message}`))
-
-      return result
     },
-    simulateTransaction: async ({
-      memo,
-      amount,
-      receiver,
-      denomAddress,
-      destinationChainId,
-      relayContractAddress,
-      account = parameters.account
-    }: TransferAssetsParameters<AptosChainId>): Promise<Result<string, Error>> => {
-      const rpcUrl = parameters.transport({}).value?.url
+    simulateTransaction: async (
+      transferParameters: TransferAssetsParameters<AptosChainId>
+    ): Promise<Result<string, Error>> => {
+      let {
+        memo,
+        amount,
+        receiver,
+        denomAddress,
+        autoApprove: _,
+        destinationChainId,
+        relayContractAddress
+      } = transferParameters
 
-      if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
-      if (!account) return err(new Error("No Aptos account found"))
+      if (!transferParameters.account) return err(new Error("No Aptos account found"))
+      if (!destinationChainId) return err(new Error("destinationChainId missing"))
 
-      if (parameters.chainId === destinationChainId) {
-        return await aptosSameChainTransferSimulate({
-          amount,
-          account,
-          receiver,
-          denomAddress,
-          baseUrl: rpcUrl
+      if (clientParameters.chainId === destinationChainId) {
+        return await aptosTransferSimulate({
+          aptos,
+          path: "SAME_CHAIN",
+          ...transferParameters
         })
       }
 
       const chainDetails = await getHubbleChainDetails({
         destinationChainId,
-        sourceChainId: parameters.chainId
+        sourceChainId: clientParameters.chainId
       })
-
       if (chainDetails.isErr()) return err(chainDetails.error)
 
       if (chainDetails.value.transferType === "pfm") {
@@ -138,22 +165,21 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
         if (pfmMemo.isErr()) return err(pfmMemo.error)
         memo = pfmMemo.value
       }
-
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      const result = await transferAssetFromAptosSimulate({
+      return await aptosTransferSimulate({
+        ...transferParameters,
+        path: "CROSS_CHAIN",
         memo,
+        aptos,
         amount,
-        account,
         receiver,
         denomAddress,
         sourceChannel,
-        baseUrl: rpcUrl,
+        destinationChainId,
         relayContractAddress
       })
-      if (!result) return err(new Error(`Aptos transfer failed`))
-
-      return result
     }
   }))
+}
