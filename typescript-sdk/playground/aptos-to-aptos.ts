@@ -3,7 +3,12 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { http, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import {
+  http,
+  createUnionClient,
+  type TransferAssetsParameters,
+  hexStringToUint8Array
+} from "#mod.ts"
 
 /* node --import=tsx playground/aptos-to-union.ts --private-key $PRIVATE_KEY */
 
@@ -18,14 +23,10 @@ const PRIVATE_KEY = values["private-key"]
 
 if (!PRIVATE_KEY) raise("Private key not found")
 
-// Convert the hex string private key to a Uint8Array
-const privateKeyBytes = Uint8Array.from(Buffer.from(PRIVATE_KEY, "hex"))
-
 const aptosAccount = Account.fromPrivateKey({
-  privateKey: new Ed25519PrivateKey(privateKeyBytes)
+  privateKey: new Ed25519PrivateKey(hexStringToUint8Array(PRIVATE_KEY))
 })
 
-// Create the Aptos client
 const client = createUnionClient({
   chainId: "2",
   account: aptosAccount,

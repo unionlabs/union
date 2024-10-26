@@ -137,8 +137,8 @@ export async function aptosSameChainTransfer({
 
 async function getBalance(
   aptos: Aptos,
-  accountAddress: string,
-  denomAddress: string
+  denomAddress: string,
+  accountAddress: string
 ): Promise<Result<number, Error>> {
   try {
     const [balanceString] = await aptos.view<[string]>({
