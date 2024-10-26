@@ -36,7 +36,7 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
       ? {
           denomAddress: string // Aptos will also need a denomAddress for token identification
           account?: AptosAccount // Define account type (Aptos accounts)
-          relayContractAddress?: string // Optional relay contract address for cross-chain aptoss
+          relayContractAddress?: string // Optional relay contract address for cross-chain aptos
           gasPrice?: { amount: string; denom: string } // Aptos might also have gas price logic
           simulate?: boolean // Whether to simulate the transaction or not
         }

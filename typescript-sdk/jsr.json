@@ -7,11 +7,6 @@
     ".": "./src/mod.ts"
   },
   "publish": {
-    "include": [
-      "./src/**/*.ts",
-      "./jsr.json",
-      "./README.md",
-      "./LICENSE"
-    ]
+    "include": ["./src/**/*.ts", "./jsr.json", "./README.md", "./LICENSE"]
   }
 }
