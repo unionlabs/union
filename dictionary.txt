@@ -947,6 +947,7 @@ onloadeddata
 onloadedmetadata
 openapi
 openapiv
+opsy
 opsz
 orai
 osmo

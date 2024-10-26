@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.33",
+  "version": "0.0.34",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -25,8 +25,7 @@
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package",
     "prepublish": "bun run build",
-    "typedoc": "bun x typedoc@latest --out .docs ./src/mod.ts",
-    "preinstall": "npm_config_yes=true npm exec --no-package-lock=true only-allow@latest bun"
+    "typedoc": "bun x typedoc@latest --out .docs ./src/mod.ts"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.31.0",
