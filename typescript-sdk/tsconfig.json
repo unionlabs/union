@@ -33,6 +33,7 @@
       "#*": ["./src/*"]
     }
   },
+  "exclude": ["**/dist/**"],
   "include": ["src", "test", "scripts", "playground"],
   "files": ["reset.d.ts", "tsup.config.ts", "environment.d.ts", "vitest.config.ts"]
 }

@@ -26,7 +26,7 @@
     "@tanstack/svelte-query": "^5.55.4",
     "@tanstack/svelte-table": "^8.20.5",
     "@tanstack/svelte-virtual": "^3.10.7",
-    "@unionlabs/client": "^0.0.31",
+    "@unionlabs/client": "^0.0.33",
     "@wagmi/connectors": "^5.3.3",
     "@wagmi/core": "^2.14.1",
     "bits-ui": "^0.21.13",
@@ -46,13 +46,13 @@
     "viem": "^2.21.35"
   },
   "devDependencies": {
+    "@aptos-labs/wallet-adapter-core": "^4.18.1",
     "@iconify-json/fa6-solid": "^1.2.0",
     "@iconify-json/logos": "^1.2.0",
     "@iconify-json/lucide": "^1.2.3",
     "@iconify-json/mdi": "^1.2.0",
     "@iconify-json/tabler": "^1.2.1",
     "@keplr-wallet/types": "^0.12.127",
-    "@aptos-labs/wallet-adapter-core": "^4.18.1",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.83.0",

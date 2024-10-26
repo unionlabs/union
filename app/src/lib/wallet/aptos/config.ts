@@ -6,7 +6,6 @@ import type { ChainWalletStore } from "../types.ts"
 
 /**
  * TODO:
- *
  * - check with Petra wallet team for proper `window.aptos` types
  */
 
@@ -40,9 +39,9 @@ export function createAptosStore(
     connectionStatus: "disconnected"
   }
 ) {
-  const walletCore = getAptosWallet()
+  const wallet = getAptosWallet()
 
-  const isConnected = (() => walletCore?.isConnected())()
+  const isConnected = (() => wallet?.isConnected())()
 
   const { subscribe, set, update, reset } = persisted(
     "aptos-store",
@@ -62,13 +61,13 @@ export function createAptosStore(
     subscribe,
     connect: async (walletId: string) => {
       console.info(`[aptos] aptosConnectClick`, walletId)
-      const walletCore = getAptosWallet()
-      if (!walletCore) {
+      const wallet = getAptosWallet()
+      if (!wallet) {
         window.open("https://petra.app/", "_blank", "noopener noreferrer")
         return
       }
 
-      const account = await walletCore.connect()
+      const account = await wallet.connect()
 
       update(v => ({
         ...v,
@@ -79,12 +78,12 @@ export function createAptosStore(
     },
     disconnect: async () => {
       const aptosWalletId = get({ subscribe }).connectedWallet as AptosWalletId
-      const walletCore = getAptosWallet()
+      const wallet = getAptosWallet()
       console.info(`[aptos] aptosDisconnectClick`, get(aptosStore))
 
-      const isConnected = await walletCore?.isConnected()
+      const isConnected = await wallet?.isConnected()
       if (isConnected) {
-        await walletCore?.disconnect()
+        await wallet?.disconnect()
 
         update(_ => ({
           chain: "aptos",

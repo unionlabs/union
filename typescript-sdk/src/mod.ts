@@ -30,6 +30,7 @@ import {
   aptosChainId,
   type AptosChainId,
   createAptosClient,
+  type AptosBrowserWallet,
   type AptosClientParameters
 } from "./client/aptos.ts"
 export {
@@ -236,6 +237,7 @@ export {
   type AptosChainId,
   evmChainFromChainId,
   type EvmClientParameters,
+  type AptosBrowserWallet,
   type CosmosClientParameters,
   type AptosClientParameters,
   type TransferAssetsParameters,

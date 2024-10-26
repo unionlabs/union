@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.31",
+  "version": "0.0.33",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -49,7 +49,7 @@
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "tsup": "^8.3.4",
+    "tsup": "^8.3.5",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.0.1",
