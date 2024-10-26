@@ -1,25 +1,26 @@
 import { err, ok, type Result } from "neverthrow"
-import { Hex } from "node_modules/@aptos-labs/ts-sdk/dist/common"
+import { isValidBech32Address } from "../utilities/address.ts"
+import { bech32ToBytes, hexStringToUint8Array } from "../convert.ts"
 import { type Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 export type TransferAssetFromAptosParams = {
   memo?: string
   amount: bigint
+  baseUrl: string
   receiver: string
   account: Account
+  simulate?: boolean
   denomAddress: string
   sourceChannel: string
   relayContractAddress: string
-  baseUrl: string
-  simulate?: boolean
 }
 
 export type SameChainTransferParams = {
   amount: bigint
+  baseUrl: string
   account: Account
   receiver: string
   denomAddress: string
-  baseUrl: string
 }
 
 /**
@@ -31,7 +32,7 @@ export type SameChainTransferParams = {
  *   memo: "test",
  *   amount: BigInt(1),
  *   account: "0xSenderAccountAddress",
- *   receiver: "0xReceiverAddress",
+ *   receiver: "HEX_PR_BECH32_ADDRESS",
  *   denomAddress: "0x1::aptos_coin::AptosCoin",
  *   sourceChannel: "channel-1",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
@@ -63,7 +64,9 @@ export async function transferAssetFromAptos({
         function: `${relayContractAddress}::ibc::send`,
         functionArguments: [
           sourceChannel,
-          Hex.fromHexString(receiver).toUint8Array(),
+          isValidBech32Address(receiver)
+            ? bech32ToBytes(receiver)
+            : hexStringToUint8Array(receiver),
           [denomAddress],
           [amount],
           memo,
@@ -176,7 +179,9 @@ export async function transferAssetFromAptosSimulate({
         function: `${relayContractAddress}::ibc::send`,
         functionArguments: [
           sourceChannel,
-          Hex.fromHexString(receiver).toUint8Array(),
+          isValidBech32Address(receiver)
+            ? bech32ToBytes(receiver)
+            : hexStringToUint8Array(receiver),
           [denomAddress],
           [amount],
           memo,

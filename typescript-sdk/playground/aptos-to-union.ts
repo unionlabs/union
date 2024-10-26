@@ -35,7 +35,8 @@ const client = createUnionClient({
 const transferPayload = {
   memo: "",
   amount: 1n,
-  receiver: "1363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b5",
+  // receiver: "1363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b5",
+  receiver: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md",
   denomAddress: "0x9935a6a334e070bcecf5b1abb1c842c123572e63e70f0539d79610c32954c06c",
   destinationChainId: "union-testnet-8"
 } satisfies TransferAssetsParameters<"2">
