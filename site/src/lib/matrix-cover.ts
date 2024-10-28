@@ -13,13 +13,13 @@ interface AnimationState {
 }
 
 let state: AnimationState = {
-  currentRotation: 0,
-  targetRotation: 0,
+  currentRotation: Math.PI / 4,
+  targetRotation: Math.PI / 4,
   isTransitioning: false,
   transitionStartTime: 0,
   transitionDuration: 1000,
-  totalRotation: 0,
-  lastTargetRotation: 0
+  totalRotation: Math.PI / 4,
+  lastTargetRotation: Math.PI / 4
 }
 
 function startRotationTransition(angle: number) {
@@ -358,7 +358,7 @@ function initWebGL() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
     // Adjusted field of view for better perspective
-    const fieldOfView = (45 * Math.PI) / 180 // Changed from 50 to 45 degrees
+    const fieldOfView = (45 * Math.PI) / 180
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight
     const zNear = 0.1
     const zFar = 100.0
