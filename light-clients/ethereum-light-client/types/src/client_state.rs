@@ -1,5 +1,4 @@
 use beacon_api_types::ForkParameters;
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::{H160, H256},
     ibc::core::client::height::Height,

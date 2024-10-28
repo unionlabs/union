@@ -2190,6 +2190,7 @@ dependencies = [
 name = "berachain-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "ethereum-light-client-types",
  "protos",
  "serde",
@@ -13804,7 +13805,6 @@ dependencies = [
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
- "ethereum-verifier",
  "ethers",
  "futures",
  "jsonrpsee",

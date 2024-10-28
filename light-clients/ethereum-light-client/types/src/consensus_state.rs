@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{bls::BlsPublicKey, hash::H256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,

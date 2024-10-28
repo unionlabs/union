@@ -4,13 +4,20 @@ name    = "berachain-light-client-types"
 version = "0.1.0"
 
 [dependencies]
+beacon-api-types              = { workspace = true }
 ethereum-light-client-types   = { workspace = true }
-protos                        = { workspace = true, features = ["union+ibc+lightclients+berachain+v1"] }
-serde                         = { workspace = true, features = ["derive"] }
+protos                        = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
 tendermint-light-client-types = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [features]
 default = ["proto"]
-proto   = ["unionlabs/proto", "tendermint-light-client-types/proto", "ethereum-light-client-types/proto"]
+proto = [
+  "protos",
+  "unionlabs/proto",
+  "tendermint-light-client-types/proto",
+  "ethereum-light-client-types/proto",
+]
+serde = ["ethereum-light-client-types/serde", "dep:serde"]

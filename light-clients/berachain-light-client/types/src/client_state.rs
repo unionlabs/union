@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Fraction;
 use unionlabs::{
     cosmos::ics23::proof_spec::ProofSpec, google::protobuf::duration::Duration, hash::H160,
     ibc::core::client::height::Height, uint::U256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub consensus_chain_id: String,
     pub execution_chain_id: U256,

@@ -1,5 +1,4 @@
-use protos::ibc::core::client::v1::Height;
-use serde::{Deserialize, Serialize};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::{AccountProof, LightClientUpdate};
 
@@ -18,13 +17,17 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::errors::MissingField;
+    use unionlabs::{errors::MissingField, required};
 
-    use crate::Header;
+    use crate::{account_proof, light_client_update, Header};
 
     impl From<Header> for protos::union::ibc::lightclients::ethereum::v1::Header {
         fn from(value: Header) -> Self {
-            todo!()
+            Self {
+                trusted_height: Some(value.trusted_height.into()),
+                consensus_update: Some(value.consensus_update.into()),
+                ibc_account_proof: Some(value.ibc_account_proof.into()),
+            }
         }
     }
 
@@ -32,12 +35,10 @@ pub mod proto {
     pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
-        // #[error("invalid `trusted_sync_committee`")]
-        // TrustedSyncCommittee(#[from] TryFromTrustedSyncCommitteeError),
-        // #[error("invalid `consensus_update`")]
-        // ConsensusUpdate(#[from] TryFromLightClientUpdateError),
-        // #[error("invalid `account_update`")]
-        // AccountUpdate(#[from] TryFromAccountUpdateError),
+        #[error("invalid consensus_update")]
+        ConsensusUpdate(#[from] light_client_update::proto::Error),
+        #[error("invalid ibc_account_update")]
+        IbcAccountUpdate(#[from] account_proof::proto::Error),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::Header> for Header {
@@ -46,7 +47,11 @@ pub mod proto {
         fn try_from(
             value: protos::union::ibc::lightclients::ethereum::v1::Header,
         ) -> Result<Self, Self::Error> {
-            todo!()
+            Ok(Self {
+                trusted_height: required!(value.trusted_height)?.into(),
+                consensus_update: required!(value.consensus_update)?.try_into()?,
+                ibc_account_proof: required!(value.ibc_account_proof)?.try_into()?,
+            })
         }
     }
 }
