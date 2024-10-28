@@ -6,6 +6,7 @@ import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import BlogIntroSection from "#/components/sections/blogIntroSection.astro"
+import AnimationLayout from "../../layouts/AnimationLayout.astro";
 
 export const prerender = false
 
@@ -27,47 +28,48 @@ const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
 <SectionsLayout title="Union Blog" gapless>
-  <BlogIntroSection />
-  <div class="flex w-full justify-center pb-24">
-    <div class="max-w-[1440px]">
-      <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
-      <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
-        {
-          publishedBlogPosts.map((blogPostEntry: BlogPost) => (
-            <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
-              <Card class="size-full border-none" padded>
-                <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
-                  <img
-                    class="w-full h-full object-cover border-none"
-                    loading="eager"
-                    alt={blogPostEntry.fields.cover.fields.title}
-                    src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
-                  />
-                </div>
-                <div class="flex flex-col gap-2">
-                  <H3>{blogPostEntry.fields.title}</H3>
-                  <div class="flex items-center justify-between text-xl font-mono font-semibold">
-                    <time
-                      class="text-accent-500"
-                      datetime={toISODate(`${blogPostEntry?.fields?.date}`)}
-                    >
-                      {saneDateTime(`${blogPostEntry?.fields?.date}`)}
-                    </time>
-                    <div class="h-full w-1 bg-white" />
-                    <p class="uppercase font-mono truncate">
-                      <span class="hidden lg:inline-block mr-2">Author: </span>
-                      {blogPostEntry.fields.author}
-                    </p>
-                  </div>
-                  <p class="text-base text-white font-mono">{blogPostEntry.fields.description}</p>
-                </div>
-              </Card>
-            </a>
-          ))
-        }
+  <AnimationLayout title="Development blog" text="Stay informed">
+    <div class="flex w-full justify-center py-16">
+      <div class="max-w-[1440px]">
+        <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
+        <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
+          {
+            publishedBlogPosts.map((blogPostEntry: BlogPost) => (
+                    <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
+                      <Card class="size-full border-none" padded>
+                        <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
+                          <img
+                                  class="w-full h-full object-cover border-none"
+                                  loading="eager"
+                                  alt={blogPostEntry.fields.cover.fields.title}
+                                  src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
+                          />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                          <H3>{blogPostEntry.fields.title}</H3>
+                          <div class="flex items-center justify-between text-xl font-mono font-semibold">
+                            <time
+                                    class="text-accent-500"
+                                    datetime={toISODate(`${blogPostEntry?.fields?.date}`)}
+                            >
+                              {saneDateTime(`${blogPostEntry?.fields?.date}`)}
+                            </time>
+                            <div class="h-full w-1 bg-white" />
+                            <p class="uppercase font-mono truncate">
+                              <span class="hidden lg:inline-block mr-2">Author: </span>
+                              {blogPostEntry.fields.author}
+                            </p>
+                          </div>
+                          <p class="text-base text-white font-mono">{blogPostEntry.fields.description}</p>
+                        </div>
+                      </Card>
+                    </a>
+            ))
+          }
+        </div>
       </div>
     </div>
-  </div>
+  </AnimationLayout>
 </SectionsLayout>
 
 <style is:inline>
