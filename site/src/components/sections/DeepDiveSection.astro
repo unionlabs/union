@@ -160,32 +160,34 @@ const { entries } = Astro.props
   </div>
 
   <script>
-    const dot = document.getElementById('scrolling-dot');
-    const container = document.getElementById('swim-container');
-    const swimlane = document.getElementById('swim-lane');
+    document.addEventListener('astro:page-load', () => {
+      const dot = document.getElementById('scrolling-dot');
+      const container = document.getElementById('swim-container');
+      const swimlane = document.getElementById('swim-lane');
 
-    window.addEventListener('scroll', () => {
-      const containerRect = container.getBoundingClientRect();
-      const swimlaneRect = swimlane.getBoundingClientRect();
+      window.addEventListener('scroll', () => {
+        const containerRect = container.getBoundingClientRect();
+        const swimlaneRect = swimlane.getBoundingClientRect();
 
-      const containerTop = containerRect.top;
-      const containerBottom = containerRect.bottom;
-      const containerHeight = containerRect.height;
+        const containerTop = containerRect.top;
+        const containerBottom = containerRect.bottom;
+        const containerHeight = containerRect.height;
 
-      const swimlaneHeight = swimlaneRect.height;
+        const swimlaneHeight = swimlaneRect.height;
 
-      // Calculate how much the container is scrolled
-      const scrollPosition = Math.max(0, Math.min(containerHeight, window.innerHeight - containerTop));
+        // Calculate how much the container is scrolled
+        const scrollPosition = Math.max(0, Math.min(containerHeight, window.innerHeight - containerTop));
 
-      // Calculate the scroll percentage relative to the container's height
-      const scrollPercentage = scrollPosition / containerHeight;
+        // Calculate the scroll percentage relative to the container's height
+        const scrollPercentage = scrollPosition / containerHeight;
 
-      // Calculate the new top position of the dot within the swimlane
-      const maxDotPosition = swimlaneHeight - dot.offsetHeight;
-      const newTop = scrollPercentage * maxDotPosition;
+        // Calculate the new top position of the dot within the swimlane
+        const maxDotPosition = swimlaneHeight - dot.offsetHeight;
+        const newTop = scrollPercentage * maxDotPosition;
 
-      dot.style.top = `${newTop}px`;
-    });
+        dot.style.top = `${newTop}px`;
+      });
+    })
   </script>
 
 

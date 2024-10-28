@@ -89,37 +89,11 @@ const slideTextAnimation = {
 </style>
 
 <script>
-
   import {rotateCamera} from "../../../lib/matrix-cover";
 
   let previousPath = window.location.pathname;
 
   document.addEventListener('astro:after-swap', (e) => {
-    const currentPath = window.location.pathname;
-
-    const pageValues = {
-      '/': 1,
-      '/learn': 2,
-      '/ecosystem': 3,
-      '/team': 4
-    };
-
-    const fromPath = previousPath.replace(/\/$/, '') || '/';
-    const toPath = currentPath.replace(/\/$/, '') || '/';
-
-    console.log('From:', fromPath, 'To:', toPath);
-
-    const fromValue = pageValues[fromPath];
-    const toValue = pageValues[toPath];
-
-    if (fromValue !== undefined && toValue !== undefined) {
-      const direction = Math.abs(toValue - fromValue) > 2
-        ? (toValue < fromValue ? 'left' : 'right')
-        : (toValue > fromValue ? 'left' : 'right');
-
-      rotateCamera(direction);
-    }
-    previousPath = currentPath;
+    rotateCamera('left');
   });
-
 </script>

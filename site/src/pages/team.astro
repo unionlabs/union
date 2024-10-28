@@ -19,6 +19,7 @@ import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
 import ContainedSection from "../components/ContainedSection.astro"
 import H1 from "../components/typography/h1.astro"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
 
 const teams = [
   {
@@ -112,13 +113,7 @@ try {
             <p>{error}</p>
           </div>
   ) : teamData ? (
-          <>
-            <TopSection>
-              <div class="flex h-full w-full items-center justify-center">
-                <H1>Meet the team</H1>
-              </div>
-            </TopSection>
-
+          <AnimationLayout title="Meet the team" text="Our team is a global network of professionals, working to build the interoperability future.">
             <ContainedSection>
               <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
                 {teamData.map((person) => (
@@ -146,7 +141,7 @@ try {
                 ))}
               </div>
             </ContainedSection>
-          </>
+          </AnimationLayout>
   ) : (
           <div class="loading-message">
             <p>Loading content...</p>
