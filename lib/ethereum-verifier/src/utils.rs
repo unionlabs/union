@@ -5,7 +5,7 @@ use beacon_api_types::{
 use sha2::{Digest, Sha256};
 use ssz::{types::BitVector, Ssz};
 use typenum::Unsigned;
-use unionlabs::hash::{hash_v2::Hash, H256};
+use unionlabs::hash::H256;
 
 use crate::{
     error::{Error, InvalidMerkleBranch},

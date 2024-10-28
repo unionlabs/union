@@ -1,5 +1,8 @@
 use beacon_api_types::{
-    consts::{floorlog2, get_subtree_index, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
+    consts::{
+        floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
+        NEXT_SYNC_COMMITTEE_INDEX,
+    },
     light_client_update::LightClientUpdateSsz,
     ChainSpec, DomainType, ForkParameters, LightClientHeaderSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
 };
@@ -143,14 +146,15 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ensure(
         update_attested_slot > ctx.finalized_slot()
             || (update_attested_period == stored_period
-                && update.next_sync_committee.is_some()
+                // && update.next_sync_committee.is_some()
                 && ctx.next_sync_committee().is_none()),
         Error::IrrelevantUpdate {
             update_attested_slot,
             trusted_finalized_slot: ctx.finalized_slot(),
             update_attested_period,
             stored_period,
-            update_sync_committee_is_set: update.next_sync_committee.is_some(),
+            // update_sync_committee_is_set: update.next_sync_committee.is_some(),
+            update_sync_committee_is_set: true,
             trusted_next_sync_committee_is_set: ctx.next_sync_committee().is_some(),
         },
     )?;
@@ -172,22 +176,22 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that if the update contains the next sync committee, and the signature periods do match,
     // next sync committees match too.
-    if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
-        (&update.next_sync_committee, ctx.next_sync_committee())
-    {
+    // if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
+    //     (&update.next_sync_committee, ctx.next_sync_committee())
+    if let Some(stored_next_sync_committee) = ctx.next_sync_committee() {
         if update_attested_period == stored_period {
             ensure(
-                next_sync_committee == stored_next_sync_committee,
+                &update.next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
-                    found: next_sync_committee.aggregate_pubkey,
+                    found: update.next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &next_sync_committee.tree_hash_root().into(),
-            &update.next_sync_committee_branch.unwrap_or_default(),
+            &update.next_sync_committee.tree_hash_root().into(),
+            &update.next_sync_committee_branch,
             floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
             get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
             &update.attested_header.beacon.state_root,
@@ -351,7 +355,7 @@ pub fn get_lc_execution_root<C: ChainSpec>(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeader<C>,
+    header: &LightClientHeaderSsz<C>,
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 

@@ -10,7 +10,7 @@ workspace = true
 test-include = ["lib/ethereum-verifier/src/test/"]
 
 [dependencies]
-beacon-api-types            = { workspace = true }
+beacon-api-types            = { workspace = true, features = ["ssz"] }
 bytes                       = { workspace = true }
 ethereum-light-client-types = { workspace = true }
 hash-db                     = { version = "0.16.0", default-features = false }

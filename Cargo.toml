@@ -68,7 +68,7 @@ members = [
   "light-clients/cometbls-light-client",
   "light-clients/cometbls-light-client/types",
 
-  "light-clients/ethereum-light-client",
+  # "light-clients/ethereum-light-client",
   "light-clients/ethereum-light-client/types",
 
   "light-clients/evm-in-cosmos-light-client",
