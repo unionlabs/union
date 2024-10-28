@@ -10,7 +10,7 @@ import (
 	"github.com/consensys/gnark/std/hash/sha2"
 	"github.com/consensys/gnark/std/math/uints"
 
-	"github.com/cometbft/cometbft/proto/tendermint/types"
+	types "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/hash/mimc"
 )

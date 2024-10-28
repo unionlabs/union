@@ -8,9 +8,9 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	bankkeeper "cosmossdk.io/x/bank/keeper"
+	banktypes "cosmossdk.io/x/bank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	bindingstypes "union/x/tokenfactory/bindings/types"
@@ -278,10 +278,6 @@ func parseAddress(addr string) (sdk.AccAddress, error) {
 	parsed, err := sdk.AccAddressFromBech32(addr)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "address from bech32")
-	}
-	err = sdk.VerifyAddressFormat(parsed)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "verify address format")
 	}
 	return parsed, nil
 }

@@ -1,6 +1,0 @@
-syntax = "proto3";
-package cockroach.errorspb;
-option go_package = "errorspb";
-
-// TestError is meant for use in testing only.
-message TestError{}

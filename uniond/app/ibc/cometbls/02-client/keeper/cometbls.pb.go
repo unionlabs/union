@@ -6,7 +6,7 @@ package keeper
 
 import (
 	fmt "fmt"
-	types2 "github.com/cometbft/cometbft/proto/tendermint/types"
+	types2 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	types "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"

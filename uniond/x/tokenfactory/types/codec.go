@@ -1,11 +1,12 @@
 package types
 
 import (
+	"cosmossdk.io/core/registry"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	// authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
+	// authzcodec "cosmossdk.io/x/authz/codec"
 )
 
 var (
@@ -47,7 +48,7 @@ func init() {
 	amino.Seal()
 }
 
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgCreateDenom{},
@@ -58,9 +59,9 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgCreateDenom{}, createTFDenom, nil)
-	cdc.RegisterConcrete(&MsgMint{}, mintTFDenom, nil)
-	cdc.RegisterConcrete(&MsgBurn{}, burnTFDenom, nil)
-	cdc.RegisterConcrete(&MsgChangeAdmin{}, changeAdminTFDenom, nil)
+func RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	registrar.RegisterConcrete(&MsgCreateDenom{}, createTFDenom)
+	registrar.RegisterConcrete(&MsgMint{}, mintTFDenom)
+	registrar.RegisterConcrete(&MsgBurn{}, burnTFDenom)
+	registrar.RegisterConcrete(&MsgChangeAdmin{}, changeAdminTFDenom)
 }

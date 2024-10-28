@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	"github.com/cosmos/gogoproto/proto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,7 +11,7 @@ import (
 )
 
 // GetAuthorityMetadata returns the authority metadata for a specific denom
-func (k Keeper) GetAuthorityMetadata(ctx sdk.Context, denom string) (types.DenomAuthorityMetadata, error) {
+func (k Keeper) GetAuthorityMetadata(ctx context.Context, denom string) (types.DenomAuthorityMetadata, error) {
 	bz := k.GetDenomPrefixStore(ctx, denom).Get([]byte(types.DenomAuthorityMetadataKey))
 
 	metadata := types.DenomAuthorityMetadata{}

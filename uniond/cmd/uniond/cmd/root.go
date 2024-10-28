@@ -6,15 +6,22 @@ import (
 	"os"
 	"strings"
 
+	"cosmossdk.io/x/tx/signing"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+
 	"cosmossdk.io/client/v2/autocli"
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
+
 	dbm "github.com/cosmos/cosmos-db"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -23,22 +30,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
-	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
-
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -59,6 +64,15 @@ func (m AppOptionsMap) Get(key string) interface{} {
 	}
 
 	return v
+}
+
+func (m AppOptionsMap) GetString(key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+
+	return v.(string)
 }
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -85,8 +99,13 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
+		WithAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())).
+		WithValidatorAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())).
+		WithConsensusAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())).
 		WithHomeDir(tempDir()).
-		WithViper("")
+		WithViper(""). // uses by default the binary name as prefix
+		WithAddressPrefix(sdk.GetConfig().GetBech32AccountAddrPrefix()).
+		WithValidatorPrefix(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
 
 	rootCmd := &cobra.Command{
 		Use:   app.Name + "d",
@@ -112,11 +131,19 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			// is only available if the client is online.
 			if !initClientCtx.Offline {
 				txConfigOpts := tx.ConfigOptions{
-					EnabledSignModes:           append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL),
+					EnabledSignModes:           append(tx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL),
 					TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
+					SigningOptions: &signing.Options{
+						AddressCodec: address.Bech32Codec{
+							Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+						},
+						ValidatorAddressCodec: address.Bech32Codec{
+							Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+						},
+					},
 				}
 				txConfigWithTextual, err := tx.NewTxConfigWithOptions(
-					codec.NewProtoCodec(encodingConfig.InterfaceRegistry),
+					initClientCtx.Codec,
 					txConfigOpts,
 				)
 				if err != nil {
@@ -137,7 +164,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig, tempApp.BasicModuleManager)
+	initRootCmd(rootCmd, encodingConfig, tempApp.ModuleManager)
 
 	autoCliOpts, err := enrichAutoCliOpts(tempApp.AutoCliOpts(), initClientCtx)
 	if err != nil {
@@ -157,21 +184,15 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 }
 
 func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context) (autocli.AppOptions, error) {
-	autoCliOpts.AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
-	autoCliOpts.ValidatorAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
-	autoCliOpts.ConsensusAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
-
-	var err error
-	clientCtx, err = config.ReadFromClientConfig(clientCtx)
+	clientCtx, err := config.ReadFromClientConfig(clientCtx)
 	if err != nil {
 		return autocli.AppOptions{}, err
 	}
-
 	autoCliOpts.ClientCtx = clientCtx
-	autoCliOpts.Keyring, err = keyring.NewAutoCLIKeyring(clientCtx.Keyring)
-	if err != nil {
-		return autocli.AppOptions{}, err
-	}
+
+	autoCliOpts.ClientCtx.AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	autoCliOpts.ClientCtx.ValidatorAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
+	autoCliOpts.ClientCtx.ConsensusAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
 
 	return autoCliOpts, nil
 }
@@ -186,17 +207,17 @@ func initCometBFTConfig() *cmtcfg.Config {
 func initRootCmd(
 	rootCmd *cobra.Command,
 	encodingConfig appparams.EncodingConfig,
-	basicManager module.BasicManager,
+	moduleManager *module.Manager,
 ) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
+		genutilcli.InitCmd(moduleManager),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
-		pruning.Cmd(newApp, app.DefaultNodeHome),
+		pruning.Cmd(newApp),
 		snapshot.Cmd(newApp),
 		staking.NewTxCmd(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())),
 	)
@@ -204,16 +225,14 @@ func initRootCmd(
 	// add server commands
 	server.AddCommands(
 		rootCmd,
-		app.DefaultNodeHome,
 		newApp,
-		appExport,
-		addModuleInitFlags,
+		server.StartCmdOptions[servertypes.Application]{},
 	)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		genesisCommand(encodingConfig.TxConfig, basicManager),
+		genesisCommand(encodingConfig.TxConfig, moduleManager),
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
@@ -221,8 +240,8 @@ func initRootCmd(
 }
 
 // genesisCommand builds genesis-related `uniond genesis` command. Users may provide application specific commands as a parameter
-func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
-	cmd := genutilcli.Commands(txConfig, basicManager, app.DefaultNodeHome)
+func genesisCommand(txConfig client.TxConfig, moduleManager *module.Manager, cmds ...*cobra.Command) *cobra.Command {
+	cmd := genutilcli.Commands(moduleManager.Modules[genutiltypes.ModuleName].(genutil.AppModule), moduleManager, appExport)
 
 	for _, subCmd := range cmds {
 		cmd.AddCommand(subCmd)
@@ -242,7 +261,7 @@ func queryCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		rpc.ValidatorCommand(),
+		rpc.WaitTxCmd(),
 		rpc.QueryEventForTxCmd(),
 		server.QueryBlocksCmd(),
 		server.QueryBlockResultsCmd(),
@@ -281,7 +300,6 @@ func txCommand() *cobra.Command {
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
-	crisis.AddModuleInitFlags(startCmd)
 }
 
 func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
@@ -303,7 +321,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 // newApp creates a new Cosmos SDK app
 func newApp(
 	logger log.Logger,
-	db dbm.DB,
+	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
@@ -323,7 +341,7 @@ func newApp(
 // appExport creates a new simapp (optionally at a given height)
 func appExport(
 	logger log.Logger,
-	db dbm.DB,
+	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
 	height int64,
 	forZeroHeight bool,

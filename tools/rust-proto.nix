@@ -129,33 +129,36 @@ _: {
           # and yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
           # ask me how much time i wasted figuring this out
           fixup-script = ''
-            sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 4")\]/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>),/Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "4")\]Bls12_381(::prost::alloc::vec::Vec<u8>),/' "./src/tendermint.crypto.rs"
+            # sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 4")\]/' "./src/cometbft.crypto.v1.rs"
+            # sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>),/Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "4")\]Bls12381(::prost::alloc::vec::Vec<u8>),/' "./src/cometbft.crypto.rs"
 
             # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<public_key::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<public_key::Sum>,/' "./src/tendermint.crypto.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.crypto.rs"
+            sed -i 's/pub sum: ::core::option::Option<public_key::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<public_key::Sum>,/' "./src/cometbft.crypto.v1.rs"
+            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.crypto.v1.rs"
 
             # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
-            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12_381")\]Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
+            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
+            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
+            sed -i 's/Bls12381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12381")\]Bls12381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
 
 
 
             # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/tendermint.types.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.types.rs"
+            sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/cometbft.types.v1.rs"
+            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.types.v1.rs"
 
-            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/tendermint.types.rs"
-            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
+            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/cometbft.types.v1.rs"
+            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/LightClientAttackEvidence")\]LightClientAttackEvidence(/' "./src/cometbft.types.v1.rs"
           '';
         };
+
         uniond = rec {
           src = "${proto.uniond}";
           proto-deps = [
             src
+            "${proto.cosmossdk}/x/bank/proto"
+            "${proto.cosmossdk}/x/staking/proto"
           ];
         };
         galoisd = rec {
@@ -208,6 +211,14 @@ _: {
             sed -i 's/AllowList(Validators)/AllowList(ValidatorsList)/' "./src/cosmos.staking.v1beta1.rs"
             sed -i 's/DenyList(Validators)/DenyList(ValidatorsList)/' "./src/cosmos.staking.v1beta1.rs"
           '';
+        };
+        cosmos-sdk-bank = {
+          src = "${proto.cosmossdk}/x/bank/proto";
+          proto-deps = [ ];
+        };
+        cosmos-sdk-staking = {
+          src = "${proto.cosmossdk}/x/staking/proto";
+          proto-deps = [ ];
         };
       };
 
@@ -308,42 +319,42 @@ _: {
 
             ".cosmos.bank.v1beta1" = [ serde ];
 
-            ".tendermint.types.Block" = [ serde ];
-            ".tendermint.types.BlockID" = [ serde ];
-            ".tendermint.types.Commit" = [ serde ];
-            ".tendermint.types.CommitSig" = [ serde ];
-            ".tendermint.types.Data" = [ serde ];
-            ".tendermint.types.DuplicateVoteEvidence" = [ serde ];
-            ".tendermint.types.Evidence" = [ serde ];
-            ".tendermint.types.EvidenceList" = [ serde ];
-            ".tendermint.types.Header" = [ serde ];
-            ".tendermint.types.LightBlock" = [ serde ];
-            ".tendermint.types.LightClientAttackEvidence" = [ serde ];
-            ".tendermint.types.PartSetHeader" = [ serde ];
-            ".tendermint.types.SignedHeader" = [ serde ];
-            ".tendermint.types.TxProof" = [ serde ];
-            ".tendermint.types.Validator" = [ serde ];
-            ".tendermint.types.ValidatorSet" = [ serde ];
-            ".tendermint.types.Vote" = [ serde ];
+            ".cometbft.types.v1.Block" = [ serde ];
+            ".cometbft.types.v1.BlockID" = [ serde ];
+            ".cometbft.types.v1.Commit" = [ serde ];
+            ".cometbft.types.v1.CommitSig" = [ serde ];
+            ".cometbft.types.v1.Data" = [ serde ];
+            ".cometbft.types.v1.DuplicateVoteEvidence" = [ serde ];
+            ".cometbft.types.v1.Evidence" = [ serde ];
+            ".cometbft.types.v1.EvidenceList" = [ serde ];
+            ".cometbft.types.v1.Header" = [ serde ];
+            ".cometbft.types.v1.LightBlock" = [ serde ];
+            ".cometbft.types.v1.LightClientAttackEvidence" = [ serde ];
+            ".cometbft.types.v1.PartSetHeader" = [ serde ];
+            ".cometbft.types.v1.SignedHeader" = [ serde ];
+            ".cometbft.types.v1.TxProof" = [ serde ];
+            ".cometbft.types.v1.Validator" = [ serde ];
+            ".cometbft.types.v1.ValidatorSet" = [ serde ];
+            ".cometbft.types.v1.Vote" = [ serde ];
 
-            ".tendermint.version.Consensus" = [ serde ];
+            ".cometbft.version.v1.Consensus" = [ serde ];
 
-            ".tendermint.abci.ExecTxResult" = [ serde ];
-            ".tendermint.abci.Event" = [ serde ];
-            ".tendermint.abci.EventAttribute" = [ serde ];
-            ".tendermint.abci.ResponseQuery" = [ serde ];
+            ".cometbft.abci.v1.ExecTxResult" = [ serde ];
+            ".cometbft.abci.v1.Event" = [ serde ];
+            ".cometbft.abci.v1.EventAttribute" = [ serde ];
+            ".cometbft.abci.v1.QueryResponse" = [ serde ];
 
-            ".tendermint.crypto.PublicKey" = [ serde ];
-            # ".tendermint.crypto.PublicKey.sum" = [ serde ];
-            ".tendermint.crypto.ProofOps" = [ serde ];
-            ".tendermint.crypto.ProofOp" = [ serde ];
-            ".tendermint.crypto.Proof" = [ serde ];
+            ".cometbft.crypto.v1.PublicKey" = [ serde ];
+            # ".cometbft.crypto.v1.PublicKey.sum" = [ serde ];
+            ".cometbft.crypto.v1.ProofOps" = [ serde ];
+            ".cometbft.crypto.v1.ProofOp" = [ serde ];
+            ".cometbft.crypto.v1.Proof" = [ serde ];
 
-            ".tendermint.p2p.DefaultNodeInfo" = [ serde ];
-            ".tendermint.p2p.DefaultNodeInfoOther" = [ serde ];
-            ".tendermint.p2p.ProtocolVersion" = [ serde ];
+            ".cometbft.p2p.v1.DefaultNodeInfo" = [ serde ];
+            ".cometbft.p2p.v1.DefaultNodeInfoOther" = [ serde ];
+            ".cometbft.p2p.v1.ProtocolVersion" = [ serde ];
 
-            # ".tendermint.types.Validator" = [ serde ];
+            # ".cometbft.types.v1.Validator" = [ serde ];
           };
 
           field_attribute = {
@@ -427,102 +438,104 @@ _: {
 
             ".cosmos.ics23.v1.NonExistenceProof.value" = [ serde_base64 ];
 
-            ".tendermint.types.Header.last_commit_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.data_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.validators_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.next_validators_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.consensus_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.app_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.last_results_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.evidence_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.proposer_address" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Header.height" = [ serde_string ];
+            ".cometbft.types.v1.Header.last_commit_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.data_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.validators_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.next_validators_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.consensus_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.app_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.last_results_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.evidence_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.proposer_address" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Header.height" = [ serde_string ];
 
             # this type is so cursed
-            ".tendermint.types.BlockID.hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.BlockID.part_set_header" = [ (serde_alias "parts") ];
+            ".cometbft.types.v1.BlockID.hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.BlockID.part_set_header" = [ (serde_alias "parts") ];
 
-            ".tendermint.types.PartSetHeader.hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Commit.height" = [ serde_string ];
-            ".tendermint.types.CommitSig.signature" = [ serde_base64_opt_default ];
-            ".tendermint.types.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.CommitSig.timestamp" = [
+            ".cometbft.types.v1.PartSetHeader.hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Commit.height" = [ serde_string ];
+            ".cometbft.types.v1.CommitSig.signature" = [ serde_base64_opt_default ];
+            ".cometbft.types.v1.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.CommitSig.timestamp" = [
               ''
                 #[cfg_attr(
-                                  feature = "serde",
-                                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-                              )]''
+                    feature = "serde",
+                    serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+                )]''
             ];
 
-            ".tendermint.version.Consensus.block" = [ serde_string ];
-            ".tendermint.version.Consensus.app" = [ serde_default ];
+            ".cometbft.version.v1.Consensus.block" = [ serde_string ];
+            ".cometbft.version.v1.Consensus.app" = [ serde_default ];
 
-            ".tendermint.abci.ResponseQuery.index" = [ serde_string ];
-            ".tendermint.abci.ResponseQuery.height" = [ serde_string ];
-            ".tendermint.abci.ResponseQuery.key" = [ serde_base64_opt_default ];
-            ".tendermint.abci.ResponseQuery.value" = [ serde_base64_opt_default ];
-            ".tendermint.abci.ResponseQuery.proof_ops" = [ (serde_alias "proofOps") ];
+            ".cometbft.abci.v1.QueryResponse.index" = [ serde_string ];
+            ".cometbft.abci.v1.QueryResponse.height" = [ serde_string ];
+            ".cometbft.abci.v1.QueryResponse.key" = [ serde_base64_opt_default ];
+            ".cometbft.abci.v1.QueryResponse.value" = [ serde_base64_opt_default ];
+            ".cometbft.abci.v1.QueryResponse.proof_ops" = [ (serde_alias "proofOps") ];
 
-            ".tendermint.crypto.ProofOp.key" = [ serde_base64 ];
-            ".tendermint.crypto.ProofOp.data" = [ serde_base64 ];
+            ".cometbft.crypto.v1.ProofOp.key" = [ serde_base64 ];
+            ".cometbft.crypto.v1.ProofOp.data" = [ serde_base64 ];
 
-            ".tendermint.crypto.Proof.total" = [ serde_string ];
-            ".tendermint.crypto.Proof.index" = [ serde_string ];
-            ".tendermint.crypto.Proof.leaf_hash" = [ serde_base64 ];
-            ".tendermint.crypto.Proof.aunts" = [ serde_inner_base64 ];
+            ".cometbft.crypto.v1.Proof.total" = [ serde_string ];
+            ".cometbft.crypto.v1.Proof.index" = [ serde_string ];
+            ".cometbft.crypto.v1.Proof.leaf_hash" = [ serde_base64 ];
+            ".cometbft.crypto.v1.Proof.aunts" = [ serde_inner_base64 ];
 
-            ".tendermint.p2p.DefaultNodeInfo.channels" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.p2p.DefaultNodeInfo.default_node_id" = [ (serde_alias "id") ];
+            ".cometbft.p2p.v1.DefaultNodeInfo.channels" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.p2p.v1.DefaultNodeInfo.default_node_id" = [ (serde_alias "id") ];
 
-            ".tendermint.p2p.ProtocolVersion.p2p" = [ serde_string ];
-            ".tendermint.p2p.ProtocolVersion.block" = [ serde_string ];
-            ".tendermint.p2p.ProtocolVersion.app" = [ serde_string ];
+            ".cometbft.p2p.v1.ProtocolVersion.p2p" = [ serde_string ];
+            ".cometbft.p2p.v1.ProtocolVersion.block" = [ serde_string ];
+            ".cometbft.p2p.v1.ProtocolVersion.app" = [ serde_string ];
 
-            ".tendermint.types.Validator.address" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Validator.voting_power" = [ serde_string ];
-            ".tendermint.types.Validator.proposer_priority" = [ serde_string ];
+            ".cometbft.types.v1.Validator.address" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Validator.voting_power" = [ serde_string ];
+            ".cometbft.types.v1.Validator.proposer_priority" = [ serde_string ];
+            ".cometbft.types.v1.Validator.pub_key_type" = [ serde_default ];
+            ".cometbft.types.v1.Validator.pub_key_bytes" = [ serde_default ];
 
-            ".tendermint.types.Data.txs" = [ serde_inner_base64 ];
+            ".cometbft.types.v1.Data.txs" = [ serde_inner_base64 ];
 
-            ".tendermint.types.Vote.height" = [ serde_string ];
-            ".tendermint.types.Vote.validator_address" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.Vote.signature" = [ serde_base64 ];
-            ".tendermint.types.Vote.extension" = [ serde_base64_opt_default ];
-            ".tendermint.types.Vote.extension_signature" = [ serde_base64_opt_default ];
+            ".cometbft.types.v1.Vote.height" = [ serde_string ];
+            ".cometbft.types.v1.Vote.validator_address" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.Vote.signature" = [ serde_base64 ];
+            ".cometbft.types.v1.Vote.extension" = [ serde_base64_opt_default ];
+            ".cometbft.types.v1.Vote.extension_signature" = [ serde_base64_opt_default ];
 
-            ".tendermint.types.TxProof.root_hash" = [ serde_hex_upper_unprefixed ];
-            ".tendermint.types.TxProof.data" = [ serde_base64 ];
+            ".cometbft.types.v1.TxProof.root_hash" = [ serde_hex_upper_unprefixed ];
+            ".cometbft.types.v1.TxProof.data" = [ serde_base64 ];
 
-            ".tendermint.abci.ExecTxResult.data" = [ serde_base64_opt_default ];
-            ".tendermint.abci.ExecTxResult.gas_wanted" = [ serde_string ];
-            ".tendermint.abci.ExecTxResult.gas_used" = [ serde_string ];
+            ".cometbft.abci.v1.ExecTxResult.data" = [ serde_base64_opt_default ];
+            ".cometbft.abci.v1.ExecTxResult.gas_wanted" = [ serde_string ];
+            ".cometbft.abci.v1.ExecTxResult.gas_used" = [ serde_string ];
 
-            # ".tendermint.types.Vote.timestamp" = [
+            # ".cometbft.types.v1.Vote.timestamp" = [
             #   ''#[cfg_attr(
             #       feature = "serde",
             #       serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
             #   )]''
             # ];
 
-            ".tendermint.types.DuplicateVoteEvidence.total_voting_power" = [
+            ".cometbft.types.v1.DuplicateVoteEvidence.total_voting_power" = [
               (serde_alias "TotalVotingPower")
               serde_string
             ];
-            ".tendermint.types.DuplicateVoteEvidence.validator_power" = [
+            ".cometbft.types.v1.DuplicateVoteEvidence.validator_power" = [
               (serde_alias "ValidatorPower")
               serde_string
             ];
-            ".tendermint.types.DuplicateVoteEvidence.timestamp" = [ (serde_alias "Timestamp") ];
+            ".cometbft.types.v1.DuplicateVoteEvidence.timestamp" = [ (serde_alias "Timestamp") ];
 
-            ".tendermint.types.LightClientAttackEvidence.common_height" = [ serde_string ];
-            ".tendermint.types.LightClientAttackEvidence.total_voting_power" = [ serde_string ];
-            # ".tendermint.crypto.PublicKey.sum" = [ serde_flatten ];
+            ".cometbft.types.v1.LightClientAttackEvidence.common_height" = [ serde_string ];
+            ".cometbft.types.v1.LightClientAttackEvidence.total_voting_power" = [ serde_string ];
+            # ".cometbft.crypto.v1.PublicKey.sum" = [ serde_flatten ];
           };
 
           enum_attribute = {
-            # ".tendermint.crypto.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
-            # ".tendermint.types.Evidence.sum.DuplicateVoteEvidence" = [ (serde_alias "tendermint/DuplicateVoteEvidence") ];
-            # ".tendermint.types.Evidence.sum.LightClientAttackEvidence" = [ (serde_alias "tendermint/LightClientAttackEvidence") ];
+            # ".cometbft.crypto.v1.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
+            # ".cometbft.types.v1.Evidence.sum.DuplicateVoteEvidence" = [ (serde_alias "tendermint/DuplicateVoteEvidence") ];
+            # ".cometbft.types.v1.Evidence.sum.LightClientAttackEvidence" = [ (serde_alias "tendermint/LightClientAttackEvidence") ];
           };
         };
 
