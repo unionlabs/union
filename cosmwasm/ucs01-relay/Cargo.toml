@@ -18,8 +18,8 @@ library = []
 
 [dependencies]
 base58             = { version = "0.2" }
-cosmwasm-schema    = { version = "2.0.0" }
-cosmwasm-std       = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0", "abort"] }
+cosmwasm-schema    = { version = "2.1.0" }
+cosmwasm-std       = { version = "2.1.0", features = ["stargate", "cosmwasm_2_1", "abort"] }
 cw-controllers     = { version = "2.0.0" }
 cw-storage-plus    = { version = "2.0.0" }
 cw2                = { version = "2.0.0" }
