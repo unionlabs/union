@@ -63,16 +63,18 @@ onMount(() => {
           <Print>Loading</Print>
         {/if}
 
-      {:else if contributor.currentUserState === "inWaitlist"}
-        <Waitlist/>
+      <!--{:else if contributor.currentUserState === "inWaitlist"}-->
+      <!--  <Waitlist/>-->
 
       {:else if contributor.currentUserState === "join"}
         <Join/>
 
       {/if}
     {/if}
+
   {:else if user.session === null && terminal.tab === 1}
     <Authenticate/>
   {/if}
+
 {/if}
 
