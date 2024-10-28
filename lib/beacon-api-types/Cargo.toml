@@ -9,11 +9,11 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-hex-literal.workspace = true
+hex-literal = { workspace = true }
 serde       = { workspace = true, optional = true, features = ["derive"] }
 serde-utils = { workspace = true, optional = true }
 ssz         = { workspace = true, optional = true }
-typenum.workspace = true
+typenum     = { workspace = true }
 unionlabs   = { workspace = true }
 
 [features]

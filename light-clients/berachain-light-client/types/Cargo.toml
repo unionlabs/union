@@ -15,9 +15,9 @@ unionlabs                     = { workspace = true }
 [features]
 default = ["proto"]
 proto = [
-  "protos",
+  "dep:protos",
   "unionlabs/proto",
   "tendermint-light-client-types/proto",
   "ethereum-light-client-types/proto",
 ]
-serde = ["ethereum-light-client-types/serde", "dep:serde"]
+serde = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]
