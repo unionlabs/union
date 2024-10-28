@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 beacon-api                  = { workspace = true }
-beacon-api-types = { workspace = true, features = ["serde"] }
+beacon-api-types            = { workspace = true, features = ["serde"] }
 bitvec                      = { workspace = true }
 chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }

@@ -86,52 +86,6 @@ _: {
           '';
         }
       );
-
-      # NOTE(aeryz): This script currently act as a convenient way to call `eth_getProof`. When we add query
-      # client state capability to `ucli`, we will extend this to also query a given client and construct the
-      # full test data. 
-      fetch-membership-data = mkCi false (
-        pkgs.writeShellApplicationWithArgs {
-          name = "fetch-membership-data";
-          runtimeInputs = [ pkgs.jq ];
-          arguments = [
-            {
-              arg = "execution_endpoint";
-              required = true;
-            }
-            {
-              arg = "contract";
-              required = true;
-              help = "The address of the contract that we want to read the storage of";
-            }
-            {
-              arg = "commitment_key";
-              required = true;
-              help = "The slot where the value is stored at";
-            }
-            {
-              arg = "at";
-              default = "latest";
-              help = "The height of the block that we fetch the data from";
-            }
-          ];
-          text = ''
-            curl -s --header "Content-Type: application/json" \
-                 -X POST \
-                 --data '
-                   {
-                     "jsonrpc":"2.0", 
-                     "method": "eth_getProof", 
-                     "params": [
-                       "'"$argc_contract"'", 
-                       ["'"$argc_commitment_key"'"], 
-                       "'"$argc_at"'"
-                     ], 
-                     "id": 1
-                   }' "$argc_execution_endpoint"  | jq
-          '';
-        }
-      );
     in
     {
       packages =
@@ -139,7 +93,6 @@ _: {
         // mainnet.packages
         // {
           inherit gen-eth-lc-update-test-data;
-          inherit fetch-membership-data;
         };
       checks = minimal.checks // mainnet.checks;
     };
