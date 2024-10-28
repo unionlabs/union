@@ -75,8 +75,9 @@ impl<T, N: Unsigned + NonZero> Vector<T, N> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum TryFromVecError {
+    #[error("invalid length: expected {expected}, found {found}")]
     InvalidLength { expected: usize, found: usize },
 }
 

@@ -13,6 +13,7 @@ hex-literal = { workspace = true }
 serde       = { workspace = true, optional = true, features = ["derive"] }
 serde-utils = { workspace = true, optional = true }
 ssz         = { workspace = true, optional = true }
+thiserror   = { workspace = true }
 typenum     = { workspace = true }
 unionlabs   = { workspace = true }
 

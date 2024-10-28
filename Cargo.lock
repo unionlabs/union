@@ -2114,6 +2114,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "ssz",
+ "thiserror",
  "typenum",
  "unionlabs",
 ]

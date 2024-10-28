@@ -13,8 +13,9 @@ use beacon_api_types::{
         floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
         NEXT_SYNC_COMMITTEE_INDEX,
     },
-    light_client_update::LightClientUpdateSsz,
-    ChainSpec, DomainType, ForkParameters, LightClientHeaderSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
+    light_client_update::LightClientUpdate,
+    ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader,
+    SyncCommitteeSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
 };
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
@@ -71,22 +72,24 @@ pub trait BlsVerify {
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ctx: &Ctx,
-    update: LightClientUpdateSsz<Ctx::ChainSpec>,
+    update: LightClientUpdate,
     current_slot: u64,
     genesis_validators_root: H256,
     bls_verifier: V,
 ) -> Result<(), Error> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
+    let set_bits = sync_aggregate
+        .sync_committee_bits
+        .iter()
+        .map(|i| *i as usize)
+        .sum::<usize>();
     ensure(
-        sync_aggregate.sync_committee_bits.num_set_bits()
-            >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
-        Error::InsufficientSyncCommitteeParticipants(
-            sync_aggregate.sync_committee_bits.num_set_bits(),
-        ),
+        set_bits >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
+        Error::InsufficientSyncCommitteeParticipants(set_bits),
     )?;
 
-    is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
+    is_valid_light_client_header::<Ctx::ChainSpec>(ctx.fork_parameters(), &update.attested_header)?;
 
     // Verify update does not skip a sync committee period
     let update_attested_slot = update.attested_header.beacon.slot;
@@ -172,7 +175,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
     // NOTE(aeryz): We always expect to get `finalized_header` and it's embedded into the type definition.
-    is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
+    is_valid_light_client_header::<Ctx::ChainSpec>(
+        ctx.fork_parameters(),
+        &update.finalized_header,
+    )?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
     // This confirms that the `finalized_header` is really finalized.
@@ -186,22 +192,25 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that if the update contains the next sync committee, and the signature periods do match,
     // next sync committees match too.
-    // if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
-    //     (&update.next_sync_committee, ctx.next_sync_committee())
-    if let Some(stored_next_sync_committee) = ctx.next_sync_committee() {
+    if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
+        (&update.next_sync_committee, ctx.next_sync_committee())
+    {
         if update_attested_period == stored_period {
             ensure(
-                &update.next_sync_committee == stored_next_sync_committee,
+                next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
-                    found: update.next_sync_committee.aggregate_pubkey,
+                    found: next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &update.next_sync_committee.tree_hash_root().into(),
-            &update.next_sync_committee_branch,
+            &TryInto::<SyncCommitteeSsz<Ctx::ChainSpec>>::try_into(next_sync_committee.clone())
+                .unwrap()
+                .tree_hash_root()
+                .into(),
+            &update.next_sync_committee_branch.unwrap_or_default(),
             floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
             get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
             &update.attested_header.beacon.state_root,
@@ -224,7 +233,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         .sync_committee_bits
         .iter()
         .zip(sync_committee.pubkeys.iter())
-        .filter_map(|(included, pubkey)| included.then_some(pubkey))
+        .filter_map(|(included, pubkey)| if *included == 1 { Some(pubkey) } else { None })
         .collect::<Vec<_>>();
 
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
@@ -343,11 +352,14 @@ pub fn verify_storage_absence(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-get_lc_execution_root)
 pub fn get_lc_execution_root<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeaderSsz<C>,
+    header: &LightClientHeader,
 ) -> H256 {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
     if epoch >= fork_parameters.deneb.epoch {
-        return header.execution.tree_hash_root().into();
+        return TryInto::<ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
+            .unwrap()
+            .tree_hash_root()
+            .into();
     }
 
     // TODO: Figure out what to do here
@@ -365,7 +377,7 @@ pub fn get_lc_execution_root<C: ChainSpec>(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeaderSsz<C>,
+    header: &LightClientHeader,
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
@@ -382,7 +394,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     )?;
 
     validate_merkle_branch(
-        &get_lc_execution_root(fork_parameters, header),
+        &get_lc_execution_root::<C>(fork_parameters, header),
         &header.execution_branch,
         floorlog2(EXECUTION_PAYLOAD_INDEX),
         get_subtree_index(EXECUTION_PAYLOAD_INDEX),

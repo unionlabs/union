@@ -9,7 +9,7 @@ pub struct SyncAggregate {
 }
 
 #[cfg(feature = "ssz")]
-#[derive(Debug, Clone, PartialEq, ssz::Ssz)]
+#[derive(Debug, Clone, PartialEq, ::ssz::Ssz)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -18,6 +18,6 @@ pub struct SyncAggregate {
 pub struct SyncAggregateSsz<C: crate::SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz::types
     // #[debug("BitVector({})", sync_committee_bits.iter().map(|b| if b { '1' } else { '0' }).collect::<String>())]
-    pub sync_committee_bits: ssz::types::BitVector<C::SYNC_COMMITTEE_SIZE>,
+    pub sync_committee_bits: ::ssz::types::BitVector<C::SYNC_COMMITTEE_SIZE>,
     pub sync_committee_signature: BlsSignature,
 }

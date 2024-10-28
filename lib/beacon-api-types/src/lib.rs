@@ -83,7 +83,6 @@ pub use crate::{
     beacon_block::BeaconBlockSsz, beacon_block_body::BeaconBlockBodySsz, deposit::DepositSsz,
     execution_payload::ExecutionPayloadSsz, execution_payload_header::ExecutionPayloadHeaderSsz,
     indexed_attestation::IndexedAttestationSsz, light_client_bootstrap::LightClientBootstrapSsz,
-    light_client_finality_update::LightClientFinalityUpdateSsz,
     light_client_header::LightClientHeaderSsz, signed_beacon_block::SignedBeaconBlockSsz,
     sync_aggregate::SyncAggregateSsz, sync_committee::SyncCommitteeSsz,
 };
