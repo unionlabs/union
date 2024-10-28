@@ -1,7 +1,7 @@
 use beacon_api_types::SyncAggregate;
 use unionlabs::errors::InvalidLength;
 
-fn into_proto(
+pub fn into_proto(
     value: SyncAggregate,
 ) -> protos::union::ibc::lightclients::ethereum::v1::SyncAggregate {
     protos::union::ibc::lightclients::ethereum::v1::SyncAggregate {

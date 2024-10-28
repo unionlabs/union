@@ -6,7 +6,8 @@ use unionlabs::{
     uint::U256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub chain_id: U256,
     pub genesis_validators_root: H256,
