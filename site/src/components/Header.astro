@@ -1,6 +1,7 @@
 ---
 import unionLogo from "#/assets/union-logo/logo.svg"
 import { Icon } from "astro-icon/components"
+import ExternalLinkIcon from "./ExternalLinkIcon.astro";
 const menuItems = [
   {
     url: "/learn",
@@ -102,11 +103,12 @@ const menuItems = [
                 <a
                     href={menuItem.url}
                     class:list={[
-                      "text-normal flex flex-col flex-1 uppercase font-mono font-bold",
+                      "text-normal flex items-center gap-1.5 flex-1 uppercase font-mono font-bold",
                       { "text-accent-500": menuItem.highlight },
                     ]}
                 >
                   {menuItem.name}
+                  {menuItem.external ? <ExternalLinkIcon /> : ""}
                 </a>
               </li>
           ))
@@ -162,8 +164,9 @@ const menuItems = [
         {
           menuItems.map(menuItem => (
             <li class="py-2 px-4">
-              <a href={menuItem.url} class="text-white text-shadow !text-lg text-normal flex flex-col flex-1 uppercase font-mono">
+              <a href={menuItem.url} class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono">
                 {menuItem.name}
+                {menuItem.external ? <ExternalLinkIcon /> : ""}
               </a>
             </li>
           ))
