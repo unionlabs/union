@@ -55,7 +55,7 @@ function updateRotation(now: number) {
   return newRotation
 }
 
-let canvas: HTMLCanvasElement
+let canvas: HTMLCanvasElement | null
 let mouseX = 0
 let mouseY = 0
 let targetMouseX = 0
@@ -71,6 +71,9 @@ const W2 = WIDTH / 2
 
 // Perlin noise implementation
 class PerlinNoise {
+  private readonly permutation: number[]
+  private readonly p: number[]
+
   constructor() {
     this.permutation = new Array(512)
     this.p = new Array(256).fill(0).map((_, i) => i)
@@ -83,22 +86,22 @@ class PerlinNoise {
     }
   }
 
-  fade(t) {
+  fade(t: number): number {
     return t * t * t * (t * (t * 6 - 15) + 10)
   }
 
-  lerp(t, a, b) {
+  lerp(t: number, a: number, b: number): number {
     return a + t * (b - a)
   }
 
-  grad(hash, x, y, z) {
+  grad(hash: number, x: number, y: number, z: number): number {
     const h = hash & 15
     const u = h < 8 ? x : y
     const v = h < 4 ? y : h === 12 || h === 14 ? x : z
     return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v)
   }
 
-  noise(x, y, z) {
+  noise(x: number, y: number, z: number): number {
     const X = Math.floor(x) & 255
     const Y = Math.floor(y) & 255
     const Z = Math.floor(z) & 255
@@ -151,8 +154,13 @@ class PerlinNoise {
 }
 
 function initWebGL() {
-  canvas = document.getElementById("waveCanvas")
-  const gl = canvas.getContext("webgl")
+  canvas = document.getElementById("waveCanvas") as HTMLCanvasElement | null
+  if (!canvas) {
+    console.error("Canvas element not found")
+    return
+  }
+
+  const gl: WebGLRenderingContext | null = canvas.getContext("webgl")
   if (!gl) {
     console.error("WebGL not supported")
     return
@@ -183,7 +191,11 @@ function initWebGL() {
     `
 
   // Initialize shaders
-  function initShaderProgram(gl, vsSource, fsSource) {
+  function initShaderProgram(
+    gl: WebGLRenderingContext,
+    vsSource: string,
+    fsSource: string
+  ): WebGLProgram | null {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource)
 
@@ -192,6 +204,11 @@ function initWebGL() {
     }
 
     const shaderProgram = gl.createProgram()
+    if (!shaderProgram) {
+      console.error("Unable to create shader program")
+      return null
+    }
+
     gl.attachShader(shaderProgram, vertexShader)
     gl.attachShader(shaderProgram, fragmentShader)
     gl.linkProgram(shaderProgram)
@@ -206,8 +223,13 @@ function initWebGL() {
     return shaderProgram
   }
 
-  function loadShader(gl, type, source) {
+  function loadShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
     const shader = gl.createShader(type)
+    if (shader === null) {
+      console.error("Failed to create shader")
+      return null
+    }
+
     gl.shaderSource(shader, source)
     gl.compileShader(shader)
 
@@ -240,7 +262,29 @@ function initWebGL() {
   }
 
   // Create cube geometry
-  function initBuffers(gl) {
+  function initBuffers(gl: WebGLRenderingContext): {
+    position: WebGLBuffer
+    color: WebGLBuffer
+    indices: WebGLBuffer
+  } | null {
+    const positionBuffer = gl.createBuffer()
+    if (!positionBuffer) {
+      console.error("Failed to create position buffer")
+      return null
+    }
+
+    const colorBuffer = gl.createBuffer()
+    if (!colorBuffer) {
+      console.error("Failed to create color buffer")
+      return null
+    }
+
+    const indexBuffer = gl.createBuffer()
+    if (!indexBuffer) {
+      console.error("Failed to create index buffer")
+      return null
+    }
+
     const positions = [
       // Front face
       -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
@@ -256,7 +300,6 @@ function initWebGL() {
       -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5
     ]
 
-    const positionBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
@@ -273,14 +316,13 @@ function initWebGL() {
     ]
 
     // biome-ignore lint/suspicious/noEvolvingTypes: idc
-    let colors = []
+    let colors: number[] = []
 
     for (let j = 0; j < faceColors.length; ++j) {
       const c = faceColors[j]
       colors = colors.concat(c, c, c, c)
     }
 
-    const colorBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
 
@@ -323,7 +365,6 @@ function initWebGL() {
       23 // left
     ]
 
-    const indexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW)
 
@@ -339,7 +380,7 @@ function initWebGL() {
   const perlin = new PerlinNoise()
 
   // New function to calculate wave offset
-  function calculateWaveOffset(x, z, time) {
+  function calculateWaveOffset(x: number, z: number, time: number): number {
     const scale = 0.1
     const speed = 0.5
     const amplitude = 1.0
@@ -348,7 +389,28 @@ function initWebGL() {
     return noiseValue * amplitude
   }
 
-  function drawScene(gl, programInfo, buffers, cubePositions, totalTime) {
+  function drawScene(
+    gl: WebGLRenderingContext,
+    programInfo: {
+      program: WebGLProgram
+      attribLocations: {
+        vertexPosition: number
+        vertexColor: number
+      }
+      uniformLocations: {
+        projectionMatrix: WebGLUniformLocation
+        modelViewMatrix: WebGLUniformLocation
+        yOffset: WebGLUniformLocation
+      }
+    },
+    buffers: {
+      position: WebGLBuffer
+      color: WebGLBuffer
+      indices: WebGLBuffer
+    },
+    cubePositions: Array<glMatrix.vec3>,
+    totalTime: number
+  ): void {
     gl.viewport(0, 0, displayWidth, displayHeight)
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clearDepth(1.0)
@@ -452,13 +514,14 @@ function initWebGL() {
     }
   }
 
-  function onResize(entries) {
+  function onResize(entries: ResizeObserverEntry[]): void {
     for (const entry of entries) {
       let width: number
       let height: number
       let dpr = window.devicePixelRatio
       let dprSupport = false
-      if (entry.devicePixelContentBoxSize) {
+
+      if (entry.devicePixelContentBoxSize?.[0]) {
         // NOTE: Only this path gives the correct answer
         // The other paths are an imperfect fallback
         // for browsers that don't provide anyway to do this
@@ -467,22 +530,28 @@ function initWebGL() {
         dpr = 1 // it's already in width and height
         dprSupport = true
       } else if (entry.contentBoxSize) {
-        if (entry.contentBoxSize[0]) {
-          width = entry.contentBoxSize[0].inlineSize
-          height = entry.contentBoxSize[0].blockSize
-        } else {
-          // legacy
-          width = entry.contentBoxSize.inlineSize
-          height = entry.contentBoxSize.blockSize
-        }
+        // Handle array or single object for contentBoxSize
+        const contentBoxSize = Array.isArray(entry.contentBoxSize)
+          ? entry.contentBoxSize[0]
+          : entry.contentBoxSize
+        width = contentBoxSize.inlineSize
+        height = contentBoxSize.blockSize
       } else {
         // legacy
         width = entry.contentRect.width
         height = entry.contentRect.height
       }
+
       if (!RETINA_ENABLED) {
         dpr = 0.71
       }
+
+      // ensure we have valid numbers
+      if (typeof width !== "number" || typeof height !== "number") {
+        console.error("Invalid dimensions received")
+        return
+      }
+
       // update global state reflecting ideal canvas size
       displayWidth = Math.round(width * dpr)
       displayHeight = Math.round(height * dpr)
@@ -513,7 +582,8 @@ function initWebGL() {
   // Animation loop
   let then = 0
 
-  function render(now) {
+  function render(now: DOMHighResTimeStamp): void {
+    if (!canvas) return
     now *= 0.001 // convert to seconds
     const deltaTime = now - then
     then = now
@@ -531,10 +601,16 @@ function initWebGL() {
   requestAnimationFrame(render)
 
   // Update mouse position
-  function updateMousePosition(event) {
+  function updateMousePosition(event: MouseEvent): void {
+    if (!canvas) return
     const rect = canvas.getBoundingClientRect()
-    targetMouseX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    targetMouseY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+    const width = canvas.width || displayWidth // Fallback to displayWidth
+    const height = canvas.height || displayHeight // Fallback to displayHeight
+
+    if (width === 0 || height === 0) return // Prevent division by zero
+
+    targetMouseX = ((event.clientX - rect.left) / width) * 4 - 1
+    targetMouseY = -(((event.clientY - rect.top) / height) * 4) + 1
   }
 
   document.addEventListener("mousemove", updateMousePosition)
