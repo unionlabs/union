@@ -56,8 +56,8 @@ message Header {
 message Misbehaviour {
   .ibc.core.client.v1.Height trusted_height = 1;
   SyncCommittee current_sync_committee = 2;
-  LightClientUpdate update_1 = 2;
-  LightClientUpdate update_2 = 3;
+  LightClientUpdate update_1 = 3;
+  LightClientUpdate update_2 = 4;
 }
 
 message ForkParameters {
@@ -77,8 +77,8 @@ message Fork {
 
 message LightClientUpdate {
   oneof update {
-    EpochChangeUpdate = 1;
-    WithinEpochUpdate = 2;
+    EpochChangeUpdate epoch_change_update = 1;
+    WithinEpochUpdate within_epoch_update = 2;
   }
 }
 
@@ -91,7 +91,7 @@ message EpochChangeUpdate {
 
 message WithinEpochUpdate {
   SyncCommittee sync_committee = 1;
-  LightClientUpdateData update_data = 4;
+  LightClientUpdateData update_data = 2;
 }
 
 message LightClientUpdateData {
