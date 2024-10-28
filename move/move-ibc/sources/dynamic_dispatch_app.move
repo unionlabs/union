@@ -16,12 +16,17 @@ module ibc::dynamic_dispatch_app {
         self_address: address
     }
 
+    public fun verify_value(): u64 {
+        4444444444321 // Just for testing
+    }
+
     public fun on_recv_packet<T: key>(
         _store: Object<T>
     ): u64 {
         let value: u64 = dispatcher::retrieve(new_proof());
         std::debug::print(&string::utf8(b"incoming value to on_recv_packet is:"));
         std::debug::print(&value);
+        assert!(value == verify_value(), 0);
         321 // Just for testing
     }
 
