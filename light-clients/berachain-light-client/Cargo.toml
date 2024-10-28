@@ -31,8 +31,8 @@ sha3             = { workspace = true }
 thiserror        = { workspace = true }
 
 berachain-light-client-types  = { workspace = true, features = ["proto"] }
-ethereum-light-client-types  = { workspace = true, features = ["proto"] }
 cometbft-types                = { workspace = true, features = ["proto", "hash"] }
+ethereum-light-client-types   = { workspace = true, features = ["proto"] }
 ethereum-verifier             = { workspace = true }
 hex-literal                   = { workspace = true }
 ics008-wasm-client            = { workspace = true }

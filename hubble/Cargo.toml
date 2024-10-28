@@ -28,7 +28,7 @@ async-trait                   = "0.1.82"
 axum                          = { workspace = true, features = ["macros", "tokio"] }
 backon                        = "0.4.4"
 base64                        = { workspace = true }
-beacon-api-types = { workspace = true, features = ["serde", "ssz"] }
+beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
 berachain-light-client-types  = { workspace = true, features = ["proto"] }
 chain-utils                   = { workspace = true }
 chrono                        = { workspace = true, features = ["clock"] }
@@ -38,7 +38,7 @@ cometbft-rpc                  = { workspace = true }
 cometbls-light-client-types   = { workspace = true, features = ["proto", "ethabi"] }
 const-hex                     = "1.12.0"
 contracts                     = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde"] }
+ethereum-light-client-types   = { workspace = true, features = ["serde"] }
 futures                       = { workspace = true, features = ["async-await"] }
 hex                           = { workspace = true }
 itertools                     = "0.13.0"
