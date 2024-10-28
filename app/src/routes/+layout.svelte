@@ -16,6 +16,7 @@ import Header from "$lib/components/header/header.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
+import DeprecationNotice from "$lib/components/deprecation-notice.svelte"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 
@@ -62,7 +63,10 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
+    <DeprecationNotice/>
+    <!--
     <slot />
+    !-->
   </div>
   <Footer />
 
