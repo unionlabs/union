@@ -8,11 +8,13 @@ const ROTATION_DURATION = 1500;
 const EASE_POWER = 4;
 
 export function rotateCamera() {
-  if (isRotating) return;
-
-  isRotating = true;
-  rotationStartTime = performance.now();
-  targetPlaneRotation = currentPlaneRotation + Math.PI / 2; // 90 degrees in radians
+  if (isRotating) {
+    targetPlaneRotation += Math.PI / 2;
+  } else {
+    isRotating = true;
+    rotationStartTime = performance.now();
+    targetPlaneRotation = currentPlaneRotation + Math.PI / 2;
+  }
 }
 
 let canvas: HTMLCanvasElement
