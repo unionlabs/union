@@ -12,6 +12,29 @@ AND o.name <> '00000000-0000-0000-0000-000000000000';
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
 
+CREATE TABLE user_ping(
+  id uuid PRIMARY KEY
+);
+
+ALTER TABLE user_ping ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_ping ADD FOREIGN KEY (id) REFERENCES auth.users(id);
+
+CREATE POLICY view_self
+  ON user_ping
+  FOR SELECT
+    TO authenticated
+    USING (
+      (SELECT auth.uid()) = id
+    );
+
+CREATE POLICY allow_insert_self
+  ON user_ping
+  FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (SELECT auth.uid()) = id
+    );
+
 CREATE TABLE wallet_address(
   id uuid PRIMARY KEY,
   wallet text NOT NULL
@@ -369,11 +392,26 @@ CREATE OR REPLACE VIEW current_contributor_id AS
   SELECT qq.id
   FROM queue qq
   WHERE NOT EXISTS (
-    SELECT c.id FROM contribution c WHERE c.id = qq.id
+    SELECT c.id
+    FROM contribution c
+    WHERE c.id = qq.id
   ) AND (
-    EXISTS (SELECT cs.expire FROM contribution_status cs WHERE cs.id = qq.id AND cs.expire > now())
+    EXISTS (
+      SELECT cs.expire
+      FROM contribution_status cs
+      WHERE cs.id = qq.id
+      AND cs.expire > now()
+      AND (
+        cs.started > (now() - INTERVAL '10 minutes')
+        OR
+        EXISTS (SELECT * FROM public.user_ping up WHERE up.id = qq.id))
+    )
     OR
-    EXISTS (SELECT cs.id FROM contribution_submitted cs WHERE cs.id = qq.id)
+    EXISTS (
+      SELECT cs.id
+      FROM contribution_submitted cs
+      WHERE cs.id = qq.id
+    )
   )
   ORDER BY qq.score DESC
   LIMIT 1;
@@ -490,8 +528,10 @@ CREATE POLICY allow_service_insert
     );
 
 CREATE OR REPLACE FUNCTION can_download(name varchar) RETURNS BOOLEAN AS $$
+DECLARE
+  r BOOLEAN;
 BEGIN
-  RETURN (
+   r := (
     -- User must be the current contributor.
     (SELECT cci.id FROM public.current_contributor_id cci) = auth.uid()
     AND
@@ -501,6 +541,10 @@ BEGIN
     -- Do not allow the user to interact with the file after its contribution has been submitted.
     NOT EXISTS (SELECT * FROM public.contribution_submitted cs WHERE cs.id = auth.uid())
   );
+  IF(r = true) THEN
+    INSERT INTO public.user_ping(id) VALUES (auth.uid()) ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN r;
 END
 $$ LANGUAGE plpgsql SET search_path = '';
 
