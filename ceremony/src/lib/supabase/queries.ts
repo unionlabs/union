@@ -58,7 +58,7 @@ export const queryQueuePayloadId = async (userId: string) => {
 export const queryCurrentUserState = async () => {
   const { data, error } = await supabase
     .from("current_user_state")
-    .select("in_waitlist, has_redeemed, in_queue, waitlist_position")
+    .select("has_redeemed, in_queue, waitlist_position")
     .single()
 
   return { data, error }

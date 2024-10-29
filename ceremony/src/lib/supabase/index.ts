@@ -140,7 +140,6 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
 
   if (data.in_queue) return "inQueue"
   if (data.has_redeemed) return "hasRedeemed"
-  if (data.in_waitlist) return "inWaitlist"
 
   return "join"
 }

@@ -22,7 +22,7 @@ type State =
   | "noClient"
   | "missed"
 
-export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
+export type AllowanceState = "hasRedeemed" | "inQueue" | "join" | undefined
 
 export type ContributionState =
   | "contribute"
@@ -116,7 +116,7 @@ export class Contributor {
     this.state = "loading"
     this.clientState = undefined
     this.contributionState = undefined
-    this.userWallet = null
+    this.userWallet = undefined
     this.queueState = {
       position: null,
       count: null
