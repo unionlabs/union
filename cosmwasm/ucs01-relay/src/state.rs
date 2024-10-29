@@ -39,7 +39,7 @@ pub struct PfmRefundPacketKey {
     pub sequence: u64,
 }
 
-impl<'a> Prefixer<'a> for PfmRefundPacketKey {
+impl Prefixer<'_> for PfmRefundPacketKey {
     fn prefix(&self) -> Vec<cw_storage_plus::Key> {
         let mut res = self.sequence.prefix();
         res.extend(self.port_id.prefix());
@@ -84,7 +84,7 @@ impl From<IbcEndpoint> for IbcEndpointKey {
     }
 }
 
-impl<'a> Prefixer<'a> for IbcEndpointKey {
+impl Prefixer<'_> for IbcEndpointKey {
     fn prefix(&self) -> Vec<cw_storage_plus::Key> {
         let mut res = self.0.port_id.prefix();
         res.extend(self.0.channel_id.prefix());

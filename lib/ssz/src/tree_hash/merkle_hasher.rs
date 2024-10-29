@@ -21,7 +21,7 @@ enum Preimage<'a> {
     Slice(&'a [u8]),
 }
 
-impl<'a> Preimage<'a> {
+impl Preimage<'_> {
     /// Returns a 32-byte slice.
     fn as_bytes(&self) -> &[u8] {
         match self {

@@ -74,7 +74,7 @@ pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
 }
 
 fn num_sanitized_leaves(num_bytes: usize) -> usize {
-    let leaves = (num_bytes + HASHSIZE - 1) / HASHSIZE;
+    let leaves = num_bytes.div_ceil(HASHSIZE);
     leaves.next_power_of_two()
 }
 

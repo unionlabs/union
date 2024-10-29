@@ -18,7 +18,7 @@ impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> UpdateHook<'a, F> {
     }
 }
 
-impl<'a> UpdateHook<'a, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
+impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
     pub fn filter(chain_id: &ChainId<'_>) -> String {
         format!(
             r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}"] | any"#,
@@ -27,9 +27,7 @@ impl<'a> UpdateHook<'a, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
     }
 }
 
-impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage>
-    for UpdateHook<'a, F>
-{
+impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for UpdateHook<'_, F> {
     fn visit_call(&mut self, c: &mut Call) {
         match c {
             Call::FetchUpdateHeaders(fetch) if &fetch.chain_id == self.chain_id => {

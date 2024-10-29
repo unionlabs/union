@@ -478,7 +478,7 @@ trait OnReceive {
 pub struct StatefulOnReceive<'a> {
     deps: DepsMut<'a>,
 }
-impl<'a> OnReceive for StatefulOnReceive<'a> {
+impl OnReceive for StatefulOnReceive<'_> {
     fn foreign_toggle(
         &mut self,
         contract_address: &Addr,
@@ -576,7 +576,7 @@ struct StatefulSendTokens<'a> {
     contract_address: String,
 }
 
-impl<'a> ForTokens for StatefulSendTokens<'a> {
+impl ForTokens for StatefulSendTokens<'_> {
     fn on_local(
         &mut self,
         channel_id: &str,
@@ -614,7 +614,7 @@ struct StatefulRefundTokens<'a> {
     receiver: String,
 }
 
-impl<'a> ForTokens for StatefulRefundTokens<'a> {
+impl ForTokens for StatefulRefundTokens<'_> {
     fn on_local(
         &mut self,
         channel_id: &str,
@@ -666,7 +666,7 @@ pub struct Ics20Protocol<'a> {
     pub common: ProtocolCommon<'a>,
 }
 
-impl<'a> TransferProtocol for Ics20Protocol<'a> {
+impl TransferProtocol for Ics20Protocol<'_> {
     const VERSION: &'static str = "ics20-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 0;
@@ -864,7 +864,7 @@ pub struct Ucs01Protocol<'a> {
     pub common: ProtocolCommon<'a>,
 }
 
-impl<'a> TransferProtocol for Ucs01Protocol<'a> {
+impl TransferProtocol for Ucs01Protocol<'_> {
     const VERSION: &'static str = "ucs01-relay-1";
     const ORDERING: IbcOrder = IbcOrder::Unordered;
     const RECEIVE_REPLY_ID: u64 = 1;

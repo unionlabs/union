@@ -47,7 +47,7 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
     );
 
     // The number of leaves that can be made directly from `bytes`.
-    let leaves_with_values = (bytes.len() + (BYTES_PER_CHUNK - 1)) / BYTES_PER_CHUNK;
+    let leaves_with_values = bytes.len().div_ceil(BYTES_PER_CHUNK);
 
     // The number of parents that have at least one non-padding leaf.
     //

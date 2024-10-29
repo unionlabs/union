@@ -452,7 +452,7 @@ pub struct BitIter<'a, T> {
     i: usize,
 }
 
-impl<'a, T: BitfieldBehaviour> Iterator for BitIter<'a, T> {
+impl<T: BitfieldBehaviour> Iterator for BitIter<'_, T> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
