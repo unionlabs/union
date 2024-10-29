@@ -28,23 +28,33 @@ const slideTextAnimation = {
 }
 ---
 
-<div class="header-grid">
-  <div class="glow-effect" transition:persist></div>
-  <MatrixCover/>
-  <div class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center">
-    <div class="max-w-2xl flex flex-col gap-4" transition:animate={slideTextAnimation}>
-      <H1>{title}</H1>
-      <TextP>{text}</TextP>
+
+<div class="header-container">
+  <div class="header-grid">
+    <div class="glow-effect" transition:persist></div>
+    <MatrixCover/>
+    <div class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center">
+      <div class="max-w-2xl flex flex-col gap-4" transition:animate={slideTextAnimation}>
+        <H1>{title}</H1>
+        <TextP>{text}</TextP>
+      </div>
     </div>
   </div>
 </div>
 
 <style lang="postcss" is:global>
+
+    .header-container {
+        padding: 0.5rem;
+        height: calc(100svh - 75px);
+        width: 100%;
+    }
+
     .header-grid {
-        --outer-border: 3px;
-        --inner-border: 1px;
+        --outer-border: 0.25rem;
+        --inner-border: 0px;
         background-color: rgba(115, 115, 115, 0.35);
-        height: calc(100svh - 68px);
+        height: 100%;
         width: 100%;
         display: grid;
         grid-template-rows: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
