@@ -83,10 +83,9 @@ pub use crate::{
     attestation::AttestationSsz, attester_slashing::AttesterSlashingSsz,
     beacon_block::BeaconBlockSsz, beacon_block_body::BeaconBlockBodySsz, deposit::DepositSsz,
     execution_payload::ExecutionPayloadSsz, execution_payload_header::ExecutionPayloadHeaderSsz,
-    indexed_attestation::IndexedAttestationSsz, light_client_bootstrap::LightClientBootstrapSsz,
-    light_client_finality_update::LightClientFinalityUpdateSsz,
-    light_client_header::LightClientHeaderSsz, signed_beacon_block::SignedBeaconBlockSsz,
-    sync_aggregate::SyncAggregateSsz, sync_committee::SyncCommitteeSsz,
+    indexed_attestation::IndexedAttestationSsz, light_client_header::LightClientHeaderSsz,
+    signed_beacon_block::SignedBeaconBlockSsz, sync_aggregate::SyncAggregateSsz,
+    sync_committee::SyncCommitteeSsz,
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
