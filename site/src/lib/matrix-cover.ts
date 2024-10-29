@@ -1,12 +1,12 @@
 import * as glMatrix from "gl-matrix"
 
-let currentPlaneRotation = 0; // Track plane rotation in radians
-let targetPlaneRotation = 0; // Track target plane rotation in radians
+let currentPlaneRotation = 0;
+let targetPlaneRotation = 0;
 let isRotating = false;
 let rotationStartTime = 0;
-const ROTATION_DURATION = 1000; // Duration in milliseconds
+const ROTATION_DURATION = 1500;
+const EASE_POWER = 4;
 
-// Add this function to handle the rotation
 export function rotateCamera() {
   if (isRotating) return;
 
@@ -335,10 +335,14 @@ function initWebGL() {
       const elapsed = performance.now() - rotationStartTime;
       const progress = Math.min(elapsed / ROTATION_DURATION, 1);
 
-      // Use easeInOutCubic for smooth animation
-      const easeProgress = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      let easeProgress;
+      if (progress < 0.5) {
+        // Ease-in (start slow, accelerate)
+        easeProgress = Math.pow(progress * 2, EASE_POWER) / 2;
+      } else {
+        // Ease-out (decelerate to end)
+        easeProgress = 1 - Math.pow(2 - progress * 2, EASE_POWER) / 2;
+      }
 
       currentPlaneRotation = currentPlaneRotation + (targetPlaneRotation - currentPlaneRotation) * easeProgress;
 
