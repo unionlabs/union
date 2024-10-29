@@ -107,7 +107,7 @@ const menuItems = [
                     ]}
                 >
                   {menuItem.name}
-                  {menuItem.external ? <ExternalLinkIcon /> : ""}
+                  {menuItem.external ? <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" /> : ""}
                 </a>
               </li>
           ))
@@ -165,7 +165,7 @@ const menuItems = [
             <li class="py-2 px-4">
               <a href={menuItem.url} class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono">
                 {menuItem.name}
-                {menuItem.external ? <ExternalLinkIcon /> : ""}
+                {menuItem.external ? <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" /> : ""}
               </a>
             </li>
           ))
