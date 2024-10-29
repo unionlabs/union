@@ -270,7 +270,7 @@ pub struct SszDecoder<'a> {
     items: SmallVec8<&'a [u8]>,
 }
 
-impl<'a> SszDecoder<'a> {
+impl SszDecoder<'_> {
     /// Decodes the next item.
     ///
     /// # Panics

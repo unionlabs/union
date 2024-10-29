@@ -56,7 +56,7 @@ where
 #[must_use]
 pub fn bitfield_bytes_tree_hash_root<N: Unsigned>(bytes: &[u8]) -> Hash256 {
     let byte_size = (N::USIZE + 7) / 8;
-    let leaf_count = (byte_size + BYTES_PER_CHUNK - 1) / BYTES_PER_CHUNK;
+    let leaf_count = byte_size.div_ceil(BYTES_PER_CHUNK);
 
     let mut hasher = MerkleHasher::with_leaves(leaf_count);
 

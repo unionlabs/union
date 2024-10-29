@@ -210,9 +210,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
             "#,
         )
-        .try_for_each(
-            |result| async move { Ok(trace!("rows affected: {}", result.rows_affected())) },
-        )
+        .try_for_each(|result| async move {
+            trace!("rows affected: {}", result.rows_affected());
+            Ok(())
+        })
         .instrument(info_span!("init"))
         .await?;
 

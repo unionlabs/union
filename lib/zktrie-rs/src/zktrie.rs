@@ -274,7 +274,7 @@ impl<H: HashScheme> ZkTrie<H> {
                 Err(err) => return Err(err),
             }
         }
-        return Ok(*node.hash());
+        Ok(*node.hash())
     }
 
     // addLeaf recursively adds a newLeaf in the MT while updating the path, and returns the node hash

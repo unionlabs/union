@@ -12,7 +12,7 @@ pub enum Slot<'a> {
     Offset(U256),
 }
 
-impl<'a> Slot<'a> {
+impl Slot<'_> {
     // https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html#mappings-and-dynamic-arrays
     #[inline]
     #[must_use = "calculating the slot has no effect"]

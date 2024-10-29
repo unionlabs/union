@@ -36,10 +36,7 @@ pub fn hash_concat(h1: &[u8], h2: &[u8]) -> [u8; 32] {
 /// `minimum_leaf_count` will only be used if it is greater than or equal to the minimum number of leaves that can be created from `bytes`.
 #[must_use]
 pub fn merkle_root(bytes: &[u8], minimum_leaf_count: usize) -> Hash256 {
-    let leaves = std::cmp::max(
-        (bytes.len() + (HASHSIZE - 1)) / HASHSIZE,
-        minimum_leaf_count,
-    );
+    let leaves = std::cmp::max(bytes.len().div_ceil(HASHSIZE), minimum_leaf_count);
 
     if leaves == 0 {
         // If there are no bytes then the hash is always zero.

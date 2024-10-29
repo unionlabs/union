@@ -62,7 +62,7 @@ impl<'a> BytesBitIterator<'a> {
     }
 }
 
-impl<'a> core::iter::Iterator for BytesBitIterator<'a> {
+impl core::iter::Iterator for BytesBitIterator<'_> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -74,7 +74,7 @@ impl<'a> core::iter::Iterator for BytesBitIterator<'a> {
     }
 }
 
-impl<'a> core::iter::DoubleEndedIterator for BytesBitIterator<'a> {
+impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }

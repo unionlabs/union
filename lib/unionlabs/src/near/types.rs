@@ -263,7 +263,7 @@ impl From<ParseKeyTypeError> for ParseKeyError {
 // for that: https://github.com/Nullus157/bs58-rs/pull/97
 struct Bs58<'a>(&'a [u8]);
 
-impl<'a> core::fmt::Display for Bs58<'a> {
+impl core::fmt::Display for Bs58<'_> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         debug_assert!(self.0.len() <= 65);
         // The largest buffer we’re ever encoding is 65-byte long.  Base58
