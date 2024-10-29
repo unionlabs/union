@@ -3,7 +3,6 @@ import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.t
 import { contentfulClient } from "../lib/contentful/client.ts"
 import TeamMember from "#/components/TeamMember.astro"
 
-import SectionsLayout from "#/layouts/SectionsLayout.astro"
 
 import vc_galileo from "#/assets/images/investors/galileo.svg"
 import vc_nascent from "#/assets/images/investors/nascent.svg"
@@ -104,7 +103,6 @@ try {
 }
 ---
 
-<SectionsLayout gapless title="Union Team">
   {error ? (
           <div class="error-message">
             <h2>Error</h2>
@@ -123,5 +121,4 @@ try {
             <p>Loading content...</p>
           </div>
   )}
-</SectionsLayout>
 

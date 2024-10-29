@@ -35,14 +35,16 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
 ---
 
 <!doctype html>
+<!--
 <script>
   // native ViewTransitions flash on page changes in some cases.
   // astro does not provide an option to use the fallback client router,
   // so we manually remove the ViewTransition API from the document
   // such that astro will use the fallback ClientRouter
   // https://github.com/withastro/astro/blob/74ef2feb3a6a68e45a0cbfe60a61e90af6b4e923/packages/astro/src/transitions/router.ts#L37
-  document.startViewTransition = undefined;
+  document.startViewTransition = false;
 </script>
+!-->
 <html lang="en">
   <Head>
     <meta charset="utf-8" />

@@ -1,5 +1,4 @@
 ---
-import SectionsLayout from "../layouts/SectionsLayout.astro"
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro"
 import { contentfulClient } from "../lib/contentful/client.ts"
 import { renderRichText, renderTitle } from "../lib/contentful/render.ts"
@@ -26,7 +25,6 @@ try {
 }
 ---
 
-<SectionsLayout title="Learn" gapless>
   {error ? (
           <div class="error-message">
             <h2>Error</h2>
@@ -41,4 +39,3 @@ try {
             <p>Loading content...</p>
           </div>
   )}
-</SectionsLayout>

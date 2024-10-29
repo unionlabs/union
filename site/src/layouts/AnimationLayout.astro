@@ -1,4 +1,5 @@
 ---
+import Layout from "#/layouts/Layout.astro"
 import BorderIntro from "../components/sections/landing/BorderIntro.astro"
 import { ClientRouter } from "astro:transitions"
 
@@ -14,8 +15,8 @@ const { title, text } = Astro.props
   <ClientRouter/>
 </head>
 
-<BorderIntro {title} {text}/>
-<div class="relative">
+<Layout title="Union">
+  <BorderIntro {title} {text}/>
   <slot/>
-</div>
+</Layout>
 

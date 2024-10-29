@@ -26,10 +26,9 @@ Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate"
 const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
-<SectionsLayout title="Union Blog" gapless>
   <AnimationLayout title="Development blog" text="Stay informed">
     <div class="flex w-full justify-center py-16">
-      <div class="max-w-[1440px]">
+      <div class="max-w-6xl">
         <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
         <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
           {
@@ -69,7 +68,6 @@ const imageWithProtocol = (url: string) => `https:${url}`
       </div>
     </div>
   </AnimationLayout>
-</SectionsLayout>
 
 <style is:inline>
   *::selection {
