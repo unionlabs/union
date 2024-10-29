@@ -93,7 +93,7 @@ const slideTextAnimation = {
 
   let previousPath = window.location.pathname;
 
-  document.addEventListener('astro:after-swap', (e) => {
+  document.addEventListener('astro:after-preparation', (e) => {
     rotateCamera('left');
   });
 </script>
