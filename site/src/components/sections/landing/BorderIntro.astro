@@ -29,7 +29,7 @@ const slideTextAnimation = {
 ---
 
 <div class="header-grid">
-  <div class="glow-effect"></div>
+  <div class="glow-effect" transition:persist></div>
   <MatrixCover/>
   <div class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center">
     <div class="max-w-2xl flex flex-col gap-4" transition:animate={slideTextAnimation}>
@@ -87,36 +87,57 @@ const slideTextAnimation = {
     rotateCamera();
   });
 
-  const headerGrid = document.querySelector('.header-grid');
-  const glowEffect = document.querySelector('.glow-effect');
+  let headerGrid;
+  let glowEffect;
   let previousAngle = 0;
   let currentRotation = 0;
+  let mouseMoveHandler;
 
-  if (headerGrid && glowEffect) {
-    headerGrid.addEventListener('mousemove', (e) => {
-      const rect = headerGrid.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+  function initializeGlowEffect() {
+    headerGrid = document.querySelector('.header-grid');
+    glowEffect = document.querySelector('.glow-effect');
 
-      const deltaX = e.clientX - centerX;
-      const deltaY = e.clientY - centerY;
-      const newAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+    if (headerGrid && glowEffect) {
+      mouseMoveHandler = (e) => {
+        const rect = headerGrid.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
 
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const scale = Math.max(4, (distance / rect.height) * 8);
+        const deltaX = e.clientX - centerX;
+        const deltaY = e.clientY - centerY;
+        const newAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
 
-      let angleDiff = newAngle - previousAngle;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const scale = Math.max(4, (distance / rect.height) * 8);
 
-      if (angleDiff > 180) {
-        angleDiff -= 360;
-      } else if (angleDiff < -180) {
-        angleDiff += 360;
-      }
+        let angleDiff = newAngle - previousAngle;
 
-      currentRotation += angleDiff;
-      previousAngle = newAngle;
+        if (angleDiff > 180) {
+          angleDiff -= 360;
+        } else if (angleDiff < -180) {
+          angleDiff += 360;
+        }
 
-      glowEffect.style.transform = `scale(${scale}) rotate(${currentRotation + 90}deg)`;
-    });
+        currentRotation += angleDiff;
+        previousAngle = newAngle;
+
+        glowEffect.style.transform = `scale(${scale}) rotate(${currentRotation + 90}deg)`;
+      };
+
+      headerGrid.addEventListener('mousemove', mouseMoveHandler);
+    }
   }
+
+  function cleanup() {
+    if (headerGrid && mouseMoveHandler) {
+      headerGrid.removeEventListener('mousemove', mouseMoveHandler);
+    }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    cleanup();
+    initializeGlowEffect();
+  });
+
+  document.addEventListener('astro:before-preparation', cleanup);
 </script>
