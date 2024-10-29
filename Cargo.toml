@@ -125,6 +125,8 @@ members = [
 
   "drip",
   "light-clients/movement/ics08-movement",
+  "light-clients/movement/ics08-movement/types",
+
   "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
@@ -199,6 +201,8 @@ pg-queue                       = { path = "lib/pg-queue", default-features = fal
 poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
 protos                         = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
+
+movement-light-client-types = { path = "light-clients/movement/ics08-movement/types", default-features = false }
 
 ibc-events = { path = "lib/ibc-events", default-features = false }
 

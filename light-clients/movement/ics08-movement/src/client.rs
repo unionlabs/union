@@ -5,6 +5,9 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, StorageState,
 };
+use movement_light_client_types::{
+    client_state::ClientState, consensus_state::ConsensusState, header::Header,
+};
 use unionlabs::{
     aptos::transaction_info::TransactionInfo,
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
@@ -12,12 +15,7 @@ use unionlabs::{
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
-        lightclients::{
-            movement::{
-                client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            },
-            wasm,
-        },
+        lightclients::wasm,
     },
 };
 

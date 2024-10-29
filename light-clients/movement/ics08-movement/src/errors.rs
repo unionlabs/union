@@ -1,8 +1,9 @@
 use ics008_wasm_client::IbcClientError;
+use movement_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     aptos::storage_proof::TryFromStorageProofError,
     encoding::{DecodeErrorOf, Proto},
-    ibc::{core::client::height::Height, lightclients::movement},
+    ibc::core::client::height::Height,
     TryFromProtoBytesError,
 };
 
@@ -11,9 +12,9 @@ use crate::client::MovementLightClient;
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum Error {
     #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, movement::client_state::ClientState>),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, movement::consensus_state::ConsensusState>),
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     #[error("header verification failure ({0})")]

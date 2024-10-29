@@ -149,7 +149,7 @@ pub fn schedule_create_client_checker(
                                     todo!("We still need to add evm-in-cosmos")
                                 }
                                 WasmClientType::Movement => {
-                                    let cs = match unionlabs::ibc::lightclients::movement::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match movement_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);

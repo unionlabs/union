@@ -4,6 +4,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
+use movement_light_client_types::{ClientState, ConsensusState, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_utils::Hex;
@@ -13,13 +14,7 @@ use unionlabs::{
     aptos::storage_proof::StorageProof,
     encoding::{DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
-    ibc::{
-        core::client::height::Height,
-        lightclients::{
-            movement::{self, header::Header},
-            wasm,
-        },
-    },
+    ibc::{core::client::height::Height, lightclients::wasm},
     ErrorReporter,
 };
 use voyager_message::{
@@ -42,9 +37,13 @@ pub struct Module {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {}
 
-type SelfConsensusState =
-    Any<wasm::consensus_state::ConsensusState<movement::consensus_state::ConsensusState>>;
-type SelfClientState = Any<wasm::client_state::ClientState<movement::client_state::ClientState>>;
+type SelfConsensusState = Any<
+    wasm::consensus_state::ConsensusState<
+        movement_light_client_types::consensus_state::ConsensusState,
+    >,
+>;
+type SelfClientState =
+    Any<wasm::client_state::ClientState<movement_light_client_types::client_state::ClientState>>;
 
 impl ClientModule for Module {
     type Config = Config;
@@ -153,7 +152,7 @@ impl ClientModuleServer for Module {
                 )
             })?;
 
-        serde_json::from_value::<movement::client_state::ClientState>(client_state)
+        serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
@@ -178,7 +177,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Value,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        serde_json::from_value::<movement::consensus_state::ConsensusState>(consensus_state)
+        serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

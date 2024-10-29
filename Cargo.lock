@@ -6282,6 +6282,7 @@ dependencies = [
  "hex",
  "itertools 0.13.0",
  "lazy_static",
+ "movement-light-client-types",
  "num-traits",
  "prometheus",
  "prost 0.12.6",
@@ -6531,6 +6532,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "ics008-wasm-client",
+ "movement-light-client-types",
  "protos",
  "rlp",
  "serde",
@@ -8122,6 +8124,19 @@ dependencies = [
  "smallbitvec",
  "smallvec",
  "triomphe",
+]
+
+[[package]]
+name = "movement-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "rlp",
+ "serde",
+ "sha3 0.10.8",
+ "thiserror",
+ "unionlabs",
 ]
 
 [[package]]
@@ -13618,6 +13633,7 @@ dependencies = [
  "macros",
  "move-bindgen",
  "move-core-types",
+ "movement-light-client-types",
  "prost 0.12.6",
  "protos",
  "reqwest 0.11.27",
@@ -13697,6 +13713,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
+ "movement-light-client-types",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -13806,6 +13823,7 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "move-core-types",
+ "movement-light-client-types",
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
@@ -13916,6 +13934,7 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "move-core-types",
+ "movement-light-client-types",
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
