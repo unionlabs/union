@@ -337,17 +337,16 @@ function initWebGL() {
       const elapsed = performance.now() - rotationStartTime
       const progress = Math.min(elapsed / ROTATION_DURATION, 1)
 
-      let easeProgress
+      let easeProgress: number
       if (progress < 0.5) {
         // Ease-in (start slow, accelerate)
-        easeProgress = Math.pow(progress * 2, EASE_POWER) / 2
+        easeProgress = (progress * 2) ** EASE_POWER / 2
       } else {
         // Ease-out (decelerate to end)
-        easeProgress = 1 - Math.pow(2 - progress * 2, EASE_POWER) / 2
+        easeProgress = 1 - (2 - progress * 2) ** EASE_POWER / 2
       }
 
-      currentPlaneRotation =
-        currentPlaneRotation + (targetPlaneRotation - currentPlaneRotation) * easeProgress
+      currentPlaneRotation += (targetPlaneRotation - currentPlaneRotation) * easeProgress
 
       if (progress >= 1) {
         isRotating = false
@@ -356,8 +355,8 @@ function initWebGL() {
     }
 
     // Smooth out mouse movement
-    mouseX += (targetMouseX - mouseX) * 0.1
-    mouseY += (targetMouseY - mouseY) * 0.1
+    mouseX += (targetMouseX - mouseX) * 0.5
+    mouseY += (targetMouseY - mouseY) * 0.5
 
     // Set up camera view
     glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
@@ -521,17 +520,40 @@ function initWebGL() {
   // Update mouse position
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
-    targetMouseX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    targetMouseY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+    const normalizedX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
+    const normalizedY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+
+    // Check if mouse is below the canvas
+    if (event.clientY > rect.bottom) {
+      // Reset to default camera position
+      targetMouseX = 0
+      targetMouseY = 0
+    } else {
+      targetMouseX = normalizedX
+      targetMouseY = normalizedY
+    }
+  }
+
+  // Add mouseleave handler
+  function handleMouseLeave(event) {
+    const rect = canvas.getBoundingClientRect()
+    if (event.clientY > rect.bottom) {
+      targetMouseX = 0
+      targetMouseY = 0
+    }
   }
 
   document.addEventListener("mousemove", updateMousePosition)
+  canvas.addEventListener("mouseleave", handleMouseLeave)
 
-  // Cleanup function
   return () => {
-    canvas.removeEventListener("mousemove", updateMousePosition)
+    document.removeEventListener("mousemove", updateMousePosition)
+    canvas.removeEventListener("mouseleave", handleMouseLeave)
   }
 }
+
+// Initialize WebGL when the component mounts
+document.addEventListener("DOMContentLoaded", initWebGL)
 
 // Initialize WebGL when the component mounts
 document.addEventListener("DOMContentLoaded", initWebGL)
