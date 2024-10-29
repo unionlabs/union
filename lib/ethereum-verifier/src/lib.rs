@@ -1,6 +1,5 @@
 extern crate alloc;
 
-pub mod context;
 pub mod crypto;
 pub mod error;
 pub mod primitives;
@@ -15,7 +14,7 @@ use beacon_api_types::{
     },
     light_client_update::LightClientUpdate,
     ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader,
-    SyncCommitteeSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
+    SyncCommittee, SyncCommitteeSsz,
 };
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
@@ -30,7 +29,6 @@ use unionlabs::{
 };
 
 use crate::{
-    context::LightClientContext,
     error::Error,
     primitives::{Account, GENESIS_SLOT},
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
@@ -40,9 +38,6 @@ use crate::{
     },
 };
 
-type MinSyncCommitteeParticipants<Ctx> =
-    <<Ctx as LightClientContext>::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS;
-
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(
         &self,
@@ -50,6 +45,11 @@ pub trait BlsVerify {
         msg: Vec<u8>,
         signature: BlsSignature,
     ) -> Result<(), Error>;
+}
+
+pub enum UpdateType {
+    EpochChange(SyncCommittee),
+    WithinEpoch(SyncCommittee),
 }
 
 /// Verifies if the light client `update` is valid.
@@ -69,12 +69,15 @@ pub trait BlsVerify {
 ///   this function only allows a non-existent next sync committee to be set in that case. It doesn't allow a sync committee
 ///   to be changed or removed.
 ///
-/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
-pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
-    ctx: &Ctx,
+/// [See in consenss-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
+pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     update: LightClientUpdate,
+    current_sync_committee: Option<SyncCommittee>,
+    next_sync_committee: Option<SyncCommittee>,
     current_slot: u64,
+    finalized_slot: u64,
     genesis_validators_root: H256,
+    fork_parameters: &ForkParameters,
     bls_verifier: V,
 ) -> Result<(), Error> {
     // Verify sync committee has sufficient participants
@@ -85,11 +88,11 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         .map(|i| *i as usize)
         .sum::<usize>();
     ensure(
-        set_bits >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
+        set_bits >= C::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
         Error::InsufficientSyncCommitteeParticipants(set_bits),
     )?;
 
-    is_valid_light_client_header::<Ctx::ChainSpec>(ctx.fork_parameters(), &update.attested_header)?;
+    is_valid_light_client_header::<C>(fork_parameters, &update.attested_header)?;
 
     // Verify update does not skip a sync committee period
     let update_attested_slot = update.attested_header.beacon.slot;
@@ -124,12 +127,10 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     //     - the light client must have the `current_sync_committee` and use it to verify the new header.
     // 2. stored_period = N, signature_period = N + 1:
     //     - the light client must have the `next_sync_committee` and use it to verify the new header.
-    let stored_period =
-        compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(ctx.finalized_slot());
-    let signature_period =
-        compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update.signature_slot);
+    let stored_period = compute_sync_committee_period_at_slot::<C>(finalized_slot);
+    let signature_period = compute_sync_committee_period_at_slot::<C>(update.signature_slot);
 
-    if ctx.next_sync_committee().is_some() {
+    if next_sync_committee.is_some() {
         ensure(
             signature_period == stored_period || signature_period == stored_period + 1,
             Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists {
@@ -148,8 +149,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     }
 
     // Verify update is relevant
-    let update_attested_period =
-        compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update_attested_slot);
+    let update_attested_period = compute_sync_committee_period_at_slot::<C>(update_attested_slot);
 
     // There are two options to do a light client update:
     // 1. We are updating the header with a newer one.
@@ -157,28 +157,25 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     // signature period to set the next sync committee. This means that the stored header could be larger.
     // The light client implementation needs to take care of it.
     ensure(
-        update_attested_slot > ctx.finalized_slot()
+        update_attested_slot > finalized_slot
             || (update_attested_period == stored_period
-                // && update.next_sync_committee.is_some()
-                && ctx.next_sync_committee().is_none()),
+                && update.next_sync_committee.is_some()
+                && next_sync_committee.is_none()),
         Error::IrrelevantUpdate {
             update_attested_slot,
-            trusted_finalized_slot: ctx.finalized_slot(),
+            trusted_finalized_slot: finalized_slot,
             update_attested_period,
             stored_period,
             // update_sync_committee_is_set: update.next_sync_committee.is_some(),
             update_sync_committee_is_set: true,
-            trusted_next_sync_committee_is_set: ctx.next_sync_committee().is_some(),
+            trusted_next_sync_committee_is_set: next_sync_committee.is_some(),
         },
     )?;
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
     // NOTE(aeryz): We always expect to get `finalized_header` and it's embedded into the type definition.
-    is_valid_light_client_header::<Ctx::ChainSpec>(
-        ctx.fork_parameters(),
-        &update.finalized_header,
-    )?;
+    is_valid_light_client_header::<C>(fork_parameters, &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
     // This confirms that the `finalized_header` is really finalized.
@@ -193,7 +190,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     // Verify that if the update contains the next sync committee, and the signature periods do match,
     // next sync committees match too.
     if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
-        (&update.next_sync_committee, ctx.next_sync_committee())
+        (&update.next_sync_committee, &next_sync_committee)
     {
         if update_attested_period == stored_period {
             ensure(
@@ -206,7 +203,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &TryInto::<SyncCommitteeSsz<Ctx::ChainSpec>>::try_into(next_sync_committee.clone())
+            &TryInto::<SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
                 .unwrap()
                 .tree_hash_root()
                 .into(),
@@ -219,11 +216,9 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify sync committee aggregate signature
     let sync_committee = if signature_period == stored_period {
-        ctx.current_sync_committee()
-            .ok_or(Error::ExpectedCurrentSyncCommittee)?
+        current_sync_committee.ok_or(Error::ExpectedCurrentSyncCommittee)?
     } else {
-        ctx.next_sync_committee()
-            .ok_or(Error::ExpectedNextSyncCommittee)?
+        next_sync_committee.ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
     // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
@@ -238,15 +233,15 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
     let fork_version = compute_fork_version(
-        ctx.fork_parameters(),
-        compute_epoch_at_slot::<Ctx::ChainSpec>(fork_version_slot),
+        fork_parameters,
+        compute_epoch_at_slot::<C>(fork_version_slot),
     );
 
     let domain = compute_domain(
         DomainType::SYNC_COMMITTEE,
         Some(fork_version),
         Some(genesis_validators_root),
-        ctx.fork_parameters().genesis_fork_version,
+        fork_parameters.genesis_fork_version,
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
