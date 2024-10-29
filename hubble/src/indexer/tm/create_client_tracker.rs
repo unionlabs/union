@@ -156,6 +156,8 @@ pub fn schedule_create_client_checker(
                                             continue;
                                         }
                                     };
+
+                                    cs.chain_id.to_string()
                                 }
                             };
 

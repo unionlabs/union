@@ -8014,6 +8014,7 @@ dependencies = [
 name = "movement-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "rlp",
