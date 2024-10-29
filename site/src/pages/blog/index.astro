@@ -35,7 +35,7 @@ const imageWithProtocol = (url: string) => `https:${url}`
             publishedBlogPosts.map((blogPostEntry: BlogPost) => (
                     <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
                       <Card class="size-full border-none" padded>
-                        <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
+                        <div class="border-2 border-neutral-800 w-full h-[14rem] rounded-tl-[4rem] overflow-hidden mb-2">
                           <img
                                   class="w-full h-full object-cover border-none"
                                   loading="eager"
