@@ -434,7 +434,7 @@ function initWebGL() {
     mouseX += (targetMouseX - mouseX) * 0.1
     mouseY += (targetMouseY - mouseY) * 0.1
 
-    glMatrix.mat4.lookAt(modelViewMatrix, [0, 20, -15], [0, -2, 0], [0, 1, 0])
+    glMatrix.mat4.lookAt(modelViewMatrix, [0, 12, 12], [0, -2, 0], [0, 1, 0])
 
     // Apply rotations
     const currentRotation = updateRotation(totalTime * 1000)
