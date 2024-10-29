@@ -29,9 +29,9 @@ module ibc::dispatcher {
 
     /// Register a `T` to callback. Providing an instance of `T` guarantees that only the
     /// originating module can call `register` for that type.
-    public fun register<T: drop>(callback: FunctionInfo, _proof: T) acquires Dispatcher {
+    public fun register<T: drop>(callback: FunctionInfo, _proof: T, some_seed: vector<u8>) acquires Dispatcher {
         let constructor_ref =
-            object::create_named_object(&storage_signer(), DISPATCHER_APP_SEED);
+            object::create_named_object(&storage_signer(), some_seed);
 
         let metadata =
             fungible_asset::add_fungibility(
@@ -54,6 +54,7 @@ module ibc::dispatcher {
         );
 
         let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
+        let type_info = type_info::type_of<T>();
         table::add(&mut dispatcher.dispatcher, type_info::type_of<T>(), metadata);
     }
 
@@ -70,6 +71,7 @@ module ibc::dispatcher {
     }
 
     public fun retrieve<P: drop, T: copy + drop + store>(_proof: P): T acquires Dispatcher, Storage {
+        let type_info = type_info::type_of<P>();
         move_from<Storage<P, T>>(storage_address()).data
     }
 
