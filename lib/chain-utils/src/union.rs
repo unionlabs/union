@@ -127,10 +127,7 @@ impl Union {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: self.chain_revision,
-            revision_height: height,
-        }
+        Height::new_with_revision(self.chain_revision, height)
     }
 }
 

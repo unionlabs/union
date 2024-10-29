@@ -103,7 +103,7 @@ impl ConsensusModuleServer for Module {
 
         let commit = self
             .tm_client
-            .commit(Some(height.revision_height.try_into().unwrap()))
+            .commit(Some(height.height().try_into().unwrap()))
             .await
             .unwrap();
 
@@ -155,10 +155,10 @@ impl ConsensusModuleServer for Module {
                 ))
             },
             frozen_height: None,
-            latest_height: Height {
-                revision_number: self.chain_revision,
-                revision_height: height.inner().try_into().expect("is within bounds; qed;"),
-            },
+            latest_height: Height::new_with_revision(
+                self.chain_revision,
+                height.inner().try_into().expect("is within bounds; qed;"),
+            ),
             proof_specs: SDK_SPECS.into(),
             upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
         })
@@ -170,7 +170,7 @@ impl ConsensusModuleServer for Module {
     async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let commit = self
             .tm_client
-            .commit(Some(height.revision_height.try_into().unwrap()))
+            .commit(Some(height.height().try_into().unwrap()))
             .await
             .map_err(|e| {
                 ErrorObject::owned(

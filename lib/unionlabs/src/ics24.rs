@@ -12,6 +12,7 @@ use crate::{
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::Member,
+    ErrorReporter,
 };
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
@@ -75,10 +76,77 @@ pub struct ClientStatePath {
 }
 
 /// The raw consensus state bytes as encoded by the light client.
-#[ibc_path("clients/{client_id}/consensusStates/{height}", Hex<Vec<u8>>)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
+#[serde(deny_unknown_fields)]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub height: Height,
+}
+
+impl ::core::fmt::Display for ClientConsensusStatePath {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        write!(
+            f,
+            "clients/{}/consensusStates/{}-{}",
+            self.client_id,
+            self.height.revision(),
+            self.height.height()
+        )
+    }
+}
+
+impl FromStr for ClientConsensusStatePath {
+    type Err = PathParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        dbg!(s);
+
+        let mut it = s.split('/');
+
+        match it.next() {
+            Some(s) => {
+                if s != "clients" {
+                    return Err(PathParseError::InvalidStaticSegment {
+                        expected: "clients",
+                        found: s.to_owned(),
+                    });
+                }
+            }
+            None => return Err(PathParseError::MissingStaticSegment("clients")),
+        }
+
+        let client_id = it
+            .next()
+            .ok_or(PathParseError::MissingSegment)?
+            .parse()
+            .map_err(|e| PathParseError::Parse(ErrorReporter(e).to_string()))?;
+
+        match it.next() {
+            Some(s) => {
+                if s != "consensusStates" {
+                    return Err(PathParseError::InvalidStaticSegment {
+                        expected: "consensusStates",
+                        found: s.to_owned(),
+                    });
+                }
+            }
+            None => return Err(PathParseError::MissingStaticSegment("consensusStates")),
+        }
+
+        let height =
+            Height::from_str_allow_zero_revision(it.next().ok_or(PathParseError::MissingSegment)?)
+                .map_err(|e| PathParseError::Parse(ErrorReporter(e).to_string()))?;
+
+        if it.next().is_some() {
+            return Err(PathParseError::TooManySegments);
+        }
+
+        Ok(Self { client_id, height })
+    }
+}
+
+impl IbcPath for ClientConsensusStatePath {
+    type Value = Hex<Vec<u8>>;
 }
 
 // REVIEW: Make this an `Option`?
@@ -190,10 +258,7 @@ mod tests {
                 .unwrap(),
             Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: "08-wasm-0".to_string().validate().unwrap(),
-                height: Height {
-                    revision_number: 0,
-                    revision_height: 1
-                }
+                height: Height::new(1)
             })
         );
         assert_eq!(

@@ -100,10 +100,7 @@ pub fn parse_height_from_key(key: &[u8]) -> Result<Height, StorageError> {
     let revision_height = u64::from_be_bytes(key[key.len() - 8..key.len()].try_into().unwrap());
     let revision_number =
         u64::from_be_bytes(key[key.len() - 16..key.len() - 8].try_into().unwrap());
-    Ok(Height {
-        revision_number,
-        revision_height,
-    })
+    Ok(Height::new_with_revision(revision_number, revision_height))
 }
 
 /// Save the consensus state metadata at `height`.
@@ -121,8 +118,8 @@ pub fn consensus_state_iterator_key(height: Height) -> Vec<u8> {
     CONSENSUS_STATE_ITER_KEY_PREFIX
         .bytes()
         .chain(*b"/")
-        .chain(height.revision_number.to_be_bytes())
-        .chain(height.revision_height.to_be_bytes())
+        .chain(height.revision().to_be_bytes())
+        .chain(height.height().to_be_bytes())
         .collect()
 }
 
@@ -176,10 +173,7 @@ mod tests {
         heights
             .into_iter()
             .for_each(|(revision_number, revision_height)| {
-                let height = Height {
-                    revision_number,
-                    revision_height,
-                };
+                let height = Height::new_with_revision(revision_number, revision_height);
                 let key = consensus_state_iterator_key(height);
 
                 assert_eq!(parse_height_from_key(&key), Ok(height));
@@ -210,30 +204,20 @@ mod tests {
             save_consensus_state_metadata(
                 deps.as_mut(),
                 *timestamp,
-                Height {
-                    revision_number: *rn,
-                    revision_height: *rh,
-                },
+                Height::new_with_revision(*rn, *rh),
             );
         });
 
-        let prev_height = Height {
-            revision_number: ordered_heights[2].0,
-            revision_height: ordered_heights[2].1,
-        };
-
-        let next_height = Height {
-            revision_number: ordered_heights[3].0,
-            revision_height: ordered_heights[3].1,
-        };
+        let prev_height = Height::new_with_revision(ordered_heights[2].0, ordered_heights[2].1);
+        let next_height = Height::new_with_revision(ordered_heights[3].0, ordered_heights[3].1);
 
         let next = get_current_or_next_consensus_state_meta(
             deps.as_ref(),
-            Height {
-                revision_number: prev_height.revision_number,
+            Height::new_with_revision(
+                prev_height.revision(),
                 // +1 because the api says that if the input exists, it returns the input
-                revision_height: prev_height.revision_height + 1,
-            },
+                prev_height.height() + 1,
+            ),
         )
         .unwrap()
         .unwrap();
@@ -243,11 +227,11 @@ mod tests {
 
         let prev = get_current_or_prev_consensus_state_meta(
             deps.as_ref(),
-            Height {
-                revision_number: next_height.revision_number,
+            Height::new_with_revision(
+                next_height.revision(),
                 // -1 because the api says that if the input exists, it returns the input
-                revision_height: next_height.revision_height - 1,
-            },
+                next_height.height() - 1,
+            ),
         )
         .unwrap()
         .unwrap();
@@ -259,10 +243,10 @@ mod tests {
         assert_eq!(
             get_current_or_next_consensus_state_meta(
                 deps.as_ref(),
-                Height {
-                    revision_number: ordered_heights.last().unwrap().0,
-                    revision_height: ordered_heights.last().unwrap().1 + 1
-                }
+                Height::new_with_revision(
+                    ordered_heights.last().unwrap().0,
+                    ordered_heights.last().unwrap().1 + 1
+                )
             )
             .unwrap(),
             None
@@ -272,10 +256,10 @@ mod tests {
         assert_eq!(
             get_current_or_prev_consensus_state_meta(
                 deps.as_ref(),
-                Height {
-                    revision_number: ordered_heights.first().unwrap().0,
-                    revision_height: ordered_heights.first().unwrap().1 - 1
-                }
+                Height::new_with_revision(
+                    ordered_heights.first().unwrap().0,
+                    ordered_heights.first().unwrap().1 - 1
+                )
             )
             .unwrap(),
             None
@@ -299,10 +283,7 @@ mod tests {
 
         unordered_heights.iter().for_each(|(rn, rh)| {
             deps.storage.set(
-                &consensus_state_iterator_key(Height {
-                    revision_number: *rn,
-                    revision_height: *rh,
-                }),
+                &consensus_state_iterator_key(Height::new_with_revision(*rn, *rh)),
                 &[1],
             );
         });
@@ -315,10 +296,10 @@ mod tests {
             .for_each(|(i, (k, _))| {
                 assert_eq!(
                     k,
-                    consensus_state_iterator_key(Height {
-                        revision_number: unordered_heights[i].0,
-                        revision_height: unordered_heights[i].1,
-                    })
+                    consensus_state_iterator_key(Height::new_with_revision(
+                        unordered_heights[i].0,
+                        unordered_heights[i].1,
+                    ))
                 );
             })
     }

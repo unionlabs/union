@@ -101,7 +101,7 @@ impl ConsensusModuleServer for Module {
 
         let commit = self
             .tm_client
-            .commit(Some(NonZeroU64::new(height.revision_height).unwrap()))
+            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
             .await
             .unwrap();
 
@@ -116,21 +116,17 @@ impl ConsensusModuleServer for Module {
                 .unwrap(),
             trusting_period: unbonding_period * 85 / 100,
             max_clock_drift: (60 * 20) * 1_000_000_000,
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_height: Height {
-                revision_number: self
-                    .chain_id
+            frozen_height: Height::new(0),
+            latest_height: Height::new_with_revision(
+                self.chain_id
                     .as_str()
                     .split('-')
                     .last()
                     .unwrap()
                     .parse()
                     .unwrap(),
-                revision_height: height.inner().try_into().expect("value is >= 0; qed;"),
-            },
+                height.inner().try_into().expect("value is >= 0; qed;"),
+            ),
         })
         .unwrap())
     }
@@ -140,7 +136,7 @@ impl ConsensusModuleServer for Module {
     async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let commit = self
             .tm_client
-            .commit(Some(NonZeroU64::new(height.revision_height).unwrap()))
+            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
             .await
             .unwrap();
 

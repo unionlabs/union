@@ -20,16 +20,10 @@
         "trusting_period": "510s",
         "unbonding_period": "600s",
         "max_clock_drift": "600s",
-        "frozen_height": {
-          "revision_number": 0,
-          "revision_height": 0
-        }
+        "frozen_height": "0"
       },
       "code_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "latest_height": {
-        "revision_number": 3,
-        "revision_height": 1045140
-      }
+      "latest_height": "3-1045140"
     }
   }
 }

@@ -9,10 +9,7 @@
     "unbonding_period": "1.000000001s",
     "max_clock_drift": "1.000000001s",
     "frozen_height": null,
-    "latest_height": {
-      "revision_number": 1,
-      "revision_height": 12
-    },
+    "latest_height": "1-12",
     "proof_specs": [
       {
         "leaf_spec": {
@@ -57,9 +54,6 @@
     ],
     "upgrade_path": ["first", "second"]
   },
-  "latest_height": {
-    "revision_number": 1,
-    "revision_height": 12
-  },
+  "latest_height": "1-12",
   "checksum": "0xfa19d6ccbe4bde2d6a205136e65089460c4d9781a918add0e9dd3a0b9a2d73cb"
 }

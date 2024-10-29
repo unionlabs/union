@@ -121,10 +121,10 @@ impl IbcClient for TendermintLightClient {
             Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
         )?;
 
-        if revision_number != header.trusted_height.revision_number {
+        if revision_number != header.trusted_height.revision() {
             return Err(Error::from(RevisionNumberMismatch {
                 trusted_revision_number: revision_number,
-                header_revision_number: header.trusted_height.revision_number,
+                header_revision_number: header.trusted_height.revision(),
             })
             .into());
         }
@@ -137,10 +137,10 @@ impl IbcClient for TendermintLightClient {
             .try_into()
             .expect("value is bounded >= 0; qed;");
 
-        if signed_height <= header.trusted_height.revision_height {
+        if signed_height <= header.trusted_height.height() {
             return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
                 signed_height,
-                trusted_height: header.trusted_height.revision_height,
+                trusted_height: header.trusted_height.height(),
             }
             .into());
         }
@@ -148,10 +148,10 @@ impl IbcClient for TendermintLightClient {
         tendermint_verifier::verify::verify(
             &construct_partial_header(
                 client_state.data.chain_id,
-                i64::try_from(header.trusted_height.revision_height)
+                i64::try_from(header.trusted_height.height())
                     .map_err(|_| {
                         Error::from(IbcHeightTooLargeForTendermintHeight(
-                            header.trusted_height.revision_height,
+                            header.trusted_height.height(),
                         ))
                     })?
                     .try_into()
@@ -492,11 +492,11 @@ pub fn is_client_expired(
 /// revision height. This function is a utility to generate a `Height` type out
 /// of the update data.
 pub fn height_from_header(header: &Header) -> Height {
-    Height {
-        revision_number: header.trusted_height.revision_number,
+    Height::new_with_revision(
+        header.trusted_height.revision(),
         // SAFETY: height's bounds are [0..i64::MAX]
-        revision_height: header.signed_header.header.height.inner() as u64,
-    }
+        header.signed_header.header.height.inner() as u64,
+    )
 }
 
 pub fn check_trusted_header(
@@ -538,15 +538,9 @@ mod tests {
 
     use super::*;
 
-    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 1,
-        revision_height: 10,
-    };
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(1, 10);
 
-    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 1,
-        revision_height: 12,
-    };
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(1, 12);
 
     fn save_states_to_migrate_store(
         deps: DepsMut,

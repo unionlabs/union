@@ -529,10 +529,7 @@ mod tests {
             let expected_event = UpdateClient {
                 client_id: "client_id".parse().unwrap(),
                 client_type: "client_type".to_string(),
-                consensus_heights: vec![Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                }],
+                consensus_heights: vec![Height::new_with_revision(1, 1)],
             };
 
             assert_eq!(
@@ -582,7 +579,8 @@ mod tests {
                 }),
                 Err(TryFromTendermintEventError::AttributeValueParse {
                     field: "consensus_heights",
-                    error: HeightFromStrError::Invalid.to_string(),
+                    error: "invalid numeric value in height string: invalid digit found in string"
+                        .to_owned()
                 })
             );
         }

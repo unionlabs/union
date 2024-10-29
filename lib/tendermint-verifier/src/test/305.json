@@ -116,10 +116,7 @@
     ],
     "total_voting_power": 4000000000000000
   },
-  "trusted_height": {
-    "revision_height": 302,
-    "revision_number": 1
-  },
+  "trusted_height": "1-302",
   "trusted_validators": {
     "proposer": {
       "address": "0x3fb23e5cd869ee24a00604bcf0b9a2696ab0b599",

@@ -77,10 +77,7 @@ impl Contract {
             .send_packet(
                 env::current_account_id().to_string().validate().unwrap(),
                 source_channel,
-                Height {
-                    revision_number: 0,
-                    revision_height: 1_000_000_000,
-                },
+                Height::new(1_000_000_000),
                 0,
                 b"hello world!".to_vec(),
             )
