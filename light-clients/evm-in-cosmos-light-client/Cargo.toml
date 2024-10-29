@@ -15,12 +15,12 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cometbls-light-client-types = { workspace = true, features = ["proto"] }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
-ethereum-light-client       = { workspace = true, features = ["mainnet", "library"] }
-ics008-wasm-client          = { workspace = true }
-ics23                       = { workspace = true }
-protos                      = { workspace = true }
-thiserror                   = { workspace = true }
-unionlabs                   = { workspace = true, features = ["ethabi", "stargate"] }
+# ethereum-light-client       = { workspace = true, features = ["mainnet", "library"] }
+ics008-wasm-client = { workspace = true }
+ics23              = { workspace = true }
+protos             = { workspace = true }
+thiserror          = { workspace = true }
+unionlabs          = { workspace = true, features = ["ethabi", "stargate"] }
 
 [features]
 default = []

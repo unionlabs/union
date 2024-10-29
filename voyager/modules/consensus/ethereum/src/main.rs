@@ -1,6 +1,8 @@
 use std::ops::Div;
 
 use beacon_api::client::BeaconApiClient;
+use beacon_api_types::PresetBaseKind;
+use ethereum_light_client_types::{AccountProof, ClientState, ConsensusState};
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -10,14 +12,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
-    ethereum::{config::PresetBaseKind, IBC_HANDLER_COMMITMENTS_SLOT},
-    hash::H160,
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{
-            self, account_proof::AccountProof, account_update::AccountUpdate,
-        },
-    },
+    ethereum::IBC_HANDLER_COMMITMENTS_SLOT, hash::H160, ibc::core::client::height::Height,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
@@ -58,7 +53,7 @@ pub struct Config {
 }
 
 impl Module {
-    pub async fn fetch_account_update(&self, slot: u64) -> AccountUpdate {
+    pub async fn fetch_account_update(&self, slot: u64) -> AccountProof {
         let execution_height = self
             .beacon_api_client
             .execution_height(beacon_api::client::BlockId::Slot(slot))
@@ -76,15 +71,13 @@ impl Module {
             .await
             .unwrap();
 
-        AccountUpdate {
-            account_proof: AccountProof {
-                storage_root: account_update.storage_hash.into(),
-                proof: account_update
-                    .account_proof
-                    .into_iter()
-                    .map(|x| x.to_vec())
-                    .collect(),
-            },
+        AccountProof {
+            storage_root: account_update.storage_hash.into(),
+            proof: account_update
+                .account_proof
+                .into_iter()
+                .map(|x| x.to_vec())
+                .collect(),
         }
     }
 }
@@ -143,7 +136,7 @@ impl ConsensusModuleServer for Module {
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
-        Ok(serde_json::to_value(ethereum::client_state::ClientState {
+        Ok(serde_json::to_value(ClientState {
             chain_id: self
                 .chain_id
                 .as_str()
@@ -208,29 +201,27 @@ impl ConsensusModuleServer for Module {
         // Normalize to nanos in order to be compliant with cosmos
         let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
 
-        Ok(
-            serde_json::to_value(ethereum::consensus_state::ConsensusState {
-                slot: bootstrap.header.beacon.slot,
-                state_root: bootstrap.header.execution.state_root,
-                storage_root: self
-                    .provider
-                    .get_proof(
-                        ethers::types::H160::from(*self.ibc_handler_address.get()),
-                        vec![],
-                        Some(bootstrap.header.execution.block_number.into()),
-                    )
-                    .await
-                    .unwrap()
-                    .storage_hash
-                    .0
-                    .into(),
-                timestamp,
-                current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-                next_sync_committee: light_client_update
-                    .next_sync_committee
-                    .map(|nsc| nsc.aggregate_pubkey),
-            })
-            .expect("infallible"),
-        )
+        Ok(serde_json::to_value(ConsensusState {
+            slot: bootstrap.header.beacon.slot,
+            state_root: bootstrap.header.execution.state_root,
+            storage_root: self
+                .provider
+                .get_proof(
+                    ethers::types::H160::from(*self.ibc_handler_address.get()),
+                    vec![],
+                    Some(bootstrap.header.execution.block_number.into()),
+                )
+                .await
+                .unwrap()
+                .storage_hash
+                .0
+                .into(),
+            timestamp,
+            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
+            next_sync_committee: light_client_update
+                .next_sync_committee
+                .map(|nsc| nsc.aggregate_pubkey),
+        })
+        .expect("infallible"))
     }
 }

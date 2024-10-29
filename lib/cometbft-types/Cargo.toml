@@ -26,4 +26,4 @@ unionlabs             = { workspace = true, features = ["test_utils"] }
 [features]
 default = ["proto", "hash"]
 hash    = ["dep:sha2", "dep:prost"]
-proto   = ["dep:protos"]
+proto   = ["dep:protos", "unionlabs/proto"]

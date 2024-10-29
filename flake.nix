@@ -223,15 +223,15 @@
         ./site/site.nix
         ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
-        ./light-clients/ethereum-light-client/ethereum-light-client.nix
+        # ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
-        ./light-clients/scroll-light-client/scroll-light-client.nix
-        ./light-clients/arbitrum-light-client/arbitrum-light-client.nix
-        ./light-clients/linea-light-client/linea-light-client.nix
-        ./light-clients/berachain-light-client/berachain-light-client.nix
-        ./light-clients/evm-in-cosmos-light-client/evm-in-cosmos-light-client.nix
-        ./light-clients/movement/ics08-movement/ics08-movement.nix
+        # ./light-clients/scroll-light-client/scroll-light-client.nix
+        # ./light-clients/arbitrum-light-client/arbitrum-light-client.nix
+        # ./light-clients/linea-light-client/linea-light-client.nix
+        # ./light-clients/berachain-light-client/berachain-light-client.nix
+        # ./light-clients/evm-in-cosmos-light-client/evm-in-cosmos-light-client.nix
+        # ./light-clients/movement/ics08-movement/ics08-movement.nix
         ./lib/cometbls-groth16-verifier/default.nix
         ./lib/linea-verifier/default.nix
         ./lib/linea-zktrie/default.nix
@@ -261,7 +261,6 @@
         ./e2e/e2e.nix
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
-        ./ucli/ucli.nix
         treefmt-nix.flakeModule
       ];
 
@@ -545,7 +544,7 @@
 
             SQLX_OFFLINE = true;
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-            RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
+            # RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt

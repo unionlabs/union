@@ -1,9 +1,7 @@
+use ethereum_light_client_types::{AccountProof, StorageProof};
 use unionlabs::{
     aptos::{state_proof::StateProof, transaction_proof::TransactionInfoWithProof},
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-    },
+    ibc::core::client::height::Height,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -23,15 +21,13 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use ethereum_light_client_types::{account_proof, storage_proof};
     use unionlabs::{
         aptos::{
             state_proof::TryFromStateProofError,
             transaction_proof::TryFromTransactionInfoWithProofError,
         },
         errors::{required, MissingField},
-        ibc::lightclients::ethereum::{
-            account_proof::TryFromAccountProofError, storage_proof::TryFromStorageProofError,
-        },
         impl_proto_via_try_from_into,
     };
 
@@ -63,9 +59,9 @@ pub mod proto {
         #[error("invalid tx proof")]
         TxProof(#[from] TryFromTransactionInfoWithProofError),
         #[error("invalid state proof hash proof")]
-        StateProofHashProof(#[from] TryFromStorageProofError),
+        StateProofHashProof(#[from] storage_proof::proto::Error),
         #[error("invalid settlement contract proof")]
-        SettlementContractProof(#[from] TryFromAccountProofError),
+        SettlementContractProof(#[from] account_proof::proto::Error),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header {

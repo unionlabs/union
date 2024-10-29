@@ -1,4 +1,5 @@
-use chain_utils::ethereum::ETHEREUM_REVISION_NUMBER;
+use beacon_api_types::PresetBaseKind;
+use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -11,15 +12,8 @@ use tracing::instrument;
 use unionlabs::{
     self,
     encoding::{DecodeAs, EncodeAs, Proto},
-    ethereum::config::PresetBaseKind,
     google::protobuf::any::Any,
-    ibc::{
-        core::client::height::Height,
-        lightclients::{
-            ethereum::{self, header::UnboundedHeader, storage_proof::StorageProof},
-            wasm,
-        },
-    },
+    ibc::{core::client::height::Height, lightclients::wasm},
     ErrorReporter,
 };
 use voyager_message::{
@@ -67,9 +61,8 @@ impl ClientModule for Module {
     }
 }
 
-type SelfConsensusState =
-    Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
-type SelfClientState = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
+type SelfConsensusState = Any<wasm::consensus_state::ConsensusState<ConsensusState>>;
+type SelfClientState = Any<wasm::client_state::ClientState<ClientState>>;
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
@@ -94,7 +87,7 @@ impl Module {
 
     pub fn make_height(revision_height: u64) -> Height {
         Height {
-            revision_number: ETHEREUM_REVISION_NUMBER,
+            revision_number: 0,
             revision_height,
         }
     }
@@ -163,7 +156,7 @@ impl ClientModuleServer for Module {
                 )
             })?;
 
-        serde_json::from_value::<ethereum::client_state::ClientState>(client_state)
+        serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
@@ -188,7 +181,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Value,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        serde_json::from_value::<ethereum::consensus_state::ConsensusState>(consensus_state)
+        serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
@@ -263,7 +256,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Hex<Vec<u8>>> {
-        serde_json::from_value::<UnboundedHeader>(header)
+        serde_json::from_value::<Header>(header)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
@@ -287,7 +280,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<Proto>())
+            .map(|storage_proof| storage_proof.encode_as::<Proto>())
             .map(Hex)
     }
 }

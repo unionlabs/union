@@ -52,8 +52,10 @@ pub enum Error {
     #[error(transparent)]
     TrustedValidatorsMismatch(#[from] TrustedValidatorsMismatch),
 
-    #[error("verify membership error")]
-    VerifyMembership(#[from] ethereum_light_client::errors::Error),
+    // #[error("verify membership error")]
+    // VerifyMembership(#[from] ethereum_light_client::errors::Error),
+    #[error("invalid execution payload header")]
+    ExecutionPayloadHeader(#[from] beacon_api_types::execution_payload_header::ssz::Error),
 
     #[error(transparent)]
     MigrateClientStore(#[from] MigrateClientStoreError),

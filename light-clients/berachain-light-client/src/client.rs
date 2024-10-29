@@ -1,5 +1,7 @@
+use beacon_api_types::ExecutionPayloadHeaderSsz;
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::{Deps, DepsMut, Env};
+use ethereum_light_client_types::StorageProof;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, read_subject_client_state,
@@ -29,12 +31,9 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, Proto, Ssz},
     ensure,
-    ibc::{
-        core::{
-            client::{genesis_metadata::GenesisMetadata, height::Height},
-            commitment::{merkle_path::MerklePath, merkle_root::MerkleRoot},
-        },
-        lightclients::ethereum::storage_proof::StorageProof,
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::{merkle_path::MerklePath, merkle_root::MerkleRoot},
     },
 };
 
@@ -79,24 +78,26 @@ impl IbcClient for BerachainLightClient {
         let storage_proof =
             StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-        match value {
-            StorageState::Occupied(value) => ethereum_light_client::client::do_verify_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-                value,
-            ),
-            StorageState::Empty => ethereum_light_client::client::do_verify_non_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-            ),
-        }
-        .map_err(Error::from)?;
+        // match value {
+        //     StorageState::Occupied(value) => ethereum_light_client::client::do_verify_membership(
+        //         path,
+        //         storage_root,
+        //         client_state.data.ibc_commitment_slot,
+        //         storage_proof,
+        //         value,
+        //     ),
+        //     StorageState::Empty => ethereum_light_client::client::do_verify_non_membership(
+        //         path,
+        //         storage_root,
+        //         client_state.data.ibc_commitment_slot,
+        //         storage_proof,
+        //     ),
+        // }
+        // .map_err(Error::from)?;
 
-        Ok(())
+        // Ok(())
+
+        todo!()
     }
 
     fn verify_header(
@@ -172,7 +173,7 @@ impl IbcClient for BerachainLightClient {
                 b"beacon".to_vec(),
                 [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
             ],
-            header.execution_header.encode_as::<Ssz>(),
+            ExecutionPayloadHeaderSsz::try_from(header.execution_header)?.encode_as::<Ssz>(),
         )
         .map_err(Error::ExecutionHeaderVerify)?;
 

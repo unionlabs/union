@@ -1,16 +1,12 @@
-use hex_literal::hex;
 use sha2::Digest;
 use sha3::Keccak256;
 
 use crate::{
     ethereum::slot::{MappingKey, Slot},
     hash::H256,
-    macros::hex_string_array_wrapper,
     uint::U256,
 };
 
-pub mod beacon;
-pub mod config;
 pub mod slot;
 
 #[inline]
@@ -28,29 +24,6 @@ pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
 #[must_use = "calculating the commitment key has no effect"]
 pub fn ibc_commitment_key(path: &str, slot: U256) -> U256 {
     Slot::Mapping(&Slot::Offset(slot), MappingKey::Bytes32(keccak256(path))).slot()
-}
-
-hex_string_array_wrapper! {
-    pub struct Version(pub [u8; 4]);
-    pub struct DomainType(pub [u8; 4]);
-    pub struct ForkDigest(pub [u8; 4]);
-    pub struct Domain(pub [u8; 32]);
-}
-
-#[rustfmt::skip]
-impl DomainType {
-    pub const BEACON_PROPOSER: Self                = Self(hex!("00000000"));
-    pub const BEACON_ATTESTER: Self                = Self(hex!("01000000"));
-    pub const RANDAO: Self                         = Self(hex!("02000000"));
-    pub const DEPOSIT: Self                        = Self(hex!("03000000"));
-    pub const VOLUNTARY_EXIT: Self                 = Self(hex!("04000000"));
-    pub const SELECTION_PROOF: Self                = Self(hex!("05000000"));
-    pub const AGGREGATE_AND_PROOF: Self            = Self(hex!("06000000"));
-    pub const SYNC_COMMITTEE: Self                 = Self(hex!("07000000"));
-    pub const SYNC_COMMITTEE_SELECTION_PROOF: Self = Self(hex!("08000000"));
-    pub const CONTRIBUTION_AND_PROOF: Self         = Self(hex!("09000000"));
-    pub const BLS_TO_EXECUTION_CHANGE: Self        = Self(hex!("0A000000"));
-    pub const APPLICATION_MASK: Self               = Self(hex!("00000001"));
 }
 
 #[cfg(test)]

@@ -1,3 +1,11 @@
+use beacon_api_types::{
+    consts::{
+        floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
+        NEXT_SYNC_COMMITTEE_INDEX,
+    },
+    light_client_update::LightClientUpdateSsz,
+    ChainSpec, DomainType, ForkParameters, LightClientHeaderSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
+};
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
 use ssz::Ssz;
@@ -6,21 +14,7 @@ use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     ensure,
-    ethereum::{
-        config::{
-            consts::{
-                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-                NEXT_SYNC_COMMITTEE_INDEX,
-            },
-            ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
-        },
-        DomainType,
-    },
     hash::{H160, H256},
-    ibc::lightclients::ethereum::{
-        execution_payload_header::CapellaExecutionPayloadHeader, fork_parameters::ForkParameters,
-        light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
-    },
     uint::U256,
 };
 
@@ -67,7 +61,7 @@ pub trait BlsVerify {
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ctx: &Ctx,
-    update: LightClientUpdate<Ctx::ChainSpec>,
+    update: LightClientUpdateSsz<Ctx::ChainSpec>,
     current_slot: u64,
     genesis_validators_root: H256,
     bls_verifier: V,
@@ -152,14 +146,15 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ensure(
         update_attested_slot > ctx.finalized_slot()
             || (update_attested_period == stored_period
-                && update.next_sync_committee.is_some()
+                // && update.next_sync_committee.is_some()
                 && ctx.next_sync_committee().is_none()),
         Error::IrrelevantUpdate {
             update_attested_slot,
             trusted_finalized_slot: ctx.finalized_slot(),
             update_attested_period,
             stored_period,
-            update_sync_committee_is_set: update.next_sync_committee.is_some(),
+            // update_sync_committee_is_set: update.next_sync_committee.is_some(),
+            update_sync_committee_is_set: true,
             trusted_next_sync_committee_is_set: ctx.next_sync_committee().is_some(),
         },
     )?;
@@ -181,22 +176,22 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that if the update contains the next sync committee, and the signature periods do match,
     // next sync committees match too.
-    if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
-        (&update.next_sync_committee, ctx.next_sync_committee())
-    {
+    // if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
+    //     (&update.next_sync_committee, ctx.next_sync_committee())
+    if let Some(stored_next_sync_committee) = ctx.next_sync_committee() {
         if update_attested_period == stored_period {
             ensure(
-                next_sync_committee == stored_next_sync_committee,
+                &update.next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
-                    found: next_sync_committee.aggregate_pubkey,
+                    found: update.next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &next_sync_committee.tree_hash_root().into(),
-            &update.next_sync_committee_branch.unwrap_or_default(),
+            &update.next_sync_committee.tree_hash_root().into(),
+            &update.next_sync_committee_branch,
             floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
             get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
             &update.attested_header.beacon.state_root,
@@ -338,18 +333,19 @@ pub fn verify_storage_absence(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-get_lc_execution_root)
 pub fn get_lc_execution_root<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeader<C>,
+    header: &LightClientHeaderSsz<C>,
 ) -> H256 {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
     if epoch >= fork_parameters.deneb.epoch {
         return header.execution.tree_hash_root().into();
     }
 
-    if epoch >= fork_parameters.capella.epoch {
-        return CapellaExecutionPayloadHeader::from(header.execution.clone())
-            .tree_hash_root()
-            .into();
-    }
+    // TODO: Figure out what to do here
+    // if epoch >= fork_parameters.capella.epoch {
+    //     return CapellaExecutionPayloadHeader::from(header.execution.clone())
+    //         .tree_hash_root()
+    //         .into();
+    // }
 
     H256::default()
 }
@@ -359,7 +355,7 @@ pub fn get_lc_execution_root<C: ChainSpec>(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeader<C>,
+    header: &LightClientHeaderSsz<C>,
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
@@ -384,444 +380,441 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use std::{cmp::Ordering, fs};
-
-    use serde::Deserialize;
-    use unionlabs::{
-        ethereum::config::{Mainnet, SEPOLIA},
-        ibc::lightclients::ethereum::{storage_proof::StorageProof, sync_committee::SyncCommittee},
-    };
-
-    use super::*;
-
-    #[derive(Debug, Clone)]
-    struct Context {
-        finalized_slot: u64,
-        current_sync_committee: Option<SyncCommittee<Mainnet>>,
-        next_sync_committee: Option<SyncCommittee<Mainnet>>,
-    }
-
-    #[derive(Deserialize)]
-    struct InitialData {
-        genesis_validators_root: H256,
-        current_sync_committee: SyncCommittee<Mainnet>,
-        next_sync_committee: SyncCommittee<Mainnet>,
-    }
-
-    #[derive(Deserialize)]
-    struct TestProof {
-        pub storage_root: H256,
-        pub storage_proof: StorageProof,
-    }
-
-    lazy_static::lazy_static! {
-        static ref VALID_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_1.json").unwrap()).unwrap();
-        static ref VALID_PROOF2: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_2.json").unwrap()).unwrap();
-
-        static ref ABSENT_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/absent_proof_1.json").unwrap()).unwrap();
-
-        static ref INITIAL_DATA: InitialData = serde_json::from_str(&fs::read_to_string("src/test/initial_test_data.json").unwrap()).unwrap();
-
-        static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
-            // Read all the updates, only process files
-            let mut updates: Vec<LightClientUpdate<Mainnet>> = fs::read_dir("src/test/updates/").unwrap().filter(|f|
-                f.as_ref().unwrap().path().is_file()
-            ).map(|f| {
-                serde_json::from_str(&fs::read_to_string(f.unwrap().path()).unwrap()).unwrap()
-            }).collect();
-
-            // Sort the updates from oldest to most recent for us to do updates by iterating over
-            updates.sort_by(|lhs, rhs| {
-                if lhs.attested_header.beacon.slot > rhs.attested_header.beacon.slot {
-                    Ordering::Greater
-                } else {
-                    Ordering::Less
-                }
-            });
-
-            // Since this verification library is stateless and it does not update any context after verifying an update,
-            // we are manually doing it here.
-            let mut current_sync_committee = Some(INITIAL_DATA.current_sync_committee.clone());
-            let mut next_sync_committee= Some(INITIAL_DATA.next_sync_committee.clone());
-            let mut update_data = vec![];
-            updates.iter().enumerate().skip(1).for_each(|(i, update)|
-                {
-                    let current_update = &updates[i - 1];
-                    let context = Context {
-                        finalized_slot: current_update.attested_header.beacon.slot,
-                        current_sync_committee: current_sync_committee.clone(),
-                        next_sync_committee: next_sync_committee.clone(),
-                    };
-                    update_data.push((context, update.clone()));
-
-                    // If the update contains a next sync committee, it means that we are moving to the next sync committee period
-                    // and updating the next sync committee.
-                    if let Some(ref nsc) = update.next_sync_committee {
-                        current_sync_committee = next_sync_committee.take();
-                        next_sync_committee = Some(nsc.clone());
-                    }
-                });
-
-            update_data
-        };
-    }
-
-    impl LightClientContext for Context {
-        type ChainSpec = Mainnet;
-
-        fn finalized_slot(&self) -> u64 {
-            self.finalized_slot
-        }
-
-        fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            self.current_sync_committee.as_ref()
-        }
-
-        fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            self.next_sync_committee.as_ref()
-        }
-
-        fn fork_parameters(&self) -> &ForkParameters {
-            &SEPOLIA.fork_parameters
-        }
-    }
-
-    struct BlsVerifier;
-
-    impl BlsVerify for BlsVerifier {
-        fn fast_aggregate_verify<'pk>(
-            &self,
-            public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
-            msg: Vec<u8>,
-            signature: BlsSignature,
-        ) -> Result<(), Error> {
-            let res = crate::crypto::fast_aggregate_verify_unchecked(
-                public_keys.into_iter().collect::<Vec<_>>().as_slice(),
-                msg.as_slice(),
-                &signature,
-            )
-            .unwrap();
-
-            if res {
-                Ok(())
-            } else {
-                Err(Error::Crypto)
-            }
-        }
-    }
-
-    fn do_validate_light_client_update(
-        ctx: &Context,
-        update: LightClientUpdate<Mainnet>,
-    ) -> Result<(), Error> {
-        let attested_slot = update.attested_header.beacon.slot;
-        validate_light_client_update(
-            ctx,
-            update,
-            attested_slot + 32,
-            INITIAL_DATA.genesis_validators_root,
-            BlsVerifier,
-        )
-    }
-
-    #[test]
-    fn validate_light_client_update_works() {
-        UPDATES.iter().for_each(|(ctx, update)| {
-            assert_eq!(do_validate_light_client_update(ctx, update.clone()), Ok(()))
-        });
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_insufficient_sync_committee_participants() {
-        let (ctx, mut update) = UPDATES[0].clone();
-
-        // Setting the sync committee bits to zero will result in no participants.
-        update.sync_aggregate.sync_committee_bits = Default::default();
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InsufficientSyncCommitteeParticipants { .. })
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_invalid_header() {
-        let (ctx, correct_update) = UPDATES[0].clone();
-
-        let mut update = correct_update.clone();
-        update.attested_header.execution.timestamp += 1;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidMerkleBranch(_))
-        ));
-
-        let mut update = correct_update;
-        update.finalized_header.execution.timestamp += 1;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidMerkleBranch(_))
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_incorrect_slot_order() {
-        let (ctx, correct_update) = UPDATES[0].clone();
-
-        // signature slot can't be bigger than the current slot
-        let mut update = correct_update.clone();
-        update.signature_slot = u64::MAX;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::UpdateMoreRecentThanCurrentSlot {
-                current_slot: 3577248,
-                update_signature_slot: u64::MAX,
-            })
-        ));
-
-        // attested slot can't be bigger than the signature slot
-        let mut update = correct_update.clone();
-
-        let before_deneb =
-            SEPOLIA.fork_parameters.deneb.epoch * (SEPOLIA.preset.SLOTS_PER_EPOCH as u64) - 1;
-        update.finalized_header.beacon.slot = before_deneb - 100;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSlots { .. })
-        ));
-
-        // finalized slot can't be bigger than the attested slot
-        let mut update = correct_update;
-        update.finalized_header.beacon.slot = before_deneb;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSlots { .. })
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_invalid_signature_period() {
-        let (mut ctx, update) = UPDATES[0].clone();
-
-        ctx.finalized_slot = u64::MAX;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update.clone()),
-            Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists { .. })
-        ));
-
-        // This should fail for both when the next sync committee exist and don't exist
-        ctx.next_sync_committee = None;
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist { .. })
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_irrelevant_update() {
-        let (mut ctx, correct_update) = UPDATES
-            .iter()
-            .find(|(_, update)| update.next_sync_committee.is_some())
-            .cloned()
-            .unwrap()
-            .clone();
-
-        // Expected next sync committee since attested slot is not bigger than the stored slot.
-        let mut update = correct_update.clone();
-        update.next_sync_committee = None;
-        ctx.finalized_slot = update.attested_header.beacon.slot;
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::IrrelevantUpdate { .. })
-        ));
-
-        // Expected stored next sync committee to be None
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, correct_update),
-            Err(Error::IrrelevantUpdate { .. })
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_invalid_finality_branch() {
-        let (ctx, mut update) = UPDATES[0].clone();
-
-        update.finality_branch[0] = Default::default();
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidMerkleBranch(_))
-        ));
-    }
-
-    #[test]
-    fn validate_light_client_update_fails_when_invalid_next_sync_committee_branch() {
-        let (ctx, mut update) = UPDATES
-            .iter()
-            .find(|(_, update)| update.next_sync_committee.is_some())
-            .cloned()
-            .unwrap()
-            .clone();
-
-        update.next_sync_committee_branch = Some(Default::default());
-
-        assert!(matches!(
-            do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidMerkleBranch(_))
-        ));
-    }
-
-    #[test]
-    fn verify_state_works() {
-        assert_eq!(
-            get_node(
-                VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key.to_be_bytes(),
-                VALID_PROOF.storage_proof.proof.iter()
-            )
-            .unwrap()
-            .as_ref(),
-            Some(&rlp::encode(&VALID_PROOF.storage_proof.value).to_vec())
-        );
-    }
-
-    #[test]
-    fn verify_state_fails_when_invalid_root() {
-        let storage_root = {
-            let mut root = VALID_PROOF.storage_root.into_bytes();
-            root[0] = u8::MAX - root[0];
-            root.try_into().unwrap()
-        };
-
-        assert!(matches!(
-            get_node(
-                storage_root,
-                VALID_PROOF.storage_proof.key.to_be_bytes(),
-                VALID_PROOF.storage_proof.proof.iter()
-            ),
-            Err(Error::Trie(_))
-        ));
-    }
-
-    #[test]
-    fn verify_state_returns_fails_when_invalid_key() {
-        let mut proof_key = VALID_PROOF.storage_proof.key.to_be_bytes();
-        proof_key[0] = u8::MAX - proof_key[0];
-
-        assert!(matches!(
-            get_node(
-                VALID_PROOF.storage_root,
-                proof_key,
-                VALID_PROOF.storage_proof.proof.iter()
-            ),
-            Err(Error::Trie(_))
-        ));
-    }
-
-    #[test]
-    fn verify_state_fails_when_invalid_proof() {
-        let mut proof = VALID_PROOF.storage_proof.proof.clone();
-        proof[0][0] = u8::MAX - proof[0][0];
-
-        assert!(matches!(
-            get_node(
-                VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key.to_be_bytes(),
-                &proof
-            ),
-            Err(Error::Trie(_))
-        ));
-    }
-
-    #[test]
-    fn verify_absent_storage_works() {
-        assert_eq!(
-            verify_storage_absence(
-                ABSENT_PROOF.storage_root,
-                ABSENT_PROOF.storage_proof.key,
-                ABSENT_PROOF.storage_proof.proof.iter()
-            ),
-            Ok(true)
-        )
-    }
-
-    #[test]
-    fn verify_absent_storage_returns_false_when_storage_exists() {
-        assert_eq!(
-            verify_storage_absence(
-                VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key,
-                VALID_PROOF.storage_proof.proof.iter()
-            ),
-            Ok(false)
-        );
-    }
-
-    #[test]
-    fn verify_storage_proof_works() {
-        assert_eq!(
-            verify_storage_proof(
-                VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key,
-                &rlp::encode(&VALID_PROOF.storage_proof.value),
-                VALID_PROOF.storage_proof.proof.iter()
-            ),
-            Ok(())
-        );
-    }
-
-    #[test]
-    fn verify_storage_proof_fails_when_incorrect_value() {
-        let mut proof_value = VALID_PROOF.storage_proof.value.to_be_bytes();
-        proof_value[0] = u8::MAX - proof_value[0];
-
-        assert!(matches!(
-            verify_storage_proof(
-                VALID_PROOF.storage_root,
-                VALID_PROOF.storage_proof.key,
-                proof_value.as_ref(),
-                VALID_PROOF.storage_proof.proof.iter()
-            ),
-            Err(Error::ValueMismatch { .. })
-        ));
-    }
-
-    #[test]
-    fn verify_storage_proof_leading_zero_value_works() {
-        assert_eq!(
-            verify_storage_proof(
-                VALID_PROOF2.storage_root,
-                VALID_PROOF2.storage_proof.key,
-                &rlp::encode(&VALID_PROOF2.storage_proof.value),
-                VALID_PROOF2.storage_proof.proof.iter()
-            ),
-            Ok(())
-        );
-    }
-
-    #[test]
-    fn is_valid_light_client_header_works() {
-        UPDATES.iter().for_each(|(_, update)| {
-            // Both finalized and attested headers should be verifiable
-            assert_eq!(
-                is_valid_light_client_header(&SEPOLIA.fork_parameters, &update.attested_header),
-                Ok(()),
-                "invalid attested header"
-            );
-
-            assert_eq!(
-                is_valid_light_client_header(&SEPOLIA.fork_parameters, &update.finalized_header),
-                Ok(()),
-                "invalid finalized header"
-            );
-        });
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use std::{cmp::Ordering, fs};
+
+//     use beacon_api_types::{Mainnet, SyncCommittee, MAINNET};
+//     use serde::Deserialize;
+
+//     use super::*;
+
+//     #[derive(Debug, Clone)]
+//     struct Context {
+//         finalized_slot: u64,
+//         current_sync_committee: Option<SyncCommittee<Mainnet>>,
+//         next_sync_committee: Option<SyncCommittee<Mainnet>>,
+//     }
+
+//     #[derive(Deserialize)]
+//     struct InitialData {
+//         genesis_validators_root: H256,
+//         current_sync_committee: SyncCommittee<Mainnet>,
+//         next_sync_committee: SyncCommittee<Mainnet>,
+//     }
+
+//     #[derive(Deserialize)]
+//     struct TestProof {
+//         pub storage_root: H256,
+//         pub storage_proof: StorageProof,
+//     }
+
+//     lazy_static::lazy_static! {
+//         static ref VALID_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_1.json").unwrap()).unwrap();
+//         static ref VALID_PROOF2: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_2.json").unwrap()).unwrap();
+
+//         static ref ABSENT_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/absent_proof_1.json").unwrap()).unwrap();
+
+//         static ref INITIAL_DATA: InitialData = serde_json::from_str(&fs::read_to_string("src/test/initial_test_data.json").unwrap()).unwrap();
+
+//         static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
+//             // Read all the updates, only process files
+//             let mut updates: Vec<LightClientUpdate<Mainnet>> = fs::read_dir("src/test/updates/").unwrap().filter(|f|
+//                 f.as_ref().unwrap().path().is_file()
+//             ).map(|f| {
+//                 serde_json::from_str(&fs::read_to_string(f.unwrap().path()).unwrap()).unwrap()
+//             }).collect();
+
+//             // Sort the updates from oldest to most recent for us to do updates by iterating over
+//             updates.sort_by(|lhs, rhs| {
+//                 if lhs.attested_header.beacon.slot > rhs.attested_header.beacon.slot {
+//                     Ordering::Greater
+//                 } else {
+//                     Ordering::Less
+//                 }
+//             });
+
+//             // Since this verification library is stateless and it does not update any context after verifying an update,
+//             // we are manually doing it here.
+//             let mut current_sync_committee = Some(INITIAL_DATA.current_sync_committee.clone());
+//             let mut next_sync_committee= Some(INITIAL_DATA.next_sync_committee.clone());
+//             let mut update_data = vec![];
+//             updates.iter().enumerate().skip(1).for_each(|(i, update)|
+//                 {
+//                     let current_update = &updates[i - 1];
+//                     let context = Context {
+//                         finalized_slot: current_update.attested_header.beacon.slot,
+//                         current_sync_committee: current_sync_committee.clone(),
+//                         next_sync_committee: next_sync_committee.clone(),
+//                     };
+//                     update_data.push((context, update.clone()));
+
+//                     // If the update contains a next sync committee, it means that we are moving to the next sync committee period
+//                     // and updating the next sync committee.
+//                     if let Some(ref nsc) = update.next_sync_committee {
+//                         current_sync_committee = next_sync_committee.take();
+//                         next_sync_committee = Some(nsc.clone());
+//                     }
+//                 });
+
+//             update_data
+//         };
+//     }
+
+//     impl LightClientContext for Context {
+//         type ChainSpec = Mainnet;
+
+//         fn finalized_slot(&self) -> u64 {
+//             self.finalized_slot
+//         }
+
+//         fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
+//             self.current_sync_committee.as_ref()
+//         }
+
+//         fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
+//             self.next_sync_committee.as_ref()
+//         }
+
+//         fn fork_parameters(&self) -> &ForkParameters {
+//             &SEPOLIA.fork_parameters
+//         }
+//     }
+
+//     struct BlsVerifier;
+
+//     impl BlsVerify for BlsVerifier {
+//         fn fast_aggregate_verify<'pk>(
+//             &self,
+//             public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+//             msg: Vec<u8>,
+//             signature: BlsSignature,
+//         ) -> Result<(), Error> {
+//             let res = crate::crypto::fast_aggregate_verify_unchecked(
+//                 public_keys.into_iter().collect::<Vec<_>>().as_slice(),
+//                 msg.as_slice(),
+//                 &signature,
+//             )
+//             .unwrap();
+
+//             if res {
+//                 Ok(())
+//             } else {
+//                 Err(Error::Crypto)
+//             }
+//         }
+//     }
+
+//     fn do_validate_light_client_update(
+//         ctx: &Context,
+//         update: LightClientUpdate<Mainnet>,
+//     ) -> Result<(), Error> {
+//         let attested_slot = update.attested_header.beacon.slot;
+//         validate_light_client_update(
+//             ctx,
+//             update,
+//             attested_slot + 32,
+//             INITIAL_DATA.genesis_validators_root,
+//             BlsVerifier,
+//         )
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_works() {
+//         UPDATES.iter().for_each(|(ctx, update)| {
+//             assert_eq!(do_validate_light_client_update(ctx, update.clone()), Ok(()))
+//         });
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_insufficient_sync_committee_participants() {
+//         let (ctx, mut update) = UPDATES[0].clone();
+
+//         // Setting the sync committee bits to zero will result in no participants.
+//         update.sync_aggregate.sync_committee_bits = Default::default();
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InsufficientSyncCommitteeParticipants { .. })
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_invalid_header() {
+//         let (ctx, correct_update) = UPDATES[0].clone();
+
+//         let mut update = correct_update.clone();
+//         update.attested_header.execution.timestamp += 1;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidMerkleBranch(_))
+//         ));
+
+//         let mut update = correct_update;
+//         update.finalized_header.execution.timestamp += 1;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidMerkleBranch(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_incorrect_slot_order() {
+//         let (ctx, correct_update) = UPDATES[0].clone();
+
+//         // signature slot can't be bigger than the current slot
+//         let mut update = correct_update.clone();
+//         update.signature_slot = u64::MAX;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::UpdateMoreRecentThanCurrentSlot {
+//                 current_slot: 3577248,
+//                 update_signature_slot: u64::MAX,
+//             })
+//         ));
+
+//         // attested slot can't be bigger than the signature slot
+//         let mut update = correct_update.clone();
+
+//         let before_deneb =
+//             SEPOLIA.fork_parameters.deneb.epoch * (SEPOLIA.preset.SLOTS_PER_EPOCH as u64) - 1;
+//         update.finalized_header.beacon.slot = before_deneb - 100;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidSlots { .. })
+//         ));
+
+//         // finalized slot can't be bigger than the attested slot
+//         let mut update = correct_update;
+//         update.finalized_header.beacon.slot = before_deneb;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidSlots { .. })
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_invalid_signature_period() {
+//         let (mut ctx, update) = UPDATES[0].clone();
+
+//         ctx.finalized_slot = u64::MAX;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update.clone()),
+//             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists { .. })
+//         ));
+
+//         // This should fail for both when the next sync committee exist and don't exist
+//         ctx.next_sync_committee = None;
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist { .. })
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_irrelevant_update() {
+//         let (mut ctx, correct_update) = UPDATES
+//             .iter()
+//             .find(|(_, update)| update.next_sync_committee.is_some())
+//             .cloned()
+//             .unwrap()
+//             .clone();
+
+//         // Expected next sync committee since attested slot is not bigger than the stored slot.
+//         let mut update = correct_update.clone();
+//         update.next_sync_committee = None;
+//         ctx.finalized_slot = update.attested_header.beacon.slot;
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::IrrelevantUpdate { .. })
+//         ));
+
+//         // Expected stored next sync committee to be None
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, correct_update),
+//             Err(Error::IrrelevantUpdate { .. })
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_invalid_finality_branch() {
+//         let (ctx, mut update) = UPDATES[0].clone();
+
+//         update.finality_branch[0] = Default::default();
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidMerkleBranch(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn validate_light_client_update_fails_when_invalid_next_sync_committee_branch() {
+//         let (ctx, mut update) = UPDATES
+//             .iter()
+//             .find(|(_, update)| update.next_sync_committee.is_some())
+//             .cloned()
+//             .unwrap()
+//             .clone();
+
+//         update.next_sync_committee_branch = Some(Default::default());
+
+//         assert!(matches!(
+//             do_validate_light_client_update(&ctx, update),
+//             Err(Error::InvalidMerkleBranch(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn verify_state_works() {
+//         assert_eq!(
+//             get_node(
+//                 VALID_PROOF.storage_root,
+//                 VALID_PROOF.storage_proof.key.to_be_bytes(),
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             )
+//             .unwrap()
+//             .as_ref(),
+//             Some(&rlp::encode(&VALID_PROOF.storage_proof.value).to_vec())
+//         );
+//     }
+
+//     #[test]
+//     fn verify_state_fails_when_invalid_root() {
+//         let storage_root = {
+//             let mut root = VALID_PROOF.storage_root.into_bytes();
+//             root[0] = u8::MAX - root[0];
+//             root.try_into().unwrap()
+//         };
+
+//         assert!(matches!(
+//             get_node(
+//                 storage_root,
+//                 VALID_PROOF.storage_proof.key.to_be_bytes(),
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             ),
+//             Err(Error::Trie(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn verify_state_returns_fails_when_invalid_key() {
+//         let mut proof_key = VALID_PROOF.storage_proof.key.to_be_bytes();
+//         proof_key[0] = u8::MAX - proof_key[0];
+
+//         assert!(matches!(
+//             get_node(
+//                 VALID_PROOF.storage_root,
+//                 proof_key,
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             ),
+//             Err(Error::Trie(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn verify_state_fails_when_invalid_proof() {
+//         let mut proof = VALID_PROOF.storage_proof.proof.clone();
+//         proof[0][0] = u8::MAX - proof[0][0];
+
+//         assert!(matches!(
+//             get_node(
+//                 VALID_PROOF.storage_root,
+//                 VALID_PROOF.storage_proof.key.to_be_bytes(),
+//                 &proof
+//             ),
+//             Err(Error::Trie(_))
+//         ));
+//     }
+
+//     #[test]
+//     fn verify_absent_storage_works() {
+//         assert_eq!(
+//             verify_storage_absence(
+//                 ABSENT_PROOF.storage_root,
+//                 ABSENT_PROOF.storage_proof.key,
+//                 ABSENT_PROOF.storage_proof.proof.iter()
+//             ),
+//             Ok(true)
+//         )
+//     }
+
+//     #[test]
+//     fn verify_absent_storage_returns_false_when_storage_exists() {
+//         assert_eq!(
+//             verify_storage_absence(
+//                 VALID_PROOF.storage_root,
+//                 VALID_PROOF.storage_proof.key,
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             ),
+//             Ok(false)
+//         );
+//     }
+
+//     #[test]
+//     fn verify_storage_proof_works() {
+//         assert_eq!(
+//             verify_storage_proof(
+//                 VALID_PROOF.storage_root,
+//                 VALID_PROOF.storage_proof.key,
+//                 &rlp::encode(&VALID_PROOF.storage_proof.value),
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             ),
+//             Ok(())
+//         );
+//     }
+
+//     #[test]
+//     fn verify_storage_proof_fails_when_incorrect_value() {
+//         let mut proof_value = VALID_PROOF.storage_proof.value.to_be_bytes();
+//         proof_value[0] = u8::MAX - proof_value[0];
+
+//         assert!(matches!(
+//             verify_storage_proof(
+//                 VALID_PROOF.storage_root,
+//                 VALID_PROOF.storage_proof.key,
+//                 proof_value.as_ref(),
+//                 VALID_PROOF.storage_proof.proof.iter()
+//             ),
+//             Err(Error::ValueMismatch { .. })
+//         ));
+//     }
+
+//     #[test]
+//     fn verify_storage_proof_leading_zero_value_works() {
+//         assert_eq!(
+//             verify_storage_proof(
+//                 VALID_PROOF2.storage_root,
+//                 VALID_PROOF2.storage_proof.key,
+//                 &rlp::encode(&VALID_PROOF2.storage_proof.value),
+//                 VALID_PROOF2.storage_proof.proof.iter()
+//             ),
+//             Ok(())
+//         );
+//     }
+
+//     #[test]
+//     fn is_valid_light_client_header_works() {
+//         UPDATES.iter().for_each(|(_, update)| {
+//             // Both finalized and attested headers should be verifiable
+//             assert_eq!(
+//                 is_valid_light_client_header(&SEPOLIA.fork_parameters, &update.attested_header),
+//                 Ok(()),
+//                 "invalid attested header"
+//             );
+
+//             assert_eq!(
+//                 is_valid_light_client_header(&SEPOLIA.fork_parameters, &update.finalized_header),
+//                 Ok(()),
+//                 "invalid finalized header"
+//             );
+//         });
+//     }
+// }

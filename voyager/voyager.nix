@@ -41,6 +41,9 @@
       packages =
         voyager.packages
         // {
+          # voyager-modules-names = builtins.toFile "voyager-modules-list.json" (
+          #   builtins.toJSON (map (p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name) voy-modules-list)
+          # );
           ethereum-multi-send = pkgs.writeShellApplication {
             name = "ethereum-multi-send";
             runtimeInputs = [ self'.packages.forge ];

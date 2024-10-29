@@ -187,7 +187,7 @@ fn container(
                                 }
                                 None => {
                                     len = len
-                                        .checked_add(ssz::BYTES_PER_LENGTH_OFFSET)
+                                        .checked_add(::ssz::BYTES_PER_LENGTH_OFFSET)
                                         .expect("encode ssz_bytes_len length overflow for offset");
                                     len = len
                                         .checked_add(::ssz::Ssz::ssz_bytes_len(&self.#ident).get())

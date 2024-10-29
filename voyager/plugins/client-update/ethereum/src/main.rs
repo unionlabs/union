@@ -1,8 +1,14 @@
 use std::{collections::VecDeque, ops::Div};
 
 use beacon_api::{client::BeaconApiClient, types::Spec};
+use beacon_api_types::{
+    light_client_update::NextSyncCommitteeBranch, PresetBaseKind, SyncCommittee,
+};
 use bitvec::{order::Msb0, vec::BitVec};
-use chain_utils::{ethereum::ETHEREUM_REVISION_NUMBER, BoxDynError};
+use ethereum_light_client_types::{
+    AccountProof, EpochChangeUpdate, Header, LightClientUpdate, LightClientUpdateData,
+    WithinEpochUpdate,
+};
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use futures::{stream, StreamExt};
 use jsonrpsee::{
@@ -13,19 +19,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    constants::metric::NANOS_PER_SECOND,
-    ethereum::config::PresetBaseKind,
-    hash::H160,
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{
-            account_proof::AccountProof,
-            account_update::AccountUpdate,
-            header::UnboundedHeader,
-            light_client_update::UnboundedLightClientUpdate,
-            trusted_sync_committee::{UnboundedActiveSyncCommittee, UnboundedTrustedSyncCommittee},
-        },
-    },
+    constants::metric::NANOS_PER_SECOND, hash::H160, ibc::core::client::height::Height,
     ErrorReporter,
 };
 use voyager_message::{
@@ -36,7 +30,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, defer, now, pass::PassResult, seq, Op, Visit};
+use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
@@ -91,7 +85,7 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
-    pub async fn fetch_account_update(&self, slot: u64) -> AccountUpdate {
+    pub async fn fetch_account_update(&self, slot: u64) -> AccountProof {
         let execution_height = self
             .beacon_api_client
             .execution_height(beacon_api::client::BlockId::Slot(slot))
@@ -109,15 +103,13 @@ impl Module {
             .await
             .unwrap();
 
-        AccountUpdate {
-            account_proof: AccountProof {
-                storage_root: account_update.storage_hash.into(),
-                proof: account_update
-                    .account_proof
-                    .into_iter()
-                    .map(|x| x.to_vec())
-                    .collect(),
-            },
+        AccountProof {
+            storage_root: account_update.storage_hash.into(),
+            proof: account_update
+                .account_proof
+                .into_iter()
+                .map(|x| x.to_vec())
+                .collect(),
         }
     }
 }
@@ -272,9 +264,8 @@ impl Module {
 
         // === FETCH VALID FINALITY UPDATE
 
-        // TODO: This is named poorly?
-        let has_supermajority = {
-            let scb = BitVec::<u8, Msb0>::try_from(
+        let does_not_have_has_supermajority = {
+            let sync_committee_bits = BitVec::<u8, Msb0>::try_from(
                 finality_update.sync_aggregate.sync_committee_bits.clone(),
             )
             .unwrap();
@@ -287,12 +278,12 @@ impl Module {
                 .data
                 .sync_committee_size;
 
-            assert_eq!(scb.len() as u64, sync_committee_size);
+            assert_eq!(sync_committee_bits.len() as u64, sync_committee_size);
 
-            scb.count_ones() * 3 < scb.len() * 2
+            sync_committee_bits.count_ones() * 3 < sync_committee_bits.len() * 2
         };
 
-        if has_supermajority {
+        if does_not_have_has_supermajority {
             info!(
                 signature_slot = finality_update.signature_slot,
                 "signature supermajority not hit"
@@ -360,7 +351,21 @@ impl Module {
 
                         vec.push_back(
                             self_
-                                .make_header(old_trusted_slot, update, true, &spec)
+                                .make_header(
+                                    old_trusted_slot,
+                                    LightClientUpdateData {
+                                        attested_header: update.attested_header,
+                                        finalized_header: update.finalized_header,
+                                        finality_branch: update.finality_branch,
+                                        sync_aggregate: update.sync_aggregate,
+                                        signature_slot: update.signature_slot,
+                                    },
+                                    Some((
+                                        update.next_sync_committee.unwrap(),
+                                        update.next_sync_committee_branch.unwrap(),
+                                    )),
+                                    &spec,
+                                )
                                 .await,
                         );
 
@@ -390,16 +395,14 @@ impl Module {
             Some(
                 self.make_header(
                     last_update_block_number,
-                    UnboundedLightClientUpdate {
+                    LightClientUpdateData {
                         attested_header: finality_update.attested_header,
-                        next_sync_committee: None,
-                        next_sync_committee_branch: None,
                         finalized_header: finality_update.finalized_header,
                         finality_branch: finality_update.finality_branch,
                         sync_aggregate: finality_update.sync_aggregate,
                         signature_slot: finality_update.signature_slot,
                     },
-                    false,
+                    None,
                     &spec,
                 )
                 .await,
@@ -428,7 +431,10 @@ impl Module {
 
         let last_update_signature_slot = headers
             .iter()
-            .map(|h| h.consensus_update.signature_slot)
+            .map(|header| match &header.consensus_update {
+                LightClientUpdate::EpochChange(update) => update.update_data.signature_slot,
+                LightClientUpdate::WithinEpoch(update) => update.update_data.signature_slot,
+            })
             .max()
             .expect("expected at least one update");
 
@@ -450,12 +456,15 @@ impl Module {
                         (
                             DecodedHeaderMeta {
                                 height: Height {
-                                    revision_number: ETHEREUM_REVISION_NUMBER,
-                                    revision_height: header
-                                        .consensus_update
-                                        .attested_header
-                                        .beacon
-                                        .slot,
+                                    revision_number: 0,
+                                    revision_height: match &header.consensus_update {
+                                        LightClientUpdate::EpochChange(update) => {
+                                            update.update_data.attested_header.beacon.slot
+                                        }
+                                        LightClientUpdate::WithinEpoch(update) => {
+                                            update.update_data.attested_header.beacon.slot
+                                        }
+                                    },
                                 },
                             },
                             serde_json::to_value(header).unwrap(),
@@ -471,26 +480,26 @@ impl Module {
         fields(
             chain_id = %self.chain_id,
             %currently_trusted_slot,
-            signature_slot = %light_client_update.signature_slot,
-            %is_next,
+            signature_slot = %light_client_update_data.signature_slot,
         )
     )]
     async fn make_header(
         &self,
         currently_trusted_slot: u64,
-        light_client_update: UnboundedLightClientUpdate,
-        is_next: bool,
+        light_client_update_data: LightClientUpdateData,
+        // if this is an epoch change update, provide the next sync committee for the target epoch
+        next_sync_committee: Option<(SyncCommittee, NextSyncCommitteeBranch)>,
         spec: &Spec,
-    ) -> UnboundedHeader {
+    ) -> Header {
         // When we fetch the update at this height, the `next_sync_committee` will
         // be the current sync committee of the period that we want to update to.
         let previous_period = u64::max(
             1,
-            light_client_update.attested_header.beacon.slot / spec.period(),
+            light_client_update_data.attested_header.beacon.slot / spec.period(),
         ) - 1;
 
-        let account_update = self
-            .fetch_account_update(light_client_update.attested_header.beacon.slot)
+        let ibc_account_proof = self
+            .fetch_account_update(light_client_update_data.attested_header.beacon.slot)
             .await;
 
         let previous_period_light_client_update = self
@@ -505,28 +514,30 @@ impl Module {
             .pop()
             .unwrap();
 
-        UnboundedHeader {
-            consensus_update: light_client_update,
-            trusted_sync_committee: UnboundedTrustedSyncCommittee {
-                trusted_height: Height {
-                    revision_number: ETHEREUM_REVISION_NUMBER,
-                    revision_height: currently_trusted_slot,
-                },
-                sync_committee: if is_next {
-                    UnboundedActiveSyncCommittee::Next(
-                        previous_period_light_client_update
+        Header {
+            consensus_update: match next_sync_committee {
+                Some((next_sync_committee, next_sync_committee_branch)) => {
+                    LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
+                        sync_committee: previous_period_light_client_update
                             .next_sync_committee
                             .unwrap(),
-                    )
-                } else {
-                    UnboundedActiveSyncCommittee::Current(
-                        previous_period_light_client_update
-                            .next_sync_committee
-                            .unwrap(),
-                    )
-                },
+                        next_sync_committee,
+                        next_sync_committee_branch,
+                        update_data: light_client_update_data,
+                    }))
+                }
+                None => LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
+                    sync_committee: previous_period_light_client_update
+                        .next_sync_committee
+                        .unwrap(),
+                    update_data: light_client_update_data,
+                })),
             },
-            account_update,
+            trusted_height: Height {
+                revision_number: 0,
+                revision_height: currently_trusted_slot,
+            },
+            ibc_account_proof,
         }
     }
 }

@@ -326,7 +326,7 @@
             };
 
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
+            # RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             CARGO_PROFILE = if dev then "dev" else "release";
           };
 
@@ -486,7 +486,6 @@
       #       "--exclude=tidy"
       #       "--exclude=generate-rust-sol-bindings"
       #       "--exclude=ensure-blocks"
-      #       "--exclude=ucli"
       #       "--hide-instantiations"
       #     ];
       #     SQLX_OFFLINE = true;

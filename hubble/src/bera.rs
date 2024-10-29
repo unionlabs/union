@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
+use beacon_api_types::{
+    execution_payload_header::ExecutionPayloadHeader, ExecutionPayloadHeaderSsz, Mainnet,
+};
 use color_eyre::{eyre::eyre, Result};
 use cometbft_rpc::{types::AbciQueryResponse, Client};
 use tracing::info;
-use unionlabs::{
-    berachain::BerachainChainSpec, encoding::DecodeAs,
-    ibc::lightclients::ethereum::execution_payload_header::ExecutionPayloadHeader,
-};
+use unionlabs::encoding::DecodeAs;
 
 use crate::consensus::{Indexer, Querier};
 
@@ -76,17 +76,21 @@ impl Bera {
     pub async fn execution_header_at_beacon_slot(
         &self,
         slot: u64,
-    ) -> Result<ExecutionPayloadHeader<BerachainChainSpec>> {
-        use unionlabs::{berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX, encoding::Ssz};
+    ) -> Result<ExecutionPayloadHeader> {
+        use unionlabs::encoding::Ssz;
 
-        let header = ExecutionPayloadHeader::<BerachainChainSpec>::decode_as::<Ssz>(
+        // https://github.com/unionlabs/union/blob/2ce63ba3e94b13444d69ac03995958dc74b8f8c9/lib/unionlabs/src/berachain.rs#L9
+        pub const LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX: u8 = 17;
+
+        let header = ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
             &self
                 .beacon_store_abci_query([LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX], slot, false)
                 .await?
                 .response
                 .value,
         )?;
-        Ok(header)
+
+        Ok(header.into())
     }
 }
 

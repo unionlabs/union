@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{google::protobuf::timestamp::Timestamp, hash::H256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     /// Timestamp of the execution layer.
     pub eth_timestamp: u64,

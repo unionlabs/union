@@ -1,10 +1,8 @@
-use serde::{Deserialize, Serialize};
-use unionlabs::ibc::{
-    core::client::height::Height,
-    lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-};
+use ethereum_light_client_types::{AccountProof, StorageProof};
+use unionlabs::ibc::core::client::height::Height;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub l1_height: Height,
     pub l1_account_proof: AccountProof,
@@ -13,17 +11,14 @@ pub struct Header {
     pub last_batch_index_proof: StorageProof,
     pub batch_hash_proof: StorageProof,
     pub l2_ibc_account_proof: AccountProof,
-    #[serde(with = "::serde_utils::hex_string")]
     pub batch_header: Vec<u8>,
 }
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use ethereum_light_client_types::{account_proof, storage_proof};
     use unionlabs::{
         errors::{InvalidLength, MissingField},
-        ibc::lightclients::ethereum::{
-            account_proof::TryFromAccountProofError, storage_proof::TryFromStorageProofError,
-        },
         impl_proto_via_try_from_into, required,
     };
 
@@ -50,17 +45,17 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid l1_account_proof")]
-        L1AccountProof(#[source] TryFromAccountProofError),
+        L1AccountProof(#[source] account_proof::proto::Error),
         #[error("invalid l2_state_root")]
         L2StateRoot(#[source] InvalidLength),
         #[error("invalid l2_state_proof")]
-        L2StateProof(#[source] TryFromStorageProofError),
+        L2StateProof(#[source] storage_proof::proto::Error),
         #[error("invalid last_batch_index_proof")]
-        LastBatchIndexProof(#[source] TryFromStorageProofError),
+        LastBatchIndexProof(#[source] storage_proof::proto::Error),
         #[error("invalid l2_ibc_account_proof")]
-        L2IbcAccountProof(#[source] TryFromAccountProofError),
+        L2IbcAccountProof(#[source] account_proof::proto::Error),
         #[error("invalid batch_hash_proof")]
-        BatchHashProof(#[source] TryFromStorageProofError),
+        BatchHashProof(#[source] storage_proof::proto::Error),
         #[error("invalid l1_message_hash")]
         L1MessageHash(#[source] InvalidLength),
         #[error("invalid blob_versioned_hash")]

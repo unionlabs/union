@@ -1,13 +1,8 @@
-use serde::{Deserialize, Serialize};
-use unionlabs::{
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-    },
-    linea::proof::InclusionProof,
-};
+use ethereum_light_client_types::{AccountProof, StorageProof};
+use unionlabs::{ibc::core::client::height::Height, linea::proof::InclusionProof};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub l1_height: Height,
     pub l1_rollup_contract_proof: AccountProof,
@@ -19,11 +14,9 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use ethereum_light_client_types::{account_proof, storage_proof};
     use unionlabs::{
         errors::{InvalidLength, MissingField},
-        ibc::lightclients::ethereum::{
-            account_proof::TryFromAccountProofError, storage_proof::TryFromStorageProofError,
-        },
         impl_proto_via_try_from_into,
         linea::proof::TryFromMerkleProofError,
         required,
@@ -51,19 +44,19 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid l1_rollup_contract_proof")]
-        L1RollupContractProof(#[source] TryFromAccountProofError),
+        L1RollupContractProof(#[source] account_proof::proto::Error),
         #[error("invalid l2_block_number")]
         L2BlockNumber(#[source] InvalidLength),
         #[error("invalid l2_block_number_proof")]
-        L2BlockNumberProof(#[source] TryFromStorageProofError),
+        L2BlockNumberProof(#[source] storage_proof::proto::Error),
         #[error("invalid l2_state_root")]
         L2StateRoot(#[source] InvalidLength),
         #[error("invalid l2_state_root_proof")]
-        L2StateRootProof(#[source] TryFromStorageProofError),
+        L2StateRootProof(#[source] storage_proof::proto::Error),
         #[error("invalid l2_timestamp")]
         L2Timestamp(#[source] InvalidLength),
         #[error("invalid l2_timestamp_proof")]
-        L2TimestampProof(#[source] TryFromStorageProofError),
+        L2TimestampProof(#[source] storage_proof::proto::Error),
         #[error("invalid l2_ibc_contract_proof")]
         L2IbcContractProof(#[source] TryFromMerkleProofError),
     }

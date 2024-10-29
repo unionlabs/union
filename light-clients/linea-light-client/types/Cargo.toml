@@ -4,14 +4,16 @@ name    = "linea-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-protos    = { workspace = true, features = ["union+ibc+lightclients+linea+v1"] }
-serde     = { workspace = true, features = ["derive"] }
-thiserror = { workspace = true }
-unionlabs = { workspace = true }
+ethereum-light-client-types = { workspace = true }
+protos                      = { workspace = true, optional = true, features = ["union+ibc+lightclients+linea+v1"] }
+serde                       = { workspace = true, optional = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true }
 
 [features]
-default = ["proto"]
-proto   = ["unionlabs/proto"]
+default = ["proto", "serde"]
+proto   = ["dep:protos", "unionlabs/proto", "ethereum-light-client-types/proto"]
+serde   = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

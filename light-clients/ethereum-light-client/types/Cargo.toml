@@ -1,0 +1,26 @@
+[package]
+edition = "2021"
+name    = "ethereum-light-client-types"
+version = "0.1.0"
+
+[dependencies]
+beacon-api-types = { workspace = true }
+protos           = { workspace = true, features = ["union+ibc+lightclients+ethereum+v1"] }
+serde            = { workspace = true, optional = true, features = ["derive"] }
+serde-utils      = { workspace = true, optional = true }
+thiserror        = { workspace = true }
+unionlabs        = { workspace = true }
+
+[features]
+default = ["proto", "serde"]
+proto = ["unionlabs/proto"]
+serde = [
+  # TODO: Feature gate serde in unionlabs
+  # "unionlabs/serde",
+  "beacon-api-types/serde",
+  "dep:serde",
+  "dep:serde-utils",
+]
+
+[dev-dependencies]
+hex-literal = { workspace = true }

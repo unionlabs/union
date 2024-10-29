@@ -1,12 +1,12 @@
 use rlp::Encodable;
-use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     hash::{H160, H2048, H256, H64},
     uint::U256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, rlp::RlpEncodable)]
+#[derive(Debug, Clone, PartialEq, rlp::RlpEncodable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct L2Header {
     pub parent_hash: H256,
     pub sha3_uncles: H256,

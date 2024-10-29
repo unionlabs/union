@@ -18,8 +18,8 @@ use crate::{
     beacon::Beacon,
     consensus::{Indexer, Querier},
 };
-sol! {
 
+sol! {
     #[derive(Debug)]
     event NodeCreated (
         uint64 indexed node_num,

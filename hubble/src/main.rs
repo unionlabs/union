@@ -71,7 +71,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
         let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
         interval.tick().await;
         loop {
-            info!("updating_tokens");
+            info!("updating tokens");
             token_list::update_tokens(db.clone(), args.tokens_urls.clone()).await?;
             interval.tick().await;
         }
