@@ -43,6 +43,7 @@ const slideTextAnimation = {
     .header-grid {
         --outer-border: 3px;
         --inner-border: 1px;
+        background-color: rgba(115, 115, 115, 0.35);
         height: calc(100svh - 68px);
         width: 100%;
         display: grid;
@@ -53,7 +54,10 @@ const slideTextAnimation = {
     }
 
     .glow-effect {
-        grid-area: 3 / 3 / 6 / 6;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 1;
         background: conic-gradient(
                 from 0deg at 50% 50%,
                 rgba(160, 236, 253, 1) 15deg,
@@ -62,10 +66,9 @@ const slideTextAnimation = {
                 rgba(160, 236, 253, 0) 345deg,
                 rgba(160, 236, 253, 1) 345deg
         );
-        z-index: 2;
         mix-blend-mode: screen;
-        transition: transform 0.1s ease-out;
-        transform: scale(10);
+        filter: blur(10px);
+        transform-origin: center;
     }
 
     .header-grid > canvas {
