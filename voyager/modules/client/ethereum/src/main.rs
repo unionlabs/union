@@ -86,10 +86,7 @@ impl Module {
     }
 
     pub fn make_height(revision_height: u64) -> Height {
-        Height {
-            revision_number: 0,
-            revision_height,
-        }
+        Height::new(revision_height)
     }
 }
 

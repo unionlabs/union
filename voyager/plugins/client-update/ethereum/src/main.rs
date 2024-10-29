@@ -307,7 +307,7 @@ impl Module {
         let target_period =
             sync_committee_period(finality_update.attested_header.beacon.slot, spec.period());
 
-        let trusted_period = sync_committee_period(update_from.revision_height, spec.period());
+        let trusted_period = sync_committee_period(update_from.height(), spec.period());
 
         info!("target period: {target_period}, trusted period: {trusted_period}");
 
@@ -338,7 +338,7 @@ impl Module {
         );
 
         let (updates, last_update_block_number) = stream::iter(light_client_updates)
-            .fold((VecDeque::new(), update_from.revision_height), {
+            .fold((VecDeque::new(), update_from.height()), {
                 |(mut vec, mut trusted_slot), update| {
                     let self_ = self.clone();
                     let spec = spec.clone();
@@ -381,9 +381,9 @@ impl Module {
             [].into()
         };
 
-        let does_not_have_finality_update = last_update_block_number >= update_to.revision_height;
+        let does_not_have_finality_update = last_update_block_number >= update_to.height();
 
-        debug!(last_update_block_number, update_to.revision_height);
+        debug!(last_update_block_number, %update_to);
 
         let finality_update_msg = if does_not_have_finality_update {
             info!("does not have finality update");
@@ -455,17 +455,14 @@ impl Module {
                     .map(|header| {
                         (
                             DecodedHeaderMeta {
-                                height: Height {
-                                    revision_number: 0,
-                                    revision_height: match &header.consensus_update {
-                                        LightClientUpdate::EpochChange(update) => {
-                                            update.update_data.attested_header.beacon.slot
-                                        }
-                                        LightClientUpdate::WithinEpoch(update) => {
-                                            update.update_data.attested_header.beacon.slot
-                                        }
-                                    },
-                                },
+                                height: Height::new(match &header.consensus_update {
+                                    LightClientUpdate::EpochChange(update) => {
+                                        update.update_data.attested_header.beacon.slot
+                                    }
+                                    LightClientUpdate::WithinEpoch(update) => {
+                                        update.update_data.attested_header.beacon.slot
+                                    }
+                                }),
                             },
                             serde_json::to_value(header).unwrap(),
                         )
@@ -533,10 +530,7 @@ impl Module {
                     update_data: light_client_update_data,
                 })),
             },
-            trusted_height: Height {
-                revision_number: 0,
-                revision_height: currently_trusted_slot,
-            },
+            trusted_height: Height::new(currently_trusted_slot),
             ibc_account_proof,
         }
     }

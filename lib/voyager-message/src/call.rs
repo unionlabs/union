@@ -647,7 +647,7 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if chain_height.revision_number != height.revision_number {
+                if chain_height.revision() != height.revision() {
                     return Err(QueueError::Fatal(
                         format!(
                             "revision number mismatch, \
@@ -659,7 +659,7 @@ impl CallT<VoyagerMessage> for Call {
 
                 debug!("latest height is {chain_height}, waiting for {height}");
 
-                if chain_height.revision_height >= height.revision_height {
+                if chain_height.height() >= height.height() {
                     Ok(noop())
                 } else {
                     Ok(seq([
@@ -678,10 +678,10 @@ impl CallT<VoyagerMessage> for Call {
 
                 Ok(call(WaitForHeight {
                     chain_id,
-                    height: Height {
-                        revision_number: chain_height.revision_number,
-                        revision_height: chain_height.revision_height + height,
-                    },
+                    height: Height::new_with_revision(
+                        chain_height.revision(),
+                        chain_height.height() + height,
+                    ),
                 }))
             }
 
@@ -736,7 +736,7 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if trusted_client_state_meta.height.revision_height >= height.revision_height {
+                if trusted_client_state_meta.height.height() >= height.height() {
                     debug!(
                         "client height reached ({} >= {})",
                         trusted_client_state_meta.height, height

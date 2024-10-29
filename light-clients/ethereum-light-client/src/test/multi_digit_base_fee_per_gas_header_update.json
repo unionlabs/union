@@ -1,6 +1,6 @@
 {
   "trusted_sync_committee": {
-    "trusted_height": { "revision_number": 0, "revision_height": 88 },
+    "trusted_height": "88",
     "sync_committee": {
       "@type": "next",
       "@value": {

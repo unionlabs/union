@@ -1137,9 +1137,6 @@
         "aggregate_pubkey": "0xa210dc22d065f947f26edccf82d3c2886ad51c2241d8b67636fa3e5c5ec67f7e016c288b25bfa9ebdcb9682e76212a6c"
       }
     },
-    "trusted_height": {
-      "revision_height": 3579394,
-      "revision_number": 0
-    }
+    "trusted_height": "3579394"
   }
 }

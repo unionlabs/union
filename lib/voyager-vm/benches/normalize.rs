@@ -22,20 +22,14 @@ fn mk_msg() -> Op<VoyagerMessage> {
                 data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    start_height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
+                    start_height: Height::new_with_revision(1, 1),
                 }),
                 conc([
                     noop(),
                     data(PluginMessage::new("", "")),
                     call(FetchBlocks {
                         chain_id: ChainId::new("chain"),
-                        start_height: Height {
-                            revision_number: 1,
-                            revision_height: 1,
-                        },
+                        start_height: Height::new_with_revision(1, 1),
                     }),
                 ]),
             ],
@@ -49,20 +43,14 @@ fn mk_msg() -> Op<VoyagerMessage> {
             data(PluginMessage::new("", "")),
             call(FetchBlocks {
                 chain_id: ChainId::new("chain"),
-                start_height: Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
+                start_height: Height::new_with_revision(1, 1),
             }),
             conc([
                 noop(),
                 data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    start_height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
+                    start_height: Height::new_with_revision(1, 1),
                 }),
             ]),
         ]),
