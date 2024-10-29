@@ -106,10 +106,7 @@ impl ChainModule for Module {
 impl Module {
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: self.chain_revision,
-            revision_height: height,
-        }
+        Height::new_with_revision(self.chain_revision, height)
     }
 
     async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
@@ -429,7 +426,7 @@ impl ChainModuleServer for Module {
                 IBC_STORE_PATH,
                 &path_string,
                 Some(
-                    i64::try_from(at.revision_height)
+                    i64::try_from(at.height())
                         .expect("should be fine")
                         .try_into()
                         .expect("invalid height"),
@@ -575,7 +572,7 @@ impl ChainModuleServer for Module {
                 // a proof at height H is provable at height H + 1
                 // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
                 Some(
-                    (i64::try_from(at.revision_height).expect("should be fine") - 1)
+                    (i64::try_from(at.height()).expect("should be fine") - 1)
                         .try_into()
                         .expect("invalid height"),
                 ),

@@ -104,7 +104,10 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string(),
             data: value.data.into(),
-            timeout_height: value.timeout_height.into(),
+            timeout_height: contracts::ibc_handler::IbcCoreClientV1HeightData {
+                revision_number: value.timeout_height.revision(),
+                revision_height: value.timeout_height.height(),
+            },
             timeout_timestamp: value.timeout_timestamp,
         }
     }

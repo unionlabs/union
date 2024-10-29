@@ -50,10 +50,10 @@ impl Module {
         data(OrderedHeaders {
             headers: vec![(
                 DecodedHeaderMeta {
-                    height: Height {
-                        revision_number: update_from.revision_number,
-                        revision_height: signed_header.header.height.inner().try_into().unwrap(),
-                    },
+                    height: Height::new_with_revision(
+                        update_from.revision(),
+                        signed_header.header.height.inner().try_into().unwrap(),
+                    ),
                 },
                 serde_json::to_value(Header {
                     signed_header: LightHeader {

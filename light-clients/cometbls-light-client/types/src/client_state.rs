@@ -89,8 +89,8 @@ pub mod ethabi {
                 chainId: self.chain_id.into_fixed_bytes(),
                 trustingPeriod: self.trusting_period,
                 maxClockDrift: self.max_clock_drift,
-                frozenHeight: self.frozen_height.revision_height,
-                latestHeight: self.latest_height.revision_height,
+                frozenHeight: self.frozen_height.height(),
+                latestHeight: self.latest_height.height(),
             }
             .abi_encode()
         }
@@ -107,14 +107,8 @@ pub mod ethabi {
                     .map_err(|err| TryFromEthAbiBytesErrorAlloy::Convert(Error::ChainId(err)))?,
                 trusting_period: client_state.trustingPeriod,
                 max_clock_drift: client_state.maxClockDrift,
-                frozen_height: Height {
-                    revision_number: 0,
-                    revision_height: client_state.frozenHeight,
-                },
-                latest_height: Height {
-                    revision_number: 0,
-                    revision_height: client_state.latestHeight,
-                },
+                frozen_height: Height::new(client_state.frozenHeight),
+                latest_height: Height::new(client_state.latestHeight),
             })
         }
     }

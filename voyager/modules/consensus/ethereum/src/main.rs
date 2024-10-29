@@ -148,12 +148,9 @@ impl ConsensusModuleServer for Module {
             seconds_per_slot: spec.seconds_per_slot,
             slots_per_epoch: spec.slots_per_epoch,
             epochs_per_sync_committee_period: spec.epochs_per_sync_committee_period,
-            latest_slot: height.revision_height,
+            latest_slot: height.height(),
             min_sync_committee_participants: 0,
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            frozen_height: Height::new(0),
             ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
             ibc_contract_address: self.ibc_handler_address,
         })
@@ -166,7 +163,7 @@ impl ConsensusModuleServer for Module {
         let beacon_api_client = &self.beacon_api_client;
 
         let trusted_header = beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(height.revision_height))
+            .header(beacon_api::client::BlockId::Slot(height.height()))
             .await
             .unwrap()
             .data;
@@ -179,10 +176,10 @@ impl ConsensusModuleServer for Module {
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
-        assert!(bootstrap.header.beacon.slot == height.revision_height);
+        assert!(bootstrap.header.beacon.slot == height.height());
 
         let light_client_update = {
-            let current_period = height.revision_height.div(spec.period());
+            let current_period = height.height().div(spec.period());
 
             debug!(%current_period);
 

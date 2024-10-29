@@ -98,10 +98,7 @@ impl Contract {
     }
 
     pub fn latest_height(&self) -> Height {
-        Height {
-            revision_number: 0,
-            revision_height: self.client_state.latest_height,
-        }
+        Height::new(self.client_state.latest_height)
     }
 
     #[allow(unused)]
@@ -117,10 +114,7 @@ impl Contract {
     ) -> bool {
         let raw_state_proof: RawStateProof = serde_json::from_slice(&proof).unwrap();
         let state_proof = raw_state_proof.parse();
-        let consensus_state = self
-            .consensus_states
-            .get(&(height.revision_height + 1))
-            .unwrap();
+        let consensus_state = self.consensus_states.get(&(height.height() + 1)).unwrap();
 
         let key = key_from_path(&path.key_path[1]);
 
@@ -184,10 +178,7 @@ impl Contract {
         (
             borsh::to_vec(&self.client_state).unwrap(),
             vec![(
-                Height {
-                    revision_number: 0,
-                    revision_height: header_update.new_state.inner_lite.height,
-                },
+                Height::new(header_update.new_state.inner_lite.height),
                 borsh::to_vec(&new_consensus_state).unwrap(),
             )],
         )

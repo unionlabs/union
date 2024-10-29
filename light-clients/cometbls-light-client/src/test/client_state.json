@@ -4,18 +4,9 @@
     "trusting_period": 10000,
     "unbonding_period": 10000,
     "max_clock_drift": 100000,
-    "frozen_height": {
-      "revision_height": 0,
-      "revision_number": 0
-    },
-    "latest_height": {
-      "revision_height": 1124,
-      "revision_number": 1
-    }
+    "frozen_height": "0",
+    "latest_height": "1-1124"
   },
-  "latest_height": {
-    "revision_height": 1124,
-    "revision_number": 1
-  },
+  "latest_height": "1-1124",
   "checksum": "0xfa19d6ccbe4bde2d6a205136e65089460c4d9781a918add0e9dd3a0b9a2d73cb"
 }

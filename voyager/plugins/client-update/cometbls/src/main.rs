@@ -191,21 +191,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             }) => {
                 let trusted_validators = self
                     .tm_client
-                    .all_validators(Some(update_from.revision_height.try_into().unwrap()))
+                    .all_validators(Some(update_from.height().try_into().unwrap()))
                     .await
                     .unwrap()
                     .validators;
 
                 let untrusted_validators = self
                     .tm_client
-                    .all_validators(Some(update_to.revision_height.try_into().unwrap()))
+                    .all_validators(Some(update_to.height().try_into().unwrap()))
                     .await
                     .unwrap()
                     .validators;
 
                 let signed_header = self
                     .tm_client
-                    .commit(Some(update_to.revision_height.try_into().unwrap()))
+                    .commit(Some(update_to.height().try_into().unwrap()))
                     .await
                     .unwrap()
                     .signed_header;
