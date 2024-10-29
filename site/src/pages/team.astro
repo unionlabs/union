@@ -1,6 +1,7 @@
 ---
 import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.ts"
 import { contentfulClient } from "../lib/contentful/client.ts"
+import TeamMember from "#/components/TeamMember.astro"
 
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import Card from "#/components/Card.astro"
@@ -114,29 +115,7 @@ try {
           <AnimationLayout title="Meet the team" text="Our team is a global network of professionals, working to build the interoperability future.">
             <ContainedSection>
               <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
-                {teamData.map((person) => (
-                        <Card class="border-none group">
-                          <a
-                                  href={`https://x.com/${person.twitterHandle}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="gap-4 flex flex-col"
-                          >
-                            <div class="object-cover overflow-hidden">
-                              <img
-                                      class="w-full h-auto group-hover:scale-110 transition"
-                                      src={person.profilePicture.fields.file.url}
-                                      alt={`${person.name} - Union worker`}
-                              />
-                            </div>
-                            <div class="leading-tight uppercase font-mono">
-                              <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
-                              <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-                              <div class="text-accent text-lg -mt-1 block">@{person.twitterHandle}</div>
-                            </div>
-                          </a>
-                        </Card>
-                ))}
+                {teamData.map((person) => <TeamMember {person}/>)}
               </div>
             </ContainedSection>
           </AnimationLayout>
