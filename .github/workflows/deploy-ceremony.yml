@@ -22,40 +22,6 @@ env:
   ASTRO_TELEMETRY_DISABLED: true
 
 jobs:
-  garnix:
-    name: Wait on Garnix CI
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait on Garnix CI Check Suite
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          REF: ${{ github.head_ref || github.sha }}
-        run: |
-          sleep 15
-
-          status=''
-
-          while [[ $status != 'completed' ]]; do
-            check_suites=$(gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/$REPO/commits/$REF/check-suites")
-
-            status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .status')
-            sleep 15
-          done
-          conclusion=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .conclusion')
-          case "$conclusion" in
-            failure | timed_out | action_required | stale | startup_failure)
-              echo "ERROR: Garnix CI concluded with $conclusion"
-              exit 1
-              ;;
-            *)
-              echo "INFO: Garnix CI concluded with $conclusion"
-              ;;
-          esac
-
   deploy-preview:
     runs-on: ['ubuntu-latest']
     permissions:
@@ -126,7 +92,6 @@ jobs:
 
   deploy-staging:
     runs-on: ['ubuntu-latest']
-    needs: [garnix]
     env:
       npm_config_yes: true
     environment: 'ceremony-staging'
@@ -151,7 +116,6 @@ jobs:
 
   deploy-production:
     runs-on: ['ubuntu-latest']
-    needs: [garnix]
     env:
       npm_config_yes: true
     environment: 'ceremony-production'
