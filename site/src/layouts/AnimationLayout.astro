@@ -1,6 +1,6 @@
 ---
 import BorderIntro from "../components/sections/landing/BorderIntro.astro"
-import { ViewTransitions } from "astro:transitions"
+import { ClientRouter } from "astro:transitions"
 
 interface Props {
   title: any
@@ -11,7 +11,7 @@ const { title, text } = Astro.props
 ---
 
 <head>
-  <ViewTransitions/>
+  <ClientRouter/>
 </head>
 
 <BorderIntro {title} {text}/>
