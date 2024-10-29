@@ -6,22 +6,23 @@ repository   = { workspace = true }
 version      = "0.1.0"
 
 [dependencies]
-aptos-verifier     = { workspace = true }
-bcs                = { workspace = true }
-cosmwasm-std       = { workspace = true, features = ["abort"] }
-ethereum-verifier  = { workspace = true }
-hex                = { workspace = true, features = ["alloc"] }
-hex-literal        = { workspace = true }
-ics008-wasm-client = { workspace = true }
-protos             = { workspace = true }
-rlp                = { workspace = true }
-serde              = { workspace = true, features = ["derive"] }
-serde-utils        = { workspace = true }
-serde_json         = { workspace = true }
-sha2               = { workspace = true, features = ["std"] }
-sha3               = { workspace = true }
-thiserror          = { workspace = true }
-unionlabs          = { workspace = true, features = ["cosmwasm", "stargate"] }
+aptos-verifier              = { workspace = true }
+bcs                         = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+ethereum-verifier           = { workspace = true }
+hex                         = { workspace = true, features = ["alloc"] }
+hex-literal                 = { workspace = true }
+ics008-wasm-client          = { workspace = true }
+movement-light-client-types = { workspace = true, features = ["proto"] }
+protos                      = { workspace = true }
+rlp                         = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
+serde_json                  = { workspace = true }
+sha2                        = { workspace = true, features = ["std"] }
+sha3                        = { workspace = true }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["cosmwasm", "stargate"] }
 
 [dev-dependencies]
 aptos-crypto = { workspace = true }

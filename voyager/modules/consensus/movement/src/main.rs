@@ -4,6 +4,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
+use movement_light_client_types::{ClientState, ConsensusState};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
@@ -13,7 +14,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     hash::{hash_v2::Hash, H160},
-    ibc::{core::client::height::Height, lightclients::movement},
+    ibc::core::client::height::Height,
     id::ClientId,
     uint::U256,
     validated::ValidateT,
@@ -156,7 +157,7 @@ impl ConsensusModuleServer for Module {
             .unwrap()
             .to_owned();
 
-        Ok(serde_json::to_value(movement::client_state::ClientState {
+        Ok(serde_json::to_value(ClientState {
             chain_id: self.chain_id.to_string(),
             l1_client_id: self.l1_client_id.clone(),
             l1_contract_address: self.l1_settlement_address,
@@ -176,13 +177,11 @@ impl ConsensusModuleServer for Module {
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_consensus_state(&self, _: &Extensions, _height: Height) -> RpcResult<Value> {
-        Ok(
-            serde_json::to_value(movement::consensus_state::ConsensusState {
-                state_root: Default::default(),
-                timestamp: 1000,
-                state_proof_hash: Default::default(),
-            })
-            .expect("infallible"),
-        )
+        Ok(serde_json::to_value(ConsensusState {
+            state_root: Default::default(),
+            timestamp: 1000,
+            state_proof_hash: Default::default(),
+        })
+        .expect("infallible"))
     }
 }

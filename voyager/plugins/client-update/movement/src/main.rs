@@ -18,10 +18,7 @@ use unionlabs::{
     hash::{hash_v2::Hash, H160},
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-            movement,
-        },
+        lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
     },
     id::ClientId,
     uint::U256,
@@ -222,7 +219,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 revision_height: to,
                             },
                         },
-                        serde_json::to_value(movement::header::Header {
+                        serde_json::to_value(movement_light_client_types::Header {
                             // dummy value for now, until movement settles on a public L1
                             // 0-1, otherwise it's omitted in the proto encoding(?)
                             l1_height: Height::default().increment(),
@@ -292,28 +289,30 @@ impl ConsensusModuleServer for Module {
             .unwrap()
             .to_owned();
 
-        Ok(serde_json::to_value(movement::client_state::ClientState {
-            chain_id: self.chain_id.to_string(),
-            l1_client_id: self.l1_client_id.clone(),
-            l1_contract_address: self.l1_settlement_address,
-            l2_contract_address: self.ibc_handler_address,
-            table_handle: AccountAddress(Hash::new(
-                U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
-            )),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_block_num: height.revision_height,
-        })
-        .expect("infallible"))
+        Ok(
+            serde_json::to_value(movement_light_client_types::ClientState {
+                chain_id: self.chain_id.to_string(),
+                l1_client_id: self.l1_client_id.clone(),
+                l1_contract_address: self.l1_settlement_address,
+                l2_contract_address: self.ibc_handler_address,
+                table_handle: AccountAddress(Hash::new(
+                    U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
+                )),
+                frozen_height: Height {
+                    revision_number: 0,
+                    revision_height: 0,
+                },
+                latest_block_num: height.revision_height,
+            })
+            .expect("infallible"),
+        )
     }
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_consensus_state(&self, _: &Extensions, _height: Height) -> RpcResult<Value> {
         Ok(
-            serde_json::to_value(movement::consensus_state::ConsensusState {
+            serde_json::to_value(movement_light_client_types::ConsensusState {
                 state_root: Default::default(),
                 timestamp: 1000,
                 state_proof_hash: Default::default(),
@@ -327,7 +326,7 @@ pub async fn get_lc_header(
     movement_rest_url: &str,
     from: u64,
     to: u64,
-) -> movement::header::Header {
+) -> movement_light_client_types::Header {
     let client = reqwest::Client::new();
 
     let state_proof: StateProofResponse = client
@@ -339,7 +338,7 @@ pub async fn get_lc_header(
         .await
         .unwrap();
 
-    movement::header::Header {
+    movement_light_client_types::Header {
         // dummy value for now, until movement settles on a public L1
         // 0-1, otherwise it's omitted in the proto encoding(?)
         l1_height: Height::default().increment(),

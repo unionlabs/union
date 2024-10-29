@@ -41,6 +41,7 @@ futures                       = { workspace = true, features = ["async-await"] }
 hex                           = { workspace = true }
 itertools                     = "0.13.0"
 lazy_static                   = { workspace = true }
+movement-light-client-types   = { workspace = true, features = ["proto"] }
 num-traits                    = "0.2.19"
 prometheus                    = { version = "0.13.3", features = ["process"] }
 prost                         = { workspace = true }

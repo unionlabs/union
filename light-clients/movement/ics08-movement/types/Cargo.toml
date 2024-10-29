@@ -1,0 +1,20 @@
+[package]
+edition = "2021"
+name    = "movement-light-client-types"
+version = "0.1.0"
+
+[dependencies]
+protos         = { workspace = true, optional = true, features = ["union+ibc+lightclients+movement+v1"] }
+rlp            = { workspace = true, features = ["derive"] }
+serde          = { workspace = true, optional = true, features = ["derive"] }
+sha3.workspace = true
+thiserror      = { workspace = true }
+unionlabs      = { workspace = true }
+
+[features]
+default = ["proto"]
+proto   = ["unionlabs/proto", "dep:protos"]
+serde   = ["dep:serde"]
+
+[dev-dependencies]
+hex-literal = { workspace = true }
