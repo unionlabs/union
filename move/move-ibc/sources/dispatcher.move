@@ -1,4 +1,3 @@
-
 module ibc::dispatcher {
     use std::option;
     use std::string;
@@ -20,28 +19,30 @@ module ibc::dispatcher {
         /// Tracks the input type to the dispatch handler.
         dispatcher: Table<TypeInfo, Object<Metadata>>,
         /// Used to store temporary data for dispatching.
-        obj_ref: ExtendRef,
+        obj_ref: ExtendRef
     }
 
     /// Store the data to dispatch here.
     struct Storage<phantom P, T> has drop, key {
-        data: T,
+        data: T
     }
 
     /// Register a `T` to callback. Providing an instance of `T` guarantees that only the
     /// originating module can call `register` for that type.
     public fun register<T: drop>(callback: FunctionInfo, _proof: T) acquires Dispatcher {
-        let constructor_ref = object::create_named_object(&storage_signer(), DISPATCHER_APP_SEED);
+        let constructor_ref =
+            object::create_named_object(&storage_signer(), DISPATCHER_APP_SEED);
 
-        let metadata = fungible_asset::add_fungibility(
-            &constructor_ref,
-            option::none(),
-            string::utf8(b"dis"),
-            string::utf8(b"dis"),
-            0,
-            string::utf8(b""),
-            string::utf8(b""),
-        );
+        let metadata =
+            fungible_asset::add_fungibility(
+                &constructor_ref,
+                option::none(),
+                string::utf8(b"dis"),
+                string::utf8(b"dis"),
+                0,
+                string::utf8(b""),
+                string::utf8(b"")
+            );
 
         fungible_asset::create_store(&constructor_ref, metadata); //its required to create store for fungible asset
 
@@ -49,7 +50,7 @@ module ibc::dispatcher {
             &constructor_ref,
             option::none(),
             option::none(),
-            option::some(callback),
+            option::some(callback)
         );
 
         let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
@@ -73,24 +74,27 @@ module ibc::dispatcher {
     }
 
     /// Prepares the dispatch table.
-    fun init_module(publisher: &signer)  {
-        let constructor_ref = &object::create_named_object(publisher, DISPATCHER_APP_SEED);
+    fun init_module(publisher: &signer) {
+        let constructor_ref = &object::create_named_object(
+            publisher, DISPATCHER_APP_SEED
+        );
         let vault_signer = &object::generate_signer(constructor_ref);
 
         move_to(
             vault_signer,
             Dispatcher {
                 dispatcher: table::new(),
-                obj_ref: object::generate_extend_ref(constructor_ref),
+                obj_ref: object::generate_extend_ref(constructor_ref)
             }
         );
     }
 
     inline fun storage_address(): address acquires Dispatcher {
         // object::address_from_extend_ref(&borrow_global<Dispatcher>(get_vault_addr()).obj_ref)
-        object::address_from_extend_ref(&borrow_global<Dispatcher>(get_vault_addr()).obj_ref)
+        object::address_from_extend_ref(
+            &borrow_global<Dispatcher>(get_vault_addr()).obj_ref
+        )
     }
-
 
     #[view]
     public fun get_vault_addr(): address {
@@ -102,9 +106,7 @@ module ibc::dispatcher {
         object::generate_signer_for_extending(&vault.obj_ref)
     }
 
-
-    
     public fun init_module_for_testing(publisher: &signer) {
         init_module(publisher);
-    }   
+    }
 }
