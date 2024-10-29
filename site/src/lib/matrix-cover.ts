@@ -1,19 +1,19 @@
 import * as glMatrix from "gl-matrix"
 
-let currentPlaneRotation = 0;
-let targetPlaneRotation = 0;
-let isRotating = false;
-let rotationStartTime = 0;
-const ROTATION_DURATION = 1500;
-const EASE_POWER = 4;
+let currentPlaneRotation = 0
+let targetPlaneRotation = 0
+let isRotating = false
+let rotationStartTime = 0
+const ROTATION_DURATION = 1500
+const EASE_POWER = 4
 
 export function rotateCamera() {
   if (isRotating) {
-    targetPlaneRotation += Math.PI / 2;
+    targetPlaneRotation += Math.PI / 2
   } else {
-    isRotating = true;
-    rotationStartTime = performance.now();
-    targetPlaneRotation = currentPlaneRotation + Math.PI / 2;
+    isRotating = true
+    rotationStartTime = performance.now()
+    targetPlaneRotation = currentPlaneRotation + Math.PI / 2
   }
 }
 
@@ -312,74 +312,75 @@ function initWebGL() {
 
   // Draw scene
   function drawScene(gl, programInfo, buffers, cubePositions, totalTime) {
-    gl.viewport(0, 0, displayWidth, displayHeight);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
+    gl.viewport(0, 0, displayWidth, displayHeight)
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    gl.clearDepth(1.0)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
 
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    const fieldOfView = (50 * Math.PI) / 180;
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const zNear = 0.1;
-    const zFar = 100.0;
-    const projectionMatrix = glMatrix.mat4.create();
+    const fieldOfView = (50 * Math.PI) / 180
+    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight
+    const zNear = 0.1
+    const zFar = 100.0
+    const projectionMatrix = glMatrix.mat4.create()
 
-    glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+    glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar)
 
     // Create separate matrices for camera and plane transformations
-    const cameraMatrix = glMatrix.mat4.create();
-    const modelMatrix = glMatrix.mat4.create();
+    const cameraMatrix = glMatrix.mat4.create()
+    const modelMatrix = glMatrix.mat4.create()
 
     // Handle rotation animation
     if (isRotating) {
-      const elapsed = performance.now() - rotationStartTime;
-      const progress = Math.min(elapsed / ROTATION_DURATION, 1);
+      const elapsed = performance.now() - rotationStartTime
+      const progress = Math.min(elapsed / ROTATION_DURATION, 1)
 
-      let easeProgress;
+      let easeProgress
       if (progress < 0.5) {
         // Ease-in (start slow, accelerate)
-        easeProgress = Math.pow(progress * 2, EASE_POWER) / 2;
+        easeProgress = Math.pow(progress * 2, EASE_POWER) / 2
       } else {
         // Ease-out (decelerate to end)
-        easeProgress = 1 - Math.pow(2 - progress * 2, EASE_POWER) / 2;
+        easeProgress = 1 - Math.pow(2 - progress * 2, EASE_POWER) / 2
       }
 
-      currentPlaneRotation = currentPlaneRotation + (targetPlaneRotation - currentPlaneRotation) * easeProgress;
+      currentPlaneRotation =
+        currentPlaneRotation + (targetPlaneRotation - currentPlaneRotation) * easeProgress
 
       if (progress >= 1) {
-        isRotating = false;
-        currentPlaneRotation = targetPlaneRotation; // Ensure we end at exact target
+        isRotating = false
+        currentPlaneRotation = targetPlaneRotation // Ensure we end at exact target
       }
     }
 
     // Smooth out mouse movement
-    mouseX += (targetMouseX - mouseX) * 0.1;
-    mouseY += (targetMouseY - mouseY) * 0.1;
+    mouseX += (targetMouseX - mouseX) * 0.1
+    mouseY += (targetMouseY - mouseY) * 0.1
 
     // Set up camera view
-    glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16]);
+    glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
 
     // Apply camera rotations (fixed angle + mouse movement)
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0]);
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0]);
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
 
     // Apply plane rotation to model matrix
-    glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0]);
+    glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0])
 
     // Combine camera and model matrices
-    const modelViewMatrix = glMatrix.mat4.create();
-    glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix);
+    const modelViewMatrix = glMatrix.mat4.create()
+    glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix)
 
     // Set up attribute buffers
     {
-      const numComponents = 3;
-      const type = gl.FLOAT;
-      const normalize = false;
-      const stride = 0;
-      const offset = 0;
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+      const numComponents = 3
+      const type = gl.FLOAT
+      const normalize = false
+      const stride = 0
+      const offset = 0
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position)
       gl.vertexAttribPointer(
         programInfo.attribLocations.vertexPosition,
         numComponents,
@@ -387,17 +388,17 @@ function initWebGL() {
         normalize,
         stride,
         offset
-      );
-      gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+      )
+      gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition)
     }
 
     {
-      const numComponents = 4;
-      const type = gl.FLOAT;
-      const normalize = false;
-      const stride = 0;
-      const offset = 0;
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+      const numComponents = 4
+      const type = gl.FLOAT
+      const normalize = false
+      const stride = 0
+      const offset = 0
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
       gl.vertexAttribPointer(
         programInfo.attribLocations.vertexColor,
         numComponents,
@@ -405,37 +406,37 @@ function initWebGL() {
         normalize,
         stride,
         offset
-      );
-      gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+      )
+      gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor)
     }
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.useProgram(programInfo.program);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices)
+    gl.useProgram(programInfo.program)
 
-    gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
+    gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix)
 
     // Draw cubes
     for (let i = 0; i < cubePositions.length; i++) {
-      const cubeMatrix = glMatrix.mat4.create();
-      const [x, _, z] = cubePositions[i];
-      glMatrix.mat4.translate(cubeMatrix, modelViewMatrix, cubePositions[i]);
+      const cubeMatrix = glMatrix.mat4.create()
+      const [x, _, z] = cubePositions[i]
+      glMatrix.mat4.translate(cubeMatrix, modelViewMatrix, cubePositions[i])
 
       // Apply wave motion
-      const waveOffset = calculateWaveOffset(x, z, totalTime);
-      glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset * 1.2, 0]);
+      const waveOffset = calculateWaveOffset(x, z, totalTime)
+      glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset * 1.2, 0])
 
       // Set y-offset uniform for fading
-      gl.uniform1f(programInfo.uniformLocations.yOffset, waveOffset);
+      gl.uniform1f(programInfo.uniformLocations.yOffset, waveOffset)
 
       // Scale down the cubes
-      glMatrix.mat4.scale(cubeMatrix, cubeMatrix, [0.4, 0.4, 0.4]);
+      glMatrix.mat4.scale(cubeMatrix, cubeMatrix, [0.4, 0.4, 0.4])
 
-      gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, cubeMatrix);
+      gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, cubeMatrix)
 
-      const vertexCount = 36;
-      const type = gl.UNSIGNED_SHORT;
-      const offset = 0;
-      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+      const vertexCount = 36
+      const type = gl.UNSIGNED_SHORT
+      const offset = 0
+      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset)
     }
   }
 
