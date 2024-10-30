@@ -3,7 +3,7 @@ module ibc::sample_ibc {
 
     use aptos_framework::function_info;
 
-    use ibc::dynamic_dispatch_app;
+    use ibc::ping_pong_app;
     use ibc::dynamic_dispatch_app2;
     use ibc::dispatcher;
     use ibc::engine;
@@ -89,20 +89,11 @@ module ibc::sample_ibc {
 
 
     #[test(publisher = @ibc)]
-    #[expected_failure(abort_code = 0)]
     fun test_register(publisher: &signer) {
         setup(publisher);
 
         let param =
-            dynamic_dispatch_app::new_dynamic_dispatch_param(
-                14,
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
+            ping_pong_app::new_dynamic_dispatch_param(
                 option::none(),
                 option::none(),
                 option::none(),
@@ -114,7 +105,7 @@ module ibc::sample_ibc {
                 option::none()
             );
 
-        engine::dispatch<dynamic_dispatch_app::PingPongProof, dynamic_dispatch_app::DynamicDispatchParam>(
+        engine::dispatch<ping_pong_app::PingPongProof, ping_pong_app::DynamicDispatchParam>(
             param
         );
 
@@ -151,10 +142,10 @@ module ibc::sample_ibc {
         let cb =
             function_info::new_function_info(
                 publisher,
-                string::utf8(b"dynamic_dispatch_app"),
+                string::utf8(b"ping_pong_app"),
                 string::utf8(b"on_packet")
             );
-        dispatcher::register<dynamic_dispatch_app::PingPongProof>(cb, dynamic_dispatch_app::new_ping_pong_proof(), b"something");
+        dispatcher::register<ping_pong_app::PingPongProof>(cb, ping_pong_app::new_ping_pong_proof(), b"something");
 
         let cb =
             function_info::new_function_info(
