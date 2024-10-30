@@ -943,7 +943,19 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let fields_map = fields
         .named
         .iter()
-        .map(|f| (f.ident.as_ref().unwrap(), &f.ty))
+        .map(|f| {
+            (
+                f.ident.as_ref().unwrap(),
+                (
+                    &f.ty,
+                    f.attrs.iter().find_map(|attr| {
+                        attr.path()
+                            .is_ident("ibc_path")
+                            .then(|| attr.parse_args::<Expr>().unwrap())
+                    }),
+                ),
+            )
+        })
         .collect::<HashMap<_, _>>();
 
     let parse_body = segments
@@ -963,12 +975,23 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             },
             Segment::Variable(variable_seg) => {
-                let ty = fields_map[variable_seg];
+                let (ty, parse) = &fields_map[variable_seg];
+
+                let expr = match parse {
+                    Some(parse) => quote! {
+                        (#parse)(segment)
+                            .map_err(|e| PathParseError::Parse(e.to_string()))?
+                    },
+                    None => quote! {
+                        segment
+                            .parse()
+                            .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?
+                    }
+                };
+
                 quote! {
                     let #variable_seg = match it.next() {
-                        Some(segment) => segment
-                            .parse()
-                            .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?,
+                        Some(segment) => #expr,
                         None => return Err(PathParseError::MissingSegment),
                     };
                 }
@@ -980,7 +1003,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
         .iter()
         .map(|x| match x {
             Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].span()=>
+            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].0.span()=>
                 let #variable_seg = &self.#variable_seg;
             },
         })
@@ -994,8 +1017,14 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
     let ident = &item_struct.ident;
 
+    let mut item_struct = item_struct.clone();
+    item_struct
+        .fields
+        .iter_mut()
+        .for_each(|f| f.attrs.retain(|a| !a.path().is_ident("ibc_path")));
+
     quote! {
-        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
         #[serde(deny_unknown_fields)]
         #item_struct
 
@@ -1072,7 +1101,7 @@ fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
                 })
                 .map_or_else(
                     || Segment::Static(segment.to_string()),
-                    |s| Segment::Variable(Ident::new(s, path.span())),
+                    |s| Segment::Variable(Ident::new(s.split(':').next().unwrap(), path.span())),
                 )
         })
         .collect()

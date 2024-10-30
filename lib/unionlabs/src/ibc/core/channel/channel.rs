@@ -9,8 +9,7 @@ use crate::{
         order::Order,
         state::State,
     },
-    id::{ConnectionId, ConnectionIdValidator},
-    validated::{Validate, ValidateT},
+    id::{ConnectionId, ParsePrefixedIdError},
 };
 
 #[model(
@@ -35,7 +34,7 @@ impl From<Channel> for protos::ibc::core::channel::v1::Channel {
             connection_hops: value
                 .connection_hops
                 .into_iter()
-                .map(|x| x.to_string())
+                .map(|x| x.to_string_prefixed())
                 .collect(),
             version: value.version,
         }
@@ -53,7 +52,7 @@ pub enum TryFromChannelError {
     #[error("invalid ordering")]
     Ordering(#[source] UnknownEnumVariant<i32>),
     #[error("invalid connection_hops")]
-    ConnectionHops(#[from] <ConnectionIdValidator as Validate<String>>::Error),
+    ConnectionHops(#[from] ParsePrefixedIdError),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
@@ -69,7 +68,7 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
             connection_hops: proto
                 .connection_hops
                 .into_iter()
-                .map(ValidateT::validate)
+                .map(|c| ConnectionId::from_str_prefixed(&c))
                 .collect::<Result<_, _>>()
                 .map_err(TryFromChannelError::ConnectionHops)?,
             version: proto.version,
@@ -87,7 +86,7 @@ impl From<Channel> for contracts::ibc_handler::IbcCoreChannelV1ChannelData {
             connection_hops: value
                 .connection_hops
                 .into_iter()
-                .map(|x| x.to_string())
+                .map(|x| x.to_string_prefixed())
                 .collect(),
             version: value.version,
         }
@@ -100,7 +99,7 @@ pub enum TryFromEthAbiChannelError {
     State(UnknownEnumVariant<u8>),
     Ordering(UnknownEnumVariant<u8>),
     Counterparty(TryFromEthAbiChannelCounterpartyError),
-    ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
+    ConnectionHops(ParsePrefixedIdError),
 }
 
 #[cfg(feature = "ethabi")]
@@ -126,7 +125,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
             connection_hops: value
                 .connection_hops
                 .into_iter()
-                .map(ValidateT::validate)
+                .map(|c| ConnectionId::from_str_prefixed(&c))
                 .collect::<Result<_, _>>()
                 .map_err(TryFromEthAbiChannelError::ConnectionHops)?,
             version: value.version,

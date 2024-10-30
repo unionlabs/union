@@ -31,7 +31,7 @@ mod tests {
     use hex_literal::hex;
 
     use super::*;
-    use crate::{ics24::ConnectionPath, validated::ValidateT};
+    use crate::{ics24::ConnectionPath, id::ConnectionId};
 
     #[test]
     fn commitment_key() {
@@ -40,14 +40,14 @@ mod tests {
                 U256::from_be_bytes(hex!(
                     "55c4893838cf8a468bfdb0c63e25a4c924d9b7ad283fc335d5f527d29b2fcfc7"
                 )),
-                "connection-100",
+                ConnectionId::new(100),
                 0,
             ),
             (
                 U256::from_be_bytes(hex!(
                     "f39538e1f0ca1c5f5ecdf1bb05f67c173f2d0f75b41fbb5be884f6aab2ebae91"
                 )),
-                "connection-1",
+                ConnectionId::new(1),
                 5,
             ),
         ];
@@ -55,10 +55,7 @@ mod tests {
         for (expected, connection_id, slot) in commitments {
             assert_eq!(
                 ibc_commitment_key(
-                    &ConnectionPath {
-                        connection_id: connection_id.to_owned().validate().unwrap()
-                    }
-                    .to_string(),
+                    &ConnectionPath { connection_id }.to_string(),
                     U256::from(slot),
                 ),
                 expected

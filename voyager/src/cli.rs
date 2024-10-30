@@ -2,14 +2,7 @@ use std::ffi::OsString;
 
 use chain_utils::BoxDynError;
 use clap::{self, Parser, Subcommand};
-use unionlabs::{
-    self,
-    bounded::BoundedI64,
-    ics24::{self, Path},
-    result_unwrap,
-    uint::U256,
-    QueryHeight,
-};
+use unionlabs::{self, bounded::BoundedI64, result_unwrap, QueryHeight};
 use voyager_message::{
     core::ChainId,
     module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
@@ -17,9 +10,9 @@ use voyager_message::{
 };
 use voyager_vm::Op;
 
-use crate::cli::handshake::HandshakeCmd;
+// use crate::cli::handshake::HandshakeCmd;
 
-pub mod handshake;
+// pub mod handshake;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -68,7 +61,7 @@ pub enum Command {
     /// Config related subcommands.
     #[command(subcommand)]
     Config(ConfigCmd),
-    Handshake(HandshakeCmd),
+    // Handshake(HandshakeCmd),
     /// Construct a `FetchBlocks` op to send to the specified chain.
     InitFetch {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
@@ -91,14 +84,14 @@ pub enum Command {
     Plugin(PluginCmd),
     #[command(subcommand)]
     Module(ModuleCmd),
-    Query {
-        #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
-        on: ChainId<'static>,
-        #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
-        height: QueryHeight,
-        #[command(subcommand)]
-        path: ics24::Path,
-    },
+    // Query {
+    //     #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
+    //     on: ChainId<'static>,
+    //     #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
+    //     height: QueryHeight,
+    //     #[command(subcommand)]
+    //     path: ics24::Path,
+    // },
 }
 
 #[derive(Debug, Subcommand)]
@@ -158,13 +151,13 @@ pub enum QueueCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum UtilCmd {
-    /// Compute the EVM IBC commitment key for the given IBC commitment path.
-    IbcCommitmentKey {
-        #[command(subcommand)]
-        path: Path,
-        #[arg(long, default_value_t = U256::ZERO)]
-        commitment_slot: U256,
-    },
+    // /// Compute the EVM IBC commitment key for the given IBC commitment path.
+    // IbcCommitmentKey {
+    //     #[command(subcommand)]
+    //     path: Path,
+    //     #[arg(long, default_value_t = U256::ZERO)]
+    //     commitment_slot: U256,
+    // },
 }
 
 #[derive(Debug, Subcommand)]

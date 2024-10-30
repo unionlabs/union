@@ -493,7 +493,8 @@ pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
                 %chain_id,
                 %message.client_id,
                 %message.counterparty.client_id,
-                message.counterparty.connection_id = %message.counterparty.connection_id.as_deref().unwrap_or_default(),
+                // TODO: Use Valuable here
+                ?message.counterparty.connection_id,
                 message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
                 %message.version.identifier,
                 message.version.features = %message
@@ -511,7 +512,8 @@ pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
                 %chain_id,
                 %message.client_id,
                 %message.counterparty.client_id,
-                message.counterparty.connection_id = %message.counterparty.connection_id.as_deref().unwrap_or_default(),
+                // TODO: Use Valuable here
+                ?message.counterparty.connection_id,
                 message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
                 %message.delay_period,
                 // TODO: This needs `valuable`
@@ -556,7 +558,8 @@ pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
                 %message.channel.state,
                 %message.channel.ordering,
                 %message.channel.counterparty.port_id,
-                %message.channel.counterparty.channel_id,
+                // TODO: Use Valuable here
+                ?message.channel.counterparty.channel_id,
                 message.channel.connection_hops = %message
                     .channel
                     .connection_hops
@@ -575,7 +578,8 @@ pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
                 %message.channel.state,
                 %message.channel.ordering,
                 %message.channel.counterparty.port_id,
-                %message.channel.counterparty.channel_id,
+                // TODO: Use Valuable here
+                ?message.channel.counterparty.channel_id,
                 message.channel.connection_hops = %message
                     .channel
                     .connection_hops

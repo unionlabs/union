@@ -13,7 +13,6 @@ use unionlabs::{
         client::height::Height,
     },
     id::{ChannelId, ConnectionId, PortId},
-    validated::ValidateT,
 };
 
 #[near_bindgen]
@@ -75,7 +74,7 @@ impl Contract {
     pub fn ping(ibc_addr: AccountId, source_channel: ChannelId) -> Promise {
         ext_ibc::ext(ibc_addr)
             .send_packet(
-                env::current_account_id().to_string().validate().unwrap(),
+                PortId::new(env::current_account_id().to_string()).unwrap(),
                 source_channel,
                 Height::new(1_000_000_000),
                 0,

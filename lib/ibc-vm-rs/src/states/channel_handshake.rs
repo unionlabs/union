@@ -12,7 +12,6 @@ use unionlabs::{
         NextSequenceSendPath,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    validated::ValidateT,
 };
 
 use crate::{
@@ -277,7 +276,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     ordering: Order::Unordered,
                     counterparty: channel::counterparty::Counterparty {
                         port_id: port_id.clone(),
-                        channel_id: "".to_string(),
+                        channel_id: None,
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
@@ -307,8 +306,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                                     key_path: vec![
                                         "ibc".to_string(),
                                         format!(
-                                            "channelEnds/ports/{}/channels/{}",
-                                            counterparty.port_id, counterparty.channel_id
+                                            "channelEnds/ports/{}/channels/{:#}",
+                                            counterparty.port_id,
+                                            counterparty.channel_id.unwrap()
                                         ),
                                     ],
                                 },
@@ -421,7 +421,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
-                        counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
+                        counterparty_channel_id: counterparty.channel_id.unwrap(),
                         connection_id: connection_hops[0].clone(),
                         version,
                     })],
@@ -526,9 +526,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     state: channel::state::State::Tryopen,
                     ordering: Order::Unordered,
                     counterparty: channel::counterparty::Counterparty {
-                        // TODO(aeryz): make port id a validator type
                         port_id: port_id.clone(),
-                        channel_id: channel_id.clone().to_string(),
+                        channel_id: Some(channel_id.clone()),
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
@@ -628,7 +627,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
 
                 channel.state = channel::state::State::Open;
                 channel.version = counterparty_version;
-                channel.counterparty.channel_id = counterparty_channel_id.clone();
+                channel.counterparty.channel_id =
+                    Some(ChannelId::from_str_prefixed(&counterparty_channel_id).unwrap());
 
                 let counterparty_port_id = channel.counterparty.port_id.clone();
                 let connection_id = channel.connection_hops[0].clone();
@@ -640,7 +640,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_port_id,
-                        counterparty_channel_id: counterparty_channel_id.validate().unwrap(),
+                        counterparty_channel_id: ChannelId::from_str_prefixed(
+                            &counterparty_channel_id,
+                        )
+                        .unwrap(),
                         connection_id,
                     })],
                     IbcVmResponse::Empty,
@@ -738,9 +741,8 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     state: channel::state::State::Open,
                     ordering: Order::Unordered,
                     counterparty: channel::counterparty::Counterparty {
-                        // TODO(aeryz): make port id a validator type
                         port_id: port_id.clone(),
-                        channel_id: channel_id.clone().to_string(),
+                        channel_id: Some(channel_id.clone()),
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: channel.version,
@@ -768,9 +770,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                                     key_path: vec![
                                         "ibc".to_string(),
                                         format!(
-                                            "channelEnds/ports/{}/channels/{}",
+                                            "channelEnds/ports/{}/channels/{:#}",
                                             channel.counterparty.port_id,
-                                            channel.counterparty.channel_id,
+                                            channel.counterparty.channel_id.unwrap(),
                                         ),
                                     ],
                                 },
@@ -845,7 +847,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                             port_id,
                             channel_id,
                             counterparty_port_id: counterparty.port_id,
-                            counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
+                            counterparty_channel_id: counterparty.channel_id.unwrap(),
                             connection_id,
                         },
                     )],

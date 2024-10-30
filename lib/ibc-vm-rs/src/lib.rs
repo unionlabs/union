@@ -120,7 +120,7 @@ pub trait IbcHost: Sized {
 
     fn next_channel_identifier(&mut self) -> Result<ChannelId, Self::Error>;
 
-    fn client_state(&self, client_id: &str) -> Option<Vec<u8>>;
+    fn client_state(&self, client_id: &ClientId) -> Option<Vec<u8>>;
 
     fn read<T: Decode<Proto>>(&self, path: &Path) -> Option<T>;
 

@@ -23,12 +23,10 @@ use clap::Parser;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
-use serde_json::json;
-use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use unionlabs::{ethereum::ibc_commitment_key, ics24, QueryHeight};
+use unionlabs::QueryHeight;
 use voyager_message::{
     call::FetchBlocks,
     context::{get_plugin_info, Context, ModulesConfig},
@@ -41,7 +39,7 @@ use voyager_vm::{call, filter::FilterResult, Op, Queue};
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd, UtilCmd},
+    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
     queue::{QueueConfig, Voyager, VoyagerInitError},
 };
@@ -255,63 +253,63 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             ModuleCmd::Consensus(_) => todo!(),
             ModuleCmd::Client(_) => todo!(),
         },
-        Command::Query { on, height, path } => {
-            let voyager = Voyager::new(get_voyager_config()?).await?;
+        // Command::Query { on, height, path } => {
+        //     let voyager = Voyager::new(get_voyager_config()?).await?;
 
-            let height = voyager.context.rpc_server.query_height(&on, height).await?;
+        //     let height = voyager.context.rpc_server.query_height(&on, height).await?;
 
-            let state = voyager
-                .context
-                .rpc_server
-                .query_ibc_state(&on, height, path.clone())
-                .await?
-                .state;
+        //     let state = voyager
+        //         .context
+        //         .rpc_server
+        //         .query_ibc_state(&on, height, path.clone())
+        //         .await?
+        //         .state;
 
-            let state = match &path {
-                ics24::Path::ClientState(path) => {
-                    let client_info = voyager
-                        .context
-                        .rpc_server
-                        .client_info(&on, path.client_id.clone())
-                        .await?;
+        //     let state = match &path {
+        //         ics24::Path::ClientState(path) => {
+        //             let client_info = voyager
+        //                 .context
+        //                 .rpc_server
+        //                 .client_info(&on, path.client_id.clone())
+        //                 .await?;
 
-                    voyager
-                        .context
-                        .rpc_server
-                        .decode_client_state(
-                            &client_info.client_type,
-                            &client_info.ibc_interface,
-                            serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
-                        )
-                        .await?
-                }
-                ics24::Path::ClientConsensusState(path) => {
-                    let client_info = voyager
-                        .context
-                        .rpc_server
-                        .client_info(&on, path.client_id.clone())
-                        .await?;
+        //             voyager
+        //                 .context
+        //                 .rpc_server
+        //                 .decode_client_state(
+        //                     &client_info.client_type,
+        //                     &client_info.ibc_interface,
+        //                     serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
+        //                 )
+        //                 .await?
+        //         }
+        //         ics24::Path::ClientConsensusState(path) => {
+        //             let client_info = voyager
+        //                 .context
+        //                 .rpc_server
+        //                 .client_info(&on, path.client_id.clone())
+        //                 .await?;
 
-                    voyager
-                        .context
-                        .rpc_server
-                        .decode_consensus_state(
-                            &client_info.client_type,
-                            &client_info.ibc_interface,
-                            serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
-                        )
-                        .await?
-                }
-                _ => state,
-            };
+        //             voyager
+        //                 .context
+        //                 .rpc_server
+        //                 .decode_consensus_state(
+        //                     &client_info.client_type,
+        //                     &client_info.ibc_interface,
+        //                     serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
+        //                 )
+        //                 .await?
+        //         }
+        //         _ => state,
+        //     };
 
-            voyager.shutdown().await;
+        //     voyager.shutdown().await;
 
-            print_json(&json!({
-               "path": path.to_string(),
-               "state": state,
-            }));
-        }
+        //     print_json(&json!({
+        //        "path": path.to_string(),
+        //        "state": state,
+        //     }));
+        // }
         Command::Queue(cli_msg) => {
             let db = match get_voyager_config()?.voyager.queue {
                 QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?,
@@ -362,7 +360,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 }
             }
         }
-        Command::Handshake(_) => todo!(),
         // Command::Handshake(HandshakeCmd {
         //     chain_a,
         //     chain_b,
@@ -477,10 +474,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             }
         }
         Command::Util(util) => match util {
-            UtilCmd::IbcCommitmentKey {
-                path,
-                commitment_slot,
-            } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
+            // UtilCmd::IbcCommitmentKey {
+            //     path,
+            //     commitment_slot,
+            // } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
         },
     }
 

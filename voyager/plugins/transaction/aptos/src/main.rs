@@ -403,7 +403,11 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                             .collect::<Vec<String>>(),
                         data.channel.ordering as u8,
                         data.channel.counterparty.port_id.to_string(),
-                        data.channel.counterparty.channel_id,
+                        data.channel
+                            .counterparty
+                            .channel_id
+                            .unwrap()
+                            .to_string_prefixed(),
                         data.channel.version,
                     ),
                 ),
@@ -420,7 +424,11 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                             .collect::<Vec<String>>(),
                         data.channel.ordering as u8,
                         data.channel.counterparty.port_id.to_string(),
-                        data.channel.counterparty.channel_id,
+                        data.channel
+                            .counterparty
+                            .channel_id
+                            .unwrap()
+                            .to_string_prefixed(),
                         data.counterparty_version,
                         data.channel.version,
                         data.proof_init,
