@@ -1,0 +1,11 @@
+---
+interface Props {
+  gapless?: boolean
+}
+
+const { gapless } = Astro.props
+---
+
+<main class:list={["flex flex-col relative", {"gap-8 md:gap-16 lg:gap-32 my-8 md:my-16 lg:my-32": !gapless}]}>
+	<slot />
+</main>

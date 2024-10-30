@@ -3,8 +3,8 @@
 import { contentfulClient } from "../lib/contentful/client.ts"
 import type { LandingPageSkeleton, LandingPageFields } from "../lib/contentful/types.ts"
 
+import SectionsContainer from "#/components/SectionsContainer.astro"
 import ContainedSection from "../components//ContainedSection.astro"
-import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import ConsensusSection from "../components/sections/landing/ConsensusSection.astro"
 import ZkSection from "../components/sections/landing/ZkSection.astro"
 import ExecutionSection from "../components/sections/landing/ExecutionSection.astro"
@@ -31,7 +31,7 @@ import partner_polygon from "#/assets/images/marquee/partners/polygon.png"
 import partner_movement from "#/assets/images/marquee/partners/movement.png"
 import partner_bera from "#/assets/images/marquee/partners/bera.png"
 import partner_arbitrum from "#/assets/images/marquee/partners/arbitrum.png"
-import BorderIntro from "../components/sections/landing/BorderIntro.astro"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
 
 export const prerender = false
 
@@ -81,39 +81,35 @@ try {
 }
 ---
 
-<SectionsLayout>
   {error ? (
           <div class="error-message">
             <h2>Error</h2>
             <p>{error}</p>
           </div>
   ) : landingData ? (
-          <>
-            <BorderIntro
-                    title={landingData.firstTitle}
-                    text={landingData.firstText}
-            />
-            <ConsensusSection
-                    title={landingData.secondTitle}
-                    text={landingData.secondText}
-            />
-            <ZkSection
-                    title={landingData.thirdTitle}
-                    text={landingData.thirdText}
-            />
-            <ExecutionSection
-                    title={landingData.fourthTitle}
-                    text={landingData.fourthText}
-            />
-            <ContainedSection>
-              <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
-              <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
-            </ContainedSection>
-          </>
+          <AnimationLayout title="Join the union" text="The next generation of aggregation, interoperability, and chain abstraction.">
+            <SectionsContainer>
+              <ConsensusSection
+                      title={landingData.secondTitle}
+                      text={landingData.secondText}
+              />
+              <ZkSection
+                      title={landingData.thirdTitle}
+                      text={landingData.thirdText}
+              />
+              <ExecutionSection
+                      title={landingData.fourthTitle}
+                      text={landingData.fourthText}
+              />
+              <ContainedSection>
+                <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
+                <MarqueeSection title={"Our partners."} reverse={true} data={partners} />
+              </ContainedSection>
+            </SectionsContainer>
+          </AnimationLayout>
   ) : (
           <div class="loading-message">
             <p>Loading content...</p>
           </div>
   )}
-</SectionsLayout>
 

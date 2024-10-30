@@ -1,26 +1,36 @@
 ---
-import unionLogo from "#/assets/union-logo/logo.svg"
 import { Icon } from "astro-icon/components"
+import ExternalLinkIcon from "./ExternalLinkIcon.astro"
 const menuItems = [
   {
     url: "/learn",
     name: "learn",
-    highlight: false
-  },
-  {
-    url: "https://docs.union.build/",
-    name: "build",
-    highlight: false
+    highlight: false,
+    external: false
   },
   {
     url: "/ecosystem",
     name: "ecosystem",
-    highlight: false
+    highlight: false,
+    external: false
+  },
+  {
+    url: "/blog",
+    name: "blog",
+    highlight: false,
+    external: false
+  },
+  {
+    url: "https://docs.union.build/",
+    name: "docs",
+    highlight: false,
+    external: true
   },
   {
     url: "https://app.union.build",
     name: "testnet",
-    highlight: false
+    highlight: false,
+    external: true
   }
 ]
 ---
@@ -60,7 +70,7 @@ const menuItems = [
 <header
   class="z-[100] w-full flex justify-around"
 >
-  <div class="max-w-[1200px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
+  <div class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
     <a
       href="/"
       id="union-logo"
@@ -98,11 +108,12 @@ const menuItems = [
                 <a
                     href={menuItem.url}
                     class:list={[
-                      "text-normal flex flex-col flex-1 uppercase font-mono font-bold",
+                      "text-normal flex items-center gap-1.5 flex-1 uppercase font-mono font-bold",
                       { "text-accent-500": menuItem.highlight },
                     ]}
                 >
                   {menuItem.name}
+                  {menuItem.external ? <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" /> : ""}
                 </a>
               </li>
           ))
@@ -113,7 +124,7 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://discord.union.build"
           >
-            <Icon name="tabler:brand-discord-filled" color="#fff" size="1.2rem" />
+            <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
             <span class="sr-only">Discord</span>
           </a>
         </li>
@@ -123,7 +134,7 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://github.com/unionlabs/union"
           >
-            <Icon name="tabler:brand-github-filled" color="#fff" size="1.2rem" />
+            <Icon name="tabler:brand-github-filled" color="#fff" size="20px" />
             <span class="sr-only">GitHub</span>
           </a>
         </li>
@@ -133,7 +144,7 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://x.com/union_build"
           >
-            <Icon name="fa6-brands:x-twitter" color="#fff" size="1.1rem" />
+            <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
             <span class="sr-only">X</span>
           </a>
         </li>
@@ -148,7 +159,7 @@ const menuItems = [
         title="Menu"
         class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
-        <Icon name="tabler:menu-2" color="#000000" size="1.2rem" />
+        <Icon name="tabler:menu-2" color="#000000" size="20px" />
       </button>
 
       <ul
@@ -158,8 +169,9 @@ const menuItems = [
         {
           menuItems.map(menuItem => (
             <li class="py-2 px-4">
-              <a href={menuItem.url} class="text-white text-shadow !text-lg text-normal flex flex-col flex-1 uppercase font-mono">
+              <a href={menuItem.url} class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono">
                 {menuItem.name}
+                {menuItem.external ? <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" /> : ""}
               </a>
             </li>
           ))
@@ -172,7 +184,7 @@ const menuItems = [
             class="flex gap-2 text-lg px-4 py-2 uppercase"
           >
             <label>Discord</label>
-            <Icon name="tabler:brand-discord-filled" color="#fff" size="1rem" class="my-auto" />
+            <Icon name="tabler:brand-discord-filled" color="#fff" size="16px" class="my-auto" />
           </a>
         </li>
         <li class="">
@@ -183,7 +195,7 @@ const menuItems = [
             class="flex gap-2 text-lg px-4 py-2 uppercase"
           >
             <label>X.com</label>
-            <Icon name="fa6-brands:x-twitter" color="#fff" size="1.1rem" class="my-auto" />
+            <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" class="my-auto" />
           </a>
         </li>
       </ul>

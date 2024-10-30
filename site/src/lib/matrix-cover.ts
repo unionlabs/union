@@ -1,6 +1,21 @@
 import * as glMatrix from "gl-matrix"
 
-let state: "start" | "rotating" | "main"
+let currentPlaneRotation = 0
+let targetPlaneRotation = 0
+let isRotating = false
+let rotationStartTime = 0
+const ROTATION_DURATION = 1500
+const EASE_POWER = 4
+
+export function rotateCamera() {
+  if (isRotating) {
+    targetPlaneRotation += Math.PI / 2
+  } else {
+    isRotating = true
+    rotationStartTime = performance.now()
+    targetPlaneRotation = currentPlaneRotation + Math.PI / 2
+  }
+}
 
 let canvas: HTMLCanvasElement
 let mouseX = 0
@@ -313,28 +328,49 @@ function initWebGL() {
 
     glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar)
 
-    const modelViewMatrix = glMatrix.mat4.create()
+    // Create separate matrices for camera and plane transformations
+    const cameraMatrix = glMatrix.mat4.create()
+    const modelMatrix = glMatrix.mat4.create()
 
-    // mouseX -= 0.05;
-    // mouseY -= 0.05;
+    // Handle rotation animation
+    if (isRotating) {
+      const elapsed = performance.now() - rotationStartTime
+      const progress = Math.min(elapsed / ROTATION_DURATION, 1)
+
+      let easeProgress: number
+      if (progress < 0.5) {
+        // Ease-in (start slow, accelerate)
+        easeProgress = (progress * 2) ** EASE_POWER / 2
+      } else {
+        // Ease-out (decelerate to end)
+        easeProgress = 1 - (2 - progress * 2) ** EASE_POWER / 2
+      }
+
+      currentPlaneRotation += (targetPlaneRotation - currentPlaneRotation) * easeProgress
+
+      if (progress >= 1) {
+        isRotating = false
+        currentPlaneRotation = targetPlaneRotation // Ensure we end at exact target
+      }
+    }
 
     // Smooth out mouse movement
-    mouseX += (targetMouseX - mouseX) * 0.1
-    mouseY += (targetMouseY - mouseY) * 0.1
+    mouseX += (targetMouseX - mouseX) * 0.5
+    mouseY += (targetMouseY - mouseY) * 0.5
 
-    // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
+    // Set up camera view
+    glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
 
-    // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
-    glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -16])
-    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
-    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
+    // Apply camera rotations (fixed angle + mouse movement)
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
 
-    // Current time since the animation started (you need to define how you get this)
+    // Apply plane rotation to model matrix
+    glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0])
 
-    // Normalize time to a value between 0 and 1
-
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
+    // Combine camera and model matrices
+    const modelViewMatrix = glMatrix.mat4.create()
+    glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix)
 
     // Set up attribute buffers
     {
@@ -374,7 +410,6 @@ function initWebGL() {
     }
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices)
-
     gl.useProgram(programInfo.program)
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix)
@@ -385,7 +420,7 @@ function initWebGL() {
       const [x, _, z] = cubePositions[i]
       glMatrix.mat4.translate(cubeMatrix, modelViewMatrix, cubePositions[i])
 
-      // Apply wave motion with new calculation
+      // Apply wave motion
       const waveOffset = calculateWaveOffset(x, z, totalTime)
       glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset * 1.2, 0])
 
@@ -397,12 +432,10 @@ function initWebGL() {
 
       gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, cubeMatrix)
 
-      {
-        const vertexCount = 36
-        const type = gl.UNSIGNED_SHORT
-        const offset = 0
-        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset)
-      }
+      const vertexCount = 36
+      const type = gl.UNSIGNED_SHORT
+      const offset = 0
+      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset)
     }
   }
 
@@ -487,17 +520,40 @@ function initWebGL() {
   // Update mouse position
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
-    targetMouseX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    targetMouseY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+    const normalizedX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
+    const normalizedY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+
+    // Check if mouse is below the canvas
+    if (event.clientY > rect.bottom) {
+      // Reset to default camera position
+      targetMouseX = 0
+      targetMouseY = 0
+    } else {
+      targetMouseX = normalizedX
+      targetMouseY = normalizedY
+    }
+  }
+
+  // Add mouseleave handler
+  function handleMouseLeave(event) {
+    const rect = canvas.getBoundingClientRect()
+    if (event.clientY > rect.bottom) {
+      targetMouseX = 0
+      targetMouseY = 0
+    }
   }
 
   document.addEventListener("mousemove", updateMousePosition)
+  canvas.addEventListener("mouseleave", handleMouseLeave)
 
-  // Cleanup function
   return () => {
-    canvas.removeEventListener("mousemove", updateMousePosition)
+    document.removeEventListener("mousemove", updateMousePosition)
+    canvas.removeEventListener("mouseleave", handleMouseLeave)
   }
 }
+
+// Initialize WebGL when the component mounts
+document.addEventListener("DOMContentLoaded", initWebGL)
 
 // Initialize WebGL when the component mounts
 document.addEventListener("DOMContentLoaded", initWebGL)

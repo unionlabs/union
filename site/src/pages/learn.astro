@@ -1,10 +1,9 @@
 ---
-import TopSection from "../components/sections/TopSection.astro"
-import SectionsLayout from "../layouts/SectionsLayout.astro"
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro"
 import { contentfulClient } from "../lib/contentful/client.ts"
 import { renderRichText, renderTitle } from "../lib/contentful/render.ts"
 import type { LearningPageFields } from "../lib/contentful/types.ts"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
 
 export const prerender = false
 
@@ -18,7 +17,7 @@ try {
   if (landingEntries.items.length > 0) {
     learningData = landingEntries.items[0].fields
   } else {
-    error = "No landing page data found."
+    error = "No learning page data found."
   }
 } catch (err) {
   console.error("Error fetching Contentful data:", err)
@@ -26,26 +25,17 @@ try {
 }
 ---
 
-<SectionsLayout gapless>
   {error ? (
           <div class="error-message">
             <h2>Error</h2>
             <p>{error}</p>
           </div>
   ) : learningData ? (
-          <TopSection title={renderTitle(learningData.coverTitle)}>
-            <div class="flex flex-col text-center gap-8">
-              <div class="md:text-5xl font-mono uppercase">
-                <Fragment set:html={renderRichText(learningData.coverText)}/>
-              </div>
-              <p class="rotate-90 text-5xl">{'>>>'}</p>
-            </div>
-            <div></div>
-          </TopSection>
-          <DeepDiveSection entries={learningData} />
+          <AnimationLayout title="Learn" text="Connecting projects, people, and products into a unified organism of interoperability.">
+            <DeepDiveSection entries={learningData} />
+          </AnimationLayout>
   ) : (
           <div class="loading-message">
             <p>Loading content...</p>
           </div>
   )}
-</SectionsLayout>

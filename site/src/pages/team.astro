@@ -1,10 +1,7 @@
 ---
 import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.ts"
 import { contentfulClient } from "../lib/contentful/client.ts"
-
-import SectionsLayout from "#/layouts/SectionsLayout.astro"
-import Card from "#/components/Card.astro"
-import TopSection from "../components/sections/TopSection.astro"
+import TeamMember from "#/components/TeamMember.astro"
 
 import vc_galileo from "#/assets/images/investors/galileo.svg"
 import vc_nascent from "#/assets/images/investors/nascent.svg"
@@ -18,6 +15,7 @@ import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
 import ContainedSection from "../components/ContainedSection.astro"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
 
 const teams = [
   {
@@ -104,55 +102,22 @@ try {
 }
 ---
 
-<SectionsLayout gapless title="Union Team">
   {error ? (
           <div class="error-message">
             <h2>Error</h2>
             <p>{error}</p>
           </div>
   ) : teamData ? (
-          <>
-            <TopSection title="Union team">
-              <div class="flex flex-col text-center gap-8">
-                <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of
-                  professionals, working to build
-                  the <span class="text-accent-500">interoperability future.</span></p>
-              </div>
-              <div></div>
-            </TopSection>
-
+          <AnimationLayout title="Meet the team" text="Our team is a global network of professionals, working to build the interoperability future.">
             <ContainedSection>
               <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
-                {teamData.map((person) => (
-                        <Card class="border-none group">
-                          <a
-                                  href={`https://x.com/${person.twitterHandle}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="gap-4 flex flex-col"
-                          >
-                            <div class="object-cover overflow-hidden">
-                              <img
-                                      class="w-full h-auto group-hover:scale-110 transition"
-                                      src={person.profilePicture.fields.file.url}
-                                      alt={`${person.name} - Union worker`}
-                              />
-                            </div>
-                            <div class="leading-tight uppercase font-mono">
-                              <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
-                              <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-                              <div class="text-accent text-lg -mt-1 block">@{person.twitterHandle}</div>
-                            </div>
-                          </a>
-                        </Card>
-                ))}
+                {teamData.map((person) => <TeamMember {person}/>)}
               </div>
             </ContainedSection>
-          </>
+          </AnimationLayout>
   ) : (
           <div class="loading-message">
             <p>Loading content...</p>
           </div>
   )}
-</SectionsLayout>
 
