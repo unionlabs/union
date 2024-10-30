@@ -101,13 +101,36 @@ const slideTextAnimation = {
         grid-area: 4 / 3 / 5 / 6;
         z-index: 4;
     }
+
+    @keyframes slideOutLeft {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
 
 <script>
   import {rotateCamera} from "../lib/matrix-cover";
 
-  document.addEventListener('astro:after-preparation', (e) => {
-    rotateCamera();
+  document.addEventListener('astro:after-preparation', () => {
+    const randomIndex = Math.floor(Math.random() * 4);
+    rotateCamera(randomIndex);
   });
 
   let headerGrid;
