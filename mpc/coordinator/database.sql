@@ -90,7 +90,7 @@ CREATE POLICY allow_insert_self
   FOR INSERT
     TO authenticated
     WITH CHECK (
-      (SELECT auth.uid()) = id AND open_to_public() = false
+      (SELECT auth.uid()) = id
     );
 
 CREATE OR REPLACE FUNCTION waitlist_overwrite_timestamp() RETURNS TRIGGER AS $$
@@ -111,7 +111,7 @@ EXECUTE FUNCTION waitlist_overwrite_timestamp();
 -----------
 CREATE OR REPLACE FUNCTION open_to_public() RETURNS boolean AS $$
 BEGIN
-  RETURN false;
+  RETURN true;
 END
 $$ LANGUAGE plpgsql SET search_path = '';
 
