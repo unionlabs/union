@@ -1,8 +1,213 @@
 ---
-import EcosystemSection from "../components/sections/EcosystemSection.astro"
-import AnimationLayout from "../layouts/AnimationLayout.astro"
+import EcosystemSection from "#/components/sections/EcosystemSection.astro"
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
+import H1 from "#/components/typography/h1.astro"
+import QuoteSubTitle from "#/components/typography/QuoteSubTitle.astro"
+import H3 from "#/components/typography/h3.astro"
+import { contentfulClient } from "#/lib/contentful/client.ts"
+import { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
+
+let ecosystemData: Array<EcosystemFields> | null = null
+let ecosystemCategories: Array<CategoryFields> | null = null
+let error: string | null = null
+
+try {
+  const ecosystemEntries = await contentfulClient.getEntries<EcosystemSkeleton>({
+    content_type: "ecosystem"
+  })
+
+  if (ecosystemEntries.items.length > 0) {
+    ecosystemData = ecosystemEntries.items
+      .map(item => item.fields)
+      .sort((a, b) => a.name?.localeCompare(b.name))
+
+    const allCategories = ecosystemData.flatMap(item => {
+      if (Array.isArray(item.category)) {
+        return item.category.map(cat => {
+          console.log(item)
+          return cat.fields.category
+        })
+      }
+      return []
+    })
+
+    ecosystemCategories = Array.from(new Set(allCategories)).sort()
+  } else {
+    error = "No ecosystem data found."
+  }
+} catch (err) {
+  console.error("Error fetching Contentful data:", err)
+  error = "Failed to load content. Please try again later."
+}
 ---
 
 <AnimationLayout title="Ecosystem" text="Connecting projects, people, and products into a unified organism of interoperability.">
-  <EcosystemSection/>
+  <main class="max-w-8xl p-4 md:p-8 gap-4 place-self-center flex flex-col lg:flex-row">
+    <!-- Search and filters -->
+    <div class="flex flex-col gap-4 max-w-sm">
+      <!-- <H1>Union <span class="text-accent-500">Ecosystem</span></H1> -->
+      <QuoteSubTitle>The Union reef is an ocean of possibilities. Check out who is already swimming with us to
+        build the modular zk future.
+      </QuoteSubTitle>
+      <!-- search input !-->
+      <div><label for="searchInput"></label><input
+            type="text"
+            id="searchInput"
+            placeholder="Search by name..."
+            class="px-4 py-2 border-2 bg-transparent text-white placeholder-white font-mono"
+      /></div>
+
+
+      <div class="col-span-1">
+        <button
+                id="filterToggle"
+                class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center lg:hidden"
+        >
+          Filter
+          <svg
+                  class="w-5 h-5 transform transition-transform duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </button>
+
+        <div id="filterContent" class="hidden lg:block">
+          {ecosystemCategories.map(category => (
+                  <div class="mb-2">
+                    <label class="inline-flex items-center cursor-pointer font-mono uppercase">
+                      <input
+                              type="checkbox"
+                              name="category"
+                              value={category}
+                              class="sr-only peer"
+                      />
+                      <div
+                              class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
+                     peer-checked:bg-accent-500 peer-checked:border-accent-500
+                     bg-transparent transition-colors duration-200 ease-in-out mr-2"
+                      >
+                        <svg
+                                class="w-3 h-3 text-white hidden peer-checked:block"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M5 13l4 4L19 7"
+                          ></path>
+                        </svg>
+                      </div>
+                      {category}
+                    </label>
+                  </div>
+          ))}
+        </div>
+      </div>  
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="cards-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+      {ecosystemData.map(item => (
+              <a href={item.url} target="_blank" class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full max-w-[250px] aspect-[3/4]">
+                <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
+                <img
+                        src={item.background.fields.file.url}
+                        alt={item.name}
+                        class="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
+                  <div class="flex w-full justify-between items-center">
+                    <div class="flex flex-col gap-1">
+                      {item.category.map(cat => (
+                              <span class="text-sm bg-white text-black uppercase font-mono font-bold px-2 py-1" id="card-cat">{cat.fields.category}</span>
+                      ))}
+                    </div>
+                    <img
+                            src={item.logo.fields.file.url}
+                            alt={`${item.name} logo`}
+                            class="w-24 h-24 object-contain"
+                    />
+                  </div>
+                  <H3 class="text-lg font-semibold">{item.name}</H3>
+                </div>
+              </a>
+      ))}
+    </div>
+
+  </main>
 </AnimationLayout>
+
+
+
+
+<script>
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+  const cards = document.querySelectorAll('.cards-grid > a') as NodeListOf<HTMLDivElement>;
+
+  function filterCards(): void {
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedCategories = Array.from(checkboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value.toLowerCase());  // Convert to lowercase here
+
+    cards.forEach(card => {
+      const name = card.querySelector('h3').textContent.toLowerCase();
+      const categoryElements = card.querySelectorAll('#card-cat');
+      const categories = Array.from(categoryElements).map(el => el.textContent.toLowerCase());
+
+      const matchesSearch = name.includes(searchTerm);
+      const matchesCategory = selectedCategories.length === 0 ||
+        categories.some(cardCat => selectedCategories.includes(cardCat));
+
+      if (matchesSearch && matchesCategory) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
+    });
+  }
+
+  searchInput.addEventListener('input', filterCards);
+  checkboxes.forEach(checkbox => checkbox.addEventListener('change', filterCards));
+
+
+  const filterToggle = document.getElementById('filterToggle');
+  const filterContent = document.getElementById('filterContent');
+  const filterIcon = filterToggle.querySelector('svg');
+
+  filterToggle.addEventListener('click', () => {
+    filterContent.classList.toggle('hidden');
+    filterIcon.classList.toggle('rotate-180');
+  });
+
+  document.addEventListener('click', (event) => {
+    const isClickInsideFilter = filterToggle.contains(event.target) || filterContent.contains(event.target);
+    if (!isClickInsideFilter && window.innerWidth < 768) {
+      filterContent.classList.add('hidden');
+      filterIcon.classList.remove('rotate-180');
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1024) {
+      filterContent.classList.remove('hidden');
+    } else {
+      filterContent.classList.add('hidden');
+      filterIcon.classList.remove('rotate-180');
+    }
+  });
+</script>
