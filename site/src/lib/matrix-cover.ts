@@ -57,9 +57,10 @@ export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
     targetColorSet = normalizedIndex
     lastColorIndex = normalizedIndex
   } else {
-    lastColorIndex = direction === "right"
-      ? (lastColorIndex + 1) % colorSets.length
-      : (lastColorIndex - 1 + colorSets.length) % colorSets.length
+    lastColorIndex =
+      direction === "right"
+        ? (lastColorIndex + 1) % colorSets.length
+        : (lastColorIndex - 1 + colorSets.length) % colorSets.length
     targetColorSet = lastColorIndex
   }
 
@@ -70,7 +71,8 @@ export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
     isRotating = true
     rotationStartTime = performance.now()
     initialRotation = currentPlaneRotation
-    targetPlaneRotation = currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
+    targetPlaneRotation =
+      currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
     colorTransitionProgress = 0
   }
 }
@@ -479,7 +481,8 @@ function initWebGL(initialColorIndex: number) {
         if (queuedRotations > 0) {
           rotationStartTime = performance.now()
           initialRotation = currentPlaneRotation
-          targetPlaneRotation = currentPlaneRotation +
+          targetPlaneRotation =
+            currentPlaneRotation +
             (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
           colorTransitionProgress = 0
         } else {
