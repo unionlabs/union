@@ -4,17 +4,88 @@ let currentPlaneRotation = 0
 let targetPlaneRotation = 0
 let isRotating = false
 let rotationStartTime = 0
-const ROTATION_DURATION = 1500
+let queuedRotations = 0
+const ROTATION_DURATION = 1200
 const EASE_POWER = 4
 
-export function rotateCamera() {
+const colorSets = [
+  {
+    primary: [0.71, 0.94, 0.99, 1.0], // Cyan
+    mid: [0.51, 0.94, 0.99, 1.0],
+    dark: [0.37, 0.87, 0.99, 1.0]
+  },
+  {
+    primary: [0.99, 0.71, 0.94, 1.0], // Pink
+    mid: [0.99, 0.51, 0.94, 1.0],
+    dark: [0.99, 0.37, 0.87, 1.0]
+  },
+  {
+    primary: [0.94, 0.99, 0.71, 1.0], // Yellow
+    mid: [0.94, 0.99, 0.51, 1.0],
+    dark: [0.87, 0.99, 0.37, 1.0]
+  },
+  {
+    primary: [0.71, 0.99, 0.78, 1.0], // Mint
+    mid: [0.51, 0.99, 0.61, 1.0],
+    dark: [0.37, 0.99, 0.45, 1.0]
+  }
+]
+
+let currentColorSet = 0
+let targetColorSet = 0
+let lastColorIndex = 0
+let initialRotation = 0 // Store the starting rotation when animation begins
+let colorTransitionProgress = 0
+let currentRotationDirection: "left" | "right" = "right"
+
+export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
+  const MAX_QUEUED_ROTATIONS = 4
+  if (queuedRotations >= MAX_QUEUED_ROTATIONS) return
+
+  queuedRotations++
+
+  // Set or update rotation direction
+  if (!isRotating) {
+    currentRotationDirection = direction
+  } else if (currentRotationDirection !== direction) {
+    // If trying to rotate in opposite direction while rotating, ignore the new direction
+    direction = currentRotationDirection
+  }
+
+  if (colorIndex >= 0) {
+    const normalizedIndex = colorIndex % colorSets.length
+    targetColorSet = normalizedIndex
+    lastColorIndex = normalizedIndex
+  } else {
+    lastColorIndex =
+      direction === "right"
+        ? (lastColorIndex + 1) % colorSets.length
+        : (lastColorIndex - 1 + colorSets.length) % colorSets.length
+    targetColorSet = lastColorIndex
+  }
+
   if (isRotating) {
-    targetPlaneRotation += Math.PI / 2
+    const rotationAmount = direction === "right" ? Math.PI / 2 : -Math.PI / 2
+    targetPlaneRotation = initialRotation + rotationAmount * queuedRotations
   } else {
     isRotating = true
     rotationStartTime = performance.now()
-    targetPlaneRotation = currentPlaneRotation + Math.PI / 2
+    initialRotation = currentPlaneRotation
+    targetPlaneRotation =
+      currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
+    colorTransitionProgress = 0
   }
+}
+
+function interpolateColors(colorA, colorB, progress) {
+  return colorA.map((c, i) => c + (colorB[i] - c) * progress)
+}
+
+export function setInitialColor(colorIndex = 1) {
+  const normalizedIndex = colorIndex % colorSets.length
+  currentColorSet = normalizedIndex
+  targetColorSet = normalizedIndex
+  lastColorIndex = normalizedIndex
 }
 
 let canvas: HTMLCanvasElement
@@ -112,7 +183,8 @@ class PerlinNoise {
   }
 }
 
-function initWebGL() {
+function initWebGL(initialColorIndex: number) {
+  setInitialColor(initialColorIndex)
   canvas = document.getElementById("waveCanvas")
   const gl = canvas.getContext("webgl")
   if (!gl) {
@@ -122,18 +194,39 @@ function initWebGL() {
 
   // Vertex shader
   const vsSource = `
-      attribute vec4 aVertexPosition;
-      attribute vec4 aVertexColor;
-      uniform mat4 uModelViewMatrix;
-      uniform mat4 uProjectionMatrix;
-      uniform float uYOffset;
-      varying lowp vec4 vColor;
-      void main(void) {
-        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-        float fadeAmount = smoothstep(-0.5, 0.5, uYOffset);
-        vColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
-      }
-    `
+  attribute vec4 aVertexPosition;
+  attribute vec4 aVertexColor;
+  uniform mat4 uModelViewMatrix;
+  uniform mat4 uProjectionMatrix;
+  uniform float uYOffset;
+  varying lowp vec4 vColor;
+  
+  void main(void) {
+    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+    float fadeAmount = smoothstep(-0.5, 0.5, uYOffset);
+    vColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
+  }
+`
+
+  function updateBufferColors(gl, buffers, colorSet) {
+    const faceColors = [
+      colorSet.primary,
+      colorSet.primary,
+      colorSet.dark,
+      colorSet.dark,
+      colorSet.mid,
+      colorSet.mid
+    ]
+
+    let colors: Array<number> = []
+    for (let j = 0; j < faceColors.length; ++j) {
+      const c = faceColors[j]
+      colors = colors.concat(c, c, c, c)
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
+  }
 
   // Fragment shader
   const fsSource = `
@@ -197,7 +290,11 @@ function initWebGL() {
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset")
+      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset"),
+      colorMix: gl.getUniformLocation(shaderProgram, "uColorMix"),
+      nextColorPrimary: gl.getUniformLocation(shaderProgram, "uNextColorPrimary"),
+      nextColorMid: gl.getUniformLocation(shaderProgram, "uNextColorMid"),
+      nextColorDark: gl.getUniformLocation(shaderProgram, "uNextColorDark")
     }
   }
 
@@ -222,25 +319,8 @@ function initWebGL() {
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
-    const CYAN = [0.71, 0.94, 0.99, 1.0]
-    const MID_CYAN = [0.51, 0.94, 0.99, 1.0]
-    const DARK_CYAN = [0.37, 0.87, 0.99, 1.0]
-    const faceColors = [
-      CYAN, // Front face
-      CYAN, // Back face
-      DARK_CYAN, // Top face
-      DARK_CYAN, // Bottom face
-      MID_CYAN, // Right face
-      MID_CYAN // Left face
-    ]
-
-    // biome-ignore lint/suspicious/noEvolvingTypes: idc
-    let colors = []
-
-    for (let j = 0; j < faceColors.length; ++j) {
-      const c = faceColors[j]
-      colors = colors.concat(c, c, c, c)
-    }
+    const currentColor = colorSets[currentColorSet]
+    const colors = generateColors(currentColor)
 
     const colorBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
@@ -328,51 +408,101 @@ function initWebGL() {
 
     glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar)
 
-    // Create separate matrices for camera and plane transformations
     const cameraMatrix = glMatrix.mat4.create()
     const modelMatrix = glMatrix.mat4.create()
 
-    // Handle rotation animation
     if (isRotating) {
       const elapsed = performance.now() - rotationStartTime
       const progress = Math.min(elapsed / ROTATION_DURATION, 1)
 
-      let easeProgress: number
-      if (progress < 0.5) {
-        // Ease-in (start slow, accelerate)
-        easeProgress = (progress * 2) ** EASE_POWER / 2
-      } else {
-        // Ease-out (decelerate to end)
-        easeProgress = 1 - (2 - progress * 2) ** EASE_POWER / 2
+      // Smooth easing function
+      let easeProgress =
+        progress < 0.5 ? (progress * 2) ** EASE_POWER / 2 : 1 - (2 - progress * 2) ** EASE_POWER / 2
+
+      // Smoothly update rotation
+      const rotationDelta = targetPlaneRotation - initialRotation
+      currentPlaneRotation = initialRotation + rotationDelta * easeProgress
+
+      // Update color transition with a slightly different timing
+      colorTransitionProgress = Math.min(progress * 1.2, 1) // Slightly faster color transition
+
+      // Calculate color interpolation
+      const currentColors = colorSets[currentColorSet]
+      const nextColors = colorSets[targetColorSet]
+
+      const interpolatedColors = {
+        primary: interpolateColors(
+          currentColors.primary,
+          nextColors.primary,
+          colorTransitionProgress
+        ),
+        mid: interpolateColors(currentColors.mid, nextColors.mid, colorTransitionProgress),
+        dark: interpolateColors(currentColors.dark, nextColors.dark, colorTransitionProgress)
       }
 
-      currentPlaneRotation += (targetPlaneRotation - currentPlaneRotation) * easeProgress
+      // Update color buffer with interpolated colors
+      const faceColors = [
+        interpolatedColors.primary,
+        interpolatedColors.primary,
+        interpolatedColors.dark,
+        interpolatedColors.dark,
+        interpolatedColors.mid,
+        interpolatedColors.mid
+      ]
+
+      let colors: Array<number> = []
+      for (const c of faceColors) {
+        colors = colors.concat(c, c, c, c)
+      }
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
 
       if (progress >= 1) {
-        isRotating = false
-        currentPlaneRotation = targetPlaneRotation // Ensure we end at exact target
+        currentPlaneRotation = targetPlaneRotation
+        currentColorSet = targetColorSet
+        queuedRotations = Math.max(0, queuedRotations - 1)
+
+        if (queuedRotations > 0) {
+          rotationStartTime = performance.now()
+          initialRotation = currentPlaneRotation
+          targetPlaneRotation = currentPlaneRotation + Math.PI / 2
+          colorTransitionProgress = 0
+        } else {
+          isRotating = false
+        }
+      }
+
+      if (progress >= 1) {
+        currentPlaneRotation = targetPlaneRotation
+        currentColorSet = targetColorSet
+        queuedRotations = Math.max(0, queuedRotations - 1)
+
+        if (queuedRotations > 0) {
+          rotationStartTime = performance.now()
+          initialRotation = currentPlaneRotation
+          targetPlaneRotation =
+            currentPlaneRotation +
+            (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
+          colorTransitionProgress = 0
+        } else {
+          isRotating = false
+          currentRotationDirection = "right"
+        }
       }
     }
 
-    // Smooth out mouse movement
     mouseX += (targetMouseX - mouseX) * 0.5
     mouseY += (targetMouseY - mouseY) * 0.5
 
-    // Set up camera view
     glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
-
-    // Apply camera rotations (fixed angle + mouse movement)
     glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
     glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
-
-    // Apply plane rotation to model matrix
     glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0])
 
-    // Combine camera and model matrices
     const modelViewMatrix = glMatrix.mat4.create()
     glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix)
 
-    // Set up attribute buffers
     {
       const numComponents = 3
       const type = gl.FLOAT
@@ -414,20 +544,16 @@ function initWebGL() {
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix)
 
-    // Draw cubes
     for (let i = 0; i < cubePositions.length; i++) {
       const cubeMatrix = glMatrix.mat4.create()
       const [x, _, z] = cubePositions[i]
       glMatrix.mat4.translate(cubeMatrix, modelViewMatrix, cubePositions[i])
 
-      // Apply wave motion
       const waveOffset = calculateWaveOffset(x, z, totalTime)
       glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset * 1.2, 0])
 
-      // Set y-offset uniform for fading
       gl.uniform1f(programInfo.uniformLocations.yOffset, waveOffset)
 
-      // Scale down the cubes
       glMatrix.mat4.scale(cubeMatrix, cubeMatrix, [0.4, 0.4, 0.4])
 
       gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, cubeMatrix)
@@ -552,8 +678,22 @@ function initWebGL() {
   }
 }
 
-// Initialize WebGL when the component mounts
-document.addEventListener("DOMContentLoaded", initWebGL)
+function generateColors(colorSet) {
+  const faceColors = [
+    colorSet.primary, // Front face
+    colorSet.primary, // Back face
+    colorSet.dark, // Top face
+    colorSet.dark, // Bottom face
+    colorSet.mid, // Right face
+    colorSet.mid // Left face
+  ]
+
+  let colors: Array<number> = []
+  for (const c of faceColors) {
+    colors = colors.concat(c, c, c, c)
+  }
+  return colors
+}
 
 // Initialize WebGL when the component mounts
-document.addEventListener("DOMContentLoaded", initWebGL)
+document.addEventListener("DOMContentLoaded", initWebGL(1))

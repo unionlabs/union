@@ -101,13 +101,55 @@ const slideTextAnimation = {
         grid-area: 4 / 3 / 5 / 6;
         z-index: 4;
     }
+
+    @keyframes slideOutLeft {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
 
 <script>
   import {rotateCamera} from "../lib/matrix-cover";
 
-  document.addEventListener('astro:after-preparation', (e) => {
-    rotateCamera();
+  const pathToIndexMap = {
+    '/': 0,
+    '/learn': 1,
+    '/ecosystem': 2,
+    '/team': 3
+  }
+
+  document.addEventListener('astro:after-preparation', (event: any) => {
+    console.log('Full event:', event);
+
+    // Get path from URL
+    const currentPath = window.location.pathname
+
+    // Get current index from path
+    const currentIndex = pathToIndexMap[currentPath] ?? 0
+
+    // For testing, let's rotate based on just the current path
+    if (currentPath in pathToIndexMap) {
+      // Simple alternating direction for now
+      const direction = currentIndex % 2 === 0 ? 'right' : 'left'
+      rotateCamera(direction as "left" | "right", currentIndex)
+    }
   });
 
   let headerGrid;
