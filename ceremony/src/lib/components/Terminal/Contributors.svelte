@@ -10,7 +10,7 @@ const { terminal } = getState()
 let contributions: Contributions | null = null
 let data: Array<{ text: string; action: string }> = $state([])
 
-onMount(async () => {
+onMount(() => {
   contributions = new Contributions()
 })
 
