@@ -7,7 +7,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 export const createSupabaseClient = () => {
   let client: SupabaseClient | null = null
   let refreshInterval: NodeJS.Timeout | null = null
-  const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+  const REFRESH_INTERVAL = 30 * 60 * 1000 // 30 minutes
 
   const getClient = () => {
     if (client) return client
