@@ -42,7 +42,7 @@ try {
 ---
 
 <AnimationLayout title="Ecosystem" text="Connecting projects, people, and products into a unified organism of interoperability.">
-  <main class="max-w-8xl p-4 md:p-8 gap-4 place-self-center flex flex-col lg:flex-row">
+  <main class="max-w-8xl p-4 md:p-8 gap-10 place-self-center flex flex-col lg:flex-row">
     <!-- Search and filters -->
     <div class="flex flex-col gap-4 max-w-sm">
       <!-- <H1>Union <span class="text-accent-500">Ecosystem</span></H1> -->
@@ -119,9 +119,9 @@ try {
     </div>
 
     <!-- Cards Grid -->
-    <div class="cards-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+    <div class="cards-grid grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 lg:gap-10 justify-items-center">
       {ecosystemData.map(item => (
-              <a href={item.url} target="_blank" class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full max-w-[250px] aspect-[3/4]">
+              <a href={item.url} target="_blank" class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full max-w-[300px] aspect-[3/4]">
                 <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
                 <img
                         src={item.background.fields.file.url}
@@ -129,19 +129,21 @@ try {
                         class="absolute inset-0 w-full h-full object-cover object-center"
                 />
                 <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
-                  <div class="flex w-full justify-between items-center">
-                    <div class="flex flex-col gap-1">
+                  <div class="flex flex-row items-end">
+                  <div class="flex flex-col gap-2 w-full items-start ">
+                    <div class="flex flex-col gap-2 items-start justify-start">
                       {item.category.map(cat => (
-                              <span class="text-sm bg-white text-black uppercase font-mono font-bold px-2 py-1" id="card-cat">{cat.fields.category}</span>
+                            <div class="text-sm bg-white text-black uppercase font-mono font-bold px-2 py" id="card-cat">{cat.fields.category}</div>
                       ))}
                     </div>
-                    <img
-                            src={item.logo.fields.file.url}
-                            alt={`${item.name} logo`}
-                            class="w-24 h-24 object-contain"
-                    />
+                    <h3 class="text-4xl uppercase font-supermolot font-bold">{item.name}</h3>
                   </div>
-                  <H3 class="text-lg font-semibold">{item.name}</H3>
+                  <img
+                          src={item.logo.fields.file.url}
+                          alt={`${item.name} logo`}
+                          class="w-24 h-24 object-contain"
+                  />
+                  </div>
                 </div>
               </a>
       ))}
