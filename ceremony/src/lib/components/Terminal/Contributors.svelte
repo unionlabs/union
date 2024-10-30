@@ -1,34 +1,38 @@
 <script lang="ts">
-import { getState } from "$lib/state/index.svelte.ts"
 import { goto } from "$app/navigation"
-import { onMount } from "svelte"
+import { onMount, onDestroy } from "svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
-import type { Contributions } from "$lib/state/contributions.svelte.ts"
-import type { Terminal } from "$lib/state/terminal.svelte.ts"
+import { Contributions } from "$lib/state/contributions.svelte.ts"
+import { getState } from "$lib/state/index.svelte.ts"
 
-type State = {
-  contributions: Contributions
-  terminal: Terminal
-}
+const { terminal } = getState()
 
-const { contributions, terminal }: State = getState()
+let contributions: Contributions | null = null
+let data: Array<{ text: string; action: string }> = $state([])
 
-let focusedIndex = $state(0)
-let buttons: Array<HTMLButtonElement> = []
-let data = $state([])
 onMount(() => {
-  contributions.data.map(contribution => {
-    data.push({ text: contribution.payload_id, action: contribution.public_key_hash })
-  })
+  contributions = new Contributions()
 })
 
-function trigger(value: any) {
+onDestroy(() => {
+  if (contributions) {
+    contributions = null
+  }
+})
+
+$effect(() => {
+  if (contributions) {
+    data = contributions.data.map(contribution => ({
+      text: contribution.payload_id,
+      action: contribution.public_key_hash
+    }))
+  }
+})
+
+function trigger(value: string) {
   goto(`/contributions/${value}`)
   terminal.setTab(4)
   terminal.setHash(value)
 }
 </script>
-<Buttons
-        {data}
-        trigger={(value) => trigger(value)}
-/>
+<Buttons {data} trigger={(value) => trigger(value)}/>

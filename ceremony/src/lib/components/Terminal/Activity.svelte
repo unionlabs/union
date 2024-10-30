@@ -1,8 +1,19 @@
 <script lang="ts">
-import { getState } from "$lib/state/index.svelte.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
+import { onDestroy, onMount } from "svelte"
+import { Activity } from "$lib/state/activity.svelte.ts"
 
-const { activity } = getState()
+let activity: Activity | null = $state(null)
+
+onMount(() => {
+  activity = new Activity()
+})
+
+onDestroy(() => {
+  if (activity) {
+    activity = null
+  }
+})
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp)
@@ -20,7 +31,7 @@ function formatTimestamp(timestamp: string): string {
 }
 </script>
 
-{#if activity.data}
+{#if activity && activity.data}
   <div class="flex flex-col-reverse">
     {#each activity.data as item, i (item)}
       {@const type = item.message.type}

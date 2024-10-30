@@ -19,7 +19,7 @@ export class Activity {
       .from("log")
       .select("message, created_at")
       .order("created_at", { ascending: false })
-      .limit(100)
+      .limit(50)
 
     if (error) {
       console.error("Error fetching initial data:", error)
