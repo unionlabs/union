@@ -1,4 +1,5 @@
 use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
+use ethereum_light_client_types::ClientState;
 use ics008_wasm_client::{
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
     CustomQueryOf, InstantiateMsg,
@@ -8,7 +9,7 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::{core::client::height::Height, lightclients::ethereum::client_state::ClientState},
+    ibc::core::client::height::Height,
 };
 
 use crate::{client::EthereumLightClient, errors::Error};
@@ -53,7 +54,5 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[cfg(feature = "mainnet")]
+// TODO(aeryz): this will be generic
 ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMainnet);
-#[cfg(feature = "minimal")]
-ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMinimal);
