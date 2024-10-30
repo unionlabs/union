@@ -1,5 +1,5 @@
 use cosmwasm_std::{Binary, Deps};
-use ethereum_verifier::{error::InvalidSignature, verify::BlsVerify};
+use ethereum_verifier::{error::InvalidSignature, BlsVerify};
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},

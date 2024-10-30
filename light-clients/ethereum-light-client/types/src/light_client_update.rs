@@ -39,6 +39,38 @@ pub enum LightClientUpdate {
     WithinEpoch(Box<WithinEpochUpdate>),
 }
 
+impl LightClientUpdate {
+    pub fn update_data(&self) -> &LightClientUpdateData {
+        match self {
+            LightClientUpdate::EpochChange(update) => &update.update_data,
+            LightClientUpdate::WithinEpoch(update) => &update.update_data,
+        }
+    }
+
+    pub fn trusted_sync_committee(&self) -> &SyncCommittee {
+        match self {
+            LightClientUpdate::EpochChange(update) => &update.sync_committee,
+            LightClientUpdate::WithinEpoch(update) => &update.sync_committee,
+        }
+    }
+}
+
+impl From<LightClientUpdate> for beacon_api_types::LightClientUpdate {
+    fn from(value: LightClientUpdate) -> Self {
+        match value {
+            LightClientUpdate::EpochChange(update) => {
+                update.update_data.new_beacon_light_client_update(
+                    Some(update.next_sync_committee),
+                    Some(update.next_sync_committee_branch),
+                )
+            }
+            LightClientUpdate::WithinEpoch(update) => update
+                .update_data
+                .new_beacon_light_client_update(None, None),
+        }
+    }
+}
+
 #[cfg(feature = "proto")]
 pub mod proto {
     use protos::union::ibc::lightclients::ethereum::v1::light_client_update;

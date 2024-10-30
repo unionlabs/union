@@ -16,6 +16,7 @@ test-include = ["light-clients/ethereum-light-client/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
@@ -46,11 +47,6 @@ serde_json  = { workspace = true }
 unionlabs   = { workspace = true, features = ["std"] }
 
 [features]
-default = ["mainnet"]
-
-mainnet = []
-minimal = []
-
 # enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
 library = []
 

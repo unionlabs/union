@@ -122,10 +122,13 @@ pub fn compute_slot_at_timestamp<C: SECONDS_PER_SLOT>(
 // Returns if at least 2/3 of the sync committee signed
 //
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_update
-pub fn validate_signature_supermajority<C: SYNC_COMMITTEE_SIZE>(
-    sync_committee_bits: &BitVector<C::SYNC_COMMITTEE_SIZE>,
-) -> bool {
-    sync_committee_bits.num_set_bits() * 3 >= sync_committee_bits.len() * 2
+pub fn validate_signature_supermajority(sync_committee_bits: &[u8]) -> bool {
+    sync_committee_bits
+        .iter()
+        .map(|i| *i as usize)
+        .sum::<usize>()
+        * 3
+        >= sync_committee_bits.len() * 2
 }
 
 /// Check if `leaf` at `index` verifies against the Merkle `root` and `branch`.

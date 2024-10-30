@@ -1,12 +1,10 @@
+use ethereum_light_client_types::{client_state, consensus_state, StorageProof};
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{self, storage_proof::StorageProof},
-    },
+    ibc::core::client::height::Height,
     uint::U256,
 };
 
@@ -24,9 +22,9 @@ pub enum Error {
     ClientStateNotFound,
 
     #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, ethereum::client_state::ClientState>),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, client_state::ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ethereum::consensus_state::ConsensusState>),
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, consensus_state::ConsensusState>),
 
     #[error(transparent)]
     CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),

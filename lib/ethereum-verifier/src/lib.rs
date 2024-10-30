@@ -71,9 +71,9 @@ pub enum UpdateType {
 ///
 /// [See in consenss-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
-    update: LightClientUpdate,
-    current_sync_committee: Option<SyncCommittee>,
-    next_sync_committee: Option<SyncCommittee>,
+    update: &LightClientUpdate,
+    current_sync_committee: Option<&SyncCommittee>,
+    next_sync_committee: Option<&SyncCommittee>,
     current_slot: u64,
     finalized_slot: u64,
     genesis_validators_root: H256,
@@ -166,8 +166,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
             trusted_finalized_slot: finalized_slot,
             update_attested_period,
             stored_period,
-            // update_sync_committee_is_set: update.next_sync_committee.is_some(),
-            update_sync_committee_is_set: true,
+            update_sync_committee_is_set: update.next_sync_committee.is_some(),
             trusted_next_sync_committee_is_set: next_sync_committee.is_some(),
         },
     )?;
@@ -194,7 +193,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     {
         if update_attested_period == stored_period {
             ensure(
-                next_sync_committee == stored_next_sync_committee,
+                &next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
                     found: next_sync_committee.aggregate_pubkey,
