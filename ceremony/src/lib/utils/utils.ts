@@ -94,16 +94,38 @@ export function msToTimeString(ms: number): string {
 }
 
 export function formatWaitTime(minutes: number) {
-  const hours = Math.floor(minutes / 60)
+  const weeks = Math.floor(minutes / (7 * 24 * 60))
+  const days = Math.floor((minutes % (7 * 24 * 60)) / (24 * 60))
+  const hours = Math.floor((minutes % (24 * 60)) / 60)
   const remainingMinutes = Math.round(minutes % 60)
 
-  if (hours === 0) {
-    return `${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`
+  const parts = []
+
+  if (weeks > 0) {
+    parts.push(`${weeks} week${weeks !== 1 ? "s" : ""}`)
   }
 
-  if (remainingMinutes === 0) {
-    return `${hours} hour${hours !== 1 ? "s" : ""}`
+  if (days > 0) {
+    parts.push(`${days} day${days !== 1 ? "s" : ""}`)
   }
 
-  return `${hours} hour${hours !== 1 ? "s" : ""} and ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`
+  if (hours > 0 && weeks === 0) {
+    // Only show hours if less than a week
+    parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`)
+  }
+
+  if (remainingMinutes > 0 && weeks === 0 && days === 0) {
+    // Only show minutes if less than a day
+    parts.push(`${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`)
+  }
+
+  if (parts.length === 0) {
+    return "0 minutes"
+  }
+
+  if (parts.length === 1) {
+    return parts[0]
+  }
+
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
 }
