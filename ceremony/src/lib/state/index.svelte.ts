@@ -2,12 +2,10 @@ import { getContext, setContext } from "svelte"
 import { Contributor } from "./contributor.svelte.ts"
 import { Terminal } from "./terminal.svelte.ts"
 import { user, type UserSession } from "$lib/state/session.svelte.ts"
-import { Contributions } from "$lib/state/contributions.svelte.ts"
 
 export interface AppState {
   contributor: Contributor
   terminal: Terminal
-  contributions: Contributions
   user: UserSession
 }
 
@@ -18,7 +16,6 @@ export function createState() {
   const state: AppState = {
     contributor: new Contributor(),
     terminal: new Terminal(),
-    contributions: new Contributions(),
     user: user
   }
 
