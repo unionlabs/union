@@ -130,7 +130,7 @@ const slideTextAnimation = {
 
   document.addEventListener('astro:after-preparation', () => {
     const randomIndex = Math.floor(Math.random() * 4);
-    rotateCamera(randomIndex);
+    rotateCamera('left', randomIndex);
   });
 
   let headerGrid;

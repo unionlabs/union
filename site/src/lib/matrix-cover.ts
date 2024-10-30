@@ -35,34 +35,42 @@ let currentColorSet = 0
 let targetColorSet = 0
 let lastColorIndex = 0
 let initialRotation = 0 // Store the starting rotation when animation begins
-let colorTransitionProgress = 0 // Track color transition separately
+let colorTransitionProgress = 0
+let currentRotationDirection: "left" | "right" = "right"
 
-export function rotateCamera(colorIndex = -1) {
-  // Limit maximum queued rotations to prevent excessive spinning
+export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
   const MAX_QUEUED_ROTATIONS = 4
   if (queuedRotations >= MAX_QUEUED_ROTATIONS) return
 
   queuedRotations++
 
-  // Update color target
+  // Set or update rotation direction
+  if (!isRotating) {
+    currentRotationDirection = direction
+  } else if (currentRotationDirection !== direction) {
+    // If trying to rotate in opposite direction while rotating, ignore the new direction
+    direction = currentRotationDirection
+  }
+
   if (colorIndex >= 0) {
     const normalizedIndex = colorIndex % colorSets.length
     targetColorSet = normalizedIndex
     lastColorIndex = normalizedIndex
   } else {
-    lastColorIndex = (lastColorIndex + 1) % colorSets.length
+    lastColorIndex = direction === "right"
+      ? (lastColorIndex + 1) % colorSets.length
+      : (lastColorIndex - 1 + colorSets.length) % colorSets.length
     targetColorSet = lastColorIndex
   }
 
   if (isRotating) {
-    // Update target rotation while maintaining smooth motion
-    targetPlaneRotation = initialRotation + (Math.PI / 2) * queuedRotations
+    const rotationAmount = direction === "right" ? Math.PI / 2 : -Math.PI / 2
+    targetPlaneRotation = initialRotation + rotationAmount * queuedRotations
   } else {
-    // Start new rotation
     isRotating = true
     rotationStartTime = performance.now()
     initialRotation = currentPlaneRotation
-    targetPlaneRotation = currentPlaneRotation + Math.PI / 2
+    targetPlaneRotation = currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
     colorTransitionProgress = 0
   }
 }
@@ -208,7 +216,7 @@ function initWebGL(initialColorIndex: number) {
       colorSet.mid
     ]
 
-    let colors = []
+    let colors: Array<number> = []
     for (let j = 0; j < faceColors.length; ++j) {
       const c = faceColors[j]
       colors = colors.concat(c, c, c, c)
@@ -440,7 +448,7 @@ function initWebGL(initialColorIndex: number) {
         interpolatedColors.mid
       ]
 
-      let colors: number[] = []
+      let colors: Array<number> = []
       for (const c of faceColors) {
         colors = colors.concat(c, c, c, c)
       }
@@ -449,20 +457,34 @@ function initWebGL(initialColorIndex: number) {
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
 
       if (progress >= 1) {
-        // Complete current rotation
         currentPlaneRotation = targetPlaneRotation
         currentColorSet = targetColorSet
         queuedRotations = Math.max(0, queuedRotations - 1)
 
         if (queuedRotations > 0) {
-          // Start next rotation immediately
           rotationStartTime = performance.now()
           initialRotation = currentPlaneRotation
           targetPlaneRotation = currentPlaneRotation + Math.PI / 2
           colorTransitionProgress = 0
         } else {
-          // All rotations complete
           isRotating = false
+        }
+      }
+
+      if (progress >= 1) {
+        currentPlaneRotation = targetPlaneRotation
+        currentColorSet = targetColorSet
+        queuedRotations = Math.max(0, queuedRotations - 1)
+
+        if (queuedRotations > 0) {
+          rotationStartTime = performance.now()
+          initialRotation = currentPlaneRotation
+          targetPlaneRotation = currentPlaneRotation +
+            (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
+          colorTransitionProgress = 0
+        } else {
+          isRotating = false
+          currentRotationDirection = "right"
         }
       }
     }
@@ -663,7 +685,7 @@ function generateColors(colorSet) {
     colorSet.mid // Left face
   ]
 
-  let colors = []
+  let colors: Array<number> = []
   for (const c of faceColors) {
     colors = colors.concat(c, c, c, c)
   }
