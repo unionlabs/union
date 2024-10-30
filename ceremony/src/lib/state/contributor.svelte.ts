@@ -67,8 +67,8 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
 const CLIENT_POLING_INTERVAL = second * 5
-const CONTRIBUTION_POLLING_INTERVAL = second * 15
-const QUEUE_POLLING_INTERVAL = second * 30
+const CONTRIBUTION_POLLING_INTERVAL = second * 30
+const QUEUE_POLLING_INTERVAL = second * 60
 
 export class Contributor {
   userId = $state<string | undefined>(undefined)
