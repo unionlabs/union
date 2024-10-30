@@ -99,7 +99,7 @@ export function formatWaitTime(minutes: number) {
   const hours = Math.floor((minutes % (24 * 60)) / 60)
   const remainingMinutes = Math.round(minutes % 60)
 
-  const parts = []
+  const parts: Array<string> = []
 
   if (weeks > 0) {
     parts.push(`${weeks} week${weeks !== 1 ? "s" : ""}`)
