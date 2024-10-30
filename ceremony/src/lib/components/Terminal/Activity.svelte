@@ -1,7 +1,7 @@
 <script lang="ts">
 import Print from "$lib/components/Terminal/Print.svelte"
-import {onDestroy, onMount} from "svelte";
-import {Activity} from "$lib/state/activity.svelte.ts";
+import { onDestroy, onMount } from "svelte"
+import { Activity } from "$lib/state/activity.svelte.ts"
 
 let activity: Activity | null = $state(null)
 
@@ -11,9 +11,9 @@ onMount(() => {
 
 onDestroy(() => {
   if (activity) {
-    activity = null;
+    activity = null
   }
-});
+})
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp)
