@@ -136,7 +136,7 @@ CREATE POLICY view_all
       true
     );
 
-CREATE OR REPLACE VIEW current_queue AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS current_queue AS
   (
     SELECT *, (SELECT COUNT(*) FROM queue qq
                 WHERE
@@ -146,10 +146,10 @@ CREATE OR REPLACE VIEW current_queue AS
     WHERE
     -- Contribution round not started
     NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
-    ORDER BY q.score DESC
   );
 
-ALTER VIEW current_queue SET (security_invoker = on);
+CREATE UNIQUE INDEX idx_current_queue_id ON current_queue(id);
+CREATE INDEX idx_current_queue_position ON current_queue(position);
 
 CREATE OR REPLACE FUNCTION min_score() RETURNS INTEGER AS $$
 BEGIN
@@ -459,6 +459,7 @@ BEGIN
     INSERT INTO public.contribution_status(id)
     SELECT cq.id
     FROM public.current_queue cq
+    ORDER BY cq.position ASC
     LIMIT 1;
     IF (EXISTS (SELECT cci.id FROM public.current_contributor_id cci)) THEN
       PERFORM public.do_log(
@@ -668,6 +669,9 @@ CREATE TABLE log(
 
 ALTER TABLE log ENABLE ROW LEVEL SECURITY;
 
+CREATE INDEX idx_log_created_at ON log(created_at);
+CREATE INDEX idx_log_created_at_id ON log(created_at, id);
+
 CREATE POLICY view_all
   ON log
   FOR SELECT
@@ -717,7 +721,7 @@ CREATE UNIQUE INDEX idx_users_contribution_pkh ON users_contribution(public_key_
 
 -- Will rotate the current contributor if the slot expired without any contribution submitted
 SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
-
 SELECT cron.schedule('update-users-contribution', '30 seconds', 'REFRESH MATERIALIZED VIEW CONCURRENTLY public.users_contribution');
+SELECT cron.schedule('update-current-queue', '30 seconds', 'REFRESH MATERIALIZED VIEW CONCURRENTLY public.current_queue');
 
 COMMIT;
