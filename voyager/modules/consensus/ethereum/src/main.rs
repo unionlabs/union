@@ -215,9 +215,11 @@ impl ConsensusModuleServer for Module {
                 .into(),
             timestamp,
             current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
+            // TODO(aeryz): can this be None?
             next_sync_committee: light_client_update
                 .next_sync_committee
-                .map(|nsc| nsc.aggregate_pubkey),
+                .unwrap()
+                .aggregate_pubkey,
         })
         .expect("infallible"))
     }

@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use arbitrum_light_client_types::{ClientState, Header};
-use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
+use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},

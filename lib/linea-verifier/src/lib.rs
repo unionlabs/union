@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
+use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use linea_light_client_types::{ClientState, Header};
 use unionlabs::{

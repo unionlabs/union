@@ -1,5 +1,5 @@
 use cosmwasm_std::{Binary, Deps};
-use ethereum_verifier::{error::InvalidSignature, verify::BlsVerify};
+use ethereum_verifier::{error::InvalidSignature, BlsVerify};
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
@@ -10,7 +10,7 @@ pub struct VerificationContext<'a> {
     pub deps: Deps<'a, UnionCustomQuery>,
 }
 
-impl<'a> BlsVerify for VerificationContext<'a> {
+impl BlsVerify for VerificationContext<'_> {
     fn fast_aggregate_verify<'pk>(
         &self,
         public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,

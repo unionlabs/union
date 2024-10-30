@@ -13,7 +13,7 @@ pub struct ConsensusState {
     /// aggregate public key of current sync committee
     pub current_sync_committee: BlsPublicKey,
     /// aggregate public key of next sync committee
-    pub next_sync_committee: Option<BlsPublicKey>,
+    pub next_sync_committee: BlsPublicKey,
 }
 
 #[cfg(feature = "proto")]
@@ -32,10 +32,7 @@ pub mod proto {
                 storage_root: value.storage_root.into(),
                 timestamp: value.timestamp,
                 current_sync_committee: value.current_sync_committee.into(),
-                next_sync_committee: value
-                    .next_sync_committee
-                    .map(Into::into)
-                    .unwrap_or_default(),
+                next_sync_committee: value.next_sync_committee.into(),
             }
         }
     }
@@ -67,16 +64,10 @@ pub mod proto {
                     .current_sync_committee
                     .try_into()
                     .map_err(Error::CurrentSyncCommittee)?,
-                next_sync_committee: if value.next_sync_committee.is_empty() {
-                    None
-                } else {
-                    Some(
-                        value
-                            .next_sync_committee
-                            .try_into()
-                            .map_err(Error::NextSyncCommittee)?,
-                    )
-                },
+                next_sync_committee: value
+                    .next_sync_committee
+                    .try_into()
+                    .map_err(Error::NextSyncCommittee)?,
             })
         }
     }

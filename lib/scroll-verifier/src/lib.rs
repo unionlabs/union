@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
+use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
 use scroll_codec::{hash_batch, HashBatchError};
 use scroll_light_client_types::{ClientState, Header};
 use unionlabs::{

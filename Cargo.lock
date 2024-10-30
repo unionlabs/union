@@ -4715,6 +4715,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "beacon-api-types",
+ "bytes",
+ "cosmwasm-std 1.5.2",
+ "ethereum-light-client-types",
+ "ethereum-verifier",
+ "ethers-contract-derive",
+ "ethers-core",
+ "hex",
+ "hex-literal",
+ "ics008-wasm-client",
+ "lazy_static",
+ "prost 0.12.6",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "tiny-keccak",
+ "unionlabs",
+]
+
+[[package]]
 name = "ethereum-light-client-types"
 version = "0.1.0"
 dependencies = [
