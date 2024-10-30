@@ -18,7 +18,7 @@ pub mod proto {
         validator_set,
     };
 
-    impl From<LightBlock> for protos::tendermint::types::LightBlock {
+    impl From<LightBlock> for protos::cometbft::types::v1::LightBlock {
         fn from(value: LightBlock) -> Self {
             Self {
                 signed_header: Some(value.signed_header.into()),
@@ -37,10 +37,10 @@ pub mod proto {
         ValidatorSet(#[from] validator_set::proto::Error),
     }
 
-    impl TryFrom<protos::tendermint::types::LightBlock> for LightBlock {
+    impl TryFrom<protos::cometbft::types::v1::LightBlock> for LightBlock {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::LightBlock) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::LightBlock) -> Result<Self, Self::Error> {
             Ok(Self {
                 signed_header: required!(value.signed_header)?.try_into()?,
                 validator_set: required!(value.validator_set)?.try_into()?,

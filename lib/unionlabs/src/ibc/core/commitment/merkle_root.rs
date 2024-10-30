@@ -2,7 +2,10 @@
 use contracts::glue::IbcCoreCommitmentV1MerkleRootData;
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{
+    errors::InvalidLength,
+    hash::{hash_v2::Base64, H256},
+};
 
 // #[cfg_attr(
 //     feature = "ethabi",
@@ -13,7 +16,7 @@ use crate::{errors::InvalidLength, hash::H256};
 // )]
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
 pub struct MerkleRoot {
-    pub hash: H256,
+    pub hash: H256<Base64>,
 }
 
 impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {

@@ -20,7 +20,7 @@ pub mod proto {
         header::{self},
     };
 
-    impl From<Block> for protos::tendermint::types::Block {
+    impl From<Block> for protos::cometbft::types::v1::Block {
         fn from(value: Block) -> Self {
             Self {
                 header: Some(value.header.into()),
@@ -43,10 +43,10 @@ pub mod proto {
         Commit(#[from] commit::proto::Error),
     }
 
-    impl TryFrom<protos::tendermint::types::Block> for Block {
+    impl TryFrom<protos::cometbft::types::v1::Block> for Block {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::Block) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::Block) -> Result<Self, Self::Error> {
             Ok(Self {
                 header: required!(value.header)?.try_into()?,
                 data: required!(value.data)?.into(),

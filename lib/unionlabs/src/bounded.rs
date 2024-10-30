@@ -21,7 +21,14 @@ macro_rules! bounded_int {
 
             impl<const MIN: $ty, const MAX: $ty> core::fmt::Debug for $Struct<MIN, MAX> {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                    f.write_fmt(format_args!("{}<{MIN}, {MAX}>({})", stringify!($Struct), self.0))
+                    write!(
+                        f,
+                        "{}<{min}..={max}>({})",
+                        stringify!($Struct),
+                        self.0,
+                        min = if MIN == <$ty>::MIN { "MIN".to_owned() } else { format!("{MIN}") },
+                        max = if MAX == <$ty>::MAX { "MAX".to_owned() } else { format!("{MAX}") },
+                    )
                 }
             }
 

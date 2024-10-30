@@ -930,5 +930,6 @@ pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
             .map(|hop| ConnectionId::from_str_prefixed(&hop).unwrap())
             .collect(),
         version: channel.version,
+        upgrade_sequence: 0,
     }
 }

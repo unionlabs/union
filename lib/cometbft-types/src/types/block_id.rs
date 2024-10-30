@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::hash::H256;
+use unionlabs::hash::{hash_v2::HexUnprefixed, H256};
 
 use crate::types::part_set_header::PartSetHeader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct BlockId {
     /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
-    pub hash: Option<H256>,
+    pub hash: Option<H256<HexUnprefixed>>,
+    #[serde(rename = "parts")]
     pub part_set_header: PartSetHeader,
 }
 
@@ -14,36 +15,17 @@ pub struct BlockId {
 pub mod proto {
     use unionlabs::{
         errors::{ExpectedLength, InvalidLength, MissingField},
-        hash::H256,
+        hash::{hash_v2::HexUnprefixed, H256},
         impl_proto_via_try_from_into, required,
     };
 
     use crate::types::{block_id::BlockId, part_set_header};
 
-    impl_proto_via_try_from_into!(BlockId => protos::tendermint::types::BlockId);
+    impl_proto_via_try_from_into!(BlockId => protos::cometbft::types::v1::BlockId);
 
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error(transparent)]
-        MissingField(#[from] MissingField),
-        #[error("invalid hash")]
-        Hash(#[source] InvalidLength),
-        #[error("invalid part set header")]
-        PartSetHeader(#[from] part_set_header::proto::Error),
-    }
-
-    impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
-        type Error = Error;
-
-        fn try_from(value: protos::tendermint::types::BlockId) -> Result<Self, Self::Error> {
-            Ok(Self {
-                hash: maybe_empty_h256(&value.hash).map_err(Error::Hash)?,
-                part_set_header: required!(value.part_set_header)?.try_into()?,
-            })
-        }
-    }
-
-    pub(crate) fn maybe_empty_h256(value: &[u8]) -> Result<Option<H256>, InvalidLength> {
+    pub(crate) fn maybe_empty_h256(
+        value: &[u8],
+    ) -> Result<Option<H256<HexUnprefixed>>, InvalidLength> {
         Ok(if value.is_empty() {
             None
         } else {
@@ -56,6 +38,47 @@ pub mod proto {
                     })?,
             )
         })
+    }
+
+    impl TryFrom<protos::cometbft::types::v1::BlockId> for BlockId {
+        type Error = Error;
+
+        fn try_from(value: protos::cometbft::types::v1::BlockId) -> Result<Self, Self::Error> {
+            Ok(Self {
+                hash: maybe_empty_h256(&value.hash).map_err(Error::Hash)?,
+                part_set_header: required!(value.part_set_header)?.try_into()?,
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid hash")]
+        Hash(#[source] InvalidLength),
+        #[error("invalid part set header")]
+        PartSetHeader(#[from] part_set_header::proto::Error),
+    }
+
+    impl From<BlockId> for protos::cometbft::types::v1::BlockId {
+        fn from(value: BlockId) -> Self {
+            Self {
+                hash: value.hash.map(Into::into).unwrap_or_default(),
+                part_set_header: Some(value.part_set_header.into()),
+            }
+        }
+    }
+
+    impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
+        type Error = Error;
+
+        fn try_from(value: protos::tendermint::types::BlockId) -> Result<Self, Self::Error> {
+            Ok(Self {
+                hash: maybe_empty_h256(&value.hash).map_err(Error::Hash)?,
+                part_set_header: required!(value.part_set_header)?.try_into()?,
+            })
+        }
     }
 
     impl From<BlockId> for protos::tendermint::types::BlockId {

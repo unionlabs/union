@@ -15,9 +15,9 @@ pub mod proto {
 
     use crate::{crypto::public_key, types::simple_validator::SimpleValidator};
 
-    impl_proto_via_try_from_into!(SimpleValidator => protos::tendermint::types::SimpleValidator);
+    impl_proto_via_try_from_into!(SimpleValidator => protos::cometbft::types::v1::SimpleValidator);
 
-    impl From<SimpleValidator> for protos::tendermint::types::SimpleValidator {
+    impl From<SimpleValidator> for protos::cometbft::types::v1::SimpleValidator {
         fn from(value: SimpleValidator) -> Self {
             Self {
                 pub_key: Some(value.pub_key.into()),
@@ -34,11 +34,11 @@ pub mod proto {
         PubKey(#[from] public_key::proto::Error),
     }
 
-    impl TryFrom<protos::tendermint::types::SimpleValidator> for SimpleValidator {
+    impl TryFrom<protos::cometbft::types::v1::SimpleValidator> for SimpleValidator {
         type Error = Error;
 
         fn try_from(
-            value: protos::tendermint::types::SimpleValidator,
+            value: protos::cometbft::types::v1::SimpleValidator,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 pub_key: required!(value.pub_key)?.try_into()?,

@@ -1,21 +1,4 @@
 // @generated
-/// DenomAuthorityMetadata specifies metadata for addresses that have specific
-/// capabilities over a token factory denom. Right now there is only one Admin
-/// permission, but is planned to be extended to the future.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DenomAuthorityMetadata {
-    /// Can be empty for no admin, or a valid address
-    #[prost(string, tag = "1")]
-    pub admin: ::prost::alloc::string::String,
-}
-impl ::prost::Name for DenomAuthorityMetadata {
-    const NAME: &'static str = "DenomAuthorityMetadata";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
 /// Params defines the parameters for the tokenfactory module.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -30,127 +13,6 @@ pub struct Params {
 }
 impl ::prost::Name for Params {
     const NAME: &'static str = "Params";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// GenesisState defines the tokenfactory module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines the paramaters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    #[prost(message, repeated, tag = "2")]
-    pub factory_denoms: ::prost::alloc::vec::Vec<GenesisDenom>,
-}
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// GenesisDenom defines a tokenfactory denom that is defined within genesis
-/// state. The structure contains DenomAuthorityMetadata which defines the
-/// denom's admin.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisDenom {
-    #[prost(string, tag = "1")]
-    pub denom: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
-}
-impl ::prost::Name for GenesisDenom {
-    const NAME: &'static str = "GenesisDenom";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryDenomAuthorityMetadataRequest defines the request structure for the
-/// DenomAuthorityMetadata gRPC query.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryDenomAuthorityMetadataRequest {
-    #[prost(string, tag = "1")]
-    pub denom: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryDenomAuthorityMetadataRequest {
-    const NAME: &'static str = "QueryDenomAuthorityMetadataRequest";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryDenomAuthorityMetadataResponse defines the response structure for the
-/// DenomAuthorityMetadata gRPC query.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryDenomAuthorityMetadataResponse {
-    #[prost(message, optional, tag = "1")]
-    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
-}
-impl ::prost::Name for QueryDenomAuthorityMetadataResponse {
-    const NAME: &'static str = "QueryDenomAuthorityMetadataResponse";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryDenomsFromCreatorRequest defines the request structure for the
-/// DenomsFromCreator gRPC query.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryDenomsFromCreatorRequest {
-    #[prost(string, tag = "1")]
-    pub creator: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryDenomsFromCreatorRequest {
-    const NAME: &'static str = "QueryDenomsFromCreatorRequest";
-    const PACKAGE: &'static str = "tokenfactory.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
-    }
-}
-/// QueryDenomsFromCreatorRequest defines the response structure for the
-/// DenomsFromCreator gRPC query.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryDenomsFromCreatorResponse {
-    #[prost(string, repeated, tag = "1")]
-    pub denoms: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for QueryDenomsFromCreatorResponse {
-    const NAME: &'static str = "QueryDenomsFromCreatorResponse";
     const PACKAGE: &'static str = "tokenfactory.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
@@ -309,6 +171,144 @@ impl ::prost::Name for MsgSetDenomMetadata {
 pub struct MsgSetDenomMetadataResponse {}
 impl ::prost::Name for MsgSetDenomMetadataResponse {
     const NAME: &'static str = "MsgSetDenomMetadataResponse";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// DenomAuthorityMetadata specifies metadata for addresses that have specific
+/// capabilities over a token factory denom. Right now there is only one Admin
+/// permission, but is planned to be extended to the future.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomAuthorityMetadata {
+    /// Can be empty for no admin, or a valid address
+    #[prost(string, tag = "1")]
+    pub admin: ::prost::alloc::string::String,
+}
+impl ::prost::Name for DenomAuthorityMetadata {
+    const NAME: &'static str = "DenomAuthorityMetadata";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// GenesisState defines the tokenfactory module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// params defines the paramaters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    #[prost(message, repeated, tag = "2")]
+    pub factory_denoms: ::prost::alloc::vec::Vec<GenesisDenom>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// GenesisDenom defines a tokenfactory denom that is defined within genesis
+/// state. The structure contains DenomAuthorityMetadata which defines the
+/// denom's admin.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisDenom {
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
+}
+impl ::prost::Name for GenesisDenom {
+    const NAME: &'static str = "GenesisDenom";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryDenomAuthorityMetadataRequest defines the request structure for the
+/// DenomAuthorityMetadata gRPC query.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomAuthorityMetadataRequest {
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryDenomAuthorityMetadataRequest {
+    const NAME: &'static str = "QueryDenomAuthorityMetadataRequest";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryDenomAuthorityMetadataResponse defines the response structure for the
+/// DenomAuthorityMetadata gRPC query.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomAuthorityMetadataResponse {
+    #[prost(message, optional, tag = "1")]
+    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
+}
+impl ::prost::Name for QueryDenomAuthorityMetadataResponse {
+    const NAME: &'static str = "QueryDenomAuthorityMetadataResponse";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryDenomsFromCreatorRequest defines the request structure for the
+/// DenomsFromCreator gRPC query.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomsFromCreatorRequest {
+    #[prost(string, tag = "1")]
+    pub creator: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryDenomsFromCreatorRequest {
+    const NAME: &'static str = "QueryDenomsFromCreatorRequest";
+    const PACKAGE: &'static str = "tokenfactory.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)
+    }
+}
+/// QueryDenomsFromCreatorRequest defines the response structure for the
+/// DenomsFromCreator gRPC query.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDenomsFromCreatorResponse {
+    #[prost(string, repeated, tag = "1")]
+    pub denoms: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for QueryDenomsFromCreatorResponse {
+    const NAME: &'static str = "QueryDenomsFromCreatorResponse";
     const PACKAGE: &'static str = "tokenfactory.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("tokenfactory.v1beta1.{}", Self::NAME)

@@ -454,7 +454,7 @@ impl Module {
                             %tx_hash,
 
                             %tx.tx_result.code,
-                            tx.tx_result.data = %::serde_utils::to_hex(&tx.tx_result.data),
+                            ?tx.tx_result.data,
                             %tx.tx_result.log,
                             %tx.tx_result.info,
                             %tx.tx_result.gas_wanted,
@@ -501,6 +501,8 @@ impl Module {
             timeout_height: 0,
             extension_options: vec![],
             non_critical_extension_options: vec![],
+            unordered: false,
+            timeout_timestamp: None,
         };
 
         let auth_info = AuthInfo {
@@ -711,6 +713,7 @@ fn process_msgs(
                         delay_period: message.delay_period,
                     })
                 }
+                #[allow(deprecated)]
                 IbcMessage::ConnectionOpenTry(message) => {
                     mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                         client_id: message.client_id.to_string(),
@@ -735,6 +738,7 @@ fn process_msgs(
                         ..Default::default()
                     })
                 }
+                #[allow(deprecated)]
                 IbcMessage::ConnectionOpenAck(message) => {
                     mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                         client_state: Some(

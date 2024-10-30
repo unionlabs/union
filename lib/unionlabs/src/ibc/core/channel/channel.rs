@@ -23,6 +23,7 @@ pub struct Channel {
     pub connection_hops: Vec<ConnectionId>,
     // REVIEW(benluelo): Make this more strongly typed?
     pub version: String,
+    pub upgrade_sequence: u64,
 }
 
 impl From<Channel> for protos::ibc::core::channel::v1::Channel {
@@ -37,6 +38,7 @@ impl From<Channel> for protos::ibc::core::channel::v1::Channel {
                 .map(|x| x.to_string_prefixed())
                 .collect(),
             version: value.version,
+            upgrade_sequence: value.upgrade_sequence,
         }
     }
 }
@@ -72,6 +74,7 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
                 .collect::<Result<_, _>>()
                 .map_err(TryFromChannelError::ConnectionHops)?,
             version: proto.version,
+            upgrade_sequence: proto.upgrade_sequence,
         })
     }
 }
@@ -129,6 +132,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
                 .collect::<Result<_, _>>()
                 .map_err(TryFromEthAbiChannelError::ConnectionHops)?,
             version: value.version,
+            upgrade_sequence: 0,
         })
     }
 }

@@ -35,7 +35,7 @@ pub mod proto {
 
     use crate::types::{block_id, vote::Vote};
 
-    impl From<Vote> for protos::tendermint::types::Vote {
+    impl From<Vote> for protos::cometbft::types::v1::Vote {
         fn from(value: Vote) -> Self {
             Self {
                 r#type: value.ty.into(),
@@ -70,10 +70,10 @@ pub mod proto {
         ValidatorAddress(#[from] InvalidLength),
     }
 
-    impl TryFrom<protos::tendermint::types::Vote> for Vote {
+    impl TryFrom<protos::cometbft::types::v1::Vote> for Vote {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::Vote) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::Vote) -> Result<Self, Self::Error> {
             Ok(Self {
                 ty: value.r#type.try_into()?,
                 height: value.height.try_into()?,

@@ -1,10 +1,11 @@
 use cometbft_types::{
     crypto::public_key::PublicKey,
     types::{
-        block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-        canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
-        commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
-        simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
+        block_id::BlockId, canonical_block_id::CanonicalBlockId,
+        canonical_part_set_header::CanonicalPartSetHeader, canonical_vote::CanonicalVote,
+        commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
+        signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
+        validator_set::ValidatorSet,
     },
 };
 use prost::Message;
@@ -29,7 +30,7 @@ pub(crate) fn canonical_vote(
     };
 
     Ok(
-        Into::<protos::tendermint::types::LegacyCanonicalVote>::into(CanonicalVote {
+        Into::<protos::tendermint::types::CanonicalVote>::into(CanonicalVote {
             ty: SignedMsgType::Precommit,
             height: commit.height,
             // roundabout way to go from i32 >= 0 to i64 >= 0

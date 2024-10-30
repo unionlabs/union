@@ -202,25 +202,6 @@ impl ::prost::Name for ForwardRelayerAddress {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
     }
 }
-/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
-/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Metadata {
-    /// fee_version defines the ICS29 fee version
-    #[prost(string, tag = "1")]
-    pub fee_version: ::prost::alloc::string::String,
-    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
-    #[prost(string, tag = "2")]
-    pub app_version: ::prost::alloc::string::String,
-}
-impl ::prost::Name for Metadata {
-    const NAME: &'static str = "Metadata";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
 /// QueryIncentivizedPacketsRequest defines the request type for the IncentivizedPackets rpc
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -705,6 +686,25 @@ impl ::prost::Name for MsgPayPacketFeeAsync {
 pub struct MsgPayPacketFeeAsyncResponse {}
 impl ::prost::Name for MsgPayPacketFeeAsyncResponse {
     const NAME: &'static str = "MsgPayPacketFeeAsyncResponse";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Metadata {
+    /// fee_version defines the ICS29 fee version
+    #[prost(string, tag = "1")]
+    pub fee_version: ::prost::alloc::string::String,
+    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
+    #[prost(string, tag = "2")]
+    pub app_version: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Metadata {
+    const NAME: &'static str = "Metadata";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)

@@ -82,8 +82,6 @@ impl ::prost::Name for SignDoc {
 }
 /// SignDocDirectAux is the type used for generating sign bytes for
 /// SIGN_MODE_DIRECT_AUX.
-///
-/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignDocDirectAux {
@@ -105,7 +103,7 @@ pub struct SignDocDirectAux {
     /// sequence is the sequence number of the signing account.
     #[prost(uint64, tag = "5")]
     pub sequence: u64,
-    /// tips have been depreacted and should not be used
+    /// tips have been deprecated and should not be used
     #[deprecated]
     #[prost(message, optional, tag = "6")]
     pub tip: ::core::option::Option<Tip>,
@@ -132,13 +130,33 @@ pub struct TxBody {
     pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
     /// memo is any arbitrary note/comment to be added to the transaction.
     /// WARNING: in clients, any publicly exposed text should not be called memo,
-    /// but should be called `note` instead (see <https://github.com/cosmos/cosmos-sdk/issues/9122>).
+    /// but should be called `note` instead (see
+    /// <https://github.com/cosmos/cosmos-sdk/issues/9122>).
     #[prost(string, tag = "2")]
     pub memo: ::prost::alloc::string::String,
-    /// timeout is the block height after which this transaction will not
-    /// be processed by the chain
+    /// timeout_height is the block height after which this transaction will not
+    /// be processed by the chain.
     #[prost(uint64, tag = "3")]
     pub timeout_height: u64,
+    /// unordered, when set to true, indicates that the transaction signer(s)
+    /// intend for the transaction to be evaluated and executed in an un-ordered
+    /// fashion. Specifically, the account's nonce will NOT be checked or
+    /// incremented, which allows for fire-and-forget as well as concurrent
+    /// transaction execution.
+    ///
+    /// Note, when set to true, the existing 'timeout_height' value must
+    /// be set and will be used to correspond to a time_stamp in which the transaction is deemed
+    /// valid.
+    #[prost(bool, tag = "4")]
+    pub unordered: bool,
+    /// timeout_timestamp is the block time after which this transaction will not
+    /// be processed by the chain.
+    ///
+    /// Note, if unordered=true this value MUST be set
+    /// and will act as a short-lived TTL in which the transaction is deemed valid
+    /// and kept in memory to prevent duplicates.
+    #[prost(message, optional, tag = "5")]
+    pub timeout_timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     /// extension_options are arbitrary options that can be added by chains
     /// when the default options are not sufficient. If any of these are present
     /// and can't be handled, the transaction will be rejected
@@ -178,8 +196,6 @@ pub struct AuthInfo {
     ///
     /// This field is ignored if the chain didn't enable tips, i.e. didn't add the
     /// `TipDecorator` in its posthandler.
-    ///
-    /// Since: cosmos-sdk 0.46
     #[deprecated]
     #[prost(message, optional, tag = "3")]
     pub tip: ::core::option::Option<Tip>,
@@ -288,7 +304,7 @@ impl ::prost::Name for ModeInfo {
 }
 /// Fee includes the amount of coins paid in fees and the maximum
 /// gas to be used by the transaction. The ratio yields an effective "gasprice",
-/// which must be above some miminum to be accepted into the mempool.
+/// which must be above some minimum to be accepted into the mempool.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Fee {
@@ -299,14 +315,16 @@ pub struct Fee {
     /// before an out of gas error occurs
     #[prost(uint64, tag = "2")]
     pub gas_limit: u64,
-    /// if unset, the first signer is responsible for paying the fees. If set, the specified account must pay the fees.
-    /// the payer must be a tx signer (and thus have signed this field in AuthInfo).
-    /// setting this field does *not* change the ordering of required signers for the transaction.
+    /// if unset, the first signer is responsible for paying the fees. If set, the
+    /// specified account must pay the fees. the payer must be a tx signer (and
+    /// thus have signed this field in AuthInfo). setting this field does *not*
+    /// change the ordering of required signers for the transaction.
     #[prost(string, tag = "3")]
     pub payer: ::prost::alloc::string::String,
-    /// if set, the fee payer (either the first signer or the value of the payer field) requests that a fee grant be used
-    /// to pay fees instead of the fee payer's own balance. If an appropriate fee grant does not exist or the chain does
-    /// not support fee grants, this will fail
+    /// if set, the fee payer (either the first signer or the value of the payer
+    /// field) requests that a fee grant be used to pay fees instead of the fee
+    /// payer's own balance. If an appropriate fee grant does not exist or the
+    /// chain does not support fee grants, this will fail
     #[prost(string, tag = "4")]
     pub granter: ::prost::alloc::string::String,
 }
@@ -318,8 +336,6 @@ impl ::prost::Name for Fee {
     }
 }
 /// Tip is the tip used for meta-transactions.
-///
-/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tip {
@@ -341,8 +357,6 @@ impl ::prost::Name for Tip {
 /// tipper) builds and sends to the fee payer (who will build and broadcast the
 /// actual tx). AuxSignerData is not a valid tx in itself, and will be rejected
 /// by the node if sent directly as-is.
-///
-/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuxSignerData {
@@ -376,13 +390,13 @@ impl ::prost::Name for AuxSignerData {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetTxsEventRequest {
     /// events is the list of transaction event type.
-    /// Deprecated post v0.47.x: use query instead, which should contain a valid
+    /// Deprecated: post v0.47.x use query instead, which should contain a valid
     /// events query.
     #[deprecated]
     #[prost(string, repeated, tag = "1")]
     pub events: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// pagination defines a pagination for the request.
-    /// Deprecated post v0.46.x: use page and limit instead.
+    /// Deprecated: post v0.46.x use page and limit instead.
     #[deprecated]
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
@@ -398,8 +412,6 @@ pub struct GetTxsEventRequest {
     pub limit: u64,
     /// query defines the transaction event query that is proxied to Tendermint's
     /// TxSearch RPC method. The query must be valid.
-    ///
-    /// Since cosmos-sdk 0.50
     #[prost(string, tag = "6")]
     pub query: ::prost::alloc::string::String,
 }
@@ -422,7 +434,7 @@ pub struct GetTxsEventResponse {
     #[prost(message, repeated, tag = "2")]
     pub tx_responses: ::prost::alloc::vec::Vec<super::super::base::abci::v1beta1::TxResponse>,
     /// pagination defines a pagination for the response.
-    /// Deprecated post v0.46.x: use total instead.
+    /// Deprecated: post v0.46.x use total instead.
     #[deprecated]
     #[prost(message, optional, tag = "3")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
@@ -482,8 +494,6 @@ pub struct SimulateRequest {
     #[prost(message, optional, tag = "1")]
     pub tx: ::core::option::Option<Tx>,
     /// tx_bytes is the raw transaction.
-    ///
-    /// Since: cosmos-sdk 0.43
     #[prost(bytes = "vec", tag = "2")]
     pub tx_bytes: ::prost::alloc::vec::Vec<u8>,
 }
@@ -549,8 +559,6 @@ impl ::prost::Name for GetTxResponse {
 }
 /// GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.45.2
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockWithTxsRequest {
@@ -570,8 +578,6 @@ impl ::prost::Name for GetBlockWithTxsRequest {
 }
 /// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
 /// method.
-///
-/// Since: cosmos-sdk 0.45.2
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockWithTxsResponse {
@@ -579,9 +585,9 @@ pub struct GetBlockWithTxsResponse {
     #[prost(message, repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<Tx>,
     #[prost(message, optional, tag = "2")]
-    pub block_id: ::core::option::Option<super::super::super::tendermint::types::BlockId>,
+    pub block_id: ::core::option::Option<super::super::super::cometbft::types::v1::BlockId>,
     #[prost(message, optional, tag = "3")]
-    pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
+    pub block: ::core::option::Option<super::super::super::cometbft::types::v1::Block>,
     /// pagination defines a pagination for the response.
     #[prost(message, optional, tag = "4")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
@@ -595,8 +601,6 @@ impl ::prost::Name for GetBlockWithTxsResponse {
 }
 /// TxDecodeRequest is the request type for the Service.TxDecode
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeRequest {
@@ -613,8 +617,6 @@ impl ::prost::Name for TxDecodeRequest {
 }
 /// TxDecodeResponse is the response type for the
 /// Service.TxDecode method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeResponse {
@@ -631,8 +633,6 @@ impl ::prost::Name for TxDecodeResponse {
 }
 /// TxEncodeRequest is the request type for the Service.TxEncode
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeRequest {
@@ -649,8 +649,6 @@ impl ::prost::Name for TxEncodeRequest {
 }
 /// TxEncodeResponse is the response type for the
 /// Service.TxEncode method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeResponse {
@@ -667,8 +665,6 @@ impl ::prost::Name for TxEncodeResponse {
 }
 /// TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeAminoRequest {
@@ -684,8 +680,6 @@ impl ::prost::Name for TxEncodeAminoRequest {
 }
 /// TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxEncodeAminoResponse {
@@ -701,8 +695,6 @@ impl ::prost::Name for TxEncodeAminoResponse {
 }
 /// TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeAminoRequest {
@@ -718,8 +710,6 @@ impl ::prost::Name for TxDecodeAminoRequest {
 }
 /// TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino
 /// RPC method.
-///
-/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxDecodeAminoResponse {
@@ -774,7 +764,7 @@ impl OrderBy {
 pub enum BroadcastMode {
     /// zero-value for mode ordering
     Unspecified = 0,
-    /// DEPRECATED: use BROADCAST_MODE_SYNC instead,
+    /// Deprecated: use BROADCAST_MODE_SYNC instead,
     /// BROADCAST_MODE_BLOCK is not supported by the SDK from v0.47.x onwards.
     Block = 1,
     /// BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits

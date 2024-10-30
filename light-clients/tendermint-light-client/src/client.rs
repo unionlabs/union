@@ -19,7 +19,7 @@ use unionlabs::{
     encoding::{DecodeAs, Proto},
     ensure,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::H256,
+    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
         client::{genesis_metadata::GenesisMetadata, height::Height},
         commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
@@ -114,8 +114,11 @@ impl IbcClient for TendermintLightClient {
             IbcClientError::ConsensusStateNotFound(header.trusted_height),
         )?;
 
-        check_trusted_header(&header, &consensus_state.data.next_validators_hash)
-            .map_err(Error::from)?;
+        check_trusted_header(
+            &header,
+            consensus_state.data.next_validators_hash.as_encoding(),
+        )
+        .map_err(Error::from)?;
 
         let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
             Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
@@ -218,7 +221,7 @@ impl IbcClient for TendermintLightClient {
                 data: ConsensusState {
                     timestamp: header.signed_header.header.time,
                     root: MerkleRoot {
-                        hash: header.signed_header.header.app_hash,
+                        hash: header.signed_header.header.app_hash.into_encoding(),
                     },
                     next_validators_hash: header.signed_header.header.next_validators_hash,
                 },
@@ -446,7 +449,7 @@ pub fn construct_partial_header(
     chain_id: String,
     height: BoundedI64<0, { i64::MAX }>,
     time: Timestamp,
-    next_validators_hash: H256,
+    next_validators_hash: H256<HexUnprefixed>,
 ) -> SignedHeader {
     SignedHeader {
         header: cometbft_types::types::header::Header {

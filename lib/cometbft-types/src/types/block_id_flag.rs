@@ -15,7 +15,7 @@ pub mod proto {
 
     use crate::types::block_id_flag::BlockIdFlag;
 
-    impl From<BlockIdFlag> for protos::tendermint::types::BlockIdFlag {
+    impl From<BlockIdFlag> for protos::cometbft::types::v1::BlockIdFlag {
         fn from(value: BlockIdFlag) -> Self {
             match value {
                 BlockIdFlag::Unknown => Self::Unknown,
@@ -28,17 +28,17 @@ pub mod proto {
 
     impl From<BlockIdFlag> for i32 {
         fn from(value: BlockIdFlag) -> Self {
-            protos::tendermint::types::BlockIdFlag::from(value).into()
+            protos::cometbft::types::v1::BlockIdFlag::from(value).into()
         }
     }
 
-    impl From<protos::tendermint::types::BlockIdFlag> for BlockIdFlag {
-        fn from(value: protos::tendermint::types::BlockIdFlag) -> Self {
+    impl From<protos::cometbft::types::v1::BlockIdFlag> for BlockIdFlag {
+        fn from(value: protos::cometbft::types::v1::BlockIdFlag) -> Self {
             match value {
-                protos::tendermint::types::BlockIdFlag::Unknown => Self::Unknown,
-                protos::tendermint::types::BlockIdFlag::Absent => Self::Absent,
-                protos::tendermint::types::BlockIdFlag::Commit => Self::Commit,
-                protos::tendermint::types::BlockIdFlag::Nil => Self::Nil,
+                protos::cometbft::types::v1::BlockIdFlag::Unknown => Self::Unknown,
+                protos::cometbft::types::v1::BlockIdFlag::Absent => Self::Absent,
+                protos::cometbft::types::v1::BlockIdFlag::Commit => Self::Commit,
+                protos::cometbft::types::v1::BlockIdFlag::Nil => Self::Nil,
             }
         }
     }
@@ -48,13 +48,13 @@ pub mod proto {
 
         fn try_from(value: i32) -> Result<Self, Self::Error> {
             Ok(
-                match protos::tendermint::types::BlockIdFlag::try_from(value)
+                match protos::cometbft::types::v1::BlockIdFlag::try_from(value)
                     .map_err(|_| UnknownEnumVariant(value))?
                 {
-                    protos::tendermint::types::BlockIdFlag::Unknown => Self::Unknown,
-                    protos::tendermint::types::BlockIdFlag::Absent => Self::Absent,
-                    protos::tendermint::types::BlockIdFlag::Commit => Self::Commit,
-                    protos::tendermint::types::BlockIdFlag::Nil => Self::Nil,
+                    protos::cometbft::types::v1::BlockIdFlag::Unknown => Self::Unknown,
+                    protos::cometbft::types::v1::BlockIdFlag::Absent => Self::Absent,
+                    protos::cometbft::types::v1::BlockIdFlag::Commit => Self::Commit,
+                    protos::cometbft::types::v1::BlockIdFlag::Nil => Self::Nil,
                 },
             )
         }

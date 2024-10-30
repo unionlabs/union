@@ -1,13 +1,18 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::hash::H256;
+use unionlabs::{
+    bytes::Bytes,
+    hash::{
+        hash_v2::{Base64, HexUnprefixed},
+        H256,
+    },
+};
 
 use crate::crypto::proof::Proof;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TxProof {
-    pub root_hash: H256,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub data: Vec<u8>,
+    pub root_hash: H256<HexUnprefixed>,
+    pub data: Bytes<Base64>,
     pub proof: Proof,
 }
 
@@ -20,23 +25,23 @@ pub mod proto {
 
     use crate::{crypto::proof, types::tx_proof::TxProof};
 
-    impl From<TxProof> for protos::tendermint::types::TxProof {
+    impl From<TxProof> for protos::cometbft::types::v1::TxProof {
         fn from(value: TxProof) -> Self {
             Self {
                 root_hash: value.root_hash.into(),
-                data: value.data,
+                data: value.data.into(),
                 proof: Some(value.proof.into()),
             }
         }
     }
 
-    impl TryFrom<protos::tendermint::types::TxProof> for TxProof {
+    impl TryFrom<protos::cometbft::types::v1::TxProof> for TxProof {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::TxProof) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::TxProof) -> Result<Self, Self::Error> {
             Ok(Self {
                 root_hash: value.root_hash.try_into()?,
-                data: value.data,
+                data: value.data.into(),
                 proof: required!(value.proof)?.try_into()?,
             })
         }

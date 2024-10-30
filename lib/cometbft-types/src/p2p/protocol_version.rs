@@ -2,8 +2,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProtocolVersion {
+    #[serde(with = "::serde_utils::string")]
     pub p2p: u64,
+    #[serde(with = "::serde_utils::string")]
     pub block: u64,
+    #[serde(with = "::serde_utils::string")]
     pub app: u64,
 }
 

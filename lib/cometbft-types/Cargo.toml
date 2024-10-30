@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 prost                 = { workspace = true, optional = true }
-protos                = { workspace = true, features = ["tendermint+abci", "tendermint+blocksync", "tendermint+consensus", "tendermint+crypto", "tendermint+p2p", "tendermint+privval", "tendermint+statesync", "tendermint+store", "tendermint+types", "tendermint+version"], optional = true }
+protos                = { workspace = true, features = ["cometbft+types+v1"] } # always enable types bc we use the raw CommitSig type for serde
 serde-utils.workspace = true
 serde.workspace       = true
 sha2                  = { workspace = true, optional = true }
@@ -25,5 +25,29 @@ unionlabs             = { workspace = true, features = ["test_utils"] }
 
 [features]
 default = ["proto", "hash"]
-hash    = ["dep:sha2", "dep:prost"]
-proto   = ["dep:protos", "unionlabs/proto"]
+hash = ["dep:sha2", "dep:prost"]
+proto = [
+  "unionlabs/proto",
+
+  "protos/tendermint+abci",
+  "protos/tendermint+blocksync",
+  "protos/tendermint+consensus",
+  "protos/tendermint+crypto",
+  "protos/tendermint+p2p",
+  "protos/tendermint+privval",
+  "protos/tendermint+statesync",
+  "protos/tendermint+store",
+  "protos/tendermint+types",
+  "protos/tendermint+version",
+
+  "protos/cometbft+abci+v1",
+  "protos/cometbft+blocksync+v1",
+  "protos/cometbft+consensus+v1",
+  "protos/cometbft+crypto+v1",
+  "protos/cometbft+p2p+v1",
+  "protos/cometbft+privval+v1",
+  "protos/cometbft+statesync+v1",
+  "protos/cometbft+store+v1",
+  # "protos/cometbft+types+v1", this is always enabled
+  "protos/cometbft+version+v1",
+]

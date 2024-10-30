@@ -209,6 +209,7 @@ pub mod hash_v2 {
         InvalidLength(#[from] InvalidLength),
     }
 
+    #[repr(transparent)]
     pub struct Hash<const BYTES: usize, E: Encoding = HexPrefixed> {
         // we abuse deprecated a bit here to make sure this field doesn't get read anywhere it shouldn't, enforcing usage of the constructor instead - this makes sure that the const {} block gets monomorphized, causing a post-mono error if BYTES is 0.
         #[deprecated = "this field should never be used directly, use Hash::new() to construct this type and .get{_mut}() to access the data"]
@@ -279,6 +280,14 @@ pub mod hash_v2 {
             }
         }
 
+        #[must_use = "constructing a Hash has no effect"]
+        pub const fn new_ref(arr: &[u8; BYTES]) -> &Self {
+            const { assert!(BYTES > 0, "BYTES must be greater than 0") };
+
+            // SAFETY: Hash has the same layout as [u8; BYTES], guaranteed by repr(transparent)
+            unsafe { &*core::ptr::from_ref::<[u8; BYTES]>(arr).cast::<Self>() }
+        }
+
         #[must_use = "reading the inner value has no effect"]
         #[inline(always)]
         pub fn get(&self) -> &[u8; BYTES] {
@@ -310,6 +319,12 @@ pub mod hash_v2 {
         #[inline(always)]
         pub fn into_encoding<E2: Encoding>(&self) -> Hash<BYTES, E2> {
             Hash::new(*self.get())
+        }
+
+        #[must_use = "converting a hash to a hash with a different encoding has no effect"]
+        #[inline(always)]
+        pub fn as_encoding<E2: Encoding>(&self) -> &Hash<BYTES, E2> {
+            Hash::new_ref(self.get())
         }
     }
 
@@ -752,6 +767,13 @@ pub mod hash_v2 {
                     found: 4
                 }))
             );
+        }
+
+        #[test]
+        fn new_ref() {
+            let arr = &[1, 2, 3];
+
+            assert_eq!(<Hash<3, HexPrefixed>>::new_ref(arr).get(), arr);
         }
     }
 }

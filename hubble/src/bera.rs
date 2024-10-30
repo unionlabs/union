@@ -87,7 +87,8 @@ impl Bera {
                 .beacon_store_abci_query([LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX], slot, false)
                 .await?
                 .response
-                .value,
+                .value
+                .unwrap(),
         )?;
 
         Ok(header.into())

@@ -12,8 +12,8 @@ pub struct EventAttribute {
 pub mod proto {
     use crate::abci::event_attribute::EventAttribute;
 
-    impl From<protos::tendermint::abci::EventAttribute> for EventAttribute {
-        fn from(value: protos::tendermint::abci::EventAttribute) -> Self {
+    impl From<protos::cometbft::abci::v1::EventAttribute> for EventAttribute {
+        fn from(value: protos::cometbft::abci::v1::EventAttribute) -> Self {
             Self {
                 key: value.key,
                 value: value.value,
@@ -22,7 +22,7 @@ pub mod proto {
         }
     }
 
-    impl From<EventAttribute> for protos::tendermint::abci::EventAttribute {
+    impl From<EventAttribute> for protos::cometbft::abci::v1::EventAttribute {
         fn from(value: EventAttribute) -> Self {
             Self {
                 key: value.key,

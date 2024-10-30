@@ -212,5 +212,27 @@ pub mod msg_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn module_query_safe(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgModuleQuerySafe>,
+        ) -> std::result::Result<tonic::Response<super::MsgModuleQuerySafeResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.interchain_accounts.host.v1.Msg/ModuleQuerySafe",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.interchain_accounts.host.v1.Msg",
+                "ModuleQuerySafe",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }

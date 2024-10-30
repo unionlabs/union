@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{hash::H256, ibc::core::commitment::merkle_root::MerkleRoot};
+use unionlabs::{
+    hash::{hash_v2::HexUnprefixed, H256},
+    ibc::core::commitment::merkle_root::MerkleRoot,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub timestamp: u64,
     pub app_hash: MerkleRoot,
-    pub next_validators_hash: H256,
+    pub next_validators_hash: H256<HexUnprefixed>,
 }
 
 #[cfg(feature = "proto")]

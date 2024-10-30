@@ -6,7 +6,7 @@ use std::{
 use cometbft_types::{
     crypto::public_key::PublicKey,
     types::{
-        canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
+        canonical_block_id::CanonicalBlockId, canonical_part_set_header::CanonicalPartSetHeader,
         commit_sig::CommitSig, signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         validator::Validator,
     },
@@ -256,10 +256,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 timestamp: _,
                                 signature,
                             } => {
-                                if let Some(validator_index) = validators_map.get(validator_address)
+                                if let Some(validator_index) =
+                                    validators_map.get(validator_address.as_encoding())
                                 {
                                     bitmap.set_bit(*validator_index as u64, true);
-                                    signatures.push(signature.clone());
+                                    signatures.push(signature.clone().into());
                                     trace!(
                                         %validator_address,
                                         %validator_index,
@@ -290,7 +291,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 panic!("must be bn254")
                             };
                             SimpleValidator {
-                                pub_key: PublicKey::Bn254(key.to_vec()),
+                                pub_key: PublicKey::Bn254(key.clone()),
                                 voting_power: v.voting_power.into(),
                             }
                         })

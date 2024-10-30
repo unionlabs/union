@@ -17,6 +17,10 @@ pub struct Allocation {
     /// allow list of receivers, an empty allow list permits any receiver address
     #[prost(string, repeated, tag = "4")]
     pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// allow list of memo strings, an empty list prohibits all memo strings;
+    /// a list only with "*" permits any memo string
+    #[prost(string, repeated, tag = "5")]
+    pub allowed_packet_data: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 impl ::prost::Name for Allocation {
     const NAME: &'static str = "Allocation";
@@ -87,25 +91,92 @@ impl ::prost::Name for Params {
         ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
     }
 }
-/// GenesisState defines the ibc-transfer genesis state
+/// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
+/// ICS20 enabled chains. See ICS Spec here:
+/// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
+pub struct MsgTransfer {
+    /// the port on which the packet will be sent
     #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
+    pub source_port: ::prost::alloc::string::String,
+    /// the channel by which the packet will be sent
+    #[prost(string, tag = "2")]
+    pub source_channel: ::prost::alloc::string::String,
+    /// the tokens to be transferred
     #[prost(message, optional, tag = "3")]
-    pub params: ::core::option::Option<Params>,
-    /// total_escrowed contains the total amount of tokens escrowed
-    /// by the transfer module
-    #[prost(message, repeated, tag = "4")]
-    pub total_escrowed:
-        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+    pub token: ::core::option::Option<super::super::super::super::cosmos::base::v1beta1::Coin>,
+    /// the sender address
+    #[prost(string, tag = "4")]
+    pub sender: ::prost::alloc::string::String,
+    /// the recipient address on the destination chain
+    #[prost(string, tag = "5")]
+    pub receiver: ::prost::alloc::string::String,
+    /// Timeout height relative to the current block height.
+    /// The timeout is disabled when set to 0.
+    #[prost(message, optional, tag = "6")]
+    pub timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
+    /// Timeout timestamp in absolute nanoseconds since unix epoch.
+    /// The timeout is disabled when set to 0.
+    #[prost(uint64, tag = "7")]
+    pub timeout_timestamp: u64,
+    /// optional memo
+    #[prost(string, tag = "8")]
+    pub memo: ::prost::alloc::string::String,
 }
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
+impl ::prost::Name for MsgTransfer {
+    const NAME: &'static str = "MsgTransfer";
+    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
+    }
+}
+/// MsgTransferResponse defines the Msg/Transfer response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgTransferResponse {
+    /// sequence number of the transfer packet sent
+    #[prost(uint64, tag = "1")]
+    pub sequence: u64,
+}
+impl ::prost::Name for MsgTransferResponse {
+    const NAME: &'static str = "MsgTransferResponse";
+    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams is the Msg/UpdateParams request type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the transfer parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the response structure for executing a
+/// MsgUpdateParams message.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
     const PACKAGE: &'static str = "ibc.applications.transfer.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
@@ -313,92 +384,25 @@ impl ::prost::Name for QueryTotalEscrowForDenomResponse {
         ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
     }
 }
-/// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
-/// ICS20 enabled chains. See ICS Spec here:
-/// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
+/// GenesisState defines the ibc-transfer genesis state
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTransfer {
-    /// the port on which the packet will be sent
+pub struct GenesisState {
     #[prost(string, tag = "1")]
-    pub source_port: ::prost::alloc::string::String,
-    /// the channel by which the packet will be sent
-    #[prost(string, tag = "2")]
-    pub source_channel: ::prost::alloc::string::String,
-    /// the tokens to be transferred
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
     #[prost(message, optional, tag = "3")]
-    pub token: ::core::option::Option<super::super::super::super::cosmos::base::v1beta1::Coin>,
-    /// the sender address
-    #[prost(string, tag = "4")]
-    pub sender: ::prost::alloc::string::String,
-    /// the recipient address on the destination chain
-    #[prost(string, tag = "5")]
-    pub receiver: ::prost::alloc::string::String,
-    /// Timeout height relative to the current block height.
-    /// The timeout is disabled when set to 0.
-    #[prost(message, optional, tag = "6")]
-    pub timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-    /// Timeout timestamp in absolute nanoseconds since unix epoch.
-    /// The timeout is disabled when set to 0.
-    #[prost(uint64, tag = "7")]
-    pub timeout_timestamp: u64,
-    /// optional memo
-    #[prost(string, tag = "8")]
-    pub memo: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgTransfer {
-    const NAME: &'static str = "MsgTransfer";
-    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
-    }
-}
-/// MsgTransferResponse defines the Msg/Transfer response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTransferResponse {
-    /// sequence number of the transfer packet sent
-    #[prost(uint64, tag = "1")]
-    pub sequence: u64,
-}
-impl ::prost::Name for MsgTransferResponse {
-    const NAME: &'static str = "MsgTransferResponse";
-    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParams is the Msg/UpdateParams request type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// signer address
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    /// params defines the transfer parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
     pub params: ::core::option::Option<Params>,
+    /// total_escrowed contains the total amount of tokens escrowed
+    /// by the transfer module
+    #[prost(message, repeated, tag = "4")]
+    pub total_escrowed:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the response structure for executing a
-/// MsgUpdateParams message.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
     const PACKAGE: &'static str = "ibc.applications.transfer.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.transfer.v1.{}", Self::NAME)
