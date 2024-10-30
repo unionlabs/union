@@ -10,7 +10,7 @@ pub struct VerificationContext<'a> {
     pub deps: Deps<'a, UnionCustomQuery>,
 }
 
-impl<'a> BlsVerify for VerificationContext<'a> {
+impl BlsVerify for VerificationContext<'_> {
     fn fast_aggregate_verify<'pk>(
         &self,
         public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,

@@ -1,9 +1,9 @@
 use beacon_api_types::{
     Domain, DomainType, ForkData, ForkParameters, SigningData, Version,
-    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH, SYNC_COMMITTEE_SIZE,
+    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
 };
 use sha2::{Digest, Sha256};
-use ssz::{types::BitVector, Ssz};
+use ssz::Ssz;
 use typenum::Unsigned;
 use unionlabs::hash::H256;
 
