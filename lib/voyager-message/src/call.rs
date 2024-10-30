@@ -489,7 +489,7 @@ impl CallT<VoyagerMessage> for Call {
                             .ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id,
-                            channel_id: event.channel_id.to_string(),
+                            channel_id: Some(event.channel_id),
                         },
                         connection_hops: vec![event.connection.counterparty.connection_id.unwrap()],
                         version: event.version.clone(),

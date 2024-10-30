@@ -25,8 +25,8 @@ use serde::{Deserialize, Serialize};
 pub use typenum;
 
 use crate::{
+    errors::{ExpectedLength, InvalidLength},
     ibc::core::client::height::{Height, HeightFromStrError},
-    id::Bounded,
     validated::Validated,
 };
 
@@ -139,7 +139,22 @@ pub enum TryFromEthAbiBytesErrorAlloy<E> {
 
 /// An empty string. Will only parse/serialize to/from `""`.
 pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
-pub type EmptyStringValidator = Bounded<0, 0>;
+pub struct EmptyStringValidator;
+
+impl<T: AsRef<str>> validated::Validate<T> for EmptyStringValidator {
+    type Error = InvalidLength;
+
+    fn validate(s: T) -> Result<T, Self::Error> {
+        if s.as_ref().is_empty() {
+            Ok(s)
+        } else {
+            Err(InvalidLength {
+                expected: ExpectedLength::Exact(0),
+                found: s.as_ref().len(),
+            })
+        }
+    }
+}
 
 #[doc(hidden)]
 pub use paste::paste;

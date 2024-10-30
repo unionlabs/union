@@ -22,7 +22,10 @@ use ucs01_relay_api::{
     protocol::TransferProtocol,
     types::make_foreign_denom,
 };
-use unionlabs::validated::Validated;
+use unionlabs::{
+    id::{ChannelId, PortId},
+    validated::Validated,
+};
 
 use crate::{
     contract::{execute, instantiate, query},
@@ -617,8 +620,8 @@ fn test_pfm_valid_memo() {
         &(Memo::Forward {
             forward: PacketForward {
                 receiver: Validated::new(fwd_contract_addr.to_string()).unwrap(),
-                port: Validated::new(fwd_dst_port.clone()).unwrap(),
-                channel: Validated::new(fwd_dst_channel.clone()).unwrap(),
+                port: PortId::new(fwd_dst_port.clone()).unwrap(),
+                channel: ChannelId::from_str_prefixed(&fwd_dst_channel).unwrap(),
                 next: None,
                 retries: 1,
                 return_info: None,

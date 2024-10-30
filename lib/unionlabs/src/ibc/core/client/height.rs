@@ -125,12 +125,16 @@ impl Ord for Height {
 
 impl fmt::Display for Height {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.revision {
-            Some(revision_number) => {
-                write!(f, "{}-{}", revision_number, self.height)
-            }
-            None => {
-                write!(f, "{}", self.height)
+        if f.alternate() {
+            write!(f, "{}-{}", self.revision(), self.height)
+        } else {
+            match self.revision {
+                Some(revision_number) => {
+                    write!(f, "{}-{}", revision_number, self.height)
+                }
+                None => {
+                    write!(f, "{}", self.height)
+                }
             }
         }
     }
@@ -311,6 +315,28 @@ mod tests {
                 }
             ),
             "1"
+        );
+
+        assert_eq!(
+            format!(
+                "{:#}",
+                Height {
+                    revision: None,
+                    height: 1,
+                }
+            ),
+            "0-1"
+        );
+
+        assert_eq!(
+            format!(
+                "{:#}",
+                Height {
+                    revision: Some(nz!(1)),
+                    height: 1,
+                }
+            ),
+            "1-1"
         );
     }
 

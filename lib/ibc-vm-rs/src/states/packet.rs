@@ -11,7 +11,6 @@ use unionlabs::{
         ReceiptPath,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    validated::ValidateT,
 };
 
 use crate::{
@@ -83,10 +82,10 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into());
                 }
 
-                if packet.source_channel.to_string() != channel.counterparty.channel_id {
+                if Some(&packet.source_channel) != channel.counterparty.channel_id.as_ref() {
                     return Err(IbcError::SourceChannelMismatch(
                         packet.source_channel,
-                        channel.counterparty.channel_id.validate().unwrap(),
+                        channel.counterparty.channel_id.unwrap(),
                     )
                     .into());
                 }
@@ -392,7 +391,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         timeout_height,
                         timeout_timestamp,
                         destination_port: channel.counterparty.port_id,
-                        destination_channel: channel.counterparty.channel_id.validate().unwrap(),
+                        destination_channel: channel.counterparty.channel_id.unwrap(),
                         data,
                         connection_id: channel.connection_hops[0].clone(),
                     },
@@ -594,11 +593,10 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into());
                 }
 
-                if packet.destination_channel.to_string() != channel.counterparty.channel_id {
+                if Some(&packet.destination_channel) != channel.counterparty.channel_id.as_ref() {
                     return Err(IbcError::DestinationChannelMismatch(
                         packet.destination_channel,
-                        // TODO(aeryz): make the error String so that we don't need to validate
-                        channel.counterparty.channel_id.validate().unwrap(),
+                        channel.counterparty.channel_id.unwrap(),
                     )
                     .into());
                 }

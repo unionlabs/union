@@ -9,8 +9,7 @@ use unionlabs::{
         },
     },
     ics24::ConnectionPath,
-    id::ClientId,
-    validated::ValidateT,
+    id::{ClientId, ConnectionId},
 };
 
 use crate::{
@@ -331,7 +330,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 let connection: ConnectionEnd = host
                     .read(
                         &ConnectionPath {
-                            connection_id: connection_id.clone().validate().unwrap(),
+                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                         }
                         .into(),
                     )
@@ -355,7 +354,9 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     state: connection::state::State::Tryopen,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: Some(connection_id.clone().validate().unwrap()),
+                        connection_id: Some(
+                            ConnectionId::from_str_prefixed(&connection_id).unwrap(),
+                        ),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
@@ -402,13 +403,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 }
                 connection.state = connection::state::State::Open;
                 connection.counterparty.connection_id =
-                    Some(counterparty_connection_id.clone().validate().unwrap());
+                    Some(ConnectionId::from_str_prefixed(&counterparty_connection_id).unwrap());
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
 
                 host.commit(
                     ConnectionPath {
-                        connection_id: connection_id.clone().validate().unwrap(),
+                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                     }
                     .into(),
                     connection,
@@ -416,10 +417,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenAck(ibc_events::ConnectionOpenAck {
-                        connection_id: connection_id.validate().unwrap(),
+                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                         client_id,
                         counterparty_client_id,
-                        counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
+                        counterparty_connection_id: ConnectionId::from_str_prefixed(
+                            &counterparty_connection_id,
+                        )
+                        .unwrap(),
                     })],
                     IbcVmResponse::Empty,
                 ))
@@ -466,7 +470,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 let connection: ConnectionEnd = host
                     .read(
                         &ConnectionPath {
-                            connection_id: connection_id.clone().validate().unwrap(),
+                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                         }
                         .into(),
                     )
@@ -488,7 +492,9 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     state: connection::state::State::Open,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: Some(connection_id.clone().validate().unwrap()),
+                        connection_id: Some(
+                            ConnectionId::from_str_prefixed(&connection_id).unwrap(),
+                        ),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
@@ -542,7 +548,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 connection.state = connection::state::State::Open;
                 host.commit(
                     ConnectionPath {
-                        connection_id: connection_id.clone().validate().unwrap(),
+                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                     }
                     .into(),
                     connection,
@@ -551,7 +557,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenConfirm(
                         ibc_events::ConnectionOpenConfirm {
-                            connection_id: connection_id.validate().unwrap(),
+                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
                             client_id,
                             counterparty_client_id,
                             counterparty_connection_id,

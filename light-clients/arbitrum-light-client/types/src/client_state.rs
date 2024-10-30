@@ -27,10 +27,9 @@ pub mod proto {
     use unionlabs::{
         bounded::BoundedIntError,
         errors::{InvalidLength, MissingField, UnknownEnumVariant},
-        id::ClientIdValidator,
+        id::ParsePrefixedIdError,
         impl_proto_via_try_from_into, required,
         uint::{FromDecStrErr, U256},
-        validated::{Validate, ValidateT},
     };
 
     use crate::ClientState;
@@ -44,7 +43,7 @@ pub mod proto {
             value: protos::union::ibc::lightclients::arbitrum::v1::ClientState,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                l1_client_id: value.l1_client_id.validate().map_err(Error::L1ClientId)?,
+                l1_client_id: value.l1_client_id.parse().map_err(Error::L1ClientId)?,
                 chain_id: value
                     .chain_id
                     .parse()
@@ -82,7 +81,7 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid l1_client_id")]
-        L1ClientId(#[source] <ClientIdValidator as Validate<String>>::Error),
+        L1ClientId(#[source] ParsePrefixedIdError),
         #[error("invalid l1_contract_address")]
         ChainId(#[source] Arc<FromDecStrErr>),
         #[error("invalid l1_latest_confirmed_slot")]

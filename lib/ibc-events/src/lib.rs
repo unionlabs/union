@@ -197,7 +197,7 @@ event! {
 
         #[event(tag = "connection_open_init", deprecated("counterparty_connection_id"))]
         ConnectionOpenInit {
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             #[parse(ClientId::from_str)]
             client_id: ClientId,
@@ -207,37 +207,37 @@ event! {
 
         #[event(tag = "connection_open_try")]
         ConnectionOpenTry {
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             #[parse(ClientId::from_str)]
             client_id: ClientId,
             #[parse(ClientId::from_str)]
             counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             counterparty_connection_id: ConnectionId,
         },
 
         #[event(tag = "connection_open_ack")]
         ConnectionOpenAck {
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             #[parse(ClientId::from_str)]
             client_id: ClientId,
             #[parse(ClientId::from_str)]
             counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             counterparty_connection_id: ConnectionId,
         },
 
         #[event(tag = "connection_open_confirm")]
         ConnectionOpenConfirm {
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             #[parse(ClientId::from_str)]
             client_id: ClientId,
             #[parse(ClientId::from_str)]
             counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             counterparty_connection_id: ConnectionId,
         },
 
@@ -245,11 +245,11 @@ event! {
         ChannelOpenInit {
             #[parse(PortId::from_str)]
             port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             channel_id: ChannelId,
             #[parse(PortId::from_str)]
             counterparty_port_id: PortId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             version: String,
         },
@@ -258,13 +258,13 @@ event! {
         ChannelOpenTry {
             #[parse(PortId::from_str)]
             port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             channel_id: ChannelId,
             #[parse(PortId::from_str)]
             counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
             version: String,
         },
@@ -273,13 +273,13 @@ event! {
         ChannelOpenAck {
             #[parse(PortId::from_str)]
             port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             channel_id: ChannelId,
             #[parse(PortId::from_str)]
             counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -287,13 +287,13 @@ event! {
         ChannelOpenConfirm {
             #[parse(PortId::from_str)]
             port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             channel_id: ChannelId,
             #[parse(PortId::from_str)]
             counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -313,16 +313,16 @@ event! {
             packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_src_channel: ChannelId,
             #[parse(PortId::from_str)]
             packet_dst_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
             #[parse(hex::decode)]
             #[serde(with = "::serde_utils::hex_string")]
             packet_ack_hex: Vec<u8>,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -339,15 +339,15 @@ event! {
             packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_src_channel: ChannelId,
             #[parse(PortId::from_str)]
             packet_dst_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
             packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -365,15 +365,15 @@ event! {
             packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_src_channel: ChannelId,
             #[parse(PortId::from_str)]
             packet_dst_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
             packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -387,15 +387,15 @@ event! {
             packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_src_channel: ChannelId,
             #[parse(PortId::from_str)]
             packet_dst_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
             packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
@@ -409,15 +409,15 @@ event! {
             packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_src_channel: ChannelId,
             #[parse(PortId::from_str)]
             packet_dst_port: PortId,
-            #[parse(ChannelId::from_str)]
+            #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
             #[parse(Order::from_str)]
             packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str)]
+            #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
     }
@@ -452,7 +452,7 @@ impl IbcEvent {
 mod tests {
     mod event_conversion {
         use cometbft_types::abci::{event::Event, event_attribute::EventAttribute};
-        use unionlabs::ibc::core::client::height::{Height, HeightFromStrError};
+        use unionlabs::{ibc::core::client::height::Height, id::ConnectionId};
 
         use crate::{
             ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
@@ -487,10 +487,10 @@ mod tests {
                     ],
                 }),
                 Ok(ConnectionOpenConfirm {
-                    connection_id: "connection-11".parse().unwrap(),
+                    connection_id: ConnectionId::new(11),
                     client_id: "08-wasm-1".parse().unwrap(),
                     counterparty_client_id: "cometbls-new-0".parse().unwrap(),
-                    counterparty_connection_id: "connection-6".parse().unwrap(),
+                    counterparty_connection_id: ConnectionId::new(6),
                 })
             );
         }
@@ -500,7 +500,7 @@ mod tests {
             let attributes = vec![
                 EventAttribute {
                     key: "client_id".to_string(),
-                    value: "client_id".to_string(),
+                    value: "client_id-1".to_string(),
                     index: true,
                 },
                 EventAttribute {
@@ -527,7 +527,7 @@ mod tests {
             };
 
             let expected_event = UpdateClient {
-                client_id: "client_id".parse().unwrap(),
+                client_id: "client_id-1".parse().unwrap(),
                 client_type: "client_type".to_string(),
                 consensus_heights: vec![Height::new_with_revision(1, 1)],
             };
@@ -557,7 +557,7 @@ mod tests {
                     attributes: vec![
                         EventAttribute {
                             key: "client_id".to_string(),
-                            value: "client_id".to_string(),
+                            value: "client_id-1".to_string(),
                             index: true,
                         },
                         EventAttribute {

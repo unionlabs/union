@@ -135,22 +135,16 @@ where
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
-    // TODO: Use ClientId here
-    client_id: String,
+    client_id: crate::id::ClientId,
     height: Height,
 ) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
-    use crate::validated::ValidateT;
-
     query_ibc_abci::<T>(
         deps,
         env,
-        Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_id.validate().expect("invalid client id"),
-            height,
-        }),
+        Path::ClientConsensusState(ClientConsensusStatePath { client_id, height }),
     )
 }
 
@@ -159,19 +153,10 @@ where
 pub fn query_client_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
-    // TODO: Use ClientId here
-    client_id: String,
+    client_id: crate::id::ClientId,
 ) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
-    use crate::validated::ValidateT;
-
-    query_ibc_abci::<T>(
-        deps,
-        env,
-        Path::ClientState(ClientStatePath {
-            client_id: client_id.validate().expect("invalid client id"),
-        }),
-    )
+    query_ibc_abci::<T>(deps, env, Path::ClientState(ClientStatePath { client_id }))
 }

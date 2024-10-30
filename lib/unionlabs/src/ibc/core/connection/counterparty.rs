@@ -5,7 +5,7 @@ use macros::model;
 use crate::{
     errors::{required, MissingField},
     ibc::core::commitment::merkle_prefix::MerklePrefix,
-    id::{ClientId, ConnectionId},
+    id::{ClientId, ConnectionId, ParsePrefixedIdError},
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into, from))]
@@ -23,9 +23,7 @@ impl From<Counterparty> for protos::ibc::core::connection::v1::Counterparty {
             client_id: value.client_id.to_string(),
             connection_id: value
                 .connection_id
-                .as_deref()
-                .unwrap_or_default()
-                .to_string(),
+                .map_or_else(String::new, |c| c.to_string_prefixed()),
             prefix: Some(value.prefix.into()),
         }
     }
@@ -38,7 +36,7 @@ pub enum TryFromConnectionCounterpartyError {
     #[error("invalid client_id")]
     ClientId(#[source] <ClientId as FromStr>::Err),
     #[error("invalid connection_id")]
-    ConnectionId(#[source] <ConnectionId as FromStr>::Err),
+    ConnectionId(#[source] ParsePrefixedIdError),
 }
 
 impl TryFrom<protos::ibc::core::connection::v1::Counterparty> for Counterparty {
@@ -56,9 +54,7 @@ impl TryFrom<protos::ibc::core::connection::v1::Counterparty> for Counterparty {
                 None
             } else {
                 Some(
-                    value
-                        .connection_id
-                        .parse()
+                    ConnectionId::from_str_prefixed(&value.connection_id)
                         .map_err(TryFromConnectionCounterpartyError::ConnectionId)?,
                 )
             },
@@ -74,9 +70,7 @@ impl From<Counterparty> for contracts::ibc_handler::IbcCoreConnectionV1Counterpa
             client_id: value.client_id.to_string(),
             connection_id: value
                 .connection_id
-                .as_deref()
-                .unwrap_or_default()
-                .to_string(),
+                .map_or_else(String::new, |c| c.to_string_prefixed()),
             prefix: value.prefix.into(),
         }
     }
@@ -86,7 +80,7 @@ impl From<Counterparty> for contracts::ibc_handler::IbcCoreConnectionV1Counterpa
 #[cfg(feature = "ethabi")]
 pub enum TryFromEthAbiConnectionCounterpartyError {
     ClientId(<ClientId as FromStr>::Err),
-    ConnectionId(<ConnectionId as FromStr>::Err),
+    ConnectionId(ParsePrefixedIdError),
 }
 
 #[cfg(feature = "ethabi")]
@@ -105,9 +99,7 @@ impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1CounterpartyData> for Co
                 None
             } else {
                 Some(
-                    value
-                        .connection_id
-                        .parse()
+                    ConnectionId::from_str_prefixed(&value.connection_id)
                         .map_err(TryFromEthAbiConnectionCounterpartyError::ConnectionId)?,
                 )
             },

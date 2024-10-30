@@ -29,7 +29,6 @@ use unionlabs::{
     },
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    validated::ValidateT,
 };
 
 use crate::error::Error;
@@ -45,9 +44,11 @@ impl IbcHost for Contract {
 
     fn next_client_identifier(&mut self, client_type: &str) -> Result<ClientId, Error> {
         self.client_index += 1;
-        Ok(format!("{client_type}-{}", self.client_index)
-            .validate()
-            .unwrap())
+
+        Ok(ClientId::new(
+            client_type.to_owned(),
+            self.client_index.try_into().unwrap(),
+        ))
     }
 
     fn commit_raw(&mut self, key: Path, value: Vec<u8>) -> Result<(), Error> {
@@ -57,12 +58,11 @@ impl IbcHost for Contract {
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, Error> {
         self.connection_index += 1;
-        Ok(format!("connection-{}", self.connection_index)
-            .validate()
-            .unwrap())
+
+        Ok(ConnectionId::new(self.connection_index.try_into().unwrap()))
     }
 
-    fn client_state(&self, client_id: &str) -> Option<Vec<u8>> {
+    fn client_state(&self, client_id: &ClientId) -> Option<Vec<u8>> {
         self.commitments
             .get(&format!("clients/{client_id}/clientState"))
     }
@@ -80,9 +80,8 @@ impl IbcHost for Contract {
 
     fn next_channel_identifier(&mut self) -> Result<ChannelId, Error> {
         self.channel_index += 1;
-        Ok(format!("channel-{}", self.channel_index)
-            .validate()
-            .unwrap())
+
+        Ok(ChannelId::new(self.channel_index.try_into().unwrap()))
     }
 
     fn read_raw(&self, key: &Path) -> Option<Vec<u8>> {
@@ -112,9 +111,12 @@ impl IbcHost for Contract {
 #[derive(BorshDeserialize, BorshSerialize, Owner)]
 pub struct Contract {
     commitments: LookupMap<String, Vec<u8>>,
+
+    // TODO: Make these u32
     client_index: u64,
     connection_index: u64,
     channel_index: u64,
+
     account_ids: LookupMap<String, AccountId>,
 
     // client id -> account id
@@ -342,7 +344,7 @@ impl Contract {
         data: Vec<u8>,
     ) -> PromiseOrValue<IbcVmResponse> {
         assert!(
-            &*source_port == env::predecessor_account_id().as_str(),
+            source_port.as_str() == env::predecessor_account_id().as_str(),
             "expected sender to own the capability"
         );
 

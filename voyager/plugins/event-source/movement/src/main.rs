@@ -22,7 +22,7 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{ChannelEndPath, ConnectionPath},
-    id::{ChannelId, ClientId, PortId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
@@ -224,7 +224,7 @@ impl Module {
                 QueryHeight::Latest,
                 ChannelEndPath {
                     port_id: self_channel.counterparty.port_id.clone(),
-                    channel_id: self_channel.counterparty.channel_id.parse().unwrap(),
+                    channel_id: self_channel.counterparty.channel_id.unwrap(),
                 },
             )
             .await
@@ -491,7 +491,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::ConnectionOpenInit(event) => (
                         ConnectionOpenInit {
                             client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
+                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
+                                .unwrap(),
                             counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
                         }
                         .into(),
@@ -500,12 +501,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::ConnectionOpenTry(event) => (
                         ConnectionOpenTry {
                             client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: event
-                                .counterparty_connection_id
-                                .parse()
+                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
                                 .unwrap(),
+                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: ConnectionId::from_str_prefixed(
+                                &event.counterparty_connection_id,
+                            )
+                            .unwrap(),
                         }
                         .into(),
                         event.client_id.parse().unwrap(),
@@ -513,28 +515,30 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::ConnectionOpenAck(event) => (
                         ConnectionOpenAck {
                             client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: event
-                                .counterparty_connection_id
-                                .parse()
+                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
                                 .unwrap(),
+                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: ConnectionId::from_str_prefixed(
+                                &event.counterparty_connection_id,
+                            )
+                            .unwrap(),
                         }
                         .into(),
                         event.client_id.parse().unwrap(),
                     ),
-                    events::IbcEvent::ConnectionOpenConfirm(e) => (
+                    events::IbcEvent::ConnectionOpenConfirm(event) => (
                         ConnectionOpenConfirm {
-                            client_id: e.client_id.parse().unwrap(),
-                            connection_id: e.connection_id.parse().unwrap(),
-                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: e
-                                .counterparty_connection_id
-                                .parse()
+                            client_id: event.client_id.parse().unwrap(),
+                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
                                 .unwrap(),
+                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: ConnectionId::from_str_prefixed(
+                                &event.counterparty_connection_id,
+                            )
+                            .unwrap(),
                         }
                         .into(),
-                        e.client_id.parse().unwrap(),
+                        event.client_id.parse().unwrap(),
                     ),
                     events::IbcEvent::ChannelOpenInit(event) => {
                         let ledger_version = self.ledger_version_of_height(height).await;
@@ -557,7 +561,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenInit {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
+                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
+                                    .unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
                                 connection,
                                 version: event.version,
@@ -587,12 +592,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenTry {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_port_id
-                                    .parse()
+                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
                                     .unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: ChannelId::from_str_prefixed(
+                                    &event.counterparty_channel_id,
+                                )
+                                .unwrap(),
                                 connection,
                                 version: event.version,
                             }
@@ -634,12 +640,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenAck {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_channel_id
-                                    .parse()
+                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
                                     .unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: ChannelId::from_str_prefixed(
+                                    &event.counterparty_channel_id,
+                                )
+                                .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -681,12 +688,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenConfirm {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_channel_id
-                                    .parse()
+                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
                                     .unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: ChannelId::from_str_prefixed(
+                                    &event.counterparty_channel_id,
+                                )
+                                .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -705,7 +713,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
+                                ChannelId::from_str_prefixed(&event.packet.destination_channel)
+                                    .unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -740,7 +749,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
+                                ChannelId::from_str_prefixed(&event.packet.destination_channel)
+                                    .unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -774,7 +784,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.source_port.parse().unwrap(),
-                                event.source_channel.parse().unwrap(),
+                                ChannelId::from_str_prefixed(&event.source_channel).unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -808,7 +818,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.source_port.parse().unwrap(),
-                                event.packet.source_channel.parse().unwrap(),
+                                ChannelId::from_str_prefixed(&event.packet.source_channel).unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -891,7 +901,10 @@ pub fn convert_connection(
             connection_id: if connection.counterparty.connection_id.is_empty() {
                 None
             } else {
-                Some(connection.counterparty.connection_id.parse().unwrap())
+                Some(
+                    ConnectionId::from_str_prefixed(&connection.counterparty.connection_id)
+                        .unwrap(),
+                )
             },
             prefix: MerklePrefix {
                 key_prefix: connection.counterparty.prefix.key_prefix.into(),
@@ -907,12 +920,14 @@ pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
         ordering: channel.ordering.try_into().unwrap(),
         counterparty: channel::counterparty::Counterparty {
             port_id: channel.counterparty.port_id.parse().unwrap(),
-            channel_id: channel.counterparty.channel_id.parse().unwrap(),
+            channel_id: Some(
+                ChannelId::from_str_prefixed(&channel.counterparty.channel_id).unwrap(),
+            ),
         },
         connection_hops: channel
             .connection_hops
             .into_iter()
-            .map(|hop| hop.parse().unwrap())
+            .map(|hop| ConnectionId::from_str_prefixed(&hop).unwrap())
             .collect(),
         version: channel.version,
     }

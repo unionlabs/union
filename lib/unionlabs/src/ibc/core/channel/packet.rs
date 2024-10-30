@@ -5,8 +5,7 @@ use macros::model;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
-    id::{ChannelId, ChannelIdValidator, PortId, PortIdValidator},
-    validated::{Validate, ValidateT},
+    id::{ChannelId, Ics24IdParseError, ParsePrefixedIdError, PortId},
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::Packet), into, from))]
@@ -28,9 +27,9 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
         Self {
             sequence: value.sequence.get(),
             source_port: value.source_port.to_string(),
-            source_channel: value.source_channel.to_string(),
+            source_channel: value.source_channel.to_string_prefixed(),
             destination_port: value.destination_port.to_string(),
-            destination_channel: value.destination_channel.to_string(),
+            destination_channel: value.destination_channel.to_string_prefixed(),
             data: value.data,
             timeout_height: Some(value.timeout_height.into()),
             timeout_timestamp: value.timeout_timestamp,
@@ -45,13 +44,13 @@ pub enum TryFromPacketError {
     #[error("invalid sequence")]
     Sequence(#[source] TryFromIntError),
     #[error("invalid source_channel")]
-    SourceChannel(#[source] <ChannelIdValidator as Validate<String>>::Error),
+    SourceChannel(#[source] ParsePrefixedIdError),
     #[error("invalid destination_channel")]
-    DestinationChannel(#[source] <ChannelIdValidator as Validate<String>>::Error),
+    DestinationChannel(#[source] ParsePrefixedIdError),
     #[error("invalid source_port")]
-    SourcePort(#[source] <PortIdValidator as Validate<String>>::Error),
+    SourcePort(#[source] Ics24IdParseError),
     #[error("invalid destination_port")]
-    DestinationPort(#[source] <PortIdValidator as Validate<String>>::Error),
+    DestinationPort(#[source] Ics24IdParseError),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
@@ -65,20 +64,15 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
                 .map_err(TryFromPacketError::Sequence)?,
             source_port: proto
                 .source_port
-                .validate()
+                .try_into()
                 .map_err(TryFromPacketError::SourcePort)?,
-            source_channel: proto
-                .source_channel
-                .validate()
+            source_channel: ChannelId::from_str_prefixed(&proto.source_channel)
                 .map_err(TryFromPacketError::SourceChannel)?,
             destination_port: proto
                 .destination_port
-                .validate()
+                .try_into()
                 .map_err(TryFromPacketError::DestinationPort)?,
-
-            destination_channel: proto
-                .destination_channel
-                .validate()
+            destination_channel: ChannelId::from_str_prefixed(&proto.destination_channel)
                 .map_err(TryFromPacketError::DestinationChannel)?,
             data: proto.data,
             timeout_height: required!(proto.timeout_height)?.into(),
@@ -90,8 +84,8 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
 #[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiPacketError {
-    SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
-    DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
+    SourceChannel(ParsePrefixedIdError),
+    DestinationChannel(ParsePrefixedIdError),
 }
 
 #[cfg(feature = "ethabi")]
@@ -100,9 +94,9 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
         Self {
             sequence: value.sequence.get(),
             source_port: value.source_port.to_string(),
-            source_channel: value.source_channel.to_string(),
+            source_channel: value.source_channel.to_string_prefixed(),
             destination_port: value.destination_port.to_string(),
-            destination_channel: value.destination_channel.to_string(),
+            destination_channel: value.destination_channel.to_string_prefixed(),
             data: value.data.into(),
             timeout_height: contracts::ibc_handler::IbcCoreClientV1HeightData {
                 revision_number: value.timeout_height.revision(),

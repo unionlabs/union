@@ -22,7 +22,7 @@ pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
 }
 
 #[model]
-#[derive(Hash, derive_more::Display, clap::Subcommand, enumorph::Enumorph)]
+#[derive(Hash, derive_more::Display, enumorph::Enumorph)]
 pub enum Path {
     #[display(fmt = "{_0}")]
     ClientState(ClientStatePath),
@@ -150,27 +150,30 @@ impl IbcPath for ClientConsensusStatePath {
 }
 
 // REVIEW: Make this an `Option`?
-#[ibc_path("connections/{connection_id}", Option<ConnectionEnd>)]
+#[ibc_path("connections/{connection_id:#}", Option<ConnectionEnd>)]
 pub struct ConnectionPath {
+    #[ibc_path(ConnectionId::from_str_prefixed)]
     pub connection_id: ConnectionId,
 }
 
 // REVIEW: Make this an `Option`?
 #[ibc_path(
-    "channelEnds/ports/{port_id}/channels/{channel_id}",
+    "channelEnds/ports/{port_id}/channels/{channel_id:#}",
     Option<Channel>
 )]
 pub struct ChannelEndPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
 }
 
 #[ibc_path(
-    "commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}",
+    "commitments/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}",
     Option<H256>
 )]
 pub struct CommitmentPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
@@ -178,39 +181,44 @@ pub struct CommitmentPath {
 /// SHA-256 of the packet acknowledgement.
 ///
 /// If the packet has not yet been acknowledged (either because the packet does not exist or the packet has not been acknowledged yet), then the acknowledgement commitment is unset.
-#[ibc_path("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}", Option<H256>)]
+#[ibc_path("acks/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}", Option<H256>)]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
 /// This defaults to `false` for packets which have not yet been received.
 #[ibc_path(
-    "receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}",
+    "receipts/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}",
     bool
 )]
 pub struct ReceiptPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
-#[ibc_path("nextSequenceSend/ports/{port_id}/channels/{channel_id}", u64)]
+#[ibc_path("nextSequenceSend/ports/{port_id}/channels/{channel_id:#}", u64)]
 pub struct NextSequenceSendPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
 }
 
-#[ibc_path("nextSequenceRecv/ports/{port_id}/channels/{channel_id}", u64)]
+#[ibc_path("nextSequenceRecv/ports/{port_id}/channels/{channel_id:#}", u64)]
 pub struct NextSequenceRecvPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
 }
 
-#[ibc_path("nextSequenceAck/ports/{port_id}/channels/{channel_id}", u64)]
+#[ibc_path("nextSequenceAck/ports/{port_id}/channels/{channel_id:#}", u64)]
 pub struct NextSequenceAckPath {
     pub port_id: PortId,
+    #[ibc_path(ChannelId::from_str_prefixed)]
     pub channel_id: ChannelId,
 }
 
@@ -242,14 +250,14 @@ pub enum PathParseError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ibc::core::client::height::Height, validated::ValidateT};
+    use crate::ibc::core::client::height::Height;
 
     #[test]
     fn parse_ibc_paths_from_str() {
         assert_eq!(
             "clients/08-wasm-0/clientState".parse::<Path>().unwrap(),
             Path::ClientState(ClientStatePath {
-                client_id: "08-wasm-0".to_string().validate().unwrap()
+                client_id: ClientId::new("08-wasm", 0)
             })
         );
         assert_eq!(
@@ -257,14 +265,14 @@ mod tests {
                 .parse::<Path>()
                 .unwrap(),
             Path::ClientConsensusState(ClientConsensusStatePath {
-                client_id: "08-wasm-0".to_string().validate().unwrap(),
+                client_id: ClientId::new("08-wasm", 0),
                 height: Height::new(1)
             })
         );
         assert_eq!(
             "connections/connection-0".parse::<Path>().unwrap(),
             Path::Connection(ConnectionPath {
-                connection_id: "connection-0".to_string().validate().unwrap()
+                connection_id: ConnectionId::new(0)
             })
         );
         assert_eq!(
@@ -272,8 +280,8 @@ mod tests {
                 .parse::<Path>()
                 .unwrap(),
             Path::ChannelEnd(ChannelEndPath {
-                port_id: "port".to_string().validate().unwrap(),
-                channel_id: "channel-0".to_string().validate().unwrap()
+                port_id: PortId::new("port").unwrap(),
+                channel_id: ChannelId::new(0)
             })
         );
         assert_eq!(
@@ -281,8 +289,8 @@ mod tests {
                 .parse::<Path>()
                 .unwrap(),
             Path::Commitment(CommitmentPath {
-                port_id: "port".to_string().validate().unwrap(),
-                channel_id: "channel-0".to_string().validate().unwrap(),
+                port_id: PortId::new("port").unwrap(),
+                channel_id: ChannelId::new(0),
                 sequence: 1.try_into().unwrap()
             })
         );
@@ -291,8 +299,8 @@ mod tests {
                 .parse::<Path>()
                 .unwrap(),
             Path::Acknowledgement(AcknowledgementPath {
-                port_id: "port".to_string().validate().unwrap(),
-                channel_id: "channel-0".to_string().validate().unwrap(),
+                port_id: PortId::new("port").unwrap(),
+                channel_id: ChannelId::new(0),
                 sequence: 1.try_into().unwrap()
             })
         );
