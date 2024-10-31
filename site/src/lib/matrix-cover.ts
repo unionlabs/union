@@ -661,6 +661,18 @@ function initWebGL(initialColorIndex: number) {
     targetMouseY = (-(y / rect.height) * 2 + 1)
   }
 
+  function handleTouch(event) {
+    event.preventDefault()
+    const touch = event.touches[0]
+    if (touch) {
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      })
+      updateMousePosition(mouseEvent)
+    }
+  }
+
 
   function handleMouseLeave(event) {
     const rect = canvas.getBoundingClientRect()
@@ -672,6 +684,8 @@ function initWebGL(initialColorIndex: number) {
 
   document.addEventListener("mousemove", updateMousePosition)
   canvas.addEventListener("mouseleave", handleMouseLeave)
+  canvas.addEventListener("touchstart", handleTouch)
+  canvas.addEventListener("touchmove", handleTouch)
   canvas.addEventListener("touchend", handleMouseLeave)
 
   return () => {

@@ -49,11 +49,11 @@ const currentPath = pathname.slice(1) // remove the first "/"
     </div>
     <MatrixCover />
     <div
-      class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
+            class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
     >
       <div
-        class="max-w-2xl flex flex-col gap-4"
-        transition:animate={slideTextAnimation}
+              class="max-w-2xl flex flex-col gap-4"
+              transition:animate={slideTextAnimation}
       >
         <H1>{title}</H1>
         <TextP>{text}</TextP>
@@ -113,6 +113,12 @@ const currentPath = pathname.slice(1) // remove the first "/"
         transform-origin: center;
     }
 
+    @media (max-width: 1024px) {
+        .glow-effect {
+            animation: rotate-glow 8s linear infinite;
+        }
+    }
+
     .shiny-border {
         background-color: #262626;
         grid-area: 2 / 2 / 7 / 7;
@@ -129,6 +135,15 @@ const currentPath = pathname.slice(1) // remove the first "/"
     .header-text-content {
         grid-area: 4 / 3 / 5 / 6;
         z-index: 4;
+    }
+
+    @keyframes rotate-glow {
+        from {
+            transform: scale(6) rotate(0deg);
+        }
+        to {
+            transform: scale(6) rotate(360deg);
+        }
     }
 
     @keyframes slideOutLeft {
@@ -161,19 +176,16 @@ const currentPath = pathname.slice(1) // remove the first "/"
     "/": 0,
     "/learn": 1,
     "/ecosystem": 2,
-    "/team": 3,
+    "/blog": 3,
+    "/team": 4,
   };
 
   document.addEventListener("astro:after-preparation", (event: any) => {
-    // Get path from URL
-    const currentPath = window.location.pathname;
 
-    // Get current index from path
+    const currentPath = window.location.pathname;
     const currentIndex = pathToIndexMap[currentPath] ?? 0;
 
-    // For testing, let's rotate based on just the current path
     if (currentPath in pathToIndexMap) {
-      // Simple alternating direction for now
       const direction = currentIndex % 2 === 0 ? "right" : "left";
       rotateCamera(direction as "left" | "right", currentIndex);
     }
@@ -184,13 +196,21 @@ const currentPath = pathname.slice(1) // remove the first "/"
   let previousAngle = 0;
   let currentRotation = 0;
   let mouseMoveHandler;
+  let isTablet = false;
+
+  function checkDeviceSize() {
+    isTablet = window.matchMedia("(max-width: 1024px)").matches;
+  }
 
   function initializeGlowEffect() {
     headerGrid = document.querySelector(".header-grid");
     glowEffect = document.querySelector(".glow-effect");
+    checkDeviceSize();
 
     if (headerGrid && glowEffect) {
       mouseMoveHandler = (e) => {
+        if (isTablet) return; // Skip mouse tracking on tablet sizes
+
         const rect = headerGrid.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -217,6 +237,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
       };
 
       headerGrid.addEventListener("mousemove", mouseMoveHandler);
+      window.addEventListener("resize", checkDeviceSize);
     }
   }
 
@@ -224,13 +245,14 @@ const currentPath = pathname.slice(1) // remove the first "/"
     if (headerGrid && mouseMoveHandler) {
       headerGrid.removeEventListener("mousemove", mouseMoveHandler);
     }
+    window.removeEventListener("resize", checkDeviceSize);
   }
 
   document.addEventListener("astro:page-load", () => {
     cleanup();
     initializeGlowEffect();
   });
-
+  
   document.addEventListener("astro:before-preparation", (event) => {
     cleanup();
 
