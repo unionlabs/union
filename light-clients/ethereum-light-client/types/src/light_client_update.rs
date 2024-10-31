@@ -47,10 +47,19 @@ impl LightClientUpdate {
         }
     }
 
-    pub fn trusted_sync_committee(&self) -> &SyncCommittee {
+    /// `ethereum-verifier` takes both `current_sync_committee` and `next_sync_committee` as a parameter.
+    /// Although theoretically it can work when both params to be `Some`, for optimization reasons, the client
+    /// will only pass one at a time based on the update type. This function returns the currently trusted sync committee
+    /// in tuple format ready to be passed in to the verifier.
+    ///
+    /// Returns `(current_sync_committee, next_sync_committee)`
+
+    pub fn currently_trusted_sync_committee(
+        &self,
+    ) -> (Option<&SyncCommittee>, Option<&SyncCommittee>) {
         match self {
-            LightClientUpdate::EpochChange(update) => &update.sync_committee,
-            LightClientUpdate::WithinEpoch(update) => &update.sync_committee,
+            LightClientUpdate::EpochChange(update) => (None, Some(&update.sync_committee)),
+            LightClientUpdate::WithinEpoch(update) => (Some(&update.sync_committee), None),
         }
     }
 }
@@ -59,14 +68,14 @@ impl From<LightClientUpdate> for beacon_api_types::LightClientUpdate {
     fn from(value: LightClientUpdate) -> Self {
         match value {
             LightClientUpdate::EpochChange(update) => {
-                update.update_data.new_beacon_light_client_update(
+                update.update_data.into_beacon_light_client_update(
                     Some(update.next_sync_committee),
                     Some(update.next_sync_committee_branch),
                 )
             }
             LightClientUpdate::WithinEpoch(update) => update
                 .update_data
-                .new_beacon_light_client_update(None, None),
+                .into_beacon_light_client_update(None, None),
         }
     }
 }

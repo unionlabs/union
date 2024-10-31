@@ -45,28 +45,22 @@ impl ::prost::Name for AccountProof {
 pub struct ClientState {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
+    #[prost(string, tag = "2")]
+    pub chain_spec: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "3")]
     pub genesis_validators_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag = "3")]
-    pub min_sync_committee_participants: u64,
     #[prost(uint64, tag = "4")]
     pub genesis_time: u64,
     #[prost(message, optional, tag = "5")]
     pub fork_parameters: ::core::option::Option<ForkParameters>,
     #[prost(uint64, tag = "6")]
-    pub seconds_per_slot: u64,
-    #[prost(uint64, tag = "7")]
-    pub slots_per_epoch: u64,
-    #[prost(uint64, tag = "8")]
-    pub epochs_per_sync_committee_period: u64,
-    #[prost(uint64, tag = "9")]
     pub latest_slot: u64,
-    #[prost(message, optional, tag = "10")]
+    #[prost(message, optional, tag = "7")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "11")]
+    #[prost(bytes = "vec", tag = "8")]
     pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "12")]
+    #[prost(bytes = "vec", tag = "9")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {

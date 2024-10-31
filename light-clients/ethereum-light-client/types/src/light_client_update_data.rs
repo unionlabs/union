@@ -19,7 +19,7 @@ pub struct LightClientUpdateData {
 }
 
 impl LightClientUpdateData {
-    pub fn new_beacon_light_client_update(
+    pub fn into_beacon_light_client_update(
         self,
         next_sync_committee: Option<SyncCommittee>,
         next_sync_committee_branch: Option<NextSyncCommitteeBranch>,

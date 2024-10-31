@@ -142,14 +142,11 @@ impl ConsensusModuleServer for Module {
                 .as_str()
                 .parse()
                 .expect("self.chain_id is a valid u256"),
+            chain_spec: spec.preset_base,
             genesis_validators_root: genesis.genesis_validators_root,
             genesis_time: genesis.genesis_time,
             fork_parameters: spec.to_fork_parameters(),
-            seconds_per_slot: spec.seconds_per_slot,
-            slots_per_epoch: spec.slots_per_epoch,
-            epochs_per_sync_committee_period: spec.epochs_per_sync_committee_period,
             latest_slot: height.height(),
-            min_sync_committee_participants: 0,
             frozen_height: Height::new(0),
             ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
             ibc_contract_address: self.ibc_handler_address,

@@ -24,17 +24,14 @@ message AccountProof {
 
 message ClientState {
   string chain_id = 1;
-  bytes genesis_validators_root = 2;
-  uint64 min_sync_committee_participants = 3;
+  string chain_spec = 2;
+  bytes genesis_validators_root = 3;
   uint64 genesis_time = 4;
   ForkParameters fork_parameters = 5;
-  uint64 seconds_per_slot = 6;
-  uint64 slots_per_epoch = 7;
-  uint64 epochs_per_sync_committee_period = 8;
-  uint64 latest_slot = 9;
-  .ibc.core.client.v1.Height frozen_height = 10;
-  bytes ibc_commitment_slot = 11;
-  bytes ibc_contract_address = 12;
+  uint64 latest_slot = 6;
+  .ibc.core.client.v1.Height frozen_height = 7;
+  bytes ibc_commitment_slot = 8;
+  bytes ibc_contract_address = 9;
 }
 
 
