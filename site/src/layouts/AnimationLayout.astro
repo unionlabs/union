@@ -198,19 +198,6 @@ const currentPath = pathname.slice(1) // remove the first "/"
     updateSaturation,
   } from "../lib/matrix-cover";
 
-  document.addEventListener(
-    "astro:page-load",
-    () => {
-      const currentPath = window.location.pathname;
-      const config = pathConfigMap[currentPath] ?? {
-        index: 0,
-        saturation: 100,
-      };
-      updateSaturation(config.saturation);
-    },
-    { once: true },
-  );
-
   document.addEventListener("astro:before-preparation", (event: any) => {
     const fromConfig = pathConfigMap[event.from.pathname] ?? {
       index: 0,
