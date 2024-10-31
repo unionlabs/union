@@ -185,12 +185,17 @@ class PerlinNoise {
 
 function initWebGL(initialColorIndex: number) {
   setInitialColor(initialColorIndex)
-  canvas = document.getElementById("waveCanvas")
+  canvas = document.querySelector("#waveCanvas") // Make sure we're using querySelector
+  if (!canvas) {
+    console.error("Canvas not found")
+    return
+  }
   const gl = canvas.getContext("webgl")
   if (!gl) {
     console.error("WebGL not supported")
     return
   }
+
 
   // Vertex shader
   const vsSource = `
@@ -492,16 +497,17 @@ function initWebGL(initialColorIndex: number) {
       }
     }
 
-    mouseX += (targetMouseX - mouseX) * 0.5
-    mouseY += (targetMouseY - mouseY) * 0.5
+    mouseX += (targetMouseX - mouseX) * 0.1
+    mouseY += (targetMouseY - mouseY) * 0.1
 
     glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.1, [1, 0, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.1, [0, 1, 0])
     glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0])
 
     const modelViewMatrix = glMatrix.mat4.create()
     glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix)
+
 
     {
       const numComponents = 3
@@ -646,21 +652,16 @@ function initWebGL(initialColorIndex: number) {
   // Update mouse position
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
-    const normalizedX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    const normalizedY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
 
-    // Check if mouse is below the canvas
-    if (event.clientY > rect.bottom) {
-      // Reset to default camera position
-      targetMouseX = 0
-      targetMouseY = 0
-    } else {
-      targetMouseX = normalizedX
-      targetMouseY = normalizedY
-    }
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    // Reduced multiplier from 2 to 1 for less movement
+    targetMouseX = ((x / rect.width) * 2 - 1)
+    targetMouseY = (-(y / rect.height) * 2 + 1)
   }
 
-  // Add mouseleave handler
+
   function handleMouseLeave(event) {
     const rect = canvas.getBoundingClientRect()
     if (event.clientY > rect.bottom) {
@@ -671,6 +672,7 @@ function initWebGL(initialColorIndex: number) {
 
   document.addEventListener("mousemove", updateMousePosition)
   canvas.addEventListener("mouseleave", handleMouseLeave)
+  canvas.addEventListener("touchend", handleMouseLeave)
 
   return () => {
     document.removeEventListener("mousemove", updateMousePosition)
@@ -696,4 +698,8 @@ function generateColors(colorSet) {
 }
 
 // Initialize WebGL when the component mounts
-document.addEventListener("DOMContentLoaded", initWebGL(1))
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => initWebGL(1))
+} else {
+  initWebGL(1)
+}
