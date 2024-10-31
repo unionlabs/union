@@ -21,6 +21,12 @@ const menuItems = [
     external: false
   },
   {
+    url: "/team",
+    name: "team",
+    highlight: false,
+    external: false
+  },
+  {
     url: "https://docs.union.build/",
     name: "docs",
     highlight: false,
@@ -59,14 +65,18 @@ const menuItems = [
     }
   });
 
-  overlay?.addEventListener("click", () => {
+  function closeMenu() {
     menuOpen = false;
     if (!menuItemsList || !overlay) return;
     menuItemsList.style.display = "none";
     menuItemsList.style.maxHeight = "0";
 
     overlay.classList.toggle("show", menuOpen);
-  });
+  }
+
+  overlay?.addEventListener("click", closeMenu);
+
+  document.addEventListener("astro:before-preparation", closeMenu);
 </script>
 
 <header class="z-[100] w-full flex justify-around">
