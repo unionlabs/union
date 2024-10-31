@@ -188,7 +188,7 @@ impl ::prost::Name for QueryConfigRequest {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
 }
-/// QueryConfigRequest is the Query/Config response type.
+/// QueryConfigResponse is the Query/Config response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConfigResponse {

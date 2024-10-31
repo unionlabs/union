@@ -11,7 +11,7 @@ pub struct ProofOps {
 pub mod proto {
     use crate::crypto::proof_ops::ProofOps;
 
-    impl From<ProofOps> for protos::tendermint::crypto::ProofOps {
+    impl From<ProofOps> for protos::cometbft::crypto::v1::ProofOps {
         fn from(value: ProofOps) -> Self {
             Self {
                 ops: value.ops.into_iter().map(Into::into).collect(),
@@ -19,8 +19,8 @@ pub mod proto {
         }
     }
 
-    impl From<protos::tendermint::crypto::ProofOps> for ProofOps {
-        fn from(value: protos::tendermint::crypto::ProofOps) -> Self {
+    impl From<protos::cometbft::crypto::v1::ProofOps> for ProofOps {
+        fn from(value: protos::cometbft::crypto::v1::ProofOps) -> Self {
             Self {
                 ops: value.ops.into_iter().map(Into::into).collect(),
             }

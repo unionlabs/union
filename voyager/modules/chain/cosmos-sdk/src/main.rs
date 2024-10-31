@@ -445,67 +445,62 @@ impl ChainModuleServer for Module {
         type ValueOf<T> = <T as IbcPath>::Value;
 
         Ok(match path {
-            Path::ClientState(_) => into_value::<ValueOf<ClientStatePath>>(Hex(query_result.value)),
+            Path::ClientState(_) => {
+                into_value::<ValueOf<ClientStatePath>>(Hex(query_result.value.unwrap().into()))
+            }
             Path::ClientConsensusState(_) => {
-                into_value::<ValueOf<ClientConsensusStatePath>>(Hex(query_result.value))
+                into_value::<ValueOf<ClientConsensusStatePath>>(Hex(query_result
+                    .value
+                    .unwrap()
+                    .into()))
             }
             Path::Connection(_) => {
-                into_value::<ValueOf<ConnectionPath>>(if query_result.value.is_empty() {
-                    None
-                } else {
-                    Some(
-                        ConnectionEnd::decode_as::<Proto>(&query_result.value).map_err(
-                            fatal_rpc_error("error decoding connection end", error_data()),
-                        )?,
-                    )
+                into_value::<ValueOf<ConnectionPath>>(match query_result.value {
+                    Some(value) => Some(ConnectionEnd::decode_as::<Proto>(&value).map_err(
+                        fatal_rpc_error("error decoding connection end", error_data()),
+                    )?),
+                    None => None,
                 })
             }
             Path::ChannelEnd(_) => {
-                into_value::<ValueOf<ChannelEndPath>>(if query_result.value.is_empty() {
-                    None
-                } else {
-                    Some(
-                        Channel::decode_as::<Proto>(&query_result.value)
-                            .map_err(fatal_rpc_error("error decoding channel end", error_data()))?,
-                    )
+                into_value::<ValueOf<ChannelEndPath>>(match query_result.value {
+                    Some(value) => Some(Channel::decode_as::<Proto>(&value).map_err(
+                        fatal_rpc_error("error decoding connection end", error_data()),
+                    )?),
+                    None => None,
                 })
             }
             Path::Commitment(_) => {
-                into_value::<ValueOf<CommitmentPath>>(if query_result.value.is_empty() {
-                    None
-                } else {
-                    Some(
-                        H256::try_from(query_result.value)
+                into_value::<ValueOf<CommitmentPath>>(match query_result.value {
+                    Some(value) => Some(
+                        H256::try_from(value)
                             .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
-                    )
+                    ),
+                    None => None,
                 })
             }
             Path::Acknowledgement(_) => {
-                into_value::<ValueOf<AcknowledgementPath>>(if query_result.value.is_empty() {
-                    None
-                } else {
-                    Some(H256::try_from(query_result.value).map_err(fatal_rpc_error(
-                        "error decoding acknowledgement commitment",
-                        error_data(),
-                    ))?)
+                into_value::<ValueOf<AcknowledgementPath>>(match query_result.value {
+                    Some(value) => Some(
+                        H256::try_from(value)
+                            .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
+                    ),
+                    None => None,
                 })
             }
-            Path::Receipt(_) => into_value::<ValueOf<ReceiptPath>>(match query_result.value[..] {
-                [] => false,
-                [1] => true,
-                ref invalid => {
+            Path::Receipt(_) => into_value::<ValueOf<ReceiptPath>>(match query_result.value {
+                None => false,
+                Some(value) if value == [1u8] => true,
+                Some(ref invalid) => {
                     return Err(fatal_rpc_error("error decoding receipt", error_data())(
-                        format!(
-                            "value is neither empty nor the single byte 0x01, found {}",
-                            serde_utils::to_hex(invalid)
-                        ),
+                        format!("value is neither empty nor the single byte 0x01, found {invalid}"),
                     ))
                 }
             }),
             // NOTE: For these branches, we use H64 as a mildly hacky way to have a better error message (since `<[T; N] as TryFrom<Vec<T>>>::Error = Vec<T>`)
             Path::NextSequenceSend(_) => {
                 into_value::<ValueOf<NextSequenceSendPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value.unwrap())
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_send",
                             error_data(),
@@ -515,7 +510,7 @@ impl ChainModuleServer for Module {
             }
             Path::NextSequenceRecv(_) => {
                 into_value::<ValueOf<NextSequenceRecvPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value.unwrap())
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_recv",
                             error_data(),
@@ -525,7 +520,7 @@ impl ChainModuleServer for Module {
             }
             Path::NextSequenceAck(_) => {
                 into_value::<ValueOf<NextSequenceAckPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value.unwrap())
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_ack",
                             error_data(),
@@ -535,7 +530,7 @@ impl ChainModuleServer for Module {
             }
             Path::NextConnectionSequence(_) => {
                 into_value::<ValueOf<NextConnectionSequencePath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value.unwrap())
                         .map_err(fatal_rpc_error(
                             "error decoding next_connection_sequence",
                             error_data(),
@@ -545,7 +540,7 @@ impl ChainModuleServer for Module {
             }
             Path::NextClientSequence(_) => {
                 into_value::<ValueOf<NextClientSequencePath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value.unwrap())
                         .map_err(fatal_rpc_error(
                             "error decoding next_client_sequence",
                             error_data(),

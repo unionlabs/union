@@ -13,6 +13,24 @@ pub struct Consensus {
 pub mod proto {
     use crate::version::consensus::Consensus;
 
+    impl From<protos::cometbft::version::v1::Consensus> for Consensus {
+        fn from(value: protos::cometbft::version::v1::Consensus) -> Self {
+            Self {
+                block: value.block,
+                app: value.app,
+            }
+        }
+    }
+
+    impl From<Consensus> for protos::cometbft::version::v1::Consensus {
+        fn from(value: Consensus) -> Self {
+            Self {
+                block: value.block,
+                app: value.app,
+            }
+        }
+    }
+
     impl From<protos::tendermint::version::Consensus> for Consensus {
         fn from(value: protos::tendermint::version::Consensus) -> Self {
             Self {

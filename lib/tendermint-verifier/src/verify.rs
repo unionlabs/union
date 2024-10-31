@@ -214,7 +214,11 @@ pub fn verify_commit_light<V: HostFns>(
                     validator_address,
                     timestamp,
                     signature,
-                } => Ok(Some((*validator_address, *timestamp, signature.clone()))),
+                } => Ok(Some((
+                    *validator_address,
+                    *timestamp,
+                    signature.clone().into_vec(),
+                ))),
                 _ => Ok(None),
             }
         };
@@ -295,7 +299,11 @@ pub fn verify_commit_light_trusting<V: HostFns>(
                     validator_address,
                     timestamp,
                     signature,
-                } => Ok(Some((*validator_address, *timestamp, signature.clone()))),
+                } => Ok(Some((
+                    *validator_address,
+                    *timestamp,
+                    signature.clone().into_vec(),
+                ))),
                 _ => Ok(None),
             }
         };
@@ -477,8 +485,8 @@ fn verify_new_headers_and_vals(
         .ok_or(Error::MissingBlockIdHash)?;
     if untrusted_header_hash != commit_hash {
         return Err(Error::SignedHeaderCommitHashMismatch {
-            sh_hash: untrusted_header_hash,
-            commit_hash,
+            sh_hash: untrusted_header_hash.into_encoding(),
+            commit_hash: commit_hash.into_encoding(),
         });
     }
 
@@ -524,7 +532,7 @@ fn verify_new_headers_and_vals(
     if untrusted_header.header.validators_hash != untrusted_validators_hash {
         return Err(Error::UntrustedValidatorSetMismatch {
             expected: untrusted_header.header.validators_hash,
-            found: untrusted_validators_hash,
+            found: untrusted_validators_hash.into_encoding(),
         });
     }
 
@@ -553,7 +561,7 @@ mod tests {
                 panic!("invalid pubkey");
             };
             let key: VerifyingKey =
-                VerifyingKey::from_bytes(pubkey.as_slice().try_into().unwrap()).unwrap();
+                VerifyingKey::from_bytes(&pubkey.as_ref().try_into().unwrap()).unwrap();
             let signature: Signature = Signature::from_bytes(sig.try_into().unwrap());
             key.verify(msg, &signature).is_ok()
         }
@@ -572,7 +580,7 @@ mod tests {
                     panic!("invalid pubkey");
                 };
                 let key: VerifyingKey =
-                    VerifyingKey::from_bytes(pubkey.as_slice().try_into().unwrap()).unwrap();
+                    VerifyingKey::from_bytes(pubkey.as_ref().try_into().unwrap()).unwrap();
                 let signature: Signature =
                     Signature::from_bytes(&<[u8; 64]>::try_from(*signature).unwrap());
                 signatures.push(signature);

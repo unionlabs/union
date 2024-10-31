@@ -130,6 +130,24 @@ impl ::prost::Name for HasVote {
         ::prost::alloc::format!("tendermint.consensus.{}", Self::NAME)
     }
 }
+/// HasProposalBlockPart is sent to indicate that a particular proposal block part has been received.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HasProposalBlockPart {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(int32, tag = "3")]
+    pub index: i32,
+}
+impl ::prost::Name for HasProposalBlockPart {
+    const NAME: &'static str = "HasProposalBlockPart";
+    const PACKAGE: &'static str = "tendermint.consensus";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.consensus.{}", Self::NAME)
+    }
+}
 /// VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -175,7 +193,7 @@ impl ::prost::Name for VoteSetBits {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
-    #[prost(oneof = "message::Sum", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9")]
+    #[prost(oneof = "message::Sum", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")]
     pub sum: ::core::option::Option<message::Sum>,
 }
 /// Nested message and enum types in `Message`.
@@ -201,6 +219,8 @@ pub mod message {
         VoteSetMaj23(super::VoteSetMaj23),
         #[prost(message, tag = "9")]
         VoteSetBits(super::VoteSetBits),
+        #[prost(message, tag = "10")]
+        HasProposalBlockPart(super::HasProposalBlockPart),
     }
 }
 impl ::prost::Name for Message {

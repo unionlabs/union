@@ -160,6 +160,11 @@ pub enum SignMode {
     /// EIP-191 in the future.
     ///
     /// Since: cosmos-sdk 0.45.2
+    /// Deprecated: post 0.47.x Sign mode refers to a method of encoding string data for
+    /// signing, but in the SDK, it also refers to how to encode a transaction into a string.
+    /// This opens the possibility for additional EIP191 sign modes, like SIGN_MODE_EIP_191_TEXTUAL,
+    /// SIGN_MODE_EIP_191_LEGACY_JSON, and more.
+    /// Each new EIP191 sign mode should be accompanied by an associated ADR.
     Eip191 = 191,
 }
 impl SignMode {

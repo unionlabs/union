@@ -14,7 +14,7 @@ cometbft-types                 = { workspace = true, features = ["proto"] }
 hex                            = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 macros                         = { workspace = true }
-protos                         = { workspace = true, features = ["serde", "tendermint+abci", "tendermint+blocksync", "tendermint+consensus", "tendermint+crypto", "tendermint+libs+bits", "tendermint+mempool", "tendermint+p2p", "tendermint+privval", "tendermint+rpc+grpc", "tendermint+state", "tendermint+statesync", "tendermint+store", "tendermint+types", "tendermint+version"] }
+protos                         = { workspace = true, features = ["serde", "cometbft+abci+v1", "cometbft+blocksync+v1", "cometbft+consensus+v1", "cometbft+crypto+v1", "cometbft+libs+bits+v1", "cometbft+mempool+v1", "cometbft+p2p+v1", "cometbft+privval+v1", "cometbft+rpc+grpc+v1beta3", "cometbft+state+v1", "cometbft+statesync+v1", "cometbft+store+v1", "cometbft+types+v1", "cometbft+version+v1"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }

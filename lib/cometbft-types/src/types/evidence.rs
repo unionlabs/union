@@ -7,9 +7,11 @@ use crate::types::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
-#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+#[serde(tag = "type", content = "value", rename_all = "snake_case")]
 pub enum Evidence {
+    #[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVote(DuplicateVoteEvidence),
+    #[serde(rename = "tendermint/LightClientAttackEvidence")]
     LightClientAttack(LightClientAttackEvidence),
 }
 
@@ -19,15 +21,15 @@ pub mod proto {
 
     use crate::types::{duplicate_vote_evidence, evidence::Evidence, light_client_attack_evidence};
 
-    impl From<Evidence> for protos::tendermint::types::Evidence {
+    impl From<Evidence> for protos::cometbft::types::v1::Evidence {
         fn from(value: Evidence) -> Self {
             Self {
                 sum: Some(match value {
                     Evidence::DuplicateVote(e) => {
-                        protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e.into())
+                        protos::cometbft::types::v1::evidence::Sum::DuplicateVoteEvidence(e.into())
                     }
                     Evidence::LightClientAttack(e) => {
-                        protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(
+                        protos::cometbft::types::v1::evidence::Sum::LightClientAttackEvidence(
                             e.into(),
                         )
                     }
@@ -46,15 +48,15 @@ pub mod proto {
         LightClientAttack(#[from] light_client_attack_evidence::proto::Error),
     }
 
-    impl TryFrom<protos::tendermint::types::Evidence> for Evidence {
+    impl TryFrom<protos::cometbft::types::v1::Evidence> for Evidence {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::Evidence) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::Evidence) -> Result<Self, Self::Error> {
             Ok(match required!(value.sum)? {
-                protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e) => {
+                protos::cometbft::types::v1::evidence::Sum::DuplicateVoteEvidence(e) => {
                     Self::DuplicateVote(e.try_into()?)
                 }
-                protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(e) => {
+                protos::cometbft::types::v1::evidence::Sum::LightClientAttackEvidence(e) => {
                     Self::LightClientAttack(e.try_into()?)
                 }
             })
@@ -113,7 +115,7 @@ mod tests {
 }
 "#;
 
-        let evidence = serde_json::from_str::<protos::tendermint::types::Evidence>(json).unwrap();
+        let evidence = serde_json::from_str::<protos::cometbft::types::v1::Evidence>(json).unwrap();
 
         dbg!(evidence);
     }

@@ -34,7 +34,7 @@ impl HostFns for Ed25519Verifier<'_> {
         let Ok(pubkeys) = pubkeys
             .iter()
             .map(|pk| match pk {
-                PublicKey::Ed25519(pkey) => Ok(pkey.as_slice()),
+                PublicKey::Ed25519(pkey) => Ok(pkey.as_ref()),
                 _ => Err(()),
             })
             .collect::<Result<Vec<_>, _>>()

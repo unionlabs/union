@@ -143,7 +143,7 @@ impl ConsensusModuleServer for Module {
         Ok(serde_json::to_value(ConsensusState {
             timestamp: commit.signed_header.header.time.as_unix_nanos(),
             app_hash: MerkleRoot {
-                hash: commit.signed_header.header.app_hash,
+                hash: commit.signed_header.header.app_hash.into_encoding(),
             },
             next_validators_hash: commit.signed_header.header.next_validators_hash,
         })

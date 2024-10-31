@@ -31,76 +31,6 @@ impl ::prost::Name for Contract {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
-/// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChecksumsRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-}
-impl ::prost::Name for QueryChecksumsRequest {
-    const NAME: &'static str = "QueryChecksumsRequest";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChecksumsResponse {
-    /// checksums is a list of the hex encoded checksums of all wasm codes stored.
-    #[prost(string, repeated, tag = "1")]
-    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-}
-impl ::prost::Name for QueryChecksumsResponse {
-    const NAME: &'static str = "QueryChecksumsResponse";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeRequest is the request type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeRequest {
-    /// checksum is a hex encoded string of the code stored.
-    #[prost(string, tag = "1")]
-    pub checksum: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryCodeRequest {
-    const NAME: &'static str = "QueryCodeRequest";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeResponse is the response type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryCodeResponse {
-    const NAME: &'static str = "QueryCodeResponse";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
 /// MsgStoreCode defines the request type for the StoreCode rpc.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -204,6 +134,76 @@ impl ::prost::Name for MsgMigrateContractResponse {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
+/// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChecksumsRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "1")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+}
+impl ::prost::Name for QueryChecksumsRequest {
+    const NAME: &'static str = "QueryChecksumsRequest";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChecksumsResponse {
+    /// checksums is a list of the hex encoded checksums of all wasm codes stored.
+    #[prost(string, repeated, tag = "1")]
+    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+}
+impl ::prost::Name for QueryChecksumsResponse {
+    const NAME: &'static str = "QueryChecksumsResponse";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeRequest is the request type for the Query/Code RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeRequest {
+    /// checksum is a hex encoded string of the code stored.
+    #[prost(string, tag = "1")]
+    pub checksum: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryCodeRequest {
+    const NAME: &'static str = "QueryCodeRequest";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeResponse is the response type for the Query/Code RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryCodeResponse {
+    const NAME: &'static str = "QueryCodeResponse";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
 /// Wasm light client's Client state
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -255,6 +255,24 @@ pub struct ClientMessage {
 }
 impl ::prost::Name for ClientMessage {
     const NAME: &'static str = "ClientMessage";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// Checksums defines a list of all checksums that are stored
+///
+/// Deprecated: This message is deprecated in favor of storing the checksums
+/// using a Collections.KeySet.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Checksums {
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for Checksums {
+    const NAME: &'static str = "Checksums";
     const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)

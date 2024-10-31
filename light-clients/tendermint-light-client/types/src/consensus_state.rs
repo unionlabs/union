@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    google::protobuf::timestamp::Timestamp, hash::H256,
+    google::protobuf::timestamp::Timestamp,
+    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::commitment::merkle_root::MerkleRoot,
 };
 
@@ -8,7 +9,7 @@ use unionlabs::{
 pub struct ConsensusState {
     pub timestamp: Timestamp,
     pub root: MerkleRoot,
-    pub next_validators_hash: H256,
+    pub next_validators_hash: H256<HexUnprefixed>,
 }
 
 #[cfg(feature = "proto")]

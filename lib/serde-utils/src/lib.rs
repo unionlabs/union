@@ -766,20 +766,23 @@ pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
         D: Deserializer<'de>,
         T: TryFrom<DateTime<Utc>, Error: Debug>,
     {
-        String::deserialize(deserializer).and_then(|s| {
-            if s == "0001-01-01T00:00:00Z" {
-                Ok(None)
-            } else {
-                let datetime = DateTime::parse_from_rfc3339(&s).map_err(|err| {
-                    serde::de::Error::custom(format!("unable to parse data: {err:?}"))
-                })?;
+        <Option<String>>::deserialize(deserializer).and_then(|s| match s {
+            Some(s) => {
+                if s == "0001-01-01T00:00:00Z" {
+                    Ok(None)
+                } else {
+                    let datetime = DateTime::parse_from_rfc3339(&s).map_err(|err| {
+                        serde::de::Error::custom(format!("unable to parse data: {err:?}"))
+                    })?;
 
-                Ok(Some(T::try_from(datetime.into()).map_err(|err| {
-                    serde::de::Error::custom(format!(
-                        "unable to convert data from rfc3339 datetime: {err:?}"
-                    ))
-                })?))
+                    Ok(Some(T::try_from(datetime.into()).map_err(|err| {
+                        serde::de::Error::custom(format!(
+                            "unable to convert data from rfc3339 datetime: {err:?}"
+                        ))
+                    })?))
+                }
             }
+            None => Ok(None),
         })
     }
 }

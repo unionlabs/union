@@ -8,6 +8,242 @@ pub mod capability {
         // @@protoc_insertion_point(capability.v1)
     }
 }
+pub mod cometbft {
+    pub mod abci {
+        #[cfg(feature = "cometbft+abci+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.abci.v1)
+        pub mod v1 {
+            include!("cometbft.abci.v1.rs");
+            // @@protoc_insertion_point(cometbft.abci.v1)
+        }
+        #[cfg(feature = "cometbft+abci+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.abci.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.abci.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.abci.v1beta1)
+        }
+        #[cfg(feature = "cometbft+abci+v1beta2")]
+        // @@protoc_insertion_point(attribute:cometbft.abci.v1beta2)
+        pub mod v1beta2 {
+            include!("cometbft.abci.v1beta2.rs");
+            // @@protoc_insertion_point(cometbft.abci.v1beta2)
+        }
+        #[cfg(feature = "cometbft+abci+v1beta3")]
+        // @@protoc_insertion_point(attribute:cometbft.abci.v1beta3)
+        pub mod v1beta3 {
+            include!("cometbft.abci.v1beta3.rs");
+            // @@protoc_insertion_point(cometbft.abci.v1beta3)
+        }
+    }
+    pub mod blocksync {
+        #[cfg(feature = "cometbft+blocksync+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.blocksync.v1)
+        pub mod v1 {
+            include!("cometbft.blocksync.v1.rs");
+            // @@protoc_insertion_point(cometbft.blocksync.v1)
+        }
+        #[cfg(feature = "cometbft+blocksync+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.blocksync.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.blocksync.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.blocksync.v1beta1)
+        }
+    }
+    pub mod consensus {
+        #[cfg(feature = "cometbft+consensus+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.consensus.v1)
+        pub mod v1 {
+            include!("cometbft.consensus.v1.rs");
+            // @@protoc_insertion_point(cometbft.consensus.v1)
+        }
+        #[cfg(feature = "cometbft+consensus+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.consensus.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.consensus.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.consensus.v1beta1)
+        }
+    }
+    pub mod crypto {
+        #[cfg(feature = "cometbft+crypto+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.crypto.v1)
+        pub mod v1 {
+            include!("cometbft.crypto.v1.rs");
+            // @@protoc_insertion_point(cometbft.crypto.v1)
+        }
+    }
+    pub mod libs {
+        pub mod bits {
+            #[cfg(feature = "cometbft+libs+bits+v1")]
+            // @@protoc_insertion_point(attribute:cometbft.libs.bits.v1)
+            pub mod v1 {
+                include!("cometbft.libs.bits.v1.rs");
+                // @@protoc_insertion_point(cometbft.libs.bits.v1)
+            }
+        }
+    }
+    pub mod mempool {
+        #[cfg(feature = "cometbft+mempool+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.mempool.v1)
+        pub mod v1 {
+            include!("cometbft.mempool.v1.rs");
+            // @@protoc_insertion_point(cometbft.mempool.v1)
+        }
+    }
+    pub mod p2p {
+        #[cfg(feature = "cometbft+p2p+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.p2p.v1)
+        pub mod v1 {
+            include!("cometbft.p2p.v1.rs");
+            // @@protoc_insertion_point(cometbft.p2p.v1)
+        }
+    }
+    pub mod privval {
+        #[cfg(feature = "cometbft+privval+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.privval.v1)
+        pub mod v1 {
+            include!("cometbft.privval.v1.rs");
+            // @@protoc_insertion_point(cometbft.privval.v1)
+        }
+        #[cfg(feature = "cometbft+privval+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.privval.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.privval.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.privval.v1beta1)
+        }
+        #[cfg(feature = "cometbft+privval+v1beta2")]
+        // @@protoc_insertion_point(attribute:cometbft.privval.v1beta2)
+        pub mod v1beta2 {
+            include!("cometbft.privval.v1beta2.rs");
+            // @@protoc_insertion_point(cometbft.privval.v1beta2)
+        }
+    }
+    pub mod rpc {
+        pub mod grpc {
+            #[cfg(feature = "cometbft+rpc+grpc+v1beta1")]
+            // @@protoc_insertion_point(attribute:cometbft.rpc.grpc.v1beta1)
+            pub mod v1beta1 {
+                include!("cometbft.rpc.grpc.v1beta1.rs");
+                // @@protoc_insertion_point(cometbft.rpc.grpc.v1beta1)
+            }
+            #[cfg(feature = "cometbft+rpc+grpc+v1beta2")]
+            // @@protoc_insertion_point(attribute:cometbft.rpc.grpc.v1beta2)
+            pub mod v1beta2 {
+                include!("cometbft.rpc.grpc.v1beta2.rs");
+                // @@protoc_insertion_point(cometbft.rpc.grpc.v1beta2)
+            }
+            #[cfg(feature = "cometbft+rpc+grpc+v1beta3")]
+            // @@protoc_insertion_point(attribute:cometbft.rpc.grpc.v1beta3)
+            pub mod v1beta3 {
+                include!("cometbft.rpc.grpc.v1beta3.rs");
+                // @@protoc_insertion_point(cometbft.rpc.grpc.v1beta3)
+            }
+        }
+    }
+    pub mod services {
+        pub mod block {
+            #[cfg(feature = "cometbft+services+block+v1")]
+            // @@protoc_insertion_point(attribute:cometbft.services.block.v1)
+            pub mod v1 {
+                include!("cometbft.services.block.v1.rs");
+                // @@protoc_insertion_point(cometbft.services.block.v1)
+            }
+        }
+        pub mod block_results {
+            #[cfg(feature = "cometbft+services+block_results+v1")]
+            // @@protoc_insertion_point(attribute:cometbft.services.block_results.v1)
+            pub mod v1 {
+                include!("cometbft.services.block_results.v1.rs");
+                // @@protoc_insertion_point(cometbft.services.block_results.v1)
+            }
+        }
+        pub mod pruning {
+            #[cfg(feature = "cometbft+services+pruning+v1")]
+            // @@protoc_insertion_point(attribute:cometbft.services.pruning.v1)
+            pub mod v1 {
+                include!("cometbft.services.pruning.v1.rs");
+                // @@protoc_insertion_point(cometbft.services.pruning.v1)
+            }
+        }
+        pub mod version {
+            #[cfg(feature = "cometbft+services+version+v1")]
+            // @@protoc_insertion_point(attribute:cometbft.services.version.v1)
+            pub mod v1 {
+                include!("cometbft.services.version.v1.rs");
+                // @@protoc_insertion_point(cometbft.services.version.v1)
+            }
+        }
+    }
+    pub mod state {
+        #[cfg(feature = "cometbft+state+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.state.v1)
+        pub mod v1 {
+            include!("cometbft.state.v1.rs");
+            // @@protoc_insertion_point(cometbft.state.v1)
+        }
+        #[cfg(feature = "cometbft+state+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.state.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.state.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.state.v1beta1)
+        }
+        #[cfg(feature = "cometbft+state+v1beta2")]
+        // @@protoc_insertion_point(attribute:cometbft.state.v1beta2)
+        pub mod v1beta2 {
+            include!("cometbft.state.v1beta2.rs");
+            // @@protoc_insertion_point(cometbft.state.v1beta2)
+        }
+        #[cfg(feature = "cometbft+state+v1beta3")]
+        // @@protoc_insertion_point(attribute:cometbft.state.v1beta3)
+        pub mod v1beta3 {
+            include!("cometbft.state.v1beta3.rs");
+            // @@protoc_insertion_point(cometbft.state.v1beta3)
+        }
+    }
+    pub mod statesync {
+        #[cfg(feature = "cometbft+statesync+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.statesync.v1)
+        pub mod v1 {
+            include!("cometbft.statesync.v1.rs");
+            // @@protoc_insertion_point(cometbft.statesync.v1)
+        }
+    }
+    pub mod store {
+        #[cfg(feature = "cometbft+store+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.store.v1)
+        pub mod v1 {
+            include!("cometbft.store.v1.rs");
+            // @@protoc_insertion_point(cometbft.store.v1)
+        }
+    }
+    pub mod types {
+        #[cfg(feature = "cometbft+types+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.types.v1)
+        pub mod v1 {
+            include!("cometbft.types.v1.rs");
+            // @@protoc_insertion_point(cometbft.types.v1)
+        }
+        #[cfg(feature = "cometbft+types+v1beta1")]
+        // @@protoc_insertion_point(attribute:cometbft.types.v1beta1)
+        pub mod v1beta1 {
+            include!("cometbft.types.v1beta1.rs");
+            // @@protoc_insertion_point(cometbft.types.v1beta1)
+        }
+        #[cfg(feature = "cometbft+types+v1beta2")]
+        // @@protoc_insertion_point(attribute:cometbft.types.v1beta2)
+        pub mod v1beta2 {
+            include!("cometbft.types.v1beta2.rs");
+            // @@protoc_insertion_point(cometbft.types.v1beta2)
+        }
+    }
+    pub mod version {
+        #[cfg(feature = "cometbft+version+v1")]
+        // @@protoc_insertion_point(attribute:cometbft.version.v1)
+        pub mod v1 {
+            include!("cometbft.version.v1.rs");
+            // @@protoc_insertion_point(cometbft.version.v1)
+        }
+    }
+}
 pub mod cosmos {
     pub mod app {
         pub mod runtime {
@@ -16,6 +252,12 @@ pub mod cosmos {
             pub mod v1alpha1 {
                 include!("cosmos.app.runtime.v1alpha1.rs");
                 // @@protoc_insertion_point(cosmos.app.runtime.v1alpha1)
+            }
+            #[cfg(feature = "cosmos+app+runtime+v2")]
+            // @@protoc_insertion_point(attribute:cosmos.app.runtime.v2)
+            pub mod v2 {
+                include!("cosmos.app.runtime.v2.rs");
+                // @@protoc_insertion_point(cosmos.app.runtime.v2)
             }
         }
         #[cfg(feature = "cosmos+app+v1alpha1")]
@@ -39,22 +281,6 @@ pub mod cosmos {
         pub mod v1beta1 {
             include!("cosmos.auth.v1beta1.rs");
             // @@protoc_insertion_point(cosmos.auth.v1beta1)
-        }
-    }
-    pub mod authz {
-        pub mod module {
-            #[cfg(feature = "cosmos+authz+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.authz.module.v1)
-            pub mod v1 {
-                include!("cosmos.authz.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.authz.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+authz+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.authz.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.authz.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.authz.v1beta1)
         }
     }
     pub mod autocli {
@@ -135,54 +361,6 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.base.v1beta1)
         }
     }
-    pub mod circuit {
-        pub mod module {
-            #[cfg(feature = "cosmos+circuit+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.circuit.module.v1)
-            pub mod v1 {
-                include!("cosmos.circuit.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.circuit.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+circuit+v1")]
-        // @@protoc_insertion_point(attribute:cosmos.circuit.v1)
-        pub mod v1 {
-            include!("cosmos.circuit.v1.rs");
-            // @@protoc_insertion_point(cosmos.circuit.v1)
-        }
-    }
-    pub mod consensus {
-        pub mod module {
-            #[cfg(feature = "cosmos+consensus+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.consensus.module.v1)
-            pub mod v1 {
-                include!("cosmos.consensus.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.consensus.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+consensus+v1")]
-        // @@protoc_insertion_point(attribute:cosmos.consensus.v1)
-        pub mod v1 {
-            include!("cosmos.consensus.v1.rs");
-            // @@protoc_insertion_point(cosmos.consensus.v1)
-        }
-    }
-    pub mod crisis {
-        pub mod module {
-            #[cfg(feature = "cosmos+crisis+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.crisis.module.v1)
-            pub mod v1 {
-                include!("cosmos.crisis.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.crisis.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+crisis+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.crisis.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.crisis.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.crisis.v1beta1)
-        }
-    }
     pub mod crypto {
         #[cfg(feature = "cosmos+crypto+bn254")]
         // @@protoc_insertion_point(attribute:cosmos.crypto.bn254)
@@ -237,146 +415,12 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.crypto.secp256r1)
         }
     }
-    pub mod distribution {
-        pub mod module {
-            #[cfg(feature = "cosmos+distribution+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.distribution.module.v1)
-            pub mod v1 {
-                include!("cosmos.distribution.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.distribution.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+distribution+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.distribution.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.distribution.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.distribution.v1beta1)
-        }
-    }
-    pub mod evidence {
-        pub mod module {
-            #[cfg(feature = "cosmos+evidence+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.evidence.module.v1)
-            pub mod v1 {
-                include!("cosmos.evidence.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.evidence.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+evidence+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.evidence.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.evidence.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.evidence.v1beta1)
-        }
-    }
-    pub mod feegrant {
-        pub mod module {
-            #[cfg(feature = "cosmos+feegrant+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.feegrant.module.v1)
-            pub mod v1 {
-                include!("cosmos.feegrant.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.feegrant.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+feegrant+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.feegrant.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.feegrant.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.feegrant.v1beta1)
-        }
-    }
-    pub mod genutil {
-        pub mod module {
-            #[cfg(feature = "cosmos+genutil+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.genutil.module.v1)
-            pub mod v1 {
-                include!("cosmos.genutil.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.genutil.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+genutil+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.genutil.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.genutil.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.genutil.v1beta1)
-        }
-    }
-    pub mod gov {
-        pub mod module {
-            #[cfg(feature = "cosmos+gov+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.gov.module.v1)
-            pub mod v1 {
-                include!("cosmos.gov.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.gov.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+gov+v1")]
-        // @@protoc_insertion_point(attribute:cosmos.gov.v1)
-        pub mod v1 {
-            include!("cosmos.gov.v1.rs");
-            // @@protoc_insertion_point(cosmos.gov.v1)
-        }
-        #[cfg(feature = "cosmos+gov+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.gov.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.gov.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.gov.v1beta1)
-        }
-    }
-    pub mod group {
-        pub mod module {
-            #[cfg(feature = "cosmos+group+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.group.module.v1)
-            pub mod v1 {
-                include!("cosmos.group.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.group.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+group+v1")]
-        // @@protoc_insertion_point(attribute:cosmos.group.v1)
-        pub mod v1 {
-            include!("cosmos.group.v1.rs");
-            // @@protoc_insertion_point(cosmos.group.v1)
-        }
-    }
     pub mod ics23 {
         #[cfg(feature = "cosmos+ics23+v1")]
         // @@protoc_insertion_point(attribute:cosmos.ics23.v1)
         pub mod v1 {
             include!("cosmos.ics23.v1.rs");
             // @@protoc_insertion_point(cosmos.ics23.v1)
-        }
-    }
-    pub mod mint {
-        pub mod module {
-            #[cfg(feature = "cosmos+mint+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.mint.module.v1)
-            pub mod v1 {
-                include!("cosmos.mint.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.mint.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+mint+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.mint.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.mint.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.mint.v1beta1)
-        }
-    }
-    pub mod nft {
-        pub mod module {
-            #[cfg(feature = "cosmos+nft+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.nft.module.v1)
-            pub mod v1 {
-                include!("cosmos.nft.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.nft.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+nft+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.nft.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.nft.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.nft.v1beta1)
         }
     }
     pub mod orm {
@@ -409,44 +453,12 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.orm.v1alpha1)
         }
     }
-    pub mod params {
-        pub mod module {
-            #[cfg(feature = "cosmos+params+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.params.module.v1)
-            pub mod v1 {
-                include!("cosmos.params.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.params.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+params+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.params.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.params.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.params.v1beta1)
-        }
-    }
     pub mod reflection {
         #[cfg(feature = "cosmos+reflection+v1")]
         // @@protoc_insertion_point(attribute:cosmos.reflection.v1)
         pub mod v1 {
             include!("cosmos.reflection.v1.rs");
             // @@protoc_insertion_point(cosmos.reflection.v1)
-        }
-    }
-    pub mod slashing {
-        pub mod module {
-            #[cfg(feature = "cosmos+slashing+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.slashing.module.v1)
-            pub mod v1 {
-                include!("cosmos.slashing.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.slashing.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+slashing+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.slashing.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.slashing.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.slashing.v1beta1)
         }
     }
     pub mod staking {
@@ -499,6 +511,14 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.store.v1beta1)
         }
     }
+    pub mod streaming {
+        #[cfg(feature = "cosmos+streaming+v1")]
+        // @@protoc_insertion_point(attribute:cosmos.streaming.v1)
+        pub mod v1 {
+            include!("cosmos.streaming.v1.rs");
+            // @@protoc_insertion_point(cosmos.streaming.v1)
+        }
+    }
     pub mod tx {
         pub mod config {
             #[cfg(feature = "cosmos+tx+config+v1")]
@@ -523,36 +543,14 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.tx.v1beta1)
         }
     }
-    pub mod upgrade {
+    pub mod validate {
         pub mod module {
-            #[cfg(feature = "cosmos+upgrade+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.upgrade.module.v1)
+            #[cfg(feature = "cosmos+validate+module+v1")]
+            // @@protoc_insertion_point(attribute:cosmos.validate.module.v1)
             pub mod v1 {
-                include!("cosmos.upgrade.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.upgrade.module.v1)
+                include!("cosmos.validate.module.v1.rs");
+                // @@protoc_insertion_point(cosmos.validate.module.v1)
             }
-        }
-        #[cfg(feature = "cosmos+upgrade+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.upgrade.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.upgrade.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.upgrade.v1beta1)
-        }
-    }
-    pub mod vesting {
-        pub mod module {
-            #[cfg(feature = "cosmos+vesting+module+v1")]
-            // @@protoc_insertion_point(attribute:cosmos.vesting.module.v1)
-            pub mod v1 {
-                include!("cosmos.vesting.module.v1.rs");
-                // @@protoc_insertion_point(cosmos.vesting.module.v1)
-            }
-        }
-        #[cfg(feature = "cosmos+vesting+v1beta1")]
-        // @@protoc_insertion_point(attribute:cosmos.vesting.v1beta1)
-        pub mod v1beta1 {
-            include!("cosmos.vesting.v1beta1.rs");
-            // @@protoc_insertion_point(cosmos.vesting.v1beta1)
         }
     }
 }
@@ -564,14 +562,6 @@ pub mod cosmwasm {
             include!("cosmwasm.wasm.v1.rs");
             // @@protoc_insertion_point(cosmwasm.wasm.v1)
         }
-    }
-}
-pub mod deferredack {
-    #[cfg(feature = "deferredack+v1beta1")]
-    // @@protoc_insertion_point(attribute:deferredack.v1beta1)
-    pub mod v1beta1 {
-        include!("deferredack.v1beta1.rs");
-        // @@protoc_insertion_point(deferredack.v1beta1)
     }
 }
 pub mod google {
@@ -779,12 +769,38 @@ pub mod tendermint {
         include!("tendermint.privval.rs");
         // @@protoc_insertion_point(tendermint.privval)
     }
-    pub mod rpc {
-        #[cfg(feature = "tendermint+rpc+grpc")]
-        // @@protoc_insertion_point(attribute:tendermint.rpc.grpc)
-        pub mod grpc {
-            include!("tendermint.rpc.grpc.rs");
-            // @@protoc_insertion_point(tendermint.rpc.grpc)
+    pub mod services {
+        pub mod block {
+            #[cfg(feature = "tendermint+services+block+v1")]
+            // @@protoc_insertion_point(attribute:tendermint.services.block.v1)
+            pub mod v1 {
+                include!("tendermint.services.block.v1.rs");
+                // @@protoc_insertion_point(tendermint.services.block.v1)
+            }
+        }
+        pub mod block_results {
+            #[cfg(feature = "tendermint+services+block_results+v1")]
+            // @@protoc_insertion_point(attribute:tendermint.services.block_results.v1)
+            pub mod v1 {
+                include!("tendermint.services.block_results.v1.rs");
+                // @@protoc_insertion_point(tendermint.services.block_results.v1)
+            }
+        }
+        pub mod pruning {
+            #[cfg(feature = "tendermint+services+pruning+v1")]
+            // @@protoc_insertion_point(attribute:tendermint.services.pruning.v1)
+            pub mod v1 {
+                include!("tendermint.services.pruning.v1.rs");
+                // @@protoc_insertion_point(tendermint.services.pruning.v1)
+            }
+        }
+        pub mod version {
+            #[cfg(feature = "tendermint+services+version+v1")]
+            // @@protoc_insertion_point(attribute:tendermint.services.version.v1)
+            pub mod v1 {
+                include!("tendermint.services.version.v1.rs");
+                // @@protoc_insertion_point(tendermint.services.version.v1)
+            }
         }
     }
     #[cfg(feature = "tendermint+state")]
@@ -829,18 +845,6 @@ pub mod tokenfactory {
 pub mod union {
     pub mod galois {
         pub mod api {
-            #[cfg(feature = "union+galois+api+v1")]
-            // @@protoc_insertion_point(attribute:union.galois.api.v1)
-            pub mod v1 {
-                include!("union.galois.api.v1.rs");
-                // @@protoc_insertion_point(union.galois.api.v1)
-            }
-            #[cfg(feature = "union+galois+api+v2")]
-            // @@protoc_insertion_point(attribute:union.galois.api.v2)
-            pub mod v2 {
-                include!("union.galois.api.v2.rs");
-                // @@protoc_insertion_point(union.galois.api.v2)
-            }
             #[cfg(feature = "union+galois+api+v3")]
             // @@protoc_insertion_point(attribute:union.galois.api.v3)
             pub mod v3 {

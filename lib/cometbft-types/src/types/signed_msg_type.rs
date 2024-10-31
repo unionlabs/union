@@ -15,7 +15,7 @@ pub mod proto {
 
     use crate::types::signed_msg_type::SignedMsgType;
 
-    impl From<SignedMsgType> for protos::tendermint::types::SignedMsgType {
+    impl From<SignedMsgType> for protos::cometbft::types::v1::SignedMsgType {
         fn from(value: SignedMsgType) -> Self {
             match value {
                 SignedMsgType::Unknown => Self::Unknown,
@@ -28,17 +28,17 @@ pub mod proto {
 
     impl From<SignedMsgType> for i32 {
         fn from(value: SignedMsgType) -> Self {
-            protos::tendermint::types::SignedMsgType::from(value).into()
+            protos::cometbft::types::v1::SignedMsgType::from(value).into()
         }
     }
 
-    impl From<protos::tendermint::types::SignedMsgType> for SignedMsgType {
-        fn from(value: protos::tendermint::types::SignedMsgType) -> Self {
+    impl From<protos::cometbft::types::v1::SignedMsgType> for SignedMsgType {
+        fn from(value: protos::cometbft::types::v1::SignedMsgType) -> Self {
             match value {
-                protos::tendermint::types::SignedMsgType::Unknown => Self::Unknown,
-                protos::tendermint::types::SignedMsgType::Prevote => Self::Prevote,
-                protos::tendermint::types::SignedMsgType::Precommit => Self::Precommit,
-                protos::tendermint::types::SignedMsgType::Proposal => Self::Proposal,
+                protos::cometbft::types::v1::SignedMsgType::Unknown => Self::Unknown,
+                protos::cometbft::types::v1::SignedMsgType::Prevote => Self::Prevote,
+                protos::cometbft::types::v1::SignedMsgType::Precommit => Self::Precommit,
+                protos::cometbft::types::v1::SignedMsgType::Proposal => Self::Proposal,
             }
         }
     }
@@ -48,13 +48,13 @@ pub mod proto {
 
         fn try_from(value: i32) -> Result<Self, Self::Error> {
             Ok(
-                match protos::tendermint::types::SignedMsgType::try_from(value)
+                match protos::cometbft::types::v1::SignedMsgType::try_from(value)
                     .map_err(|_| UnknownEnumVariant(value))?
                 {
-                    protos::tendermint::types::SignedMsgType::Unknown => Self::Unknown,
-                    protos::tendermint::types::SignedMsgType::Prevote => Self::Prevote,
-                    protos::tendermint::types::SignedMsgType::Precommit => Self::Precommit,
-                    protos::tendermint::types::SignedMsgType::Proposal => Self::Proposal,
+                    protos::cometbft::types::v1::SignedMsgType::Unknown => Self::Unknown,
+                    protos::cometbft::types::v1::SignedMsgType::Prevote => Self::Prevote,
+                    protos::cometbft::types::v1::SignedMsgType::Precommit => Self::Precommit,
+                    protos::cometbft::types::v1::SignedMsgType::Proposal => Self::Proposal,
                 },
             )
         }

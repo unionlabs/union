@@ -20,7 +20,7 @@ pub mod proto {
 
     use crate::types::{duplicate_vote_evidence::DuplicateVoteEvidence, vote};
 
-    impl From<DuplicateVoteEvidence> for protos::tendermint::types::DuplicateVoteEvidence {
+    impl From<DuplicateVoteEvidence> for protos::cometbft::types::v1::DuplicateVoteEvidence {
         fn from(value: DuplicateVoteEvidence) -> Self {
             Self {
                 vote_a: Some(value.vote_a.into()),
@@ -44,11 +44,11 @@ pub mod proto {
         Timestamp(#[from] TryFromTimestampError),
     }
 
-    impl TryFrom<protos::tendermint::types::DuplicateVoteEvidence> for DuplicateVoteEvidence {
+    impl TryFrom<protos::cometbft::types::v1::DuplicateVoteEvidence> for DuplicateVoteEvidence {
         type Error = Error;
 
         fn try_from(
-            value: protos::tendermint::types::DuplicateVoteEvidence,
+            value: protos::cometbft::types::v1::DuplicateVoteEvidence,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 vote_a: required!(value.vote_a)?.try_into().map_err(Error::VoteA)?,

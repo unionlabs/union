@@ -3,7 +3,7 @@ use macros::model;
 use crate::{
     cosmos::tx::{
         auth_info::{AuthInfo, TryFromAuthInfoError},
-        tx_body::TxBody,
+        tx_body::{TryFromTxBodyError, TxBody},
     },
     errors::{required, MissingField},
 };
@@ -29,8 +29,10 @@ impl From<Tx> for protos::cosmos::tx::v1beta1::Tx {
 pub enum TryFromTxError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
-    #[error("invalid auth info")]
+    #[error("invalid auth_info")]
     AuthInfo(#[from] TryFromAuthInfoError),
+    #[error("invalid tx_body")]
+    TxBody(#[from] TryFromTxBodyError),
 }
 
 impl TryFrom<protos::cosmos::tx::v1beta1::Tx> for Tx {
@@ -38,7 +40,7 @@ impl TryFrom<protos::cosmos::tx::v1beta1::Tx> for Tx {
 
     fn try_from(value: protos::cosmos::tx::v1beta1::Tx) -> Result<Self, Self::Error> {
         Ok(Self {
-            body: required!(value.body)?.into(),
+            body: required!(value.body)?.try_into()?,
             auth_info: required!(value.auth_info)?.try_into()?,
             signatures: value.signatures,
         })

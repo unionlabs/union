@@ -2,7 +2,7 @@ use cometbft_types::types::block_id::BlockId;
 use unionlabs::{
     errors::InvalidLength,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{H160, H256},
+    hash::{hash_v2::HexUnprefixed, H160, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -29,7 +29,10 @@ pub enum Error {
     #[error("height of the signed header ({sh_height}) and commit ({commit_height}) mismatch")]
     SignedHeaderCommitHeightMismatch { sh_height: i64, commit_height: i64 },
     #[error("hash of the signed header ({sh_hash}) and commit ({commit_hash}) mismatch")]
-    SignedHeaderCommitHashMismatch { sh_hash: H256, commit_hash: H256 },
+    SignedHeaderCommitHashMismatch {
+        sh_hash: H256<HexUnprefixed>,
+        commit_hash: H256<HexUnprefixed>,
+    },
     #[error("trusted header height ({untrusted_header_height}) cannot be greater than or equal to the untrusted height ({untrusted_header_height})")]
     UntrustedHeaderHeightIsLE {
         untrusted_header_height: i64,
@@ -41,7 +44,10 @@ pub enum Error {
         trusted_header_timestamp: Timestamp,
     },
     #[error("expected the untrusted validator set to match the validators hash")]
-    UntrustedValidatorSetMismatch { expected: H256, found: H256 },
+    UntrustedValidatorSetMismatch {
+        expected: H256<HexUnprefixed>,
+        found: H256<HexUnprefixed>,
+    },
     #[error("invalid index ({index}) while getting a validator with len ({val_len})")]
     InvalidIndexInValidatorSet { index: usize, val_len: usize },
     #[error("double vote from ({0})")]
@@ -57,8 +63,8 @@ pub enum Error {
     },
     #[error("next validators hash ({next_validators_hash}) of the trusted header does not match the adjacent header's validators hash ({validators_hash})", next_validators_hash = serde_utils::to_hex(next_validators_hash), validators_hash = serde_utils::to_hex(validators_hash))]
     NextValidatorsHashMismatch {
-        next_validators_hash: H256,
-        validators_hash: H256,
+        next_validators_hash: H256<HexUnprefixed>,
+        validators_hash: H256<HexUnprefixed>,
     },
     #[error("commit signatures length ({sig_len}) does not match the validators len ({val_len})")]
     InvalidCommitSignaturesLength { sig_len: usize, val_len: usize },

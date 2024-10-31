@@ -1,20 +1,18 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::bounded::BoundedI64;
+use unionlabs::{bounded::BoundedI64, bytes::Bytes, hash::hash_v2::Base64};
 
 use crate::crypto::proof_ops::ProofOps;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ResponseQuery {
+pub struct QueryResponse {
     pub code: u32,
     /// nondeterministic
     pub log: String,
     /// nondeterministic
     pub info: String,
     pub index: i64,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub key: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub value: Vec<u8>,
+    pub key: Option<Bytes<Base64>>,
+    pub value: Option<Bytes<Base64>>,
     pub proof_ops: Option<ProofOps>,
     pub height: BoundedI64<0, { i64::MAX }>,
     pub codespace: String,
@@ -24,17 +22,17 @@ pub struct ResponseQuery {
 pub mod proto {
     use unionlabs::bounded::BoundedIntError;
 
-    use crate::abci::response_query::ResponseQuery;
+    use crate::abci::response_query::QueryResponse;
 
-    impl From<ResponseQuery> for protos::tendermint::abci::ResponseQuery {
-        fn from(value: ResponseQuery) -> Self {
+    impl From<QueryResponse> for protos::cometbft::abci::v1::QueryResponse {
+        fn from(value: QueryResponse) -> Self {
             Self {
                 code: value.code,
                 log: value.log,
                 info: value.info,
                 index: value.index,
-                key: value.key,
-                value: value.value,
+                key: value.key.unwrap_or_default().into_vec(),
+                value: value.value.unwrap_or_default().into_vec(),
                 proof_ops: value.proof_ops.map(Into::into),
                 height: value.height.inner(),
                 codespace: value.codespace,
@@ -48,17 +46,17 @@ pub mod proto {
         Height(#[source] BoundedIntError<i64>),
     }
 
-    impl TryFrom<protos::tendermint::abci::ResponseQuery> for ResponseQuery {
+    impl TryFrom<protos::cometbft::abci::v1::QueryResponse> for QueryResponse {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::abci::ResponseQuery) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::abci::v1::QueryResponse) -> Result<Self, Self::Error> {
             Ok(Self {
                 code: value.code,
                 log: value.log,
                 info: value.info,
                 index: value.index,
-                key: value.key,
-                value: value.value,
+                key: Some(value.key.into()),
+                value: Some(value.value.into()),
                 proof_ops: value.proof_ops.map(Into::into),
                 height: value.height.try_into().map_err(Error::Height)?,
                 codespace: value.codespace,

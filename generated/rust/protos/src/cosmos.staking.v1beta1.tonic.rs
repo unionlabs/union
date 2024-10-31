@@ -618,5 +618,27 @@ pub mod msg_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn rotate_cons_pub_key(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgRotateConsPubKey>,
+        ) -> std::result::Result<tonic::Response<super::MsgRotateConsPubKeyResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.staking.v1beta1.Msg/RotateConsPubKey",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.staking.v1beta1.Msg",
+                "RotateConsPubKey",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }

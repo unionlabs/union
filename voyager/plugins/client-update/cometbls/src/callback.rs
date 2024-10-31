@@ -59,9 +59,12 @@ impl Module {
                     signed_header: LightHeader {
                         height: signed_header.header.height,
                         time: signed_header.header.time,
-                        validators_hash: signed_header.header.validators_hash,
-                        next_validators_hash: signed_header.header.next_validators_hash,
-                        app_hash: signed_header.header.app_hash,
+                        validators_hash: signed_header.header.validators_hash.into_encoding(),
+                        next_validators_hash: signed_header
+                            .header
+                            .next_validators_hash
+                            .into_encoding(),
+                        app_hash: signed_header.header.app_hash.into_encoding(),
                     },
                     trusted_height: update_from,
                     zero_knowledge_proof: response.proof.evm_proof,

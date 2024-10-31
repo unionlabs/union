@@ -2,8 +2,8 @@
   "data": {
     "timestamp": 1705594555,
     "app_hash": {
-      "hash": "0x4ce2e7250c1af16bafa21c0f1f8a3e1e9b34331d0c6bce84a0bb2ef9731297aa"
+      "hash": "TOLnJQwa8WuvohwPH4o+Hps0Mx0Ma86EoLsu+XMSl6o="
     },
-    "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6ff"
+    "next_validators_hash": "0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6ff"
   }
 }

@@ -1,14 +1,18 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{bounded::BoundedI64, google::protobuf::timestamp::Timestamp, hash::H256};
+use unionlabs::{
+    bounded::BoundedI64,
+    google::protobuf::timestamp::Timestamp,
+    hash::{hash_v2::HexUnprefixed, H256},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LightHeader {
     #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
-    pub validators_hash: H256,
-    pub next_validators_hash: H256,
-    pub app_hash: H256,
+    pub validators_hash: H256<HexUnprefixed>,
+    pub next_validators_hash: H256<HexUnprefixed>,
+    pub app_hash: H256<HexUnprefixed>,
 }
 
 #[cfg(feature = "proto")]

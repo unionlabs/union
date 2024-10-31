@@ -53,7 +53,6 @@ impl LightClientUpdate {
     /// in tuple format ready to be passed in to the verifier.
     ///
     /// Returns `(current_sync_committee, next_sync_committee)`
-
     pub fn currently_trusted_sync_committee(
         &self,
     ) -> (Option<&SyncCommittee>, Option<&SyncCommittee>) {

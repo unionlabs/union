@@ -2,7 +2,7 @@ use cometbls_light_client_types::ClientState;
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    hash::H256,
+    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
 };
 
@@ -28,7 +28,10 @@ pub enum InvalidHeaderError {
         max_clock_drift: u64,
     },
     #[error("the validators hash ({actual}) doesn't match the trusted validators hash ({expected}) for an adjacent block")]
-    InvalidValidatorsHash { expected: H256, actual: H256 },
+    InvalidValidatorsHash {
+        expected: H256<HexUnprefixed>,
+        actual: H256<HexUnprefixed>,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]

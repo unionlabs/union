@@ -166,7 +166,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
         T::verify_zkp(
             &client_state.data.chain_id,
-            trusted_validators_hash,
+            trusted_validators_hash.into_encoding(),
             &header.signed_header,
             &header.zero_knowledge_proof,
         )
@@ -221,7 +221,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         consensus_state.data.app_hash = MerkleRoot {
-            hash: header.signed_header.app_hash,
+            hash: header.signed_header.app_hash.into_encoding(),
         };
 
         consensus_state.data.next_validators_hash = header.signed_header.next_validators_hash;

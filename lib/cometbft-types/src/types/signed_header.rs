@@ -14,7 +14,7 @@ pub mod proto {
 
     use crate::types::{commit, header, signed_header::SignedHeader};
 
-    impl From<SignedHeader> for protos::tendermint::types::SignedHeader {
+    impl From<SignedHeader> for protos::cometbft::types::v1::SignedHeader {
         fn from(value: SignedHeader) -> Self {
             Self {
                 header: Some(value.header.into()),
@@ -31,6 +31,26 @@ pub mod proto {
         Header(#[source] header::proto::Error),
         #[error("invalid commit")]
         Commit(#[source] commit::proto::Error),
+    }
+
+    impl TryFrom<protos::cometbft::types::v1::SignedHeader> for SignedHeader {
+        type Error = Error;
+
+        fn try_from(value: protos::cometbft::types::v1::SignedHeader) -> Result<Self, Self::Error> {
+            Ok(Self {
+                header: required!(value.header)?.try_into().map_err(Error::Header)?,
+                commit: required!(value.commit)?.try_into().map_err(Error::Commit)?,
+            })
+        }
+    }
+
+    impl From<SignedHeader> for protos::tendermint::types::SignedHeader {
+        fn from(value: SignedHeader) -> Self {
+            Self {
+                header: Some(value.header.into()),
+                commit: Some(value.commit.into()),
+            }
+        }
     }
 
     impl TryFrom<protos::tendermint::types::SignedHeader> for SignedHeader {

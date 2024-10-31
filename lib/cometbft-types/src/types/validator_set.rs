@@ -16,7 +16,7 @@ pub mod proto {
 
     use crate::types::{validator, validator_set::ValidatorSet};
 
-    impl From<ValidatorSet> for protos::tendermint::types::ValidatorSet {
+    impl From<ValidatorSet> for protos::cometbft::types::v1::ValidatorSet {
         fn from(value: ValidatorSet) -> Self {
             Self {
                 validators: value.validators.into_iter().map(Into::into).collect(),
@@ -34,6 +34,35 @@ pub mod proto {
         Validators(#[source] validator::proto::Error),
         #[error("invalid proposer")]
         Proposer(#[source] validator::proto::Error),
+    }
+
+    impl TryFrom<protos::cometbft::types::v1::ValidatorSet> for ValidatorSet {
+        type Error = Error;
+
+        fn try_from(value: protos::cometbft::types::v1::ValidatorSet) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validators: value
+                    .validators
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(Error::Validators)?,
+                proposer: required!(value.proposer)?
+                    .try_into()
+                    .map_err(Error::Proposer)?,
+                total_voting_power: value.total_voting_power,
+            })
+        }
+    }
+
+    impl From<ValidatorSet> for protos::tendermint::types::ValidatorSet {
+        fn from(value: ValidatorSet) -> Self {
+            Self {
+                validators: value.validators.into_iter().map(Into::into).collect(),
+                proposer: Some(value.proposer.into()),
+                total_voting_power: value.total_voting_power,
+            }
+        }
     }
 
     impl TryFrom<protos::tendermint::types::ValidatorSet> for ValidatorSet {

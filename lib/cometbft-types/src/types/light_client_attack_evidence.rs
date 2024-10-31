@@ -23,7 +23,7 @@ pub mod proto {
         light_block, light_client_attack_evidence::LightClientAttackEvidence, validator,
     };
 
-    impl From<LightClientAttackEvidence> for protos::tendermint::types::LightClientAttackEvidence {
+    impl From<LightClientAttackEvidence> for protos::cometbft::types::v1::LightClientAttackEvidence {
         fn from(value: LightClientAttackEvidence) -> Self {
             Self {
                 conflicting_block: Some(value.conflicting_block.into()),
@@ -53,11 +53,11 @@ pub mod proto {
         ValidatorSet(#[from] TryFromTimestampError),
     }
 
-    impl TryFrom<protos::tendermint::types::LightClientAttackEvidence> for LightClientAttackEvidence {
+    impl TryFrom<protos::cometbft::types::v1::LightClientAttackEvidence> for LightClientAttackEvidence {
         type Error = Error;
 
         fn try_from(
-            value: protos::tendermint::types::LightClientAttackEvidence,
+            value: protos::cometbft::types::v1::LightClientAttackEvidence,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 conflicting_block: required!(value.conflicting_block)?.try_into()?,

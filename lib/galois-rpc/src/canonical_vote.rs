@@ -14,7 +14,7 @@ pub struct CanonicalVote {
     pub chain_id: String,
 }
 
-impl From<CanonicalVote> for protos::tendermint::types::CanonicalVote {
+impl From<CanonicalVote> for protos::cometbft::types::v1::CanonicalVote {
     fn from(value: CanonicalVote) -> Self {
         Self {
             r#type: value.ty.into(),

@@ -20,7 +20,20 @@ pub struct CanonicalVote {
 pub mod proto {
     use crate::types::canonical_vote::CanonicalVote;
 
-    impl From<CanonicalVote> for protos::tendermint::types::LegacyCanonicalVote {
+    impl From<CanonicalVote> for protos::cometbft::types::v1::CanonicalVote {
+        fn from(value: CanonicalVote) -> Self {
+            Self {
+                r#type: value.ty.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                block_id: Some(value.block_id.into()),
+                chain_id: value.chain_id,
+                // timestamp: Some(value.timestamp.into()),
+            }
+        }
+    }
+
+    impl From<CanonicalVote> for protos::tendermint::types::CanonicalVote {
         fn from(value: CanonicalVote) -> Self {
             Self {
                 r#type: value.ty.into(),

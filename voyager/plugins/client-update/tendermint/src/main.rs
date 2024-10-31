@@ -8,7 +8,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::instrument;
-use unionlabs::hash::H160;
+use unionlabs::hash::{hash_v2::HexUnprefixed, H160};
 use voyager_message::{
     call::Call,
     core::ChainId,
@@ -219,7 +219,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
-fn mk_validator_set(validators: Vec<Validator>, proposer_address: H160) -> ValidatorSet {
+fn mk_validator_set(
+    validators: Vec<Validator>,
+    proposer_address: H160<HexUnprefixed>,
+) -> ValidatorSet {
     let proposer = validators
         .iter()
         .find(|val| val.address == proposer_address)

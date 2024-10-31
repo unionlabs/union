@@ -3,7 +3,10 @@ use core::{cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::hash::hash_v2::{Encoding, HexPrefixed};
+use crate::{
+    errors::InvalidLength,
+    hash::hash_v2::{Encoding, HexPrefixed},
+};
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
     bytes: Cow<'static, [u8]>,
@@ -87,6 +90,30 @@ impl<E: Encoding, RhsE: Encoding> PartialEq<Bytes<RhsE>> for Bytes<E> {
     }
 }
 
+impl<E: Encoding> PartialEq<Vec<u8>> for Bytes<E> {
+    fn eq(&self, other: &Vec<u8>) -> bool {
+        (**self).eq(&**other)
+    }
+}
+
+impl<E: Encoding> PartialEq<&[u8]> for Bytes<E> {
+    fn eq(&self, other: &&[u8]) -> bool {
+        (**self).eq(*other)
+    }
+}
+
+impl<E: Encoding> PartialEq<[u8]> for Bytes<E> {
+    fn eq(&self, other: &[u8]) -> bool {
+        (**self).eq(other)
+    }
+}
+
+impl<E: Encoding, const N: usize> PartialEq<[u8; N]> for Bytes<E> {
+    fn eq(&self, other: &[u8; N]) -> bool {
+        (**self).eq(other)
+    }
+}
+
 impl<E: Encoding> Eq for Bytes<E> {}
 
 impl<E: Encoding, RhsE: Encoding> PartialOrd<Bytes<RhsE>> for Bytes<E> {
@@ -158,6 +185,16 @@ impl<E: Encoding> IntoIterator for Bytes<E> {
     #[allow(clippy::unnecessary_to_owned)]
     fn into_iter(self) -> Self::IntoIter {
         self.bytes.to_vec().into_iter()
+    }
+}
+
+impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes>>
+    for crate::hash::hash_v2::Hash<BYTES, EHash>
+{
+    type Error = InvalidLength;
+
+    fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_vec())
     }
 }
 

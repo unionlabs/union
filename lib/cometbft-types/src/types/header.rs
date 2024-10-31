@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
-    hash::{H160, H256},
+    hash::{hash_v2::HexUnprefixed, H160, H256},
 };
 
 use crate::{types::block_id::BlockId, version::consensus::Consensus};
@@ -23,27 +23,27 @@ pub struct Header {
     /// hashes of block data
     ///
     /// commit from validators from the last block
-    pub last_commit_hash: H256,
+    pub last_commit_hash: H256<HexUnprefixed>,
     /// transactions
-    pub data_hash: H256,
+    pub data_hash: H256<HexUnprefixed>,
     /// hashes from the app output from the prev block
     ///
     /// validators for the current block
-    pub validators_hash: H256,
+    pub validators_hash: H256<HexUnprefixed>,
     /// validators for the next block
-    pub next_validators_hash: H256,
+    pub next_validators_hash: H256<HexUnprefixed>,
     /// consensus params for current block
-    pub consensus_hash: H256,
+    pub consensus_hash: H256<HexUnprefixed>,
     /// state after txs from the previous block
-    pub app_hash: H256,
+    pub app_hash: H256<HexUnprefixed>,
     /// root hash of all results from the txs from the previous block
-    pub last_results_hash: H256,
+    pub last_results_hash: H256<HexUnprefixed>,
     /// consensus info
     ///
     /// evidence included in the block
-    pub evidence_hash: H256,
+    pub evidence_hash: H256<HexUnprefixed>,
     /// original proposer of the block
-    pub proposer_address: H160,
+    pub proposer_address: H160<HexUnprefixed>,
 }
 
 impl Header {
@@ -79,7 +79,7 @@ impl Header {
                 .into()
         }
 
-        let header: protos::tendermint::types::Header = self.clone().into();
+        let header: protos::cometbft::types::v1::Header = self.clone().into();
 
         let mut leaves = [
             leaf_hash(header.version?.encode_to_vec()),
@@ -186,7 +186,7 @@ pub mod proto {
 
     use crate::types::{block_id, header::Header};
 
-    impl From<Header> for protos::tendermint::types::Header {
+    impl From<Header> for protos::cometbft::types::v1::Header {
         fn from(value: Header) -> Self {
             Self {
                 version: Some(value.version.into()),
@@ -235,6 +235,75 @@ pub mod proto {
         EvidenceHash(#[source] InvalidLength),
         #[error("invalid proposer address")]
         ProposerAddress(#[source] InvalidLength),
+    }
+
+    impl TryFrom<protos::cometbft::types::v1::Header> for Header {
+        type Error = Error;
+
+        fn try_from(value: protos::cometbft::types::v1::Header) -> Result<Self, Self::Error> {
+            Ok(Self {
+                version: required!(value.version)?.into(),
+                chain_id: value.chain_id,
+                height: value.height.try_into().map_err(Error::Height)?,
+                time: required!(value.time)?
+                    .try_into()
+                    .map_err(Error::Timestamp)?,
+                last_block_id: required!(value.last_block_id)?
+                    .try_into()
+                    .map_err(Error::LastBlockId)?,
+                last_commit_hash: value
+                    .last_commit_hash
+                    .try_into()
+                    .map_err(Error::LastCommitHash)?,
+                data_hash: value.data_hash.try_into().map_err(Error::DataHash)?,
+                validators_hash: value
+                    .validators_hash
+                    .try_into()
+                    .map_err(Error::ValidatorsHash)?,
+                next_validators_hash: value
+                    .next_validators_hash
+                    .try_into()
+                    .map_err(Error::NextValidatorsHash)?,
+                consensus_hash: value
+                    .consensus_hash
+                    .try_into()
+                    .map_err(Error::ConsensusHash)?,
+                app_hash: value.app_hash.try_into().map_err(Error::AppHash)?,
+                last_results_hash: value
+                    .last_results_hash
+                    .try_into()
+                    .map_err(Error::LastResultsHash)?,
+                evidence_hash: value
+                    .evidence_hash
+                    .try_into()
+                    .map_err(Error::EvidenceHash)?,
+                proposer_address: value
+                    .proposer_address
+                    .try_into()
+                    .map_err(Error::ProposerAddress)?,
+            })
+        }
+    }
+
+    impl From<Header> for protos::tendermint::types::Header {
+        fn from(value: Header) -> Self {
+            Self {
+                version: Some(value.version.into()),
+                chain_id: value.chain_id,
+                height: value.height.into(),
+                time: Some(value.time.into()),
+                last_block_id: Some(value.last_block_id.into()),
+                last_commit_hash: value.last_commit_hash.into(),
+                data_hash: value.data_hash.into(),
+                validators_hash: value.validators_hash.into(),
+                next_validators_hash: value.next_validators_hash.into(),
+                consensus_hash: value.consensus_hash.into(),
+                app_hash: value.app_hash.into(),
+                last_results_hash: value.last_results_hash.into(),
+                evidence_hash: value.evidence_hash.into(),
+                proposer_address: value.proposer_address.into(),
+            }
+        }
     }
 
     impl TryFrom<protos::tendermint::types::Header> for Header {
@@ -295,7 +364,7 @@ mod tests {
         // https://stride-testnet-rpc.polkachu.com/block?hash=B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507
         let expected_merkle_root =
             hex_literal::hex!("B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507");
-        let header: Header = serde_json::from_str::<protos::tendermint::types::Header>(
+        let header: Header = serde_json::from_str::<protos::cometbft::types::v1::Header>(
             r#"
 {
   "version": {

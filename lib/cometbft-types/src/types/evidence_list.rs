@@ -11,7 +11,7 @@ pub struct EvidenceList {
 pub mod proto {
     use crate::types::{evidence, evidence_list::EvidenceList};
 
-    impl From<EvidenceList> for protos::tendermint::types::EvidenceList {
+    impl From<EvidenceList> for protos::cometbft::types::v1::EvidenceList {
         fn from(value: EvidenceList) -> Self {
             Self {
                 evidence: value.evidence.into_iter().map(Into::into).collect(),
@@ -25,10 +25,10 @@ pub mod proto {
         Evidence(#[from] evidence::proto::Error),
     }
 
-    impl TryFrom<protos::tendermint::types::EvidenceList> for EvidenceList {
+    impl TryFrom<protos::cometbft::types::v1::EvidenceList> for EvidenceList {
         type Error = Error;
 
-        fn try_from(value: protos::tendermint::types::EvidenceList) -> Result<Self, Self::Error> {
+        fn try_from(value: protos::cometbft::types::v1::EvidenceList) -> Result<Self, Self::Error> {
             Ok(Self {
                 evidence: value
                     .evidence

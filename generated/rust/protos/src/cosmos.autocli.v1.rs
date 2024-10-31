@@ -37,6 +37,14 @@ pub struct ServiceCommandDescriptor {
     #[prost(map = "string, message", tag = "3")]
     pub sub_commands:
         ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
+    /// enhance_custom_commands specifies whether to skip the service when generating commands, if a custom command already
+    /// exists, or enhance the existing command. If set to true, the custom command will be enhanced with the services from
+    /// gRPC. otherwise when a custom command exists, no commands will be generated for the service.
+    #[prost(bool, tag = "4")]
+    pub enhance_custom_command: bool,
+    /// short is an optional parameter used to override the short description of the auto generated command.
+    #[prost(string, tag = "5")]
+    pub short: ::prost::alloc::string::String,
 }
 impl ::prost::Name for ServiceCommandDescriptor {
     const NAME: &'static str = "ServiceCommandDescriptor";
@@ -97,6 +105,12 @@ pub struct RpcCommandOptions {
     /// skip specifies whether to skip this rpc method when generating commands.
     #[prost(bool, tag = "12")]
     pub skip: bool,
+    /// gov_proposal specifies whether autocli should generate a gov proposal transaction for this rpc method.
+    /// Normally autocli generates a transaction containing the message and broadcast it.
+    /// However, when true, autocli generates a proposal transaction containing the message and broadcast it.
+    /// This option is ineffective for query commands.
+    #[prost(bool, tag = "13")]
+    pub gov_proposal: bool,
 }
 impl ::prost::Name for RpcCommandOptions {
     const NAME: &'static str = "RpcCommandOptions";
@@ -151,9 +165,13 @@ pub struct PositionalArgDescriptor {
     pub proto_field: ::prost::alloc::string::String,
     /// varargs makes a positional parameter a varargs parameter. This can only be
     /// applied to last positional parameter and the proto_field must a repeated
-    /// field.
+    /// field. Note: It is mutually exclusive with optional.
     #[prost(bool, tag = "2")]
     pub varargs: bool,
+    /// optional makes the last positional parameter optional.
+    /// Note: It is mutually exclusive with varargs.
+    #[prost(bool, tag = "3")]
+    pub optional: bool,
 }
 impl ::prost::Name for PositionalArgDescriptor {
     const NAME: &'static str = "PositionalArgDescriptor";

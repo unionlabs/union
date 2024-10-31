@@ -26,8 +26,11 @@ use unionlabs::{
 
 use crate::types::{
     AbciQueryResponse, AllValidatorsResponse, BlockResponse, BroadcastTxSyncResponse,
-    CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse,
+    CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
 };
+
+#[cfg(test)]
+mod tests;
 
 pub mod serde;
 pub mod types;
@@ -79,7 +82,7 @@ impl Client {
         &self,
         height: Option<NonZeroU64>,
         pagination: Option<types::ValidatorsPagination>,
-    ) -> Result<types::ValidatorsResponse, JsonRpcError> {
+    ) -> Result<ValidatorsResponse, JsonRpcError> {
         self.inner
             .request(
                 "validators",
@@ -105,7 +108,7 @@ impl Client {
         let mut out = vec![];
 
         loop {
-            let types::ValidatorsResponse {
+            let ValidatorsResponse {
                 block_height,
                 validators,
                 count: _,
@@ -175,8 +178,8 @@ impl Client {
             log = %res.response.log,
             info = %res.response.info,
             index = %res.response.index,
-            key = %::serde_utils::to_hex(&res.response.key),
-            value = %::serde_utils::to_hex(&res.response.value),
+            key = ?&res.response.key,
+            value = ?&res.response.value,
             height = %res.response.height,
             codespace = %res.response.codespace,
             "fetched abci query"
@@ -294,16 +297,14 @@ impl ClientT for ClientInner {
 
 // These tests are useful in testing and debugging, but should not be run in CI
 // #[cfg(test)]
-// mod tests {
-//     use std::time::Duration;
-
+// mod live_tests {
 //     use hex_literal::hex;
 
 //     use super::*;
 
 //     const UNION_TESTNET: &str = "https://rpc.testnet-8.union.build";
 //     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
-//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain-devnet.com/websocket";
+//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
 //     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
 
 //     const TEST_URL: &str = UNION_TESTNET;
@@ -332,7 +333,7 @@ impl ClientT for ClientInner {
 //             )
 //             .await;
 
-//         bg!(result);
+//         dbg!(result);
 //     }
 
 //     #[tokio::test]
@@ -389,7 +390,7 @@ impl ClientT for ClientInner {
 //             .await
 //             .unwrap();
 
-//         dbg!(result.block.evidence);
+//         dbg!(result.block);
 
 //         //     i += 1;
 
