@@ -31,7 +31,7 @@ const slideTextAnimation = {
 ---
 
 <head>
-  <ClientRouter/>
+  <ClientRouter />
 </head>
 
 <Layout title="Union">
@@ -40,16 +40,20 @@ const slideTextAnimation = {
       <div class="glow-effect" transition:persist></div>
     </div>
     <MatrixCover />
-    <div class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center">
-      <div class="max-w-2xl flex flex-col gap-4" transition:animate={slideTextAnimation}>
+    <div
+      class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
+    >
+      <div
+        class="max-w-2xl flex flex-col gap-4"
+        transition:animate={slideTextAnimation}
+      >
         <H1>{title}</H1>
         <TextP>{text}</TextP>
       </div>
     </div>
   </div>
-  <slot/>
+  <slot />
 </Layout>
-
 
 <style lang="postcss" is:global>
     .header-grid {
@@ -126,29 +130,29 @@ const slideTextAnimation = {
 </style>
 
 <script>
-  import {rotateCamera} from "../lib/matrix-cover";
+  import { rotateCamera } from "../lib/matrix-cover";
 
   const pathToIndexMap = {
-    '/': 0,
-    '/learn': 1,
-    '/ecosystem': 2,
-    '/team': 3
-  }
+    "/": 0,
+    "/learn": 1,
+    "/ecosystem": 2,
+    "/team": 3,
+  };
 
-  document.addEventListener('astro:after-preparation', (event: any) => {
-    console.log('Full event:', event);
+  document.addEventListener("astro:after-preparation", (event: any) => {
+    console.log("Full event:", event);
 
     // Get path from URL
-    const currentPath = window.location.pathname
+    const currentPath = window.location.pathname;
 
     // Get current index from path
-    const currentIndex = pathToIndexMap[currentPath] ?? 0
+    const currentIndex = pathToIndexMap[currentPath] ?? 0;
 
     // For testing, let's rotate based on just the current path
     if (currentPath in pathToIndexMap) {
       // Simple alternating direction for now
-      const direction = currentIndex % 2 === 0 ? 'right' : 'left'
-      rotateCamera(direction as "left" | "right", currentIndex)
+      const direction = currentIndex % 2 === 0 ? "right" : "left";
+      rotateCamera(direction as "left" | "right", currentIndex);
     }
   });
 
@@ -159,8 +163,8 @@ const slideTextAnimation = {
   let mouseMoveHandler;
 
   function initializeGlowEffect() {
-    headerGrid = document.querySelector('.header-grid');
-    glowEffect = document.querySelector('.glow-effect');
+    headerGrid = document.querySelector(".header-grid");
+    glowEffect = document.querySelector(".glow-effect");
 
     if (headerGrid && glowEffect) {
       mouseMoveHandler = (e) => {
@@ -189,21 +193,20 @@ const slideTextAnimation = {
         glowEffect.style.transform = `scale(${scale}) rotate(${currentRotation + 90}deg)`;
       };
 
-      headerGrid.addEventListener('mousemove', mouseMoveHandler);
+      headerGrid.addEventListener("mousemove", mouseMoveHandler);
     }
   }
 
   function cleanup() {
     if (headerGrid && mouseMoveHandler) {
-      headerGrid.removeEventListener('mousemove', mouseMoveHandler);
+      headerGrid.removeEventListener("mousemove", mouseMoveHandler);
     }
   }
 
-  document.addEventListener('astro:page-load', () => {
+  document.addEventListener("astro:page-load", () => {
     cleanup();
     initializeGlowEffect();
   });
 
-  document.addEventListener('astro:before-preparation', cleanup);
+  document.addEventListener("astro:before-preparation", cleanup);
 </script>
-

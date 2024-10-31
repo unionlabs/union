@@ -44,12 +44,12 @@ function isInternal(menuItem: { url: string }): boolean {
 >
   <ul class="flex flex-wrap gap-x-6 gap-y-4 list-none">
     {
-      menuItems.map(menuItem => (
+      menuItems.map((menuItem) => (
         <li>
           <a
             href={menuItem.url}
-            target={isInternal(menuItem) ? '' : '_blank'}
-            rel={isInternal(menuItem) ? '' : 'noopener noreferrer'}
+            target={isInternal(menuItem) ? "" : "_blank"}
+            rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
             class="text-normal uppercase"
           >
             {menuItem.name}

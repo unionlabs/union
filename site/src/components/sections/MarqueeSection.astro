@@ -18,9 +18,9 @@ const { title, data, reverse } = Astro.props
     ]}>
       <div class="marquee__group">
         {
-          data.map(item => (
+          data.map(item => 
             <img src={item.logo.src} alt={item.name}></img>
-          ))
+          )
         }
       </div>
 

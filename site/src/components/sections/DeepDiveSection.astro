@@ -19,56 +19,48 @@ const diver = [
 const { entries } = Astro.props
 ---
 
-
 <div class="flex justify-center py-24 text-lg font-mono" id="swim-container">
   <div class="relative grid grid-cols-4 gap-4 max-w-6xl px-6">
-    <div class="flex flex-col col-span-full md:col-span-3 gap-12 md:gap-24 lg:gap-48">
-
+    <div
+      class="flex flex-col col-span-full md:col-span-3 gap-12 md:gap-24 lg:gap-48"
+    >
       <div id="">
         <H1>
-          <Fragment set:html={renderTitle(entries.firstTitle)}/>
+          <Fragment set:html={renderTitle(entries.firstTitle)} />
         </H1>
         <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
           <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.firstText)}/>
+            <Fragment set:html={renderRichText(entries.firstText)} />
           </div>
-          <div class="object-contain h-auto w-full">
-
-          </div>
+          <div class="object-contain h-auto w-full"></div>
         </div>
       </div>
 
-
       <div>
         <H1>
-          <Fragment set:html={renderTitle(entries.secondTitle)}/>
+          <Fragment set:html={renderTitle(entries.secondTitle)} />
         </H1>
         <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
           <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.secondText)}/>
+            <Fragment set:html={renderRichText(entries.secondText)} />
             <H1>
-              <Fragment set:html={renderTitle(entries.thirdTitle)}/>
+              <Fragment set:html={renderTitle(entries.thirdTitle)} />
             </H1>
-            <Fragment set:html={renderRichText(entries.thirdText)}/>
+            <Fragment set:html={renderRichText(entries.thirdText)} />
           </div>
-          <div class="object-contain h-auto w-full">
-
-          </div>
+          <div class="object-contain h-auto w-full"></div>
         </div>
       </div>
 
-
       <div>
         <H1>
-          <Fragment set:html={renderTitle(entries.fourthTitle)}/>
+          <Fragment set:html={renderTitle(entries.fourthTitle)} />
         </H1>
         <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
           <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.fourthText)}/>
+            <Fragment set:html={renderRichText(entries.fourthText)} />
           </div>
-          <div class="object-contain h-auto w-full w-max-[400px]">
-
-          </div>
+          <div class="object-contain h-auto w-full w-max-[400px]"></div>
         </div>
       </div>
 
@@ -76,15 +68,13 @@ const { entries } = Astro.props
         <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
           <div>
             <H1>
-              <Fragment set:html={renderTitle(entries.fifthTitle)}/>
+              <Fragment set:html={renderTitle(entries.fifthTitle)} />
             </H1>
             <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
-              <Fragment set:html={renderRichText(entries.fifthText)}/>
+              <Fragment set:html={renderRichText(entries.fifthText)} />
             </div>
           </div>
-          <div class="object-contain  w-[300px]">
-
-          </div>
+          <div class="object-contain w-[300px]"></div>
         </div>
       </div>
 
@@ -92,80 +82,87 @@ const { entries } = Astro.props
         <div class="flex flex-col 2xl:flex-row gap-8 w-full">
           <div>
             <H1>
-              <Fragment set:html={renderTitle(entries.sixthTitle)}/>
+              <Fragment set:html={renderTitle(entries.sixthTitle)} />
             </H1>
             <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
-              <Fragment set:html={renderRichText(entries.sixthText)}/>
+              <Fragment set:html={renderRichText(entries.sixthText)} />
             </div>
           </div>
-          <div class="object-contain h-auto w-full max-w-[386px]">
-
-          </div>
+          <div class="object-contain h-auto w-full max-w-[386px]"></div>
         </div>
       </div>
 
       <div class="flex flex-col gap-12 md:gap-24">
         <div>
           <H1>
-            <Fragment set:html={renderTitle(entries.seventhTitle)}/>
+            <Fragment set:html={renderTitle(entries.seventhTitle)} />
           </H1>
           <div class="flex flex-col 2xl:flex-row w-full pt-5">
             <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.seventhText)}/>
+              <Fragment set:html={renderRichText(entries.seventhText)} />
             </div>
           </div>
         </div>
 
         <div>
           <H1>
-            <Fragment set:html={renderTitle(entries.eighthTitle)}/>
+            <Fragment set:html={renderTitle(entries.eighthTitle)} />
           </H1>
           <div class="flex flex-col 2xl:flex-row w-full pt-5">
             <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.eighthText)}/>
+              <Fragment set:html={renderRichText(entries.eighthText)} />
             </div>
           </div>
         </div>
 
         <div>
-          <H1>     <Fragment set:html={renderTitle(entries.ninthTitle)}/></H1>
+          <H1> <Fragment set:html={renderTitle(entries.ninthTitle)} /></H1>
           <div class="flex flex-col 2xl:flex-row w-full pt-5">
             <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.ninthText)}/>
+              <Fragment set:html={renderRichText(entries.ninthText)} />
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
 
     <div class="relative col-span-1 hidden lg:block">
       <div class="sticky top-16 p-4 pr-0">
         <div class="flex gap-8 h-full justify-end font-mono">
           <div class="flex flex-col gap-6">
-            {diver.map(item => (
-                    <div class="h-16 flex items-center">
-                      <a href="#" class="hover:text-accent-500">{item.text}</a>
-                    </div>
-            ))}
+            {
+              diver.map((item) => (
+                <div class="h-16 flex items-center">
+                  <a href="#" class="hover:text-accent-500">
+                    {item.text}
+                  </a>
+                </div>
+              ))
+            }
           </div>
-          <div class="flex dive-gradient h-auto min-w-7 relative" id="swim-lane">
-            <Image id="scrolling-dot" src={smallWhale} alt="small whale" class="absolute w-10"></Image>
+          <div
+            class="flex dive-gradient h-auto min-w-7 relative"
+            id="swim-lane"
+          >
+            <Image
+              id="scrolling-dot"
+              src={smallWhale}
+              alt="small whale"
+              class="absolute w-10"
+            />
           </div>
         </div>
       </div>
     </div>
-
   </div>
 
   <script>
-    document.addEventListener('astro:page-load', () => {
-      const dot = document.getElementById('scrolling-dot');
-      const container = document.getElementById('swim-container');
-      const swimlane = document.getElementById('swim-lane');
+    document.addEventListener("astro:page-load", () => {
+      const dot = document.getElementById("scrolling-dot");
+      const container = document.getElementById("swim-container");
+      const swimlane = document.getElementById("swim-lane");
 
-      window.addEventListener('scroll', () => {
+      window.addEventListener("scroll", () => {
         const containerRect = container.getBoundingClientRect();
         const swimlaneRect = swimlane.getBoundingClientRect();
 
@@ -176,7 +173,10 @@ const { entries } = Astro.props
         const swimlaneHeight = swimlaneRect.height;
 
         // Calculate how much the container is scrolled
-        const scrollPosition = Math.max(0, Math.min(containerHeight, window.innerHeight - containerTop));
+        const scrollPosition = Math.max(
+          0,
+          Math.min(containerHeight, window.innerHeight - containerTop),
+        );
 
         // Calculate the scroll percentage relative to the container's height
         const scrollPercentage = scrollPosition / containerHeight;
@@ -187,16 +187,18 @@ const { entries } = Astro.props
 
         dot.style.top = `${newTop}px`;
       });
-    })
+    });
   </script>
 
-
   <style>
-
-      .dive-gradient {
-          background: linear-gradient(180deg, #FFFFFF 4%, #A0ECFD 7.13%, #030711 56%, #000000 100%);
-      }
-
+    .dive-gradient {
+      background: linear-gradient(
+        180deg,
+        #ffffff 4%,
+        #a0ecfd 7.13%,
+        #030711 56%,
+        #000000 100%
+      );
+    }
   </style>
-
-
+</div>

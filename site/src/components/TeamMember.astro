@@ -12,28 +12,32 @@ interface Props {
 
 const { person } = Astro.props
 ---
-                        
+
 <Card class="border-none group">
   <a
-          href={`https://x.com/${person.twitterHandle}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="gap-4 flex flex-col"
+    href={`https://x.com/${person.twitterHandle}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="gap-4 flex flex-col"
   >
     <div class="object-cover overflow-hidden">
-    <!-- We don't have a picture for every person !-->
-    {person?.profilePicture?.fields?.file?.url ? 
-      <img
-              class="w-full h-auto group-hover:scale-110 transition"
-              src={person?.profilePicture?.fields?.file?.url}
-              alt={`${person.name} - Union worker`}
-      />
-      :
-      <div class="bg-neutral-900 aspect-1 w-full"></div>
+      <!-- We don't have a picture for every person !-->
+      {
+        person?.profilePicture?.fields?.file?.url ? (
+          <img
+            class="w-full h-auto group-hover:scale-110 transition"
+            src={person?.profilePicture?.fields?.file?.url}
+            alt={`${person.name} - Union worker`}
+          />
+        ) : (
+          <div class="bg-neutral-900 aspect-1 w-full" />
+        )
       }
     </div>
     <div class="leading-tight uppercase font-mono">
-      <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
+      <h1 class="text-2xl font-bold font-supermolot uppercase">
+        {person.name}
+      </h1>
       <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
       <div class="text-accent text-lg -mt-1 block">@{person.twitterHandle}</div>
     </div>

@@ -29,8 +29,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
 
-              echo "Applying nix fmt"
-              nix fmt
+              echo "Applying nix fmt (through fmt-site)"
+              nix run .#fmt-site
 
               # seems deprecated
               # echo "Applying biome fmt"

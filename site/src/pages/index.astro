@@ -1,4 +1,3 @@
-
 ---
 import { contentfulClient } from "../lib/contentful/client.ts"
 import type { LandingPageSkeleton, LandingPageFields } from "../lib/contentful/types.ts"
@@ -81,35 +80,43 @@ try {
 }
 ---
 
-  {error ? (
-          <div class="error-message">
-            <h2>Error</h2>
-            <p>{error}</p>
-          </div>
+{
+  error ? (
+    <div class="error-message">
+      <h2>Error</h2>
+      <p>{error}</p>
+    </div>
   ) : landingData ? (
-          <AnimationLayout title="Join the union" text="The next generation of aggregation, interoperability, and chain abstraction.">
-            <SectionsContainer>
-              <ConsensusSection
-                      title={landingData.secondTitle}
-                      text={landingData.secondText}
-              />
-              <ZkSection
-                      title={landingData.thirdTitle}
-                      text={landingData.thirdText}
-              />
-              <ExecutionSection
-                      title={landingData.fourthTitle}
-                      text={landingData.fourthText}
-              />
-              <ContainedSection>
-                <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
-                <MarqueeSection title={"Our partners."} reverse={true} data={partners} />
-              </ContainedSection>
-            </SectionsContainer>
-          </AnimationLayout>
+    <AnimationLayout
+      title="Join the union"
+      text="The next generation of aggregation, interoperability, and chain abstraction."
+    >
+      <SectionsContainer>
+        <ConsensusSection
+          title={landingData.secondTitle}
+          text={landingData.secondText}
+        />
+        <ZkSection
+          title={landingData.thirdTitle}
+          text={landingData.thirdText}
+        />
+        <ExecutionSection
+          title={landingData.fourthTitle}
+          text={landingData.fourthText}
+        />
+        <ContainedSection>
+          <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
+          <MarqueeSection
+            title={"Our partners."}
+            reverse={true}
+            data={partners}
+          />
+        </ContainedSection>
+      </SectionsContainer>
+    </AnimationLayout>
   ) : (
-          <div class="loading-message">
-            <p>Loading content...</p>
-          </div>
-  )}
-
+    <div class="loading-message">
+      <p>Loading content...</p>
+    </div>
+  )
+}

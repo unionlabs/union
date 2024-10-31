@@ -2,7 +2,14 @@
 const { class: className, padded, ...rest } = Astro.props
 ---
 
-<div class:list={["bg-black/30 backdrop-blur-xl rounded border border-border/50 shadow-xl", {"p-4 md:p-6": padded}, className]} {...rest} >
-<!-- <div class:list={["bg-gradient-to-b from-black to-neutral-950 rounded border border-[#1f1f1f] shadow-lg size-full", {"p-4 md:p-6": padded}, className]} {...rest} > -->
-  <slot/>
+<div
+  class:list={[
+    "bg-black/30 backdrop-blur-xl rounded border border-border/50 shadow-xl",
+    { "p-4 md:p-6": padded },
+    className,
+  ]}
+  {...rest}
+>
+  <!-- <div class:list={["bg-gradient-to-b from-black to-neutral-950 rounded border border-[#1f1f1f] shadow-lg size-full", {"p-4 md:p-6": padded}, className]} {...rest} > -->
+  <slot />
 </div>

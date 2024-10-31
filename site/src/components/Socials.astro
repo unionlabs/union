@@ -7,10 +7,12 @@ import TextA from "#/components/TextA.astro"
 
 <section class="bg-black mb-px flex flex-col items-center justif-center">
   <div class="flex-1 max-w-4xl">
-    <p class="text-4xl mb-4 font-normal text-center text-white">Join the Union</p>
+    <p class="text-4xl mb-4 font-normal text-center text-white">
+      Join the Union
+    </p>
     <div class="grid grid-cols-1 md:grid-cols-3">
       {
-        socialLinks.map(socialLink => (
+        socialLinks.map((socialLink) => (
           <a
             href={socialLink.href}
             target="_blank"

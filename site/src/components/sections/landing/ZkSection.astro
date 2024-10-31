@@ -20,17 +20,23 @@ const textHtml = renderRichText(text)
 
 <ContainedSection>
   <div class="grid w-full py-24">
-    <div class="z-20 col-start-1 max-w-2xl justify-center justify-self-center row-start-1 self-center flex flex-col items-center text-center">
+    <div
+      class="z-20 col-start-1 max-w-2xl justify-center justify-self-center row-start-1 self-center flex flex-col items-center text-center"
+    >
       <H1>
-        <Fragment set:html={titleHtml}/>
+        <Fragment set:html={titleHtml} />
       </H1>
       <div class="text-3xl max-w-[1037px] py-4 sm:py-8">
         <Subtitle>
-          <Fragment set:html={textHtml}/>
+          <Fragment set:html={textHtml} />
         </Subtitle>
       </div>
       <ButtonA>Start Swimming</ButtonA>
     </div>
-    <Image src={whale} alt="Big Whale" class="z-10  scale-150 md:scale-100 col-start-1 row-start-1 opacity-60"></Image>
+    <Image
+      src={whale}
+      alt="Big Whale"
+      class="z-10 scale-150 md:scale-100 col-start-1 row-start-1 opacity-60"
+    />
   </div>
 </ContainedSection>
