@@ -28,6 +28,9 @@ const slideTextAnimation = {
     }
   }
 }
+
+const pathname = new URL(Astro.request.url).pathname;
+const currentPath = pathname.slice(1); // remove the first "/"
 ---
 
 <head>
@@ -35,7 +38,7 @@ const slideTextAnimation = {
 </head>
 
 <Layout title="Union">
-  <div class="header-grid">
+  <div class:list={["header-grid place-self-center", currentPath === "" ? "" : "header-grid--collapsed"]}>
     <div class="shiny-border">
       <div class="glow-effect" transition:persist></div>
     </div>
@@ -52,7 +55,9 @@ const slideTextAnimation = {
       </div>
     </div>
   </div>
-  <slot />
+  <div transition:animate>
+    <slot />
+  </div>
 </Layout>
 
 <style lang="postcss" is:global>
@@ -60,7 +65,7 @@ const slideTextAnimation = {
         --outer-border: 8px;
         --inner-border: 2px;
         --header-height: 68px;
-        height: calc(100vh - var(--header-height));
+        height: calc(100svh - var(--header-height));
         min-height: 400px;
         width: 100%;
         display: grid;
@@ -68,6 +73,14 @@ const slideTextAnimation = {
         grid-template-columns: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
         position: relative;
         overflow: hidden;
+        transition: height 0.5s;
+    }
+
+
+    .header-grid--collapsed {
+        height: calc(70svh - var(--header-height));
+        transition: height 2s;
+        /*@apply max-w-6xl;*/
     }
 
     .glow-effect {
@@ -209,4 +222,15 @@ const slideTextAnimation = {
   });
 
   document.addEventListener("astro:before-preparation", cleanup);
+
+  document.addEventListener("astro:before-preparation", () => {
+    cleanup();
+    toggleCollapsed();
+
+  });
+
+  function toggleCollapsed() {
+    headerGrid = document.querySelector(".header-grid");
+    headerGrid?.classList.add("header-grid--collapsed");
+  }
 </script>
