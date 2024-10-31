@@ -196,7 +196,6 @@ function initWebGL(initialColorIndex: number) {
     return
   }
 
-
   // Vertex shader
   const vsSource = `
   attribute vec4 aVertexPosition;
@@ -508,7 +507,6 @@ function initWebGL(initialColorIndex: number) {
     const modelViewMatrix = glMatrix.mat4.create()
     glMatrix.mat4.multiply(modelViewMatrix, cameraMatrix, modelMatrix)
 
-
     {
       const numComponents = 3
       const type = gl.FLOAT
@@ -657,22 +655,21 @@ function initWebGL(initialColorIndex: number) {
     const y = event.clientY - rect.top
 
     // Reduced multiplier from 2 to 1 for less movement
-    targetMouseX = ((x / rect.width) * 2 - 1)
-    targetMouseY = (-(y / rect.height) * 2 + 1)
+    targetMouseX = (x / rect.width) * 2 - 1
+    targetMouseY = -(y / rect.height) * 2 + 1
   }
 
   function handleTouch(event) {
     event.preventDefault()
     const touch = event.touches[0]
     if (touch) {
-      const mouseEvent = new MouseEvent('mousemove', {
+      const mouseEvent = new MouseEvent("mousemove", {
         clientX: touch.clientX,
         clientY: touch.clientY
       })
       updateMousePosition(mouseEvent)
     }
   }
-
 
   function handleMouseLeave(event) {
     const rect = canvas.getBoundingClientRect()
@@ -712,8 +709,8 @@ function generateColors(colorSet) {
 }
 
 // Initialize WebGL when the component mounts
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => initWebGL(1))
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => initWebGL(1))
 } else {
   initWebGL(1)
 }

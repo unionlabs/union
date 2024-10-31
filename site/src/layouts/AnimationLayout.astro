@@ -49,11 +49,11 @@ const currentPath = pathname.slice(1) // remove the first "/"
     </div>
     <MatrixCover />
     <div
-            class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
+      class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
     >
       <div
-              class="max-w-2xl flex flex-col gap-4"
-              transition:animate={slideTextAnimation}
+        class="max-w-2xl flex flex-col gap-4"
+        transition:animate={slideTextAnimation}
       >
         <H1>{title}</H1>
         <TextP>{text}</TextP>
@@ -181,7 +181,6 @@ const currentPath = pathname.slice(1) // remove the first "/"
   };
 
   document.addEventListener("astro:after-preparation", (event: any) => {
-
     const currentPath = window.location.pathname;
     const currentIndex = pathToIndexMap[currentPath] ?? 0;
 
@@ -195,7 +194,6 @@ const currentPath = pathname.slice(1) // remove the first "/"
   let previousAngle = 0;
   let currentRotation = 0;
   let isTablet = false;
-
 
   function checkDeviceSize() {
     isTablet = window.matchMedia("(max-width: 1024px)").matches;
@@ -221,7 +219,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         const maxDistance = Math.sqrt(
           Math.pow(Math.max(centerX, window.innerWidth - centerX), 4) +
-          Math.pow(Math.max(centerY, window.innerHeight - centerY), 4)
+            Math.pow(Math.max(centerY, window.innerHeight - centerY), 4),
         );
 
         const scale = Math.min(4, Math.max(5, (distance / maxDistance) * 6));
@@ -258,7 +256,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
     cleanup();
     initializeGlowEffect();
   });
-  
+
   document.addEventListener("astro:before-preparation", (event) => {
     cleanup();
 
