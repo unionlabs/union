@@ -64,7 +64,15 @@ _: {
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
-              ./node_modules/prettier/bin/prettier.cjs --plugin=prettier-plugin-astro --write ./**/*.astro   
+
+              # This formats the non-frontmatter portion of .astro files
+              # TODO: move to treefmt https://treefmt.com/usage
+              ./node_modules/prettier/bin/prettier.cjs --plugin=prettier-plugin-astro --write ./**/*.astro || true
+
+              cd ..
+
+              # this re-formats the frontmatter portion, using our biome config
+              nix fmt
             '';
           };
         };
