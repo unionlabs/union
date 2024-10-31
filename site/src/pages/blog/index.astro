@@ -5,6 +5,7 @@ import H3 from "#/components/typography/h3.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import AnimationLayout from "../../layouts/AnimationLayout.astro"
+import ContainedSection from "#/components/ContainedSection.astro"
 
 export const prerender = false
 
@@ -26,18 +27,16 @@ const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
 <AnimationLayout title="Development blog" text="Stay informed">
-  <div class="flex w-full justify-center py-16">
-    <div class="max-w-6xl">
       <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
-      <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
+      <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {
           publishedBlogPosts.map((blogPostEntry: BlogPost) => (
             <a
               class="pointer-cursor"
               href={`/blog/${blogPostEntry.fields.slug}`}
             >
-              <Card class="size-full border-none" padded>
-                <div class="border-2 border-neutral-800 w-full  rounded-tl-[2rem] overflow-hidden mb-2">
+              <Card class="size-full border-none">
+                <div class="border-2 border-neutral-800 w-full rounded-tl-[2rem] overflow-hidden mb-2">
                   <img
                     class="w-full h-full object-cover border-none"
                     loading="eager"
@@ -69,9 +68,7 @@ const imageWithProtocol = (url: string) => `https:${url}`
             </a>
           ))
         }
-      </div>
-    </div>
-  </div>
+      </ContainedSection>
 </AnimationLayout>
 
 <style is:inline>

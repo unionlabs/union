@@ -1,4 +1,5 @@
 ---
+import ContainedSection from "../components/ContainedSection.astro"
 import EcosystemSection from "#/components/sections/EcosystemSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
 import H1 from "#/components/typography/h1.astro"
@@ -45,16 +46,14 @@ try {
   title="Ecosystem"
   text="Connecting projects, people, and products into a unified organism of interoperability."
 >
-  <main
-    class="max-w-8xl p-4 md:p-8 gap-10 place-self-center flex flex-col lg:flex-row"
-  >
-    <!-- Search and filters -->
-    <div class="flex flex-col gap-4 max-w-sm">
-      <!-- <H1>Union <span class="text-accent-500">Ecosystem</span></H1> -->
+  <ContainedSection>
+      <!--
+      <H1>Union <span class="text-accent-500">Ecosystem</span></H1>
       <QuoteSubTitle
         >The Union reef is an ocean of possibilities. Check out who is already
         swimming with us to build the modular zk future.
       </QuoteSubTitle>
+       -->
       <!-- search input !-->
       <div>
         <label for="searchInput"></label><input
@@ -65,10 +64,10 @@ try {
         />
       </div>
 
-      <div class="col-span-1">
+      <div>
         <button
           id="filterToggle"
-          class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center lg:hidden"
+          class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center"
         >
           Filter
           <svg
@@ -86,7 +85,7 @@ try {
           </svg>
         </button>
 
-        <div id="filterContent" class="hidden lg:block">
+        <div id="filterContent" class="hidden">
           {
             ecosystemCategories.map((category) => (
               <div class="mb-2">
@@ -124,18 +123,17 @@ try {
           }
         </div>
       </div>
-    </div>
+  </ContainedSection>
+
 
     <!-- Cards Grid -->
-    <div
-      class="cards-grid grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6 lg:gap-10 justify-items-center"
-    >
+    <ContainedSection grid className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {
         ecosystemData.map((item) => (
           <a
             href={item.url}
             target="_blank"
-            class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full max-w-[300px] aspect-[3/4]"
+            class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full aspect-[3/4]"
           >
             <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0" />
             <img
@@ -170,8 +168,7 @@ try {
           </a>
         ))
       }
-    </div>
-  </main>
+    </ContainedSection>
 </AnimationLayout>
 
 <script>
