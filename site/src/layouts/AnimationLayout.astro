@@ -16,13 +16,13 @@ const slideTextAnimation = {
   forwards: {
     old: {
       name: "slideOutLeft",
-      duration: "0.4s",
+      duration: "0.35s",
       easing: "ease-out",
       fillMode: "forwards"
     },
     new: {
       name: "slideInRight",
-      duration: "0.4s",
+      duration: "0.35s",
       easing: "ease-out",
       fillMode: "forwards"
     }
@@ -192,23 +192,39 @@ const currentPath = pathname.slice(1) // remove the first "/"
 </style>
 
 <script>
-  import { rotateCamera } from "../lib/matrix-cover";
+  import {
+    pathConfigMap,
+    rotateCamera,
+    updateSaturation,
+  } from "../lib/matrix-cover";
 
-  const pathToIndexMap = {
-    "/": 0,
-    "/learn": 1,
-    "/ecosystem": 2,
-    "/blog": 3,
-    "/team": 4,
-  };
+  document.addEventListener(
+    "astro:page-load",
+    () => {
+      const currentPath = window.location.pathname;
+      const config = pathConfigMap[currentPath] ?? {
+        index: 0,
+        saturation: 100,
+      };
+      updateSaturation(config.saturation);
+    },
+    { once: true },
+  );
 
-  document.addEventListener("astro:after-preparation", (event: any) => {
-    const currentPath = window.location.pathname;
-    const currentIndex = pathToIndexMap[currentPath] ?? 0;
+  document.addEventListener("astro:before-preparation", (event: any) => {
+    const fromConfig = pathConfigMap[event.from.pathname] ?? {
+      index: 0,
+      saturation: 100,
+    };
+    const toConfig = pathConfigMap[event.to.pathname] ?? {
+      index: 0,
+      saturation: 100,
+    };
 
-    if (currentPath in pathToIndexMap) {
-      const direction = currentIndex % 2 === 0 ? "right" : "left";
-      rotateCamera(direction as "left" | "right", currentIndex);
+    if (toConfig.index) {
+      const direction = toConfig.index > fromConfig.index ? "left" : "right";
+      rotateCamera(direction);
+      updateSaturation(toConfig.saturation);
     }
   });
 
@@ -281,14 +297,10 @@ const currentPath = pathname.slice(1) // remove the first "/"
 
   document.addEventListener("astro:before-preparation", (event) => {
     cleanup();
-
-    console.log(event);
     toggleCollapsed(event.to.pathname === "/");
   });
 
   function toggleCollapsed(open) {
-    console.log(open);
-    console.log(window.location.pathname);
     headerGrid = document.querySelector(".header-grid");
 
     if (open) {
