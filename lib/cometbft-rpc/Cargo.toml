@@ -24,6 +24,6 @@ tracing-subscriber             = { workspace = true, features = ["env-filter", "
 unionlabs                      = { workspace = true }
 
 [dev-dependencies]
-hex-literal    = "0.4.1"
-serde_json     = "1.0.114"
-tokio          = { workspace = true, features = ["macros"] }
+hex-literal = "0.4.1"
+serde_json  = "1.0.114"
+tokio       = { workspace = true, features = ["macros"] }

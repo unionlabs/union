@@ -40,7 +40,7 @@ pub mod proto {
         #[error("invalid block id")]
         BlockId(#[source] block_id::proto::Error),
         #[error("invalid signatures")]
-        Signatures(#[source] commit_sig::proto::Error),
+        Signatures(#[source] commit_sig::Error),
     }
 
     impl TryFrom<protos::cometbft::types::v1::Commit> for Commit {
