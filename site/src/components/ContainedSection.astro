@@ -1,14 +1,19 @@
 ---
 interface Props {
-  className?: string,
-  grid?: boolean 
+  className?: string
+  grid?: boolean
 }
 
 const { className, grid } = Astro.props
 ---
 
 <section class=`flex w-full justify-center items-center`>
-  <div class:list={[`max-w-6xl w-full z-10 px-4 overflow-hidden ${className}`, grid ? "grid gap-4 sm:gap-8 lg:gap-12 py-2 sm:py-4 lg:py-8" : ""]}>
+  <div
+    class:list={[
+      `max-w-6xl w-full z-10 px-4 overflow-hidden ${className}`,
+      grid ? "grid gap-4 sm:gap-8 lg:gap-12 py-2 sm:py-4 lg:py-8" : "",
+    ]}
+  >
     <slot />
   </div>
 </section>

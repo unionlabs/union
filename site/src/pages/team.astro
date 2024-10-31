@@ -113,7 +113,10 @@ try {
       title="Meet the team"
       text="Our team is a global network of professionals, working to build the interoperability future."
     >
-      <ContainedSection grid className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <ContainedSection
+        grid
+        className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      >
         {teamData.map((person) => (
           <TeamMember {person} />
         ))}
