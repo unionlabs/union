@@ -18,7 +18,7 @@ thiserror.workspace   = true
 unionlabs             = { workspace = true }
 
 [dev-dependencies]
-cometbft-types        = { workspace = true, features = ["proto"] }
+cometbft-types        = { workspace = true, default-features = true }   # enable all features for tests
 hex-literal.workspace = true
 serde_json            = { workspace = true }
 unionlabs             = { workspace = true, features = ["test_utils"] }
