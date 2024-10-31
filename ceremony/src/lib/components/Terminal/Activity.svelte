@@ -49,7 +49,9 @@ function formatTimestamp(timestamp: string): string {
         {:else if type === "contribution_submitted"}
           {user} has submitted their contribution
         {:else if type === "contribution_verified"}
-          {user}'s contribution has just been verified
+          {user} contribution has just been verified
+        {:else if type === "contribution_expired"}
+          {user} contribution has expired
         {/if}
       </Print>
     {/each}

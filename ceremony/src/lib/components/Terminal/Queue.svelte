@@ -17,11 +17,6 @@ let averages = $state<TimeResult>()
 onMount(async () => {
   terminal.setStep(8)
   terminal.updateHistory({ text: "YOU ARE IN QUEUE" })
-  terminal.updateHistory({ lineBreak: true, text: "" })
-  terminal.updateHistory({
-    text: "Do not close this tab or your Terminal. Ensure you have a reliable internet connection and that your computer does not go to sleep.",
-    type: "warning"
-  })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
   await contributor.checkUserWallet(contributor.userId)
@@ -39,6 +34,15 @@ $effect(() => {
 })
 </script>
 
+{#if contributor.queueState.position}
+  <Print class="text-red-500">
+    {contributor.queueState.position < 50 ?
+      "Do not close this tab or your Terminal. Ensure you have a reliable internet connection and that your computer does not go to sleep." :
+      "Your contribution slot is far in the future. You can turn your device off and return later without losing progression. If you are not online when it is your turn, you will lose your slot and not be able to contribute."
+    }
+  </Print>
+{/if}
+<Print><br></Print>
 <Print>Your place in line: <span
         class="text-union-accent-500">{contributor.queueState.position ?? "LOADING"}{getNumberSuffix(contributor.queueState.position)}</span>
 </Print>
