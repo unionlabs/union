@@ -53,6 +53,21 @@ _: {
             '';
           };
         };
+        fmt-site = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "fmt-site";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd site/
+
+              export PUPPETEER_SKIP_DOWNLOAD=1 
+              npm install
+              ./node_modules/prettier/bin/prettier.cjs --plugin=prettier-plugin-astro --write ./**/*.astro   
+            '';
+          };
+        };
         site-check = {
           type = "app";
           program = pkgs.writeShellApplication {
