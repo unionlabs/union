@@ -13,6 +13,9 @@ module ibc::dispatcher {
     use std::signer;
 
     friend ibc::engine;
+    friend ibc::ping_pong_app;
+    friend ibc::sample_ibc;
+
     const DISPATCHER_APP_SEED: vector<u8> = b"union-ibc-dispatcher-v1";
 
     struct Dispatcher has key {
@@ -24,7 +27,8 @@ module ibc::dispatcher {
 
     /// Store the data to dispatch here.
     struct Storage<phantom P, T> has drop, key {
-        data: T
+        data: T,
+        return_value: vector<u8>
     }
 
     /// Register a `T` to callback. Providing an instance of `T` guarantees that only the
@@ -60,8 +64,8 @@ module ibc::dispatcher {
 
     /// Insert into this module as the callback needs to retrieve and avoid a cyclical dependency:
     /// engine -> storage and then engine -> callback -> storage
-    public(friend) fun insert<P: store, T: store>(data: T): Object<Metadata> acquires Dispatcher {
-        move_to(&storage_signer(), Storage<P, T> { data });
+    public(friend) fun insert<P: store, T: store>(data: T, return_value: vector<u8>): Object<Metadata> acquires Dispatcher {
+        move_to(&storage_signer(), Storage<P, T> { data, return_value });
 
         let typeinfo = type_info::type_of<P>();
         let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
@@ -70,10 +74,50 @@ module ibc::dispatcher {
         type_info
     }
 
-    public fun retrieve<P: drop, T: copy + drop + store>(_proof: P): T acquires Dispatcher, Storage {
-        let type_info = type_info::type_of<P>();
-        move_from<Storage<P, T>>(storage_address()).data
+    public fun retrieve<P: drop, T: copy + drop + store>(_proof: P): (T, vector<u8>) acquires Dispatcher, Storage {
+        // let type_info = type_info::type_of<P>();
+        let my_storage = move_from<Storage<P, T>>(storage_address());//.data
+        (my_storage.data, my_storage.return_value)
     }
+
+
+    // public fun retrieve_mut<P: drop, T: copy + drop + store>(
+    //     _proof: P
+    // ): &mut Storage<P, T> acquires Dispatcher, Storage {
+    //     // Retrieves a mutable reference to the storage
+    //     borrow_global_mut<Storage<P, T>>(storage_address())
+    // }
+
+    // Getter for `data`
+    public(friend) fun get_data<P: drop, T: copy + drop + store>(
+        _proof: P
+    ): T acquires Dispatcher, Storage {
+        borrow_global<Storage<P, T>>(storage_address()).data
+    }
+
+    // Getter for `return_value`
+    public(friend) fun get_return_value<P: drop, T: copy + drop + store>(
+        _proof: P
+    ): vector<u8> acquires Dispatcher, Storage {
+        borrow_global<Storage<P, T>>(storage_address()).return_value
+    }
+
+    // Setter for `return_value`
+    public(friend) fun set_return_value<P: drop, T: copy + drop + store>(
+        _proof: P,
+        new_value: vector<u8>
+    ) acquires Dispatcher, Storage {
+        borrow_global_mut<Storage<P, T>>(storage_address()).return_value = new_value;
+    }
+
+    // Optional: Setter for `data` if needed
+    public(friend) fun set_data<P: drop, T: copy + drop + store>(
+        _proof: P,
+        new_data: T
+    ) acquires Dispatcher, Storage {
+        borrow_global_mut<Storage<P, T>>(storage_address()).data = new_data;
+    }
+
 
     /// Prepares the dispatch table.
     fun init_module(publisher: &signer) {

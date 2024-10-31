@@ -1,4 +1,4 @@
-module ibc::ping_pong_app {
+module ibc::dynamic_dispatch_app2 {
     use aptos_framework::object::{Self, Object};
     use std::option;
     use ibc::dispatcher;
@@ -14,13 +14,13 @@ module ibc::ping_pong_app {
     use ibc::channel;
     use ibc::packet::{Self, Packet};
 
-    struct PingPongProof has drop, store {}
-    
-    public(friend) fun new_ping_pong_proof(): PingPongProof {
-        PingPongProof {}
-    }
+    struct TestProof2 has drop, store {}
 
+    public(friend) fun new_proof2(): TestProof2 {
+        TestProof2 {}
+    }
     friend ibc::sample_ibc;
+
 
 
     const ACK_SUCCESS: vector<u8> = b"1";
@@ -165,86 +165,63 @@ module ibc::ping_pong_app {
         vault.self_address
     }
 
-    struct RecvPacketParams has copy, drop, store {
-        packet: Packet
-    }
-
-    struct AcknowledgePacketParams has copy, drop, store {
-        packet: Packet,
-        acknowledgement: vector<u8>
-    }
-
-    struct TimeoutPacketParams has copy, drop, store {
-        packet: Packet
-    }
-
-    struct ChannelOpenInitParams has copy, drop, store {
-        ordering: u8,
-        connection_id: u32,
-        channel_id: u32,
-        version: vector<u8>
-    }
-
-    struct ChannelOpenTryParams has copy, drop, store {
-        ordering: u8,
-        connection_id: u32,
-        channel_id: u32,
-        counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>
-    }
-
-    struct ChannelOpenAckParams has copy, drop, store {
-        channel_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_version: vector<u8>,
-    }
-
-    struct ChannelOpenConfirmParams has copy, drop, store {
-        channel_id: u32
-    }
-
-    struct ChannelCloseInitParams has copy, drop, store {
-        channel_id: u32
-    }
-
-    struct ChannelCloseConfirmParams has copy, drop, store {
-        channel_id: u32
-    }
-
     struct DynamicDispatchParam has copy, store, drop, key {
-        recv_packet_param: option::Option<RecvPacketParams>,
-        acknowledge_packet_param: option::Option<AcknowledgePacketParams>,
-        timeout_packet_param: option::Option<TimeoutPacketParams>,
-        channel_open_init_param: option::Option<ChannelOpenInitParams>,
-        channel_open_try_param: option::Option<ChannelOpenTryParams>,
-        channel_open_ack_param: option::Option<ChannelOpenAckParams>,
-        channel_open_confirm_param: option::Option<ChannelOpenConfirmParams>,
-        channel_close_init_param: option::Option<ChannelCloseInitParams>,
-        channel_close_confirm_param: option::Option<ChannelCloseConfirmParams>
+        function_type: u8, // Identifier for the function type
+        packet: option::Option<Packet>, // Consolidates packet parameters
+        acknowledgement: option::Option<vector<u8>>,
+        proof: option::Option<vector<u8>>,
+        proof_height: option::Option<u64>,
+        connection_id: option::Option<u32>,
+        ordering: option::Option<u8>,
+        version: option::Option<vector<u8>>,
+        channel_state: option::Option<u8>,
+        channel_order: option::Option<u8>,
+        counterparty_channel_id: option::Option<u32>,
+        counterparty_version: option::Option<vector<u8>>,
+        proof_init: option::Option<vector<u8>>,
+        channel_id: option::Option<u32>,
+        proof_ack: option::Option<vector<u8>>,
+        port_id: option::Option<string::String>,
+        channel_id_str: option::Option<string::String>
     }
 
     public(friend) fun new_dynamic_dispatch_param(
-        recv_packet_param: option::Option<RecvPacketParams>,
-        acknowledge_packet_param: option::Option<AcknowledgePacketParams>,
-        timeout_packet_param: option::Option<TimeoutPacketParams>,
-        channel_open_init_param: option::Option<ChannelOpenInitParams>,
-        channel_open_try_param: option::Option<ChannelOpenTryParams>,
-        channel_open_ack_param: option::Option<ChannelOpenAckParams>,
-        channel_open_confirm_param: option::Option<ChannelOpenConfirmParams>,
-        channel_close_init_param: option::Option<ChannelCloseInitParams>,
-        channel_close_confirm_param: option::Option<ChannelCloseConfirmParams>
+        function_type: u8,
+        packet: option::Option<Packet>,
+        acknowledgement: option::Option<vector<u8>>,
+        proof: option::Option<vector<u8>>,
+        proof_height: option::Option<u64>,
+        connection_id: option::Option<u32>,
+        ordering: option::Option<u8>,
+        version: option::Option<vector<u8>>,
+        channel_state: option::Option<u8>,
+        channel_order: option::Option<u8>,
+        counterparty_channel_id: option::Option<u32>,
+        counterparty_version: option::Option<vector<u8>>,
+        proof_init: option::Option<vector<u8>>,
+        channel_id: option::Option<u32>,
+        proof_ack: option::Option<vector<u8>>,
+        port_id: option::Option<string::String>,
+        channel_id_str: option::Option<string::String>
     ): DynamicDispatchParam {
         DynamicDispatchParam {
-            recv_packet_param,
-            acknowledge_packet_param,
-            timeout_packet_param,
-            channel_open_init_param,
-            channel_open_try_param,
-            channel_open_ack_param,
-            channel_open_confirm_param,
-            channel_close_init_param,
-            channel_close_confirm_param
+            function_type,
+            packet,
+            acknowledgement,
+            proof,
+            proof_height,
+            connection_id,
+            ordering,
+            version,
+            channel_state,
+            channel_order,
+            counterparty_channel_id,
+            counterparty_version,
+            proof_init,
+            channel_id,
+            proof_ack,
+            port_id,
+            channel_id_str
         }
     }
 
@@ -323,50 +300,31 @@ module ibc::ping_pong_app {
     }
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
-        // Get the current value of `return_value`
-        let other_data = dispatcher::get_return_value<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof());
-        std::debug::print(&string::utf8(b"other_data before modification: "));
-        std::debug::print(&other_data);
-
-        // Modify `other_data` using the setter
-        dispatcher::set_return_value<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
-
-        // Get and print the modified `other_data`
-        let modified_other_data = dispatcher::get_return_value<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof());
-        std::debug::print(&string::utf8(b"other_data after modification: "));
-        std::debug::print(&modified_other_data);
-
-        // Access the `data` field through the getter
-        let value: DynamicDispatchParam = dispatcher::get_data(new_ping_pong_proof());
-
-        // other_data = b"asdasd";
-        // std::debug::print(&string::utf8(b"other_data after overwrite is: "));
-        // std::debug::print(other_data);
-        // let other_data: vector<u8> = dispatcher::retrieve_storage<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof());
-        // other_data = b"asdasd";
-        if (option::is_some(&value.recv_packet_param)){
-            let pack = option::extract(&mut value.recv_packet_param).packet;
+        let (value, other) = dispatcher::retrieve(new_proof2());
+        let value: DynamicDispatchParam = value;
+        if (value.function_type == ON_RECV_PACKET) {
+            let pack = option::extract(&mut value.packet);
             on_recv_packet(pack);
-        } else if (option::is_some(&value.acknowledge_packet_param)) {
-            let pack = option::extract(&mut value.acknowledge_packet_param).packet;
-            let acknowledgement = option::extract(&mut value.acknowledge_packet_param).acknowledgement;
+        } else if (value.function_type == ON_ACKNOWLEDGE_PACKET) {
+            let pack = option::extract(&mut value.packet);
+            let acknowledgement = option::extract(&mut value.acknowledgement);
             on_acknowledge_packet(pack, acknowledgement);
-        } else if (option::is_some(&value.timeout_packet_param)) {
-            let pack = option::extract(&mut value.timeout_packet_param).packet;
+        } else if (value.function_type == ON_TIMEOUT_PACKET) {
+            let pack = option::extract(&mut value.packet);
             on_timeout_packet(pack);
-        } else if (option::is_some(&value.channel_open_init_param)) {
-            let ordering = option::extract(&mut value.channel_open_init_param).ordering;
-            let connection_id = option::extract(&mut value.channel_open_init_param).connection_id;
-            let channel_id = option::extract(&mut value.channel_open_init_param).channel_id;
-            let version = option::extract(&mut value.channel_open_init_param).version;
+        } else if (value.function_type == ON_CHANNEL_OPEN_INIT) {
+            let ordering = option::extract(&mut value.ordering);
+            let connection_id = option::extract(&mut value.connection_id);
+            let channel_id = option::extract(&mut value.channel_id);
+            let version = option::extract(&mut value.version);
             on_channel_open_init(ordering, connection_id, channel_id, version);
-        } else if (option::is_some(&value.channel_open_try_param)) {
-            let ordering = option::extract(&mut value.channel_open_try_param).ordering;
-            let connection_id = option::extract(&mut value.channel_open_try_param).connection_id;
-            let channel_id = option::extract(&mut value.channel_open_try_param).channel_id;
-            let counterparty_channel_id = option::extract(&mut value.channel_open_try_param).counterparty_channel_id;
-            let version = option::extract(&mut value.channel_open_try_param).version;
-            let counterparty_version = option::extract(&mut value.channel_open_try_param).counterparty_version;
+        } else if (value.function_type == ON_CHANNEL_OPEN_TRY) {
+            let ordering = option::extract(&mut value.ordering);
+            let connection_id = option::extract(&mut value.connection_id);
+            let channel_id = option::extract(&mut value.channel_id);
+            let counterparty_channel_id = option::extract(&mut value.counterparty_channel_id);
+            let version = option::extract(&mut value.version);
+            let counterparty_version = option::extract(&mut value.counterparty_version);
             on_channel_open_try(
                 ordering,
                 connection_id,
@@ -375,25 +333,24 @@ module ibc::ping_pong_app {
                 version,
                 counterparty_version
             );
-        } else if (option::is_some(&value.channel_open_ack_param)) {
-            let channel_id = option::extract(&mut value.channel_open_ack_param).channel_id;
-            let counterparty_version = option::extract(&mut value.channel_open_ack_param).counterparty_version;
-            let counterparty_version = option::extract(&mut value.channel_open_ack_param).counterparty_version;
+        } else if (value.function_type == ON_CHANNEL_OPEN_ACK) {
+            let channel_id = option::extract(&mut value.channel_id);
+            let counterparty_version = option::extract(&mut value.counterparty_version);
+            let counterparty_version = option::extract(&mut value.counterparty_version);
             on_channel_open_ack(channel_id, counterparty_version, counterparty_version);
-        } else if (option::is_some(&value.channel_open_confirm_param)) {
-            let channel_id = option::extract(&mut value.channel_open_confirm_param).channel_id;
+        } else if (value.function_type == ON_CHANNEL_OPEN_CONFIRM) {
+            let channel_id = option::extract(&mut value.channel_id);
             on_channel_open_confirm(channel_id);
-        } else if (option::is_some(&value.channel_close_init_param)) {
-            let channel_id = option::extract(&mut value.channel_close_init_param).channel_id;
+        } else if (value.function_type == ON_CHANNEL_CLOSE_INIT) {
+            let channel_id = option::extract(&mut value.channel_id);
             on_channel_close_init(channel_id);
-        } else if (option::is_some(&value.channel_close_confirm_param)) {
-            let channel_id = option::extract(&mut value.channel_close_confirm_param).channel_id;
+        } else if (value.function_type == ON_CHANNEL_CLOSE_CONFIRM) {
+            let channel_id = option::extract(&mut value.channel_id);
             on_channel_close_confirm(channel_id);
         } else {
-            std::debug::print(&string::utf8(b"Invalid function type. under ping_pong_app.move!!!!"));
+            std::debug::print(&string::utf8(b"Invalid function type. under app2.move!!!!"));
             // abort 0
         };
-
         0
     }
 
