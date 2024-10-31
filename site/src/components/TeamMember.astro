@@ -13,12 +13,12 @@ interface Props {
 const { person } = Astro.props
 ---
 
-<Card class="border-none hover:scale-105 transition">
+<Card hoverScale>
   <a
     href={`https://x.com/${person.twitterHandle}`}
     target="_blank"
     rel="noopener noreferrer"
-    class="flex flex-col bg-neutral-900 border-neutral-800 border-2"
+    class="flex flex-col"
   >
     <div class="object-cover overflow-hidden">
       <!-- We don't have a picture for every person !-->
@@ -38,8 +38,8 @@ const { person } = Astro.props
       <h1 class="text-2xl font-bold font-supermolot uppercase">
         {person.name}
       </h1>
-      <div class="text-gray-400 sm:text-lg sm:-mt-1">{person.title}</div>
-      <div class="text-accent block sm:text-lg sm:-mt-1">
+      <div class="text-gray-400">{person.title}</div>
+      <div class="text-accent block">
         @{person.twitterHandle}
       </div>
     </div>

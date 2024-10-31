@@ -5,6 +5,7 @@ import H3 from "#/components/typography/h3.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import AnimationLayout from "../../layouts/AnimationLayout.astro"
+import ContainedSection from "#/components/ContainedSection.astro"
 
 export const prerender = false
 
@@ -26,52 +27,36 @@ const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
 <AnimationLayout title="Development blog" text="Stay informed">
-  <div class="flex w-full justify-center py-16">
-    <div class="max-w-6xl">
-      <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
-      <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
-        {
-          publishedBlogPosts.map((blogPostEntry: BlogPost) => (
-            <a
-              class="pointer-cursor"
-              href={`/blog/${blogPostEntry.fields.slug}`}
-            >
-              <Card class="size-full border-none" padded>
-                <div class="border-2 border-neutral-800 w-full  rounded-tl-[2rem] overflow-hidden mb-2">
-                  <img
-                    class="w-full h-full object-cover border-none"
-                    loading="eager"
-                    alt={blogPostEntry.fields.cover.fields.title}
-                    src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
-                  />
-                </div>
-                <div class="flex flex-col gap-2">
-                  <h2 class="font-supermolot font-bold text-xl">{blogPostEntry.fields.title}</h2>
-                  <!--
-                  <div class="flex items-center justify-between font-mono font-semibold">
-                    <time
-                      class="text-accent-500"
-                      datetime={toISODate(`${blogPostEntry?.fields?.date}`)}
-                    >
-                      {saneDateTime(`${blogPostEntry?.fields?.date}`)}
-                    </time>
-                    <div class="h-full w-1 bg-white" />
-                    <p class="uppercase font-mono truncate">
-                      {blogPostEntry.fields.author}
-                    </p>
-                  </div>
-                  !-->
-                  <p class="text-base text-white font-mono">
-                    {blogPostEntry.fields.description}
-                  </p>
-                </div>
-              </Card>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </div>
+  <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
+  <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    {
+      publishedBlogPosts.map((blogPostEntry: BlogPost) => (
+        <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
+          <Card
+            hoverScale
+            class="group size-full rounded-tl-[2rem] overflow-hidden"
+          >
+            <div>
+              <img
+                class="grayscale group-hover:grayscale-0 transition  w-full h-full object-cover border-none"
+                loading="eager"
+                alt={blogPostEntry.fields.cover.fields.title}
+                src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
+              />
+            </div>
+            <div class="flex flex-col gap-2 p-4">
+              <h2 class="font-supermolot uppercase font-bold text-xl">
+                {blogPostEntry.fields.title}
+              </h2>
+              <p class="text-base text-neutral-200 font-mono">
+                {blogPostEntry.fields.description}
+              </p>
+            </div>
+          </Card>
+        </a>
+      ))
+    }
+  </ContainedSection>
 </AnimationLayout>
 
 <style is:inline>

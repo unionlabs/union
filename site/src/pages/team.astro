@@ -113,12 +113,13 @@ try {
       title="Meet the team"
       text="Our team is a global network of professionals, working to build the interoperability future."
     >
-      <ContainedSection>
-        <div class="grid gap-4 sm:gap-12 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 py-2 sm:py-8">
-          {teamData.map((person) => (
-            <TeamMember {person} />
-          ))}
-        </div>
+      <ContainedSection
+        grid
+        className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      >
+        {teamData.map((person) => (
+          <TeamMember {person} />
+        ))}
       </ContainedSection>
     </AnimationLayout>
   ) : (
