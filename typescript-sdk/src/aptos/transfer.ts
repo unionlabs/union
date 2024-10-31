@@ -77,7 +77,7 @@ export async function transferAssetFromAptos(
           : parameters.receiver,
         [parameters.denomAddress],
         [parameters.amount],
-        parameters.memo,
+        parameters.memo ?? "",
         9n,
         999_999_999n,
         0n
@@ -90,7 +90,18 @@ export async function transferAssetFromAptos(
         payload: {
           function: payload.function,
           type_arguments: payload.typeArguments,
-          arguments: payload.functionArguments.map(toString)
+          arguments: [
+            parameters.sourceChannel,
+            isValidBech32Address(parameters.receiver)
+              ? bech32AddressToHex({ address: parameters.receiver })
+              : parameters.receiver,
+            [parameters.denomAddress],
+            [parameters.amount.toString()],
+            parameters.memo ?? "",
+            BigInt(9n).toString(),
+            BigInt(999_999_999).toString(),
+            BigInt(0n).toString()
+          ]
         }
       })
       return ok(hash)

@@ -16,8 +16,8 @@ type AptosNetworkInfo = { chainId: string; name: Capitalize<AptosNetwork>; url: 
 export interface AptosWalletTransactionPayload {
   function: string
   type_info?: string
-  arguments: Array<string>
   type_arguments: Array<string>
+  arguments: Array<string | [string]>
 }
 
 export interface AptosBrowserWallet {
