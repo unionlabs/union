@@ -1,5 +1,34 @@
 import * as glMatrix from "gl-matrix"
 
+export const pathConfigMap = {
+  "/": {
+    index: 1,
+    saturation: 100
+  },
+  "/learn": {
+    index: 2,
+    saturation: 90
+  },
+  "/ecosystem": {
+    index: 3,
+    saturation: 60
+  },
+  "/blog": {
+    index: 4,
+    saturation: 30
+  },
+  "/team": {
+    index: 5,
+    saturation: 0
+  }
+} as const
+
+const colorSet = {
+  primary: [0.71, 0.94, 0.99, 1.0], // Cyan
+  mid: [0.51, 0.94, 0.99, 1.0],
+  dark: [0.37, 0.87, 0.99, 1.0]
+}
+
 let currentPlaneRotation = 0
 let targetPlaneRotation = 0
 let isRotating = false
@@ -7,38 +36,10 @@ let rotationStartTime = 0
 let queuedRotations = 0
 const ROTATION_DURATION = 1200
 const EASE_POWER = 4
-
-const colorSets = [
-  {
-    primary: [0.71, 0.94, 0.99, 1.0], // Cyan
-    mid: [0.51, 0.94, 0.99, 1.0],
-    dark: [0.37, 0.87, 0.99, 1.0]
-  },
-  {
-    primary: [0.99, 0.71, 0.94, 1.0], // Pink
-    mid: [0.99, 0.51, 0.94, 1.0],
-    dark: [0.99, 0.37, 0.87, 1.0]
-  },
-  {
-    primary: [0.94, 0.99, 0.71, 1.0], // Yellow
-    mid: [0.94, 0.99, 0.51, 1.0],
-    dark: [0.87, 0.99, 0.37, 1.0]
-  },
-  {
-    primary: [0.71, 0.99, 0.78, 1.0], // Mint
-    mid: [0.51, 0.99, 0.61, 1.0],
-    dark: [0.37, 0.99, 0.45, 1.0]
-  }
-]
-
-let currentColorSet = 0
-let targetColorSet = 0
-let lastColorIndex = 0
-let initialRotation = 0 // Store the starting rotation when animation begins
-let colorTransitionProgress = 0
+let initialRotation = 0
 let currentRotationDirection: "left" | "right" = "right"
 
-export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
+export function rotateCamera(direction: "left" | "right") {
   const MAX_QUEUED_ROTATIONS = 4
   if (queuedRotations >= MAX_QUEUED_ROTATIONS) return
 
@@ -52,18 +53,6 @@ export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
     direction = currentRotationDirection
   }
 
-  if (colorIndex >= 0) {
-    const normalizedIndex = colorIndex % colorSets.length
-    targetColorSet = normalizedIndex
-    lastColorIndex = normalizedIndex
-  } else {
-    lastColorIndex =
-      direction === "right"
-        ? (lastColorIndex + 1) % colorSets.length
-        : (lastColorIndex - 1 + colorSets.length) % colorSets.length
-    targetColorSet = lastColorIndex
-  }
-
   if (isRotating) {
     const rotationAmount = direction === "right" ? Math.PI / 2 : -Math.PI / 2
     targetPlaneRotation = initialRotation + rotationAmount * queuedRotations
@@ -73,19 +62,22 @@ export function rotateCamera(direction: "left" | "right", colorIndex = -1) {
     initialRotation = currentPlaneRotation
     targetPlaneRotation =
       currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
-    colorTransitionProgress = 0
   }
 }
 
-function interpolateColors(colorA, colorB, progress) {
-  return colorA.map((c, i) => c + (colorB[i] - c) * progress)
-}
+let currentSaturation = 100
+let targetSaturation = 100
+let isSaturating = false
+let saturationStartTime = 0
+const SATURATION_DURATION = 1200
 
-export function setInitialColor(colorIndex = 1) {
-  const normalizedIndex = colorIndex % colorSets.length
-  currentColorSet = normalizedIndex
-  targetColorSet = normalizedIndex
-  lastColorIndex = normalizedIndex
+export function updateSaturation(saturationValue: number) {
+  saturationValue = Math.max(0, Math.min(100, saturationValue))
+  if (saturationValue === currentSaturation) return
+
+  targetSaturation = saturationValue
+  isSaturating = true
+  saturationStartTime = performance.now()
 }
 
 let canvas: HTMLCanvasElement
@@ -183,8 +175,10 @@ class PerlinNoise {
   }
 }
 
-function initWebGL(initialColorIndex: number) {
-  setInitialColor(initialColorIndex)
+function initWebGL() {
+  const currentPath = window.location.pathname
+  const initialConfig = pathConfigMap[currentPath] ?? { index: 0, saturation: 100 }
+  currentSaturation = initialConfig.saturation
   canvas = document.querySelector("#waveCanvas") // Make sure we're using querySelector
   if (!canvas) {
     console.error("Canvas not found")
@@ -203,34 +197,21 @@ function initWebGL(initialColorIndex: number) {
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
   uniform float uYOffset;
+  uniform float uSaturation;
   varying lowp vec4 vColor;
+  
+  vec4 adjustSaturation(vec4 color, float saturation) {
+    float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    return vec4(mix(vec3(grey), color.rgb, saturation), color.a);
+  }
   
   void main(void) {
     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
     float fadeAmount = smoothstep(-0.5, 0.5, uYOffset);
-    vColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
+    vec4 baseColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
+    vColor = adjustSaturation(baseColor, uSaturation);
   }
 `
-
-  function updateBufferColors(gl, buffers, colorSet) {
-    const faceColors = [
-      colorSet.primary,
-      colorSet.primary,
-      colorSet.dark,
-      colorSet.dark,
-      colorSet.mid,
-      colorSet.mid
-    ]
-
-    let colors: Array<number> = []
-    for (let j = 0; j < faceColors.length; ++j) {
-      const c = faceColors[j]
-      colors = colors.concat(c, c, c, c)
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
-  }
 
   // Fragment shader
   const fsSource = `
@@ -295,10 +276,7 @@ function initWebGL(initialColorIndex: number) {
       projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
       yOffset: gl.getUniformLocation(shaderProgram, "uYOffset"),
-      colorMix: gl.getUniformLocation(shaderProgram, "uColorMix"),
-      nextColorPrimary: gl.getUniformLocation(shaderProgram, "uNextColorPrimary"),
-      nextColorMid: gl.getUniformLocation(shaderProgram, "uNextColorMid"),
-      nextColorDark: gl.getUniformLocation(shaderProgram, "uNextColorDark")
+      saturation: gl.getUniformLocation(shaderProgram, "uSaturation")
     }
   }
 
@@ -323,9 +301,7 @@ function initWebGL(initialColorIndex: number) {
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
-    const currentColor = colorSets[currentColorSet]
-    const colors = generateColors(currentColor)
-
+    const colors = generateColors(colorSet)
     const colorBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
@@ -427,59 +403,8 @@ function initWebGL(initialColorIndex: number) {
       const rotationDelta = targetPlaneRotation - initialRotation
       currentPlaneRotation = initialRotation + rotationDelta * easeProgress
 
-      // Update color transition with a slightly different timing
-      colorTransitionProgress = Math.min(progress * 1.2, 1) // Slightly faster color transition
-
-      // Calculate color interpolation
-      const currentColors = colorSets[currentColorSet]
-      const nextColors = colorSets[targetColorSet]
-
-      const interpolatedColors = {
-        primary: interpolateColors(
-          currentColors.primary,
-          nextColors.primary,
-          colorTransitionProgress
-        ),
-        mid: interpolateColors(currentColors.mid, nextColors.mid, colorTransitionProgress),
-        dark: interpolateColors(currentColors.dark, nextColors.dark, colorTransitionProgress)
-      }
-
-      // Update color buffer with interpolated colors
-      const faceColors = [
-        interpolatedColors.primary,
-        interpolatedColors.primary,
-        interpolatedColors.dark,
-        interpolatedColors.dark,
-        interpolatedColors.mid,
-        interpolatedColors.mid
-      ]
-
-      let colors: Array<number> = []
-      for (const c of faceColors) {
-        colors = colors.concat(c, c, c, c)
-      }
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
-
       if (progress >= 1) {
         currentPlaneRotation = targetPlaneRotation
-        currentColorSet = targetColorSet
-        queuedRotations = Math.max(0, queuedRotations - 1)
-
-        if (queuedRotations > 0) {
-          rotationStartTime = performance.now()
-          initialRotation = currentPlaneRotation
-          targetPlaneRotation = currentPlaneRotation + Math.PI / 2
-          colorTransitionProgress = 0
-        } else {
-          isRotating = false
-        }
-      }
-
-      if (progress >= 1) {
-        currentPlaneRotation = targetPlaneRotation
-        currentColorSet = targetColorSet
         queuedRotations = Math.max(0, queuedRotations - 1)
 
         if (queuedRotations > 0) {
@@ -488,11 +413,27 @@ function initWebGL(initialColorIndex: number) {
           targetPlaneRotation =
             currentPlaneRotation +
             (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
-          colorTransitionProgress = 0
         } else {
           isRotating = false
           currentRotationDirection = "right"
         }
+      }
+    }
+
+    // Handle saturation transition
+    if (isSaturating) {
+      const elapsed = performance.now() - saturationStartTime
+      const progress = Math.min(elapsed / SATURATION_DURATION, 1)
+
+      // Use same easing as rotation
+      let easeProgress =
+        progress < 0.5 ? (progress * 2) ** EASE_POWER / 2 : 1 - (2 - progress * 2) ** EASE_POWER / 2
+
+      currentSaturation += (targetSaturation - currentSaturation) * easeProgress
+
+      if (progress >= 1) {
+        currentSaturation = targetSaturation
+        isSaturating = false
       }
     }
 
@@ -545,6 +486,9 @@ function initWebGL(initialColorIndex: number) {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices)
     gl.useProgram(programInfo.program)
+
+    // Set the saturation uniform before drawing
+    gl.uniform1f(programInfo.uniformLocations.saturation, currentSaturation / 100)
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix)
 
