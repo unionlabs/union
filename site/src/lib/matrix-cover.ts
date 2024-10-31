@@ -620,14 +620,7 @@ function initWebGL(initialColorIndex: number) {
       }
     }
   }
-  // const cubePositions = []
-  // for (let x = -28; x < 10; x++) {
-  //   for (let z = -28; z < 10; z++) {
-  //     cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6])
-  //   }
-  // }
 
-  // Animation loop
   let then = 0
 
   function render(now) {
@@ -637,8 +630,6 @@ function initWebGL(initialColorIndex: number) {
 
     canvas.width = displayWidth
     canvas.height = displayHeight
-    // gl.canvas.clientWidth = displayWidth;
-    // gl.canvas.clientHeight = displayHeight;
 
     drawScene(gl, programInfo, buffers, cubePositions, now)
 
@@ -651,14 +642,21 @@ function initWebGL(initialColorIndex: number) {
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
 
+    if (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    ) {
+      return
+    }
+
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
 
-    // Reduced multiplier from 2 to 1 for less movement
     targetMouseX = (x / rect.width) * 2 - 1
     targetMouseY = -(y / rect.height) * 2 + 1
   }
-
   function handleTouch(event) {
     event.preventDefault()
     const touch = event.touches[0]
@@ -671,23 +669,12 @@ function initWebGL(initialColorIndex: number) {
     }
   }
 
-  function handleMouseLeave(event) {
-    const rect = canvas.getBoundingClientRect()
-    if (event.clientY > rect.bottom) {
-      targetMouseX = 0
-      targetMouseY = 0
-    }
-  }
-
   document.addEventListener("mousemove", updateMousePosition)
-  canvas.addEventListener("mouseleave", handleMouseLeave)
   canvas.addEventListener("touchstart", handleTouch)
   canvas.addEventListener("touchmove", handleTouch)
-  canvas.addEventListener("touchend", handleMouseLeave)
 
   return () => {
     document.removeEventListener("mousemove", updateMousePosition)
-    canvas.removeEventListener("mouseleave", handleMouseLeave)
   }
 }
 
