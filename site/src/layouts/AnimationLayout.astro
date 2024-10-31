@@ -113,6 +113,12 @@ const currentPath = pathname.slice(1) // remove the first "/"
         transform-origin: center;
     }
 
+    @media (max-width: 1024px) {
+        .glow-effect {
+            animation: rotate-glow 8s linear infinite;
+        }
+    }
+
     .shiny-border {
         background-color: #262626;
         grid-area: 2 / 2 / 7 / 7;
@@ -131,6 +137,15 @@ const currentPath = pathname.slice(1) // remove the first "/"
         z-index: 4;
     }
 
+    @keyframes rotate-glow {
+        from {
+            transform: scale(6) rotate(0deg);
+        }
+        to {
+            transform: scale(6) rotate(360deg);
+        }
+    }
+
     @keyframes slideOutLeft {
         from {
             transform: translateX(0);
@@ -139,6 +154,28 @@ const currentPath = pathname.slice(1) // remove the first "/"
         to {
             transform: translateX(-100%);
             opacity: 0;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
         }
     }
 
@@ -161,36 +198,38 @@ const currentPath = pathname.slice(1) // remove the first "/"
     "/": 0,
     "/learn": 1,
     "/ecosystem": 2,
-    "/team": 3,
+    "/blog": 3,
+    "/team": 4,
   };
 
   document.addEventListener("astro:after-preparation", (event: any) => {
-    // Get path from URL
     const currentPath = window.location.pathname;
-
-    // Get current index from path
     const currentIndex = pathToIndexMap[currentPath] ?? 0;
 
-    // For testing, let's rotate based on just the current path
     if (currentPath in pathToIndexMap) {
-      // Simple alternating direction for now
       const direction = currentIndex % 2 === 0 ? "right" : "left";
       rotateCamera(direction as "left" | "right", currentIndex);
     }
   });
 
-  let headerGrid;
-  let glowEffect;
+  let headerGrid, glowEffect, mouseMoveHandler;
   let previousAngle = 0;
   let currentRotation = 0;
-  let mouseMoveHandler;
+  let isTablet = false;
+
+  function checkDeviceSize() {
+    isTablet = window.matchMedia("(max-width: 1024px)").matches;
+  }
 
   function initializeGlowEffect() {
     headerGrid = document.querySelector(".header-grid");
     glowEffect = document.querySelector(".glow-effect");
+    checkDeviceSize();
 
     if (headerGrid && glowEffect) {
       mouseMoveHandler = (e) => {
+        if (isTablet) return;
+
         const rect = headerGrid.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -200,10 +239,16 @@ const currentPath = pathname.slice(1) // remove the first "/"
         const newAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
 
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const scale = Math.max(4, (distance / rect.height) * 8);
+        const maxDistance = Math.sqrt(
+          Math.pow(Math.max(centerX, window.innerWidth - centerX), 4) +
+            Math.pow(Math.max(centerY, window.innerHeight - centerY), 4),
+        );
+
+        const scale = Math.min(4, Math.max(5, (distance / maxDistance) * 6));
 
         let angleDiff = newAngle - previousAngle;
 
+        // Handle angle wraparound
         if (angleDiff > 180) {
           angleDiff -= 360;
         } else if (angleDiff < -180) {
@@ -213,10 +258,12 @@ const currentPath = pathname.slice(1) // remove the first "/"
         currentRotation += angleDiff;
         previousAngle = newAngle;
 
+        // Update glow effect position and rotation
         glowEffect.style.transform = `scale(${scale}) rotate(${currentRotation + 90}deg)`;
       };
 
-      headerGrid.addEventListener("mousemove", mouseMoveHandler);
+      window.addEventListener("mousemove", mouseMoveHandler);
+      window.addEventListener("resize", checkDeviceSize);
     }
   }
 
@@ -224,6 +271,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
     if (headerGrid && mouseMoveHandler) {
       headerGrid.removeEventListener("mousemove", mouseMoveHandler);
     }
+    window.removeEventListener("resize", checkDeviceSize);
   }
 
   document.addEventListener("astro:page-load", () => {

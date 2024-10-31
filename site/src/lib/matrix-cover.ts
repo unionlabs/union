@@ -185,7 +185,11 @@ class PerlinNoise {
 
 function initWebGL(initialColorIndex: number) {
   setInitialColor(initialColorIndex)
-  canvas = document.getElementById("waveCanvas")
+  canvas = document.querySelector("#waveCanvas") // Make sure we're using querySelector
+  if (!canvas) {
+    console.error("Canvas not found")
+    return
+  }
   const gl = canvas.getContext("webgl")
   if (!gl) {
     console.error("WebGL not supported")
@@ -492,12 +496,12 @@ function initWebGL(initialColorIndex: number) {
       }
     }
 
-    mouseX += (targetMouseX - mouseX) * 0.5
-    mouseY += (targetMouseY - mouseY) * 0.5
+    mouseX += (targetMouseX - mouseX) * 0.1
+    mouseY += (targetMouseY - mouseY) * 0.1
 
     glMatrix.mat4.translate(cameraMatrix, cameraMatrix, [0, 0, -16])
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, endRotationY + mouseY * 0.1, [1, 0, 0])
+    glMatrix.mat4.rotate(cameraMatrix, cameraMatrix, -endRotationX + mouseX * 0.1, [0, 1, 0])
     glMatrix.mat4.rotate(modelMatrix, modelMatrix, currentPlaneRotation, [0, 1, 0])
 
     const modelViewMatrix = glMatrix.mat4.create()
@@ -616,14 +620,7 @@ function initWebGL(initialColorIndex: number) {
       }
     }
   }
-  // const cubePositions = []
-  // for (let x = -28; x < 10; x++) {
-  //   for (let z = -28; z < 10; z++) {
-  //     cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6])
-  //   }
-  // }
 
-  // Animation loop
   let then = 0
 
   function render(now) {
@@ -633,8 +630,6 @@ function initWebGL(initialColorIndex: number) {
 
     canvas.width = displayWidth
     canvas.height = displayHeight
-    // gl.canvas.clientWidth = displayWidth;
-    // gl.canvas.clientHeight = displayHeight;
 
     drawScene(gl, programInfo, buffers, cubePositions, now)
 
@@ -646,35 +641,40 @@ function initWebGL(initialColorIndex: number) {
   // Update mouse position
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
-    const normalizedX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    const normalizedY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
 
-    // Check if mouse is below the canvas
-    if (event.clientY > rect.bottom) {
-      // Reset to default camera position
-      targetMouseX = 0
-      targetMouseY = 0
-    } else {
-      targetMouseX = normalizedX
-      targetMouseY = normalizedY
+    if (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    ) {
+      return
     }
-  }
 
-  // Add mouseleave handler
-  function handleMouseLeave(event) {
-    const rect = canvas.getBoundingClientRect()
-    if (event.clientY > rect.bottom) {
-      targetMouseX = 0
-      targetMouseY = 0
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    targetMouseX = (x / rect.width) * 2 - 1
+    targetMouseY = -(y / rect.height) * 2 + 1
+  }
+  function handleTouch(event) {
+    event.preventDefault()
+    const touch = event.touches[0]
+    if (touch) {
+      const mouseEvent = new MouseEvent("mousemove", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      })
+      updateMousePosition(mouseEvent)
     }
   }
 
   document.addEventListener("mousemove", updateMousePosition)
-  canvas.addEventListener("mouseleave", handleMouseLeave)
+  canvas.addEventListener("touchstart", handleTouch)
+  canvas.addEventListener("touchmove", handleTouch)
 
   return () => {
     document.removeEventListener("mousemove", updateMousePosition)
-    canvas.removeEventListener("mouseleave", handleMouseLeave)
   }
 }
 
@@ -696,4 +696,8 @@ function generateColors(colorSet) {
 }
 
 // Initialize WebGL when the component mounts
-document.addEventListener("DOMContentLoaded", initWebGL(1))
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => initWebGL(1))
+} else {
+  initWebGL(1)
+}

@@ -48,41 +48,96 @@ const menuItems = [
 ---
 
 <script>
-  let menuOpen = false;
+  let cleanupListeners: (() => void)[] = [];
+  let menuOpen = false; // Track menu state globally
+  let overlay: HTMLElement | null = null;
+  let menuItemsList: HTMLElement | null = null;
 
-  let overlay = document.getElementById("overlay");
-  let menuButton = document.getElementById("menu-button");
-  let menuItemsList = document.getElementById("menu-items-list");
+  function initMenu() {
+    cleanupListeners.forEach((cleanup) => cleanup());
+    cleanupListeners = [];
 
-  menuButton?.addEventListener("click", () => {
-    menuOpen = !menuOpen;
-    if (!menuItemsList || !overlay) return;
-    menuItemsList.style.display = menuOpen ? "flex" : "none";
-    menuItemsList.style.maxHeight = menuOpen
-      ? menuItemsList.scrollHeight + "px"
-      : "0";
+    overlay = document.getElementById("overlay");
+    const menuButton = document.getElementById("menu-button");
+    menuItemsList = document.getElementById("menu-items-list");
+    const menuLinks = document.querySelectorAll(".menu-link");
 
-    if (menuOpen) {
-      overlay.classList.add("show");
-      overlay.style.visibility = "visible";
-    } else {
-      overlay.classList.remove("show");
-      overlay.style.visibility = "hidden";
+    if (!overlay || !menuButton || !menuItemsList) {
+      console.error("Required elements not found");
+      return;
     }
-  });
 
-  function closeMenu() {
-    menuOpen = false;
-    if (!menuItemsList || !overlay) return;
-    menuItemsList.style.display = "none";
-    menuItemsList.style.maxHeight = "0";
+    const toggleMenu = (open: boolean) => {
+      menuOpen = open;
+      menuItemsList!.style.display = menuOpen ? "flex" : "none";
+      menuItemsList!.style.maxHeight = menuOpen
+        ? `${menuItemsList!.scrollHeight}px`
+        : "0";
 
-    overlay.classList.toggle("show", menuOpen);
+      if (menuOpen) {
+        overlay!.classList.add("show");
+        overlay!.style.visibility = "visible";
+      } else {
+        overlay!.classList.remove("show");
+        overlay!.style.visibility = "hidden";
+      }
+    };
+
+    const handleMenuClick = () => {
+      toggleMenu(!menuOpen);
+    };
+
+    const handleOverlayClick = () => {
+      toggleMenu(false);
+    };
+
+    const handleLinkClick = (e: Event) => {
+      toggleMenu(false);
+    };
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && menuOpen) {
+        toggleMenu(false);
+      }
+    };
+
+    menuButton.addEventListener("click", handleMenuClick);
+    overlay.addEventListener("click", handleOverlayClick);
+    window.addEventListener("resize", handleResize);
+
+    menuLinks.forEach((link) => {
+      link.addEventListener("click", handleLinkClick);
+    });
+
+    cleanupListeners.push(() => {
+      menuButton.removeEventListener("click", handleMenuClick);
+      overlay.removeEventListener("click", handleOverlayClick);
+      window.removeEventListener("resize", handleResize);
+      menuLinks.forEach((link) => {
+        link.removeEventListener("click", handleLinkClick);
+      });
+    });
   }
 
-  overlay?.addEventListener("click", closeMenu);
+  function closeMenu() {
+    if (menuOpen && overlay && menuItemsList) {
+      menuItemsList.style.display = "none";
+      menuItemsList.style.maxHeight = "0";
+      overlay.classList.remove("show");
+      overlay.style.visibility = "hidden";
+      menuOpen = false;
+    }
+  }
 
-  document.addEventListener("astro:before-preparation", closeMenu);
+  document.addEventListener("astro:page-load", () => {
+    initMenu();
+  });
+
+  document.addEventListener("astro:before-swap", () => {
+    closeMenu();
+    cleanupListeners.forEach((cleanup) => cleanup());
+    cleanupListeners = [];
+  });
 </script>
 
 <header class="z-[100] w-full flex justify-around">
@@ -274,6 +329,7 @@ const menuItems = [
     height: var(--header-height) !important;
     min-height: var(--header-height) !important;
   }
+
   #menu-items-list {
     display: none;
     overflow: hidden;
