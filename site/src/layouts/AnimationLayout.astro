@@ -29,8 +29,8 @@ const slideTextAnimation = {
   }
 }
 
-const pathname = new URL(Astro.request.url).pathname;
-const currentPath = pathname.slice(1); // remove the first "/"
+const pathname = new URL(Astro.request.url).pathname
+const currentPath = pathname.slice(1) // remove the first "/"
 ---
 
 <head>
@@ -38,7 +38,12 @@ const currentPath = pathname.slice(1); // remove the first "/"
 </head>
 
 <Layout title="Union">
-  <div class:list={["header-grid place-self-center", currentPath === "" ? "" : "header-grid--collapsed"]}>
+  <div
+    class:list={[
+      "header-grid place-self-center",
+      currentPath === "" ? "header-grid--open" : "header-grid--collapsed",
+    ]}
+  >
     <div class="shiny-border">
       <div class="glow-effect" transition:persist></div>
     </div>
@@ -67,20 +72,27 @@ const currentPath = pathname.slice(1); // remove the first "/"
         --header-height: 68px;
         height: calc(100svh - var(--header-height));
         min-height: 400px;
+        @apply max-w-[100%];
         width: 100%;
         display: grid;
         grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
         grid-template-columns: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
         position: relative;
         overflow: hidden;
-        transition: height 0.5s;
+        transition: height 0.5s, width 0.5s;
     }
 
 
+    .header-grid--open {
+        height: calc(100svh - var(--header-height));
+        transition: height 0.5s, max-width 0.5s;
+        @apply max-w-[100%];
+    }
+
     .header-grid--collapsed {
-        height: calc(70svh - var(--header-height));
-        transition: height 2s;
-        /*@apply max-w-6xl;*/
+        height: calc(30svh - var(--header-height));
+        transition: height 0.5s, max-width 0.5s;
+        @apply max-w-6xl;
     }
 
     .glow-effect {
@@ -153,8 +165,6 @@ const currentPath = pathname.slice(1); // remove the first "/"
   };
 
   document.addEventListener("astro:after-preparation", (event: any) => {
-    console.log("Full event:", event);
-
     // Get path from URL
     const currentPath = window.location.pathname;
 
@@ -221,16 +231,28 @@ const currentPath = pathname.slice(1); // remove the first "/"
     initializeGlowEffect();
   });
 
-  document.addEventListener("astro:before-preparation", cleanup);
-
-  document.addEventListener("astro:before-preparation", () => {
+  document.addEventListener("astro:before-preparation", (event) => {
     cleanup();
-    toggleCollapsed();
 
+    console.log(event);
+    toggleCollapsed(event.to.pathname === "/");
   });
 
-  function toggleCollapsed() {
+  function toggleCollapsed(open) {
+    console.log(open);
+    console.log(window.location.pathname);
     headerGrid = document.querySelector(".header-grid");
-    headerGrid?.classList.add("header-grid--collapsed");
+
+    if (open) {
+      headerGrid?.classList.remove("header-grid--collapsed");
+      headerGrid?.classList.add("header-grid--open");
+    } else {
+      headerGrid?.classList.remove("header-grid--open");
+      headerGrid?.classList.add("header-grid--collapsed");
+    }
   }
+
+  document.addEventListener("astro:after-swap", () =>
+    toggleCollapsed(window.location.pathname === "/"),
+  );
 </script>
