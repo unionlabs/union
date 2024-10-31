@@ -1,4 +1,4 @@
-use core::{fmt::Display, num::NonZeroU64, str::FromStr};
+use core::{fmt, fmt::Display, num::NonZeroU64, str::FromStr};
 
 use macros::{ibc_path, model};
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,125 @@ use crate::{
     traits::Member,
     ErrorReporter,
 };
+
+pub mod ethabi {
+    use sha2::Digest;
+    use sha3::Keccak256;
+
+    use crate::hash::H256;
+
+    /// 0x0100000000000000000000000000000000000000000000000000000000000000
+    pub const COMMITMENT_MAGIC: H256 = {
+        let mut bz = [0; 32];
+        bz[0] = 1;
+        H256::new(bz)
+    };
+    pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
+
+    const CLIENT_STATE: u8 = 0x00;
+    const CONSENSUS_STATE: u8 = 0x01;
+    const CONNECTIONS: u8 = 0x02;
+    const CHANNELS: u8 = 0x03;
+    const PACKETS: u8 = 0x04;
+    const PACKET_ACKS: u8 = 0x05;
+    const NEXT_SEQ_SEND: u8 = 0x06;
+    const NEXT_SEQ_RECV: u8 = 0x07;
+    const NEXT_SEQ_ACK: u8 = 0x08;
+
+    #[must_use]
+    pub fn client_state_key(client_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([CLIENT_STATE])
+            .chain_update(client_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
+        Keccak256::new()
+            .chain_update([CONSENSUS_STATE])
+            .chain_update(client_id.to_be_bytes())
+            .chain_update(height.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn connection_key(connection_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([CONNECTIONS])
+            .chain_update(connection_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn channel_key(channel_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([CHANNELS])
+            .chain_update(channel_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn commitments_key(channel_id: u32, sequence: u64) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKETS])
+            .chain_update(channel_id.to_be_bytes())
+            .chain_update(sequence.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn acknowledgements_key(channel_id: u32, sequence: u64) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKET_ACKS])
+            .chain_update(channel_id.to_be_bytes())
+            .chain_update(sequence.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn receipts_key(channel_id: u32, sequence: u64) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKETS])
+            .chain_update(channel_id.to_be_bytes())
+            .chain_update(sequence.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn next_seq_send_key(channel_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_SEND])
+            .chain_update(channel_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn next_seq_recv_key(channel_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_RECV])
+            .chain_update(channel_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+
+    #[must_use]
+    pub fn next_seq_ack_key(channel_id: u32) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_ACK])
+            .chain_update(channel_id.to_be_bytes())
+            .finalize()
+            .into()
+    }
+}
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
@@ -83,8 +202,8 @@ pub struct ClientConsensusStatePath {
     pub height: Height,
 }
 
-impl ::core::fmt::Display for ClientConsensusStatePath {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+impl fmt::Display for ClientConsensusStatePath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "clients/{}/consensusStates/{}-{}",
