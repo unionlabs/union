@@ -27,34 +27,36 @@ const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
 <AnimationLayout title="Development blog" text="Stay informed">
-      <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
-      <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {
-          publishedBlogPosts.map((blogPostEntry: BlogPost) => (
-            <a
-              class="pointer-cursor"
-              href={`/blog/${blogPostEntry.fields.slug}`}
-            >
-              <Card hoverScale class="group size-full rounded-tl-[2rem] overflow-hidden">
-                <div>
-                  <img
-                    class="grayscale group-hover:grayscale-0 transition  w-full h-full object-cover border-none"
-                    loading="eager"
-                    alt={blogPostEntry.fields.cover.fields.title}
-                    src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
-                  />
-                </div>
-                <div class="flex flex-col gap-2 p-4">
-                  <h2 class="font-supermolot uppercase font-bold text-xl">{blogPostEntry.fields.title}</h2>
-                  <p class="text-base text-neutral-200 font-mono">
-                    {blogPostEntry.fields.description}
-                  </p>
-                </div>
-              </Card>
-            </a>
-          ))
-        }
-      </ContainedSection>
+  <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
+  <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    {
+      publishedBlogPosts.map((blogPostEntry: BlogPost) => (
+        <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
+          <Card
+            hoverScale
+            class="group size-full rounded-tl-[2rem] overflow-hidden"
+          >
+            <div>
+              <img
+                class="grayscale group-hover:grayscale-0 transition  w-full h-full object-cover border-none"
+                loading="eager"
+                alt={blogPostEntry.fields.cover.fields.title}
+                src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
+              />
+            </div>
+            <div class="flex flex-col gap-2 p-4">
+              <h2 class="font-supermolot uppercase font-bold text-xl">
+                {blogPostEntry.fields.title}
+              </h2>
+              <p class="text-base text-neutral-200 font-mono">
+                {blogPostEntry.fields.description}
+              </p>
+            </div>
+          </Card>
+        </a>
+      ))
+    }
+  </ContainedSection>
 </AnimationLayout>
 
 <style is:inline>
