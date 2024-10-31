@@ -191,12 +191,11 @@ const currentPath = pathname.slice(1) // remove the first "/"
     }
   });
 
-  let headerGrid;
-  let glowEffect;
+  let headerGrid, glowEffect, mouseMoveHandler;
   let previousAngle = 0;
   let currentRotation = 0;
-  let mouseMoveHandler;
   let isTablet = false;
+
 
   function checkDeviceSize() {
     isTablet = window.matchMedia("(max-width: 1024px)").matches;
@@ -209,7 +208,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
 
     if (headerGrid && glowEffect) {
       mouseMoveHandler = (e) => {
-        if (isTablet) return; // Skip mouse tracking on tablet sizes
+        if (isTablet) return;
 
         const rect = headerGrid.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -220,10 +219,16 @@ const currentPath = pathname.slice(1) // remove the first "/"
         const newAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
 
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const scale = Math.max(4, (distance / rect.height) * 8);
+        const maxDistance = Math.sqrt(
+          Math.pow(Math.max(centerX, window.innerWidth - centerX), 4) +
+          Math.pow(Math.max(centerY, window.innerHeight - centerY), 4)
+        );
+
+        const scale = Math.min(4, Math.max(5, (distance / maxDistance) * 6));
 
         let angleDiff = newAngle - previousAngle;
 
+        // Handle angle wraparound
         if (angleDiff > 180) {
           angleDiff -= 360;
         } else if (angleDiff < -180) {
@@ -233,10 +238,11 @@ const currentPath = pathname.slice(1) // remove the first "/"
         currentRotation += angleDiff;
         previousAngle = newAngle;
 
+        // Update glow effect position and rotation
         glowEffect.style.transform = `scale(${scale}) rotate(${currentRotation + 90}deg)`;
       };
 
-      headerGrid.addEventListener("mousemove", mouseMoveHandler);
+      window.addEventListener("mousemove", mouseMoveHandler);
       window.addEventListener("resize", checkDeviceSize);
     }
   }
