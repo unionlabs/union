@@ -78,6 +78,7 @@ pub mod ics24;
 
 pub mod validated;
 
+pub mod bytes;
 pub mod hash;
 
 pub mod encoding;
