@@ -1,12 +1,11 @@
-use beacon_api_types::ChainSpec;
+use beacon_api_types::{ChainSpec, PresetBaseKind};
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
 };
 use ethereum_verifier::{
     utils::{
-        compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
-        compute_timestamp_at_slot, validate_signature_supermajority,
+        compute_slot_at_timestamp, compute_timestamp_at_slot, validate_signature_supermajority,
     },
     validate_light_client_update, verify_account_storage_root, verify_storage_absence,
     verify_storage_proof,
@@ -104,18 +103,16 @@ impl IbcClient for EthereumLightClient {
         env: Env,
         header: Header,
     ) -> Result<(), IbcClientError<Self>> {
-        let wasm_consensus_state = read_consensus_state(deps, &header.trusted_height)?
-            .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
+        let client_state = read_client_state(deps)?.data;
 
-        let wasm_client_state = read_client_state(deps)?;
-
-        verify_header::<beacon_api_types::Mainnet>(
-            wasm_client_state,
-            wasm_consensus_state,
-            deps,
-            env,
-            header,
-        )
+        match client_state.chain_spec {
+            PresetBaseKind::Minimal => {
+                verify_header::<beacon_api_types::Minimal>(client_state, deps, env, header)
+            }
+            PresetBaseKind::Mainnet => {
+                verify_header::<beacon_api_types::Mainnet>(client_state, deps, env, header)
+            }
+        }
     }
 
     fn verify_misbehaviour(
@@ -123,14 +120,22 @@ impl IbcClient for EthereumLightClient {
         env: Env,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), IbcClientError<Self>> {
-        let wasm_client_state = read_client_state(deps)?;
+        let client_state = read_client_state(deps)?.data;
 
-        verify_misbehaviour::<beacon_api_types::Mainnet>(
-            wasm_client_state.data,
-            deps,
-            env,
-            misbehaviour,
-        )
+        match client_state.chain_spec {
+            PresetBaseKind::Minimal => verify_misbehaviour::<beacon_api_types::Minimal>(
+                client_state,
+                deps,
+                env,
+                misbehaviour,
+            ),
+            PresetBaseKind::Mainnet => verify_misbehaviour::<beacon_api_types::Mainnet>(
+                client_state,
+                deps,
+                env,
+                misbehaviour,
+            ),
+        }
     }
 
     fn update_state(
@@ -140,7 +145,14 @@ impl IbcClient for EthereumLightClient {
     ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
-        update_state::<beacon_api_types::Mainnet>(client_state, deps, header)
+        match client_state.data.chain_spec {
+            PresetBaseKind::Minimal => {
+                update_state::<beacon_api_types::Minimal>(client_state, deps, header)
+            }
+            PresetBaseKind::Mainnet => {
+                update_state::<beacon_api_types::Mainnet>(client_state, deps, header)
+            }
+        }
     }
 
     fn update_state_on_misbehaviour(
@@ -242,7 +254,6 @@ impl IbcClient for EthereumLightClient {
             WasmClientState {
                 data: ClientState {
                     chain_id: scs.chain_id,
-                    min_sync_committee_participants: scs.min_sync_committee_participants,
                     fork_parameters: scs.fork_parameters,
                     latest_slot: scs.latest_slot,
                     ibc_commitment_slot: scs.ibc_commitment_slot,
@@ -293,10 +304,6 @@ fn migrate_check_allowed_fields(
     subject_client_state.genesis_time == substitute_client_state.genesis_time
         && subject_client_state.genesis_validators_root
             == substitute_client_state.genesis_validators_root
-        && subject_client_state.seconds_per_slot == substitute_client_state.seconds_per_slot
-        && subject_client_state.slots_per_epoch == substitute_client_state.slots_per_epoch
-        && subject_client_state.epochs_per_sync_committee_period
-            == substitute_client_state.epochs_per_sync_committee_period
 }
 
 pub fn do_verify_membership(
@@ -400,40 +407,37 @@ pub fn check_commitment_key(
 }
 
 fn verify_header<C: ChainSpec>(
-    wasm_client_state: WasmClientState,
-    wasm_consensus_state: WasmConsensusState,
+    client_state: ClientState,
     deps: Deps<UnionCustomQuery>,
     env: Env,
     header: Header,
 ) -> Result<(), IbcClientError<EthereumLightClient>> {
+    let consensus_state = read_consensus_state(deps, &header.trusted_height)?
+        .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?
+        .data;
+
     // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
     // at the current timestamp.
-    let current_slot = compute_slot_at_timestamp::<C>(
-        wasm_client_state.data.genesis_time,
-        env.block.time.seconds(),
-    )
-    .ok_or(Error::IntegerOverflow)?;
+    let current_slot =
+        compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
+            .ok_or(Error::IntegerOverflow)?;
 
-    let (update_data, current_sync_committee, next_sync_committee) = match header.consensus_update {
-        LightClientUpdate::EpochChange(ref update) => {
-            (&update.update_data, None, Some(&update.sync_committee))
-        }
-        LightClientUpdate::WithinEpoch(ref update) => {
-            (&update.update_data, Some(&update.sync_committee), None)
-        }
-    };
+    let (current_sync_committee, next_sync_committee) =
+        header.consensus_update.currently_trusted_sync_committee();
 
     validate_light_client_update::<C, VerificationContext>(
         &header.consensus_update.clone().into(),
         current_sync_committee,
         next_sync_committee,
         current_slot,
-        wasm_consensus_state.data.slot,
-        wasm_client_state.data.genesis_validators_root,
-        &wasm_client_state.data.fork_parameters,
+        consensus_state.slot,
+        client_state.genesis_validators_root,
+        &client_state.fork_parameters,
         VerificationContext { deps },
     )
     .map_err(Error::ValidateLightClient)?;
+
+    let update_data = header.consensus_update.update_data();
 
     // check whether at least 2/3 of the sync committee signed
     ensure(
@@ -445,7 +449,7 @@ fn verify_header<C: ChainSpec>(
 
     verify_account_storage_root(
         update_data.attested_header.execution.state_root,
-        &wasm_client_state.data.ibc_contract_address,
+        &client_state.ibc_contract_address,
         &proof_data.proof,
         &proof_data.storage_root,
     )
@@ -459,7 +463,6 @@ fn update_state<C: ChainSpec>(
     mut deps: DepsMut<UnionCustomQuery>,
     header: Header,
 ) -> Result<Vec<Height>, IbcClientError<EthereumLightClient>> {
-    let _trusted_sync_committee = header.consensus_update.trusted_sync_committee();
     let trusted_height = header.trusted_height;
 
     let mut consensus_state: WasmConsensusState =
@@ -467,10 +470,6 @@ fn update_state<C: ChainSpec>(
             .ok_or(Error::ConsensusStateNotFound(trusted_height))?;
 
     let consensus_update = header.consensus_update.update_data();
-
-    let _store_period = compute_sync_committee_period_at_slot::<C>(consensus_state.data.slot);
-    let _update_finalized_period =
-        compute_sync_committee_period_at_slot::<C>(consensus_update.attested_header.beacon.slot);
 
     if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
         consensus_state.data.current_sync_committee = consensus_state.data.next_sync_committee;
@@ -537,31 +536,43 @@ fn verify_misbehaviour<C: ChainSpec>(
         Error::MisbehaviourCannotExist(slot_1, slot_2),
     )?;
 
-    let _wasm_consensus_state = read_consensus_state(deps, &misbehaviour.trusted_height)?
+    let wasm_consensus_state = read_consensus_state(deps, &misbehaviour.trusted_height)?
         .ok_or(Error::ConsensusStateNotFound(misbehaviour.trusted_height))?;
 
-    let _current_slot =
+    let current_slot =
         compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    // Make sure both headers would have been accepted by the light client
-    // validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
-    //     &ctx,
-    //     misbehaviour.update_1,
-    //     current_slot,
-    //     wasm_client_state.data.genesis_validators_root,
-    //     VerificationContext { deps },
-    // )
-    // .map_err(Error::ValidateLightClient)?;
+    let (current_sync_committee, next_sync_committee) =
+        misbehaviour.update_1.currently_trusted_sync_committee();
 
-    // validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
-    //     &ctx,
-    //     misbehaviour.update_2,
-    //     current_slot,
-    //     wasm_client_state.data.genesis_validators_root,
-    //     VerificationContext { deps },
-    // )
-    // .map_err(Error::ValidateLightClient)?;
+    // Make sure both headers would have been accepted by the light client
+    validate_light_client_update::<C, VerificationContext>(
+        &misbehaviour.update_1.clone().into(),
+        current_sync_committee,
+        next_sync_committee,
+        current_slot,
+        wasm_consensus_state.data.slot,
+        client_state.genesis_validators_root,
+        &client_state.fork_parameters,
+        VerificationContext { deps },
+    )
+    .map_err(Error::ValidateLightClient)?;
+
+    let (current_sync_committee, next_sync_committee) =
+        misbehaviour.update_2.currently_trusted_sync_committee();
+
+    validate_light_client_update::<C, VerificationContext>(
+        &misbehaviour.update_2.clone().into(),
+        current_sync_committee,
+        next_sync_committee,
+        current_slot,
+        wasm_consensus_state.data.slot,
+        client_state.genesis_validators_root,
+        &client_state.fork_parameters,
+        VerificationContext { deps },
+    )
+    .map_err(Error::ValidateLightClient)?;
 
     Ok(())
 }
