@@ -36,7 +36,7 @@ $effect(() => {
 
 {#if contributor.queueState.position}
   <Print class="text-red-500">
-    {contributor.queueState.position < 78 ?
+    {contributor.queueState.position < 50 ?
       "Do not close this tab or your Terminal. Ensure you have a reliable internet connection and that your computer does not go to sleep." :
       "Your contribution slot is far in the future. You can turn your device off and return later without losing progression. If you are not online when it is your turn, you will lose your slot and not be able to contribute."
     }
