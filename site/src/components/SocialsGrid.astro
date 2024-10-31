@@ -8,12 +8,8 @@ import TextA from "#/components/TextA.astro"
 <section class="flex flex-col">
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     {
-      socialLinks.map(socialLink => (
-        <a
-          href={socialLink.href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+      socialLinks.map((socialLink) => (
+        <a href={socialLink.href} target="_blank" rel="noopener noreferrer">
           <Card class="flex flex-col items-center" padded>
             <Icon name={socialLink.icon} size="2.5rem" />
             <TextA fake>{socialLink.cta}</TextA>

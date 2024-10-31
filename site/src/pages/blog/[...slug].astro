@@ -65,7 +65,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
           data-contentful-field-id="date"
           data-contentful-entry-id={entryId}
           datetime={toISODate(blogPost.fields.date)}
-          {...ContentfulLivePreview.getProps({ entryId, fieldId: 'date' })}
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "date" })}
         >
           {saneDateTime(blogPost.fields.date)}
         </time>
@@ -73,7 +73,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
           class="m-0 font-lg font-mono uppercase"
           data-contentful-field-id="author"
           data-contentful-entry-id={entryId}
-          {...ContentfulLivePreview.getProps({ entryId, fieldId: 'author' })}
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "author" })}
         >
           {blogPost.fields.author}
         </p>
@@ -85,7 +85,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         data-contentful-field-id="cover"
         data-contentful-entry-id={entryId}
         src={`${imageUrl}?fit=fill&f=center&fm=avif&w=1344&h=706`}
-        {...ContentfulLivePreview.getProps({ entryId, fieldId: 'cover' })}
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
       />
       <p>
         <em
@@ -94,7 +94,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
           data-contentful-field-id="description"
           {...ContentfulLivePreview.getProps({
             entryId,
-            fieldId: 'description',
+            fieldId: "description",
           })}
         >
           {blogPost.fields.description}
@@ -104,7 +104,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         class="font-mono"
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
-        {...ContentfulLivePreview.getProps({ entryId, fieldId: 'content' })}
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
       >
       </article>
     </div>
@@ -112,22 +112,30 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 </Layout>
 
 <script>
-  import { initializeContentfulLivePreview } from '#/lib/contentful/functions.ts'
+  import { initializeContentfulLivePreview } from "#/lib/contentful/functions.ts";
 
-  const subscriptions: Array<VoidFunction> = []
+  const subscriptions: Array<VoidFunction> = [];
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const emElement = document.querySelector('h1[data-contentful-entry-id]')
-    const entryId = emElement?.dataset.contentfulEntryId
-    if (!entryId) return
+  document.addEventListener("DOMContentLoaded", () => {
+    const emElement = document.querySelector("h1[data-contentful-entry-id]");
+    const entryId = emElement?.dataset.contentfulEntryId;
+    if (!entryId) return;
     initializeContentfulLivePreview({
       entryId,
       subscriptions,
-      locale: 'en-US',
-      debugMode: import.meta.env.MODE === 'development',
-      fields: ['date', 'date', 'title', 'cover', 'author', 'content', 'description'],
-    })
-  })
+      locale: "en-US",
+      debugMode: import.meta.env.MODE === "development",
+      fields: [
+        "date",
+        "date",
+        "title",
+        "cover",
+        "author",
+        "content",
+        "description",
+      ],
+    });
+  });
 </script>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>

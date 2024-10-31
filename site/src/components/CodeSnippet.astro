@@ -18,18 +18,15 @@ const { code } = Astro.props
 const highlightedCode = await highlightCode(code)
 ---
 
-<div
-  class='code-snippet font-mono'
-  set:html={highlightedCode}
-/>
+<div class="code-snippet font-mono" set:html={highlightedCode} />
 
 <style is:inline>
   .code-snippet > figure[data-rehype-pretty-code-figure] > pre {
-    background-color: rgba(0,0,0,0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
   }
 
   figure pre code span {
-    font-family: 'JetBrains Mono', monospace !important;
+    font-family: "JetBrains Mono", monospace !important;
   }
 
   @media (max-width: 400px) {

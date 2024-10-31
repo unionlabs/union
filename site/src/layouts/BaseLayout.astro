@@ -54,14 +54,14 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
           url,
           title,
           image: openGraphImage,
-          type: "website"
+          type: "website",
         },
         optional: {
           locale: "en_US",
           siteName: "Union",
-          description
+          description,
         },
-        image: { url: openGraphImage, alt: "Union Logo" }
+        image: { url: openGraphImage, alt: "Union Logo" },
       }}
       twitter={{
         title,
@@ -70,14 +70,14 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
         description,
         imageAlt: "Union Logo",
         creator: "@union_build",
-        card: "summary_large_image"
+        card: "summary_large_image",
       }}
       extend={{
         link: [
           {
             rel: "manifest",
             href: "/manifest.webmanifest",
-            crossorigin: "use-credentials"
+            crossorigin: "use-credentials",
           },
           {
             rel: "apple-touch-icon",
@@ -87,35 +87,38 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
             rel: "alternate",
             type: "application/rss+xml",
             title: "Union",
-            href: `${Astro.site}rss.xml`
+            href: `${Astro.site}rss.xml`,
           },
           {
             rel: "icon",
             sizes: "16x16",
             type: "image/png",
-            href: `${BASE_URL}/favicon-16x16.png`
+            href: `${BASE_URL}/favicon-16x16.png`,
           },
           {
             rel: "icon",
             sizes: "32x32",
             type: "image/png",
-            href: `${BASE_URL}/favicon-32x32.png`
+            href: `${BASE_URL}/favicon-32x32.png`,
           },
           {
             rel: "icon",
             type: "image/svg+xml",
-            href: `${BASE_URL}/favicon.svg`
+            href: `${BASE_URL}/favicon.svg`,
           },
           {
             rel: "icon",
-            href: `${BASE_URL}/favicon.ico`
+            href: `${BASE_URL}/favicon.ico`,
           },
-          { rel: "sitemap", href: "/sitemap-index.xml" }
+          { rel: "sitemap", href: "/sitemap-index.xml" },
         ],
         meta: [
           { name: "robots", content: "index, follow" },
-          { name: "viewport", content: "width=device-width, initial-scale=1.0" }
-        ]
+          {
+            name: "viewport",
+            content: "width=device-width, initial-scale=1.0",
+          },
+        ],
       }}
     />
     {
@@ -127,23 +130,23 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
               src: fontWeights.map((weight) => ({
                 path: "/fonts/InterVariable.woff2",
                 style: "normal",
-                weight
+                weight,
               })),
               preload: true,
               display: "swap",
-              fallback: "sans-serif"
+              fallback: "sans-serif",
             },
             {
               name: "JetBrains Mono",
               src: fontWeights.map((weight) => ({
                 path: "/fonts/JetBrainsMono[wght].woff2",
                 style: "normal",
-                weight
+                weight,
               })),
               preload: true,
               display: "swap",
-              fallback: "sans-serif"
-            }
+              fallback: "sans-serif",
+            },
           ]}
         />
       )

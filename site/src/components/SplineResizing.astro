@@ -22,7 +22,13 @@ const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps }
 
 <script src="@splinetool/viewer"></script>
 
-<div id="spline-container" class:list={["w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t", { "aspect-w-2": aspect === "1-2" }]}>
+<div
+  id="spline-container"
+  class:list={[
+    "w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t",
+    { "aspect-w-2": aspect === "1-2" },
+  ]}
+>
   <spline-viewer
     id="spline-viewer"
     url={model}
@@ -32,58 +38,54 @@ const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps }
 </div>
 
 <script>
-
   // Create a ResizeObserver to handle resizing of the container
-  const container = document.getElementById('spline-container');
+  const container = document.getElementById("spline-container");
   if (!container) {
     console.error("spline container not found");
   } else {
-  const originalClassName = container.className;
-  const hackClassName = originalClassName + " pr-1";
+    const originalClassName = container.className;
+    const hackClassName = originalClassName + " pr-1";
 
-  // Function to set canvas dimensions
-  function resizeCanvas() {
+    // Function to set canvas dimensions
+    function resizeCanvas() {
+      if (!container) {
+        console.error("spline container not found");
+        return;
+      }
+      const targetWidth = container.clientWidth;
+      const targetHeight = container.clientHeight;
 
-    if (!container) {
-      console.error("spline container not found");
-      return;
+      const customElement = document.querySelector("spline-viewer");
+
+      // Access the shadow root of the spline-viewer and get the canvas from it
+      const shadowRoot = customElement?.shadowRoot;
+      const canvas = shadowRoot?.getElementById("spline");
+
+      if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
+        console.error("canvas not found");
+        return;
+      }
+
+      canvas.style.width = `${targetWidth}px`;
+      canvas.style.height = `${targetHeight}px`;
+      canvas.width = targetWidth * 2;
+      canvas.height = targetHeight * 2;
+      console.log("canvas after resize", canvas);
     }
-    const targetWidth = container.clientWidth;
-    const targetHeight = container.clientHeight;
 
-  
-    const customElement = document.querySelector('spline-viewer');
+    const observer = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    observer.observe(container);
 
-    // Access the shadow root of the spline-viewer and get the canvas from it
-    const shadowRoot = customElement?.shadowRoot;
-    const canvas = shadowRoot?.getElementById('spline');
-
-    if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-      console.error("canvas not found");
-      return;
-    }
-
-    canvas.style.width = `${targetWidth}px`;
-    canvas.style.height= `${targetHeight}px`;
-    canvas.width = targetWidth * 2;
-    canvas.height = targetHeight * 2;
-    console.log("canvas after resize", canvas);
+    // Horrible hack to trigger the spline viewer to resize
+    container.className = hackClassName;
+    setInterval(function () {
+      if (container.className === originalClassName) {
+        container.className = hackClassName;
+      } else {
+        container.className = originalClassName;
+      }
+    }, 50);
   }
-
-
-  const observer = new ResizeObserver(() => { resizeCanvas(); });
-  observer.observe(container);
-
-  // Horrible hack to trigger the spline viewer to resize
-  container.className = hackClassName;
-  setInterval(function() {
-    if (container.className === originalClassName) {
-      container.className = hackClassName;
-    } else {
-      container.className = originalClassName;
-    }
-  
-  }, 50);
-
-}
 </script>

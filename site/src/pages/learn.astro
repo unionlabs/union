@@ -25,17 +25,22 @@ try {
 }
 ---
 
-  {error ? (
-          <div class="error-message">
-            <h2>Error</h2>
-            <p>{error}</p>
-          </div>
+{
+  error ? (
+    <div class="error-message">
+      <h2>Error</h2>
+      <p>{error}</p>
+    </div>
   ) : learningData ? (
-          <AnimationLayout title="Learn" text="Connecting projects, people, and products into a unified organism of interoperability.">
-            <DeepDiveSection entries={learningData} />
-          </AnimationLayout>
+    <AnimationLayout
+      title="Learn"
+      text="Connecting projects, people, and products into a unified organism of interoperability."
+    >
+      <DeepDiveSection entries={learningData} />
+    </AnimationLayout>
   ) : (
-          <div class="loading-message">
-            <p>Loading content...</p>
-          </div>
-  )}
+    <div class="loading-message">
+      <p>Loading content...</p>
+    </div>
+  )
+}

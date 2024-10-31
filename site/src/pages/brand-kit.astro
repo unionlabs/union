@@ -31,48 +31,72 @@ const colors = [
   }
 ]
 ---
-  <LanderSection>
-    <IntroHeading main title="Union Brand Kit">Logo, fonts, colors.</IntroHeading>
-    <Card padded>
-        <p class="mb-4 text-lg">Here's our Logo Kit .zip with the following files. We provide svg and png versions for all assets:</p>
-        <ul class="mb-4 text-gray-400">
-          <li class="font-mono">union-logo-banner-black-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-banner-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-banner.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-black-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-wide-black-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-wide-transparent.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo-wide.&#123;svg,png&#125; </li>
-          <li class="font-mono">union-logo.&#123;svg,png&#125; </li>
-        </ul>
-        <ButtonA href="/union-logo.zip">Download union-logo.zip</ButtonA>
-    </Card>
-  </LanderSection>
-  <LanderSection>
-    <IntroHeading title="Fonts"></IntroHeading>
-    <Card padded>
-      <p class="mb-4 text-lg">Our font is the <b>Display Variant</b> of Inter v4. The display variant is assigned to an opsz variable-font axis, and exposed as a second family "Inter Display" as static fonts.</p>
 
-      <ButtonA href="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip">Download Inter-4.0.zip</ButtonA>
-    </Card>
-  </LanderSection>
+<LanderSection>
+  <IntroHeading main title="Union Brand Kit">Logo, fonts, colors.</IntroHeading>
+  <Card padded>
+    <p class="mb-4 text-lg">
+      Here's our Logo Kit .zip with the following files. We provide svg and png
+      versions for all assets:
+    </p>
+    <ul class="mb-4 text-gray-400">
+      <li class="font-mono">
+        union-logo-banner-black-transparent.&#123;svg,png&#125;
+      </li>
+      <li class="font-mono">
+        union-logo-banner-transparent.&#123;svg,png&#125;
+      </li>
+      <li class="font-mono">union-logo-banner.&#123;svg,png&#125;</li>
+      <li class="font-mono">
+        union-logo-black-transparent.&#123;svg,png&#125;
+      </li>
+      <li class="font-mono">union-logo-transparent.&#123;svg,png&#125;</li>
+      <li class="font-mono">
+        union-logo-wide-black-transparent.&#123;svg,png&#125;
+      </li>
+      <li class="font-mono">union-logo-wide-transparent.&#123;svg,png&#125;</li>
+      <li class="font-mono">union-logo-wide.&#123;svg,png&#125;</li>
+      <li class="font-mono">union-logo.&#123;svg,png&#125;</li>
+    </ul>
+    <ButtonA href="/union-logo.zip">Download union-logo.zip</ButtonA>
+  </Card>
+</LanderSection>
+<LanderSection>
+  <IntroHeading title="Fonts" />
+  <Card padded>
+    <p class="mb-4 text-lg">
+      Our font is the <b>Display Variant</b> of Inter v4. The display variant is
+      assigned to an opsz variable-font axis, and exposed as a second family "Inter
+      Display" as static fonts.
+    </p>
 
-  <LanderSection>
-    <IntroHeading title="Colors"></IntroHeading>
-    <Card>
-      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full m-0 p-0">
-        {
-          colors.map(color=> (
-            <li class=" w-full p-4 flex gap-4">
-              <div style={`background-color: ${color.code}`} class="rounded w-12 h-12"/>
-              <div>
-                <div class="text-xl font-bold">{color.name}</div>
-                <div class="font-mono"> {color.code}</div>
-              </div>
-            </li>
-          ))
-        }
-      </ul>
-    </Card>
-  </LanderSection>
+    <ButtonA
+      href="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip"
+      >Download Inter-4.0.zip</ButtonA
+    >
+  </Card>
+</LanderSection>
+
+<LanderSection>
+  <IntroHeading title="Colors" />
+  <Card>
+    <ul
+      class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full m-0 p-0"
+    >
+      {
+        colors.map((color) => (
+          <li class=" w-full p-4 flex gap-4">
+            <div
+              style={`background-color: ${color.code}`}
+              class="rounded w-12 h-12"
+            />
+            <div>
+              <div class="text-xl font-bold">{color.name}</div>
+              <div class="font-mono"> {color.code}</div>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </Card>
+</LanderSection>
