@@ -13,19 +13,19 @@ interface Props {
 const { person } = Astro.props
 ---
 
-<Card class="border-none group">
+<Card class="border-none hover:scale-105 transition">
   <a
     href={`https://x.com/${person.twitterHandle}`}
     target="_blank"
     rel="noopener noreferrer"
-    class="gap-4 flex flex-col"
+    class="flex flex-col bg-neutral-900 border-neutral-800 border-2"
   >
     <div class="object-cover overflow-hidden">
       <!-- We don't have a picture for every person !-->
       {
         person?.profilePicture?.fields?.file?.url ? (
           <img
-            class="w-full h-auto group-hover:scale-110 transition"
+            class="w-full aspect-[1/1]"
             src={person?.profilePicture?.fields?.file?.url}
             alt={`${person.name} - Union worker`}
           />
@@ -34,12 +34,14 @@ const { person } = Astro.props
         )
       }
     </div>
-    <div class="leading-tight uppercase font-mono">
+    <div class="leading-tight flex flex-col gap p-2 sm:p-4 uppercase font-mono">
       <h1 class="text-2xl font-bold font-supermolot uppercase">
         {person.name}
       </h1>
-      <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-      <div class="text-accent text-lg -mt-1 block">@{person.twitterHandle}</div>
+      <div class="text-gray-400 sm:text-lg sm:-mt-1">{person.title}</div>
+      <div class="text-accent block sm:text-lg sm:-mt-1">
+        @{person.twitterHandle}
+      </div>
     </div>
   </a>
 </Card>
