@@ -32,7 +32,7 @@ import {
   createAptosClient,
   type AptosBrowserWallet,
   type AptosClientParameters
-} from "./client/aptos.ts"
+} from "./aptos/client.ts"
 export {
   truncateAddress,
   isValidEvmTxHash,

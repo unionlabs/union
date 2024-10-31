@@ -1,3 +1,7 @@
+export type SelectFields<T, K extends keyof T> = T extends any ? Pick<T, K> : never
+
+export type MergeUnion<T> = { [K in keyof T]: T[K] }
+
 export type CamelToSnakeCase<S extends string> = S extends `${infer T}${infer U}`
   ? `${T extends Capitalize<T> ? "_" : ""}${Lowercase<T>}${CamelToSnakeCase<U>}`
   : S

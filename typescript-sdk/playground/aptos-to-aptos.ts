@@ -27,7 +27,6 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const aptosAccount = Account.fromPrivateKey({
   privateKey: new Ed25519PrivateKey(hexStringToUint8Array(PRIVATE_KEY))
 })
-console.info(aptosAccount.accountAddress.toString())
 
 const client = createUnionClient({
   chainId: "2",
@@ -49,17 +48,17 @@ const transferPayload = {
 const simulateResult = await client.simulateTransaction(transferPayload)
 
 if (simulateResult.isErr()) {
-  consola.error("simulateResult error:", simulateResult.error)
+  consola.error("[simulateResult]error:", simulateResult.error)
   process.exit(1)
 }
 
 consola.success("simulateResult result:", simulateResult.value)
 
-const transferResultSameChain = await client.transferAsset(transferPayload)
+const transferResult = await client.transferAsset(transferPayload)
 
-if (transferResultSameChain.isErr()) {
-  consola.error("transferResultSameChain error:", transferResultSameChain.error)
+if (transferResult.isErr()) {
+  consola.error("transferResult error:", transferResult.error)
   process.exit(1)
 }
 
-consola.success("transferResultSameChain result:", transferResultSameChain.value)
+consola.success("transferResult:", transferResult.value)
