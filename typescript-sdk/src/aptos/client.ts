@@ -164,7 +164,9 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         simulateTransaction: async (
           transferParameters: TransferAssetsParameters<AptosChainId>
         ): Promise<Result<string, Error>> => {
-          const aptosClient = await client.getAptosClient({ authAccess: transferParameters.authAccess })
+          const aptosClient = await client.getAptosClient({
+            authAccess: transferParameters.authAccess
+          })
 
           let {
             memo,
