@@ -29,14 +29,13 @@ let connectedWallets = [
 
 onMount(() => {
   const aptosWallet = getAptosWallet()
-  console.info($aptosStore)
   if (aptosWallet && $aptosStore.connectionStatus === "connected") {
     aptosWallet.connect().then(account => {
       aptosStore.update(v => ({
         ...v,
 
         connectedWallet: "petra",
-        address: account?.address,
+        address: account?.address as `0x${string}`,
         connectionStatus: account?.address ? "connected" : "disconnected"
       }))
     })

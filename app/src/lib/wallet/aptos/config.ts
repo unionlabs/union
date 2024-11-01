@@ -3,7 +3,13 @@ import { derived, get } from "svelte/store"
 import { hexToBytes, type Hex } from "viem"
 import { persisted } from "svelte-persisted-store"
 import type { ChainWalletStore } from "../types.ts"
-
+// import {WalletCore} from '@aptos-labs/wallet-adapter-core'
+// const wc = new WalletCore([],['Petra'])
+// wc.signAndSubmitTransaction({
+//   data: {
+//     'functionArguments': []
+//   }
+// })
 /**
  * TODO:
  * - check with Petra wallet team for proper `window.aptos` types

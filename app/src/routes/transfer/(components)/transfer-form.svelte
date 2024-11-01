@@ -9,7 +9,6 @@ import {
   evmChainFromChainId,
   bech32ToBech32Address
 } from "@unionlabs/client"
-// } from "../../../../../typescript-sdk/dist"
 import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
 import { onMount } from "svelte"
 import { page } from "$app/stores"

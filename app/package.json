@@ -26,7 +26,7 @@
     "@tanstack/svelte-query": "^5.55.4",
     "@tanstack/svelte-table": "^8.20.5",
     "@tanstack/svelte-virtual": "^3.10.7",
-    "@unionlabs/client": "^0.0.34",
+    "@unionlabs/client": "^0.0.35",
     "@wagmi/connectors": "^5.3.3",
     "@wagmi/core": "^2.14.1",
     "bits-ui": "^0.21.13",
