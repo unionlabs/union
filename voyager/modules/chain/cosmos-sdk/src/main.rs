@@ -347,15 +347,6 @@ impl ChainModuleServer for Module {
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
     }
 
-    /// Query the latest (non-finalized) height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_height_as_destination(&self, _: &Extensions) -> RpcResult<Height> {
-        self.latest_height()
-            .await
-            // TODO: Add more context here
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
-    }
-
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
