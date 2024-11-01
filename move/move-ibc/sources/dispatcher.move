@@ -96,9 +96,8 @@ module ibc::dispatcher {
     }
 
     // Getter for `return_value`
-    public(friend) fun get_return_value<P: drop, T: copy + drop + store>(
-        _proof: P
-    ): vector<u8> acquires Dispatcher, Storage {
+    public(friend) fun get_return_value<P: drop, T: copy + drop + store>():
+        vector<u8> acquires Dispatcher, Storage {
         borrow_global<Storage<P, T>>(storage_address()).return_value
     }
 

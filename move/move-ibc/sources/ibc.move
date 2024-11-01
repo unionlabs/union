@@ -216,10 +216,6 @@ module ibc::ibc {
         client_type: String
     }
 
-    struct ChannelPort has copy, drop, store {
-        port_id: String,
-        channel_id: String
-    }
 
     // Resource to hold the global state
     struct IBCStore has key {
