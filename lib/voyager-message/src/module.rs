@@ -234,10 +234,6 @@ pub trait ChainModule {
     #[method(name = "queryLatestHeight", with_extensions)]
     async fn query_latest_height(&self) -> RpcResult<Height>;
 
-    /// Query the latest (non-finalized) height of this chain.
-    #[method(name = "queryLatestHeightAsDestination", with_extensions)]
-    async fn query_latest_height_as_destination(&self) -> RpcResult<Height>;
-
     /// Query the latest finalized timestamp of this chain.
     #[method(name = "queryLatestTimestamp", with_extensions)]
     // TODO: Make this return a better type than i64

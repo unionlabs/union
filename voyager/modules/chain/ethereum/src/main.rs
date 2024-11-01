@@ -127,44 +127,6 @@ impl ChainModuleServer for Module {
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
     }
 
-    /// Query the latest (non-finalized) height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_height_as_destination(&self, _: &Extensions) -> RpcResult<Height> {
-        let height = self
-            .beacon_api_client
-            .block(beacon_api::client::BlockId::Head)
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .data
-            .message
-            .slot;
-
-        // // HACK: we introduced this because we were using alchemy for the
-        // // execution endpoint and our custom beacon endpoint that rely on
-        // // its own execution chain. Alchemy was a bit delayed and the
-        // // execution height for the beacon head wasn't existing for few
-        // // secs. We wait for an extra beacon head to let alchemy catch up.
-        // // We should be able to remove that once we rely on an execution
-        // // endpoint that is itself used by the beacon endpoint (no different
-        // // POV).
-        // loop {
-        //     let next_height = self
-        //         .beacon_api_client
-        //         .block(beacon_api::client::BlockId::Head)
-        //         .await?
-        //         .data
-        //         .message
-        //         .slot;
-        //     if next_height > height {
-        //         break;
-        //     }
-
-        //     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        // }
-
-        Ok(self.make_height(height))
-    }
-
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
