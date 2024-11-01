@@ -222,6 +222,11 @@ module ibc::ping_pong_app {
         channel_id: u32
     }
 
+    public fun on_recv_intent_packet(packet: Packet): vector<u8> {
+        std::debug::print(&string::utf8(b"NOT IMPLEMENTED"));
+        abort 0
+    }
+
     // Functions with the "on_" prefix for each specific operation
     public fun on_recv_packet(packet: Packet): vector<u8> acquires PingPong, SignerRef {
         std::debug::print(&string::utf8(b"on_recv_packet called."));
@@ -299,34 +304,20 @@ module ibc::ping_pong_app {
     }
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
-        // Get the current value of `return_value`
-        // let other_data = dispatcher::get_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>();
-        // std::debug::print(&string::utf8(b"other_data before modification: "));
-        // std::debug::print(&other_data);
-
-        // // Modify `other_data` using the setter
-        // dispatcher::set_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
-
-        // // Get and print the modified `other_data`
-        // let modified_other_data = dispatcher::get_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>();
-        // std::debug::print(&string::utf8(b"other_data after modification: "));
-        // std::debug::print(&modified_other_data);
-
-        // Access the `data` field through the getter
         let value: ibc_dispatch::DynamicDispatchParam =
             dispatcher::get_data(new_ping_pong_proof());
 
-        // other_data = b"asdasd";
-        // std::debug::print(&string::utf8(b"other_data after overwrite is: "));
-        // std::debug::print(other_data);
-        // let other_data: vector<u8> = dispatcher::retrieve_storage<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof());
-        // other_data = b"asdasd";
         if (option::is_some(&ibc_dispatch::recv_packet_param(&value))) {
             let recv_param = option::extract(
                 &mut ibc_dispatch::recv_packet_param(&value)
             );
             let pack = ibc_dispatch::get_packet_from_recv_param(&recv_param);
             on_recv_packet(*pack);
+        } else if (option::is_some(&ibc_dispatch::recv_intent_packet_param(&value))) {
+            let recv_param =
+                option::extract(&mut ibc_dispatch::recv_intent_packet_param(&value));
+            let pack = ibc_dispatch::get_packet_from_recv_intent_param(&recv_param);
+            on_recv_intent_packet(*pack);
         } else if (option::is_some(&ibc_dispatch::acknowledge_packet_param(&value))) {
             let ack_param =
                 option::extract(&mut ibc_dispatch::acknowledge_packet_param(&value));
