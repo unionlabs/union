@@ -141,11 +141,28 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
 
 <style is:inline lang="postcss">
+  ol {
+    margin-left: 2rem;
+    list-style-type: decimal;
+    & li > ol {
+      margin-bottom: 0.25rem;
+      list-style-type: lower-alpha;
+      & li > ol {
+        list-style-type: lower-roman;
+        margin-bottom: 0rem;
+      }
+    }
+    & li > p {
+      margin-bottom: 0;
+    }
+  }
+
   blockquote {
     border-left: 2px solid #a0dbfdd3;
     padding-left: 1.5rem;
     margin-left: 0;
   }
+
   h1 {
     color: white !important; 
   }
@@ -167,7 +184,6 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
     margin-bottom: 1rem;
     color: #D1D5DB;
   }
-
 
   p > a:hover {
     color: #A0ECFD;
@@ -191,7 +207,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 
   h2,h3,h4,h5 {
     margin-top: 2rem;
-    margin-bottom: 0rem;
+    margin-bottom: 0.5rem;
     font-size: 1.87rem;
     color: #ffffff;
   }
