@@ -31,7 +31,7 @@ mod validators {
     fn validators() {
         ensure_json(
             "testdata/validators/bartio-6760022.json",
-            crate::types::ValidatorsResponse {
+            crate::rpc_types::ValidatorsResponse {
                 block_height: NonZeroU64::new(6760022).unwrap(),
                 validators: vec![
                     Validator {

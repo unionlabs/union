@@ -729,9 +729,9 @@ fn process_msgs(
                             .map(Into::into)
                             .collect(),
                         proof_height: Some(message.proof_height.into()),
-                        proof_init: message.proof_init,
-                        proof_client: message.proof_client,
-                        proof_consensus: message.proof_consensus,
+                        proof_init: message.proof_init.into(),
+                        proof_client: message.proof_client.into(),
+                        proof_consensus: message.proof_consensus.into(),
                         consensus_height: Some(message.consensus_height.into()),
                         signer: signer.to_string(),
                         host_consensus_state_proof: vec![],
@@ -746,21 +746,21 @@ fn process_msgs(
                                 .expect("value should be encoded as an `Any`"),
                         ),
                         proof_height: Some(message.proof_height.into()),
-                        proof_client: message.proof_client,
-                        proof_consensus: message.proof_consensus,
+                        proof_client: message.proof_client.into(),
+                        proof_consensus: message.proof_consensus.into(),
                         consensus_height: Some(message.consensus_height.into()),
                         signer: signer.to_string(),
                         host_consensus_state_proof: vec![],
                         connection_id: message.connection_id.to_string(),
                         counterparty_connection_id: message.counterparty_connection_id.to_string(),
                         version: Some(message.version.into()),
-                        proof_try: message.proof_try,
+                        proof_try: message.proof_try.into(),
                     })
                 }
                 IbcMessage::ConnectionOpenConfirm(message) => mk_any(
                     &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                         connection_id: message.connection_id.to_string(),
-                        proof_ack: message.proof_ack,
+                        proof_ack: message.proof_ack.into(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
                     },
@@ -777,7 +777,7 @@ fn process_msgs(
                         port_id: message.port_id.to_string(),
                         channel: Some(message.channel.into()),
                         counterparty_version: message.counterparty_version,
-                        proof_init: message.proof_init,
+                        proof_init: message.proof_init.into(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
                         ..Default::default()
@@ -789,7 +789,7 @@ fn process_msgs(
                         channel_id: message.channel_id.to_string(),
                         counterparty_version: message.counterparty_version,
                         counterparty_channel_id: message.counterparty_channel_id.to_string(),
-                        proof_try: message.proof_try,
+                        proof_try: message.proof_try.into(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
                     })
@@ -800,7 +800,7 @@ fn process_msgs(
                         channel_id: message.channel_id.to_string(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
-                        proof_ack: message.proof_ack,
+                        proof_ack: message.proof_ack.into(),
                     })
                 }
                 IbcMessage::RecvPacket(message) => {
@@ -808,14 +808,14 @@ fn process_msgs(
                         packet: Some(message.packet.into()),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
-                        proof_commitment: message.proof_commitment,
+                        proof_commitment: message.proof_commitment.into(),
                     })
                 }
                 IbcMessage::AcknowledgePacket(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                         packet: Some(message.packet.into()),
-                        acknowledgement: message.acknowledgement,
-                        proof_acked: message.proof_acked,
+                        acknowledgement: message.acknowledgement.into(),
+                        proof_acked: message.proof_acked.into(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
                     })

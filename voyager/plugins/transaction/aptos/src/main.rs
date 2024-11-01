@@ -287,8 +287,8 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ibc_handler_address,
                     (
                         data.client_type.to_string(),
-                        data.msg.client_state,
-                        data.msg.consensus_state,
+                        data.msg.client_state.into_vec(),
+                        data.msg.consensus_state.into_vec(),
                     ),
                 ),
             ),
@@ -296,7 +296,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 msg,
                 client.update_client(
                     ibc_handler_address,
-                    (data.client_id.to_string(), data.client_message),
+                    (data.client_id.to_string(), data.client_message.into_vec()),
                 ),
             ),
             IbcMessage::ConnectionOpenInit(data) => (
@@ -337,7 +337,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.counterparty.prefix.key_prefix,
                         data.delay_period,
                         data.client_id.to_string(),
-                        data.client_state,
+                        data.client_state.into_vec(),
                         data.counterparty_versions
                             .iter()
                             .map(|v| v.identifier.clone())
@@ -351,8 +351,8 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                                     .collect::<Vec<String>>()
                             })
                             .collect::<Vec<Vec<String>>>(),
-                        data.proof_init,
-                        data.proof_client,
+                        data.proof_init.into_vec(),
+                        data.proof_client.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -364,15 +364,15 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ibc_handler_address,
                     (
                         data.connection_id.to_string(),
-                        data.client_state,
+                        data.client_state.into_vec(),
                         data.version.identifier,
                         data.version
                             .features
                             .iter()
                             .map(ToString::to_string)
                             .collect::<Vec<String>>(),
-                        data.proof_try,
-                        data.proof_client,
+                        data.proof_try.into_vec(),
+                        data.proof_client.into_vec(),
                         data.counterparty_connection_id.to_string(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
@@ -385,7 +385,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ibc_handler_address,
                     (
                         data.connection_id.to_string(),
-                        data.proof_ack,
+                        data.proof_ack.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -431,7 +431,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                             .to_string_prefixed(),
                         data.counterparty_version,
                         data.channel.version,
-                        data.proof_init,
+                        data.proof_init.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -445,7 +445,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.channel_id.to_string(),
                         data.counterparty_channel_id.to_string(),
                         data.counterparty_version,
-                        data.proof_try,
+                        data.proof_try.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -457,7 +457,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     data.port_id.to_string().parse().unwrap(),
                     (
                         data.channel_id.to_string(),
-                        data.proof_ack,
+                        data.proof_ack.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -473,11 +473,11 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.packet.source_channel.to_string(),
                         data.packet.destination_port.to_string(),
                         data.packet.destination_channel.to_string(),
-                        data.packet.data,
+                        data.packet.data.into_vec(),
                         data.packet.timeout_height.revision(),
                         data.packet.timeout_height.height(),
                         data.packet.timeout_timestamp,
-                        data.proof_commitment,
+                        data.proof_commitment.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -493,12 +493,12 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.packet.source_channel.to_string(),
                         data.packet.destination_port.to_string(),
                         data.packet.destination_channel.to_string(),
-                        data.packet.data,
+                        data.packet.data.into_vec(),
                         data.packet.timeout_height.revision(),
                         data.packet.timeout_height.height(),
                         data.packet.timeout_timestamp,
-                        data.acknowledgement,
-                        data.proof_acked,
+                        data.acknowledgement.into_vec(),
+                        data.proof_acked.into_vec(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),

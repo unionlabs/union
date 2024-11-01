@@ -416,7 +416,7 @@ impl ChainModuleServer for Module {
     ) -> RpcResult<RawClientState<'static>> {
         let height = self.query_latest_height(e).await?;
 
-        let client_state = serde_json::from_value::<Hex<Vec<u8>>>(
+        let client_state = serde_json::from_value::<Bytes>(
             self.query_ibc_state(
                 e,
                 height,

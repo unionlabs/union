@@ -5,7 +5,7 @@ use beacon_api_types::{
     execution_payload_header::ExecutionPayloadHeader, ExecutionPayloadHeaderSsz, Mainnet,
 };
 use color_eyre::{eyre::eyre, Result};
-use cometbft_rpc::{types::AbciQueryResponse, Client};
+use cometbft_rpc::{rpc_types::AbciQueryResponse, Client};
 use tracing::info;
 use unionlabs::encoding::DecodeAs;
 

@@ -38,9 +38,9 @@ pub struct NonExistenceProofEthAbi {
 impl From<NonExistenceProof> for NonExistenceProofEthAbi {
     fn from(value: NonExistenceProof) -> Self {
         let exist_default = || ExistenceProof {
-            key: vec![],
-            value: vec![],
-            leaf_prefix: vec![],
+            key: vec![].into(),
+            value: vec![].into(),
+            leaf_prefix: vec![].into(),
             path: vec![],
         };
 

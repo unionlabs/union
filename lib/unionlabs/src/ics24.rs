@@ -2,9 +2,9 @@ use core::{fmt, fmt::Display, num::NonZeroU64, str::FromStr};
 
 use macros::{ibc_path, model};
 use serde::{Deserialize, Serialize};
-use serde_utils::Hex;
 
 use crate::{
+    bytes::Bytes,
     hash::H256,
     ibc::core::{
         channel::channel::Channel, client::height::Height,
@@ -189,7 +189,7 @@ impl FromStr for Path {
 }
 
 /// The raw client state bytes as encoded by the light client.
-#[ibc_path("clients/{client_id}/clientState", Hex<Vec<u8>>)]
+#[ibc_path("clients/{client_id}/clientState", Bytes)]
 pub struct ClientStatePath {
     pub client_id: ClientId,
 }
@@ -265,7 +265,7 @@ impl FromStr for ClientConsensusStatePath {
 }
 
 impl IbcPath for ClientConsensusStatePath {
-    type Value = Hex<Vec<u8>>;
+    type Value = Bytes;
 }
 
 // REVIEW: Make this an `Option`?

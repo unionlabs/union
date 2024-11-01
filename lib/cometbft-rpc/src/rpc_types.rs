@@ -20,8 +20,6 @@ use unionlabs::{
     },
 };
 
-use crate::serde::serde_as;
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum Order {
@@ -102,7 +100,6 @@ pub struct ValidatorsPagination {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AbciQueryResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::abci::v1::QueryResponse, _>")]
     pub response: QueryResponse,
 }
 

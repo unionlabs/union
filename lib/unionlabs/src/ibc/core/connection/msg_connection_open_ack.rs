@@ -1,6 +1,7 @@
 use macros::model;
 
 use crate::{
+    bytes::Bytes,
     ibc::core::{client::height::Height, connection::version::Version},
     id::ConnectionId,
 };
@@ -10,20 +11,12 @@ pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
     pub version: Version,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub client_state: Vec<u8>,
+    pub client_state: Bytes,
     // TODO: Make this type generic
     pub proof_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub proof_try: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub proof_client: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub proof_consensus: Vec<u8>,
+    pub proof_try: Bytes,
+    pub proof_client: Bytes,
+    pub proof_consensus: Bytes,
     // TODO: Make this type generic
     pub consensus_height: Height,
 }

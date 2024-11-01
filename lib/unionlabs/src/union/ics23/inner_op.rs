@@ -1,18 +1,14 @@
 use macros::model;
 
-use crate::{cosmos::ics23::hash_op::HashOp, ensure};
+use crate::{bytes::Bytes, cosmos::ics23::hash_op::HashOp, ensure};
 
 #[model(
     proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from),
     ethabi(raw(InnerOpEthAbi), into, from)
 )]
 pub struct InnerOp {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub prefix: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub suffix: Vec<u8>,
+    pub prefix: Bytes,
+    pub suffix: Bytes,
 }
 
 #[cfg(feature = "ethabi")]
@@ -45,8 +41,8 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
         )?;
 
         Ok(Self {
-            prefix: value.prefix,
-            suffix: value.suffix,
+            prefix: value.prefix.into(),
+            suffix: value.suffix.into(),
         })
     }
 }
@@ -55,8 +51,8 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     fn from(value: InnerOp) -> Self {
         crate::cosmos::ics23::inner_op::InnerOp {
             hash: EXPECTED_HASH_OP,
-            prefix: value.prefix,
-            suffix: value.suffix,
+            prefix: value.prefix.into(),
+            suffix: value.suffix.into(),
         }
         .into()
     }
@@ -66,8 +62,8 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
 impl From<InnerOpEthAbi> for InnerOp {
     fn from(value: InnerOpEthAbi) -> Self {
         Self {
-            prefix: value.prefix.to_vec(),
-            suffix: value.suffix.to_vec(),
+            prefix: value.prefix.to_vec().into(),
+            suffix: value.suffix.to_vec().into(),
         }
     }
 }
@@ -76,8 +72,8 @@ impl From<InnerOpEthAbi> for InnerOp {
 impl From<InnerOp> for InnerOpEthAbi {
     fn from(value: InnerOp) -> Self {
         Self {
-            prefix: value.prefix.into(),
-            suffix: value.suffix.into(),
+            prefix: value.prefix.into_vec().into(),
+            suffix: value.suffix.into_vec().into(),
         }
     }
 }

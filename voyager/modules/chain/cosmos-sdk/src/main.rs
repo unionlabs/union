@@ -3,10 +3,11 @@
 use std::{
     error::Error,
     fmt::{Debug, Display},
-    num::ParseIntError,
+    num::{NonZeroU64, ParseIntError},
     sync::Arc,
 };
 
+use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -15,9 +16,9 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use serde_utils::Hex;
 use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
+    bytes::Bytes,
     encoding::{DecodeAs, Proto},
     hash::{hash_v2::HexUnprefixed, H256, H64},
     ibc::core::{
@@ -26,11 +27,10 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
-        NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
-        NextSequenceSendPath, Path, ReceiptPath,
+        CommitmentPath, ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
+        NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, Path, ReceiptPath,
     },
-    id::ClientId,
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     parse_wasm_client_type, ErrorReporter, WasmClientType,
 };
 use voyager_message::{
@@ -40,6 +40,8 @@ use voyager_message::{
     run_chain_module_server, ChainModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
+
+const IBC_STORE_PATH: &str = "store/ibc/key";
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -225,44 +227,6 @@ impl Module {
             ))
     }
 
-    // async fn fetch_connection(&self, connection_id: ConnectionId) -> (ConnectionEnd, Height) {
-    //     let inner = protos::ibc::core::connection::v1::query_client::QueryClient::connect(
-    //         self.grpc_url.clone(),
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
-    //         connection_id: connection_id.to_string(),
-    //     })
-    //     .await
-    //     .unwrap()
-    //     .into_inner();
-
-    //     (
-    //         inner.connection.unwrap().try_into().unwrap(),
-    //         inner.proof_height.unwrap().into(),
-    //     )
-    // }
-
-    // async fn fetch_client(&self, client_id: ClientId) -> (Vec<u8>, Height) {
-    //     let inner = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-    //         self.grpc_url.clone(),
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-    //         client_id: client_id.to_string(),
-    //     })
-    //     .await
-    //     .unwrap()
-    //     .into_inner();
-
-    //     (
-    //         inner.client_state.unwrap().try_into().unwrap(),
-    //         inner.proof_height.unwrap().into(),
-    //     )
-    // }
-
     async fn latest_height(&self) -> Result<Height, cometbft_rpc::JsonRpcError> {
         let commit_response = self.tm_client.commit(None).await?;
 
@@ -282,6 +246,27 @@ impl Module {
         debug!(height, "latest height");
 
         Ok(self.make_height(height))
+    }
+
+    async fn abci_query(&self, path_string: &str, height: Height) -> RpcResult<QueryResponse> {
+        self.tm_client
+            .abci_query(
+                IBC_STORE_PATH,
+                &path_string,
+                Some(
+                    i64::try_from(height.height())
+                        .expect("should be fine")
+                        .try_into()
+                        .expect("invalid height"),
+                ),
+                false,
+            )
+            .await
+            .map_err(rpc_error(
+                format_args!("error fetching abci query"),
+                Some(json!({ "height": height, "path": path_string })),
+            ))
+            .map(|response| response.response)
     }
 }
 
@@ -412,143 +397,268 @@ impl ChainModuleServer for Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        const IBC_STORE_PATH: &str = "store/ibc/key";
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
+    async fn query_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Bytes> {
+        let path_string = ClientStatePath { client_id }.to_string();
 
-        let path_string = path.to_string();
+        let query_result = self.abci_query(&path_string, height).await?;
 
-        let error_data = || Some(json!({ "height": at, "path": path }));
+        Ok(query_result.value.unwrap().into_encoding())
+    }
 
-        let query_result = self
-            .tm_client
-            .abci_query(
-                IBC_STORE_PATH,
-                &path_string,
-                Some(
-                    i64::try_from(at.height())
-                        .expect("should be fine")
-                        .try_into()
-                        .expect("invalid height"),
-                ),
-                false,
-            )
-            .await
-            .map_err(rpc_error(
-                format_args!("error fetching abci query"),
-                error_data(),
-            ))?
-            .response;
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
+    async fn query_client_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        client_id: ClientId,
+        trusted_height: Height,
+    ) -> RpcResult<Bytes> {
+        let path_string = ClientConsensusStatePath {
+            client_id,
+            height: trusted_height,
+        }
+        .to_string();
 
-        // NOTE: At this point, we assume that if the node has given us a response that the data contained within said response is fully reflective of the actual state on-chain, and as such it is a fatal error if we fail to decode it
+        let query_result = self.abci_query(&path_string, height).await?;
 
-        type ValueOf<T> = <T as IbcPath>::Value;
+        Ok(query_result.value.unwrap().into_encoding())
+    }
 
-        Ok(match path {
-            Path::ClientState(_) => {
-                into_value::<ValueOf<ClientStatePath>>(Hex(query_result.value.unwrap().into()))
-            }
-            Path::ClientConsensusState(_) => {
-                into_value::<ValueOf<ClientConsensusStatePath>>(Hex(query_result
-                    .value
-                    .unwrap()
-                    .into()))
-            }
-            Path::Connection(_) => {
-                into_value::<ValueOf<ConnectionPath>>(match query_result.value {
-                    Some(value) => Some(ConnectionEnd::decode_as::<Proto>(&value).map_err(
-                        fatal_rpc_error("error decoding connection end", error_data()),
-                    )?),
-                    None => None,
-                })
-            }
-            Path::ChannelEnd(_) => {
-                into_value::<ValueOf<ChannelEndPath>>(match query_result.value {
-                    Some(value) => Some(Channel::decode_as::<Proto>(&value).map_err(
-                        fatal_rpc_error("error decoding connection end", error_data()),
-                    )?),
-                    None => None,
-                })
-            }
-            Path::Commitment(_) => {
-                into_value::<ValueOf<CommitmentPath>>(match query_result.value {
-                    Some(value) => Some(
-                        H256::try_from(value)
-                            .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
-                    ),
-                    None => None,
-                })
-            }
-            Path::Acknowledgement(_) => {
-                into_value::<ValueOf<AcknowledgementPath>>(match query_result.value {
-                    Some(value) => Some(
-                        H256::try_from(value)
-                            .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
-                    ),
-                    None => None,
-                })
-            }
-            Path::Receipt(_) => into_value::<ValueOf<ReceiptPath>>(match query_result.value {
-                None => false,
-                Some(value) if value == [1u8] => true,
-                Some(ref invalid) => {
-                    return Err(fatal_rpc_error("error decoding receipt", error_data())(
-                        format!("value is neither empty nor the single byte 0x01, found {invalid}"),
-                    ))
-                }
-            }),
-            // NOTE: For these branches, we use H64 as a mildly hacky way to have a better error message (since `<[T; N] as TryFrom<Vec<T>>>::Error = Vec<T>`)
-            Path::NextSequenceSend(_) => {
-                into_value::<ValueOf<NextSequenceSendPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value.unwrap())
-                        .map_err(fatal_rpc_error(
-                            "error decoding next_sequence_send",
-                            error_data(),
-                        ))?
-                        .get(),
-                ))
-            }
-            Path::NextSequenceRecv(_) => {
-                into_value::<ValueOf<NextSequenceRecvPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value.unwrap())
-                        .map_err(fatal_rpc_error(
-                            "error decoding next_sequence_recv",
-                            error_data(),
-                        ))?
-                        .get(),
-                ))
-            }
-            Path::NextSequenceAck(_) => {
-                into_value::<ValueOf<NextSequenceAckPath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value.unwrap())
-                        .map_err(fatal_rpc_error(
-                            "error decoding next_sequence_ack",
-                            error_data(),
-                        ))?
-                        .get(),
-                ))
-            }
-            Path::NextConnectionSequence(_) => {
-                into_value::<ValueOf<NextConnectionSequencePath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value.unwrap())
-                        .map_err(fatal_rpc_error(
-                            "error decoding next_connection_sequence",
-                            error_data(),
-                        ))?
-                        .get(),
-                ))
-            }
-            Path::NextClientSequence(_) => {
-                into_value::<ValueOf<NextClientSequencePath>>(u64::from_be_bytes(
-                    *<H64>::try_from(query_result.value.unwrap())
-                        .map_err(fatal_rpc_error(
-                            "error decoding next_client_sequence",
-                            error_data(),
-                        ))?
-                        .get(),
-                ))
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]
+    async fn query_connection(
+        &self,
+        _: &Extensions,
+        height: Height,
+        connection_id: ConnectionId,
+    ) -> RpcResult<Option<ConnectionEnd>> {
+        let path_string = ConnectionPath { connection_id }.to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(match query_result.value {
+            Some(value) => Some(
+                ConnectionEnd::decode_as::<Proto>(&value)
+                    .map_err(fatal_rpc_error("error decoding connection end", None))?,
+            ),
+            None => None,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id))]
+    async fn query_channel(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>> {
+        let path_string = ChannelEndPath {
+            channel_id,
+            port_id,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(match query_result.value {
+            Some(value) => Some(
+                Channel::decode_as::<Proto>(&value)
+                    .map_err(fatal_rpc_error("error decoding channel end", None))?,
+            ),
+            None => None,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id, %sequence))]
+    async fn query_commitment(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>> {
+        let path_string = CommitmentPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(match query_result.value {
+            Some(value) => Some(
+                H256::try_from(value)
+                    .map_err(fatal_rpc_error("error decoding commitment", None))?,
+            ),
+            None => None,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id, %sequence))]
+    async fn query_acknowledgement(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>> {
+        let path_string = AcknowledgementPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(match query_result.value {
+            Some(value) => Some(H256::try_from(value).map_err(fatal_rpc_error(
+                "error decoding acknowledgement commitment",
+                None,
+            ))?),
+            None => None,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id, %sequence))]
+    async fn query_receipt(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<bool> {
+        let path_string = ReceiptPath {
+            port_id,
+            channel_id,
+            sequence,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(match query_result.value {
+            None => false,
+            Some(b) if b == [1] => true,
+            Some(invalid) => {
+                return Err(fatal_rpc_error("error decoding receipt", None)(format!(
+                    "value is neither empty nor the single byte 0x01, found {}",
+                    serde_utils::to_hex(invalid)
+                )))
             }
         })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id))]
+    async fn query_next_sequence_send(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        let path_string = NextSequenceSendPath {
+            port_id,
+            channel_id,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(u64::from_be_bytes(
+            *<H64>::try_from(query_result.value.unwrap())
+                .map_err(fatal_rpc_error("error decoding next_sequence_send", None))?
+                .get(),
+        ))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id))]
+    async fn query_next_sequence_recv(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        let path_string = NextSequenceRecvPath {
+            port_id,
+            channel_id,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(u64::from_be_bytes(
+            *<H64>::try_from(query_result.value.unwrap())
+                .map_err(fatal_rpc_error("error decoding next_sequence_recv", None))?
+                .get(),
+        ))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %port_id, %channel_id))]
+    async fn query_next_sequence_ack(
+        &self,
+        _: &Extensions,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        let path_string = NextSequenceAckPath {
+            port_id,
+            channel_id,
+        }
+        .to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(u64::from_be_bytes(
+            *<H64>::try_from(query_result.value.unwrap())
+                .map_err(fatal_rpc_error("error decoding next_sequence_ack", None))?
+                .get(),
+        ))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn query_next_connection_sequence(
+        &self,
+        _: &Extensions,
+        height: Height,
+    ) -> RpcResult<u64> {
+        let path_string = NextConnectionSequencePath {}.to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(u64::from_be_bytes(
+            *<H64>::try_from(query_result.value.unwrap())
+                .map_err(fatal_rpc_error(
+                    "error decoding next_connection_sequence",
+                    None,
+                ))?
+                .get(),
+        ))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn query_next_client_sequence(&self, _: &Extensions, height: Height) -> RpcResult<u64> {
+        let path_string = NextClientSequencePath {}.to_string();
+
+        let query_result = self.abci_query(&path_string, height).await?;
+
+        Ok(u64::from_be_bytes(
+            *<H64>::try_from(query_result.value.unwrap())
+                .map_err(fatal_rpc_error("error decoding next_client_sequence", None))?
+                .get(),
+        ))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -602,35 +712,10 @@ impl ChainModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_raw_unfinalized_trusted_client_state(
         &self,
-        e: &Extensions,
-        client_id: ClientId,
-    ) -> RpcResult<RawClientState<'static>> {
-        let height = self.query_latest_height(e).await?;
-
-        let client_state = serde_json::from_value::<Hex<Vec<u8>>>(
-            self.query_ibc_state(
-                e,
-                height,
-                ClientStatePath {
-                    client_id: client_id.clone(),
-                }
-                .into(),
-            )
-            .await?,
-        )
-        .expect("infallible");
-
-        let ClientInfo {
-            client_type,
-            ibc_interface,
-            metadata: _,
-        } = self.client_info(e, client_id.clone()).await?;
-
-        Ok(RawClientState {
-            client_type,
-            ibc_interface,
-            bytes: client_state.0.into(),
-        })
+        _e: &Extensions,
+        _client_id: ClientId,
+    ) -> RpcResult<RawClientState> {
+        todo!()
     }
 }
 

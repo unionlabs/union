@@ -2,6 +2,8 @@ use core::{num::NonZeroU64, str::FromStr};
 
 use cometbft_types::abci::event::Event;
 use unionlabs::{
+    bytes::Bytes,
+    hash::hash_v2::HexUnprefixed,
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
@@ -302,9 +304,8 @@ event! {
             deprecated("packet_data", "packet_ack", "packet_connection")
         )]
         WriteAcknowledgement {
-            #[parse(hex::decode)]
-            #[serde(with = "::serde_utils::hex_string")]
-            packet_data_hex: Vec<u8>,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            packet_data_hex: Bytes,
             #[parse(Height::from_str)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
@@ -319,18 +320,16 @@ event! {
             packet_dst_port: PortId,
             #[parse(ChannelId::from_str_prefixed)]
             packet_dst_channel: ChannelId,
-            #[parse(hex::decode)]
-            #[serde(with = "::serde_utils::hex_string")]
-            packet_ack_hex: Vec<u8>,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            packet_ack_hex: Bytes,
             #[parse(ConnectionId::from_str_prefixed)]
             connection_id: ConnectionId,
         },
 
         #[event(tag = "recv_packet", deprecated("packet_data", "packet_connection"))]
         RecvPacket {
-            #[parse(hex::decode)]
-            #[serde(with = "::serde_utils::hex_string")]
-            packet_data_hex: Vec<u8>,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            packet_data_hex: Bytes,
             #[parse(Height::from_str)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
@@ -353,11 +352,9 @@ event! {
 
         #[event(tag = "send_packet", deprecated("packet_data", "packet_connection"))]
         SendPacket {
-            #[parse(hex::decode)]
-            #[serde(with = "::serde_utils::hex_string")]
-            packet_data_hex: Vec<u8>,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            packet_data_hex: Bytes,
             #[parse(Height::from_str)]
-            // TODO: Make this generic height instead of concrete
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,

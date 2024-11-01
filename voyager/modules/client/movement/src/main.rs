@@ -95,7 +95,7 @@ impl ClientModuleServer for Module {
     async fn decode_client_state_meta(
         &self,
         _: &Extensions,
-        client_state: Hex<Vec<u8>>,
+        client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
         let cs = Module::decode_client_state(&client_state.0)?;
 
@@ -109,7 +109,7 @@ impl ClientModuleServer for Module {
     async fn decode_consensus_state_meta(
         &self,
         _: &Extensions,
-        consensus_state: Hex<Vec<u8>>,
+        consensus_state: Bytes,
     ) -> RpcResult<ConsensusStateMeta> {
         let cs = Module::decode_consensus_state(&consensus_state.0)?;
 
@@ -119,11 +119,7 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
-    async fn decode_client_state(
-        &self,
-        _: &Extensions,
-        client_state: Hex<Vec<u8>>,
-    ) -> RpcResult<Value> {
+    async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
         Ok(serde_json::to_value(Module::decode_client_state(&client_state.0)?).unwrap())
     }
 
@@ -131,7 +127,7 @@ impl ClientModuleServer for Module {
     async fn decode_consensus_state(
         &self,
         _: &Extensions,
-        consensus_state: Hex<Vec<u8>>,
+        consensus_state: Bytes,
     ) -> RpcResult<Value> {
         Ok(serde_json::to_value(Module::decode_consensus_state(&consensus_state.0)?).unwrap())
     }
@@ -142,7 +138,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Value,
         metadata: Value,
-    ) -> RpcResult<Hex<Vec<u8>>> {
+    ) -> RpcResult<Bytes> {
         let IbcGo08WasmClientMetadata { checksum } =
             serde_json::from_value(metadata).map_err(|err| {
                 ErrorObject::owned(
@@ -176,7 +172,7 @@ impl ClientModuleServer for Module {
         &self,
         _: &Extensions,
         consensus_state: Value,
-    ) -> RpcResult<Hex<Vec<u8>>> {
+    ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -196,9 +192,9 @@ impl ClientModuleServer for Module {
     async fn reencode_counterparty_client_state(
         &self,
         _: &Extensions,
-        _client_state: Hex<Vec<u8>>,
+        _client_state: Bytes,
         _client_type: ClientType<'static>,
-    ) -> RpcResult<Hex<Vec<u8>>> {
+    ) -> RpcResult<Bytes> {
         // match client_type.as_str() {
         //     ClientType::COMETBLS_GROTH16 => {
         //         Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
@@ -225,9 +221,9 @@ impl ClientModuleServer for Module {
     async fn reencode_counterparty_consensus_state(
         &self,
         _: &Extensions,
-        consensus_state: Hex<Vec<u8>>,
+        consensus_state: Bytes,
         _client_type: ClientType<'static>,
-    ) -> RpcResult<Hex<Vec<u8>>> {
+    ) -> RpcResult<Bytes> {
         // match client_type.as_str() {
         //     ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {
         //         data: cometbls::consensus_state::ConsensusState::decode_as::<EthAbi>(
@@ -250,7 +246,7 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
-    async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -266,7 +262,7 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
-    async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(|err| {
                 ErrorObject::owned(
