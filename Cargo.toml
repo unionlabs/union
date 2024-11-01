@@ -98,7 +98,7 @@ members = [
   "voyager",
 
   "voyager/modules/chain/cosmos-sdk",
-  # "voyager/modules/chain/ethereum",
+  "voyager/modules/chain/ethereum",
   # "voyager/modules/chain/movement",
 
   "voyager/modules/client/cometbls",

@@ -1,11 +1,17 @@
 // #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
 
-use std::sync::Arc;
+use std::num::NonZeroU64;
 
+use alloy::{
+    providers::{Provider, ProviderBuilder, RootProvider},
+    transports::BoxTransport,
+};
 use beacon_api::client::BeaconApiClient;
-use chain_utils::ethereum::IbcHandlerExt;
-use contracts::ibc_handler::IBCHandler;
-use ethers::providers::{Middleware, Provider, Ws};
+use ethereum_light_client_types::StorageProof;
+use ibc_solidity::ibc::{
+    ChannelOrder, ChannelState, ConnectionState, ILightClient,
+    Ibc::{self, IbcInstance},
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -15,22 +21,27 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
+    bytes::Bytes,
     ethereum::{ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT},
-    hash::H160,
-    ibc::{core::client::height::Height, lightclients::ethereum::storage_proof::StorageProof},
-    ics24::{ClientStatePath, Path},
-    id::ClientId,
+    hash::{H160, H256},
+    ibc::core::{
+        channel::{self, channel::Channel, order::Order},
+        client::height::Height,
+        commitment::merkle_prefix::MerklePrefix,
+        connection::{self, connection_end::ConnectionEnd, version::Version},
+    },
+    ics24::{ethabi, Path},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     uint::U256,
-    ErrorReporter,
+    ErrorReporter, QueryHeight,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
-    run_chain_module_server, ChainModule,
+    rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
+    run_chain_module_server, ChainModule, ExtensionsExt, VoyagerClient,
 };
 use voyager_vm::BoxDynError;
-
-const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -43,7 +54,7 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
-    pub provider: Provider<Ws>,
+    pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -63,14 +74,16 @@ impl ChainModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+        let provider = ProviderBuilder::new()
+            .on_builtin(&config.eth_rpc_api)
+            .await?;
 
-        let chain_id = provider.get_chainid().await?;
+        let chain_id = provider.get_chain_id().await?;
 
-        info.ensure_chain_id(U256(chain_id).to_string())?;
+        info.ensure_chain_id(chain_id.to_string())?;
 
         Ok(Module {
-            chain_id: ChainId::new(U256(chain_id).to_string()),
+            chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
@@ -79,29 +92,13 @@ impl ChainModule for Module {
 }
 
 impl Module {
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
-
-        let chain_id = provider.get_chainid().await?;
-
-        Ok(Self {
-            chain_id: ChainId::new(U256(chain_id).to_string()),
-            ibc_handler_address: config.ibc_handler_address,
-            provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
-        })
-    }
-
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: ETHEREUM_REVISION_NUMBER,
-            revision_height: height,
-        }
+        Height::new(height)
     }
 
-    fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
-        IBCHandler::new(self.ibc_handler_address, Arc::new(self.provider.clone()))
+    fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
+        Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 
     #[instrument(skip(self))]
@@ -115,100 +112,6 @@ impl Module {
         debug!("beacon slot {slot} is execution height {execution_height}");
 
         execution_height
-    }
-
-    #[instrument(skip_all, fields(%path, %height))]
-    pub async fn fetch_ibc_state(&self, path: Path, height: Height) -> Result<Value, BoxDynError> {
-        let execution_height = self
-            .execution_height_of_beacon_slot(height.revision_height)
-            .await;
-
-        Ok(match path {
-            Path::ClientState(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::ClientConsensusState(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::Connection(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::ChannelEnd(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::Commitment(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::Acknowledgement(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::Receipt(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::NextSequenceSend(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::NextSequenceRecv(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::NextSequenceAck(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::NextConnectionSequence(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-            Path::NextClientSequence(path) => serde_json::to_value(
-                self.ibc_handler()
-                    .ibc_state_read(execution_height, path.clone())
-                    .await
-                    .unwrap(),
-            )
-            .unwrap(),
-        })
     }
 }
 
@@ -279,46 +182,455 @@ impl ChainModuleServer for Module {
             .unwrap())
     }
 
+    #[instrument(skip_all, fields(raw_client_id))]
+    async fn query_client_prefix(&self, _: &Extensions, raw_client_id: u32) -> RpcResult<String> {
+        Ok(self
+            .ibc_handler()
+            .clientTypes(raw_client_id)
+            .call()
+            .await
+            .unwrap()
+            ._0)
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
+        let ibc_handler = self.ibc_handler();
+        let client_type = ibc_handler
+            .clientTypes(client_id.id())
+            .call()
+            .await
+            .unwrap()
+            ._0;
         Ok(ClientInfo {
-            client_type: ClientType::new(
-                self.ibc_handler()
-                    .client_types(client_id.to_string())
-                    .await
-                    .unwrap(),
-            ),
+            client_type: ClientType::new(client_type),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_SOLIDITY),
             metadata: Default::default(),
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        self.fetch_ibc_state(path, at).await.map_err(|err| {
-            ErrorObject::owned(
-                -1,
-                format!("error fetching ibc state: {}", ErrorReporter(&*err)),
-                None::<()>,
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
+    async fn query_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Bytes> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let client_address = ibc_handler
+            .clientImpls(client_id.id())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
+        let light_client = ILightClient::new(client_address, self.provider.clone());
+        let client_state = light_client
+            .getClientState(client_id.id())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0
+            .0;
+
+        Ok(client_state.to_vec().into())
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
+    async fn query_client_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        client_id: ClientId,
+        trusted_height: Height,
+    ) -> RpcResult<Bytes> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let client_address = ibc_handler
+            .clientImpls(client_id.id())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
+        let light_client = ILightClient::new(client_address, self.provider.clone());
+
+        let consensus_state = light_client
+            .getConsensusState(client_id.id(), trusted_height.height())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0
+            .0;
+
+        Ok(consensus_state.to_vec().into())
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]
+    async fn query_connection(
+        &self,
+        e: &Extensions,
+        height: Height,
+        connection_id: ConnectionId,
+    ) -> RpcResult<Option<ConnectionEnd>> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw = ibc_handler
+            .connections(connection_id.id())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching connection: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
+        let client_type = self
+            .ibc_handler()
+            .clientTypes(raw.clientId)
+            .call()
+            .await
+            .unwrap()
+            ._0;
+
+        let client_id = ClientId::new(client_type, raw.clientId);
+
+        let client_meta = e
+            .try_get::<VoyagerClient>()?
+            .client_meta(
+                self.chain_id.clone(),
+                QueryHeight::Latest,
+                client_id.clone(),
             )
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        let counterparty_client_prefix = e
+            .try_get::<VoyagerClient>()?
+            .query_client_prefix(client_meta.chain_id, raw.counterpartyClientId)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(Some(ConnectionEnd {
+            client_id,
+            versions: vec![Version {
+                identifier: "1".to_owned(),
+                features: vec![Order::Ordered, Order::Unordered],
+            }],
+            state: match raw.state {
+                ConnectionState::Unspecified => connection::state::State::UninitializedUnspecified,
+                ConnectionState::Init => connection::state::State::Init,
+                ConnectionState::TryOpen => connection::state::State::Tryopen,
+                ConnectionState::Open => connection::state::State::Open,
+                _ => todo!(),
+            },
+            counterparty: connection::counterparty::Counterparty {
+                client_id: ClientId::new(counterparty_client_prefix, raw.counterpartyClientId),
+                connection_id: Some(ConnectionId::new(raw.counterpartyConnectionId)),
+                prefix: MerklePrefix {
+                    // TODO: Figure out what to put here
+                    key_prefix: b"TODO".to_vec(),
+                },
+            },
+            delay_period: 0,
+        }))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    async fn query_channel(
+        &self,
+        _: &Extensions,
+        height: Height,
+        _port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw = ibc_handler
+            .channels(channel_id.id())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
+        // let port_id = ibc_handler
+        //     .channelOwner(channel_id.id())
+        //     .block(execution_height.into())
+        //     .call()
+        //     .await
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("error fetching ibc state: {}", ErrorReporter(err)),
+        //             None::<()>,
+        //         )
+        //     })?
+        //     ._0;
+
+        Ok(Some(Channel {
+            state: match raw.state {
+                ChannelState::Unspecified => channel::state::State::UninitializedUnspecified,
+                ChannelState::Init => channel::state::State::Init,
+                ChannelState::TryOpen => channel::state::State::Tryopen,
+                ChannelState::Open => channel::state::State::Open,
+                ChannelState::Closed => channel::state::State::Closed,
+                _ => todo!(),
+            },
+            ordering: match raw.ordering {
+                ChannelOrder::Unspecified => Order::NoneUnspecified,
+                ChannelOrder::Unordered => Order::Unordered,
+                ChannelOrder::Ordered => Order::Ordered,
+                _ => todo!(),
+            },
+            counterparty: channel::counterparty::Counterparty {
+                port_id: PortId::new(raw.counterpartyPortId).unwrap(),
+                channel_id: Some(ChannelId::new(raw.counterpartyChannelId)),
+            },
+            connection_hops: vec![ConnectionId::new(raw.connectionId)],
+            version: raw.version,
+            upgrade_sequence: 0,
+        }))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    async fn query_commitment(
+        &self,
+        _: &Extensions,
+        height: Height,
+        _port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw: H256 = ibc_handler
+            .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0
+            .into();
+
+        Ok(if raw == <H256>::default() {
+            None
+        } else {
+            Some(raw)
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        let location = ibc_commitment_key(&path.to_string(), IBC_HANDLER_COMMITMENTS_SLOT);
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    async fn query_acknowledgement(
+        &self,
+        _: &Extensions,
+        height: Height,
+        _port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let execution_height = self
-            .execution_height_of_beacon_slot(at.revision_height)
-            .await;
+        let ibc_handler = self.ibc_handler();
+
+        let raw: H256 = ibc_handler
+            .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0
+            .into();
+
+        Ok(if raw == <H256>::default() {
+            None
+        } else {
+            Some(raw)
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    async fn query_receipt(
+        &self,
+        _: &Extensions,
+        height: Height,
+        _port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<bool> {
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw: H256 = ibc_handler
+            .commitments(ethabi::receipts_key(channel_id.id(), sequence.get()).into())
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0
+            .into();
+
+        Ok(raw.get()[0] == 1)
+    }
+
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    async fn query_next_sequence_send(
+        &self,
+        _: &Extensions,
+        _height: Height,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        todo!()
+    }
+
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    async fn query_next_sequence_recv(
+        &self,
+        _: &Extensions,
+        _height: Height,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        todo!()
+    }
+
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    async fn query_next_sequence_ack(
+        &self,
+        _: &Extensions,
+        _height: Height,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+    ) -> RpcResult<u64> {
+        todo!()
+    }
+
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn query_next_connection_sequence(
+        &self,
+        _: &Extensions,
+        _height: Height,
+    ) -> RpcResult<u64> {
+        todo!()
+    }
+
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn query_next_client_sequence(&self, _: &Extensions, _height: Height) -> RpcResult<u64> {
+        todo!()
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query_ibc_proof(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: Path,
+        // ibc_store_format: IbcStoreFormat<'static>,
+    ) -> RpcResult<Value> {
+        let location = ibc_commitment_key(
+            match path {
+                Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
+                Path::ClientConsensusState(path) => {
+                    ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+                }
+                Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
+                Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+                Path::Commitment(path) => {
+                    ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
+                }
+                Path::Acknowledgement(path) => {
+                    ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
+                }
+                Path::Receipt(path) => {
+                    ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
+                }
+                Path::NextSequenceSend(_path) => todo!(),
+                Path::NextSequenceRecv(_path) => todo!(),
+                Path::NextSequenceAck(_path) => todo!(),
+                Path::NextConnectionSequence(_path) => todo!(),
+                Path::NextClientSequence(_path) => todo!(),
+            },
+            IBC_HANDLER_COMMITMENTS_SLOT,
+        );
+
+        let execution_height = self.execution_height_of_beacon_slot(at.height()).await;
 
         let proof = self
             .provider
             .get_proof(
-                ethers::types::H160::from(self.ibc_handler_address),
+                self.ibc_handler_address.get().into(),
                 vec![location.to_be_bytes().into()],
-                Some(execution_height.into()),
             )
+            .block_id(execution_height.into())
             .await
             .unwrap();
 
@@ -330,8 +642,8 @@ impl ChainModuleServer for Module {
         };
 
         let proof = StorageProof {
-            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-            value: proof.value.into(),
+            key: U256::from_be_bytes(proof.key.0 .0),
+            value: U256::from_be_bytes(proof.value.to_be_bytes()),
             proof: proof
                 .proof
                 .into_iter()
@@ -345,28 +657,30 @@ impl ChainModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_raw_unfinalized_trusted_client_state(
         &self,
-        e: &Extensions,
-        client_id: ClientId,
-    ) -> RpcResult<RawClientState<'static>> {
-        let latest_execution_height = self.provider.get_block_number().await.unwrap().as_u64();
+        _e: &Extensions,
+        _client_id: ClientId,
+    ) -> RpcResult<RawClientState> {
+        // let latest_execution_height = self.provider.get_block_number().await.unwrap().as_u64();
 
-        let ClientInfo {
-            client_type,
-            ibc_interface,
-            metadata: _,
-        } = self.client_info(e, client_id.clone()).await?;
+        // let ClientInfo {
+        //     client_type,
+        //     ibc_interface,
+        //     metadata: _,
+        // } = self.client_info(e, client_id.clone()).await?;
 
-        Ok(RawClientState {
-            client_type,
-            ibc_interface,
-            bytes: self
-                .ibc_handler()
-                .ibc_state_read(latest_execution_height, ClientStatePath { client_id })
-                .await
-                .unwrap()
-                .0
-                .into(),
-        })
+        // Ok(RawClientState {
+        //     client_type,
+        //     ibc_interface,
+        //     bytes: self
+        //         .ibc_handler()
+        //         .ibc_state_read(latest_execution_height, ClientStatePath { client_id })
+        //         .await
+        //         .unwrap()
+        //         .0
+        //         .into(),
+        // })
+
+        todo!()
     }
 }
 
