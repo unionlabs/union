@@ -3,12 +3,11 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
-import { createUnionClient } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import type { TransferAssetsParameters } from "#client/types.ts"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/stride-to-berachain.ts --private-key "..."` --estimate-gas */
 

@@ -7,10 +7,10 @@ import {
   waitForTransactionReceipt,
   type AptosPublicAccountInfo
 } from "./transfer.ts"
-import { cosmosChainId } from "../client/cosmos.ts"
 import { err, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
-import type { TransferAssetsParameters } from "../client/types.ts"
+import { cosmosChainId } from "../client/cosmos.ts"
+import type { TransferAssetsParameters } from "../types.ts"
 import { Aptos, Network, AptosConfig } from "@aptos-labs/ts-sdk"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"

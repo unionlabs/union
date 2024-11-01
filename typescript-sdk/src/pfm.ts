@@ -1,5 +1,5 @@
+import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import type { ChainId } from "./client/types.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 
 export const createPfmMemo: (_args: {

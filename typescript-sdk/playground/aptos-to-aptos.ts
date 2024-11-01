@@ -1,15 +1,10 @@
 #!/usr/bin/env bun
 import "#patch.ts"
-import {
-  http,
-  createUnionClient,
-  hexStringToUint8Array,
-  type TransferAssetsParameters
-} from "#mod.ts"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
+import { http, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* node --import=tsx playground/aptos-to-union.ts --private-key $PRIVATE_KEY */
 
@@ -25,7 +20,7 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) raise("Private key not found")
 
 const aptosAccount = Account.fromPrivateKey({
-  privateKey: new Ed25519PrivateKey(hexStringToUint8Array(PRIVATE_KEY))
+  privateKey: new Ed25519PrivateKey(PRIVATE_KEY)
 })
 
 const client = createUnionClient({
@@ -48,11 +43,11 @@ const transferPayload = {
 const simulateResult = await client.simulateTransaction(transferPayload)
 
 if (simulateResult.isErr()) {
-  consola.error("[simulateResult]error:", simulateResult.error)
+  consola.error("simulateResult error:", simulateResult.error)
   process.exit(1)
 }
 
-consola.success("simulateResult result:", simulateResult.value)
+consola.success("simulateResult:", simulateResult.value)
 
 const transferResult = await client.transferAsset(transferPayload)
 

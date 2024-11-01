@@ -43,7 +43,7 @@ export {
 } from "./utilities/address.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
-import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
+import type { ChainId, TransferAssetsParameters } from "./types.ts"
 export { http, fallback } from "viem"
 /**
  * @module

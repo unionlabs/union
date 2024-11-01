@@ -1,3 +1,8 @@
+import type { Account as ViemAccount, Address } from "viem"
+import type { evmChainId, EvmChainId } from "./client/evm.ts"
+import type { cosmosChainId, CosmosChainId } from "./client/cosmos.ts"
+import type { aptosChainId, AptosChainId, AptosAccount } from "./aptos/client.ts"
+
 export type SelectFields<T, K extends keyof T> = T extends any ? Pick<T, K> : never
 
 export type MergeUnion<T> = { [K in keyof T]: T[K] }
@@ -13,6 +18,42 @@ export type KeysToSnakeCase<T extends object> = {
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+export type ChainId =
+  | (typeof evmChainId)[number]
+  | (typeof cosmosChainId)[number]
+  | (typeof aptosChainId)[number]
+
+export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> = {
+  memo?: string
+  amount: bigint
+  receiver: string
+  autoApprove?: boolean
+  destinationChainId: ChainId
+} & (CHAIN_ID extends CosmosChainId
+  ? {
+      denomAddress: string
+      account?: OfflineSigner
+      relayContractAddress?: string
+      gasPrice?: { amount: string; denom: string }
+    }
+  : CHAIN_ID extends EvmChainId
+    ? {
+        simulate?: boolean
+        denomAddress: Address
+        relayContractAddress?: Address
+        account?: ViemAccount | undefined
+      }
+    : CHAIN_ID extends AptosChainId
+      ? {
+          simulate?: boolean
+          denomAddress: string
+          account?: AptosAccount
+          authAccess: "key" | "wallet"
+          relayContractAddress?: string
+          gasPrice?: { amount: string; denom: string }
+        }
+      : undefined)
 
 /** Currently supported networks. */
 export type Network = "evm" | "cosmos" | "aptos"

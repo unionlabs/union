@@ -19,7 +19,7 @@ import {
 import { cosmosChainId } from "./cosmos.ts"
 import { err, ok, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
-import type { TransferAssetsParameters } from "./types.ts"
+import type { TransferAssetsParameters } from "../types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
