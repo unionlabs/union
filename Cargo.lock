@@ -13512,6 +13512,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-chain-module-ethereum"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-solidity",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [

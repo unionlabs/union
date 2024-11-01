@@ -389,11 +389,12 @@ pub fn do_verify_non_membership(
 }
 
 pub fn check_commitment_key(
-    path: &str,
+    _path: &str,
     ibc_commitment_slot: U256,
     key: U256,
 ) -> Result<(), InvalidCommitmentKey> {
-    let expected_commitment_key = ibc_commitment_key(path, ibc_commitment_slot);
+    // TODO: Fix this @aeryz
+    let expected_commitment_key = ibc_commitment_key(H256::default(), ibc_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
