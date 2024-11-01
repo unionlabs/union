@@ -46,7 +46,6 @@ import { type Writable, writable, derived, get, type Readable } from "svelte/sto
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
 
-
 export let chains: Array<Chain>
 
 let userAddress: Readable<UserAddresses> = derived(
@@ -205,7 +204,6 @@ let hopChain = derived(ucs01Configuration, $ucs01Configuration => {
 })
 
 const transfer = async () => {
-  console.info($asset,$assetSymbol)
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
   if (!$fromChainId) return toast.error("Please select a from chain")
@@ -272,22 +270,22 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-      const client = createUnionClient({
-        chainId: "2",
-        account: await wallet?.getAccount(),
-        transport: wallet as AptosBrowserWallet
-      })
+        const client = createUnionClient({
+          chainId: "2",
+          account: await wallet?.getAccount(),
+          transport: wallet as AptosBrowserWallet
+        })
 
-      const transferPayload = {
-        simulate: true,
-        receiver: $receiver,
-        amount: parsedAmount,
-        authAccess: "wallet",
-        denomAddress: $assetAddress,
-        destinationChainId: $toChain.chain_id as ChainId,
-      } satisfies TransferAssetsParameters<'2'>
+        const transferPayload = {
+          simulate: true,
+          receiver: $receiver,
+          amount: parsedAmount,
+          authAccess: "wallet",
+          denomAddress: $assetAddress,
+          destinationChainId: $toChain.chain_id as ChainId
+        } satisfies TransferAssetsParameters<"2">
 
-      const transfer = await client.transferAsset(transferPayload)
+        const transfer = await client.transferAsset(transferPayload)
 
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
