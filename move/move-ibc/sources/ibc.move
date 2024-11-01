@@ -216,7 +216,6 @@ module ibc::ibc {
         client_type: String
     }
 
-
     // Resource to hold the global state
     struct IBCStore has key {
         client_impls: SmartTable<String, address>,

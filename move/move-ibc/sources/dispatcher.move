@@ -33,9 +33,10 @@ module ibc::dispatcher {
 
     /// Register a `T` to callback. Providing an instance of `T` guarantees that only the
     /// originating module can call `register` for that type.
-    public fun register<T: drop>(callback: FunctionInfo, _proof: T, some_seed: vector<u8>) acquires Dispatcher {
-        let constructor_ref =
-            object::create_named_object(&storage_signer(), some_seed);
+    public fun register<T: drop>(
+        callback: FunctionInfo, _proof: T, some_seed: vector<u8>
+    ) acquires Dispatcher {
+        let constructor_ref = object::create_named_object(&storage_signer(), some_seed);
 
         let metadata =
             fungible_asset::add_fungibility(
@@ -64,8 +65,13 @@ module ibc::dispatcher {
 
     /// Insert into this module as the callback needs to retrieve and avoid a cyclical dependency:
     /// engine -> storage and then engine -> callback -> storage
-    public(friend) fun insert<P: store, T: store>(data: T, return_value: vector<u8>): Object<Metadata> acquires Dispatcher {
-        move_to(&storage_signer(), Storage<P, T> { data, return_value });
+    public(friend) fun insert<P: store, T: store>(
+        data: T, return_value: vector<u8>
+    ): Object<Metadata> acquires Dispatcher {
+        move_to(
+            &storage_signer(),
+            Storage<P, T> { data, return_value }
+        );
 
         let typeinfo = type_info::type_of<P>();
         let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
@@ -74,12 +80,13 @@ module ibc::dispatcher {
         type_info
     }
 
-    public fun retrieve<P: drop, T: copy + drop + store>(_proof: P): (T, vector<u8>) acquires Dispatcher, Storage {
+    public fun retrieve<P: drop, T: copy + drop + store>(
+        _proof: P
+    ): (T, vector<u8>) acquires Dispatcher, Storage {
         // let type_info = type_info::type_of<P>();
-        let my_storage = move_from<Storage<P, T>>(storage_address());//.data
+        let my_storage = move_from<Storage<P, T>>(storage_address()); //.data
         (my_storage.data, my_storage.return_value)
     }
-
 
     // public fun retrieve_mut<P: drop, T: copy + drop + store>(
     //     _proof: P
@@ -89,34 +96,28 @@ module ibc::dispatcher {
     // }
 
     // Getter for `data`
-    public(friend) fun get_data<P: drop, T: copy + drop + store>(
-        _proof: P
-    ): T acquires Dispatcher, Storage {
+    public(friend) fun get_data<P: drop, T: copy + drop + store>(_proof: P): T acquires Dispatcher, Storage {
         borrow_global<Storage<P, T>>(storage_address()).data
     }
 
     // Getter for `return_value`
-    public(friend) fun get_return_value<P: drop, T: copy + drop + store>():
-        vector<u8> acquires Dispatcher, Storage {
+    public(friend) fun get_return_value<P: drop, T: copy + drop + store>(): vector<u8> acquires Dispatcher, Storage {
         borrow_global<Storage<P, T>>(storage_address()).return_value
     }
 
     // Setter for `return_value`
     public(friend) fun set_return_value<P: drop, T: copy + drop + store>(
-        _proof: P,
-        new_value: vector<u8>
+        _proof: P, new_value: vector<u8>
     ) acquires Dispatcher, Storage {
         borrow_global_mut<Storage<P, T>>(storage_address()).return_value = new_value;
     }
 
     // Optional: Setter for `data` if needed
     public(friend) fun set_data<P: drop, T: copy + drop + store>(
-        _proof: P,
-        new_data: T
+        _proof: P, new_data: T
     ) acquires Dispatcher, Storage {
         borrow_global_mut<Storage<P, T>>(storage_address()).data = new_data;
     }
-
 
     /// Prepares the dispatch table.
     fun init_module(publisher: &signer) {
