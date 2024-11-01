@@ -48,7 +48,6 @@ function selectChain(chain: Chain) {
             <Button
               variant={'ghost'}
               on:click={() => {
-                console.info(chain)
                 selectChain(chain)
               }}
               class={cn(
