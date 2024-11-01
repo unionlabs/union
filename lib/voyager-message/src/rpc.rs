@@ -46,6 +46,13 @@ pub trait VoyagerRpc {
     // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(&self, chain_id: ChainId<'static>) -> RpcResult<i64>;
 
+    #[method(name = "queryClientPrefix")]
+    async fn query_client_prefix(
+        &self,
+        chain_id: ChainId<'static>,
+        raw_client_id: u32,
+    ) -> RpcResult<String>;
+
     #[method(name = "clientInfo")]
     async fn client_info(
         &self,

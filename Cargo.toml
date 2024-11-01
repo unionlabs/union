@@ -53,6 +53,8 @@ members = [
   "lib/near/dummy-ibc-app",
   # "lib/near/near-ibc-tests",
 
+  "lib/ibc-solidity",
+
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-verifier",
@@ -115,7 +117,7 @@ members = [
   "voyager/plugins/client-update/tendermint",
 
   "voyager/plugins/event-source/cosmos-sdk",
-  # "voyager/plugins/event-source/ethereum",
+  "voyager/plugins/event-source/ethereum",
   "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
@@ -195,6 +197,8 @@ linea-light-client-types = { path = "light-clients/linea-light-client/types", de
 linea-verifier           = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
+ibc-solidity = { path = "lib/ibc-solidity", default-features = false }
+
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
 ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
@@ -241,7 +245,7 @@ ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
-alloy = { version = "0.4", default-features = false }
+alloy = { version = "0.5", default-features = false }
 
 # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }

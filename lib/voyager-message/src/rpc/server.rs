@@ -561,6 +561,18 @@ impl VoyagerRpcServer for Server {
         self.query_latest_timestamp(&chain_id).await
     }
 
+    async fn query_client_prefix(
+        &self,
+        chain_id: ChainId<'static>,
+        raw_client_id: u32,
+    ) -> RpcResult<String> {
+        self.modules()?
+            .chain_module(&chain_id)?
+            .query_client_prefix(raw_client_id)
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
     async fn client_info(
         &self,
         chain_id: ChainId<'static>,

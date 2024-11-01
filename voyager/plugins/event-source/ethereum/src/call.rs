@@ -1,5 +1,5 @@
-use chain_utils::ethereum::IBCHandlerEvents;
 use enumorph::Enumorph;
+use ibc_solidity::ibc;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::hash::H256;
@@ -33,5 +33,28 @@ pub struct MakeFullEvent {
     pub block_number: u64,
     /// Tx hash of the transaction that emitted this event.
     pub tx_hash: H256,
-    pub event: IBCHandlerEvents,
+    pub event: IbcEvents,
+}
+
+#[model]
+pub enum IbcEvents {
+    ClientRegistered(ibc::Ibc::ClientRegistered),
+    ClientCreated(ibc::Ibc::ClientCreated),
+    ClientUpdated(ibc::Ibc::ClientUpdated),
+    ConnectionOpenInit(ibc::Ibc::ConnectionOpenInit),
+    ConnectionOpenTry(ibc::Ibc::ConnectionOpenTry),
+    ConnectionOpenAck(ibc::Ibc::ConnectionOpenAck),
+    ConnectionOpenConfirm(ibc::Ibc::ConnectionOpenConfirm),
+    ChannelOpenInit(ibc::Ibc::ChannelOpenInit),
+    ChannelOpenTry(ibc::Ibc::ChannelOpenTry),
+    ChannelOpenAck(ibc::Ibc::ChannelOpenAck),
+    ChannelOpenConfirm(ibc::Ibc::ChannelOpenConfirm),
+    ChannelCloseInit(ibc::Ibc::ChannelCloseInit),
+    ChannelCloseConfirm(ibc::Ibc::ChannelCloseConfirm),
+    SendPacket(ibc::Ibc::SendPacket),
+    RecvPacket(ibc::Ibc::RecvPacket),
+    RecvIntentPacket(ibc::Ibc::RecvIntentPacket),
+    WriteAcknowledgement(ibc::Ibc::WriteAcknowledgement),
+    AcknowledgePacket(ibc::Ibc::AcknowledgePacket),
+    TimeoutPacket(ibc::Ibc::TimeoutPacket),
 }

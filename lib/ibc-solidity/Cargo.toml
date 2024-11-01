@@ -1,0 +1,18 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ibc-solidity"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy = { workspace = true, features = ["sol-types", "contract"] }   # TODO: Fix the feature gating with `sol!`
+serde = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+default = ["rpc"]
+rpc     = ["alloy/contract"]
+serde   = ["dep:serde"]
