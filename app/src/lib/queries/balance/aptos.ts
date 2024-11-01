@@ -69,7 +69,7 @@ export async function getAptosChainBalances({
 
   if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
   return result.output.data.data.map(x => ({
-    address: x.metadata.symbol,
+    address: x.asset_type,
     symbol: x.metadata.symbol,
     balance: BigInt(x.amount),
     decimals: x.metadata.decimals
