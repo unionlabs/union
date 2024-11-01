@@ -28,7 +28,6 @@ use unionlabs::{
         channel::{self},
         client::height::Height,
     },
-    ics24::{ChannelEndPath, ConnectionPath},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     option_unwrap, parse_wasm_client_type, ErrorReporter, QueryHeight, WasmClientType,
 };
@@ -37,7 +36,7 @@ use voyager_message::{
     core::{ChainId, ClientInfo, ClientType},
     data::{ChainEvent, ChannelMetadata, ConnectionMetadata, Data, PacketMetadata},
     module::{PluginInfo, PluginServer},
-    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
+    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
     run_plugin_server, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -346,12 +345,10 @@ impl Module {
         channel::order::Order,
     )> {
         let self_connection = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_connection(
                 self.chain_id.clone(),
                 event_height.into(),
-                ConnectionPath {
-                    connection_id: self_connection_id.clone(),
-                },
+                self_connection_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?
@@ -373,13 +370,11 @@ impl Module {
             .map_err(json_rpc_error_to_error_object)?;
 
         let this_channel = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_channel(
                 self.chain_id.clone(),
                 event_height.into(),
-                ChannelEndPath {
-                    port_id: self_port_id.clone(),
-                    channel_id: self_channel_id.clone(),
-                },
+                self_port_id.clone(),
+                self_channel_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?
@@ -387,13 +382,11 @@ impl Module {
             .ok_or_else(missing_state("channel must exist", None))?;
 
         let counterparty_channel = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_channel(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
-                ChannelEndPath {
-                    port_id: other_port_id.clone(),
-                    channel_id: other_channel_id.clone(),
-                },
+                other_port_id.clone(),
+                other_channel_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?
@@ -492,7 +485,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         false,
                         page,
                         PER_PAGE_LIMIT,
-                        cometbft_rpc::types::Order::Desc,
+                        cometbft_rpc::rpc_types::Order::Desc,
                     )
                     .await
                     .map_err(rpc_error(
@@ -675,12 +668,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ref connection_id, ..
                     }) => {
                         let connection = voyager_client
-                            .query_ibc_state_typed(
+                            .query_connection(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ConnectionPath {
-                                    connection_id: connection_id.clone(),
-                                },
+                                connection_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?
@@ -746,12 +737,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ..
                     }) => {
                         let connection = voyager_client
-                            .query_ibc_state_typed(
+                            .query_connection(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ConnectionPath {
-                                    connection_id: connection_id.clone(),
-                                },
+                                connection_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?
@@ -773,13 +762,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let channel = voyager_client
-                            .query_ibc_state_typed(
+                            .query_channel(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ChannelEndPath {
-                                    port_id: port_id.to_owned(),
-                                    channel_id: channel_id.to_owned(),
-                                },
+                                port_id.to_owned(),
+                                channel_id.to_owned(),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?

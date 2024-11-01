@@ -1,17 +1,19 @@
-use std::{borrow::Cow, collections::VecDeque};
+use std::{collections::VecDeque, num::NonZeroU64};
 
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use macros::model;
 use schemars::JsonSchema;
-use serde_json::{json, Value};
-use serde_utils::Hex;
-use tracing::debug;
+use serde_json::Value;
 use unionlabs::{
-    ibc::core::client::height::Height,
-    ics24::{IbcPath, Path},
-    id::ClientId,
+    bytes::Bytes,
+    hash::H256,
+    ibc::core::{
+        channel::channel::Channel, client::height::Height,
+        connection::connection_end::ConnectionEnd,
+    },
+    ics24::Path,
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::Member,
-    ErrorReporter,
 };
 use voyager_core::ConsensusType;
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
@@ -24,7 +26,7 @@ use {
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
     data::Data,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    VoyagerMessage,
 };
 
 #[model]
@@ -248,60 +250,113 @@ pub trait ChainModule {
     async fn query_raw_unfinalized_trusted_client_state(
         &self,
         client_id: ClientId,
-    ) -> RpcResult<RawClientState<'static>>;
+    ) -> RpcResult<RawClientState>;
 
     /// Fetch the client info of a client on this chain.
     #[method(name = "clientInfo", with_extensions)]
     async fn client_info(&self, client_id: ClientId) -> RpcResult<ClientInfo>;
 
-    /// Query IBC state on this chain, at the specified [`Height`], returning
-    /// the value as a JSON [`Value`].
-    #[method(name = "queryIbcState", with_extensions)]
-    async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value>;
+    #[method(name = "queryClientState", with_extensions)]
+    async fn query_client_state(&self, height: Height, client_id: ClientId) -> RpcResult<Bytes>;
+
+    #[method(name = "queryClientConsensusState", with_extensions)]
+    async fn query_client_consensus_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        trusted_height: Height,
+    ) -> RpcResult<Bytes>;
+
+    #[method(name = "queryConnection", with_extensions)]
+    async fn query_connection(
+        &self,
+        height: Height,
+        connection_id: ConnectionId,
+    ) -> RpcResult<Option<ConnectionEnd>>;
+
+    #[method(name = "queryChannelEnd", with_extensions)]
+    async fn query_channel(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>>;
+
+    #[method(name = "queryCommitment", with_extensions)]
+    async fn query_commitment(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>>;
+
+    #[method(name = "queryAcknowledgement", with_extensions)]
+    async fn query_acknowledgement(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>>;
+
+    #[method(name = "queryReceipt", with_extensions)]
+    async fn query_receipt(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<bool>;
+
+    #[method(name = "queryNextSequenceSend", with_extensions)]
+    async fn query_next_sequence_send(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextSequenceRecv", with_extensions)]
+    async fn query_next_sequence_recv(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextSequenceAck", with_extensions)]
+    async fn query_next_sequence_ack(
+        &self,
+        height: Height,
+        port_id: PortId,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextConnectionSequence", with_extensions)]
+    async fn query_next_connection_sequence(&self, height: Height) -> RpcResult<u64>;
+
+    #[method(name = "queryNextClientSequence", with_extensions)]
+    async fn query_next_client_sequence(&self, height: Height) -> RpcResult<u64>;
 
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value>;
+    async fn query_ibc_proof(
+        &self,
+        at: Height,
+        path: Path,
+        // ibc_store_format: IbcStoreFormat<'static>,
+    ) -> RpcResult<Value>;
 }
 
 /// Raw, un-decoded client state, as queried directly from the client store.
 #[model]
-pub struct RawClientState<'a> {
-    pub client_type: ClientType<'a>,
-    pub ibc_interface: IbcInterface<'a>,
-    pub bytes: Cow<'a, [u8]>,
+pub struct RawClientState {
+    pub client_type: ClientType<'static>,
+    pub ibc_interface: IbcInterface<'static>,
+    pub bytes: Bytes,
 }
-
-pub trait ChainModuleClientExt: ChainModuleClient + Send + Sync {
-    // TODO: Maybe rename? Cor likes "_checked"
-    // TODO: Maybe take by ref here?
-    #[allow(async_fn_in_trait)]
-    async fn query_ibc_state_typed<P: IbcPath>(
-        &self,
-        at: Height,
-        path: P,
-    ) -> Result<P::Value, jsonrpsee::core::client::Error> {
-        debug!(%path, %at, "querying ibc state");
-
-        let state = self.query_ibc_state(at, path.clone().into()).await?;
-
-        Ok(
-            serde_json::from_value::<P::Value>(state.clone()).map_err(|e| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize state: {}", ErrorReporter(e)),
-                    Some(json!({
-                        "path": path,
-                        "state": state
-                    })),
-                )
-            })?,
-        )
-    }
-}
-
-impl<T> ChainModuleClientExt for T where T: ChainModuleClient + Send + Sync {}
 
 /// Client modules provide functionality to interact with a single light client
 /// type, on a single IBC interface. This can also be thought of as a "client
@@ -313,38 +368,31 @@ pub trait ClientModule {
     /// Decode the raw client state, returning the decoded metadata common
     /// between all client state types.
     #[method(name = "decodeClientStateMeta", with_extensions)]
-    async fn decode_client_state_meta(
-        &self,
-        client_state: Hex<Vec<u8>>,
-    ) -> RpcResult<ClientStateMeta>;
+    async fn decode_client_state_meta(&self, client_state: Bytes) -> RpcResult<ClientStateMeta>;
 
     /// Decode the raw consensus state, returning the decoded metadata common
     /// between all consensus state types.
     #[method(name = "decodeConsensusStateMeta", with_extensions)]
     async fn decode_consensus_state_meta(
         &self,
-        consensus_state: Hex<Vec<u8>>,
+        consensus_state: Bytes,
     ) -> RpcResult<ConsensusStateMeta>;
 
     /// Decode the raw client state, returning the decoded state as JSON.
     #[method(name = "decodeClientState", with_extensions)]
-    async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value>;
+    async fn decode_client_state(&self, client_state: Bytes) -> RpcResult<Value>;
 
     /// Decode the raw consensus state, returning the decoded state as JSON.
     #[method(name = "decodeConsensusState", with_extensions)]
-    async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value>;
+    async fn decode_consensus_state(&self, consensus_state: Bytes) -> RpcResult<Value>;
 
     /// Encode the client state, provided as JSON.
     #[method(name = "encodeClientState", with_extensions)]
-    async fn encode_client_state(
-        &self,
-        client_state: Value,
-        metadata: Value,
-    ) -> RpcResult<Hex<Vec<u8>>>;
+    async fn encode_client_state(&self, client_state: Value, metadata: Value) -> RpcResult<Bytes>;
 
     /// Encode the consensus state, provided as JSON.
     #[method(name = "encodeConsensusState", with_extensions)]
-    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>>;
+    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Bytes>;
 
     /// Re-encode the client state of the specified counterparty client type.
     ///
@@ -354,9 +402,9 @@ pub trait ClientModule {
     #[method(name = "reencodeCounterpartyClientState", with_extensions)]
     async fn reencode_counterparty_client_state(
         &self,
-        client_state: Hex<Vec<u8>>,
+        client_state: Bytes,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Hex<Vec<u8>>>;
+    ) -> RpcResult<Bytes>;
 
     /// Re-encode the client state of the specified counterparty client type.
     ///
@@ -366,17 +414,17 @@ pub trait ClientModule {
     #[method(name = "reencodeCounterpartyConsensusState", with_extensions)]
     async fn reencode_counterparty_consensus_state(
         &self,
-        consensus_state: Hex<Vec<u8>>,
+        consensus_state: Bytes,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Hex<Vec<u8>>>;
+    ) -> RpcResult<Bytes>;
 
     /// Encode the header, provided as JSON.
     #[method(name = "encodeHeader", with_extensions)]
-    async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>>;
+    async fn encode_header(&self, header: Value) -> RpcResult<Bytes>;
 
     /// Encode the proof, provided as JSON.
     #[method(name = "encodeProof", with_extensions)]
-    async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>>;
+    async fn encode_proof(&self, proof: Value) -> RpcResult<Bytes>;
 }
 
 /// Client modules provide functionality for interacting with a specific chain

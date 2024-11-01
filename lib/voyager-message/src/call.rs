@@ -6,6 +6,7 @@ use serde_json::Value;
 use serde_utils::Hex;
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
+    bytes::Bytes,
     ibc::core::{
         channel::{
             self, channel::Channel, msg_acknowledgement::MsgAcknowledgement,
@@ -23,7 +24,7 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, ReceiptPath,
+        CommitmentPath, ConnectionPath,
     },
     id::{ClientId, ConnectionId},
     traits::Member,
@@ -39,7 +40,7 @@ use crate::{
     data::{IbcMessage, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient},
-    rpc::json_rpc_error_to_error_object,
+    rpc::{json_rpc_error_to_error_object, VoyagerRpcServer},
     Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -438,27 +439,27 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_init_event: event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: event.port_id.clone(),
-                    channel_id: event.channel_id.clone(),
-                };
-
                 let origin_channel = ctx
                     .rpc_server
-                    .query_ibc_state_typed(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.clone(),
+                    .query_channel(
+                        origin_chain_id.clone(),
+                        QueryHeight::Specific(origin_chain_proof_height),
+                        event.port_id.clone(),
+                        event.channel_id.clone(),
                     )
                     .await
-                    .map_err(json_rpc_error_to_queue_error)?;
+                    .map_err(error_object_to_queue_error)?;
 
                 let proof_init = ctx
                     .rpc_server
                     .query_ibc_proof(
                         &origin_chain_id,
                         origin_chain_proof_height,
-                        origin_channel_path.into(),
+                        ChannelEndPath {
+                            port_id: event.port_id.clone(),
+                            channel_id: event.channel_id.clone(),
+                        }
+                        .into(),
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -732,7 +733,7 @@ impl CallT<VoyagerMessage> for Call {
                     .decode_client_state_meta(
                         &client_state.client_type,
                         &client_state.ibc_interface,
-                        client_state.bytes.into(),
+                        client_state.bytes,
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -799,21 +800,19 @@ async fn make_msg_recv_packet(
 
     let commitment = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &target_chain_id,
-            target_chain_latest_height,
-            ReceiptPath {
-                port_id: send_packet_event.packet.destination_channel.port_id.clone(),
-                channel_id: send_packet_event
-                    .packet
-                    .destination_channel
-                    .channel_id
-                    .clone(),
-                sequence: send_packet_event.packet.sequence,
-            },
+        .query_receipt(
+            target_chain_id.clone(),
+            QueryHeight::Specific(target_chain_latest_height),
+            send_packet_event.packet.destination_channel.port_id.clone(),
+            send_packet_event
+                .packet
+                .destination_channel
+                .channel_id
+                .clone(),
+            send_packet_event.packet.sequence,
         )
         .await
-        .map_err(json_rpc_error_to_queue_error)?
+        .map_err(error_object_to_queue_error)?
         .state;
 
     if commitment {
@@ -909,25 +908,23 @@ async fn make_msg_acknowledgement(
 
     let commitment = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &target_chain_id,
-            target_chain_latest_height,
-            CommitmentPath {
-                port_id: write_acknowledgement_event
-                    .packet
-                    .source_channel
-                    .port_id
-                    .clone(),
-                channel_id: write_acknowledgement_event
-                    .packet
-                    .source_channel
-                    .channel_id
-                    .clone(),
-                sequence: write_acknowledgement_event.packet.sequence,
-            },
+        .query_commitment(
+            target_chain_id.clone(),
+            QueryHeight::Specific(target_chain_latest_height),
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .port_id
+                .clone(),
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .channel_id
+                .clone(),
+            write_acknowledgement_event.packet.sequence,
         )
         .await
-        .map_err(json_rpc_error_to_queue_error)?
+        .map_err(error_object_to_queue_error)?
         .state;
 
     if commitment.is_none() {
@@ -1086,13 +1083,11 @@ async fn make_msg_create_client(
                 client_state: client_module
                     .encode_client_state(self_client_state, metadata)
                     .await
-                    .map_err(json_rpc_error_to_queue_error)?
-                    .0,
+                    .map_err(json_rpc_error_to_queue_error)?,
                 consensus_state: client_module
                     .encode_consensus_state(self_consensus_state)
                     .await
-                    .map_err(json_rpc_error_to_queue_error)?
-                    .0,
+                    .map_err(json_rpc_error_to_queue_error)?,
             },
             client_type: client_type.clone(),
         }),
@@ -1152,18 +1147,14 @@ async fn mk_connection_handshake_state_and_proofs(
     );
 
     // client state of the destination on the source
-    let client_state_path = ClientStatePath {
-        client_id: client_id.clone(),
-    };
     let client_state = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            client_state_path,
+        .query_client_state(
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
+            client_id.clone(),
         )
-        .await
-        .map_err(json_rpc_error_to_error_object)?
+        .await?
         .state;
 
     debug!(%client_state);
@@ -1176,7 +1167,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .decode_client_state_meta(
             &origin_client_info.client_type,
             &origin_client_info.ibc_interface,
-            client_state.0.clone(),
+            client_state.clone(),
         )
         .await?;
 
@@ -1201,15 +1192,12 @@ async fn mk_connection_handshake_state_and_proofs(
     // the connection end as stored by the origin chain after open_init/try
     let connection_state = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            ConnectionPath {
-                connection_id: connection_id.clone(),
-            },
+        .query_connection(
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
+            connection_id.clone(),
         )
-        .await
-        .map_err(json_rpc_error_to_error_object)?
+        .await?
         .state
         .ok_or(ErrorObject::owned(
             FATAL_JSONRPC_ERROR_CODE,
@@ -1296,7 +1284,7 @@ async fn mk_connection_handshake_state_and_proofs(
 
     Ok(ConnectionHandshakeStateAndProofs {
         connection_state,
-        encoded_client_state: reencoded_client_state.0,
+        encoded_client_state: reencoded_client_state,
         encoded_client_state_proof,
         encoded_consensus_state_proof,
         encoded_connection_state_proof,
@@ -1307,9 +1295,9 @@ async fn mk_connection_handshake_state_and_proofs(
 struct ConnectionHandshakeStateAndProofs {
     connection_state: ConnectionEnd,
     /// The raw client state, exactly as stored in the counterparty's state.
-    encoded_client_state: Vec<u8>,
-    encoded_client_state_proof: Vec<u8>,
-    encoded_consensus_state_proof: Vec<u8>,
-    encoded_connection_state_proof: Vec<u8>,
+    encoded_client_state: Bytes,
+    encoded_client_state_proof: Bytes,
+    encoded_consensus_state_proof: Bytes,
+    encoded_connection_state_proof: Bytes,
     consensus_height: Height,
 }

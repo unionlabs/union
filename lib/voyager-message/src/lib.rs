@@ -4,7 +4,10 @@ use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 
 use chain_utils::BoxDynError;
 use jsonrpsee::{
-    core::{client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams, RpcResult},
+    core::{
+        async_trait, client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams,
+        RpcResult,
+    },
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
@@ -16,7 +19,6 @@ use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use tonic::async_trait;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{traits::Member, ErrorReporter};
 use voyager_vm::{QueueError, QueueMessage};

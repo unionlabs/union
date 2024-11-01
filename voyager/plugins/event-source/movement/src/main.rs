@@ -21,7 +21,6 @@ use unionlabs::{
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, connection_end::ConnectionEnd},
     },
-    ics24::{ChannelEndPath, ConnectionPath},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter, QueryHeight,
 };
@@ -35,9 +34,7 @@ use voyager_message::{
         FullIbcEvent, PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
     },
     module::{PluginInfo, PluginServer},
-    rpc::{
-        json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt as _,
-    },
+    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
     run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
     VoyagerMessage,
 };
@@ -173,26 +170,23 @@ impl Module {
         channel::order::Order,
     )> {
         let self_channel = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_channel(
                 self.chain_id.clone(),
                 event_height.into(),
-                ChannelEndPath {
-                    port_id: self_port_id.clone(),
-                    channel_id: self_channel_id.clone(),
-                },
+                self_port_id.clone(),
+                self_channel_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
+        let self_connection_id = self_channel.connection_hops[0].clone();
         let self_connection = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_connection(
                 self.chain_id.clone(),
                 event_height.into(),
-                ConnectionPath {
-                    connection_id: self_channel.connection_hops[0].clone(),
-                },
+                self_connection_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?;
@@ -218,14 +212,14 @@ impl Module {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
+        let other_port_id = self_channel.counterparty.port_id.clone();
+        let other_channel_id = self_channel.counterparty.channel_id.clone().unwrap();
         let other_channel = voyager_rpc_client
-            .query_ibc_state_typed(
+            .query_channel(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
-                ChannelEndPath {
-                    port_id: self_channel.counterparty.port_id.clone(),
-                    channel_id: self_channel.counterparty.channel_id.unwrap(),
-                },
+                other_port_id.clone(),
+                other_channel_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?;
@@ -240,12 +234,12 @@ impl Module {
             version: self_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection_state.client_id,
-                connection_id: self_connection.path.connection_id.clone(),
+                connection_id: self_connection_id,
             },
         };
         let destination_channel = ChannelMetadata {
-            port_id: other_channel.path.port_id.clone(),
-            channel_id: other_channel.path.channel_id.clone(),
+            port_id: other_port_id,
+            channel_id: other_channel_id,
             version: other_channel_state.version,
             connection: ConnectionMetadata {
                 client_id: self_connection_state.counterparty.client_id,
@@ -723,8 +717,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             WriteAcknowledgement {
-                                packet_data: event.packet.data.into(),
-                                packet_ack: event.acknowledgement.into(),
+                                packet_data: event.packet.data.0.into(),
+                                packet_ack: event.acknowledgement.0.into(),
                                 packet: PacketMetadata {
                                     sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
                                     source_channel,
@@ -759,7 +753,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             RecvPacket {
-                                packet_data: event.packet.data.into(),
+                                packet_data: event.packet.data.0.into(),
                                 packet: PacketMetadata {
                                     sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
                                     source_channel,
@@ -793,7 +787,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             SendPacket {
-                                packet_data: event.data.into(),
+                                packet_data: event.data.0.into(),
                                 packet: PacketMetadata {
                                     sequence: (*event.sequence.inner()).try_into().unwrap(),
                                     source_channel,

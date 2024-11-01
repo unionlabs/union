@@ -1,6 +1,7 @@
 use macros::model;
 
 use crate::{
+    bytes::Bytes,
     ibc::core::client::height::Height,
     id::{ChannelId, PortId},
 };
@@ -12,8 +13,6 @@ pub struct MsgChannelOpenAck {
     pub counterparty_channel_id: ChannelId,
     // yes, this is actually just an unbounded string
     pub counterparty_version: String,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub proof_try: Vec<u8>,
+    pub proof_try: Bytes,
     pub proof_height: Height,
 }

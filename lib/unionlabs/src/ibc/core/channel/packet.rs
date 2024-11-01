@@ -3,6 +3,7 @@ use core::num::{NonZeroU64, TryFromIntError};
 use macros::model;
 
 use crate::{
+    bytes::Bytes,
     errors::{required, MissingField},
     ibc::core::client::height::Height,
     id::{ChannelId, Ics24IdParseError, ParsePrefixedIdError, PortId},
@@ -15,9 +16,7 @@ pub struct Packet {
     pub source_channel: ChannelId,
     pub destination_port: PortId,
     pub destination_channel: ChannelId,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub data: Vec<u8>,
+    pub data: Bytes,
     pub timeout_height: Height,
     pub timeout_timestamp: u64,
 }
@@ -30,7 +29,7 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
             source_channel: value.source_channel.to_string_prefixed(),
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string_prefixed(),
-            data: value.data,
+            data: value.data.into(),
             timeout_height: Some(value.timeout_height.into()),
             timeout_timestamp: value.timeout_timestamp,
         }
@@ -74,7 +73,7 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
                 .map_err(TryFromPacketError::DestinationPort)?,
             destination_channel: ChannelId::from_str_prefixed(&proto.destination_channel)
                 .map_err(TryFromPacketError::DestinationChannel)?,
-            data: proto.data,
+            data: proto.data.into(),
             timeout_height: required!(proto.timeout_height)?.into(),
             timeout_timestamp: proto.timeout_timestamp,
         })
@@ -97,7 +96,7 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
             source_channel: value.source_channel.to_string_prefixed(),
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string_prefixed(),
-            data: value.data.into(),
+            data: value.data.into_vec().into(),
             timeout_height: contracts::ibc_handler::IbcCoreClientV1HeightData {
                 revision_number: value.timeout_height.revision(),
                 revision_height: value.timeout_height.height(),

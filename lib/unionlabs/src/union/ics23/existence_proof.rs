@@ -1,6 +1,7 @@
 use macros::model;
 
 use crate::{
+    bytes::Bytes,
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
     ensure,
     union::ics23::inner_op::InnerOp,
@@ -11,15 +12,9 @@ use crate::{
     ethabi(raw(ExistenceProofEthAbi), into, from)
 )]
 pub struct ExistenceProof {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub key: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub value: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub leaf_prefix: Vec<u8>,
+    pub key: Bytes,
+    pub value: Bytes,
+    pub leaf_prefix: Bytes,
     pub path: Vec<InnerOp>,
 }
 
@@ -28,9 +23,9 @@ pub struct ExistenceProof {
 impl From<ExistenceProof> for ExistenceProofEthAbi {
     fn from(value: ExistenceProof) -> Self {
         ExistenceProofEthAbi {
-            key: value.key.into(),
-            value: value.value.into(),
-            leaf_prefix: value.leaf_prefix.into(),
+            key: value.key.into_vec().into(),
+            value: value.value.into_vec().into(),
+            leaf_prefix: value.leaf_prefix.into_vec().into(),
             path: value.path.into_iter().map(Into::into).collect(),
         }
     }
@@ -41,9 +36,9 @@ impl From<ExistenceProof> for ExistenceProofEthAbi {
 impl From<ExistenceProofEthAbi> for ExistenceProof {
     fn from(value: ExistenceProofEthAbi) -> Self {
         ExistenceProof {
-            key: value.key.to_vec(),
-            value: value.value.to_vec(),
-            leaf_prefix: value.leaf_prefix.to_vec(),
+            key: value.key.to_vec().into(),
+            value: value.value.to_vec().into(),
+            leaf_prefix: value.leaf_prefix.to_vec().into(),
             path: value.path.into_iter().map(Into::into).collect(),
         }
     }
@@ -111,15 +106,15 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
         )?;
 
         Ok(Self {
-            key: value.key.to_vec(),
-            value: value.value.to_vec(),
-            leaf_prefix: value.leaf.prefix.to_vec(),
+            key: value.key.to_vec().into(),
+            value: value.value.to_vec().into(),
+            leaf_prefix: value.leaf.prefix.to_vec().into(),
             path: value
                 .path
                 .into_iter()
                 .map(|io| InnerOp {
-                    prefix: io.prefix,
-                    suffix: io.suffix,
+                    prefix: io.prefix.into(),
+                    suffix: io.suffix.into(),
                 })
                 .collect(),
         })
@@ -129,8 +124,8 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
 impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
     fn from(value: ExistenceProof) -> Self {
         Self {
-            key: value.key.clone(),
-            value: value.value.clone(),
+            key: value.key.clone().into(),
+            value: value.value.clone().into(),
             leaf: Some(
                 crate::cosmos::ics23::leaf_op::LeafOp {
                     hash: EXPECTED_HASH,

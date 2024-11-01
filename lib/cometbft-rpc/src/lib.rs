@@ -24,7 +24,7 @@ use unionlabs::{
     option_unwrap, result_unwrap,
 };
 
-use crate::types::{
+use crate::rpc_types::{
     AbciQueryResponse, AllValidatorsResponse, BlockResponse, BroadcastTxSyncResponse,
     CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
 };
@@ -32,8 +32,9 @@ use crate::types::{
 #[cfg(test)]
 mod tests;
 
+pub mod rpc_types;
 pub mod serde;
-pub mod types;
+pub use cometbft_types as types;
 
 pub type JsonRpcError = jsonrpsee::core::client::Error;
 
@@ -81,7 +82,7 @@ impl Client {
     pub async fn validators(
         &self,
         height: Option<NonZeroU64>,
-        pagination: Option<types::ValidatorsPagination>,
+        pagination: Option<rpc_types::ValidatorsPagination>,
     ) -> Result<ValidatorsResponse, JsonRpcError> {
         self.inner
             .request(
@@ -116,7 +117,7 @@ impl Client {
             } = self
                 .validators(
                     height,
-                    Some(types::ValidatorsPagination {
+                    Some(rpc_types::ValidatorsPagination {
                         page,
                         per_page: Some(PER_PAGE),
                     }),

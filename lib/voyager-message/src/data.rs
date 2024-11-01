@@ -7,6 +7,7 @@ use serde_json::Value;
 use subset_of::SubsetOf;
 use tracing::info;
 use unionlabs::{
+    bytes::Bytes,
     hash::H256,
     ibc::core::{
         channel::{
@@ -292,31 +293,20 @@ pub struct ChannelOpenConfirm {
 
 #[model]
 pub struct WriteAcknowledgement {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub packet_data: Vec<u8>,
-
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub packet_ack: Vec<u8>,
-
+    pub packet_data: Bytes,
+    pub packet_ack: Bytes,
     pub packet: PacketMetadata,
 }
 
 #[model]
 pub struct RecvPacket {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub packet_data: Vec<u8>,
-
+    pub packet_data: Bytes,
     pub packet: PacketMetadata,
 }
 
 #[model]
 pub struct SendPacket {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub packet_data: Vec<u8>,
+    pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
 }
@@ -408,9 +398,7 @@ pub struct IbcState<P: IbcPath> {
 pub struct IbcProof<P: IbcPath> {
     pub path: P,
     pub height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub proof: Vec<u8>,
+    pub proof: Bytes,
 }
 
 #[model]
@@ -455,23 +443,17 @@ pub struct OrderedMsgUpdateClients {
 
 #[model]
 pub struct EncodedClientState {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub encoded_client_state: Vec<u8>,
+    pub encoded_client_state: Bytes,
 }
 
 #[model]
 pub struct EncodedConsensusState {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub encoded_consensus_state: Vec<u8>,
+    pub encoded_consensus_state: Bytes,
 }
 
 #[model]
 pub struct EncodedHeader {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub encoded_header: Vec<u8>,
+    pub encoded_header: Bytes,
 }
 
 #[model]

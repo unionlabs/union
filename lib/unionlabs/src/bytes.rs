@@ -204,6 +204,24 @@ impl<E: Encoding> From<Vec<u8>> for Bytes<E> {
     }
 }
 
+impl<E: Encoding> From<Bytes<E>> for Vec<u8> {
+    fn from(value: Bytes<E>) -> Self {
+        value.deref().into()
+    }
+}
+
+impl<E: Encoding> From<Cow<'static, [u8]>> for Bytes<E> {
+    fn from(value: Cow<'static, [u8]>) -> Self {
+        Self::new(value)
+    }
+}
+
+impl<E: Encoding> From<Bytes<E>> for Cow<'static, [u8]> {
+    fn from(value: Bytes<E>) -> Self {
+        value.bytes
+    }
+}
+
 impl<E: Encoding> From<&Vec<u8>> for Bytes<E> {
     fn from(value: &Vec<u8>) -> Self {
         Self::new(value.to_owned())
@@ -213,12 +231,6 @@ impl<E: Encoding> From<&Vec<u8>> for Bytes<E> {
 impl<E: Encoding> From<&[u8]> for Bytes<E> {
     fn from(value: &[u8]) -> Self {
         Self::new(value.to_owned())
-    }
-}
-
-impl<E: Encoding> From<Bytes<E>> for Vec<u8> {
-    fn from(value: Bytes<E>) -> Self {
-        value.deref().into()
     }
 }
 
