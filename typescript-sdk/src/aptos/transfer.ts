@@ -1,10 +1,12 @@
 import {
   type Aptos,
   Ed25519PublicKey,
+  type SimpleTransaction,
+  type AccountAddressInput,
   type Account as AptosAccount,
   type InputGenerateTransactionPayloadData
 } from "@aptos-labs/ts-sdk"
-import { err, ok, type Result } from "neverthrow"
+import { err, ok, type Result, ResultAsync } from "neverthrow"
 import { isValidBech32Address } from "../utilities/address.ts"
 import type { AptosBrowserWallet, AuthAccess } from "#aptos/wallet.ts"
 import { bech32AddressToHex, bech32ToBytes, hexStringToUint8Array } from "../convert.ts"
@@ -30,20 +32,39 @@ type AptosTransferParams = AptosTransferBaseParams & {
   relayContractAddress: string
 }
 
-export async function waitForTransactionReceipt({
-  aptos,
-  hash
-}: { aptos: Aptos; hash: string }): Promise<Result<string, Error>> {
-  const transactionResult = await aptos.waitForTransaction({
-    transactionHash: hash,
-    options: { checkSuccess: false }
-  })
-  if (!transactionResult.success) {
-    return err(new Error(transactionResult.vm_status || "waiting for transaction failed"))
-  }
+export const waitForTransactionReceipt: (args_0: { aptos: Aptos; hash: string }) => ResultAsync<
+  string,
+  Error
+> = ResultAsync.fromThrowable(
+  async ({ aptos, hash }: { aptos: Aptos; hash: string }) => {
+    const transactionResult = await aptos.waitForTransaction({
+      transactionHash: hash,
+      options: { checkSuccess: false }
+    })
+    if (!transactionResult.success) {
+      throw new Error(transactionResult.vm_status || "waiting for transaction failed")
+    }
+    return transactionResult.hash
+  },
+  error => new Error(`Waiting for transaction failed: ${error}`, { cause: error })
+)
 
-  return ok(transactionResult.hash)
-}
+const buildSimpleTransaction: (args: {
+  aptos: Aptos
+  accountAddress: AccountAddressInput
+  data: InputGenerateTransactionPayloadData
+}) => ResultAsync<SimpleTransaction, Error> = ResultAsync.fromThrowable(
+  async (args: {
+    aptos: Aptos
+    accountAddress: AccountAddressInput
+    data: InputGenerateTransactionPayloadData
+  }) =>
+    args.aptos.transaction.build.simple({
+      data: args.data,
+      sender: args.accountAddress
+    }),
+  error => new Error(`Build simple transaction failed: ${error}`, { cause: error })
+)
 
 /**
  * Transfer an asset from the Aptos blockchain (e.g., Aptos) using the IBC `send` function, similar to EVM implementation.
@@ -109,14 +130,17 @@ export async function transferAssetFromAptos(
 
     const signer = parameters.signer as AptosAccount
 
-    const transaction = await parameters.aptos.transaction.build.simple({
+    const transaction = await buildSimpleTransaction({
       data: payload,
-      sender: signer.accountAddress
+      aptos: parameters.aptos,
+      accountAddress: signer.accountAddress
     })
+
+    if (!transaction.isOk()) return err(transaction.error)
 
     if (parameters.simulate) {
       const simulationResult = await parameters.aptos.transaction.simulate.simple({
-        transaction,
+        transaction: transaction.value,
         signerPublicKey: signer.publicKey
       })
 
@@ -126,10 +150,10 @@ export async function transferAssetFromAptos(
     }
 
     const pendingTransaction = await parameters.aptos.transaction.submit.simple({
-      transaction,
+      transaction: transaction.value,
       senderAuthenticator: parameters.aptos.transaction.sign({
-        transaction,
-        signer
+        signer,
+        transaction: transaction.value
       })
     })
 
@@ -165,18 +189,21 @@ export async function aptosSameChainTransfer(
 
     const signer = parameters.signer as AptosAccount
 
-    if (parameters.simulate) {
-      const transaction = await parameters.aptos.transaction.build.simple({
-        sender: signer.accountAddress,
-        data: {
-          typeArguments: ["0x1::fungible_asset::Metadata"],
-          function: "0x1::primary_fungible_store::transfer",
-          functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
-        }
-      })
+    const transaction = await buildSimpleTransaction({
+      data: {
+        typeArguments: ["0x1::fungible_asset::Metadata"],
+        function: "0x1::primary_fungible_store::transfer",
+        functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
+      },
+      aptos: parameters.aptos,
+      accountAddress: signer.accountAddress
+    })
 
+    if (!transaction.isOk()) return err(transaction.error)
+
+    if (parameters.simulate) {
       const simulationResult = await parameters.aptos.transaction.simulate.simple({
-        transaction,
+        transaction: transaction.value,
         signerPublicKey: signer.publicKey
       })
 
@@ -184,23 +211,15 @@ export async function aptosSameChainTransfer(
       if (!resultItem?.success) return err(new Error(`Simulation failed: ${simulationResult}`))
       console.info(`aptosSameChainTransfer simulation succeeded: ${simulationResult.at(0)?.hash}`)
     }
-    const transaction = await parameters.aptos.transaction.build.simple({
-      sender: signer.accountAddress,
-      data: {
-        typeArguments: ["0x1::fungible_asset::Metadata"],
-        function: "0x1::primary_fungible_store::transfer",
-        functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
-      }
-    })
 
     const senderAuthenticator = parameters.aptos.transaction.sign({
-      transaction,
-      signer
+      signer,
+      transaction: transaction.value
     })
 
     const simpleTransactionResult = await parameters.aptos.transaction.submit.simple({
-      transaction,
-      senderAuthenticator
+      senderAuthenticator,
+      transaction: transaction.value
     })
 
     if (!simpleTransactionResult.hash.startsWith("0x")) return err(new Error("hash not found"))

@@ -39,7 +39,7 @@ export interface AptosBrowserWallet {
    * for some reason, aptos wallets use snake case for tx payload params
    * whereas aptos sdk uses camel case
    *
-   * @warm don't go this route, just `signAndSubmitTransaction` to preserve your well-being
+   * @warn don't go this route, just `signAndSubmitTransaction` to preserve your well-being
    */
   signTransaction: (args: {
     payload: AptosWalletTransactionPayload
