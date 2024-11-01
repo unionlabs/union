@@ -169,6 +169,34 @@ pub enum Path {
     NextClientSequence(NextClientSequencePath),
 }
 
+impl Path {
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn into_eth_commitment(self) -> H256 {
+        match self {
+            Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
+            Path::ClientConsensusState(path) => {
+                ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+            }
+            Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
+            Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+            Path::Commitment(path) => {
+                ethabi::commitments_key(path.channel_id.id(), path.sequence.into())
+            }
+            Path::Acknowledgement(path) => {
+                ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.into())
+            }
+            Path::Receipt(path) => ethabi::receipts_key(path.channel_id.id(), path.sequence.into()),
+            Path::NextSequenceSend(path) => ethabi::next_seq_send_key(path.channel_id.id()),
+            Path::NextSequenceRecv(path) => ethabi::next_seq_recv_key(path.channel_id.id()),
+            Path::NextSequenceAck(path) => ethabi::next_seq_ack_key(path.channel_id.id()),
+            // TODO(aeryz): check these out
+            Path::NextConnectionSequence(_path) => H256::default(),
+            Path::NextClientSequence(_path) => H256::default(),
+        }
+    }
+}
+
 impl FromStr for Path {
     type Err = PathParseError;
 
