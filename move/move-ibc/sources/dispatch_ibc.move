@@ -221,7 +221,6 @@ module ibc::sample_ibc {
         port_id: address
     }
 
-
     use aptos_framework::function_info;
     use aptos_framework::function_info::FunctionInfo;
 
@@ -454,71 +453,6 @@ module ibc::sample_ibc {
             channel_close_confirm_param
         }
     }
-
-
-    // #[test(publisher = @ibc)]
-    // fun test_register(publisher: &signer) {
-    //     setup(publisher);
-
-    //     // let param =
-    //     //     ping_pong_app::new_dynamic_dispatch_param(
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none(),
-    //     //         option::none()
-    //     //     );
-    //     let new_packet = packet::new(
-    //             1,
-    //             2,
-    //             3,
-    //             x"000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e8",
-    //             100,
-    //             200
-    //         );
-    //     let recv_packet_params = RecvPacketParams{
-    //         packet: new_packet
-    //     };
-    //     engine::dispatch<ping_pong_app::PingPongProof>(
-    //         any::pack(recv_packet_params)
-    //     );
-
-
-    //     // let other_data = dispatcher::get_return_value<ping_pong_app::PingPongProof, ping_pong_app::DynamicDispatchParam>(ping_pong_app::new_ping_pong_proof());
-    //     // std::debug::print(&string::utf8(b"other_data under dispatch_ibc.move"));
-    //     // std::debug::print(&other_data);
-
-    //     // let param2 =
-    //     //         dynamic_dispatch_app2::new_dynamic_dispatch_param(
-    //     //             14,
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none(),
-    //     //             option::none()
-    //     //         );
-
-    //     // let recv_packet = RecvPacketParams {a,b,c};
-    //     // engine::dispatch<dynamic_dispatch_app2::TestProof2>(
-    //     //     any::pack(recv_packet)
-    //     // );
-
-    // }
 
 
     public fun register_application<T: key + store + drop>(ibc_app: &signer, cb: FunctionInfo, type: T) acquires SignerRef { // pingpongapp bunu cagiracak
@@ -918,14 +852,18 @@ module ibc::sample_ibc {
         );
     }
 
-    public fun channel_open_init(
-        ibc_app: &signer, // this is the caller which should be the `ibc_app`
+    public entry fun channel_open_init<T: key + store + drop>(
         port_id: address,
         connection_id: u32,
         ordering: u8,
         version: vector<u8>
-    ): (Channel, u64) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
+    ) acquires IBCStore, Port {
+
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
 
         let port_id = address_to_string(port_id);
 
@@ -961,6 +899,25 @@ module ibc::sample_ibc {
 
         commit_channel(channel_id, channel);
 
+        let dynamic_dispatch_param = new_dynamic_dispatch_param(
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::some(ChannelOpenInitParams {
+                ordering: ordering,
+                connection_id: connection_id,
+                channel_id: channel_id,
+                version: version
+             }),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none()
+        );
+        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+
         event::emit(
             ChannelOpenInit {
                 port_id: port_id,
@@ -969,12 +926,9 @@ module ibc::sample_ibc {
                 version: version
             }
         );
-
-        (channel, 0)
     }
 
-    public fun channel_open_try(
-        ibc_app: &signer,
+    public entry fun channel_open_try<T: key + store + drop>(
         port_id: address,
         channel_state: u8,
         channel_order: u8,
@@ -984,8 +938,12 @@ module ibc::sample_ibc {
         counterparty_version: vector<u8>,
         proof_init: vector<u8>,
         proof_height: u64
-    ): (Channel, u64) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
+    ) acquires IBCStore, Port {
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
 
         let port_id = address_to_string(port_id);
 
@@ -1055,19 +1013,41 @@ module ibc::sample_ibc {
 
         commit_channel(channel_id, channel);
 
-        (channel, 0)
+        let dynamic_dispatch_param = new_dynamic_dispatch_param(
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::some(ChannelOpenTryParams {
+                ordering: channel_order,
+                connection_id: connection_id,
+                channel_id: channel_id,
+                counterparty_channel_id: counterparty_channel_id,
+                version: version,
+                counterparty_version: counterparty_version
+             }),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none()
+        );
+        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
     }
 
-    public fun channel_open_ack(
-        ibc_app: &signer, // this is the caller which should be the `ibc_app`
+    public entry fun channel_open_ack<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
         counterparty_version: vector<u8>,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64
-    ) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
+    ) acquires IBCStore, Port {
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
 
         let chan =
             *smart_table::borrow(
@@ -1122,17 +1102,37 @@ module ibc::sample_ibc {
         );
 
         commit_channel(channel_id, chan);
+
+        let dynamic_dispatch_param = new_dynamic_dispatch_param(
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::some(ChannelOpenAckParams {
+                channel_id: channel_id,
+                counterparty_channel_id: counterparty_channel_id,
+                counterparty_version: counterparty_version
+             }),
+            option::none(),
+            option::none(),
+            option::none()
+        );
+        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
     }
 
-    public fun channel_open_confirm(
-        ibc_app: &signer,
+    public entry fun channel_open_confirm<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64
-    ) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
-
+    ) acquires IBCStore, Port {
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
         let chan =
             *smart_table::borrow(
                 &borrow_global<IBCStore>(get_vault_addr()).channels,
@@ -1184,6 +1184,22 @@ module ibc::sample_ibc {
             }
         );
         commit_channel(channel_id, chan);
+
+        let dynamic_dispatch_param = new_dynamic_dispatch_param(
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::some(ChannelOpenConfirmParams {
+                channel_id: channel_id
+            }),
+            option::none(),
+            option::none()
+        );
+        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
     }
 
     // Sends a packet
@@ -1369,7 +1385,6 @@ module ibc::sample_ibc {
     /// Note that any sanity check failures will result in this function to be aborted in order for caller's
     /// storage to be reverted. This will result in acks won't be able to written.
     public entry fun recv_packet<T: key + store + drop>(
-        ibc_app: &signer,
         port_id: address,
         packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
@@ -1447,15 +1462,40 @@ module ibc::sample_ibc {
         event::emit(WriteAcknowledgement { packet, acknowledgement });
     }
 
-    public fun acknowledge_packet(
-        ibc_app: &signer,
+    public entry fun acknowledge_packet<T: key + store + drop>(
         port_id: address,
-        packets: vector<packet::Packet>,
+        packet_sequences: vector<u64>,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_datas: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
         acknowledgements: vector<vector<u8>>,
         proof: vector<u8>,
         proof_height: u64
-    ) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
+    ) acquires IBCStore, Port {
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
+
+        let packets: vector<Packet> = vector::empty();
+        let i = 0;
+        while (i < vector::length(&packet_sequences)) {
+            vector::push_back(
+                &mut packets,
+                packet::new(
+                    *vector::borrow(&packet_sequences, i),
+                    *vector::borrow(&packet_source_channels, i),
+                    *vector::borrow(&packet_destination_channels, i),
+                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_timeout_heights, i),
+                    *vector::borrow(&packet_timeout_timestamps, i)
+                )
+            );
+            i = i + 1;
+        };
         let l = vector::length(&packets);
         assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
@@ -1511,21 +1551,54 @@ module ibc::sample_ibc {
                 set_next_sequence_ack(source_channel, packet::sequence(&packet));
             };
 
+            let dynamic_dispatch_param = new_dynamic_dispatch_param(
+                option::none(),
+                option::none(),
+                option::some(AcknowledgePacketParams { packet: packet, acknowledgement: acknowledgement }),
+                option::none(),
+                option::none(),
+                option::none(),
+                option::none(),
+                option::none(),
+                option::none(),
+                option::none()
+            );
+            engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+
             event::emit(AcknowledgePacket { packet, acknowledgement });
 
             i = i + 1;
         }
     }
 
-    public fun timeout_packet(
-        ibc_app: &signer,
+    public entry fun timeout_packet<T: key + store + drop>(
         port_id: address,
-        packet: Packet,
+        packet_sequence: u64,
+        packet_source_channel: u32,
+        packet_destination_channel: u32,
+        packet_data: vector<u8>,
+        packet_timeout_height: u64,
+        packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
         next_sequence_recv: u64
-    ) acquires IBCStore {
-        authorize_app(ibc_app, port_id);
+    ) acquires IBCStore, Port {
+
+        let port = borrow_global<Port<T>>(get_vault_addr());
+        assert!(
+            port.port_id == port_id,
+            E_UNAUTHORIZED
+        );
+
+        let packet =
+            packet::new(
+                packet_sequence,
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
 
         let source_channel = packet::source_channel(&packet);
         let destination_channel = packet::destination_channel(&packet);
@@ -1588,6 +1661,20 @@ module ibc::sample_ibc {
             &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
             commitment_key
         );
+
+        let dynamic_dispatch_param = new_dynamic_dispatch_param(
+            option::none(),
+            option::none(),
+            option::none(),
+            option::some(TimeoutPacketParams { packet: packet }),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none(),
+            option::none()
+        );
+        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
 
         event::emit(TimeoutPacket { packet });
     }

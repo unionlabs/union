@@ -235,6 +235,8 @@ module ibc::ping_pong_app {
 
         initiate(pp_packet.ping);
 
+        dispatcher::set_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>(new_ping_pong_proof(), ACK_SUCCESS);
+
         ACK_SUCCESS
     }
 
@@ -297,17 +299,17 @@ module ibc::ping_pong_app {
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
         // Get the current value of `return_value`
-        let other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
-        std::debug::print(&string::utf8(b"other_data before modification: "));
-        std::debug::print(&other_data);
+        // let other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
+        // std::debug::print(&string::utf8(b"other_data before modification: "));
+        // std::debug::print(&other_data);
 
-        // Modify `other_data` using the setter
-        dispatcher::set_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
+        // // Modify `other_data` using the setter
+        // dispatcher::set_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
 
-        // Get and print the modified `other_data`
-        let modified_other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
-        std::debug::print(&string::utf8(b"other_data after modification: "));
-        std::debug::print(&modified_other_data);
+        // // Get and print the modified `other_data`
+        // let modified_other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
+        // std::debug::print(&string::utf8(b"other_data after modification: "));
+        // std::debug::print(&modified_other_data);
 
         // Access the `data` field through the getter
         let value: sample_ibc::DynamicDispatchParam = dispatcher::get_data(new_ping_pong_proof());
