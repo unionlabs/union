@@ -120,40 +120,40 @@ require (
 // Cosmos SDK v0.52
 replace (
 	cosmossdk.io/api => cosmossdk.io/api v0.7.3-0.20240924065902-eb7653cfecdf
-	cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241018173625-c2982236c557
+	cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk/client/v2 v2.0.0-20241018173625-c2982236c557
 	cosmossdk.io/core => cosmossdk.io/core v1.0.0-alpha.4
 	cosmossdk.io/core/testing => cosmossdk.io/core/testing v0.0.0-20240924155446-f195a8660be9
 	cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
-	cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk-union/tools/confix v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/bank => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk-union/x/circuit v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/consensus => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/distribution => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/epochs => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/gov => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/group => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/mint => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk-union/x/nft v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/params => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/protocolpool => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/slashing => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241018173625-c2982236c557
-	cosmossdk.io/x/staking => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk/tools/confix v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk/x/accounts v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk/x/authz v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/bank => github.com/unionlabs/cosmos-sdk/x/bank v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk/x/circuit v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/consensus => github.com/unionlabs/cosmos-sdk/x/consensus v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/distribution => github.com/unionlabs/cosmos-sdk/x/distribution v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/epochs => github.com/unionlabs/cosmos-sdk/x/epochs v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/gov => github.com/unionlabs/cosmos-sdk/x/gov v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/group => github.com/unionlabs/cosmos-sdk/x/group v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/mint => github.com/unionlabs/cosmos-sdk/x/mint v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/params => github.com/unionlabs/cosmos-sdk/x/params v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/protocolpool => github.com/unionlabs/cosmos-sdk/x/protocolpool v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/slashing => github.com/unionlabs/cosmos-sdk/x/slashing v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/staking => github.com/unionlabs/cosmos-sdk/x/staking v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/tx => cosmossdk.io/x/tx v0.13.4-0.20240815194237-858ec2fcb897
-	cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk/x/upgrade v0.0.0-20241018173625-c2982236c557
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241021101406-df0586cc2041
-	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241021101406-df0586cc2041
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20241021101406-df0586cc2041
+	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbls/api v0.0.0-20241021101406-df0586cc2041
 	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241018173625-c2982236c557
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20241018173625-c2982236c557
 	github.com/tunabay/go-bitarray => github.com/poisonphang/go-bitarray v0.0.0-20240912214703-d6127bb4d1bd
 )
