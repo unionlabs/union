@@ -588,6 +588,20 @@ pub mod hash_v2 {
     }
 
     #[cfg(feature = "ethabi")]
+    impl<E: Encoding> From<Hash<20, E>> for alloy::core::primitives::Address {
+        fn from(value: Hash<20, E>) -> Self {
+            value.get().into()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding> From<alloy::core::primitives::Address> for Hash<20, E> {
+        fn from(value: alloy::core::primitives::Address) -> Self {
+            value.0.into()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
     impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>>
         for alloy::core::primitives::FixedBytes<BYTES>
     {
