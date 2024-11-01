@@ -25,7 +25,7 @@ import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from 
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
-export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = [
+export const evmChainId = [
   `${sepolia.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,

@@ -1,6 +1,7 @@
 import type {
   RawTransaction,
   AccountAuthenticator,
+  UserTransactionResponse,
   InputGenerateTransactionOptions
 } from "@aptos-labs/ts-sdk"
 import type { Prettify, KeysToSnakeCase } from "../types.ts"
@@ -48,5 +49,5 @@ export interface AptosBrowserWallet {
 
   signAndSubmitTransaction: (args: {
     payload: AptosWalletTransactionPayload
-  }) => Promise<`0x${string}`>
+  }) => Promise<UserTransactionResponse>
 }

@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.35",
+  "version": "0.0.37",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -38,7 +38,7 @@
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.37"
+    "viem": "^2.21.38"
   },
   "devDependencies": {
     "only-allow": "^1.2.1",

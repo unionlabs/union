@@ -43,13 +43,13 @@ Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sep
 
 ```ts
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, hexStringToUint8Array, http } from "@unionlabs/client"
+import { createUnionClient, hexToBytes, http } from "@unionlabs/client"
 
 const PRIVATE_KEY = process.env["PRIVATE_KEY"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "stride"
 )
 

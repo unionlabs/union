@@ -2,14 +2,14 @@ import { expect, it, describe } from "vitest"
 import { raise } from "../src/utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { bech32AddressToHex, hexAddressToBech32, hexStringToUint8Array } from "../src/convert.ts"
+import { bech32AddressToHex, hexAddressToBech32, hexToBytes } from "../src/convert.ts"
 
 const PRIVATE_KEY = "1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380"
 
 const { address: evmAddress } = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "union"
 )
 

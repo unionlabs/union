@@ -1,12 +1,12 @@
 export type * from "./types.ts"
 export {
+  hexToBytes,
   bytesToHex,
+  bech32ToBytes,
   bech32AddressToHex,
   hexAddressToBech32,
   bytesToBech32Address,
-  bech32ToBech32Address,
-  hexStringToUint8Array,
-  uint8ArrayToHexString
+  bech32ToBech32Address
 } from "./convert.ts"
 import {
   evmChains,
@@ -88,10 +88,10 @@ export function createUnionClient(
  * @example
  * ```ts
  * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
- * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ * import { createUnionClient, hexToBytes } from "@union/client"
  *
  * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
- *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
  *   "stride"
  * )
  *
@@ -111,10 +111,10 @@ export function createUnionClient(
  * @example
  * ```ts
  * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
- * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ * import { createUnionClient, hexToBytes } from "@union/client"
  *
  * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
- *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
  *   "stride"
  * )
  *
@@ -168,10 +168,10 @@ export function createUnionClient(
  * ```ts
  * import { privateKeyToAccount } from "viem/accounts"
  * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
- * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ * import { createUnionClient, hexToBytes } from "@union/client"
  *
  * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
- *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
  *   "stride"
  * )
  *

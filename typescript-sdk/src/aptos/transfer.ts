@@ -7,14 +7,14 @@ import {
   type AccountAddressInput,
   type AccountAuthenticator,
   type Account as AptosAccount,
+  type UserTransactionResponse,
   type PendingTransactionResponse,
-  type InputGenerateTransactionPayloadData,
-  type UserTransactionResponse
+  type InputGenerateTransactionPayloadData
 } from "@aptos-labs/ts-sdk"
 import { err, ok, type Result, ResultAsync } from "neverthrow"
 import { isValidBech32Address } from "../utilities/address.ts"
 import type { AptosBrowserWallet, AuthAccess } from "#aptos/wallet.ts"
-import { bech32AddressToHex, bech32ToBytes, hexStringToUint8Array } from "../convert.ts"
+import { bech32AddressToHex, bech32ToBytes, hexToBytes } from "../convert.ts"
 
 export type { AptosAccount, AptosTransferParams, AptosPublicAccountInfo }
 
@@ -37,16 +37,16 @@ type AptosTransferParams = AptosTransferBaseParams & {
   relayContractAddress: string
 }
 
-export const waitForTransactionReceipt: (args_0: { aptos: Aptos; hash: string }) => ResultAsync<
+export const waitForTransactionReceipt: (args: { aptos: Aptos; hash: string }) => ResultAsync<
   string,
   Error
 > = ResultAsync.fromThrowable(
-  async ({ aptos, hash }: { aptos: Aptos; hash: string }) => {
-    const transactionResult = await aptos.waitForTransaction({
-      transactionHash: hash,
+  async args => {
+    const transactionResult = await args.aptos.waitForTransaction({
+      transactionHash: args.hash,
       options: { checkSuccess: false }
     })
-    if (!transactionResult.success) {
+    if (!transactionResult?.success) {
       throw new Error(transactionResult.vm_status || "waiting for transaction failed")
     }
     return transactionResult.hash
@@ -96,156 +96,163 @@ export const simulateSimpleTransaction: (args: {
   error => new Error(`Simulate simple transaction failed`, { cause: error })
 )
 
-export async function transferAssetFromAptos(
-  parameters: AptosTransferParams
-): Promise<Result<string, Error>> {
-  try {
-    const payload = {
-      function: `${parameters.relayContractAddress}::ibc::send`,
-      typeArguments: [],
-      functionArguments: [
-        parameters.sourceChannel,
-        isValidBech32Address(parameters.receiver)
-          ? bech32AddressToHex({ address: parameters.receiver })
-          : parameters.receiver,
-        [parameters.denomAddress],
-        [parameters.amount],
-        parameters.memo ?? "",
-        9n,
-        999_999_999n,
-        0n
-      ]
-    } as const satisfies InputGenerateTransactionPayloadData
+export const transferAssetFromAptos: (args: AptosTransferParams) => ResultAsync<string, Error> =
+  ResultAsync.fromThrowable(
+    async parameters => {
+      const payload = {
+        function: `${parameters.relayContractAddress}::ibc::send`,
+        typeArguments: [],
+        functionArguments: [
+          parameters.sourceChannel,
+          isValidBech32Address(parameters.receiver)
+            ? bech32AddressToHex({ address: parameters.receiver })
+            : parameters.receiver,
+          [parameters.denomAddress],
+          [parameters.amount],
+          parameters.memo ?? "",
+          9n,
+          999_999_999n,
+          0n
+        ]
+      } as const satisfies InputGenerateTransactionPayloadData
 
-    if (parameters.authAccess === "wallet") {
-      const signer = parameters.signer as AptosBrowserWallet
-      const hash = await signer.signAndSubmitTransaction({
-        payload: {
-          function: payload.function,
-          type_arguments: payload.typeArguments,
-          arguments: [
-            parameters.sourceChannel,
-            isValidBech32Address(parameters.receiver)
-              ? bech32AddressToHex({ address: parameters.receiver })
-              : parameters.receiver,
-            [parameters.denomAddress],
-            [parameters.amount.toString()],
-            parameters.memo ?? "",
-            BigInt(9n).toString(),
-            BigInt(999_999_999).toString(),
-            BigInt(0n).toString()
-          ]
+      if (parameters.authAccess === "wallet") {
+        const signer = parameters.signer as AptosBrowserWallet
+        const transaction = await signer.signAndSubmitTransaction({
+          payload: {
+            function: payload.function,
+            type_arguments: payload.typeArguments,
+            arguments: [
+              parameters.sourceChannel,
+              isValidBech32Address(parameters.receiver)
+                ? bech32AddressToHex({ address: parameters.receiver })
+                : parameters.receiver,
+              [parameters.denomAddress],
+              [parameters.amount.toString()],
+              parameters.memo ?? "",
+              BigInt(9n).toString(),
+              BigInt(999_999_999).toString(),
+              BigInt(0n).toString()
+            ]
+          }
+        })
+
+        if (!transaction?.success) {
+          throw new Error(
+            `Transaction failed: ${transaction?.vm_status} - ${JSON.stringify(transaction, undefined, 2)}`
+          )
         }
+        return transaction.hash
+      }
+
+      const signer = parameters.signer as AptosAccount
+
+      const transaction = await buildSimpleTransaction({
+        data: payload,
+        aptos: parameters.aptos,
+        accountAddress: signer.accountAddress
       })
-      return ok(hash)
-    }
 
-    const signer = parameters.signer as AptosAccount
+      if (!transaction.isOk()) throw transaction.error
 
-    const transaction = await buildSimpleTransaction({
-      data: payload,
-      aptos: parameters.aptos,
-      accountAddress: signer.accountAddress
-    })
+      if (parameters.simulate) {
+        const simulationResult = await simulateSimpleTransaction({
+          aptos: parameters.aptos,
+          transaction: transaction.value,
+          signerPublicKey: signer.publicKey
+        })
+        if (!simulationResult.isOk()) throw simulationResult.error
 
-    if (!transaction.isOk()) return err(transaction.error)
+        console.info(`aptosTransferSimulate simulation succeeded: ${simulationResult.value.hash}`)
+      }
 
-    if (parameters.simulate) {
-      const simulationResult = await simulateSimpleTransaction({
+      const pendingTransaction = await submitSimpleTransaction({
         aptos: parameters.aptos,
         transaction: transaction.value,
-        signerPublicKey: signer.publicKey
+        accountAuthenticator: parameters.aptos.transaction.sign({
+          signer,
+          transaction: transaction.value
+        })
       })
-      if (!simulationResult.isOk()) return err(simulationResult.error)
 
-      console.info(`aptosTransferSimulate simulation succeeded: ${simulationResult.value.hash}`)
-    }
+      if (!pendingTransaction.isOk()) throw pendingTransaction.error
+      if (!pendingTransaction.value.hash.startsWith("0x")) throw new Error("hash not found")
 
-    const pendingTransaction = await submitSimpleTransaction({
-      aptos: parameters.aptos,
-      transaction: transaction.value,
-      accountAuthenticator: parameters.aptos.transaction.sign({
+      return pendingTransaction.value.hash
+    },
+    error => new Error(`Transfer failed: ${error}`, { cause: error })
+  )
+
+export const aptosSameChainTransfer: (args: AptosTransferBaseParams) => ResultAsync<string, Error> =
+  ResultAsync.fromThrowable(
+    async parameters => {
+      if (!parameters.signer) throw new Error("no `signer` passed")
+
+      if (parameters.authAccess === "wallet") {
+        const signer = parameters.signer as AptosBrowserWallet
+        const transaction = await signer.signAndSubmitTransaction({
+          payload: {
+            function: "0x1::primary_fungible_store::transfer",
+            type_arguments: ["0x1::fungible_asset::Metadata"],
+            arguments: [
+              //
+              parameters.denomAddress,
+              parameters.receiver,
+              parameters.amount.toString()
+            ]
+          }
+        })
+
+        if (!transaction?.success) {
+          throw new Error(
+            `Transaction failed: ${transaction?.vm_status} - ${JSON.stringify(transaction, undefined, 2)}`
+          )
+        }
+        return transaction.hash
+      }
+
+      const signer = parameters.signer as AptosAccount
+
+      const transaction = await buildSimpleTransaction({
+        data: {
+          typeArguments: ["0x1::fungible_asset::Metadata"],
+          function: "0x1::primary_fungible_store::transfer",
+          functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
+        },
+        aptos: parameters.aptos,
+        accountAddress: signer.accountAddress
+      })
+
+      if (!transaction.isOk()) throw transaction.error
+
+      if (parameters.simulate) {
+        const simulationResult = await simulateSimpleTransaction({
+          aptos: parameters.aptos,
+          transaction: transaction.value,
+          signerPublicKey: signer.publicKey
+        })
+        if (!simulationResult.isOk()) throw simulationResult.error
+        console.info(`aptosSameChainTransfer simulation succeeded: ${simulationResult.value.hash}`)
+      }
+
+      const senderAuthenticator = parameters.aptos.transaction.sign({
         signer,
         transaction: transaction.value
       })
-    })
 
-    if (!pendingTransaction.isOk()) return err(pendingTransaction.error)
-    if (!pendingTransaction.value.hash.startsWith("0x")) return err(new Error("hash not found"))
-
-    return ok(pendingTransaction.value.hash)
-  } catch (error) {
-    return err(new Error(`Transfer failed: ${error}`))
-  }
-}
-
-export async function aptosSameChainTransfer(
-  parameters: AptosTransferBaseParams
-): Promise<Result<string, Error>> {
-  try {
-    if (!parameters.signer) return err(new Error("no `signer` passed"))
-
-    if (parameters.authAccess === "wallet") {
-      const signer = parameters.signer as AptosBrowserWallet
-      const hash = await signer.signAndSubmitTransaction({
-        payload: {
-          function: "0x1::primary_fungible_store::transfer",
-          type_arguments: ["0x1::fungible_asset::Metadata"],
-          arguments: [
-            //
-            parameters.denomAddress,
-            parameters.receiver,
-            parameters.amount.toString()
-          ]
-        }
-      })
-
-      return ok(hash)
-    }
-
-    const signer = parameters.signer as AptosAccount
-
-    const transaction = await buildSimpleTransaction({
-      data: {
-        typeArguments: ["0x1::fungible_asset::Metadata"],
-        function: "0x1::primary_fungible_store::transfer",
-        functionArguments: [parameters.denomAddress, parameters.receiver, parameters.amount]
-      },
-      aptos: parameters.aptos,
-      accountAddress: signer.accountAddress
-    })
-
-    if (!transaction.isOk()) return err(transaction.error)
-
-    if (parameters.simulate) {
-      const simulationResult = await simulateSimpleTransaction({
+      const pendingTransaction = await submitSimpleTransaction({
         aptos: parameters.aptos,
         transaction: transaction.value,
-        signerPublicKey: signer.publicKey
+        accountAuthenticator: senderAuthenticator
       })
-      if (!simulationResult.isOk()) return err(simulationResult.error)
-      console.info(`aptosSameChainTransfer simulation succeeded: ${simulationResult.value.hash}`)
-    }
 
-    const senderAuthenticator = parameters.aptos.transaction.sign({
-      signer,
-      transaction: transaction.value
-    })
+      if (!pendingTransaction.isOk()) throw pendingTransaction.error
 
-    const pendingTransaction = await submitSimpleTransaction({
-      aptos: parameters.aptos,
-      transaction: transaction.value,
-      accountAuthenticator: senderAuthenticator
-    })
-
-    if (!pendingTransaction.isOk()) return err(pendingTransaction.error)
-
-    if (!pendingTransaction.value.hash.startsWith("0x")) return err(new Error("hash not found"))
-    return ok(pendingTransaction.value.hash)
-  } catch (error) {
-    return err(new Error(`Transfer failed: ${error}`))
-  }
-}
+      if (!pendingTransaction.value.hash.startsWith("0x")) throw new Error("hash not found")
+      return pendingTransaction.value.hash
+    },
+    error => new Error(`Aptos to Aptos transfer failed: ${error}`, { cause: error })
+  )
 
 type AptosTransferSimulateParams =
   | (AptosTransferBaseParams & {
@@ -274,7 +281,7 @@ export async function aptosTransferSimulate(
           parameters.sourceChannel,
           isValidBech32Address(parameters.receiver)
             ? bech32ToBytes(parameters.receiver)
-            : hexStringToUint8Array(parameters.receiver),
+            : hexToBytes(parameters.receiver),
           [parameters.denomAddress],
           [parameters.amount],
           parameters.memo,
@@ -300,20 +307,21 @@ export async function aptosTransferSimulate(
             signerAddress: parameters.signer.accountAddress
           }
 
-    const transaction = await parameters.aptos.transaction.build.simple({
-      sender: signerAddress,
+    const transaction = await buildSimpleTransaction({
+      aptos: parameters.aptos,
+      accountAddress: signerAddress,
       data: transactionPayload
     })
+    if (!transaction.isOk()) return err(transaction.error)
 
-    const simulationResult = await parameters.aptos.transaction.simulate.simple({
-      transaction,
-      signerPublicKey
+    const simulationResult = await simulateSimpleTransaction({
+      aptos: parameters.aptos,
+      signerPublicKey,
+      transaction: transaction.value
     })
+    if (simulationResult.isOk()) return ok(simulationResult.value.hash)
 
-    const resultItem = simulationResult.at(0)
-    if (resultItem?.success) return ok(resultItem.hash)
-
-    return err(new Error(resultItem?.vm_status || "Simulation failed."))
+    return err(new Error(simulationResult.error.message || "Simulation failed."))
   } catch (error) {
     return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
   }
