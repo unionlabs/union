@@ -12,23 +12,6 @@ interface Props {
 
 const { title, text } = Astro.props
 
-const slideTextAnimation = {
-  forwards: {
-    old: {
-      name: "slideOutLeft",
-      duration: "0.35s",
-      easing: "ease-out",
-      fillMode: "forwards"
-    },
-    new: {
-      name: "slideInRight",
-      duration: "0.35s",
-      easing: "ease-out",
-      fillMode: "forwards"
-    }
-  }
-}
-
 const pathname = new URL(Astro.request.url).pathname
 const currentPath = pathname.slice(1) // remove the first "/"
 ---
@@ -49,12 +32,9 @@ const currentPath = pathname.slice(1) // remove the first "/"
     </div>
     <MatrixCover />
     <div
-      class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center"
+      class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center overflow-hidden"
     >
-      <div
-        class="max-w-2xl flex flex-col gap-4"
-        transition:animate={slideTextAnimation}
-      >
+      <div class="max-w-2xl flex flex-col gap-4 slide-this">
         <H1>{title}</H1>
         <TextP>{text}</TextP>
       </div>
@@ -146,6 +126,11 @@ const currentPath = pathname.slice(1) // remove the first "/"
         }
     }
 
+    .slide-this {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
     @keyframes slideOutLeft {
         from {
             transform: translateX(0);
@@ -198,6 +183,9 @@ const currentPath = pathname.slice(1) // remove the first "/"
     updateSaturation,
   } from "../lib/matrix-cover";
 
+  let isNavigating = false;
+  let navigationDirection: "left" | "right";
+
   document.addEventListener("astro:before-preparation", (event: any) => {
     const fromConfig = pathConfigMap[event.from.pathname] ?? {
       index: 0,
@@ -209,9 +197,28 @@ const currentPath = pathname.slice(1) // remove the first "/"
     };
 
     if (toConfig.index) {
-      const direction = toConfig.index > fromConfig.index ? "left" : "right";
-      rotateCamera(direction);
+      isNavigating = true;
+      navigationDirection =
+        toConfig.index > fromConfig.index ? "left" : "right";
+      rotateCamera(navigationDirection);
       updateSaturation(toConfig.saturation);
+
+      const slideThis = document.querySelector(".slide-this");
+      if (slideThis) {
+        slideThis.style.animation = `slideOut${navigationDirection.charAt(0).toUpperCase() + navigationDirection.slice(1)} 0.5s ease-out forwards`;
+      }
+    }
+  });
+
+  document.addEventListener("astro:after-swap", () => {
+    toggleCollapsed(window.location.pathname === "/");
+    if (isNavigating) {
+      const slideThis = document.querySelector(".slide-this");
+      if (slideThis) {
+        const slideInDirection =
+          navigationDirection === "left" ? "Right" : "Left";
+        slideThis.style.animation = `slideIn${slideInDirection} 0.5s ease-out forwards`;
+      }
     }
   });
 
