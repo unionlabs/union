@@ -121,7 +121,7 @@ members = [
   "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
-  # "voyager/plugins/transaction/ethereum",
+  "voyager/plugins/transaction/ethereum",
   "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",

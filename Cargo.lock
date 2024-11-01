@@ -144,6 +144,8 @@ dependencies = [
  "alloy-rpc-client",
  "alloy-rpc-types",
  "alloy-serde",
+ "alloy-signer",
+ "alloy-signer-local",
  "alloy-transport",
  "alloy-transport-http",
 ]
@@ -500,6 +502,22 @@ dependencies = [
  "auto_impl",
  "elliptic-curve",
  "k256",
+ "thiserror",
+]
+
+[[package]]
+name = "alloy-signer-local"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a2505d4f8c98dcae86152d58d549cb4bcf953f8352fca903410e0a0ef535571"
+dependencies = [
+ "alloy-consensus",
+ "alloy-network",
+ "alloy-primitives",
+ "alloy-signer",
+ "async-trait",
+ "k256",
+ "rand 0.8.5",
  "thiserror",
 ]
 
@@ -14019,6 +14037,32 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-transaction-plugin-ethereum"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "bip32",
+ "chain-utils",
+ "enumorph",
+ "futures",
+ "ibc-solidity",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
