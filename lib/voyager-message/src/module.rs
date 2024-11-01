@@ -243,6 +243,10 @@ pub trait ChainModule {
     // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(&self) -> RpcResult<i64>;
 
+    /// Query the prefix for a client, given it's raw numeric id.
+    #[method(name = "queryClientPrefix", with_extensions)]
+    async fn query_client_prefix(&self, raw_client_id: u32) -> RpcResult<String>;
+
     /// Query the latest raw, unfinalized trusted client state of the client
     /// `client_id`.
     // SEE: <https://github.com/unionlabs/union/issues/1813>

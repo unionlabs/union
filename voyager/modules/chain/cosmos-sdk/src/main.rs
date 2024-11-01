@@ -9,6 +9,8 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
+use futures::{stream::FuturesUnordered, TryStreamExt};
+use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -268,6 +270,62 @@ impl Module {
             ))
             .map(|response| response.response)
     }
+
+    async fn prefix_of_client_id(&self, raw_client_id: u32) -> RpcResult<&'static str> {
+        // TODO: Make this a config param
+        const KNOWN_PREFIXES: &[&str] = &["07-tendermint", "08-wasm"];
+
+        KNOWN_PREFIXES
+            .iter()
+            .map(move |prefix| {
+                let client_id = ClientId::new_static(prefix, raw_client_id).clone();
+                async move {
+                    protos::ibc::core::client::v1::query_client::QueryClient::connect(
+                        self.grpc_url.clone(),
+                    )
+                    .await
+                    .map_err(rpc_error(
+                        "error connecting to grpc server",
+                        Some(json!({ "client_id": client_id })),
+                    ))?
+                    .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+                        // NOTE: We assume this is a wasm client if we're fetching the checksum
+                        client_id: client_id.to_string(),
+                    })
+                    .await
+                    .map_err(rpc_error(
+                        "error querying client state",
+                        Some(json!({ "client_id": client_id })),
+                    ))?
+                    .into_inner()
+                    .client_state
+                    .ok_or_else(|| {
+                        // lol
+                        rpc_error(
+                            "error fetching client state",
+                            Some(json!({ "client_id": client_id })),
+                        )(&*Box::<dyn Error>::from(
+                            "client state field is empty",
+                        ))
+                    })
+                    .map(|_| prefix)
+                }
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<&'static str>>()
+            .await?
+            .into_iter()
+            .exactly_one()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("error fetching prefix of client id: {e}"),
+                    Some(json!({
+                        "found_prefixes": e.collect::<Vec<_>>()
+                    })),
+                )
+            })
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -338,6 +396,13 @@ impl ChainModuleServer for Module {
             .as_unix_nanos()
             .try_into()
             .expect("should be fine"))
+    }
+
+    #[instrument(skip_all, fields(raw_client_id))]
+    async fn query_client_prefix(&self, _: &Extensions, raw_client_id: u32) -> RpcResult<String> {
+        self.prefix_of_client_id(raw_client_id)
+            .await
+            .map(|s| s.to_owned())
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
