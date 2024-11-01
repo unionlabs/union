@@ -1,5 +1,5 @@
 
-module ibc::sample_ibc {
+module ibc::ibc_dispatch {
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};

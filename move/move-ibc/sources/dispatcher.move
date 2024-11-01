@@ -14,7 +14,7 @@ module ibc::dispatcher {
 
     friend ibc::engine;
     friend ibc::ping_pong_app;
-    friend ibc::sample_ibc;
+    friend ibc::ibc_dispatch;
 
     const DISPATCHER_APP_SEED: vector<u8> = b"union-ibc-dispatcher-v1";
 

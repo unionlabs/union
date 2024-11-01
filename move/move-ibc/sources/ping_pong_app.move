@@ -14,7 +14,7 @@ module ibc::ping_pong_app {
     use ibc::height;
     use ibc::channel;
     use ibc::packet::{Self, Packet};
-    use ibc::sample_ibc;
+    use ibc::ibc_dispatch;
 
     struct PingPongProof has drop, store, key{}
     
@@ -90,7 +90,7 @@ module ibc::ping_pong_app {
                 string::utf8(b"on_packet")
             );
 
-        sample_ibc::register_application<PingPongProof>(deployer, cb, new_ping_pong_proof());
+        ibc_dispatch::register_application<PingPongProof>(deployer, cb, new_ping_pong_proof());
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -235,7 +235,7 @@ module ibc::ping_pong_app {
 
         initiate(pp_packet.ping);
 
-        dispatcher::set_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>(new_ping_pong_proof(), ACK_SUCCESS);
+        dispatcher::set_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>(new_ping_pong_proof(), ACK_SUCCESS);
 
         ACK_SUCCESS
     }
@@ -299,79 +299,79 @@ module ibc::ping_pong_app {
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
         // Get the current value of `return_value`
-        // let other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
+        // let other_data = dispatcher::get_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>();
         // std::debug::print(&string::utf8(b"other_data before modification: "));
         // std::debug::print(&other_data);
 
         // // Modify `other_data` using the setter
-        // dispatcher::set_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
+        // dispatcher::set_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>(new_ping_pong_proof(), b"new data");
 
         // // Get and print the modified `other_data`
-        // let modified_other_data = dispatcher::get_return_value<PingPongProof, sample_ibc::DynamicDispatchParam>();
+        // let modified_other_data = dispatcher::get_return_value<PingPongProof, ibc_dispatch::DynamicDispatchParam>();
         // std::debug::print(&string::utf8(b"other_data after modification: "));
         // std::debug::print(&modified_other_data);
 
         // Access the `data` field through the getter
-        let value: sample_ibc::DynamicDispatchParam = dispatcher::get_data(new_ping_pong_proof());
+        let value: ibc_dispatch::DynamicDispatchParam = dispatcher::get_data(new_ping_pong_proof());
 
         // other_data = b"asdasd";
         // std::debug::print(&string::utf8(b"other_data after overwrite is: "));
         // std::debug::print(other_data);
         // let other_data: vector<u8> = dispatcher::retrieve_storage<PingPongProof, DynamicDispatchParam>(new_ping_pong_proof());
         // other_data = b"asdasd";
-        if (option::is_some(&sample_ibc::recv_packet_param(&value))) {
-            let recv_param = option::extract(&mut sample_ibc::recv_packet_param(&value));
-            let pack = sample_ibc::get_packet_from_recv_param(&recv_param);
+        if (option::is_some(&ibc_dispatch::recv_packet_param(&value))) {
+            let recv_param = option::extract(&mut ibc_dispatch::recv_packet_param(&value));
+            let pack = ibc_dispatch::get_packet_from_recv_param(&recv_param);
             on_recv_packet(*pack);
-        } else if (option::is_some(&sample_ibc::acknowledge_packet_param(&value))) {
-            let ack_param = option::extract(&mut sample_ibc::acknowledge_packet_param(&value));
-            let pack = sample_ibc::get_packet_from_ack_param(&ack_param);
-            let acknowledgement = sample_ibc::get_acknowledgement_from_ack_param(&ack_param);
+        } else if (option::is_some(&ibc_dispatch::acknowledge_packet_param(&value))) {
+            let ack_param = option::extract(&mut ibc_dispatch::acknowledge_packet_param(&value));
+            let pack = ibc_dispatch::get_packet_from_ack_param(&ack_param);
+            let acknowledgement = ibc_dispatch::get_acknowledgement_from_ack_param(&ack_param);
             on_acknowledge_packet(*pack, *acknowledgement);
 
-        } else if (option::is_some(&sample_ibc::timeout_packet_param(&value))) {
-            let timeout_param = option::extract(&mut sample_ibc::timeout_packet_param(&value));
-            let pack = sample_ibc::get_packet_from_timeout_param(&timeout_param);
+        } else if (option::is_some(&ibc_dispatch::timeout_packet_param(&value))) {
+            let timeout_param = option::extract(&mut ibc_dispatch::timeout_packet_param(&value));
+            let pack = ibc_dispatch::get_packet_from_timeout_param(&timeout_param);
             on_timeout_packet(*pack);
 
-        } else if (option::is_some(&sample_ibc::channel_open_init_param(&value))) {
-            let init_param = option::extract(&mut sample_ibc::channel_open_init_param(&value));
-            let ordering = sample_ibc::get_ordering_from_channel_open_init_param(&init_param);
-            let connection_id = sample_ibc::get_connection_id_from_channel_open_init_param(&init_param);
-            let channel_id = sample_ibc::get_channel_id_from_channel_open_init_param(&init_param);
-            let version = sample_ibc::get_version_from_channel_open_init_param(&init_param);
+        } else if (option::is_some(&ibc_dispatch::channel_open_init_param(&value))) {
+            let init_param = option::extract(&mut ibc_dispatch::channel_open_init_param(&value));
+            let ordering = ibc_dispatch::get_ordering_from_channel_open_init_param(&init_param);
+            let connection_id = ibc_dispatch::get_connection_id_from_channel_open_init_param(&init_param);
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_open_init_param(&init_param);
+            let version = ibc_dispatch::get_version_from_channel_open_init_param(&init_param);
             on_channel_open_init(ordering, connection_id, channel_id, *version);
 
-        } else if (option::is_some(&sample_ibc::channel_open_try_param(&value))) {
-            let try_param = option::extract(&mut sample_ibc::channel_open_try_param(&value));
-            let ordering = sample_ibc::get_ordering_from_channel_open_try_param(&try_param);
-            let connection_id = sample_ibc::get_connection_id_from_channel_open_try_param(&try_param);
-            let channel_id = sample_ibc::get_channel_id_from_channel_open_try_param(&try_param);
-            let counterparty_channel_id = sample_ibc::get_counterparty_channel_id_from_channel_open_try_param(&try_param);
-            let version = sample_ibc::get_version_from_channel_open_try_param(&try_param);
-            let counterparty_version = sample_ibc::get_counterparty_version_from_channel_open_try_param(&try_param);
+        } else if (option::is_some(&ibc_dispatch::channel_open_try_param(&value))) {
+            let try_param = option::extract(&mut ibc_dispatch::channel_open_try_param(&value));
+            let ordering = ibc_dispatch::get_ordering_from_channel_open_try_param(&try_param);
+            let connection_id = ibc_dispatch::get_connection_id_from_channel_open_try_param(&try_param);
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_open_try_param(&try_param);
+            let counterparty_channel_id = ibc_dispatch::get_counterparty_channel_id_from_channel_open_try_param(&try_param);
+            let version = ibc_dispatch::get_version_from_channel_open_try_param(&try_param);
+            let counterparty_version = ibc_dispatch::get_counterparty_version_from_channel_open_try_param(&try_param);
             on_channel_open_try(ordering, connection_id, channel_id, counterparty_channel_id, *version, *counterparty_version);
 
-        } else if (option::is_some(&sample_ibc::channel_open_ack_param(&value))) {
-            let ack_param = option::extract(&mut sample_ibc::channel_open_ack_param(&value));
-            let channel_id = sample_ibc::get_channel_id_from_channel_open_ack_param(&ack_param);
-            let counterparty_version = sample_ibc::get_counterparty_version_from_channel_open_ack_param(&ack_param);
-            let counterparty_channel_id = sample_ibc::get_counterparty_channel_id_from_channel_open_ack_param(&ack_param);
+        } else if (option::is_some(&ibc_dispatch::channel_open_ack_param(&value))) {
+            let ack_param = option::extract(&mut ibc_dispatch::channel_open_ack_param(&value));
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_open_ack_param(&ack_param);
+            let counterparty_version = ibc_dispatch::get_counterparty_version_from_channel_open_ack_param(&ack_param);
+            let counterparty_channel_id = ibc_dispatch::get_counterparty_channel_id_from_channel_open_ack_param(&ack_param);
             on_channel_open_ack(channel_id, counterparty_channel_id, *counterparty_version);
 
-        } else if (option::is_some(&sample_ibc::channel_open_confirm_param(&value))) {
-            let confirm_param = option::extract(&mut sample_ibc::channel_open_confirm_param(&value));
-            let channel_id = sample_ibc::get_channel_id_from_channel_open_confirm_param(&confirm_param);
+        } else if (option::is_some(&ibc_dispatch::channel_open_confirm_param(&value))) {
+            let confirm_param = option::extract(&mut ibc_dispatch::channel_open_confirm_param(&value));
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_open_confirm_param(&confirm_param);
             on_channel_open_confirm(channel_id);
 
-        } else if (option::is_some(&sample_ibc::channel_close_init_param(&value))) {
-            let close_init_param = option::extract(&mut sample_ibc::channel_close_init_param(&value));
-            let channel_id = sample_ibc::get_channel_id_from_channel_close_init_param(&close_init_param);
+        } else if (option::is_some(&ibc_dispatch::channel_close_init_param(&value))) {
+            let close_init_param = option::extract(&mut ibc_dispatch::channel_close_init_param(&value));
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_close_init_param(&close_init_param);
             on_channel_close_init(channel_id);
 
-        } else if (option::is_some(&sample_ibc::channel_close_confirm_param(&value))) {
-            let close_confirm_param = option::extract(&mut sample_ibc::channel_close_confirm_param(&value));
-            let channel_id = sample_ibc::get_channel_id_from_channel_close_confirm_param(&close_confirm_param);
+        } else if (option::is_some(&ibc_dispatch::channel_close_confirm_param(&value))) {
+            let close_confirm_param = option::extract(&mut ibc_dispatch::channel_close_confirm_param(&value));
+            let channel_id = ibc_dispatch::get_channel_id_from_channel_close_confirm_param(&close_confirm_param);
             on_channel_close_confirm(channel_id);
 
         } else {
