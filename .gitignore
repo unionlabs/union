@@ -81,5 +81,7 @@ move/*/build
 docs/generated
 dev-dist
 .zed
+
+rust-ice*
 .docs
 rustc-ice*
