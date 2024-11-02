@@ -1,3 +1,12 @@
+export function stringIsJSON(str: string) {
+  try {
+    let _json = JSON.parse(str)
+    return typeof _json === "object" && _json !== null
+  } catch {
+    return false
+  }
+}
+
 export function fragmentFromString(stringifiedHTML: string) {
   return document.createRange().createContextualFragment(stringifiedHTML.trim())
 }
