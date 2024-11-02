@@ -5,13 +5,11 @@ on:
     branches:
       - main
     paths:
-      - 'evm/**'
       - 'docs/**'
       - 'versions/**'
       - 'networks/genesis/**'
   pull_request:
     paths:
-      - 'evm/**'
       - 'docs/**'
       - 'versions/**'
       - 'networks/genesis/**'

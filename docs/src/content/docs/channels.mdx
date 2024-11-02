@@ -8,7 +8,6 @@ import Table from "#/components/Table.astro"
 
 <Table 
   queryFn={ async () => {
-      // 
       const response = await fetch("https://development.graphql.union.build/v1/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,10 +38,10 @@ import Table from "#/components/Table.astro"
         data: {
           headers: [
             "channel",
-            "source label", // display_name
-            "source chain", // rpc_type/chain_id
-            "dest. label", // display_name
-            "dest. chain", // rpc_type/chain_id
+            "source label",
+            "source chain", 
+            "dest. label",
+            "dest. chain",
           ],
           // @ts-expect-error
           rows: dataArray.map((item) => [
