@@ -18,7 +18,6 @@ use std::{
     process::ExitCode,
 };
 
-use chain_utils::BoxDynError;
 use clap::Parser;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
@@ -26,20 +25,21 @@ use serde::Serialize;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use unionlabs::QueryHeight;
 use voyager_message::{
-    call::FetchBlocks,
+    call::{FetchBlocks, MakeMsgCreateClient},
     context::{get_plugin_info, Context, ModulesConfig},
+    core::QueryHeight,
     filter::{make_filter, run_filter},
+    rpc::{IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, Op, Queue};
+use voyager_vm::{call, filter::FilterResult, BoxDynError, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd},
+    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
     queue::{QueueConfig, Voyager, VoyagerInitError},
 };
@@ -452,7 +452,24 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     let context = Context::new(config.plugins, config.modules).await?;
 
-                    let latest_height = context.rpc_server.query_latest_height(&chain_id).await?;
+                    let latest_height = context
+                        .rpc_server
+                        .query_latest_height(&chain_id, false)
+                        .await?;
+
+                    context.shutdown().await;
+
+                    latest_height
+                }
+                QueryHeight::Finalized => {
+                    let config = get_voyager_config()?;
+
+                    let context = Context::new(config.plugins, config.modules).await?;
+
+                    let latest_height = context
+                        .rpc_server
+                        .query_latest_height(&chain_id, true)
+                        .await?;
 
                     context.shutdown().await;
 
@@ -478,6 +495,109 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             //     path,
             //     commitment_slot,
             // } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
+        },
+        Command::Rpc(rpc) => {
+            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(format!(
+                "http://{}",
+                get_voyager_config()?.voyager.rpc_laddr
+            ))?;
+
+            match rpc {
+                RpcCmd::Info => print_json(&voyager_client.info().await?),
+                RpcCmd::ClientState {
+                    on,
+                    client_id,
+                    height,
+                    decode,
+                } => {
+                    let ibc_state = voyager_client
+                        .query_client_state(on.clone(), height, client_id.clone())
+                        .await?;
+
+                    if decode {
+                        let client_info = voyager_client.client_info(on, client_id).await?;
+
+                        let decoded = voyager_client
+                            .decode_client_state(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                ibc_state.state,
+                            )
+                            .await?;
+
+                        print_json(&IbcState {
+                            chain_id: ibc_state.chain_id,
+                            height: ibc_state.height,
+                            state: decoded,
+                        });
+                    } else {
+                        print_json(&ibc_state);
+                    }
+                }
+                RpcCmd::ConsensusState {
+                    on,
+                    client_id,
+                    trusted_height,
+                    height,
+                    decode,
+                } => {
+                    let ibc_state = voyager_client
+                        .query_client_consensus_state(
+                            on.clone(),
+                            height,
+                            client_id.clone(),
+                            trusted_height,
+                        )
+                        .await?;
+
+                    if decode {
+                        let client_info = voyager_client.client_info(on, client_id).await?;
+
+                        let decoded = voyager_client
+                            .decode_consensus_state(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                ibc_state.state,
+                            )
+                            .await?;
+
+                        print_json(&IbcState {
+                            chain_id: ibc_state.chain_id,
+                            height: ibc_state.height,
+                            state: decoded,
+                        });
+                    } else {
+                        print_json(&ibc_state);
+                    }
+                }
+            }
+        }
+        Command::Msg(msg) => match msg {
+            MsgCmd::CreateClient {
+                on,
+                tracking,
+                ibc_interface,
+                client_type,
+                height,
+                metadata,
+                enqueue,
+            } => {
+                let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
+                    chain_id: on,
+                    height,
+                    metadata,
+                    counterparty_chain_id: tracking,
+                    ibc_interface,
+                    client_type,
+                });
+
+                if enqueue {
+                    println!("enqueueing msg");
+                    send_enqueue(&get_voyager_config()?.voyager.rest_laddr, msg).await?;
+                } else {
+                    print_json(&msg);
+                }
+            }
         },
     }
 

@@ -193,6 +193,24 @@ impl IbcMessage {
             IbcMessage::TimeoutPacket(msg) => Some(msg.proof_height),
         }
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            IbcMessage::CreateClient(_) => "create_client",
+            IbcMessage::UpdateClient(_) => "update_client",
+            IbcMessage::ConnectionOpenInit(_) => "connection_open_init",
+            IbcMessage::ConnectionOpenTry(_) => "connection_open_try",
+            IbcMessage::ConnectionOpenAck(_) => "connection_open_ack",
+            IbcMessage::ConnectionOpenConfirm(_) => "connection_open_confirm",
+            IbcMessage::ChannelOpenInit(_) => "channel_open_init",
+            IbcMessage::ChannelOpenTry(_) => "channel_open_try",
+            IbcMessage::ChannelOpenAck(_) => "channel_open_ack",
+            IbcMessage::ChannelOpenConfirm(_) => "channel_open_confirm",
+            IbcMessage::RecvPacket(_) => "recv_packet",
+            IbcMessage::AcknowledgePacket(_) => "acknowledgement",
+            IbcMessage::TimeoutPacket(_) => "timeout",
+        }
+    }
 }
 
 #[model]

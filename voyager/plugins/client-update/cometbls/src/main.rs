@@ -311,6 +311,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     void(call(WaitForHeight {
                         chain_id: self.chain_id.clone(),
                         height: update_to,
+                        finalized: true,
                     })),
                     promise(
                         [call(PluginMessage::new(

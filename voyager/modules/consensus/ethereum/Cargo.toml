@@ -4,13 +4,13 @@ name    = "voyager-consensus-module-ethereum"
 version = "0.1.0"
 
 [dependencies]
+alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 beacon-api                  = { workspace = true }
 beacon-api-types            = { workspace = true, features = ["serde"] }
 bitvec                      = { workspace = true }
 chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }
-ethers                      = { workspace = true, features = ["rustls", "ws"] }
 futures                     = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }

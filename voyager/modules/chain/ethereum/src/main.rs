@@ -19,7 +19,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 use unionlabs::{
     bytes::Bytes,
     ethereum::{ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT},
@@ -33,13 +33,13 @@ use unionlabs::{
     ics24::{ethabi, Path},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     uint::U256,
-    ErrorReporter, QueryHeight,
+    ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface},
+    core::{ChainId, ClientInfo, ClientType, IbcInterface, QueryHeight},
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    run_chain_module_server, ChainModule, ExtensionsExt, VoyagerClient,
+    run_chain_module_server, ChainModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -113,37 +113,36 @@ impl Module {
 
         execution_height
     }
+
+    #[instrument(skip(self))]
+    pub async fn client_address(
+        &self,
+        client_id: u32,
+        height: u64,
+    ) -> RpcResult<alloy::primitives::Address> {
+        let client_address = self
+            .ibc_handler()
+            .clientImpls(client_id)
+            .block(height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching client address: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
+        info!(%client_address, "fetched client address");
+
+        Ok(client_address)
+    }
 }
 
 #[async_trait]
 impl ChainModuleServer for Module {
-    /// Query the latest finalized height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_height(&self, _: &Extensions) -> RpcResult<Height> {
-        self.beacon_api_client
-            .finality_update()
-            .await
-            .map(|response| self.make_height(response.data.attested_header.beacon.slot))
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
-    }
-
-    /// Query the latest finalized timestamp of this chain.
-    // TODO: Use a better timestamp type here
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_timestamp(&self, _: &Extensions) -> RpcResult<i64> {
-        Ok(self
-            .beacon_api_client
-            .finality_update()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .data
-            .attested_header
-            .execution
-            .timestamp
-            .try_into()
-            .unwrap())
-    }
-
     #[instrument(skip_all, fields(raw_client_id))]
     async fn query_client_prefix(&self, _: &Extensions, raw_client_id: u32) -> RpcResult<String> {
         Ok(self
@@ -180,21 +179,9 @@ impl ChainModuleServer for Module {
     ) -> RpcResult<Bytes> {
         let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let ibc_handler = self.ibc_handler();
-
-        let client_address = ibc_handler
-            .clientImpls(client_id.id())
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0;
+        let client_address = self
+            .client_address(client_id.id(), execution_height)
+            .await?;
 
         let light_client = ILightClient::new(client_address, self.provider.clone());
         let client_state = light_client
@@ -204,8 +191,11 @@ impl ChainModuleServer for Module {
             .await
             .map_err(|err| {
                 ErrorObject::owned(
-                    -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    match err {
+                        alloy::contract::Error::AbiError(_) => FATAL_JSONRPC_ERROR_CODE,
+                        _ => -1,
+                    },
+                    format!("error fetching client state: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?
@@ -225,21 +215,9 @@ impl ChainModuleServer for Module {
     ) -> RpcResult<Bytes> {
         let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let ibc_handler = self.ibc_handler();
-
-        let client_address = ibc_handler
-            .clientImpls(client_id.id())
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0;
+        let client_address = self
+            .client_address(client_id.id(), execution_height)
+            .await?;
 
         let light_client = ILightClient::new(client_address, self.provider.clone());
 
@@ -251,7 +229,7 @@ impl ChainModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    format!("error fetching consensus state: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?
@@ -357,7 +335,7 @@ impl ChainModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    format!("error fetching channel: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?
@@ -423,7 +401,7 @@ impl ChainModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    format!("error fetching commitment: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?
@@ -458,7 +436,7 @@ impl ChainModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    format!("error fetching acknowledgement: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?
@@ -493,7 +471,7 @@ impl ChainModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching ibc state: {}", ErrorReporter(err)),
+                    format!("error fetching receipt: {}", ErrorReporter(err)),
                     None::<()>,
                 )
             })?

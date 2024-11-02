@@ -1,8 +1,14 @@
 #![warn(clippy::pedantic)]
 
+use core::{fmt, str::FromStr};
+
 use macros::{apply, model};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use unionlabs::{hash::H256, ibc::core::client::height::Height};
+use unionlabs::{
+    hash::H256,
+    ibc::core::client::height::{Height, HeightFromStrError},
+};
 
 /// Represents the IBC interface of a chain.
 ///
@@ -71,20 +77,13 @@ impl ClientType<'static> {
     /// [`07-tendermint`]: https://github.com/cosmos/ibc/blob/main/spec/client/ics-007-tendermint-client/README.md
     pub const TENDERMINT: &'static str = "07-tendermint";
 
-    // TODO: Consolidate these two into one client type after https://github.com/unionlabs/union/issues/3006
-    /// A client tracking the Ethereum beacon chain consensus, with the mainnet
-    /// configuration. Verified through the [Ethereum Proof-of-Stake Consensus Specifications](spec).
+    /// A client tracking the Ethereum beacon chain consensus verified through the
+    /// [Ethereum Proof-of-Stake Consensus Specifications](spec).
     ///
     /// [spec]: https://github.com/ethereum/consensus-specs
-    pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
+    pub const ETHEREUM: &'static str = "ethereum";
 
-    /// A client tracking the Ethereum beacon chain consensus, with the minimal
-    /// configuration. Verified through the [Ethereum Proof-of-Stake Consensus Specifications](spec).
-    ///
-    /// [spec]: https://github.com/ethereum/consensus-specs
-    pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
-
-    /// A client tracking the state of the [Scroll] zkevm L2, settling on
+    /// A client tracking the state of the [Scroll] zkEVM L2, settling on
     /// Ethereum, verified by verifying the L2 settlement on the L1.
     ///
     /// [Scroll]: https://github.com/scroll-tech/scroll
@@ -127,15 +126,10 @@ impl ConsensusType<'static> {
     /// [CometBFT]: https://github.com/cometbft/cometbft
     pub const TENDERMINT: &'static str = "tendermint";
 
-    /// Ethereum beacon chain consensus, with the mainnet
-    /// configuration.
-    pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
+    /// Ethereum beacon chain consensus.
+    pub const ETHEREUM: &'static str = "ethereum";
 
-    /// Ethereum beacon chain consensus, with the minimal
-    /// configuration.
-    pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
-
-    /// [Scroll] zkevm L2, settling on Ethereum.
+    /// [Scroll] zkEVM L2, settling on Ethereum.
     ///
     /// [Scroll]: https://github.com/scroll-tech/scroll
     pub const SCROLL: &'static str = "scroll";
@@ -343,4 +337,44 @@ macro_rules! str_newtype {
             }
         }
     };
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum QueryHeight {
+    /// The latest, potentially unfinalized block (the head of the chain).
+    #[serde(rename = "latest")]
+    Latest,
+    /// The latest finalized block.
+    #[serde(rename = "finalized")]
+    Finalized,
+    /// A specific block that may or not be finalized.
+    #[serde(untagged)]
+    Specific(Height),
+}
+
+impl From<Height> for QueryHeight {
+    fn from(height: Height) -> Self {
+        Self::Specific(height)
+    }
+}
+
+impl fmt::Display for QueryHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            QueryHeight::Latest => f.write_str("latest"),
+            QueryHeight::Finalized => f.write_str("finalized"),
+            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
+        }
+    }
+}
+
+impl FromStr for QueryHeight {
+    type Err = HeightFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "latest" => Ok(Self::Latest),
+            _ => s.parse().map(Self::Specific),
+        }
+    }
 }

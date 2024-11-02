@@ -901,7 +901,7 @@ let
 
         echo "prop_id: $prop_id"
 
-        ${nodeBin} tx ibc-wasm store-code "$argc_wasm_blob" --title "$argc_wasm_blob" --summary "$argc_wasm_blob" --deposit 100000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
+        ${nodeBin} tx ibc-wasm store-code "$argc_wasm_blob" --title "$argc_wasm_blob" --summary "$argc_wasm_blob" --deposit 100000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas 100000000${denom} --gas-adjustment 3 -y --node "${rpc_endpoint}"
 
         until ${nodeBin} query gov proposal "$prop_id" --node "${rpc_endpoint}"; do echo "prop $prop_id not up yet"; sleep 1; done
 

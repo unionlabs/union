@@ -17,12 +17,12 @@ use unionlabs::{
     },
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    ErrorReporter, QueryHeight,
+    ErrorReporter,
 };
 
 use crate::{
     context::LoadedModulesInfo,
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -40,11 +40,19 @@ pub trait VoyagerRpc {
     async fn info(&self) -> RpcResult<LoadedModulesInfo>;
 
     #[method(name = "queryLatestHeight")]
-    async fn query_latest_height(&self, chain_id: ChainId<'static>) -> RpcResult<Height>;
+    async fn query_latest_height(
+        &self,
+        chain_id: ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<Height>;
 
     #[method(name = "queryLatestTimestamp")]
     // TODO: Make this return a better type than i64
-    async fn query_latest_timestamp(&self, chain_id: ChainId<'static>) -> RpcResult<i64>;
+    async fn query_latest_timestamp(
+        &self,
+        chain_id: ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<i64>;
 
     #[method(name = "queryClientPrefix")]
     async fn query_client_prefix(

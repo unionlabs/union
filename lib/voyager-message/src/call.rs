@@ -28,9 +28,9 @@ use unionlabs::{
     },
     id::{ClientId, ConnectionId},
     traits::Member,
-    QueryHeight, DELAY_PERIOD,
+    DELAY_PERIOD,
 };
-use voyager_core::ClientType;
+use voyager_core::{ClientType, QueryHeight};
 use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
 #[cfg(doc)]
@@ -65,7 +65,6 @@ pub enum Call {
     MakeMsgRecvPacket(MakeMsgRecvPacket),
 
     WaitForHeight(WaitForHeight),
-    WaitForHeightRelative(WaitForHeightRelative),
     WaitForTimestamp(WaitForTimestamp),
     WaitForTrustedHeight(WaitForTrustedHeight),
 
@@ -255,12 +254,7 @@ pub struct MakeMsgAcknowledgement {
 pub struct WaitForHeight {
     pub chain_id: ChainId<'static>,
     pub height: Height,
-}
-
-#[model]
-pub struct WaitForHeightRelative {
-    pub chain_id: ChainId<'static>,
-    pub height: u64,
+    pub finalized: bool,
 }
 
 #[model]
@@ -268,6 +262,7 @@ pub struct WaitForTimestamp {
     pub chain_id: ChainId<'static>,
     /// THIS IS NANOSECONDS
     pub timestamp: i64,
+    pub finalized: bool,
 }
 
 /// Wait for the client `.client_id` on `.chain_id` to trust a height >=
@@ -642,10 +637,14 @@ impl CallT<VoyagerMessage> for Call {
             }
 
             // TODO: Replace this with an aggregation
-            Call::WaitForHeight(WaitForHeight { chain_id, height }) => {
+            Call::WaitForHeight(WaitForHeight {
+                chain_id,
+                height,
+                finalized,
+            }) => {
                 let chain_height = ctx
                     .rpc_server
-                    .query_latest_height(&chain_id)
+                    .query_latest_height(&chain_id, finalized)
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -666,34 +665,23 @@ impl CallT<VoyagerMessage> for Call {
                 } else {
                     Ok(seq([
                         defer(now() + 1),
-                        call(WaitForHeight { chain_id, height }),
+                        call(WaitForHeight {
+                            chain_id,
+                            height,
+                            finalized,
+                        }),
                     ]))
                 }
-            }
-            // REVIEW: Perhaps remove, unused
-            Call::WaitForHeightRelative(WaitForHeightRelative { chain_id, height }) => {
-                let chain_height = ctx
-                    .rpc_server
-                    .query_latest_height(&chain_id)
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
-                Ok(call(WaitForHeight {
-                    chain_id,
-                    height: Height::new_with_revision(
-                        chain_height.revision(),
-                        chain_height.height() + height,
-                    ),
-                }))
             }
 
             Call::WaitForTimestamp(WaitForTimestamp {
                 chain_id,
                 timestamp,
+                finalized,
             }) => {
                 let chain_timestamp = ctx
                     .rpc_server
-                    .query_latest_timestamp(&chain_id)
+                    .query_latest_timestamp(&chain_id, finalized)
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -709,6 +697,7 @@ impl CallT<VoyagerMessage> for Call {
                         call(WaitForTimestamp {
                             chain_id,
                             timestamp,
+                            finalized,
                         }),
                     ]))
                 }
@@ -794,7 +783,7 @@ async fn make_msg_recv_packet(
 ) -> Result<Op<VoyagerMessage>, QueueError> {
     let target_chain_latest_height = ctx
         .rpc_server
-        .query_latest_height(&target_chain_id)
+        .query_latest_height(&target_chain_id, true)
         .await
         .map_err(error_object_to_queue_error)?;
 
@@ -902,7 +891,7 @@ async fn make_msg_acknowledgement(
 ) -> Result<Op<VoyagerMessage>, QueueError> {
     let target_chain_latest_height = ctx
         .rpc_server
-        .query_latest_height(&target_chain_id)
+        .query_latest_height(&target_chain_id, true)
         .await
         .map_err(error_object_to_queue_error)?;
 
@@ -1023,7 +1012,7 @@ async fn make_msg_create_client(
 ) -> Result<Op<VoyagerMessage>, QueueError> {
     let height = ctx
         .rpc_server
-        .query_latest_height(&counterparty_chain_id)
+        .query_latest_height(&counterparty_chain_id, true)
         .await
         .map_err(error_object_to_queue_error)?;
 

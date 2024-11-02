@@ -45,5 +45,4 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-// TODO(aeryz): this will be generic
-ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, EthereumMainnet);
+ics008_wasm_client::define_cosmwasm_light_client_contract!(EthereumLightClient, Ethereum);

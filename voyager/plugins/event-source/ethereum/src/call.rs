@@ -7,15 +7,8 @@ use unionlabs::hash::H256;
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleCall {
-    FetchBlock(FetchBlock),
     FetchGetLogs(FetchGetLogs),
     MakeFullEvent(MakeFullEvent),
-}
-
-/// Fetch events in a beacon block. This is a separate step from [`FetchGetLogs`] since beacon slots may be missed.
-#[model]
-pub struct FetchBlock {
-    pub slot: u64,
 }
 
 /// Fetch all events in `block_number` emitted by the `IBCHandler` via [`eth_getLogs`].
@@ -24,6 +17,9 @@ pub struct FetchBlock {
 #[model]
 pub struct FetchGetLogs {
     pub block_number: u64,
+    /// If set, only fetch blocks up to this range; otherwise indefinitely unfold.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub up_to: Option<u64>,
 }
 
 /// Construct a full ChainEvent from the given EVM event and associated metadata.

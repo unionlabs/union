@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use alloy::{
     contract::{Error, RawCallBuilder},
+    network::EthereumWallet,
     providers::{PendingTransactionError, Provider, ProviderBuilder, RootProvider},
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
@@ -26,7 +27,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{error, error_span, info, info_span, instrument, warn, Instrument};
+use tracing::{error, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
     hash::{H160, H256},
     ibc::core::channel::{channel::Channel, order::Order, packet::Packet, state::State},
@@ -305,6 +306,9 @@ impl Module {
     ) -> Result<(), TxSubmitError> {
         let signer = ProviderBuilder::new()
             .with_recommended_fillers()
+            // .filler(<NonceFiller>::default())
+            // .filler(ChainIdFiller::default())
+            .wallet(EthereumWallet::new(wallet.clone()))
             .on_provider(self.provider.clone());
 
         if let Some(max_gas_price) = self.max_gas_price {
@@ -330,17 +334,19 @@ impl Module {
 
         let msgs = process_msgs(&ibc, ibc_messages, wallet.address().0.into())?;
 
+        dbg!(&msgs);
+
         let msg_names = msgs
             .iter()
             // .map(|x| (x.0.clone(), x.1.function.name.clone()))
-            .map(|x| (x.0.clone(), "todo".to_owned()))
+            .map(|x| (x.0.clone(), x.0.name()))
             .collect::<Vec<_>>();
 
         let call = multicall.multicall(
             msgs.into_iter()
                 .map(|(_, x)| Call3 {
                     target: self.ibc_handler_address.into(),
-                    allowFailure: true,
+                    // allowFailure: true,
                     callData: x.calldata().clone(),
                 })
                 .collect(),
@@ -348,7 +354,7 @@ impl Module {
 
         info!("submitting evm tx");
 
-        match call.send().await {
+        match call.gas(30_000_000).send().await {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
@@ -383,38 +389,38 @@ impl Module {
                                 "evm tx",
                                 msg = msg_name,
                                 %idx,
-                                // data = msg.as_value(),
+                                data = %serde_json::to_string(&msg).unwrap(),
                             );
                         } else if let Ok(known_revert) =
                             IbcErrors::abi_decode(&result.returnData, true)
                         {
-                            error_span!(
-                                "evm message failed",
+                            error!(
                                 msg = %msg_name,
                                 %idx,
                                 revert = ?known_revert,
                                 well_known = true,
-                                // data = msg.as_value(),
+                                data = %serde_json::to_string(&msg).unwrap(),
+                                "evm message failed",
                             );
                         } else if result.returnData.is_empty() {
-                            error_span!(
-                                "evm message failed",
+                            error!(
                                 msg = %msg_name,
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                                // data = msg.as_value(),
+                                data = %serde_json::to_string(&msg).unwrap(),
+                                "evm message failed",
                             );
 
                             retry_msgs.push((true, msg));
                         } else {
-                            error_span!(
-                                "evm message failed",
+                            error!(
                                 msg = %msg_name,
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                                // data = msg.as_value(),
+                                data = %serde_json::to_string(&msg).unwrap(),
+                                "evm message failed",
                             );
 
                             retry_msgs.push((false, msg));
@@ -709,15 +715,17 @@ pub mod multicall {
 
         struct Call3 {
             address target;
-            bool allowFailure;
+            // bool allowFailure;
             bytes callData;
         }
 
+        #[derive(Debug)]
         struct Result {
             bool success;
             bytes returnData;
         }
 
+        #[derive(Debug)]
         event MulticallResult(Result[]);
 
         contract Multicall {
@@ -725,5 +733,56 @@ pub mod multicall {
                 Call3[] calldata calls
             ) public payable returns (Result[] memory returnData);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy::{
+        hex,
+        primitives::{fixed_bytes, LogData},
+    };
+    use ibc_solidity::ibc::Ibc::ClientCreated;
+
+    use super::*;
+
+    #[test]
+    fn multicall_result_decode() {
+        let bz = hex::decode("0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004").unwrap();
+
+        let result = MulticallResult::decode_log_data(
+            &LogData::new(
+                [fixed_bytes!(
+                    "798f59b5fbedbc6b92c366aebbe4ef378956a3a1b9ff4a1ba0760f3d0752a883"
+                )]
+                .to_vec(),
+                bz.into(),
+            )
+            .unwrap(),
+            true,
+        )
+        .unwrap();
+
+        dbg!(result);
+    }
+
+    #[test]
+    fn create_client_decode() {
+        let bz = hex::decode("0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008636f6d6574626c73000000000000000000000000000000000000000000000000").unwrap();
+
+        let result = ClientCreated::decode_log_data(
+            &LogData::new(
+                [fixed_bytes!(
+                    "04e9540749029ffe9d24e5bd373d2e18bf4fab8f13c60b4a62b9ae8562920cc8"
+                )]
+                .to_vec(),
+                bz.into(),
+            )
+            .unwrap(),
+            true,
+        )
+        .unwrap();
+
+        dbg!(result);
     }
 }

@@ -10,10 +10,12 @@ pub struct QueryResponse {
     pub log: String,
     /// nondeterministic
     pub info: String,
+    #[serde(with = "::serde_utils::string")]
     pub index: i64,
     pub key: Option<Bytes<Base64>>,
     pub value: Option<Bytes<Base64>>,
     pub proof_ops: Option<ProofOps>,
+    #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub codespace: String,
 }

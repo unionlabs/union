@@ -314,6 +314,7 @@ autocli
 autocliv
 autocorrect
 autoplay
+autoref
 autotests
 awkroot
 axelar
@@ -1166,7 +1167,6 @@ smallvec
 smoothstep
 snapshotter
 snapshottypes
-soketto
 solomachine
 sonner
 spearbit

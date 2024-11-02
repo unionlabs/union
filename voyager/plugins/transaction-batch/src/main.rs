@@ -17,11 +17,11 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::{id::ClientId, QueryHeight};
+use unionlabs::id::ClientId;
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
-    core::ChainId,
+    core::{ChainId, QueryHeight},
     data::{ChainEvent, Data, FullIbcEvent},
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
@@ -234,7 +234,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let latest_height = e
                     .try_get::<VoyagerClient>()?
-                    .query_latest_height(client_meta.chain_id.clone())
+                    .query_latest_height(client_meta.chain_id.clone(), false)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
@@ -543,6 +543,7 @@ impl Module {
                                         call(WaitForHeight {
                                             chain_id: client_meta.chain_id,
                                             height: target_height,
+                                            finalized: true,
                                         }),
                                         call(PluginMessage::new(
                                             self.plugin_name(),

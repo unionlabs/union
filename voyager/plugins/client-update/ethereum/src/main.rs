@@ -448,6 +448,7 @@ impl Module {
                 )
                 .unwrap()
                     * NANOS_PER_SECOND as i64,
+                finalized: false,
             }),
             voyager_vm::data(OrderedHeaders {
                 headers: headers

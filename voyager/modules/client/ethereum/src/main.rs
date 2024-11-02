@@ -18,8 +18,8 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{
-        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
-        IbcInterface,
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
+        IbcGo08WasmClientMetadata, IbcInterface,
     },
     module::{ClientModuleInfo, ClientModuleServer},
     run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
@@ -45,14 +45,8 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(match config.chain_spec {
-            PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-            PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
-        })?;
-        info.ensure_consensus_type(match config.chain_spec {
-            PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-            PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
-        })?;
+        info.ensure_client_type(ClientType::ETHEREUM)?;
+        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_GO_V8_08_WASM)?;
 
         Ok(Self {

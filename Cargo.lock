@@ -141,6 +141,7 @@ dependencies = [
  "alloy-genesis",
  "alloy-network",
  "alloy-provider",
+ "alloy-pubsub",
  "alloy-rpc-client",
  "alloy-rpc-types",
  "alloy-serde",
@@ -148,6 +149,7 @@ dependencies = [
  "alloy-signer-local",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ws",
 ]
 
 [[package]]
@@ -189,6 +191,7 @@ dependencies = [
  "alloy-network-primitives",
  "alloy-primitives",
  "alloy-provider",
+ "alloy-pubsub",
  "alloy-rpc-types-eth",
  "alloy-sol-types",
  "alloy-transport",
@@ -380,10 +383,12 @@ dependencies = [
  "alloy-network",
  "alloy-network-primitives",
  "alloy-primitives",
+ "alloy-pubsub",
  "alloy-rpc-client",
  "alloy-rpc-types-eth",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ws",
  "async-stream",
  "async-trait",
  "auto_impl",
@@ -402,6 +407,25 @@ dependencies = [
  "tracing",
  "url",
  "wasmtimer",
+]
+
+[[package]]
+name = "alloy-pubsub"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "222cd9b17b1c5ad48de51a88ffbdb17f17145170288f22662f80ac88739125e6"
+dependencies = [
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-transport",
+ "bimap",
+ "futures",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tower 0.5.0",
+ "tracing",
 ]
 
 [[package]]
@@ -434,8 +458,10 @@ checksum = "7fc2bd1e7403463a5f2c61e955bcc9d3072b63aa177442b0f9aa6a6d22a941e3"
 dependencies = [
  "alloy-json-rpc",
  "alloy-primitives",
+ "alloy-pubsub",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ws",
  "futures",
  "pin-project",
  "reqwest 0.12.5",
@@ -627,6 +653,24 @@ dependencies = [
  "tower 0.5.0",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "alloy-transport-ws"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e222e950ecc4ea12fbfb524b9a2275cac2cd5f57c8ce25bcaf1bd3ff80dd8fc8"
+dependencies = [
+ "alloy-pubsub",
+ "alloy-transport",
+ "futures",
+ "http 1.1.0",
+ "rustls 0.23.7",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite 0.24.0",
+ "tracing",
+ "ws_stream_wasm",
 ]
 
 [[package]]
@@ -2221,6 +2265,12 @@ dependencies = [
  "num-integer",
  "num-traits",
 ]
+
+[[package]]
+name = "bimap"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "230c5f1ca6a325a32553f8640d31ac9b49f2411e901e427570154868b46da4f7"
 
 [[package]]
 name = "bincode"
@@ -12612,6 +12662,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
+dependencies = [
+ "futures-util",
+ "log",
+ "rustls 0.23.7",
+ "rustls-pki-types",
+ "tokio",
+ "tokio-rustls 0.26.0",
+ "tungstenite 0.24.0",
+ "webpki-roots 0.26.3",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13007,6 +13073,26 @@ dependencies = [
  "sha1",
  "thiserror",
  "url",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18e5b8366ee7a95b16d32197d0b2604b43a0be89dc5fac9f8e96ccafbaedda8a"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.1.0",
+ "httparse",
+ "log",
+ "rand 0.8.5",
+ "rustls 0.23.7",
+ "rustls-pki-types",
+ "sha1",
+ "thiserror",
  "utf-8",
 ]
 
@@ -13451,53 +13537,32 @@ name = "voyager"
 version = "0.1.0"
 dependencies = [
  "axum 0.6.20",
- "beacon-api",
- "bech32 0.9.1",
- "bip32",
- "bitvec 1.0.1",
- "chain-utils",
  "clap 4.5.4",
- "contracts",
- "crossbeam-queue",
  "derive_more 0.99.17",
  "either",
  "enumorph",
  "ethers",
  "frame-support-procedural",
  "futures",
- "hex",
- "hex-literal",
  "itertools 0.13.0",
  "jsonrpsee",
- "num-bigint 0.4.6",
  "pg-queue",
  "pin-utils",
  "prometheus",
- "prost 0.12.6",
- "protos",
  "reqwest 0.11.27",
- "ripemd",
  "schemars",
  "serde",
  "serde-utils",
  "serde_json",
- "sha2 0.10.8",
- "soketto",
  "sqlx",
- "subtle-encoding",
- "tendermint",
- "tendermint-proto",
- "tendermint-rpc",
  "thiserror",
  "tikv-jemallocator",
  "tokio",
  "tokio-stream",
  "tokio-util",
- "tonic",
  "tracing",
  "tracing-futures",
  "tracing-subscriber 0.3.18",
- "typenum",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13744,13 +13809,13 @@ dependencies = [
 name = "voyager-consensus-module-ethereum"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "beacon-api",
  "beacon-api-types",
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
- "ethers",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13924,7 +13989,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "soketto",
  "subset-of",
  "thiserror",
  "tokio",

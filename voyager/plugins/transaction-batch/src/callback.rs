@@ -5,14 +5,14 @@ use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use tracing::warn;
-use unionlabs::{ibc::core::client::height::Height, id::ClientId, QueryHeight};
+use unionlabs::{ibc::core::client::height::Height, id::ClientId};
 use voyager_message::{
     call::{
         MakeMsgAcknowledgement, MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm,
         MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
         MakeMsgConnectionOpenTry, MakeMsgRecvPacket, WaitForTrustedHeight,
     },
-    core::{ChainId, ClientStateMeta},
+    core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
