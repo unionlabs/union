@@ -1,0 +1,68 @@
+---
+interface Props {
+  queryFn: <TArgs extends Array<any> | readonly []>(
+    ...args: TArgs
+  ) => Promise<{
+    data: {
+      headers: Array<string>
+      rows: Array<Array<string>>
+    }
+    error?: Error | undefined
+  }>
+}
+
+const { queryFn, ...restProps } = Astro.props
+
+const { data, error } = await queryFn()
+---
+
+<div class="px-4 sm:px-6 lg:px-8 flex justify-center w-full">
+  <div class="mt-8 flow-root">
+    <div class="overflow-x-auto">
+      <div
+        class="inline-block min-w-full align-middle border rounded-sm border-neutral-400"
+      >
+        <table class="divide-y divide-gray-300 tabular-nums">
+          <thead class="w-full min-w-full">
+            <tr class="divide-x divide-gray-200 w-full">
+              {
+                data.headers.map((header, index) => (
+                  <th
+                    scope="col"
+                    class:list={[
+                      `py-3.5 text-left text-md font-semibold`,
+                      index === 0
+                        ? 'pl-4'
+                        : index === data.headers.length - 1
+                          ? 'pl-4 text-center'
+                          : 'px-4',
+                    ]}
+                  >
+                    {header}
+                  </th>
+                ))
+              }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 w-full min-w-full">
+            {
+              data.rows.map((row, index) => (
+                <tr class="w-full">
+                  {row.map((cell, index) => (
+                    <td class="whitespace-nowrap p-4 text-sm font-medium">{cell}</td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script></script>
+
+<style lang="postcss" is:global>
+
+</style>

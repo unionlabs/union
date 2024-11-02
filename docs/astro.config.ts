@@ -149,6 +149,10 @@ export default defineConfig({
               link: "/"
             },
             {
+              label: "Channels",
+              link: "/channels"
+            },
+            {
               label: "Protocol",
               items: [
                 {
