@@ -39,13 +39,13 @@ library IBCPacketLib {
     function commitAck(
         bytes calldata ack
     ) internal pure returns (bytes32) {
-        return mergeAck(keccak256(abi.encodePacked(ack)));
+        return mergeAck(keccak256(ack));
     }
 
     function commitAckMemory(
         bytes memory ack
     ) internal pure returns (bytes32) {
-        return mergeAck(keccak256(abi.encodePacked(ack)));
+        return mergeAck(keccak256(ack));
     }
 
     function commitPacketsMemory(

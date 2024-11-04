@@ -156,6 +156,12 @@ export default defineConfig({
                   link: "/protocol/overview"
                 },
                 {
+                  label: "Specifications",
+                  autogenerate: {
+                    directory: "/protocol/specifications"
+                  }
+                },
+                {
                   label: "Channels",
                   autogenerate: {
                     directory: "/protocol/channels"
