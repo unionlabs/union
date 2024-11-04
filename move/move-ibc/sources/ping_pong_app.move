@@ -175,53 +175,6 @@ module ibc::ping_pong_app {
         vault.self_address
     }
 
-    struct RecvPacketParams has copy, drop, store {
-        packet: Packet
-    }
-
-    struct AcknowledgePacketParams has copy, drop, store {
-        packet: Packet,
-        acknowledgement: vector<u8>
-    }
-
-    struct TimeoutPacketParams has copy, drop, store {
-        packet: Packet
-    }
-
-    struct ChannelOpenInitParams has copy, drop, store {
-        ordering: u8,
-        connection_id: u32,
-        channel_id: u32,
-        version: vector<u8>
-    }
-
-    struct ChannelOpenTryParams has copy, drop, store {
-        ordering: u8,
-        connection_id: u32,
-        channel_id: u32,
-        counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>
-    }
-
-    struct ChannelOpenAckParams has copy, drop, store {
-        channel_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_version: vector<u8>
-    }
-
-    struct ChannelOpenConfirmParams has copy, drop, store {
-        channel_id: u32
-    }
-
-    struct ChannelCloseInitParams has copy, drop, store {
-        channel_id: u32
-    }
-
-    struct ChannelCloseConfirmParams has copy, drop, store {
-        channel_id: u32
-    }
-
     public fun on_recv_intent_packet(packet: Packet): vector<u8> {
         std::debug::print(&string::utf8(b"NOT IMPLEMENTED"));
         abort 0
