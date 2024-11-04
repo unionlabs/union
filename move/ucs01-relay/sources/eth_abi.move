@@ -1,4 +1,4 @@
-module ucs01::ethabi {
+module ibc::ethabi {
     use std::bcs;
     use std::vector;
     use std::string::{Self, String};
@@ -8,17 +8,20 @@ module ucs01::ethabi {
         0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
     ];
 
-    public fun encode_string(buf: &mut vector<u8>, str: String) {
-        let str_bytes = string::bytes(&str);
-        let str_len = vector::length(str_bytes);
-        let len_bytes = bcs::to_bytes(&(str_len as u256));
+    public fun encode_string(buf: &mut vector<u8>, str: &String) {
+        encode_bytes(buf, string::bytes(str))
+    }
+
+    public fun encode_bytes(buf: &mut vector<u8>, bytes: &vector<u8>) {
+        let len = vector::length(bytes);
+        let len_bytes = bcs::to_bytes(&(len as u256));
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
 
         vector::append(buf, len_bytes);
-        vector::append(buf, *str_bytes);
+        vector::append(buf, *bytes);
 
         // Calculate padding to align to 32 bytes
-        let padding_len = (32 - (str_len % 32)) % 32;
+        let padding_len = (32 - (len % 32)) % 32;
         let padding = vector::empty<u8>();
         let i = 0;
         while (i < padding_len) {
@@ -28,8 +31,6 @@ module ucs01::ethabi {
         // Append the padding
         vector::append(buf, padding);
     }
-
-    //movement improvements-4
 
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
@@ -63,9 +64,9 @@ module ucs01::ethabi {
         vector::append(buf, padded_bytes);
     }
 
-    public fun decode_uint(buf: vector<u8>, index: &mut u64): u256 {
+    public fun decode_uint(buf: &vector<u8>, index: &mut u64): u256 {
         // Extract the 32 bytes starting from the current index
-        let padded_bytes = vector::slice(&buf, *index, *index + 32);
+        let padded_bytes = vector::slice(buf, *index, *index + 32);
 
         // Reverse the vector to little-endian format
         let reversed_bytes = padded_bytes;
@@ -85,8 +86,8 @@ module ucs01::ethabi {
         vector::append(buf, u8_data);
     }
 
-    public fun decode_u8(buf: vector<u8>, index: &mut u64): u8 {
-        let padded_bytes = vector::slice(&buf, *index, *index + 1);
+    public fun decode_u8(buf: &vector<u8>, index: &mut u64): u8 {
+        let padded_bytes = vector::slice(buf, *index, *index + 1);
 
         *index = *index + 1;
 
@@ -95,15 +96,15 @@ module ucs01::ethabi {
 
     public inline fun encode_vector<T: copy>(
         buf: &mut vector<u8>,
-        vec: vector<T>,
-        encode_fn: |&mut vector<u8>, T|
+        vec: &vector<T>,
+        encode_fn: |&mut vector<u8>, &T|
     ) {
-        let len = vector::length(&vec);
+        let len = vector::length(vec);
         encode_uint<u64>(buf, len);
 
         let i = 0;
         while (i < len) {
-            let item = *vector::borrow(&vec, i);
+            let item = vector::borrow(vec, i);
             encode_fn(buf, item);
             i = i + 1;
         };
@@ -122,10 +123,31 @@ module ucs01::ethabi {
         }
     }
 
+    /// encode array of dynamic-sized data (string[], SomeDynStruct[])
+    public inline fun encode_dyn_array<T: copy>(
+        buf: &mut vector<u8>,
+        vec: &vector<T>,
+        encode_fn: |&mut vector<u8>, &T|
+    ) {
+        let rest_buf = vector::empty();
+
+        let i = 0;
+        let len = vector::length(vec);
+        encode_uint(buf, len);
+
+        while (i < len) {
+            encode_uint(buf, len * 32 + vector::length(&rest_buf));
+            encode_fn(&mut rest_buf, vector::borrow(vec, i));
+            i = i + 1;
+        };
+
+        vector::append(buf, rest_buf);
+    }
+
     public inline fun decode_vector<T>(
-        buf: vector<u8>,
+        buf: &vector<u8>,
         index: &mut u64,
-        decode_fn: |vector<u8>, &mut u64| T
+        decode_fn: |&vector<u8>, &mut u64| T
     ): vector<T> {
         let vec_len = (decode_uint(buf, index) as u64); // Decode the length of the vector
 
@@ -143,16 +165,16 @@ module ucs01::ethabi {
         result
     }
 
-    public fun decode_string(buf: vector<u8>, index: &mut u64): String {
+    public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         // Read the first 32 bytes to get the length of the string
-        let len_bytes = vector::slice(&buf, *index, *index + 32);
+        let len_bytes = vector::slice(buf, *index, *index + 32);
 
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
         let str_len: u256 = from_bcs::to_u256(len_bytes);
         *index = *index + 32; // Move the index forward after reading the length
 
         // // Read the actual string bytes
-        let str_bytes = vector::slice(&buf, *index, *index + (str_len as u64));
+        let str_bytes = vector::slice(buf, *index, *index + (str_len as u64));
         *index = *index + (str_len as u64); // Move the index forward after reading the string
 
         // Calculate padding to skip (align to 32-byte boundary)
@@ -164,9 +186,9 @@ module ucs01::ethabi {
     }
 
     // Decoding an Ethereum address (20 bytes)
-    public fun decode_address(buf: vector<u8>, index: &mut u64): address {
+    public fun decode_address(buf: &vector<u8>, index: &mut u64): address {
         // Read the 20 bytes representing the address
-        let addr_bytes = vector::slice(&buf, *index, *index + 32);
+        let addr_bytes = vector::slice(buf, *index, *index + 32);
         *index = *index + 32; // Move the index forward
 
         // Convert back to address using BCS deserialization
@@ -178,9 +200,9 @@ module ucs01::ethabi {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
         let some_str = string::utf8(b"encode string encode string");
 
-        encode_string(&mut some_variable, some_str);
+        encode_string(&mut some_variable, &some_str);
 
-        let decoded_str = decode_string(some_variable, &mut 4); // idx is 4, first 4 byte is garbage
+        let decoded_str = decode_string(&some_variable, &mut 4); // idx is 4, first 4 byte is garbage
 
         assert!(decoded_str == some_str, 1);
     }
@@ -196,8 +218,8 @@ module ucs01::ethabi {
         encode_address(&mut some_variable, addr2);
 
         let idx = 4;
-        let decoded_addr1 = decode_address(some_variable, &mut idx);
-        let decoded_addr2 = decode_address(some_variable, &mut idx);
+        let decoded_addr1 = decode_address(&some_variable, &mut idx);
+        let decoded_addr2 = decode_address(&some_variable, &mut idx);
 
         assert!(decoded_addr1 == addr1, 1);
         assert!(decoded_addr2 == addr2, 1);
@@ -216,9 +238,9 @@ module ucs01::ethabi {
         encode_uint<u128>(&mut some_variable, data3);
 
         let idx = 4;
-        let decoded_data: u8 = (decode_uint(some_variable, &mut idx) as u8);
-        let decoded_data2: u32 = (decode_uint(some_variable, &mut idx) as u32);
-        let decoded_data3: u128 = (decode_uint(some_variable, &mut idx) as u128);
+        let decoded_data: u8 = (decode_uint(&some_variable, &mut idx) as u8);
+        let decoded_data2: u32 = (decode_uint(&some_variable, &mut idx) as u32);
+        let decoded_data3: u128 = (decode_uint(&some_variable, &mut idx) as u128);
 
         assert!(decoded_data == data, 1);
         assert!(decoded_data2 == data2, 1);
@@ -238,17 +260,17 @@ module ucs01::ethabi {
 
         encode_vector<u8>(
             &mut some_variable,
-            vector_test_variable,
+            &vector_test_variable,
             |some_variable, data| {
-                encode_uint<u8>(some_variable, data);
+                encode_uint<u8>(some_variable, *data);
             }
         );
 
         encode_vector<address>(
             &mut some_variable,
-            vector_test_variable2,
+            &vector_test_variable2,
             |some_variable, data| {
-                encode_address(some_variable, data);
+                encode_address(some_variable, *data);
             }
         );
 
@@ -258,7 +280,7 @@ module ucs01::ethabi {
         // Decode the u8 vector
         let decoded_u8_vector =
             decode_vector<u8>(
-                some_variable,
+                &some_variable,
                 &mut idx,
                 |buf, index| {
                     (decode_uint(buf, index) as u8)
@@ -268,7 +290,7 @@ module ucs01::ethabi {
         // Decode the address vector
         let decoded_address_vector =
             decode_vector<address>(
-                some_variable,
+                &some_variable,
                 &mut idx,
                 |buf, index| { decode_address(buf, index) }
             );

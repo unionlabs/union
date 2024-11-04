@@ -1,9 +1,13 @@
-module ucs01::ibc {
+module ibc::relay_app {
     use ibc::ibc;
     use ibc::packet::{Packet};
+    use ibc::ibc_dispatch;
+    use ibc::dispatcher;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
+    use aptos_std::copyable_any;
     use std::event;
+    use aptos_framework::function_info;
 
     use std::string::{Self, String};
     use std::string_utils;
@@ -13,14 +17,15 @@ module ucs01::ibc {
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    use ucs01::ethabi;
+    use ibc::ethabi;
 
     // Constants
     const ORDER_UNORDERED: u8 = 1;
     const VERSION: vector<u8> = b"ucs01-relay-1";
-    const ACK_SUCCESS: u8 = 1;
+    const ACK_SUCCESS: vector<u8> = b"1";
     const ACK_FAILURE: u8 = 0;
     const ACK_LENGTH: u64 = 1;
+    use std::option;
 
     // Errors
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -32,6 +37,12 @@ module ucs01::ibc {
     const E_INVALID_COUNTERPARTY_PROTOCOL_VERSION: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
+
+    struct UcsRelayProof has drop, store, key {}
+
+    public(friend) fun new_ucs_relay_proof(): UcsRelayProof {
+        UcsRelayProof {}
+    }
 
     struct Token has copy, drop, store {
         denom: String,
@@ -235,19 +246,25 @@ module ucs01::ibc {
                 self_address: signer::address_of(account)
             }
         );
+
+        let cb =
+            function_info::new_function_info(
+                account,
+                string::utf8(b"relay_app"),
+                string::utf8(b"on_packet")
+            );
+
+        ibc_dispatch::register_application<UcsRelayProof>(
+            account, cb, new_ucs_relay_proof()
+        );
     }
 
-    public entry fun channel_open_init(
-        connection_id: u32, ordering: u8, version: vector<u8>
-    ) acquires SignerRef {
-        ibc::channel_open_init(
-            &get_signer(),
-            get_self_address(),
-            connection_id,
-            ordering,
-            version
-        );
-
+    public fun on_channel_open_init(
+        ordering: u8,
+        connection_id: u32,
+        channel_id: u32,
+        version: vector<u8>
+    ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
         };
@@ -257,34 +274,24 @@ module ucs01::ibc {
         };
     }
 
-    public entry fun chan_open_try(
-        channel_state: u8,
-        channel_order: u8,
-        connection_id: u32,
-        counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>,
-        proof_init: vector<u8>,
-        proof_height: u64
-    ) acquires SignerRef {
-        ibc::channel_open_try(
-            &get_signer(),
-            get_self_address(),
-            channel_state,
-            channel_order,
-            connection_id,
-            counterparty_channel_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
+    public fun on_recv_intent_packet(packet: Packet): vector<u8> {
+        std::debug::print(&string::utf8(b"NOT IMPLEMENTED"));
+        abort 0
+    }
 
+    public fun on_channel_open_try(
+        ordering: u8,
+        _connection_id: u32,
+        _channel_id: u32,
+        _counterparty_channel_id: u32,
+        version: vector<u8>,
+        counterparty_version: vector<u8>
+    ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
         };
 
-        if (channel_order != ORDER_UNORDERED) {
+        if (ordering != ORDER_UNORDERED) {
             abort E_INVALID_PROTOCOL_ORDERING
         };
 
@@ -293,84 +300,37 @@ module ucs01::ibc {
         };
     }
 
-    public entry fun channel_open_ack(
-        channel_id: u32,
-        counterparty_version: vector<u8>,
-        counterparty_channel_id: u32,
-        proof_try: vector<u8>,
-        proof_height: u64
-    ) acquires SignerRef {
-        // Store the channel_id
-        ibc::channel_open_ack(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height
-        );
+    public fun on_channel_open_ack(
+        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: vector<u8>
+    ) {
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
     }
 
-    public entry fun channel_open_confirm(
-        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
-    ) acquires SignerRef {
-        ibc::channel_open_confirm(
-            &get_signer(),
-            get_self_address(),
-            // port_id,
-            channel_id,
-            proof_ack,
-            proof_height
-        );
-    }
+    public fun on_channel_open_confirm(_channel_id: u32) {}
 
-    public entry fun channel_close_init(_channel_id: u32) {
+    public fun on_channel_close_init(_channel_id: u32) {
         abort E_UNSTOPPABLE
     }
 
-    public entry fun channel_close_confirm(_channel_id: u32) {
+    public fun on_channel_close_confirm(_channel_id: u32) {
         abort E_UNSTOPPABLE
     }
 
-    public entry fun timeout_packet(
-        packet_sequence: u64,
-        packet_source_channel: u32,
-        packet_destination_channel: u32,
-        packet_data: vector<u8>,
-        packet_timeout_height: u64,
-        packet_timeout_timestamp: u64,
-        proof: vector<u8>,
-        proof_height: u64,
-        next_sequence_receive: u64
-    ) acquires RelayStore, SignerRef {
+    public fun on_timeout_packet(packet: Packet) acquires RelayStore, SignerRef {
         // Decode the packet data
-        let relay_packet = decode_packet(packet_data);
+        let packet_data = ibc::packet::data(&packet);
+
+        let relay_packet = decode_packet(*packet_data);
 
         // Call the refund_tokens function to refund the sender
-        refund_tokens(packet_sequence, packet_source_channel, &relay_packet);
-
-        let packet =
-            ibc::packet::new(
-                packet_sequence,
-                packet_source_channel,
-                packet_destination_channel,
-                packet_data,
-                packet_timeout_height,
-                packet_timeout_timestamp
-            );
-
-        ibc::timeout_packet(
-            &get_signer(),
-            get_self_address(),
-            packet,
-            proof,
-            proof_height,
-            next_sequence_receive
+        refund_tokens(
+            ibc::packet::sequence(&packet),
+            ibc::packet::source_channel(&packet),
+            &relay_packet
         );
+
     }
 
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
@@ -391,18 +351,18 @@ module ucs01::ibc {
         // bytes encoded `packet.sender`
         ethabi::encode_vector<u8>(
             &mut buf,
-            packet.sender,
+            &packet.sender,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, data);
+                ethabi::encode_u8(some_variable, *data);
             }
         );
 
         // bytes encoded `packet.receiver`
         ethabi::encode_vector<u8>(
             &mut buf,
-            packet.receiver,
+            &packet.receiver,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, data);
+                ethabi::encode_u8(some_variable, *data);
             }
         );
 
@@ -426,7 +386,7 @@ module ucs01::ibc {
             ethabi::encode_uint<u64>(&mut tokens_buf, 64);
             ethabi::encode_uint<u64>(&mut tokens_buf, token.amount);
 
-            ethabi::encode_string(&mut tokens_buf, token.denom);
+            ethabi::encode_string(&mut tokens_buf, &token.denom);
 
             i = i + 1;
 
@@ -447,7 +407,7 @@ module ucs01::ibc {
             *b = *vector::borrow(&offset_buf, i - 96);
             i = i + 1;
         };
-        ethabi::encode_string(&mut buf, packet.extension);
+        ethabi::encode_string(&mut buf, &packet.extension);
 
         buf
     }
@@ -463,7 +423,7 @@ module ucs01::ibc {
         // Decoding sender address
         let sender =
             ethabi::decode_vector<u8>(
-                buf,
+                &buf,
                 &mut index,
                 |buf, index| {
                     (ethabi::decode_u8(buf, index) as u8)
@@ -472,7 +432,7 @@ module ucs01::ibc {
 
         let receiver =
             ethabi::decode_vector<u8>(
-                buf,
+                &buf,
                 &mut index,
                 |buf, index| {
                     (ethabi::decode_u8(buf, index) as u8)
@@ -482,7 +442,7 @@ module ucs01::ibc {
         // let receiver = from_bcs::to_address(receiver_vec);
 
         // Decoding the number of tokens
-        let num_tokens = (ethabi::decode_uint(buf, &mut index) as u64);
+        let num_tokens = (ethabi::decode_uint(&buf, &mut index) as u64);
 
         index = index + num_tokens * 32;
 
@@ -493,9 +453,9 @@ module ucs01::ibc {
             // dynamic data prefix
             index = index + 32;
 
-            let amount = ethabi::decode_uint(buf, &mut index);
+            let amount = ethabi::decode_uint(&buf, &mut index);
             // let _fee = ethabi::decode_uint(buf, &mut index);
-            let denom = ethabi::decode_string(buf, &mut index);
+            let denom = ethabi::decode_string(&buf, &mut index);
 
             let token = Token { amount: (amount as u64), denom: denom };
             vector::push_back(&mut tokens, token);
@@ -504,7 +464,7 @@ module ucs01::ibc {
         };
 
         // Decoding the extension string
-        let extension = ethabi::decode_string(buf, &mut index);
+        let extension = ethabi::decode_string(&buf, &mut index);
 
         // Returning the decoded RelayPacket
         RelayPacket {
@@ -756,108 +716,32 @@ module ucs01::ibc {
         }
     }
 
-    public entry fun recv_packet(
-        packet_sequences: vector<u64>,
-        packet_source_channels: vector<u32>,
-        packet_destination_channels: vector<u32>,
-        packet_datas: vector<vector<u8>>,
-        packet_timeout_heights: vector<u64>,
-        packet_timeout_timestamps: vector<u64>,
-        proof: vector<u8>,
-        proof_height: u64
-    ) acquires RelayStore, SignerRef {
-        let packets: vector<Packet> = vector::empty();
-        let i = 0;
-        while (i < vector::length(&packet_sequences)) {
-            vector::push_back(
-                &mut packets,
-                ibc::packet::new(
-                    *vector::borrow(&packet_sequences, i),
-                    *vector::borrow(&packet_source_channels, i),
-                    *vector::borrow(&packet_destination_channels, i),
-                    *vector::borrow(&packet_datas, i),
-                    *vector::borrow(&packet_timeout_heights, i),
-                    *vector::borrow(&packet_timeout_timestamps, i)
-                )
-            );
-            i = i + 1;
-        };
+    public fun on_recv_packet(packet: Packet) acquires RelayStore, SignerRef {
+        on_recv_packet_processing(packet);
 
-        ibc::recv_packet(
-            &get_signer(),
-            get_self_address(),
-            packets,
-            proof,
-            proof_height,
-            vector[1]
-        );
-        while (i < vector::length(&packets)) {
-            let packet = *vector::borrow(&packets, i);
-            on_recv_packet_processing(packet);
-        }
+        dispatcher::set_return_value<UcsRelayProof>(new_ucs_relay_proof(), ACK_SUCCESS);
     }
 
-    public entry fun acknowledge_packet(
-        packet_sequences: vector<u64>,
-        packet_source_channels: vector<u32>,
-        packet_destination_channels: vector<u32>,
-        packet_datas: vector<vector<u8>>,
-        packet_timeout_heights: vector<u64>,
-        packet_timeout_timestamps: vector<u64>,
-        acknowledgements: vector<vector<u8>>,
-        proof: vector<u8>,
-        proof_height: u64
+    public fun on_acknowledge_packet(
+        packet: Packet, acknowledgement: vector<u8>
     ) acquires RelayStore, SignerRef {
-        let packets: vector<Packet> = vector::empty();
-        let i = 0;
-        while (i < vector::length(&packet_sequences)) {
-            vector::push_back(
-                &mut packets,
-                ibc::packet::new(
-                    *vector::borrow(&packet_sequences, i),
-                    *vector::borrow(&packet_source_channels, i),
-                    *vector::borrow(&packet_destination_channels, i),
-                    *vector::borrow(&packet_datas, i),
-                    *vector::borrow(&packet_timeout_heights, i),
-                    *vector::borrow(&packet_timeout_timestamps, i)
-                )
+        if (vector::length(&acknowledgement) != ACK_LENGTH
+            || (
+                *vector::borrow(&acknowledgement, 0) != 0
+                    && *vector::borrow(&acknowledgement, 0) != 1
+            )) {
+            abort E_INVALID_ACKNOWLEDGEMENT
+        };
+
+        if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
+            let relay_packet = decode_packet(*ibc::packet::data(&packet));
+            refund_tokens(
+                ibc::packet::sequence(&packet),
+                ibc::packet::source_channel(&packet),
+                &relay_packet
             );
-            i = i + 1;
         };
 
-        ibc::acknowledge_packet(
-            &get_signer(),
-            get_self_address(),
-            packets,
-            acknowledgements,
-            proof,
-            proof_height
-        );
-
-        i = 0;
-        while (i < vector::length(&acknowledgements)) {
-            let acknowledgement = *vector::borrow(&acknowledgements, i);
-            let packet = *vector::borrow(&packets, i);
-
-            if (vector::length(&acknowledgement) != ACK_LENGTH
-                || (
-                    *vector::borrow(&acknowledgement, 0) != ACK_FAILURE
-                        && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS
-                )) {
-                abort E_INVALID_ACKNOWLEDGEMENT
-            };
-
-            if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
-                let relay_packet = decode_packet(*ibc::packet::data(&packet));
-                refund_tokens(
-                    ibc::packet::sequence(&packet),
-                    ibc::packet::source_channel(&packet),
-                    &relay_packet
-                );
-            };
-
-            i = i + 1;
-        };
     }
 
     public entry fun send(
@@ -974,6 +858,212 @@ module ucs01::ibc {
             token_address = string_utils::to_string_with_canonical_addresses(&denom);
         };
         token_address
+    }
+
+    fun on_recv_packet_deconstruct(
+        recv_param: ibc_dispatch::RecvPacketParams
+    ): Packet {
+        let pack = ibc_dispatch::get_packet_from_recv_param(&recv_param);
+        *pack
+    }
+
+    fun on_recv_intent_packet_deconstruct(
+        recv_intent_param: ibc_dispatch::RecvIntentPacketParams
+    ): Packet {
+        let pack = ibc_dispatch::get_packet_from_recv_intent_param(&recv_intent_param);
+        *pack
+    }
+
+    fun on_acknowledge_packet_deconstruct(
+        ack_param: ibc_dispatch::AcknowledgePacketParams
+    ): (Packet, vector<u8>) {
+        let pack = ibc_dispatch::get_packet_from_ack_param(&ack_param);
+        let acknowledgement =
+            ibc_dispatch::get_acknowledgement_from_ack_param(&ack_param);
+        (*pack, *acknowledgement)
+    }
+
+    fun on_timeout_packet_deconstruct(
+        timeout_param: ibc_dispatch::TimeoutPacketParams
+    ): Packet {
+        let pack = ibc_dispatch::get_packet_from_timeout_param(&timeout_param);
+        *pack
+    }
+
+    fun on_channel_open_init_deconstruct(
+        init_param: ibc_dispatch::ChannelOpenInitParams
+    ): (u8, u32, u32, vector<u8>) {
+        let ordering =
+            ibc_dispatch::get_ordering_from_channel_open_init_param(&init_param);
+        let connection_id =
+            ibc_dispatch::get_connection_id_from_channel_open_init_param(&init_param);
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_open_init_param(&init_param);
+        let version = ibc_dispatch::get_version_from_channel_open_init_param(&init_param);
+        (ordering, connection_id, channel_id, *version)
+    }
+
+    fun on_channel_open_try_deconstruct(
+        try_param: ibc_dispatch::ChannelOpenTryParams
+    ): (u8, u32, u32, u32, vector<u8>, vector<u8>) {
+        let ordering = ibc_dispatch::get_ordering_from_channel_open_try_param(&try_param);
+        let connection_id =
+            ibc_dispatch::get_connection_id_from_channel_open_try_param(&try_param);
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_open_try_param(&try_param);
+        let counterparty_channel_id =
+            ibc_dispatch::get_counterparty_channel_id_from_channel_open_try_param(
+                &try_param
+            );
+        let version = ibc_dispatch::get_version_from_channel_open_try_param(&try_param);
+        let counterparty_version =
+            ibc_dispatch::get_counterparty_version_from_channel_open_try_param(&try_param);
+        (
+            ordering,
+            connection_id,
+            channel_id,
+            counterparty_channel_id,
+            *version,
+            *counterparty_version
+        )
+    }
+
+    fun on_channel_open_ack_deconstruct(
+        ack_param: ibc_dispatch::ChannelOpenAckParams
+    ): (u32, u32, vector<u8>) {
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_open_ack_param(&ack_param);
+        let counterparty_version =
+            ibc_dispatch::get_counterparty_version_from_channel_open_ack_param(&ack_param);
+        let counterparty_channel_id =
+            ibc_dispatch::get_counterparty_channel_id_from_channel_open_ack_param(
+                &ack_param
+            );
+        (channel_id, counterparty_channel_id, *counterparty_version)
+    }
+
+    fun on_channel_open_confirm_deconstruct(
+        confirm_param: ibc_dispatch::ChannelOpenConfirmParams
+    ): u32 {
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_open_confirm_param(&confirm_param);
+        channel_id
+    }
+
+    fun on_channel_close_init_deconstruct(
+        close_init_param: ibc_dispatch::ChannelCloseInitParams
+    ): u32 {
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_close_init_param(&close_init_param);
+        channel_id
+    }
+
+    fun on_channel_close_confirm_deconstruct(
+        close_confirm_param: ibc_dispatch::ChannelCloseConfirmParams
+    ): u32 {
+        let channel_id =
+            ibc_dispatch::get_channel_id_from_channel_close_confirm_param(
+                &close_confirm_param
+            );
+        channel_id
+    }
+
+    public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
+        let type_name_output = *copyable_any::type_name(&value);
+
+        if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::RecvPacketParams>()) {
+            let (pack) =
+                on_recv_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::RecvPacketParams>(value)
+                );
+            on_recv_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::RecvIntentPacketParams>()) {
+            let (pack) =
+                on_recv_intent_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::RecvIntentPacketParams>(value)
+                );
+            on_recv_intent_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::AcknowledgePacketParams>()) {
+            let (pack, acknowledgement) =
+                on_acknowledge_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::AcknowledgePacketParams>(value)
+                );
+            on_acknowledge_packet(pack, acknowledgement);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::TimeoutPacketParams>()) {
+            let (pack) =
+                on_timeout_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::TimeoutPacketParams>(value)
+                );
+            on_timeout_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenInitParams>()) {
+            let (ordering, connection_id, channel_id, version) =
+                on_channel_open_init_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenInitParams>(value)
+                );
+            on_channel_open_init(ordering, connection_id, channel_id, version);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenTryParams>()) {
+            let (
+                ordering,
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            ) =
+                on_channel_open_try_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenTryParams>(value)
+                );
+            on_channel_open_try(
+                ordering,
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenAckParams>()) {
+            let (channel_id, counterparty_channel_id, counterparty_version) =
+                on_channel_open_ack_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenAckParams>(value)
+                );
+            on_channel_open_ack(
+                channel_id, counterparty_channel_id, counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenConfirmParams>()) {
+            let channel_id =
+                on_channel_open_confirm_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenConfirmParams>(value)
+                );
+            on_channel_open_confirm(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelCloseInitParams>()) {
+            let channel_id =
+                on_channel_close_init_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelCloseInitParams>(value)
+                );
+            on_channel_close_init(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelCloseConfirmParams>()) {
+            let channel_id =
+                on_channel_close_confirm_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelCloseConfirmParams>(value)
+                );
+            on_channel_close_confirm(channel_id);
+        } else {
+            std::debug::print(
+                &string::utf8(b"Invalid function type detected in on_packet function!")
+            );
+        };
+        0
     }
 
     // #[test]

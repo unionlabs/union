@@ -4,15 +4,10 @@ name    = "ibc"
 version = "1.0.0"
 
 [addresses]
-ibc          = "_"
-ping_pong    = "_"
-ucs01        = "_"
-zero_account = "0000000000000000000000000000000000000000000000000000000000000000"
+ibc = "_"
 
 [dev-addresses]
-ibc       = "0x22222"
-ping_pong = "0x1111"
-ucs01     = "0x4444444444444"
+ibc = "0x22222"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"

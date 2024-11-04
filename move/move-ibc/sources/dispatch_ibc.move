@@ -12,7 +12,8 @@ module ibc::ibc_dispatch {
     use std::hash;
     use std::timestamp;
     use std::option::{Self, Option};
-
+    use aptos_std::any;
+    use aptos_std::copyable_any;
     use std::string_utils;
     use ibc::commitment;
     use ibc::light_client;
@@ -222,9 +223,6 @@ module ibc::ibc_dispatch {
 
     use aptos_framework::function_info;
     use aptos_framework::function_info::FunctionInfo;
-
-    // use ibc::ping_pong_app;
-    // use ibc::dynamic_dispatch_app2;
     use ibc::dispatcher;
     use ibc::engine;
 
@@ -509,7 +507,7 @@ module ibc::ibc_dispatch {
 
     public fun register_application<T: key + store + drop>(
         ibc_app: &signer, cb: FunctionInfo, type: T
-    ) acquires SignerRef { // pingpongapp bunu cagiracak
+    ) acquires SignerRef {
         dispatcher::register<T>(cb, type, bcs::to_bytes(&signer::address_of(ibc_app)));
         move_to(
             &get_ibc_signer(),
@@ -953,27 +951,16 @@ module ibc::ibc_dispatch {
 
         commit_channel(channel_id, channel);
 
-        let dynamic_dispatch_param =
-            new_dynamic_dispatch_param(
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::some(
-                    ChannelOpenInitParams {
-                        ordering: ordering,
-                        connection_id: connection_id,
-                        channel_id: channel_id,
-                        version: version
-                    }
-                ),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none()
+        let param =
+            copyable_any::pack<ChannelOpenInitParams>(
+                ChannelOpenInitParams {
+                    ordering: ordering,
+                    connection_id: connection_id,
+                    channel_id: channel_id,
+                    version: version
+                }
             );
-        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+        engine::dispatch<T>(param);
 
         event::emit(
             ChannelOpenInit {
@@ -1067,29 +1054,19 @@ module ibc::ibc_dispatch {
 
         commit_channel(channel_id, channel);
 
-        let dynamic_dispatch_param =
-            new_dynamic_dispatch_param(
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::some(
-                    ChannelOpenTryParams {
-                        ordering: channel_order,
-                        connection_id: connection_id,
-                        channel_id: channel_id,
-                        counterparty_channel_id: counterparty_channel_id,
-                        version: version,
-                        counterparty_version: counterparty_version
-                    }
-                ),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none()
+        let param =
+            copyable_any::pack<ChannelOpenTryParams>(
+                ChannelOpenTryParams {
+                    ordering: channel_order,
+                    connection_id: connection_id,
+                    channel_id: channel_id,
+                    counterparty_channel_id: counterparty_channel_id,
+                    version: version,
+                    counterparty_version: counterparty_version
+                }
             );
-        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+        engine::dispatch<T>(param);
+
     }
 
     public entry fun channel_open_ack<T: key + store + drop>(
@@ -1157,26 +1134,15 @@ module ibc::ibc_dispatch {
 
         commit_channel(channel_id, chan);
 
-        let dynamic_dispatch_param =
-            new_dynamic_dispatch_param(
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::some(
-                    ChannelOpenAckParams {
-                        channel_id: channel_id,
-                        counterparty_channel_id: counterparty_channel_id,
-                        counterparty_version: counterparty_version
-                    }
-                ),
-                option::none(),
-                option::none(),
-                option::none()
+        let param =
+            copyable_any::pack<ChannelOpenAckParams>(
+                ChannelOpenAckParams {
+                    channel_id: channel_id,
+                    counterparty_channel_id: counterparty_channel_id,
+                    counterparty_version: counterparty_version
+                }
             );
-        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+        engine::dispatch<T>(param);
     }
 
     public entry fun channel_open_confirm<T: key + store + drop>(
@@ -1239,20 +1205,11 @@ module ibc::ibc_dispatch {
         );
         commit_channel(channel_id, chan);
 
-        let dynamic_dispatch_param =
-            new_dynamic_dispatch_param(
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::some(ChannelOpenConfirmParams { channel_id: channel_id }),
-                option::none(),
-                option::none()
+        let param =
+            copyable_any::pack<ChannelOpenConfirmParams>(
+                ChannelOpenConfirmParams { channel_id: channel_id }
             );
-        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+        engine::dispatch<T>(param);
     }
 
     // Sends a packet
@@ -1392,38 +1349,23 @@ module ibc::ibc_dispatch {
             if (!already_received) {
                 let acknowledgement = vector::empty();
                 if (intent) {
-                    let dynamic_dispatch_param =
-                        new_dynamic_dispatch_param(
-                            option::none(),
-                            option::some(RecvIntentPacketParams { packet: packet }),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none()
+
+                    let param =
+                        copyable_any::pack<RecvIntentPacketParams>(
+                            RecvIntentPacketParams { packet: packet }
                         );
-                    engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
-                    acknowledgement = dispatcher::get_return_value<T, DynamicDispatchParam>();
+                    engine::dispatch<T>(param);
+
+                    acknowledgement = dispatcher::get_return_value<T>();
                     event::emit(RecvIntentPacket { packet: packet });
                 } else {
-                    let dynamic_dispatch_param =
-                        new_dynamic_dispatch_param(
-                            option::some(RecvPacketParams { packet: packet }),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none(),
-                            option::none()
+                    let param =
+                        copyable_any::pack<RecvPacketParams>(
+                            RecvPacketParams { packet: packet }
                         );
-                    engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
-                    acknowledgement = dispatcher::get_return_value<T, DynamicDispatchParam>();
+                    engine::dispatch<T>(param);
+
+                    acknowledgement = dispatcher::get_return_value<T>();
                     event::emit(RecvPacket { packet: packet });
                 };
                 if (vector::length(&acknowledgement) > 0) {
@@ -1595,25 +1537,14 @@ module ibc::ibc_dispatch {
                 set_next_sequence_ack(source_channel, packet::sequence(&packet));
             };
 
-            let dynamic_dispatch_param =
-                new_dynamic_dispatch_param(
-                    option::none(),
-                    option::none(),
-                    option::some(
-                        AcknowledgePacketParams {
-                            packet: packet,
-                            acknowledgement: acknowledgement
-                        }
-                    ),
-                    option::none(),
-                    option::none(),
-                    option::none(),
-                    option::none(),
-                    option::none(),
-                    option::none(),
-                    option::none()
+            let param =
+                copyable_any::pack<AcknowledgePacketParams>(
+                    AcknowledgePacketParams {
+                        packet: packet,
+                        acknowledgement: acknowledgement
+                    }
                 );
-            engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+            engine::dispatch<T>(param);
 
             event::emit(AcknowledgePacket { packet, acknowledgement });
 
@@ -1709,20 +1640,9 @@ module ibc::ibc_dispatch {
             commitment_key
         );
 
-        let dynamic_dispatch_param =
-            new_dynamic_dispatch_param(
-                option::none(),
-                option::none(),
-                option::none(),
-                option::some(TimeoutPacketParams { packet: packet }),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none(),
-                option::none()
-            );
-        engine::dispatch<T, DynamicDispatchParam>(dynamic_dispatch_param);
+        let param =
+            copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet: packet });
+        engine::dispatch<T>(param);
 
         event::emit(TimeoutPacket { packet });
     }
@@ -2084,6 +2004,19 @@ module ibc::ibc_dispatch {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
+    #[test]
+    fun test_copyable_any() {
+        let channel_id = 35;
+        let channel_open_ = ChannelOpenConfirmParams { channel_id };
+        let any_packed = copyable_any::pack<ChannelOpenConfirmParams>(channel_open_);
+
+        let type_name_output = copyable_any::type_name(&any_packed);
+        assert!(
+            *type_name_output == std::type_info::type_name<ChannelOpenConfirmParams>(),
+            0
+        )
+
+    }
     // #[test(ibc_signer = @ibc)]
     // fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
     //     init_module(ibc_signer);

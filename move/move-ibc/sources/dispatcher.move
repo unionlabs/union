@@ -1,7 +1,7 @@
 module ibc::dispatcher {
     use std::option;
     use std::string;
-
+    use aptos_std::copyable_any;
     use aptos_std::table::{Self, Table};
     use aptos_std::type_info::{Self, TypeInfo};
     use aptos_framework::primary_fungible_store;
@@ -12,10 +12,10 @@ module ibc::dispatcher {
     use aptos_framework::object::{Self, ExtendRef, Object};
     use std::signer;
 
-    friend ibc::engine;
-    friend ibc::ping_pong_app;
-    friend ibc::relay_app;
-    friend ibc::ibc_dispatch;
+    // friend ibc::engine;
+    // friend ibc::ping_pong_app;
+    // friend ucs01::relay_app;
+    // friend ibc::ibc_dispatch;
 
     const DISPATCHER_APP_SEED: vector<u8> = b"union-ibc-dispatcher-v1";
 
@@ -27,8 +27,8 @@ module ibc::dispatcher {
     }
 
     /// Store the data to dispatch here.
-    struct Storage<phantom P, T> has drop, key {
-        data: T,
+    struct Storage<phantom P> has drop, key {
+        data: copyable_any::Any,
         return_value: vector<u8>
     }
 
@@ -66,12 +66,12 @@ module ibc::dispatcher {
 
     /// Insert into this module as the callback needs to retrieve and avoid a cyclical dependency:
     /// engine -> storage and then engine -> callback -> storage
-    public(friend) fun insert<P: store, T: store>(
-        data: T, return_value: vector<u8>
+    public fun insert<P: store>(
+        data: copyable_any::Any, return_value: vector<u8>
     ): Object<Metadata> acquires Dispatcher {
         move_to(
             &storage_signer(),
-            Storage<P, T> { data, return_value }
+            Storage<P> { data, return_value }
         );
 
         let typeinfo = type_info::type_of<P>();
@@ -81,43 +81,27 @@ module ibc::dispatcher {
         type_info
     }
 
-    public fun retrieve<P: drop, T: copy + drop + store>(
+    public fun retrieve<P: drop>(
         _proof: P
-    ): (T, vector<u8>) acquires Dispatcher, Storage {
+    ): (copyable_any::Any, vector<u8>) acquires Dispatcher, Storage {
         // let type_info = type_info::type_of<P>();
-        let my_storage = move_from<Storage<P, T>>(storage_address()); //.data
+        let my_storage = move_from<Storage<P>>(storage_address()); //.data
         (my_storage.data, my_storage.return_value)
     }
 
-    // public fun retrieve_mut<P: drop, T: copy + drop + store>(
-    //     _proof: P
-    // ): &mut Storage<P, T> acquires Dispatcher, Storage {
-    //     // Retrieves a mutable reference to the storage
-    //     borrow_global_mut<Storage<P, T>>(storage_address())
-    // }
-
     // Getter for `data`
-    public(friend) fun get_data<P: drop, T: copy + drop + store>(_proof: P): T acquires Dispatcher, Storage {
-        borrow_global<Storage<P, T>>(storage_address()).data
+    public fun get_data<P: drop>(_proof: P): copyable_any::Any acquires Dispatcher, Storage {
+        borrow_global<Storage<P>>(storage_address()).data
     }
 
     // Getter for `return_value`
-    public(friend) fun get_return_value<P: drop, T: copy + drop + store>(): vector<u8> acquires Dispatcher, Storage {
-        borrow_global<Storage<P, T>>(storage_address()).return_value
+    public fun get_return_value<P: drop>(): vector<u8> acquires Dispatcher, Storage {
+        borrow_global<Storage<P>>(storage_address()).return_value
     }
 
     // Setter for `return_value`
-    public(friend) fun set_return_value<P: drop, T: copy + drop + store>(
-        _proof: P, new_value: vector<u8>
-    ) acquires Dispatcher, Storage {
-        borrow_global_mut<Storage<P, T>>(storage_address()).return_value = new_value;
-    }
-
-    // Optional: Setter for `data` if needed
-    public(friend) fun set_data<P: drop, T: copy + drop + store>(
-        _proof: P, new_data: T
-    ) acquires Dispatcher, Storage {
-        borrow_global_mut<Storage<P, T>>(storage_address()).data = new_data;
+    public fun set_return_value<P: drop>(_proof: P, new_value: vector<u8>) acquires Dispatcher, Storage {
+        borrow_global_mut<Storage<P>>(storage_address()).return_value = new_value;
     }
 
     /// Prepares the dispatch table.
