@@ -37,7 +37,6 @@ module ibc::relay_app {
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
 
-
     struct UcsRelayProof has drop, store, key {}
 
     public(friend) fun new_ucs_relay_proof(): UcsRelayProof {
@@ -260,7 +259,10 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_init(
-        ordering: u8, connection_id: u32, channel_id: u32, version: vector<u8>
+        ordering: u8,
+        connection_id: u32,
+        channel_id: u32,
+        version: vector<u8>
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
@@ -298,19 +300,14 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_ack(
-        _channel_id: u32, 
-        _counterparty_channel_id: u32, 
-        counterparty_version: vector<u8>
+        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: vector<u8>
     ) {
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
     }
 
-    public fun on_channel_open_confirm(
-        _channel_id: u32
-    ) {
-
+    public fun on_channel_open_confirm(_channel_id: u32) {
     }
 
     public fun on_channel_close_init(_channel_id: u32) {
@@ -321,18 +318,16 @@ module ibc::relay_app {
         abort E_UNSTOPPABLE
     }
 
-    public fun on_timeout_packet(
-        packet: Packet
-    ) acquires RelayStore, SignerRef {
+    public fun on_timeout_packet(packet: Packet) acquires RelayStore, SignerRef {
         // Decode the packet data
         let packet_data = ibc::packet::data(&packet);
-        
+
         let relay_packet = decode_packet(*packet_data);
 
         // Call the refund_tokens function to refund the sender
         refund_tokens(
-            ibc::packet::sequence(&packet), 
-            ibc::packet::source_channel(&packet), 
+            ibc::packet::sequence(&packet),
+            ibc::packet::source_channel(&packet),
             &relay_packet
         );
 
@@ -721,12 +716,9 @@ module ibc::relay_app {
         }
     }
 
-    public fun on_recv_packet(
-        packet: Packet
-    ): vector<u8> acquires RelayStore, SignerRef {
-        
+    public fun on_recv_packet(packet: Packet): vector<u8> acquires RelayStore, SignerRef {
         on_recv_packet_processing(packet);
-        
+
         dispatcher::set_return_value<UcsRelayProof, ibc_dispatch::DynamicDispatchParam>(
             new_ucs_relay_proof(), ACK_SUCCESS
         );
@@ -753,7 +745,7 @@ module ibc::relay_app {
                 &relay_packet
             );
         };
-    
+
     }
 
     public entry fun send(
@@ -994,7 +986,6 @@ module ibc::relay_app {
 
         0
     }
-
 
     // #[test]
     // public fun decode_test() {
