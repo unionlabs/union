@@ -112,6 +112,9 @@ pub enum IbcError {
 
     #[error("empty packets received")]
     EmptyPacketsReceived,
+
+    #[error("intents don't work with ordered IBC")]
+    IntentOrderedPacket,
 }
 
 pub trait IbcHost: Sized {
@@ -370,6 +373,12 @@ pub enum IbcMsg {
     OnRecvPacket {
         packet: Packet,
         // TODO(aeryz): relayer address
+    },
+
+    OnRecvIntentPacket {
+        packet: Packet,
+        maker: Vec<u8>,
+        maker_msg: Vec<u8>,
     },
 
     OnAcknowledgePacket {

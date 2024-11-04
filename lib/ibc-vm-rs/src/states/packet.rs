@@ -28,11 +28,15 @@ pub enum RecvPacket {
         relayer: Vec<u8>,
         proof_commitment: Vec<u8>,
         proof_height: Height,
+        intent: bool,
     },
 
     MembershipVerified {
         packets: Vec<Packet>,
+        relayer_msgs: Vec<Vec<u8>>,
+        relayer: Vec<u8>,
         channel: Channel,
+        intent: bool,
     },
 
     CallbackCalled {
@@ -84,6 +88,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     relayer,
                     proof_commitment,
                     proof_height,
+                    intent,
                 },
                 &[IbcResponse::Empty],
             ) => {
@@ -112,97 +117,60 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                 let connection = ensure_connection_state(host, channel.connection_hops[0])?;
                 let sequence = packets[0].sequence;
 
-                Either::Left((
-                    RecvPacket::MembershipVerified { packets, channel },
-                    (
-                        connection.client_id,
-                        vec![IbcQuery::VerifyMembership {
-                            height: proof_height,
-                            delay_time_period: 0,
-                            delay_block_period: 0,
-                            proof: proof_commitment,
-                            path: MerklePath {
-                                key_path: vec![
-                                    "ibc".into(),
-                                    // TODO(aeryz): ditch this
-                                    CommitmentPath {
-                                        port_id: source_port.clone(),
-                                        channel_id: source_channel,
-                                        sequence,
-                                    }
-                                    .to_string(),
-                                ],
-                            },
-                            // TODO(aeryz): leave this as  H256
-                            value: COMMITMENT_MAGIC.into(),
-                        }],
-                    )
-                        .into(),
-                ))
+                if intent {
+                    // bypassing the membership verification if there's intents
+                    RecvPacket::MembershipVerified {
+                        packets,
+                        channel,
+                        intent,
+                        relayer_msgs,
+                        relayer,
+                    }
+                    .process(host, &[IbcResponse::VerifyMembership { valid: true }])?
+                } else {
+                    Either::Left((
+                        RecvPacket::MembershipVerified {
+                            packets,
+                            channel,
+                            intent,
+                            relayer_msgs,
+                            relayer,
+                        },
+                        (
+                            connection.client_id,
+                            vec![IbcQuery::VerifyMembership {
+                                height: proof_height,
+                                delay_time_period: 0,
+                                delay_block_period: 0,
+                                proof: proof_commitment,
+                                path: MerklePath {
+                                    key_path: vec![
+                                        "ibc".into(),
+                                        // TODO(aeryz): ditch this
+                                        CommitmentPath {
+                                            port_id: source_port.clone(),
+                                            channel_id: source_channel,
+                                            sequence,
+                                        }
+                                        .to_string(),
+                                    ],
+                                },
+                                // TODO(aeryz): leave this as  H256
+                                value: COMMITMENT_MAGIC.into(),
+                            }],
+                        )
+                            .into(),
+                    ))
+                }
             }
-
-            // // TODO(aeryz): recv start sequence check for replay protection
-
-            // // match host.read_raw(
-            //     &ReceiptPath {
-            //         port_id: packet.destination_port.clone(),
-            //         channel_id: packet.destination_channel.clone(),
-            //         sequence: packet.sequence,
-            //     }
-            //     .into(),
-            // ) {
-            //     Some(_) => Either::Right((
-            //         vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
-            //             packet_data_hex: packet.data,
-            //             packet_timeout_height: packet.timeout_height,
-            //             packet_timeout_timestamp: packet.timeout_timestamp,
-            //             packet_sequence: packet.sequence,
-            //             packet_src_port: packet.source_port,
-            //             packet_src_channel: packet.source_channel,
-            //             packet_dst_port: packet.destination_port,
-            //             packet_dst_channel: packet.destination_channel,
-            //             packet_channel_ordering: channel.ordering,
-            //             connection_id: channel.connection_hops[0].clone(),
-            //         })],
-            //         IbcVmResponse::Empty,
-            //     )),
-            //     None => {
-            //         // TODO(aeryz): known size can be optimized
-            //         let packet_commitment = packet_commitment(host, &packet);
-
-            //         Either::Left((
-            //             RecvPacket::MembershipVerified {
-            //                 packet: packet.clone(),
-            //                 channel: channel.clone(),
-            //             },
-            //             (
-            //                 connection.client_id,
-            //                 vec![IbcQuery::VerifyMembership {
-            //                     height: proof_height,
-            //                     delay_time_period: 0,
-            //                     delay_block_period: 0,
-            //                     proof: proof_commitment,
-            //                     path: MerklePath {
-            //                         key_path: vec![
-            //                             "ibc".into(),
-            //                             CommitmentPath {
-            //                                 port_id: packet.source_port.clone(),
-            //                                 channel_id: packet.source_channel.clone(),
-            //                                 sequence: packet.sequence,
-            //                             }
-            //                             .to_string(),
-            //                         ],
-            //                     },
-            //                     value: host.sha256(packet_commitment),
-            //                 }],
-            //             )
-            //                 .into(),
-            //         ))
-            //     }
-            // }
-            // }
             (
-                RecvPacket::MembershipVerified { packets, channel },
+                RecvPacket::MembershipVerified {
+                    packets,
+                    channel,
+                    intent,
+                    relayer_msgs,
+                    relayer,
+                },
                 &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
@@ -213,7 +181,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
 
                 let mut recv_callbacks = vec![];
 
-                for packet in &packets {
+                for (i, packet) in packets.iter().enumerate() {
                     if packet.source_port != channel.counterparty.port_id {
                         return Err(IbcError::SourcePortMismatch(
                             packet.source_port.clone(),
@@ -255,15 +223,26 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     let already_received = match channel.ordering {
                         Order::Unordered => set_packet_receive(commitment_key),
                         Order::Ordered => {
+                            if intent {
+                                return Err(IbcError::IntentOrderedPacket.into());
+                            }
                             set_next_sequence_recv(destination_channel, packet.sequence)
                         }
                         _ => panic!("not possible"),
                     };
 
                     if !already_received {
-                        recv_callbacks.push(IbcMsg::OnRecvPacket {
-                            packet: packet.clone(),
-                        });
+                        if intent {
+                            recv_callbacks.push(IbcMsg::OnRecvIntentPacket {
+                                packet: packet.clone(),
+                                maker: relayer.clone(),
+                                maker_msg: relayer_msgs[i].clone(),
+                            })
+                        } else {
+                            recv_callbacks.push(IbcMsg::OnRecvPacket {
+                                packet: packet.clone(),
+                            });
+                        }
                     }
                 }
 
