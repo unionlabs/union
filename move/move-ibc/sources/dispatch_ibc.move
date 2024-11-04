@@ -277,77 +277,6 @@ module ibc::ibc_dispatch {
         channel_id: u32
     }
 
-    struct DynamicDispatchParam has copy, store, drop, key {
-        recv_packet_param: option::Option<RecvPacketParams>,
-        recv_intent_packet_param: option::Option<RecvIntentPacketParams>,
-        acknowledge_packet_param: option::Option<AcknowledgePacketParams>,
-        timeout_packet_param: option::Option<TimeoutPacketParams>,
-        channel_open_init_param: option::Option<ChannelOpenInitParams>,
-        channel_open_try_param: option::Option<ChannelOpenTryParams>,
-        channel_open_ack_param: option::Option<ChannelOpenAckParams>,
-        channel_open_confirm_param: option::Option<ChannelOpenConfirmParams>,
-        channel_close_init_param: option::Option<ChannelCloseInitParams>,
-        channel_close_confirm_param: option::Option<ChannelCloseConfirmParams>
-    }
-
-    public fun recv_packet_param(param: &DynamicDispatchParam):
-        option::Option<RecvPacketParams> {
-        param.recv_packet_param
-    }
-
-    public fun recv_intent_packet_param(
-        param: &DynamicDispatchParam
-    ): option::Option<RecvIntentPacketParams> {
-        param.recv_intent_packet_param
-    }
-
-    public fun acknowledge_packet_param(
-        param: &DynamicDispatchParam
-    ): option::Option<AcknowledgePacketParams> {
-        param.acknowledge_packet_param
-    }
-
-    public fun timeout_packet_param(
-        param: &DynamicDispatchParam
-    ): option::Option<TimeoutPacketParams> {
-        param.timeout_packet_param
-    }
-
-    public fun channel_open_init_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelOpenInitParams> {
-        param.channel_open_init_param
-    }
-
-    public fun channel_open_try_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelOpenTryParams> {
-        param.channel_open_try_param
-    }
-
-    public fun channel_open_ack_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelOpenAckParams> {
-        param.channel_open_ack_param
-    }
-
-    public fun channel_open_confirm_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelOpenConfirmParams> {
-        param.channel_open_confirm_param
-    }
-
-    public fun channel_close_init_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelCloseInitParams> {
-        param.channel_close_init_param
-    }
-
-    public fun channel_close_confirm_param(
-        param: &DynamicDispatchParam
-    ): option::Option<ChannelCloseConfirmParams> {
-        param.channel_close_confirm_param
-    }
 
     // Getter for RecvPacketParams
     public fun get_packet_from_recv_param(param: &RecvPacketParams): &Packet {
@@ -477,32 +406,6 @@ module ibc::ibc_dispatch {
         param: &ChannelCloseConfirmParams
     ): u32 {
         param.channel_id
-    }
-
-    public fun new_dynamic_dispatch_param(
-        recv_packet_param: option::Option<RecvPacketParams>,
-        recv_intent_packet_param: option::Option<RecvIntentPacketParams>,
-        acknowledge_packet_param: option::Option<AcknowledgePacketParams>,
-        timeout_packet_param: option::Option<TimeoutPacketParams>,
-        channel_open_init_param: option::Option<ChannelOpenInitParams>,
-        channel_open_try_param: option::Option<ChannelOpenTryParams>,
-        channel_open_ack_param: option::Option<ChannelOpenAckParams>,
-        channel_open_confirm_param: option::Option<ChannelOpenConfirmParams>,
-        channel_close_init_param: option::Option<ChannelCloseInitParams>,
-        channel_close_confirm_param: option::Option<ChannelCloseConfirmParams>
-    ): DynamicDispatchParam {
-        DynamicDispatchParam {
-            recv_packet_param,
-            recv_intent_packet_param,
-            acknowledge_packet_param,
-            timeout_packet_param,
-            channel_open_init_param,
-            channel_open_try_param,
-            channel_open_ack_param,
-            channel_open_confirm_param,
-            channel_close_init_param,
-            channel_close_confirm_param
-        }
     }
 
     public fun register_application<T: key + store + drop>(
@@ -913,7 +816,6 @@ module ibc::ibc_dispatch {
         ordering: u8,
         version: vector<u8>
     ) acquires IBCStore, Port {
-
         let port = borrow_global<Port<T>>(get_vault_addr());
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
 
