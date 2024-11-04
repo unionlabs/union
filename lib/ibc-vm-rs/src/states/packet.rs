@@ -47,21 +47,11 @@ pub enum RecvPacket {
 
 fn ensure_channel_state<T: IbcHost>(
     ibc_host: &T,
-    port_id: &PortId,
     channel_id: ChannelId,
 ) -> Result<Channel, IbcError> {
     let channel: Channel = ibc_host
-        .read(
-            &ChannelEndPath {
-                port_id: port_id.clone(),
-                channel_id: channel_id.clone(),
-            }
-            .into(),
-        )
-        .ok_or(IbcError::ChannelNotFound(
-            port_id.clone(),
-            channel_id.clone(),
-        ))?;
+        .read2(ics24::ethabi::channel_key(channel_id.id()).as_ref())
+        .ok_or(IbcError::ChannelNotFound(channel_id))?;
 
     if channel.state != channel::state::State::Open {
         return Err(IbcError::IncorrectChannelState(
@@ -96,12 +86,11 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     return Err(IbcError::EmptyPacketsReceived.into());
                 }
 
-                let (destination_channel, destination_port) =
-                    (packets[0].destination_channel, &packets[0].destination_port);
+                let destination_channel = packets[0].destination_channel;
                 let (source_channel, source_port) =
                     (packets[0].source_channel, &packets[0].source_port.clone());
 
-                let channel = ensure_channel_state(host, destination_port, destination_channel)?;
+                let channel = ensure_channel_state(host, destination_channel)?;
 
                 let _proof_commitment_key = match packets.len() {
                     1 => ics24::ethabi::batch_receipts_commitment_key(
@@ -338,7 +327,6 @@ pub fn write_acknowledgement<T: IbcHost>(
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum SendPacket {
     Init {
-        source_port: PortId,
         source_channel: ChannelId,
         timeout_height: Height,
         timeout_timestamp: u64,
@@ -349,7 +337,6 @@ pub enum SendPacket {
     LatestHeightFetched {
         client_id: ClientId,
         connection_id: ConnectionId,
-        source_port: PortId,
         source_channel: ChannelId,
         destination_port: PortId,
         destination_channel: ChannelId,
@@ -361,7 +348,6 @@ pub enum SendPacket {
     TimestampFetched {
         height: Height,
         connection_id: ConnectionId,
-        source_port: PortId,
         source_channel: ChannelId,
         destination_port: PortId,
         destination_channel: ChannelId,
@@ -381,7 +367,6 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
         let res = match (self, resp) {
             (
                 SendPacket::Init {
-                    source_port,
                     source_channel,
                     timeout_height,
                     timeout_timestamp,
@@ -393,48 +378,15 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                     return Err(IbcError::ZeroTimeout.into());
                 }
 
-                let channel: Channel = host
-                    .read(
-                        &ChannelEndPath {
-                            port_id: source_port.clone(),
-                            channel_id: source_channel.clone(),
-                        }
-                        .into(),
-                    )
-                    .ok_or(IbcError::ChannelNotFound(
-                        source_port.clone(),
-                        source_channel.clone(),
-                    ))?;
+                // TODO(aeryz): authenticate channel owner here
 
-                if channel.state != channel::state::State::Open {
-                    return Err(IbcError::IncorrectChannelState(
-                        channel.state,
-                        channel::state::State::Open,
-                    )
-                    .into());
-                }
+                let channel = ensure_channel_state(host, source_channel)?;
 
-                let connection: ConnectionEnd = host
-                    .read(
-                        &ConnectionPath {
-                            connection_id: channel.connection_hops[0].clone(),
-                        }
-                        .into(),
-                    )
-                    .ok_or(IbcError::ConnectionNotFound(channel.connection_hops[0]))?;
-
-                if connection.state != connection::state::State::Open {
-                    return Err(IbcError::IncorrectConnectionState(
-                        connection.state,
-                        connection::state::State::Open,
-                    )
-                    .into());
-                }
+                let connection = ensure_connection_state(host, channel.connection_hops[0])?;
 
                 Either::Left((
                     SendPacket::LatestHeightFetched {
                         client_id: connection.client_id.clone(),
-                        source_port,
                         source_channel,
                         timeout_height,
                         timeout_timestamp,
@@ -453,7 +405,6 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
             (
                 SendPacket::LatestHeightFetched {
                     client_id,
-                    source_port,
                     source_channel,
                     timeout_height,
                     timeout_timestamp,
@@ -470,7 +421,6 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                 Either::Left((
                     SendPacket::TimestampFetched {
                         height,
-                        source_port,
                         source_channel,
                         timeout_height,
                         timeout_timestamp,
@@ -485,7 +435,6 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
             (
                 SendPacket::TimestampFetched {
                     height,
-                    source_port,
                     source_channel,
                     timeout_height,
                     timeout_timestamp,
@@ -505,18 +454,12 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                     return Err(IbcError::TimedOutPacket.into());
                 }
 
-                let sequence_path = NextSequenceSendPath {
-                    port_id: source_port.clone(),
-                    channel_id: source_channel.clone(),
-                }
-                .into();
-
-                let sequence =
-                    u64::from_be_bytes(host.read_raw(&sequence_path).unwrap().try_into().unwrap());
+                let sequence: u64 = generate_packet_sequence(host, source_channel)?;
 
                 let packet = Packet {
                     sequence: sequence.try_into().unwrap(),
-                    source_port,
+                    // TODO(aeryz): what about this?
+                    source_port: PortId::new("00").unwrap(),
                     source_channel,
                     destination_port,
                     destination_channel,
@@ -525,19 +468,13 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                     timeout_timestamp,
                 };
 
-                host.commit_raw(
-                    sequence_path,
-                    sequence.checked_add(1).unwrap().to_be_bytes().to_vec(),
-                )?;
-                let commitment = packet_commitment(host, &packet);
-                host.commit_raw(
-                    CommitmentPath {
-                        port_id: packet.source_port.clone(),
-                        channel_id: packet.source_channel.clone(),
-                        sequence: packet.sequence,
-                    }
-                    .into(),
-                    host.sha256(commitment),
+                host.commit_raw2(
+                    ics24::ethabi::batch_receipts_commitment_key(
+                        source_channel.id(),
+                        commit_packet(host, &packet),
+                    )
+                    .as_ref(),
+                    COMMITMENT_MAGIC.into_bytes(),
                 )?;
 
                 Either::Right((
@@ -564,6 +501,26 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
     }
 }
 
+fn generate_packet_sequence<T: IbcHost>(
+    host: &mut T,
+    channel_id: ChannelId,
+) -> Result<u64, T::Error> {
+    let commitment_key = ics24::ethabi::next_seq_send_key(channel_id.id());
+
+    // TODO(aeryz): make this u256
+    let seq = u64::from_be_bytes(
+        host.read_raw2(commitment_key.as_ref())
+            .expect("impossible")
+            .as_slice()
+            .try_into()
+            .expect("impossible"),
+    );
+
+    host.commit_raw2(commitment_key.as_ref(), (seq + 1).to_be_bytes().to_vec())?;
+
+    Ok(seq)
+}
+
 fn packet_commitment<T: IbcHost>(host: &mut T, packet: &Packet) -> Vec<u8> {
     let mut packet_commitment = Vec::new();
     packet_commitment.extend_from_slice(packet.timeout_timestamp.to_be_bytes().as_slice());
@@ -573,11 +530,11 @@ fn packet_commitment<T: IbcHost>(host: &mut T, packet: &Packet) -> Vec<u8> {
     packet_commitment
 }
 
-fn commit_packet<T: IbcHost>(_host: &mut T, packet: &Packet) -> H256 {
+fn commit_packet<T: IbcHost>(_host: &T, packet: &Packet) -> H256 {
     Default::default()
 }
 
-fn commit_packets<T: IbcHost>(_host: &mut T, packet: &[Packet]) -> H256 {
+fn commit_packets<T: IbcHost>(_host: &T, packet: &[Packet]) -> H256 {
     Default::default()
 }
 
@@ -627,10 +584,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ChannelNotFound(
-                        packet.source_port.clone(),
-                        packet.source_channel.clone(),
-                    ))?;
+                    .ok_or(IbcError::ChannelNotFound(packet.source_channel.clone()))?;
 
                 // TODO(aeryz): flushing state?
                 if channel.state != channel::state::State::Open {

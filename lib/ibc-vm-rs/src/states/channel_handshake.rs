@@ -493,10 +493,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ChannelNotFound(
-                        port_id.clone(),
-                        channel_id.clone(),
-                    ))?;
+                    .ok_or(IbcError::ChannelNotFound(channel_id.clone()))?;
 
                 if channel.state != channel::state::State::Init {
                     return Err(IbcError::IncorrectChannelState(
@@ -623,9 +620,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 }
                 .into();
 
-                let mut channel: Channel = host.read(&channel_path).ok_or(
-                    IbcError::ChannelNotFound(port_id.clone(), channel_id.clone()),
-                )?;
+                let mut channel: Channel = host
+                    .read(&channel_path)
+                    .ok_or(IbcError::ChannelNotFound(channel_id.clone()))?;
 
                 channel.state = channel::state::State::Open;
                 channel.version = counterparty_version;
@@ -707,10 +704,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ChannelNotFound(
-                        port_id.clone(),
-                        channel_id.clone(),
-                    ))?;
+                    .ok_or(IbcError::ChannelNotFound(channel_id.clone()))?;
 
                 if channel.state != channel::state::State::Tryopen {
                     return Err(IbcError::IncorrectChannelState(
@@ -832,9 +826,9 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 }
                 .into();
 
-                let mut channel: Channel = host.read(&channel_path).ok_or(
-                    IbcError::ChannelNotFound(port_id.clone(), channel_id.clone()),
-                )?;
+                let mut channel: Channel = host
+                    .read(&channel_path)
+                    .ok_or(IbcError::ChannelNotFound(channel_id.clone()))?;
 
                 channel.state = channel::state::State::Open;
 

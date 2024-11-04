@@ -79,8 +79,8 @@ pub enum IbcError {
     #[error("the client state is not found for client {0}")]
     ClientStateNotFound(ClientId),
 
-    #[error("channel ({1}) with port {0} is not found")]
-    ChannelNotFound(PortId, ChannelId),
+    #[error("channel ({0}) is not found")]
+    ChannelNotFound(ChannelId),
 
     #[error("channel state is {0} while {1} is expected")]
     IncorrectChannelState(channel::state::State, channel::state::State),
@@ -120,6 +120,8 @@ pub enum IbcError {
 pub trait IbcHost: Sized {
     type Error: core::fmt::Display + core::fmt::Debug + PartialEq + From<IbcError>;
 
+    fn caller(&self) -> Vec<u8>;
+
     fn next_client_identifier(&mut self, client_type: &str) -> Result<ClientId, Self::Error>;
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, Self::Error>;
@@ -128,9 +130,16 @@ pub trait IbcHost: Sized {
 
     fn client_state(&self, client_id: &ClientId) -> Option<Vec<u8>>;
 
+    // this will overtake read soon
+    fn read2<T: Decode<Proto>>(&self, key: &[u8]) -> Option<T>;
+
     fn read<T: Decode<Proto>>(&self, path: &Path) -> Option<T>;
 
+    fn read_raw2(&self, key: &[u8]) -> Option<Vec<u8>>;
+
     fn read_raw(&self, key: &Path) -> Option<Vec<u8>>;
+
+    fn commit_raw2(&mut self, key: &[u8], value: Vec<u8>) -> Result<(), Self::Error>;
 
     fn commit_raw(&mut self, key: Path, value: Vec<u8>) -> Result<(), Self::Error>;
 

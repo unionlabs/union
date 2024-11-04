@@ -132,6 +132,16 @@ pub mod ethabi {
             .finalize()
             .into()
     }
+
+    #[must_use]
+    pub fn batch_packets_commitment_key(channel_id: u32, batch_hash: H256) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKETS])
+            .chain_update(channel_id.to_be_bytes())
+            .chain_update(batch_hash.into_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
