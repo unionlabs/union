@@ -2,14 +2,15 @@ use frame_support_procedural::PartialEqNoBound;
 use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
 use states::{
-    channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
+    // channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
     client_state::UpdateClient,
     connection_handshake::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
     },
-    packet::{Acknowledgement, RecvPacket, SendPacket},
+    // packet::{Acknowledgement, RecvPacket, SendPacket},
     CreateClient,
 };
+use types::connection::ConnectionState;
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{
@@ -23,6 +24,7 @@ use unionlabs::{
 };
 
 pub mod states;
+pub mod types;
 
 lazy_static::lazy_static! {
     pub static ref DEFAULT_IBC_VERSION: Vec<Version> = vec![Version { identifier: String::from("1"), features: vec![Order::Unordered] }];
@@ -34,7 +36,7 @@ lazy_static::lazy_static! {
 #[derive(thiserror::Error, PartialEqNoBound, Debug)]
 pub enum IbcError {
     #[error("client {0} is not active ({1})")]
-    NotActive(ClientId, Status),
+    NotActive(u32, Status),
 
     // TODO(aeryz): this needs context
     #[error("unexpected action is provided to the state machine")]
@@ -47,8 +49,9 @@ pub enum IbcError {
     #[error("connection ({0}) not found")]
     ConnectionNotFound(ConnectionId),
 
-    #[error("connection state is {0} while {1} is expected")]
-    IncorrectConnectionState(connection::state::State, connection::state::State),
+    // TODO(aeryz): make this a struct
+    #[error("connection state is {0:?} while {1:?} is expected")]
+    IncorrectConnectionState(ConnectionState, ConnectionState),
 
     // TODO(aeryz): this should have the error
     #[error("ibc app callback failed ({0})")]
@@ -77,7 +80,7 @@ pub enum IbcError {
     UnsupportedFeatureInVersion(Order),
 
     #[error("the client state is not found for client {0}")]
-    ClientStateNotFound(ClientId),
+    ClientStateNotFound(u32),
 
     #[error("channel ({0}) is not found")]
     ChannelNotFound(ChannelId),
@@ -122,29 +125,23 @@ pub trait IbcHost: Sized {
 
     fn caller(&self) -> Vec<u8>;
 
-    fn next_client_identifier(&mut self, client_type: &str) -> Result<ClientId, Self::Error>;
+    fn next_client_identifier(&mut self, client_type: &str) -> Result<u32, Self::Error>;
 
     fn next_connection_identifier(&mut self) -> Result<ConnectionId, Self::Error>;
 
     fn next_channel_identifier(&mut self) -> Result<ChannelId, Self::Error>;
 
-    fn client_state(&self, client_id: &ClientId) -> Option<Vec<u8>>;
+    fn client_state(&self, client_id: &u32) -> Option<Vec<u8>>;
 
     // this will overtake read soon
-    fn read2<T: Decode<Proto>>(&self, key: &[u8]) -> Option<T>;
+    fn read<T>(&self, key: &[u8]) -> Option<T>;
 
-    fn read<T: Decode<Proto>>(&self, path: &Path) -> Option<T>;
+    fn read_raw(&self, key: &[u8]) -> Option<Vec<u8>>;
 
-    fn read_raw2(&self, key: &[u8]) -> Option<Vec<u8>>;
-
-    fn read_raw(&self, key: &Path) -> Option<Vec<u8>>;
-
-    fn commit_raw2(&mut self, key: &[u8], value: Vec<u8>) -> Result<(), Self::Error>;
-
-    fn commit_raw(&mut self, key: Path, value: Vec<u8>) -> Result<(), Self::Error>;
+    fn commit_raw(&mut self, key: &[u8], value: Vec<u8>) -> Result<(), Self::Error>;
 
     // TODO(aeryz): generic over encoding
-    fn commit<T: Encode<Proto>>(&mut self, key: Path, value: T) -> Result<(), Self::Error>;
+    fn commit<T>(&mut self, key: &[u8], value: T) -> Result<(), Self::Error>;
 
     fn delete(&mut self, key: &Path) -> Result<(), Self::Error>;
 
@@ -236,13 +233,13 @@ pub enum IbcState {
     ConnectionOpenTry(ConnectionOpenTry),
     ConnectionOpenAck(ConnectionOpenAck),
     ConnectionOpenConfirm(ConnectionOpenConfirm),
-    ChannelOpenInit(ChannelOpenInit),
-    ChannelOpenTry(ChannelOpenTry),
-    ChannelOpenAck(ChannelOpenAck),
-    ChannelOpenConfirm(ChannelOpenConfirm),
-    SendPacket(SendPacket),
-    RecvPacket(RecvPacket),
-    AcknowledgePacket(Acknowledgement),
+    // ChannelOpenInit(ChannelOpenInit),
+    // ChannelOpenTry(ChannelOpenTry),
+    // ChannelOpenAck(ChannelOpenAck),
+    // ChannelOpenConfirm(ChannelOpenConfirm),
+    // SendPacket(SendPacket),
+    // RecvPacket(RecvPacket),
+    // AcknowledgePacket(Acknowledgement),
 }
 
 macro_rules! cast_either {
@@ -273,22 +270,15 @@ impl<T: IbcHost> Runnable<T> for IbcState {
                 ConnectionOpenInit,
                 ConnectionOpenTry,
                 ConnectionOpenAck,
-                ConnectionOpenConfirm,
-                ChannelOpenInit,
-                ChannelOpenTry,
-                ChannelOpenAck,
-                ChannelOpenConfirm,
-                SendPacket,
-                RecvPacket,
-                AcknowledgePacket
+                ConnectionOpenConfirm
             ]
         );
         Ok(res)
     }
 }
 
-impl From<(ClientId, Vec<IbcQuery>)> for IbcAction {
-    fn from(value: (ClientId, Vec<IbcQuery>)) -> Self {
+impl From<(u32, Vec<IbcQuery>)> for IbcAction {
+    fn from(value: (u32, Vec<IbcQuery>)) -> Self {
         IbcAction::Query(value)
     }
 }
@@ -307,7 +297,7 @@ impl From<IbcMsg> for IbcAction {
 
 #[derive(Deserialize)]
 pub enum IbcAction {
-    Query((ClientId, Vec<IbcQuery>)),
+    Query((u32, Vec<IbcQuery>)),
     Write(Vec<IbcMsg>),
 }
 
@@ -320,7 +310,7 @@ pub enum IbcQuery {
         delay_time_period: u64,
         delay_block_period: u64,
         proof: Vec<u8>,
-        path: MerklePath,
+        path: Vec<u8>,
         value: Vec<u8>,
     },
 
@@ -334,18 +324,18 @@ pub enum IbcQuery {
 #[derive(Deserialize)]
 pub enum IbcMsg {
     Initialize {
-        client_id: ClientId,
+        client_id: u32,
         client_type: String,
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     },
     UpdateStateOnMisbehaviour {
-        client_id: ClientId,
+        client_id: u32,
         client_msg: Vec<u8>,
     },
 
     UpdateState {
-        client_id: ClientId,
+        client_id: u32,
         client_msg: Vec<u8>,
     },
 

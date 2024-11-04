@@ -1,10 +1,6 @@
 use ibc_events::ClientMisbehaviour;
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    ibc::core::client::height::Height,
-    ics24::{ClientConsensusStatePath, ClientStatePath},
-    id::ClientId,
-};
+use unionlabs::{ibc::core::client::height::Height, ics24, id::ClientId};
 
 use crate::{
     Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
@@ -14,23 +10,13 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum UpdateClient {
-    Init {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
+    Init { client_id: u32, client_msg: Vec<u8> },
 
-    LcQueriesMade {
-        client_id: ClientId,
-        client_msg: Vec<u8>,
-    },
+    LcQueriesMade { client_id: u32, client_msg: Vec<u8> },
 
-    UpdatedStateOnMisbehaviour {
-        client_id: ClientId,
-    },
+    UpdatedStateOnMisbehaviour { client_id: u32 },
 
-    UpdatedState {
-        client_id: ClientId,
-    },
+    UpdatedState { client_id: u32 },
 }
 
 impl<T: IbcHost> Runnable<T> for UpdateClient {
@@ -77,9 +63,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                 }
                 if *misbehaviour_found {
                     Either::Left((
-                        Self::UpdatedStateOnMisbehaviour {
-                            client_id: client_id.clone(),
-                        },
+                        Self::UpdatedStateOnMisbehaviour { client_id },
                         IbcMsg::UpdateStateOnMisbehaviour {
                             client_id,
                             client_msg,
@@ -104,7 +88,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                 &[IbcResponse::UpdateStateOnMisbehaviour],
             ) => Either::Right((
                 vec![IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
-                    client_id,
+                    client_id: ClientId::new("TODO", client_id),
                     // TODO(aeryz): why????
                     client_type: "TODO(aeryz) why in the hell do we have this here".to_string(),
                     // TODO(aeryz): this should be deprecated, can't see it in the latest ibc
@@ -120,10 +104,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                 }],
             ) => {
                 host.commit_raw(
-                    ClientStatePath {
-                        client_id: client_id.clone(),
-                    }
-                    .into(),
+                    ics24::ethabi::client_state_key(client_id).as_ref(),
                     client_state.clone(),
                 )?;
 
@@ -131,11 +112,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     .iter()
                     .map(|(height, state)| {
                         host.commit_raw(
-                            ClientConsensusStatePath {
-                                client_id: client_id.clone(),
-                                height: *height,
-                            }
-                            .into(),
+                            ics24::ethabi::consensus_state_key(client_id, height.height()).as_ref(),
                             state.clone(),
                         )?;
                         Ok(*height)
@@ -144,7 +121,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
 
                 Either::Right((
                     vec![IbcEvent::UpdateClient(ibc_events::UpdateClient {
-                        client_id,
+                        client_id: ClientId::new("TODO", client_id),
                         client_type: "TODO(aeryz): I hate this".to_string(),
                         consensus_heights,
                     })],

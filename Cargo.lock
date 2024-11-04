@@ -6565,6 +6565,7 @@ dependencies = [
  "frame-support-procedural",
  "hex",
  "ibc-events",
+ "ibc-solidity",
  "lazy_static",
  "schemars",
  "serde",

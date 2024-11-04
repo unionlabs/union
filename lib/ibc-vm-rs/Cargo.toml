@@ -16,6 +16,7 @@ serde                    = { workspace = true }
 serde-utils              = { workspace = true }
 thiserror                = { workspace = true }
 unionlabs                = { workspace = true }
+ibc-solidity = { workspace = true }
 
 [lints]
 workspace = true
