@@ -45,7 +45,7 @@ pub enum IbcError {
     ClientMessageVerificationFailed,
 
     #[error("connection ({0}) not found")]
-    ConnectionNotFound(String),
+    ConnectionNotFound(ConnectionId),
 
     #[error("connection state is {0} while {1} is expected")]
     IncorrectConnectionState(connection::state::State, connection::state::State),
@@ -109,6 +109,9 @@ pub enum IbcError {
 
     #[error("committed packet ({comm}) does not match the calculated one ({exp_comm})", comm = serde_utils::to_hex(.0), exp_comm= serde_utils::to_hex(.1))]
     PacketCommitmentMismatch(Vec<u8>, Vec<u8>),
+
+    #[error("empty packets received")]
+    EmptyPacketsReceived,
 }
 
 pub trait IbcHost: Sized {
@@ -205,7 +208,7 @@ pub enum IbcResponse {
         err: CallbackError,
     },
     OnRecvPacket {
-        ack: Vec<u8>,
+        acks: Vec<Vec<u8>>,
     },
     OnAcknowledgePacket {
         err: CallbackError,
@@ -278,16 +281,22 @@ impl From<(ClientId, Vec<IbcQuery>)> for IbcAction {
     }
 }
 
+impl From<Vec<IbcMsg>> for IbcAction {
+    fn from(value: Vec<IbcMsg>) -> Self {
+        IbcAction::Write(value)
+    }
+}
+
 impl From<IbcMsg> for IbcAction {
     fn from(value: IbcMsg) -> Self {
-        IbcAction::Write(value)
+        IbcAction::Write(vec![value])
     }
 }
 
 #[derive(Deserialize)]
 pub enum IbcAction {
     Query((ClientId, Vec<IbcQuery>)),
-    Write(IbcMsg),
+    Write(Vec<IbcMsg>),
 }
 
 #[derive(Serialize, Deserialize)]

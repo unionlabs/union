@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    hash::H256,
     ibc::core::{
         channel::{self, channel::Channel, order::Order, packet::Packet},
         client::height::Height,
@@ -7,12 +8,13 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{
-        AcknowledgementPath, ChannelEndPath, CommitmentPath, ConnectionPath, NextSequenceSendPath,
-        ReceiptPath,
+        self, ethabi::COMMITMENT_MAGIC, AcknowledgementPath, ChannelEndPath, CommitmentPath,
+        ConnectionPath, NextSequenceSendPath, ReceiptPath,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
+use super::connection_handshake::ensure_connection_state;
 use crate::{
     Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
     Runnable, Status,
@@ -21,20 +23,50 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum RecvPacket {
     Init {
-        packet: Packet,
+        packets: Vec<Packet>,
+        relayer_msgs: Vec<Vec<u8>>,
+        relayer: Vec<u8>,
         proof_commitment: Vec<u8>,
         proof_height: Height,
     },
 
     MembershipVerified {
-        packet: Packet,
+        packets: Vec<Packet>,
         channel: Channel,
     },
 
     CallbackCalled {
-        packet: Packet,
+        packets: Vec<Packet>,
         channel: Channel,
     },
+}
+
+fn ensure_channel_state<T: IbcHost>(
+    ibc_host: &T,
+    port_id: &PortId,
+    channel_id: ChannelId,
+) -> Result<Channel, IbcError> {
+    let channel: Channel = ibc_host
+        .read(
+            &ChannelEndPath {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+            }
+            .into(),
+        )
+        .ok_or(IbcError::ChannelNotFound(
+            port_id.clone(),
+            channel_id.clone(),
+        ))?;
+
+    if channel.state != channel::state::State::Open {
+        return Err(IbcError::IncorrectChannelState(
+            channel.state,
+            channel::state::State::Open,
+        ));
+    }
+
+    Ok(channel)
 }
 
 impl<T: IbcHost> Runnable<T> for RecvPacket {
@@ -47,199 +79,227 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
         let res = match (self, &resp) {
             (
                 RecvPacket::Init {
-                    packet,
+                    packets,
+                    relayer_msgs,
+                    relayer,
                     proof_commitment,
                     proof_height,
                 },
                 &[IbcResponse::Empty],
             ) => {
-                let channel: Channel = host
-                    .read(
-                        &ChannelEndPath {
-                            port_id: packet.destination_port.clone(),
-                            channel_id: packet.destination_channel.clone(),
-                        }
-                        .into(),
-                    )
-                    .ok_or(IbcError::ChannelNotFound(
-                        packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
-                    ))?;
-
-                if channel.state != channel::state::State::Open {
-                    return Err(IbcError::IncorrectChannelState(
-                        channel.state,
-                        channel::state::State::Open,
-                    )
-                    .into());
+                if packets.is_empty() {
+                    return Err(IbcError::EmptyPacketsReceived.into());
                 }
 
-                if packet.source_port != channel.counterparty.port_id {
-                    return Err(IbcError::SourcePortMismatch(
-                        packet.source_port,
-                        channel.counterparty.port_id,
-                    )
-                    .into());
-                }
+                let (destination_channel, destination_port) =
+                    (packets[0].destination_channel, &packets[0].destination_port);
+                let (source_channel, source_port) =
+                    (packets[0].source_channel, &packets[0].source_port.clone());
 
-                if Some(&packet.source_channel) != channel.counterparty.channel_id.as_ref() {
-                    return Err(IbcError::SourceChannelMismatch(
-                        packet.source_channel,
-                        channel.counterparty.channel_id.unwrap(),
-                    )
-                    .into());
-                }
+                let channel = ensure_channel_state(host, destination_port, destination_channel)?;
 
-                let connection: ConnectionEnd = host
-                    .read(
-                        &ConnectionPath {
-                            connection_id: channel.connection_hops[0].clone(),
-                        }
-                        .into(),
-                    )
-                    .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
-                    ))?;
+                let _proof_commitment_key = match packets.len() {
+                    1 => ics24::ethabi::batch_receipts_commitment_key(
+                        source_channel.id(),
+                        commit_packet(host, &packets[0]),
+                    ),
+                    _ => ics24::ethabi::batch_receipts_commitment_key(
+                        source_channel.id(),
+                        commit_packets(host, &packets),
+                    ),
+                };
 
-                if connection.state != connection::state::State::Open {
-                    return Err(IbcError::IncorrectConnectionState(
-                        connection.state,
-                        connection::state::State::Open,
-                    )
-                    .into());
-                }
+                let connection = ensure_connection_state(host, channel.connection_hops[0])?;
+                let sequence = packets[0].sequence;
 
-                if packet.timeout_height == Default::default() && packet.timeout_timestamp == 0 {
-                    return Err(IbcError::ZeroTimeout.into());
-                }
-
-                if packet.timeout_height != Default::default()
-                    && host.current_height() >= packet.timeout_height
-                {
-                    return Err(IbcError::TimedOutPacket.into());
-                }
-
-                if packet.timeout_timestamp != 0
-                    && host.current_timestamp() >= packet.timeout_timestamp
-                {
-                    return Err(IbcError::TimedOutPacket.into());
-                }
-
-                // TODO(aeryz): recv start sequence check for replay protection
-
-                match host.read_raw(
-                    &ReceiptPath {
-                        port_id: packet.destination_port.clone(),
-                        channel_id: packet.destination_channel.clone(),
-                        sequence: packet.sequence,
-                    }
-                    .into(),
-                ) {
-                    Some(_) => Either::Right((
-                        vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
-                            packet_data_hex: packet.data,
-                            packet_timeout_height: packet.timeout_height,
-                            packet_timeout_timestamp: packet.timeout_timestamp,
-                            packet_sequence: packet.sequence,
-                            packet_src_port: packet.source_port,
-                            packet_src_channel: packet.source_channel,
-                            packet_dst_port: packet.destination_port,
-                            packet_dst_channel: packet.destination_channel,
-                            packet_channel_ordering: channel.ordering,
-                            connection_id: channel.connection_hops[0].clone(),
-                        })],
-                        IbcVmResponse::Empty,
-                    )),
-                    None => {
-                        // TODO(aeryz): known size can be optimized
-                        let packet_commitment = packet_commitment(host, &packet);
-
-                        Either::Left((
-                            RecvPacket::MembershipVerified {
-                                packet: packet.clone(),
-                                channel: channel.clone(),
+                Either::Left((
+                    RecvPacket::MembershipVerified { packets, channel },
+                    (
+                        connection.client_id,
+                        vec![IbcQuery::VerifyMembership {
+                            height: proof_height,
+                            delay_time_period: 0,
+                            delay_block_period: 0,
+                            proof: proof_commitment,
+                            path: MerklePath {
+                                key_path: vec![
+                                    "ibc".into(),
+                                    // TODO(aeryz): ditch this
+                                    CommitmentPath {
+                                        port_id: source_port.clone(),
+                                        channel_id: source_channel,
+                                        sequence,
+                                    }
+                                    .to_string(),
+                                ],
                             },
-                            (
-                                connection.client_id,
-                                vec![IbcQuery::VerifyMembership {
-                                    height: proof_height,
-                                    delay_time_period: 0,
-                                    delay_block_period: 0,
-                                    proof: proof_commitment,
-                                    path: MerklePath {
-                                        key_path: vec![
-                                            "ibc".into(),
-                                            CommitmentPath {
-                                                port_id: packet.source_port.clone(),
-                                                channel_id: packet.source_channel.clone(),
-                                                sequence: packet.sequence,
-                                            }
-                                            .to_string(),
-                                        ],
-                                    },
-                                    value: host.sha256(packet_commitment),
-                                }],
-                            )
-                                .into(),
-                        ))
-                    }
-                }
+                            // TODO(aeryz): leave this as  H256
+                            value: COMMITMENT_MAGIC.into(),
+                        }],
+                    )
+                        .into(),
+                ))
             }
+
+            // // TODO(aeryz): recv start sequence check for replay protection
+
+            // // match host.read_raw(
+            //     &ReceiptPath {
+            //         port_id: packet.destination_port.clone(),
+            //         channel_id: packet.destination_channel.clone(),
+            //         sequence: packet.sequence,
+            //     }
+            //     .into(),
+            // ) {
+            //     Some(_) => Either::Right((
+            //         vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
+            //             packet_data_hex: packet.data,
+            //             packet_timeout_height: packet.timeout_height,
+            //             packet_timeout_timestamp: packet.timeout_timestamp,
+            //             packet_sequence: packet.sequence,
+            //             packet_src_port: packet.source_port,
+            //             packet_src_channel: packet.source_channel,
+            //             packet_dst_port: packet.destination_port,
+            //             packet_dst_channel: packet.destination_channel,
+            //             packet_channel_ordering: channel.ordering,
+            //             connection_id: channel.connection_hops[0].clone(),
+            //         })],
+            //         IbcVmResponse::Empty,
+            //     )),
+            //     None => {
+            //         // TODO(aeryz): known size can be optimized
+            //         let packet_commitment = packet_commitment(host, &packet);
+
+            //         Either::Left((
+            //             RecvPacket::MembershipVerified {
+            //                 packet: packet.clone(),
+            //                 channel: channel.clone(),
+            //             },
+            //             (
+            //                 connection.client_id,
+            //                 vec![IbcQuery::VerifyMembership {
+            //                     height: proof_height,
+            //                     delay_time_period: 0,
+            //                     delay_block_period: 0,
+            //                     proof: proof_commitment,
+            //                     path: MerklePath {
+            //                         key_path: vec![
+            //                             "ibc".into(),
+            //                             CommitmentPath {
+            //                                 port_id: packet.source_port.clone(),
+            //                                 channel_id: packet.source_channel.clone(),
+            //                                 sequence: packet.sequence,
+            //                             }
+            //                             .to_string(),
+            //                         ],
+            //                     },
+            //                     value: host.sha256(packet_commitment),
+            //                 }],
+            //             )
+            //                 .into(),
+            //         ))
+            //     }
+            // }
+            // }
             (
-                RecvPacket::MembershipVerified { packet, channel },
+                RecvPacket::MembershipVerified { packets, channel },
                 &[IbcResponse::VerifyMembership { valid }],
             ) => {
                 if !valid {
                     return Err(IbcError::MembershipVerificationFailure.into());
                 }
 
-                Either::Left((
-                    RecvPacket::CallbackCalled {
-                        packet: packet.clone(),
-                        channel,
-                    },
-                    IbcMsg::OnRecvPacket {
-                        packet: packet.clone(),
+                let destination_channel = packets[0].destination_channel;
+
+                let mut recv_callbacks = vec![];
+
+                for packet in &packets {
+                    if packet.source_port != channel.counterparty.port_id {
+                        return Err(IbcError::SourcePortMismatch(
+                            packet.source_port.clone(),
+                            channel.counterparty.port_id,
+                        )
+                        .into());
                     }
-                    .into(),
+
+                    if Some(&packet.source_channel) != channel.counterparty.channel_id.as_ref() {
+                        return Err(IbcError::SourceChannelMismatch(
+                            packet.source_channel,
+                            channel.counterparty.channel_id.unwrap(),
+                        )
+                        .into());
+                    }
+
+                    if packet.timeout_height == Default::default() && packet.timeout_timestamp == 0
+                    {
+                        return Err(IbcError::ZeroTimeout.into());
+                    }
+
+                    if packet.timeout_height != Default::default()
+                        && host.current_height() >= packet.timeout_height
+                    {
+                        return Err(IbcError::TimedOutPacket.into());
+                    }
+
+                    if packet.timeout_timestamp != 0
+                        && host.current_timestamp() >= packet.timeout_timestamp
+                    {
+                        return Err(IbcError::TimedOutPacket.into());
+                    }
+
+                    let commitment_key = ics24::ethabi::batch_receipts_commitment_key(
+                        destination_channel.id(),
+                        commit_packet(host, &packet),
+                    );
+
+                    let already_received = match channel.ordering {
+                        Order::Unordered => set_packet_receive(commitment_key),
+                        Order::Ordered => {
+                            set_next_sequence_recv(destination_channel, packet.sequence)
+                        }
+                        _ => panic!("not possible"),
+                    };
+
+                    if !already_received {
+                        recv_callbacks.push(IbcMsg::OnRecvPacket {
+                            packet: packet.clone(),
+                        });
+                    }
+                }
+
+                Either::Left((
+                    RecvPacket::CallbackCalled { packets, channel },
+                    recv_callbacks.into(),
                 ))
             }
             (
-                RecvPacket::CallbackCalled { packet, channel },
-                &[IbcResponse::OnRecvPacket { ack }],
+                RecvPacket::CallbackCalled { packets, channel },
+                &[IbcResponse::OnRecvPacket { acks }],
             ) => {
-                host.commit_raw(
-                    ReceiptPath {
-                        port_id: packet.destination_port.clone(),
-                        channel_id: packet.destination_channel.clone(),
-                        sequence: packet.sequence,
+                let mut events = vec![];
+                for (ack, packet) in acks.into_iter().zip(packets) {
+                    events.push(IbcEvent::RecvPacket(ibc_events::RecvPacket {
+                        packet_data_hex: packet.data.clone(),
+                        packet_timeout_height: packet.timeout_height,
+                        packet_timeout_timestamp: packet.timeout_timestamp,
+                        packet_sequence: packet.sequence,
+                        packet_src_port: packet.source_port.clone(),
+                        packet_src_channel: packet.source_channel,
+                        packet_dst_port: packet.destination_port.clone(),
+                        packet_dst_channel: packet.destination_channel,
+                        packet_channel_ordering: channel.ordering,
+                        connection_id: channel.connection_hops[0],
+                    }));
+
+                    if !ack.is_empty() {
+                        events.push(IbcEvent::WriteAcknowledgement(write_acknowledgement(
+                            host,
+                            &channel,
+                            packet,
+                            ack.clone(),
+                        )?));
                     }
-                    .into(),
-                    vec![1],
-                )?;
-
-                let mut events = vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
-                    packet_data_hex: packet.data.clone(),
-                    packet_timeout_height: packet.timeout_height,
-                    packet_timeout_timestamp: packet.timeout_timestamp,
-                    packet_sequence: packet.sequence,
-                    packet_src_port: packet.source_port.clone(),
-                    packet_src_channel: packet.source_channel.clone(),
-                    packet_dst_port: packet.destination_port.clone(),
-                    packet_dst_channel: packet.destination_channel.clone(),
-                    packet_channel_ordering: channel.ordering,
-                    connection_id: channel.connection_hops[0].clone(),
-                })];
-
-                if !ack.is_empty() {
-                    events.push(IbcEvent::WriteAcknowledgement(write_acknowledgement(
-                        host,
-                        &channel,
-                        packet,
-                        ack.clone(),
-                    )?));
                 }
-
                 Either::Right((events, IbcVmResponse::Empty))
             }
             _ => return Err(IbcError::UnexpectedAction.into()),
@@ -247,6 +307,17 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
 
         Ok(res)
     }
+}
+
+fn set_next_sequence_recv(
+    destination_channel: ChannelId,
+    sequence: std::num::NonZero<u64>,
+) -> bool {
+    todo!()
+}
+
+fn set_packet_receive(commitment_key: unionlabs::hash::hash_v2::Hash<32>) -> bool {
+    todo!()
 }
 
 pub fn write_acknowledgement<T: IbcHost>(
@@ -371,9 +442,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
-                    ))?;
+                    .ok_or(IbcError::ConnectionNotFound(channel.connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(
@@ -525,6 +594,14 @@ fn packet_commitment<T: IbcHost>(host: &mut T, packet: &Packet) -> Vec<u8> {
     packet_commitment
 }
 
+fn commit_packet<T: IbcHost>(_host: &mut T, packet: &Packet) -> H256 {
+    Default::default()
+}
+
+fn commit_packets<T: IbcHost>(_host: &mut T, packet: &[Packet]) -> H256 {
+    Default::default()
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Acknowledgement {
     Init {
@@ -608,9 +685,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
-                    ))?;
+                    .ok_or(IbcError::ConnectionNotFound(channel.connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(

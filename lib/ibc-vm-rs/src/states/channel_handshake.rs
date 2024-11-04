@@ -70,7 +70,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(connection_hops[0].to_string()))?;
+                    .ok_or(IbcError::ConnectionNotFound(connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(
@@ -262,7 +262,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(connection_hops[0].to_string()))?;
+                    .ok_or(IbcError::ConnectionNotFound(connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(
@@ -513,9 +513,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
-                    ))?;
+                    .ok_or(IbcError::ConnectionNotFound(channel.connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(
@@ -729,9 +727,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         }
                         .into(),
                     )
-                    .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
-                    ))?;
+                    .ok_or(IbcError::ConnectionNotFound(channel.connection_hops[0]))?;
 
                 if connection.state != connection::state::State::Open {
                     return Err(IbcError::IncorrectConnectionState(

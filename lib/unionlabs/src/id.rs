@@ -90,7 +90,9 @@ impl fmt::Display for ClientId {
     }
 }
 
-#[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Copy, macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 // #[cfg_attr(feature = "serde", serde(transparent))]
 #[debug("ConnectionId({})", self.0)]
@@ -155,7 +157,9 @@ impl Display for ConnectionId {
     }
 }
 
-#[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Copy, macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[serde(transparent)]
 // #[cfg_attr(feature = "serde", serde(transparent))]
 #[debug("ChannelId({})", self.0)]

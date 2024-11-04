@@ -294,7 +294,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenAck {
     Init {
-        connection_id: String,
+        connection_id: ConnectionId,
         version: Version,
         counterparty_connection_id: String,
         connection_end_proof: Vec<u8>,
@@ -303,7 +303,7 @@ pub enum ConnectionOpenAck {
 
     ConnectionStateVerified {
         client_id: ClientId,
-        connection_id: String,
+        connection_id: ConnectionId,
         counterparty_connection_id: String,
         connection: ConnectionEnd,
     },
@@ -328,12 +328,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
-                    .read(
-                        &ConnectionPath {
-                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                        }
-                        .into(),
-                    )
+                    .read(&ConnectionPath { connection_id }.into())
                     .ok_or(IbcError::ConnectionNotFound(connection_id.clone()))?;
 
                 if connection.state != connection::state::State::Init {
@@ -354,9 +349,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     state: connection::state::State::Tryopen,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: Some(
-                            ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                        ),
+                        connection_id: Some(connection_id),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
@@ -407,17 +400,11 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
 
-                host.commit(
-                    ConnectionPath {
-                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                    }
-                    .into(),
-                    connection,
-                )?;
+                host.commit(ConnectionPath { connection_id }.into(), connection)?;
 
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenAck(ibc_events::ConnectionOpenAck {
-                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
+                        connection_id,
                         client_id,
                         counterparty_client_id,
                         counterparty_connection_id: ConnectionId::from_str_prefixed(
@@ -439,14 +426,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub enum ConnectionOpenConfirm {
     Init {
-        connection_id: String,
+        connection_id: ConnectionId,
         connection_end_proof: Vec<u8>,
         proof_height: Height,
     },
 
     ConnectionStateVerified {
         client_id: ClientId,
-        connection_id: String,
+        connection_id: ConnectionId,
         connection: ConnectionEnd,
     },
 }
@@ -468,12 +455,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 &[IbcResponse::Empty],
             ) => {
                 let connection: ConnectionEnd = host
-                    .read(
-                        &ConnectionPath {
-                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                        }
-                        .into(),
-                    )
+                    .read(&ConnectionPath { connection_id }.into())
                     .ok_or(IbcError::ConnectionNotFound(connection_id.clone()))?;
 
                 if connection.state != connection::state::State::Tryopen {
@@ -492,9 +474,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     state: connection::state::State::Open,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: Some(
-                            ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                        ),
+                        connection_id: Some(connection_id),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
@@ -546,18 +526,12 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     connection.counterparty.connection_id.clone().unwrap();
 
                 connection.state = connection::state::State::Open;
-                host.commit(
-                    ConnectionPath {
-                        connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
-                    }
-                    .into(),
-                    connection,
-                )?;
+                host.commit(ConnectionPath { connection_id }.into(), connection)?;
 
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenConfirm(
                         ibc_events::ConnectionOpenConfirm {
-                            connection_id: ConnectionId::from_str_prefixed(&connection_id).unwrap(),
+                            connection_id,
                             client_id,
                             counterparty_client_id,
                             counterparty_connection_id,
@@ -571,4 +545,23 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
 
         Ok(res)
     }
+}
+
+pub fn ensure_connection_state<T: IbcHost>(
+    ibc_host: &T,
+    connection_id: ConnectionId,
+) -> Result<ConnectionEnd, IbcError> {
+    let connection: ConnectionEnd = ibc_host
+        .read(&ConnectionPath { connection_id }.into())
+        .ok_or(IbcError::ConnectionNotFound(connection_id))?;
+
+    if connection.state != connection::state::State::Open {
+        return Err(IbcError::IncorrectConnectionState(
+            connection.state,
+            connection::state::State::Open,
+        )
+        .into());
+    }
+
+    Ok(connection)
 }
