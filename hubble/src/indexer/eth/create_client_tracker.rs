@@ -52,8 +52,8 @@ pub fn schedule_create_client_checker(
                 let tx = provider
                     .get_transaction_by_hash(FixedBytes::from_str(&transaction_hash).expect("valid transaction hash"), None)
                     .await?
-                    .response
-                    .expect("transaction");
+                    .expect("transaction")
+                    .response;
 
                 let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {
                     Ok(msg) => msg,
