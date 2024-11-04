@@ -166,7 +166,7 @@ pub trait BlockReferenceProvider {
 
 impl Display for BlockReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.height)
+        write!(f, "{} ({})", self.height, self.hash)
     }
 }
 
