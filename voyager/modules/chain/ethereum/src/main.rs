@@ -380,105 +380,108 @@ impl ChainModuleServer for Module {
         }))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
     async fn query_commitment(
         &self,
         _: &Extensions,
-        height: Height,
+        _height: Height,
         _port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
+        _channel_id: ChannelId,
+        _sequence: NonZeroU64,
     ) -> RpcResult<Option<H256>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        // let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let ibc_handler = self.ibc_handler();
+        // let ibc_handler = self.ibc_handler();
 
-        let raw: H256 = ibc_handler
-            .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching commitment: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .into();
+        // let raw: H256 = ibc_handler
+        //     .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
+        //     .block(execution_height.into())
+        //     .call()
+        //     .await
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("error fetching ibc state: {}", ErrorReporter(err)),
+        //             None::<()>,
+        //         )
+        //     })?
+        //     ._0
+        //     .into();
 
-        Ok(if raw == <H256>::default() {
-            None
-        } else {
-            Some(raw)
-        })
+        // Ok(if raw == <H256>::default() {
+        //     None
+        // } else {
+        //     Some(raw)
+        // })
+        todo!()
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
     async fn query_acknowledgement(
         &self,
         _: &Extensions,
-        height: Height,
+        _height: Height,
         _port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
+        _channel_id: ChannelId,
+        _sequence: NonZeroU64,
     ) -> RpcResult<Option<H256>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        // let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let ibc_handler = self.ibc_handler();
+        // let ibc_handler = self.ibc_handler();
 
-        let raw: H256 = ibc_handler
-            .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching acknowledgement: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .into();
+        // let raw: H256 = ibc_handler
+        //     .commitments(ethabi::commitments_key(channel_id.id(), sequence.get()).into())
+        //     .block(execution_height.into())
+        //     .call()
+        //     .await
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("error fetching ibc state: {}", ErrorReporter(err)),
+        //             None::<()>,
+        //         )
+        //     })?
+        //     ._0
+        //     .into();
 
-        Ok(if raw == <H256>::default() {
-            None
-        } else {
-            Some(raw)
-        })
+        // Ok(if raw == <H256>::default() {
+        //     None
+        // } else {
+        //     Some(raw)
+        // })
+        todo!()
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
     async fn query_receipt(
         &self,
         _: &Extensions,
-        height: Height,
+        _height: Height,
         _port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
+        _channel_id: ChannelId,
+        _sequence: NonZeroU64,
     ) -> RpcResult<bool> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        // let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
-        let ibc_handler = self.ibc_handler();
+        // let ibc_handler = self.ibc_handler();
 
-        let raw: H256 = ibc_handler
-            .commitments(ethabi::receipts_key(channel_id.id(), sequence.get()).into())
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching receipt: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .into();
+        // let raw: H256 = ibc_handler
+        //     .commitments(ethabi::receipts_key(channel_id.id(), sequence.get()).into())
+        //     .block(execution_height.into())
+        //     .call()
+        //     .await
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("error fetching ibc state: {}", ErrorReporter(err)),
+        //             None::<()>,
+        //         )
+        //     })?
+        //     ._0
+        //     .into();
 
-        Ok(raw.get()[0] == 1)
+        // Ok(raw.get()[0] == 1)
+        todo!()
     }
 
     // #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
@@ -544,14 +547,17 @@ impl ChainModuleServer for Module {
                 }
                 Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
                 Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
-                Path::Commitment(path) => {
-                    ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
+                Path::Commitment(_path) => {
+                    todo!()
+                    // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
                 }
-                Path::Acknowledgement(path) => {
-                    ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
+                Path::Acknowledgement(_path) => {
+                    todo!()
+                    // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
                 }
-                Path::Receipt(path) => {
-                    ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
+                Path::Receipt(_path) => {
+                    todo!()
+                    // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
                 }
                 Path::NextSequenceSend(_path) => todo!(),
                 Path::NextSequenceRecv(_path) => todo!(),

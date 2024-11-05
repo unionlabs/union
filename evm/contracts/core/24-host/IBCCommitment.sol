@@ -36,13 +36,6 @@ library IBCCommitment {
         return abi.encode(CHANNELS, channelId);
     }
 
-    function packetCommitmentPath(
-        uint32 channelId,
-        uint64 sequence
-    ) internal pure returns (bytes memory) {
-        return abi.encode(PACKETS, channelId, sequence);
-    }
-
     function batchPacketsCommitmentPath(
         uint32 channelId,
         bytes32 batchHash
@@ -100,13 +93,6 @@ library IBCCommitment {
         uint32 channelId
     ) internal pure returns (bytes32) {
         return keccak256(channelPath(channelId));
-    }
-
-    function packetCommitmentKey(
-        uint32 channelId,
-        uint64 sequence
-    ) internal pure returns (bytes32) {
-        return keccak256(packetCommitmentPath(channelId, sequence));
     }
 
     function batchPacketsCommitmentKey(

@@ -54,7 +54,7 @@ fn hmac_keccak(message: &[u8]) -> [u8; 32] {
 
 // Union whitepaper: (1) H_{hmac_r}
 fn hash_to_field(message: &[u8]) -> U256 {
-    (U256::from_be_bytes(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + U256::from(1)
+    (U256::from_be_bytes(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + U256::from(1u32)
 }
 
 // Gnark commitment hashing, we employ our custom hash_to_field in the prover itself
