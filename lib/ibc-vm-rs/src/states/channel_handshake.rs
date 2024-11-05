@@ -281,12 +281,11 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
 
                 Either::Left((
                     ChannelOpenTry::CallbackCalled {
-                        port_id: port_id.clone(),
+                        port_id,
                         channel_id,
                         channel,
                     },
                     IbcMsg::OnChannelOpenTry {
-                        port_id,
                         order,
                         connection_id,
                         channel_id,

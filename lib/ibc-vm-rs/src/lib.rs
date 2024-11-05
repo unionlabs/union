@@ -2,12 +2,12 @@ use frame_support_procedural::PartialEqNoBound;
 use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
 use states::{
-    // channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
+    channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
     client_state::UpdateClient,
     connection_handshake::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
     },
-    // packet::{Acknowledgement, RecvPacket, SendPacket},
+    packet::{Acknowledgement, RecvPacket, SendPacket},
     CreateClient,
 };
 use types::{
@@ -236,13 +236,13 @@ pub enum IbcState {
     ConnectionOpenTry(ConnectionOpenTry),
     ConnectionOpenAck(ConnectionOpenAck),
     ConnectionOpenConfirm(ConnectionOpenConfirm),
-    // ChannelOpenInit(ChannelOpenInit),
-    // ChannelOpenTry(ChannelOpenTry),
-    // ChannelOpenAck(ChannelOpenAck),
-    // ChannelOpenConfirm(ChannelOpenConfirm),
-    // SendPacket(SendPacket),
-    // RecvPacket(RecvPacket),
-    // AcknowledgePacket(Acknowledgement),
+    ChannelOpenInit(ChannelOpenInit),
+    ChannelOpenTry(ChannelOpenTry),
+    ChannelOpenAck(ChannelOpenAck),
+    ChannelOpenConfirm(ChannelOpenConfirm),
+    SendPacket(SendPacket),
+    RecvPacket(RecvPacket),
+    AcknowledgePacket(Acknowledgement),
 }
 
 macro_rules! cast_either {
@@ -273,7 +273,14 @@ impl<T: IbcHost> Runnable<T> for IbcState {
                 ConnectionOpenInit,
                 ConnectionOpenTry,
                 ConnectionOpenAck,
-                ConnectionOpenConfirm
+                ConnectionOpenConfirm,
+                ChannelOpenInit,
+                ChannelOpenTry,
+                ChannelOpenAck,
+                ChannelOpenConfirm,
+                SendPacket,
+                RecvPacket,
+                AcknowledgePacket
             ]
         );
         Ok(res)
@@ -350,7 +357,6 @@ pub enum IbcMsg {
     },
 
     OnChannelOpenTry {
-        port_id: PortId,
         order: ChannelOrder,
         connection_id: ConnectionId,
         channel_id: ChannelId,
@@ -371,6 +377,8 @@ pub enum IbcMsg {
 
     OnRecvPacket {
         packet: Packet,
+        maker: Vec<u8>,
+        maker_msg: Vec<u8>,
         // TODO(aeryz): relayer address
     },
 
@@ -383,6 +391,7 @@ pub enum IbcMsg {
     OnAcknowledgePacket {
         packet: Packet,
         ack: Vec<u8>,
+        relayer: Vec<u8>,
     },
 }
 
