@@ -211,6 +211,28 @@
                   };
                 };
               };
+              options.finalizer = mkOption {
+                description = "control finalizer behavior";
+                example = {
+                  reload = true;
+                  delay_blocks = 5;
+                };
+                default = null;
+                type = types.nullOr (
+                  types.submodule {
+                    options = {
+                      delay_blocks = mkOption {
+                        type = types.int;
+                        description = "how many blocks to wait until a block is considered finalized (ie. there should be no reorgs). compensates for height differences between rpcs.";
+                      };
+                      reload = mkOption {
+                        type = types.bool;
+                        description = "reload all block data after a block is considered finalized. compensates for rpcs returning inconsistent results for non-finalized blocks.";
+                      };
+                    };
+                  }
+                );
+              };
             }
           );
         };
@@ -266,7 +288,10 @@
               ];
               text =
                 let
-                  indexersJson = builtins.toJSON cfg.indexers;
+                  # convert to json, removing null values
+                  filterNullValues = lib.attrsets.filterAttrsRecursive (_n: v: v != null);
+                  indexersWithoutNulls = map filterNullValues cfg.indexers;
+                  indexersJson = builtins.toJSON indexersWithoutNulls;
                   tokensUrlsJson = builtins.toJSON cfg.tokens_urls;
                 in
                 ''

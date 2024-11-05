@@ -33,8 +33,12 @@ impl<T: FetcherClient> Indexer<T> {
             {
                 Ok(last_finalized) => {
                     let next_height = self.next_height().await?;
-                    if next_height + self.chunk_size as u64 > last_finalized.reference().height {
-                        info!("near finalized height (current: {} finalized: {}) => start 'run to tip'", next_height, last_finalized.reference());
+                    if next_height
+                        + self.chunk_size as u64
+                        + self.finalizer_config.delay_blocks as u64
+                        > last_finalized.reference().height
+                    {
+                        info!("near finalized height (current: {} + chunk: {} + delay: {} > finalized: {}) => start 'run to tip'", next_height, self.chunk_size, self.finalizer_config.delay_blocks, last_finalized.reference());
                         return Ok(());
                     }
 

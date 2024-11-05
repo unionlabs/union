@@ -29,7 +29,41 @@ pub struct Indexer<T: FetcherClient> {
     pub indexer_id: IndexerId,
     pub start_height: BlockHeight,
     pub chunk_size: usize,
+    pub finalizer_config: FinalizerConfig,
     pub context: T::Context,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct FinalizerConfig {
+    // how many blocks to wait until a block is considered finalized (ie. there should be no reorgs).
+    // compensates for height differences between rpcs
+    // default: 5
+    #[serde(default = "FinalizerConfig::default_delay_blocks")]
+    pub delay_blocks: usize,
+    // reload all block data after a block is considered finalized
+    // compensates for rpcs returning inconsistent results for non-finalized blocks.
+    // default: true
+    #[serde(default = "FinalizerConfig::default_reload")]
+    pub reload: bool,
+}
+
+impl FinalizerConfig {
+    pub fn default_delay_blocks() -> usize {
+        5
+    }
+
+    pub fn default_reload() -> bool {
+        true
+    }
+}
+
+impl Default for FinalizerConfig {
+    fn default() -> Self {
+        FinalizerConfig {
+            delay_blocks: FinalizerConfig::default_delay_blocks(),
+            reload: FinalizerConfig::default_reload(),
+        }
+    }
 }
 
 impl<T> Indexer<T>
@@ -41,6 +75,7 @@ where
         indexer_id: IndexerId,
         start_height: BlockHeight,
         chunk_size: usize,
+        finalizer_config: FinalizerConfig,
         context: T::Context,
     ) -> Self {
         Indexer {
@@ -48,6 +83,7 @@ where
             indexer_id,
             start_height,
             chunk_size,
+            finalizer_config,
             context,
         }
     }

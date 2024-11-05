@@ -133,7 +133,11 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("{}: finalizing", reference);
 
         let mut tx = self.pg_pool.begin().await?;
-        let is_finalized = last_finalized_height >= reference.height;
+
+        // consider the block to be finalized if it's >= than the consensus height, considering the finalization delay blocks.
+        let is_finalized = last_finalized_height >= reference.height
+            && last_finalized_height - reference.height
+                >= self.finalizer_config.delay_blocks as u64;
 
         if let Some(old_hash) = match is_finalized {
             true => delete_block_status(&mut tx, self.indexer_id.clone(), reference.height).await?,
@@ -141,7 +145,13 @@ impl<T: FetcherClient> Indexer<T> {
                 get_block_status_hash(&mut tx, self.indexer_id.clone(), reference.height).await?
             }
         } {
-            if old_hash != reference.hash {
+            if is_finalized && self.finalizer_config.reload {
+                debug!("{}: finalized (reloading)", reference.height,);
+                block
+                    .update(&mut tx)
+                    .instrument(info_span!("reload"))
+                    .await?;
+            } else if old_hash != reference.hash {
                 debug!(
                     "{}: changed ({} > {} => updating)",
                     reference.height, old_hash, reference.hash,

@@ -6,7 +6,7 @@ use url::Url;
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
     tm::{context::TmContext, fetcher_client::TmFetcherClient},
-    Indexer,
+    FinalizerConfig, Indexer,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
@@ -23,6 +23,8 @@ pub struct Config {
     pub internal_chain_id: Option<i32>,
     pub new_chain_override: Option<bool>,
     pub tx_search_max_page_size: Option<u8>,
+    #[serde(default)]
+    pub finalizer: FinalizerConfig,
 }
 
 impl Config {
@@ -65,6 +67,7 @@ impl Config {
             self.indexer_id,
             start_height,
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
+            self.finalizer,
             TmContext {
                 rpc_urls: self.rpc_urls,
                 grpc_urls: self.grpc_urls,
