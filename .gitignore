@@ -77,6 +77,7 @@ db.sqlite3*
 
 *.movement
 move/*/build
+sui/build/*
 .tsup
 docs/generated
 dev-dist
