@@ -21,8 +21,6 @@ pub struct ClientState {
     pub l2_committed_batches_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "9")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "10")]
-    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {
     const NAME: &'static str = "ClientState";

@@ -76,23 +76,12 @@ impl IbcClient for LineaLightClient {
             StorageState::Occupied(value) => {
                 let inclusion_proof = InclusionProof::decode_as::<Proto>(&proof)
                     .map_err(Error::InclusionProofDecode)?;
-                do_verify_membership(
-                    path,
-                    storage_root,
-                    client_state.data.l2_ibc_contract_commitment_slot,
-                    inclusion_proof,
-                    value,
-                )?
+                do_verify_membership(path, storage_root, inclusion_proof, value)?
             }
             StorageState::Empty => {
                 let noninclusion_proof = NonInclusionProof::decode_as::<Proto>(&proof)
                     .map_err(Error::InclusionProofDecode)?;
-                do_verify_non_membership(
-                    path,
-                    storage_root,
-                    client_state.data.l2_ibc_contract_commitment_slot,
-                    noninclusion_proof,
-                )?
+                do_verify_non_membership(path, storage_root, noninclusion_proof)?
             }
         }
 
@@ -243,14 +232,13 @@ impl IbcClient for LineaLightClient {
 fn do_verify_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     storage_proof: InclusionProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
     // TODO: handle error
     let key = U256::try_from_be_bytes(&storage_proof.key).unwrap();
 
-    check_commitment_key(&path, ibc_commitment_slot, key)?;
+    check_commitment_key(&path, key)?;
 
     // we store the hash of the data, not the data itself to the commitments map
     let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
@@ -280,13 +268,12 @@ fn do_verify_membership(
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     noninclusion_proof: NonInclusionProof,
 ) -> Result<(), Error> {
     // TODO: handle error
     let key = U256::try_from_be_bytes(&noninclusion_proof.key).unwrap();
 
-    check_commitment_key(&path, ibc_commitment_slot, key)?;
+    check_commitment_key(&path, key)?;
 
     linea_zktrie::verify::verify_noninclusion::<U256>(
         &new_mimc_constants_bls12_377(),

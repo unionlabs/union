@@ -10,8 +10,6 @@ pub struct ClientState {
     pub latest_slot: u64,
     /// Evm
     #[prost(bytes = "vec", tag = "5")]
-    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "6")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {

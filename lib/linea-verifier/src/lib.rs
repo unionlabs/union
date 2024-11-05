@@ -122,7 +122,6 @@ pub fn state_root_hashes_mapping_key(slot: &U256, l2_block_number: &U256) -> U25
 //             l1_rollup_current_l2_block_number_slot: 0x119.into(),
 //             l1_rollup_l2_state_root_hashes_slot: 0x11A.into(),
 //             l2_ibc_contract_address: hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2789").into(),
-//             l2_ibc_contract_commitment_slot: 0.into(),
 //             frozen_height: Height::default(),
 //         };
 //         let header = Header {

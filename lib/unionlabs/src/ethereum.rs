@@ -22,8 +22,12 @@ pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
 ///
 /// key: `keccak256(keccak256(abi.encode_packed(path)) || slot)`
 #[must_use = "calculating the commitment key has no effect"]
-pub fn ibc_commitment_key(path: H256, slot: U256) -> U256 {
-    Slot::Mapping(&Slot::Offset(slot), MappingKey::Bytes32(path)).slot()
+pub fn ibc_commitment_key(path: H256) -> U256 {
+    Slot::Mapping(
+        &Slot::Offset(IBC_HANDLER_COMMITMENTS_SLOT),
+        MappingKey::Bytes32(path),
+    )
+    .slot()
 }
 
 // #[cfg(test)]

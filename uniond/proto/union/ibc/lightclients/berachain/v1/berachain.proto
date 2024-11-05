@@ -24,8 +24,7 @@ message ClientState {
     repeated string upgrade_path = 9;
 
     // ETHEREUM
-    bytes ibc_commitment_slot = 10;
-    bytes ibc_contract_address = 11;
+    bytes ibc_contract_address = 10;
 }
 
 message ConsensusState {

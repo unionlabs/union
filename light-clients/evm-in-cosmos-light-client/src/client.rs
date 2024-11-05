@@ -79,21 +79,12 @@ impl IbcClient for EvmInCosmosLightClient {
             StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
-            StorageState::Occupied(value) => do_verify_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-                value,
-            )
-            .map_err(Error::EthereumLightClient)?,
-            StorageState::Empty => do_verify_non_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-            )
-            .map_err(Error::EthereumLightClient)?,
+            StorageState::Occupied(value) => {
+                do_verify_membership(path, storage_root, storage_proof, value)
+                    .map_err(Error::EthereumLightClient)?
+            }
+            StorageState::Empty => do_verify_non_membership(path, storage_root, storage_proof)
+                .map_err(Error::EthereumLightClient)?,
         }
 
         Ok(())

@@ -82,14 +82,12 @@ impl IbcClient for BerachainLightClient {
         //     StorageState::Occupied(value) => ethereum_light_client::client::do_verify_membership(
         //         path,
         //         storage_root,
-        //         client_state.data.ibc_commitment_slot,
         //         storage_proof,
         //         value,
         //     ),
         //     StorageState::Empty => ethereum_light_client::client::do_verify_non_membership(
         //         path,
         //         storage_root,
-        //         client_state.data.ibc_commitment_slot,
         //         storage_proof,
         //     ),
         // }
@@ -484,7 +482,7 @@ mod tests {
 
         // dbg!(&header);
 
-        let client_state = serde_json::from_str::<wasm::client_state::ClientState<ClientState>>(r#"{"checksum":"0x9fb5b96177354ffad3fd1f0707f862dda0a651c933fe72d4a392ffab3934d8d8","data":{"consensus_chain_id":"beacond-2061","execution_chain_id":"80085","frozen_height":null,"ibc_commitment_slot":"0","ibc_contract_address":"0x9664d804589c1c9f573288edc2b9027661d624fa","latest_height":{"revision_height":91,"revision_number":2061},"max_clock_drift":"600s","proof_specs":[{"inner_spec":{"child_order":[0,1],"child_size":33,"empty_child":"0x0","hash":"sha256","max_prefix_length":12,"min_prefix_length":4},"leaf_spec":{"hash":"sha256","length":"var_proto","prefix":"0x00","prehash_key":"no_hash","prehash_value":"sha256"},"max_depth":null,"min_depth":null,"prehash_key_before_comparison":false},{"inner_spec":{"child_order":[0,1],"child_size":32,"empty_child":"0x0","hash":"sha256","max_prefix_length":1,"min_prefix_length":1},"leaf_spec":{"hash":"sha256","length":"var_proto","prefix":"0x00","prehash_key":"no_hash","prehash_value":"sha256"},"max_depth":null,"min_depth":null,"prehash_key_before_comparison":false}],"trust_level":{"denominator":3,"numerator":1},"trusting_period":"21420s","upgrade_path":["upgrade","upgradedIBCState"]},"latest_height":{"revision_height":91,"revision_number":2061}}"#).unwrap();
+        let client_state = serde_json::from_str::<wasm::client_state::ClientState<ClientState>>(r#"{"checksum":"0x9fb5b96177354ffad3fd1f0707f862dda0a651c933fe72d4a392ffab3934d8d8","data":{"consensus_chain_id":"beacond-2061","execution_chain_id":"80085","frozen_height":null,"ibc_contract_address":"0x9664d804589c1c9f573288edc2b9027661d624fa","latest_height":{"revision_height":91,"revision_number":2061},"max_clock_drift":"600s","proof_specs":[{"inner_spec":{"child_order":[0,1],"child_size":33,"empty_child":"0x0","hash":"sha256","max_prefix_length":12,"min_prefix_length":4},"leaf_spec":{"hash":"sha256","length":"var_proto","prefix":"0x00","prehash_key":"no_hash","prehash_value":"sha256"},"max_depth":null,"min_depth":null,"prehash_key_before_comparison":false},{"inner_spec":{"child_order":[0,1],"child_size":32,"empty_child":"0x0","hash":"sha256","max_prefix_length":1,"min_prefix_length":1},"leaf_spec":{"hash":"sha256","length":"var_proto","prefix":"0x00","prehash_key":"no_hash","prehash_value":"sha256"},"max_depth":null,"min_depth":null,"prehash_key_before_comparison":false}],"trust_level":{"denominator":3,"numerator":1},"trusting_period":"21420s","upgrade_path":["upgrade","upgradedIBCState"]},"latest_height":{"revision_height":91,"revision_number":2061}}"#).unwrap();
 
         let consensus_state = serde_json::from_str::<wasm::consensus_state::ConsensusState<ConsensusState>>(r#"{"data":{"comet_next_validators_hash":"0xf79cb1e942656d6189798a768e071bfdd8419a27d4461972cceab87fb8299341","comet_timestamp":"2024-06-09T07:07:18.253461685Z","eth_storage_root":"0xc0d6dc20fa4a581e2fb5ce8d5983c9790c618267583739c71b6e6e40a5698ddc","eth_timestamp":1717916840}}"#).unwrap();
 

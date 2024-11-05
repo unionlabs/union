@@ -30,10 +30,8 @@ message ClientState {
   ForkParameters fork_parameters = 5;
   uint64 latest_slot = 6;
   .ibc.core.client.v1.Height frozen_height = 7;
-  bytes ibc_commitment_slot = 8;
-  bytes ibc_contract_address = 9;
+  bytes ibc_contract_address = 8;
 }
-
 
 message ConsensusState {
   uint64 slot = 1;

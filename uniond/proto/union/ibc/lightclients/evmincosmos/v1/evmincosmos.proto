@@ -12,8 +12,7 @@ message ClientState {
   uint64 latest_slot = 3;
 
   // Evm
-  bytes ibc_commitment_slot = 5;
-  bytes ibc_contract_address = 6;
+  bytes ibc_contract_address = 5;
 }
 
 message ConsensusState {

@@ -293,7 +293,6 @@ impl Scroll {
             l2_contract_address: self.rollup_contract_address,
             l2_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
             ibc_contract_address: self.ibc_handler_address,
-            ibc_commitment_slot: U256::from(0),
             l2_committed_batches_slot: self.rollup_committed_batches_slot,
         }
     }

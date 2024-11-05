@@ -9,10 +9,10 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-alloy = { workspace = true, features = ["sol-types", "contract"] }   # TODO: Fix the feature gating with `sol!`
+alloy = { workspace = true, features = ["sol-types"] }   # TODO: Fix the feature gating with `sol!`
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-default = ["rpc"]
+default = []
 rpc     = ["alloy/contract"]
-serde   = ["dep:serde"]
+serde   = ["dep:serde", "alloy/serde"]

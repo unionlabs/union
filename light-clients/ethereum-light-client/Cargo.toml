@@ -16,6 +16,7 @@ test-include = ["light-clients/ethereum-light-client/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+alloy                       = { workspace = true, features = ["sol-types"] }
 beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
@@ -24,6 +25,7 @@ ethereum-verifier           = { workspace = true }
 ethers-contract-derive      = { workspace = true }
 ethers-core                 = { workspace = true }
 hex                         = { workspace = true }
+ibc-solidity.workspace      = true
 ics008-wasm-client          = { workspace = true }
 prost                       = { workspace = true }
 protos                      = { workspace = true }

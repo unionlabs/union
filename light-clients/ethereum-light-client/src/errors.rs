@@ -5,9 +5,11 @@ use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
     ibc::core::{
-        channel::channel::Channel, client::height::Height,
+        channel::{self, channel::Channel},
+        client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
+    id::ConnectionId,
     uint::U256,
 };
 
@@ -105,6 +107,10 @@ pub enum CanonicalizeStoredValueError {
     ConnectionEnd(#[source] DecodeErrorOf<Proto, ConnectionEnd>),
     #[error("channel")]
     Channel(#[source] DecodeErrorOf<Proto, Channel>),
+    #[error("unsupported channel state `{0}`")]
+    UnsupportedChannelState(channel::state::State),
+    #[error("invalid connection hops, expected one but found {0:?}")]
+    InvalidConnectionHops(Vec<ConnectionId>),
 }
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
