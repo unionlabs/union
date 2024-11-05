@@ -16,7 +16,6 @@ pub struct ClientState {
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
-    pub ibc_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
 }
@@ -46,7 +45,6 @@ pub mod proto {
                 fork_parameters: Some(fork_parameters_proto::into_proto(value.fork_parameters)),
                 latest_slot: value.latest_slot,
                 frozen_height: Some(value.frozen_height.into()),
-                ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
                 ibc_contract_address: value.ibc_contract_address.into(),
             }
         }
@@ -64,8 +62,6 @@ pub mod proto {
         ForkParameters(#[from] fork_parameters_proto::Error),
         #[error("invalid genesis validators root")]
         GenesisValidatorsRoot(#[source] InvalidLength),
-        #[error("invalid ibc commitment slot")]
-        IbcCommitmentSlot(#[source] InvalidLength),
         #[error("invalid ibc contract address")]
         IbcContractAddress(#[source] InvalidLength),
     }
@@ -90,8 +86,6 @@ pub mod proto {
                     .map(fork_parameters_proto::try_from_proto)??,
                 latest_slot: value.latest_slot,
                 frozen_height: value.frozen_height.unwrap_or_default().into(),
-                ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
-                    .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
                 ibc_contract_address: value
                     .ibc_contract_address
                     .try_into()

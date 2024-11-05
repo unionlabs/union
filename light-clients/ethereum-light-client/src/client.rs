@@ -1,3 +1,4 @@
+use alloy::sol_types::SolValue;
 use beacon_api_types::{ChainSpec, PresetBaseKind};
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client_types::{
@@ -21,15 +22,15 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{DecodeAs, Proto},
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
     hash::H256,
     ibc::core::{
-        channel::channel::Channel,
+        channel::{self, channel::Channel},
         client::{genesis_metadata::GenesisMetadata, height::Height},
         commitment::merkle_path::MerklePath,
-        connection::connection_end::ConnectionEnd,
+        connection::{self, connection_end::ConnectionEnd},
     },
     ics24::Path,
     uint::U256,
@@ -72,7 +73,6 @@ impl IbcClient for EthereumLightClient {
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
-        let client_state: WasmClientState = read_client_state(deps)?;
 
         let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
 
@@ -83,19 +83,10 @@ impl IbcClient for EthereumLightClient {
             StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
-            StorageState::Occupied(value) => do_verify_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-                value,
-            )?,
-            StorageState::Empty => do_verify_non_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-            )?,
+            StorageState::Occupied(value) => {
+                do_verify_membership(path, storage_root, storage_proof, value)?
+            }
+            StorageState::Empty => do_verify_non_membership(path, storage_root, storage_proof)?,
         }
 
         Ok(())
@@ -259,7 +250,6 @@ impl IbcClient for EthereumLightClient {
                     chain_id: scs.chain_id,
                     fork_parameters: scs.fork_parameters,
                     latest_slot: scs.latest_slot,
-                    ibc_commitment_slot: scs.ibc_commitment_slot,
                     ibc_contract_address: scs.ibc_contract_address,
                     frozen_height: ZERO_HEIGHT,
                     ..subject_client_state.data
@@ -312,15 +302,14 @@ fn migrate_check_allowed_fields(
 pub fn do_verify_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     storage_proof: StorageProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
-    // TODO(aeryz): figure out how is this gonna work now
-    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
-
     // we store the hash of the data, not the data itself to the commitments map
-    let (_key, value) = canonicalize_commitment(path, raw_value)?;
+    let (key, value) = canonicalize_commitment(path, raw_value)?;
+
+    // TODO(aeryz): figure out how is this gonna work now
+    check_commitment_key(key, storage_proof.key)?;
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
@@ -342,9 +331,7 @@ pub fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
-// this is required because ibc-go requires the client state to be a protobuf Any, even though
-// the counterparty (ethereum in this case) stores it as raw bytes. this will no longer be
-// required with ibc-go v9.
+/// ibc-go passes the path as the expected ics24 commitment path, so we need to decode that path and reencode it to the ethabi spec (TODO: link to the union IBC spec)
 pub fn canonicalize_commitment(
     path: String,
     raw_value: Vec<u8>,
@@ -353,13 +340,73 @@ pub fn canonicalize_commitment(
         .parse::<Path>()
         .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
 
+    // Connection and channel are constructed and passed in by ibc-go as the expected *protobuf* encoded values; we need to decode them and reencode to the ethabi spec. All other values are passed verbatim.
     let canonical_value = match path {
-        Path::Connection(_) => ConnectionEnd::decode_as::<Proto>(raw_value.as_ref())
-            .map_err(CanonicalizeStoredValueError::ConnectionEnd)?
-            .encode_as::<EthAbi>(),
-        Path::ChannelEnd(_) => Channel::decode_as::<Proto>(raw_value.as_ref())
-            .map_err(CanonicalizeStoredValueError::Channel)?
-            .encode_as::<EthAbi>(),
+        Path::Connection(_) => {
+            let connection = ConnectionEnd::decode_as::<Proto>(raw_value.as_ref())
+                .map_err(CanonicalizeStoredValueError::ConnectionEnd)?;
+
+            ibc_solidity::ibc::Connection {
+                clientId: connection.client_id.id(),
+                state: match connection.state {
+                    connection::state::State::UninitializedUnspecified => {
+                        ibc_solidity::ibc::ConnectionState::Unspecified
+                    }
+                    connection::state::State::Init => ibc_solidity::ibc::ConnectionState::Init,
+                    connection::state::State::Tryopen => {
+                        ibc_solidity::ibc::ConnectionState::TryOpen
+                    }
+                    connection::state::State::Open => ibc_solidity::ibc::ConnectionState::Open,
+                },
+                counterpartyClientId: connection.counterparty.client_id.id(),
+                counterpartyConnectionId: connection
+                    .counterparty
+                    .connection_id
+                    .map_or_else(u32::default, |c| c.id()),
+            }
+            .abi_encode_params()
+        }
+        Path::ChannelEnd(_) => {
+            let channel = Channel::decode_as::<Proto>(raw_value.as_ref())
+                .map_err(CanonicalizeStoredValueError::Channel)?;
+
+            ibc_solidity::ibc::Channel {
+                state: match channel.state {
+                    channel::state::State::UninitializedUnspecified => {
+                        ibc_solidity::ibc::ChannelState::Unspecified
+                    }
+                    channel::state::State::Init => ibc_solidity::ibc::ChannelState::Init,
+                    channel::state::State::Tryopen => ibc_solidity::ibc::ChannelState::TryOpen,
+                    channel::state::State::Open => ibc_solidity::ibc::ChannelState::Open,
+                    channel::state::State::Closed => ibc_solidity::ibc::ChannelState::Closed,
+                    state => {
+                        return Err(CanonicalizeStoredValueError::UnsupportedChannelState(state))
+                    }
+                },
+                ordering: match channel.ordering {
+                    channel::order::Order::NoneUnspecified => {
+                        ibc_solidity::ibc::ChannelOrder::Unspecified
+                    }
+                    channel::order::Order::Unordered => ibc_solidity::ibc::ChannelOrder::Unordered,
+                    channel::order::Order::Ordered => ibc_solidity::ibc::ChannelOrder::Ordered,
+                },
+                connectionId: match channel.connection_hops.len() {
+                    1 => channel.connection_hops[0].id(),
+                    _ => {
+                        return Err(CanonicalizeStoredValueError::InvalidConnectionHops(
+                            channel.connection_hops,
+                        ))
+                    }
+                },
+                counterpartyChannelId: channel
+                    .counterparty
+                    .channel_id
+                    .map_or_else(u32::default, |c| c.id()),
+                counterpartyPortId: channel.counterparty.port_id.to_string(),
+                version: channel.version,
+            }
+            .abi_encode_params()
+        }
         _ => raw_value,
     };
 
@@ -370,10 +417,14 @@ pub fn canonicalize_commitment(
 pub fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
+    let key = path
+        .parse::<Path>()
+        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?
+        .into_eth_commitment();
+
+    check_commitment_key(key, storage_proof.key)?;
 
     if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
         .map_err(Error::VerifyStorageAbsence)?
@@ -384,13 +435,8 @@ pub fn do_verify_non_membership(
     }
 }
 
-pub fn check_commitment_key(
-    _path: &str,
-    ibc_commitment_slot: U256,
-    key: U256,
-) -> Result<(), InvalidCommitmentKey> {
-    // TODO: Fix this @aeryz
-    let expected_commitment_key = ibc_commitment_key(H256::default(), ibc_commitment_slot);
+pub fn check_commitment_key(path: H256, key: U256) -> Result<(), InvalidCommitmentKey> {
+    let expected_commitment_key = ibc_commitment_key(path);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {

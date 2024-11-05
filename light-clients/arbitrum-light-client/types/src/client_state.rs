@@ -17,7 +17,6 @@ pub struct ClientState {
     pub l1_nodes_confirm_data_offset: U256,
     pub frozen_height: Height,
     pub l2_ibc_contract_address: H160,
-    pub l2_ibc_commitment_slot: U256,
 }
 
 #[cfg(feature = "proto")]
@@ -26,7 +25,7 @@ pub mod proto {
 
     use unionlabs::{
         bounded::BoundedIntError,
-        errors::{InvalidLength, MissingField, UnknownEnumVariant},
+        errors::{InvalidLength, MissingField},
         id::ParsePrefixedIdError,
         impl_proto_via_try_from_into, required,
         uint::{FromDecStrErr, U256},
@@ -70,8 +69,6 @@ pub mod proto {
                     .l2_ibc_contract_address
                     .try_into()
                     .map_err(Error::L2IbcContractAddress)?,
-                l2_ibc_commitment_slot: U256::try_from_be_bytes(&value.l2_ibc_commitment_slot)
-                    .map_err(Error::L2IbcCommitmentSlot)?,
             })
         }
     }
@@ -96,10 +93,6 @@ pub mod proto {
         ConfirmDataOffset(#[source] InvalidLength),
         #[error("invalid l2_ibc_commitment_slot")]
         L2IbcContractAddress(#[source] InvalidLength),
-        #[error("invalid l2_ibc_commitment_slot")]
-        L2IbcCommitmentSlot(#[source] InvalidLength),
-        #[error("invalid finality")]
-        Finality(UnknownEnumVariant<i32>),
     }
 
     impl From<ClientState> for protos::union::ibc::lightclients::arbitrum::v1::ClientState {
@@ -118,7 +111,6 @@ pub mod proto {
                     .to_vec(),
                 frozen_height: Some(value.frozen_height.into()),
                 l2_ibc_contract_address: value.l2_ibc_contract_address.into(),
-                l2_ibc_commitment_slot: value.l2_ibc_commitment_slot.to_be_bytes().to_vec(),
             }
         }
     }

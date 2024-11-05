@@ -346,7 +346,7 @@ impl Module {
             msgs.into_iter()
                 .map(|(_, x)| Call3 {
                     target: self.ibc_handler_address.into(),
-                    // allowFailure: true,
+                    allowFailure: true,
                     callData: x.calldata().clone(),
                 })
                 .collect(),
@@ -715,7 +715,7 @@ pub mod multicall {
 
         struct Call3 {
             address target;
-            // bool allowFailure;
+            bool allowFailure;
             bytes callData;
         }
 

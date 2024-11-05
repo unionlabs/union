@@ -9,7 +9,7 @@ beacon-api                  = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }
 futures                     = { workspace = true }
-ibc-solidity                = { workspace = true }
+ibc-solidity                = { workspace = true, features = ["rpc"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }

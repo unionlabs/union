@@ -41,7 +41,6 @@ pub struct Arbitrum {
 
     pub provider: Arc<Provider<Ws>>,
     pub ibc_handler_address: H160,
-    pub ibc_commitment_slot: U256,
     pub multicall_address: H160,
 
     pub l1: AnyEthereum<Readonly>,
@@ -61,7 +60,6 @@ pub struct Arbitrum {
 pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
-    pub ibc_commitment_slot: U256,
     pub multicall_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
@@ -128,7 +126,6 @@ impl Arbitrum {
             union_grpc_url: config.union_grpc_url,
             l1_contract_address: config.l1_contract_address,
             l1_next_node_num_slot: config.l1_latest_confirmed_slot,
-            ibc_commitment_slot: config.ibc_commitment_slot,
             l1_nodes_slot: config.l1_nodes_slot,
             l1_next_node_num_slot_offset_bytes: config.l1_next_node_num_slot_offset_bytes,
             l1_nodes_confirm_data_offset: config.l1_nodes_confirm_data_offset,
@@ -362,7 +359,6 @@ impl Arbitrum {
                 revision_height: 0,
             },
             l2_ibc_contract_address: self.ibc_handler_address,
-            l2_ibc_commitment_slot: self.ibc_commitment_slot,
         }
     }
 

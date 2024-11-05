@@ -22,7 +22,7 @@ use serde_json::Value;
 use tracing::{debug, info, instrument};
 use unionlabs::{
     bytes::Bytes,
-    ethereum::{ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT},
+    ethereum::ibc_commitment_key,
     hash::{H160, H256},
     ibc::core::{
         channel::{self, channel::Channel, order::Order},
@@ -539,34 +539,31 @@ impl ChainModuleServer for Module {
         path: Path,
         // ibc_store_format: IbcStoreFormat<'static>,
     ) -> RpcResult<Value> {
-        let location = ibc_commitment_key(
-            match path {
-                Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
-                Path::ClientConsensusState(path) => {
-                    ethabi::consensus_state_key(path.client_id.id(), path.height.height())
-                }
-                Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
-                Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
-                Path::Commitment(_path) => {
-                    todo!()
-                    // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
-                }
-                Path::Acknowledgement(_path) => {
-                    todo!()
-                    // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
-                }
-                Path::Receipt(_path) => {
-                    todo!()
-                    // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
-                }
-                Path::NextSequenceSend(_path) => todo!(),
-                Path::NextSequenceRecv(_path) => todo!(),
-                Path::NextSequenceAck(_path) => todo!(),
-                Path::NextConnectionSequence(_path) => todo!(),
-                Path::NextClientSequence(_path) => todo!(),
-            },
-            IBC_HANDLER_COMMITMENTS_SLOT,
-        );
+        let location = ibc_commitment_key(match path {
+            Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
+            Path::ClientConsensusState(path) => {
+                ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+            }
+            Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
+            Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+            Path::Commitment(_path) => {
+                todo!()
+                // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
+            }
+            Path::Acknowledgement(_path) => {
+                todo!()
+                // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
+            }
+            Path::Receipt(_path) => {
+                todo!()
+                // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
+            }
+            Path::NextSequenceSend(_path) => todo!(),
+            Path::NextSequenceRecv(_path) => todo!(),
+            Path::NextSequenceAck(_path) => todo!(),
+            Path::NextConnectionSequence(_path) => todo!(),
+            Path::NextClientSequence(_path) => todo!(),
+        });
 
         let execution_height = self.execution_height_of_beacon_slot(at.height()).await;
 

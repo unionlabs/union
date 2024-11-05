@@ -17,10 +17,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
-use unionlabs::{
-    ethereum::IBC_HANDLER_COMMITMENTS_SLOT, hash::H160, ibc::core::client::height::Height,
-    ErrorReporter,
-};
+use unionlabs::{hash::H160, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
@@ -190,7 +187,6 @@ impl ConsensusModuleServer for Module {
             fork_parameters: spec.to_fork_parameters(),
             latest_slot: height.height(),
             frozen_height: Height::new(0),
-            ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
             ibc_contract_address: self.ibc_handler_address,
         })
         .expect("infallible"))

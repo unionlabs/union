@@ -184,7 +184,6 @@ pub fn scroll_verify_zktrie_account_storage_root(
 //             l2_committed_batches_slot: 157.into(),
 //             // Dummy contract address for the sake of testing
 //             ibc_contract_address: H160::new(hex!("0000000000000000000000000000000000000000")),
-//             ibc_commitment_slot: 0.into(),
 //         };
 //         let scroll_header: Header =
 //             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())

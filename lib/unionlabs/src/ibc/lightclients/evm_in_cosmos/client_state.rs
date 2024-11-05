@@ -15,7 +15,6 @@ pub struct ClientState {
     pub l2_client_id: String,
     pub latest_slot: u64,
     pub ibc_contract_address: H160,
-    pub ibc_commitment_slot: U256,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::evmincosmos::v1::ClientState {
@@ -25,7 +24,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::evmincosmos::v1::Cl
             l2_client_id: value.l2_client_id,
             latest_slot: value.latest_slot,
             ibc_contract_address: value.ibc_contract_address.into(),
-            ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
         }
     }
 }
@@ -34,8 +32,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::evmincosmos::v1::Cl
 pub enum TryFromClientStateError {
     #[error("invalid ibc contract address")]
     IbcContractAddress(#[source] InvalidLength),
-    #[error("invalid ibc commitment slot")]
-    IbcCommitmentSlot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::evmincosmos::v1::ClientState> for ClientState {
@@ -52,8 +48,6 @@ impl TryFrom<protos::union::ibc::lightclients::evmincosmos::v1::ClientState> for
                 .ibc_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::IbcContractAddress)?,
-            ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
-                .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
         })
     }
 }

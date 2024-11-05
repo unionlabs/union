@@ -27,7 +27,6 @@ message ClientState {
   .ibc.core.client.v1.Height frozen_height = 9;
 
   bytes l2_ibc_contract_address = 10;
-  bytes l2_ibc_commitment_slot = 11;
 }
 
 message ConsensusState {

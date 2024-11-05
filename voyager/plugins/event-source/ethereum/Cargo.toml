@@ -10,7 +10,7 @@ chain-utils        = { workspace = true }
 contracts          = { workspace = true, features = ["providers"] }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
-ibc-solidity       = { workspace = true, features = ["serde"] }
+ibc-solidity       = { workspace = true, features = ["serde", "rpc"] }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }

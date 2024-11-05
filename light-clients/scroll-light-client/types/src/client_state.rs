@@ -5,7 +5,6 @@ use unionlabs::{hash::H160, ibc::core::client::height::Height, uint::U256};
 pub struct ClientState {
     pub chain_id: U256,
     pub frozen_height: Height,
-    pub ibc_commitment_slot: U256,
     pub ibc_contract_address: H160,
     // TODO: This should be ClientId
     pub l1_client_id: String,
@@ -44,7 +43,6 @@ pub mod proto {
                     .to_be_bytes()
                     .into(),
                 ibc_contract_address: value.ibc_contract_address.into(),
-                ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
                 l2_committed_batches_slot: value.l2_committed_batches_slot.to_be_bytes().into(),
             }
         }
@@ -62,8 +60,6 @@ pub mod proto {
         RollupFinalizedStateRootsSlot(#[source] InvalidLength),
         #[error("invalid ibc contract address")]
         IbcContractAddress(#[source] InvalidLength),
-        #[error("invalid ibc commitment slot")]
-        IbcCommitmentSlot(#[source] InvalidLength),
         #[error("invalid ibc committed batches slot")]
         RollupCommittedBatchesSlot(#[source] InvalidLength),
     }
@@ -94,8 +90,6 @@ pub mod proto {
                     .ibc_contract_address
                     .try_into()
                     .map_err(Error::IbcContractAddress)?,
-                ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
-                    .map_err(Error::IbcCommitmentSlot)?,
                 l2_committed_batches_slot: U256::try_from_be_bytes(
                     &value.l2_committed_batches_slot,
                 )

@@ -19,8 +19,6 @@ pub struct ClientState {
     pub proof_specs: Vec<ProofSpec>,
     pub upgrade_path: Vec<String>,
 
-    // ETHEREUM
-    pub ibc_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
 }
@@ -69,8 +67,6 @@ pub mod proto {
                     .map(|ps| ps.try_into().map_err(Error::ProofSpecs))
                     .collect::<Result<Vec<_>, _>>()?,
                 upgrade_path: value.upgrade_path,
-                ibc_commitment_slot: U256::try_from_be_bytes(&value.ibc_commitment_slot)
-                    .map_err(Error::IbcCommitmentSlot)?,
                 ibc_contract_address: value
                     .ibc_contract_address
                     .try_into()
@@ -94,8 +90,6 @@ pub mod proto {
         MaxClockDrift(#[source] DurationError),
         #[error("invalid proof specs")]
         ProofSpecs(#[from] TryFromProofSpecError),
-        #[error("invalid ibc commitment slot")]
-        IbcCommitmentSlot(#[source] InvalidLength),
         #[error("invalid ibc contract address")]
         IbcContractAddress(#[source] InvalidLength),
     }
@@ -112,7 +106,6 @@ pub mod proto {
                 latest_height: Some(value.latest_height.into()),
                 proof_specs: value.proof_specs.into_iter().map(Into::into).collect(),
                 upgrade_path: value.upgrade_path,
-                ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
                 ibc_contract_address: value.ibc_contract_address.into(),
             }
         }
