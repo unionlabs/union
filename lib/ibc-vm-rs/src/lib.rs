@@ -10,7 +10,10 @@ use states::{
     // packet::{Acknowledgement, RecvPacket, SendPacket},
     CreateClient,
 };
-use types::connection::ConnectionState;
+use types::{
+    channel::{ChannelOrder, ChannelState},
+    connection::ConnectionState,
+};
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
     ibc::core::{
@@ -85,8 +88,8 @@ pub enum IbcError {
     #[error("channel ({0}) is not found")]
     ChannelNotFound(ChannelId),
 
-    #[error("channel state is {0} while {1} is expected")]
-    IncorrectChannelState(channel::state::State, channel::state::State),
+    #[error("channel state is {0:?} while {1:?} is expected")]
+    IncorrectChannelState(ChannelState, ChannelState),
 
     #[error("source port ({0}) does not match the received packet's counterparty port ({1})")]
     SourcePortMismatch(PortId, PortId),
@@ -340,32 +343,29 @@ pub enum IbcMsg {
     },
 
     OnChannelOpenInit {
-        order: Order,
-        connection_hops: Vec<ConnectionId>,
-        port_id: PortId,
+        order: ChannelOrder,
+        connection_id: ConnectionId,
         channel_id: ChannelId,
-        counterparty: channel::counterparty::Counterparty,
         version: String,
     },
 
     OnChannelOpenTry {
-        order: Order,
-        connection_hops: Vec<ConnectionId>,
         port_id: PortId,
+        order: ChannelOrder,
+        connection_id: ConnectionId,
         channel_id: ChannelId,
-        counterparty: channel::counterparty::Counterparty,
+        counterparty_channel_id: ChannelId,
+        version: String,
         counterparty_version: String,
     },
 
     OnChannelOpenAck {
-        port_id: PortId,
         channel_id: ChannelId,
         counterparty_channel_id: String,
         counterparty_version: String,
     },
 
     OnChannelOpenConfirm {
-        port_id: PortId,
         channel_id: ChannelId,
     },
 

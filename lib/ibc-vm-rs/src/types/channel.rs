@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::id::{ChannelId, ConnectionId, PortId};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ChannelState {
     Unspecified,
     Init,
@@ -10,7 +10,7 @@ pub enum ChannelState {
     Closed,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ChannelOrder {
     Unspecified,
     Unordered,
