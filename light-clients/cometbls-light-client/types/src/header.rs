@@ -115,7 +115,7 @@ pub mod ethabi {
                 trustedHeight: self.trusted_height.height(),
                 zeroKnowledgeProof: self.zero_knowledge_proof.into(),
             }
-            .abi_encode()
+            .abi_encode_params()
         }
     }
 

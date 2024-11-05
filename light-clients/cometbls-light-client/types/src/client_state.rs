@@ -92,7 +92,7 @@ pub mod ethabi {
                 frozenHeight: self.frozen_height.height(),
                 latestHeight: self.latest_height.height(),
             }
-            .abi_encode()
+            .abi_encode_params()
         }
     }
 

@@ -29,11 +29,11 @@ use unionlabs::{
         client::height::Height,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    option_unwrap, parse_wasm_client_type, ErrorReporter, QueryHeight, WasmClientType,
+    option_unwrap, parse_wasm_client_type, ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType},
+    core::{ChainId, ClientInfo, ClientType, QueryHeight},
     data::{ChainEvent, ChannelMetadata, ConnectionMetadata, Data, PacketMetadata},
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
@@ -550,9 +550,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }),
                 )),
                 seq([
+                    // TODO: Make this a config param
                     call(WaitForHeight {
                         chain_id: self.chain_id.clone(),
                         height: height.increment(),
+                        finalized: true,
                     }),
                     call(PluginMessage::new(
                         self.plugin_name(),

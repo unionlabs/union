@@ -230,15 +230,6 @@ pub trait Plugin<C: Member, Cb: Member> {
 /// providing interfaces to interact with the
 #[rpc(client, server, namespace = "chain")]
 pub trait ChainModule {
-    /// Query the latest finalized height of this chain.
-    #[method(name = "queryLatestHeight", with_extensions)]
-    async fn query_latest_height(&self) -> RpcResult<Height>;
-
-    /// Query the latest finalized timestamp of this chain.
-    #[method(name = "queryLatestTimestamp", with_extensions)]
-    // TODO: Make this return a better type than i64
-    async fn query_latest_timestamp(&self) -> RpcResult<i64>;
-
     /// Query the prefix for a client, given it's raw numeric id.
     #[method(name = "queryClientPrefix", with_extensions)]
     async fn query_client_prefix(&self, raw_client_id: u32) -> RpcResult<String>;
@@ -428,9 +419,18 @@ pub trait ClientModule {
 }
 
 /// Client modules provide functionality for interacting with a specific chain
-/// consensus.
+/// consensus and finality.
 #[rpc(client, server, namespace = "consensus")]
 pub trait ConsensusModule {
+    /// Query the latest finalized height of this chain.
+    #[method(name = "queryLatestHeight", with_extensions)]
+    async fn query_latest_height(&self, finalized: bool) -> RpcResult<Height>;
+
+    /// Query the latest finalized timestamp of this chain.
+    #[method(name = "queryLatestTimestamp", with_extensions)]
+    // TODO: Make this return a better type than i64
+    async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<i64>;
+
     /// The client state of this chain at the specified [`Height`].
     ///
     /// Returns the client state value as JSON, which will then be encoded to

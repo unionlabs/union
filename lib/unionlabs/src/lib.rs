@@ -26,7 +26,6 @@ pub use typenum;
 
 use crate::{
     errors::{ExpectedLength, InvalidLength},
-    ibc::core::client::height::{Height, HeightFromStrError},
     validated::Validated,
 };
 
@@ -167,6 +166,7 @@ macro_rules! export_wasm_client_type {
         $crate::paste! {
             #[no_mangle]
             #[used]
+            #[allow(non_upper_case_globals)]
             static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;
         }
     };
@@ -179,8 +179,7 @@ macro_rules! export_wasm_client_type {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WasmClientType {
-    EthereumMinimal,
-    EthereumMainnet,
+    Ethereum,
     Cometbls,
     Tendermint,
     Scroll,
@@ -201,19 +200,6 @@ pub enum ClientType {
     _11Cometbls,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn wasm_client_type_serde() {
-        assert_eq!(
-            r#"{"wasm":"ethereum_minimal"}"#,
-            serde_json::to_string(&ClientType::Wasm(WasmClientType::EthereumMinimal)).unwrap()
-        );
-    }
-}
-
 impl ClientType {
     #[must_use]
     pub const fn identifier_prefix(self) -> &'static str {
@@ -231,8 +217,7 @@ impl FromStr for WasmClientType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "EthereumMinimal" => Ok(WasmClientType::EthereumMinimal),
-            "EthereumMainnet" => Ok(WasmClientType::EthereumMainnet),
+            "Ethereum" => Ok(WasmClientType::Ethereum),
             "Cometbls" => Ok(WasmClientType::Cometbls),
             "Tendermint" => Ok(WasmClientType::Tendermint),
             "Scroll" => Ok(WasmClientType::Scroll),
@@ -249,8 +234,7 @@ impl FromStr for WasmClientType {
 impl Display for WasmClientType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EthereumMinimal => write!(f, "EthereumMinimal"),
-            Self::EthereumMainnet => write!(f, "EthereumMainnet"),
+            Self::Ethereum => write!(f, "Ethereum"),
             Self::Cometbls => write!(f, "Cometbls"),
             Self::Tendermint => write!(f, "Tendermint"),
             Self::Scroll => write!(f, "Scroll"),
@@ -290,41 +274,6 @@ pub fn parse_wasm_client_type(
         })
         .map(str::parse)
         .transpose()
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-// REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
-pub enum QueryHeight {
-    #[serde(rename = "latest")]
-    Latest,
-    #[serde(untagged)]
-    Specific(Height),
-}
-
-impl From<Height> for QueryHeight {
-    fn from(height: Height) -> Self {
-        Self::Specific(height)
-    }
-}
-
-impl Display for QueryHeight {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            QueryHeight::Latest => f.write_str("latest"),
-            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
-        }
-    }
-}
-
-impl FromStr for QueryHeight {
-    type Err = HeightFromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "latest" => Ok(Self::Latest),
-            _ => s.parse().map(Self::Specific),
-        }
-    }
 }
 
 // TODO: remove this as it is unused

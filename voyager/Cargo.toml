@@ -16,53 +16,32 @@ workspace = true
 
 [dependencies]
 axum                     = { workspace = true, features = ["macros", "tokio", "json"] }
-beacon-api               = { workspace = true }
-bech32                   = "0.9.1"
-bip32                    = { workspace = true, features = ["secp256k1"] }
-bitvec                   = { workspace = true }
-chain-utils              = { workspace = true }
 clap                     = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
-contracts                = { workspace = true }
-crossbeam-queue          = { workspace = true, features = ["std"] }
 derive_more              = { workspace = true }
 either                   = { workspace = true, features = ["serde"] }
 enumorph                 = { workspace = true }
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 futures                  = { workspace = true }
-hex                      = { workspace = true }
-hex-literal              = { workspace = true }
 itertools                = "0.13.0"
 jsonrpsee                = { workspace = true, features = ["client", "full", "tracing"] }
-num-bigint               = { workspace = true }
 pg-queue                 = { workspace = true }
 pin-utils                = "0.1.0"
 prometheus               = "0.13.4"
-prost                    = { workspace = true }
-protos                   = { workspace = true, features = ["proto_full", "client"] }
 reqwest                  = { workspace = true, features = ["tokio-rustls"] }
-ripemd                   = { workspace = true }
-schemars.workspace       = true
+schemars                 = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
-sha2                     = { workspace = true }
-soketto                  = "0.8.0"
 sqlx                     = { workspace = true, features = ["postgres", "migrate", "tls-rustls"] }
-subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
-tendermint               = { workspace = true }
-tendermint-proto         = { workspace = true }
-tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client"] }
 thiserror                = { workspace = true }
 tikv-jemallocator        = "0.5"
 tokio                    = { workspace = true, features = ["macros"] }
 tokio-stream             = { workspace = true }
 tokio-util               = "0.7.9"
-tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                  = { workspace = true, features = ["max_level_trace"] }
 tracing-futures          = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber       = { workspace = true, features = ["env-filter", "json"] }
-typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }
 voyager-message          = { workspace = true }
 voyager-vm               = { workspace = true }

@@ -4,7 +4,7 @@ name    = "voyager-chain-module-ethereum"
 version = "0.1.0"
 
 [dependencies]
-alloy                       = { workspace = true }
+alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws"] }
 beacon-api                  = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }

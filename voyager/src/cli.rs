@@ -1,14 +1,15 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, str::FromStr};
 
-use chain_utils::BoxDynError;
 use clap::{self, Parser, Subcommand};
-use unionlabs::{self, bounded::BoundedI64, result_unwrap, QueryHeight};
+use unionlabs::{
+    self, bounded::BoundedI64, ibc::core::client::height::Height, id::ClientId, result_unwrap,
+};
 use voyager_message::{
-    core::ChainId,
+    core::{ChainId, ClientType, IbcInterface, QueryHeight},
     module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
     VoyagerMessage,
 };
-use voyager_vm::Op;
+use voyager_vm::{BoxDynError, Op};
 
 // use crate::cli::handshake::HandshakeCmd;
 
@@ -20,7 +21,7 @@ pub struct AppArgs {
     #[arg(
         long,
         short = 'c',
-        env = "VOYAGER_CONFIG_FILE_PATH",
+        // env = "VOYAGER_CONFIG_FILE_PATH",
         global = true,
         help_heading = "Global options"
     )]
@@ -28,7 +29,7 @@ pub struct AppArgs {
     #[arg(
         long,
         short = 'l',
-        env = "VOYAGER_LOG_FORMAT",
+        // env = "VOYAGER_LOG_FORMAT",
         global = true,
         default_value_t = LogFormat::default(),
         help_heading = "Global options"
@@ -36,7 +37,7 @@ pub struct AppArgs {
     pub log_format: LogFormat,
     #[arg(
         long,
-        env = "VOYAGER_STACK_SIZE",
+        // env = "VOYAGER_STACK_SIZE",
         global = true,
         default_value_t = 2 * 1024 * 1024,
         help_heading = "Global options"
@@ -84,6 +85,11 @@ pub enum Command {
     Plugin(PluginCmd),
     #[command(subcommand)]
     Module(ModuleCmd),
+    /// Call into the JSON-RPC of a running voyager instance.
+    #[command(subcommand)]
+    Rpc(RpcCmd),
+    #[command(subcommand)]
+    Msg(MsgCmd),
     // Query {
     //     #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
     //     on: ChainId<'static>,
@@ -109,6 +115,7 @@ type Pg64 = BoundedI64<1, { i64::MAX }>;
 #[derive(Debug, Subcommand)]
 pub enum QueueCmd {
     /// Enqueue a new op to the queue of an already running voyager instance.
+    #[command(alias = "e")]
     Enqueue {
         #[arg(value_parser(|s: &str| serde_json::from_str::<Op<VoyagerMessage>>(s)))]
         op: Op<VoyagerMessage>,
@@ -182,4 +189,63 @@ pub enum ModuleCmd {
     Chain(ChainModuleInfo),
     Consensus(ConsensusModuleInfo),
     Client(ClientModuleInfo),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum RpcCmd {
+    Info,
+    ClientState {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId<'static>,
+        client_id: ClientId,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+        #[arg(long, short = 'd', default_value_t = false)]
+        decode: bool,
+    },
+    ConsensusState {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId<'static>,
+        client_id: ClientId,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+        trusted_height: Height,
+        #[arg(long, short = 'd', default_value_t = false)]
+        decode: bool,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum MsgCmd {
+    CreateClient {
+        #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId<'static>,
+        #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        tracking: ChainId<'static>,
+        #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
+        ibc_interface: IbcInterface<'static>,
+        #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
+        client_type: ClientType<'static>,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Null
+        )]
+        metadata: serde_json::Value,
+
+        /// Automatically enqueue the op.
+        #[arg(long, short = 'e', default_value_t = false)]
+        enqueue: bool,
+    },
+}
+
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "intended as sugar to specify the error type"
+)]
+fn ok<T>(t: T) -> Result<T, BoxDynError> {
+    Ok(t)
 }

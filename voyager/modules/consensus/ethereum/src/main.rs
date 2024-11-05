@@ -1,11 +1,17 @@
 use std::ops::Div;
 
+use alloy::{
+    eips::BlockNumberOrTag,
+    providers::{Provider, ProviderBuilder, RootProvider},
+    rpc::types::BlockTransactionsKind,
+    transports::BoxTransport,
+};
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::PresetBaseKind;
 use ethereum_light_client_types::{AccountProof, ClientState, ConsensusState};
-use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -13,6 +19,7 @@ use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     ethereum::IBC_HANDLER_COMMITMENTS_SLOT, hash::H160, ibc::core::client::height::Height,
+    ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
@@ -35,7 +42,7 @@ pub struct Module {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub provider: Provider<Ws>,
+    pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -62,11 +69,10 @@ impl Module {
 
         let account_update = self
             .provider
-            .get_proof(
-                ethers::types::H160::from(self.ibc_handler_address),
-                vec![],
+            .get_proof(self.ibc_handler_address.into(), vec![])
+            .block_id(
                 // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                Some(execution_height.into()),
+                execution_height.into(),
             )
             .await
             .unwrap();
@@ -86,15 +92,14 @@ impl ConsensusModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+        let provider = ProviderBuilder::new()
+            .on_builtin(&config.eth_rpc_api)
+            .await?;
 
-        let chain_id = ChainId::new(provider.get_chainid().await?.to_string());
+        let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
-        info.ensure_consensus_type(match config.chain_spec {
-            PresetBaseKind::Minimal => ConsensusType::ETHEREUM_MINIMAL,
-            PresetBaseKind::Mainnet => ConsensusType::ETHEREUM_MAINNET,
-        })?;
+        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
 
         let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
 
@@ -118,18 +123,55 @@ impl ConsensusModule for Module {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
-    #[error("beacon error")]
-    Beacon(#[from] beacon_api::client::NewError),
-}
-
 #[async_trait]
 impl ConsensusModuleServer for Module {
+    /// Query the latest finalized height of this chain.
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
+        if finalized {
+            self.beacon_api_client
+                .finality_update()
+                .await
+                .map(|response| Height::new(response.data.finalized_header.execution.block_number))
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+        } else {
+            Ok(Height::new(self.provider.get_block_number().await.unwrap()))
+        }
+    }
+
+    /// Query the latest finalized timestamp of this chain.
+    // TODO: Use a better timestamp type here
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
+        if finalized {
+            Ok(self
+                .beacon_api_client
+                .finality_update()
+                .await
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+                .data
+                .attested_header
+                .execution
+                .timestamp
+                .try_into()
+                .unwrap())
+        } else {
+            Ok(self
+                .provider
+                .get_block(
+                    BlockNumberOrTag::Latest.into(),
+                    BlockTransactionsKind::Hashes,
+                )
+                .await
+                .unwrap()
+                .unwrap()
+                .header
+                .timestamp
+                .try_into()
+                .unwrap())
+        }
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let genesis = self.beacon_api_client.genesis().await.unwrap().data;
@@ -200,11 +242,8 @@ impl ConsensusModuleServer for Module {
             state_root: bootstrap.header.execution.state_root,
             storage_root: self
                 .provider
-                .get_proof(
-                    ethers::types::H160::from(*self.ibc_handler_address.get()),
-                    vec![],
-                    Some(bootstrap.header.execution.block_number.into()),
-                )
+                .get_proof(self.ibc_handler_address.into(), vec![])
+                .block_id(bootstrap.header.execution.block_number.into())
                 .await
                 .unwrap()
                 .storage_hash

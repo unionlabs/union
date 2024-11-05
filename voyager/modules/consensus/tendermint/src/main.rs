@@ -12,7 +12,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
-use tracing::instrument;
+use tracing::{debug, error, instrument};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap, result_unwrap, ErrorReporter,
@@ -85,8 +85,93 @@ pub struct ChainIdParseError {
     source: Option<ParseIntError>,
 }
 
+impl Module {
+    #[must_use]
+    pub fn make_height(&self, height: u64) -> Height {
+        Height::new_with_revision(self.chain_revision, height)
+    }
+
+    async fn latest_height(&self, finalized: bool) -> Result<Height, cometbft_rpc::JsonRpcError> {
+        let commit_response = self.tm_client.commit(None).await?;
+
+        let mut height = commit_response
+            .signed_header
+            .header
+            .height
+            .inner()
+            .try_into()
+            .expect("value is >= 0; qed;");
+
+        if finalized && !commit_response.canonical {
+            debug!(
+                "commit is not canonical and finalized height was requested, \
+                latest finalized height is the previous block"
+            );
+            height -= 1;
+        }
+
+        debug!(height, "latest height");
+
+        Ok(self.make_height(height))
+    }
+}
+
 #[async_trait]
 impl ConsensusModuleServer for Module {
+    /// Query the latest finalized height of this chain.
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
+        self.latest_height(finalized)
+            .await
+            // TODO: Add more context here
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+    }
+
+    /// Query the latest finalized timestamp of this chain.
+    // TODO: Use a better timestamp type here
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
+        let mut commit_response =
+            self.tm_client.commit(None).await.map_err(|err| {
+                ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
+            })?;
+
+        if finalized && commit_response.canonical {
+            debug!(
+                "commit is not canonical and finalized timestamp was \
+                requested, fetching commit at previous block"
+            );
+            commit_response = self
+                .tm_client
+                .commit(Some(
+                    (u64::try_from(commit_response.signed_header.header.height.inner() - 1)
+                        .expect("should be fine"))
+                    .try_into()
+                    .expect("should be fine"),
+                ))
+                .await
+                .map_err(|err| {
+                    ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
+                })?;
+
+            if !commit_response.canonical {
+                error!(
+                    ?commit_response,
+                    "commit for previous height is not canonical? continuing \
+                    anyways, but this may cause issues downstream"
+                );
+            }
+        }
+
+        Ok(commit_response
+            .signed_header
+            .header
+            .time
+            .as_unix_nanos()
+            .try_into()
+            .expect("should be fine"))
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(

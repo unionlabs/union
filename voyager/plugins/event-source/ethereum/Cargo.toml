@@ -4,7 +4,7 @@ name    = "voyager-event-source-plugin-ethereum"
 version = "0.1.0"
 
 [dependencies]
-alloy              = { workspace = true, features = ["rpc", "rpc-types"] }
+alloy              = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 beacon-api         = { workspace = true }
 chain-utils        = { workspace = true }
 contracts          = { workspace = true, features = ["providers"] }

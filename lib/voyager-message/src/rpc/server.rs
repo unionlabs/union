@@ -19,14 +19,14 @@ use unionlabs::{
     },
     ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    ErrorReporter, QueryHeight,
+    ErrorReporter,
 };
 
 // use valuable::Valuable;
 // use voyager_core::IbcStoreFormat;
 use crate::{
     context::{LoadedModulesInfo, Modules},
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient},
     rpc::{
         json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
@@ -95,13 +95,26 @@ impl Server {
             QueryHeight::Latest => {
                 let latest_height = self
                     .modules()?
-                    .chain_module(chain_id)
+                    .consensus_module(chain_id)
                     .map_err(fatal_error)?
-                    .query_latest_height()
+                    .query_latest_height(false)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                debug!(%latest_height, "queried latest height");
+                debug!(%latest_height, finalized = false, "queried latest height");
+
+                Ok(latest_height)
+            }
+            QueryHeight::Finalized => {
+                let latest_height = self
+                    .modules()?
+                    .consensus_module(chain_id)
+                    .map_err(fatal_error)?
+                    .query_latest_height(true)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                debug!(%latest_height, finalized = true, "queried latest height");
 
                 Ok(latest_height)
             }
@@ -223,16 +236,20 @@ impl ServerInner {
 }
 
 impl Server {
-    #[instrument(skip_all, fields(%chain_id))]
-    pub async fn query_latest_height(&self, chain_id: &ChainId<'static>) -> RpcResult<Height> {
+    #[instrument(skip_all, fields(%chain_id, finalized))]
+    pub async fn query_latest_height(
+        &self,
+        chain_id: &ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<Height> {
         debug!("querying latest height");
 
         let latest_height = self
             .inner
             .modules()?
-            .chain_module(chain_id)
+            .consensus_module(chain_id)
             .map_err(fatal_error)?
-            .query_latest_height()
+            .query_latest_height(finalized)
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
@@ -244,16 +261,20 @@ impl Server {
         Ok(latest_height)
     }
 
-    #[instrument(skip_all, fields(%chain_id))]
-    pub async fn query_latest_timestamp(&self, chain_id: &ChainId<'static>) -> RpcResult<i64> {
+    #[instrument(skip_all, fields(%chain_id, finalized))]
+    pub async fn query_latest_timestamp(
+        &self,
+        chain_id: &ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<i64> {
         debug!("querying latest timestamp");
 
         let latest_timestamp = self
             .inner
             .modules()?
-            .chain_module(chain_id)
+            .consensus_module(chain_id)
             .map_err(fatal_error)?
-            .query_latest_timestamp()
+            .query_latest_timestamp(finalized)
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
@@ -553,12 +574,20 @@ impl VoyagerRpcServer for Server {
         Ok(self.modules()?.info())
     }
 
-    async fn query_latest_height(&self, chain_id: ChainId<'static>) -> RpcResult<Height> {
-        self.query_latest_height(&chain_id).await
+    async fn query_latest_height(
+        &self,
+        chain_id: ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<Height> {
+        self.query_latest_height(&chain_id, finalized).await
     }
 
-    async fn query_latest_timestamp(&self, chain_id: ChainId<'static>) -> RpcResult<i64> {
-        self.query_latest_timestamp(&chain_id).await
+    async fn query_latest_timestamp(
+        &self,
+        chain_id: ChainId<'static>,
+        finalized: bool,
+    ) -> RpcResult<i64> {
+        self.query_latest_timestamp(&chain_id, finalized).await
     }
 
     async fn query_client_prefix(

@@ -89,7 +89,7 @@ pub mod ethabi {
                 appHash: self.app_hash.hash.into(),
                 nextValidatorsHash: self.next_validators_hash.into(),
             }
-            .abi_encode()
+            .abi_encode_params()
         }
     }
 

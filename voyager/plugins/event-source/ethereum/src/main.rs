@@ -3,7 +3,6 @@
 use std::collections::VecDeque;
 
 use alloy::{
-    network::primitives::BlockTransactionsKind,
     providers::{Provider, ProviderBuilder, RootProvider},
     rpc::types::Filter,
     sol_types::SolEventInterface,
@@ -22,14 +21,14 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace, warn};
 use unionlabs::{
-    hash::{H160, H256},
+    hash::H160,
     ibc::core::{channel, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    ErrorReporter, QueryHeight,
+    ErrorReporter,
 };
 use voyager_message::{
-    call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo},
+    call::Call,
+    core::{ChainId, ClientInfo, QueryHeight},
     data::{
         ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
@@ -38,12 +37,12 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
     run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
-    VoyagerMessage,
+    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, defer, noop, now, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlock, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall},
+    call::{FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall},
     callback::ModuleCallback,
 };
 
@@ -135,11 +134,6 @@ impl Module {
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
         })
-    }
-
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new(height)
     }
 
     async fn make_packet_metadata(
@@ -260,8 +254,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
                         call(PluginMessage::new(
                             self.plugin_name(),
-                            ModuleCall::from(FetchBlock {
-                                slot: fetch.start_height.height(),
+                            ModuleCall::from(FetchGetLogs {
+                                block_number: fetch.start_height.height(),
+                                up_to: None,
                             }),
                         ))
                     }
@@ -291,31 +286,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 event,
             }) => {
-                // TODO: Remove after https://github.com/unionlabs/union/issues/3039
-                let slot = self
-                    .beacon_api_client
-                    .block(
-                        <H256>::from(
-                            self.provider
-                                .get_block(block_number.into(), BlockTransactionsKind::Hashes)
-                                .await
-                                .unwrap()
-                                .unwrap()
-                                .header
-                                .parent_beacon_block_root
-                                .unwrap(),
-                        )
-                        .into(),
-                    )
-                    .await
-                    .unwrap()
-                    .data
-                    .message
-                    .slot;
-
-                info!("execution block {block_number} is beacon slot {slot}");
-
-                let height = self.make_height(slot);
+                let provable_height = Height::new(block_number);
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 match event {
@@ -328,7 +299,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -337,7 +312,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info: client_info.clone(),
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: CreateClient {
                                 client_id,
                                 client_type: client_info.client_type,
@@ -368,7 +343,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -377,7 +356,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info: client_info.clone(),
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: UpdateClient {
                                 client_id,
                                 client_type: client_info.client_type,
@@ -405,7 +384,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -423,7 +406,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ConnectionOpenInit {
                                 client_id,
                                 connection_id: ConnectionId::new(raw_event.connectionId),
@@ -452,7 +435,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -470,7 +457,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ConnectionOpenTry {
                                 client_id,
                                 connection_id: ConnectionId::new(raw_event.connectionId),
@@ -502,7 +489,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -520,7 +511,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ConnectionOpenAck {
                                 client_id,
                                 connection_id: ConnectionId::new(raw_event.connectionId),
@@ -551,7 +542,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map_err(json_rpc_error_to_error_object)?;
 
                         let client_meta = voyager_client
-                            .client_meta(self.chain_id.clone(), height.into(), client_id.clone())
+                            .client_meta(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                client_id.clone(),
+                            )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
@@ -569,7 +564,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ConnectionOpenConfirm {
                                 client_id,
                                 connection_id: ConnectionId::new(raw_event.connectionId),
@@ -588,7 +583,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = voyager_client
                             .query_connection(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 ConnectionId::new(raw_event.connectionId),
                             )
                             .await
@@ -604,7 +599,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_meta = voyager_client
                             .client_meta(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 connection.client_id.clone(),
                             )
                             .await
@@ -616,7 +611,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let channel = voyager_client
                             .query_channel(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 port_id.clone(),
                                 channel_id.clone(),
                             )
@@ -630,7 +625,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ChannelOpenInit {
                                 port_id,
                                 channel_id,
@@ -646,7 +641,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = voyager_client
                             .query_connection(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 ConnectionId::new(raw_event.connectionId),
                             )
                             .await
@@ -662,7 +657,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_meta = voyager_client
                             .client_meta(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 connection.client_id.clone(),
                             )
                             .await
@@ -674,7 +669,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let channel = voyager_client
                             .query_channel(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 port_id.clone(),
                                 channel_id.clone(),
                             )
@@ -688,7 +683,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ChannelOpenTry {
                                 port_id,
                                 channel_id,
@@ -707,7 +702,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = voyager_client
                             .query_connection(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 ConnectionId::new(raw_event.connectionId),
                             )
                             .await
@@ -723,7 +718,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_meta = voyager_client
                             .client_meta(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 connection.client_id.clone(),
                             )
                             .await
@@ -735,7 +730,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let channel = voyager_client
                             .query_channel(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 port_id.clone(),
                                 channel_id.clone(),
                             )
@@ -749,7 +744,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ChannelOpenAck {
                                 port_id,
                                 channel_id,
@@ -768,7 +763,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = voyager_client
                             .query_connection(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 ConnectionId::new(raw_event.connectionId),
                             )
                             .await
@@ -784,7 +779,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_meta = voyager_client
                             .client_meta(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 connection.client_id.clone(),
                             )
                             .await
@@ -796,7 +791,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let channel = voyager_client
                             .query_channel(
                                 self.chain_id.clone(),
-                                height.into(),
+                                provable_height.into(),
                                 port_id.clone(),
                                 channel_id.clone(),
                             )
@@ -810,7 +805,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: ChannelOpenConfirm {
                                 port_id,
                                 channel_id,
@@ -850,7 +845,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
-                                height,
+                                provable_height,
                                 self_port_id,
                                 ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
@@ -862,7 +857,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: voyager_message::data::SendPacket {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet: PacketMetadata {
@@ -897,7 +892,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
-                                height,
+                                provable_height,
                                 self_port_id,
                                 ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
@@ -909,7 +904,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: voyager_message::data::TimeoutPacket {
                                 packet: PacketMetadata {
                                     sequence: event.packet.sequence.try_into().unwrap(),
@@ -943,7 +938,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
-                                height,
+                                provable_height,
                                 self_port_id,
                                 ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
@@ -955,7 +950,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: voyager_message::data::AcknowledgePacket {
                                 packet: PacketMetadata {
                                     sequence: event.packet.sequence.try_into().unwrap(),
@@ -990,7 +985,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
-                                height,
+                                provable_height,
                                 self_port_id,
                                 ChannelId::new(event.packet.destinationChannel),
                                 e.try_get()?,
@@ -1002,7 +997,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: voyager_message::data::WriteAcknowledgement {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet_ack: event.acknowledgement.to_vec().into(),
@@ -1038,7 +1033,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
-                                height,
+                                provable_height,
                                 self_port_id,
                                 ChannelId::new(event.packet.destinationChannel),
                                 e.try_get()?,
@@ -1050,7 +1045,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                             counterparty_chain_id,
                             tx_hash,
-                            provable_height: height,
+                            provable_height,
                             event: voyager_message::data::RecvPacket {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet: PacketMetadata {
@@ -1070,102 +1065,39 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                 }
             }
-            ModuleCall::FetchBlock(FetchBlock { slot }) => {
-                debug!(%slot, "fetching beacon slot");
-
-                info!(%slot, "querying slot");
-
-                match self
-                    .beacon_api_client
-                    .block(beacon_api::client::BlockId::Slot(slot))
-                    .await
-                {
-                    // if the slot was missed, just try to get the next block
-                    Err(beacon_api::errors::Error::NotFound(
-                        beacon_api::errors::NotFoundError {
-                            message,
-                            error,
-                            status_code,
-                        },
-                    )) => {
-                        info!(%slot, %message, %error, %status_code, "beacon block not found for slot");
-
-                        Ok(call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchBlock { slot: slot + 1 }),
-                        )))
-                    }
-                    Err(err) => Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error fetching beacon block for slot {slot}: {}",
-                            ErrorReporter(err)
-                        ),
+            ModuleCall::FetchGetLogs(FetchGetLogs {
+                block_number,
+                up_to,
+            }) => {
+                if up_to.is_some_and(|up_to| up_to < block_number) {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "`up_to` must be either > `block_number` or null",
                         None::<()>,
-                    )),
-                    // TODO: Check block.extra.finalized once we do https://github.com/unionlabs/union/issues/3041
-                    Ok(_) => {
-                        // if the block is finalized, fetch events from this block and then try the next block
-                        if self
-                            .beacon_api_client
-                            .finality_update()
-                            .await
-                            .unwrap()
-                            .data
-                            .attested_header
-                            .beacon
-                            .slot
-                            >= slot
-                        {
-                            info!(%slot, "block is finalized");
-
-                            Ok(conc([
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::from(FetchGetLogs {
-                                        block_number: self
-                                            .beacon_api_client
-                                            .execution_height(slot.into())
-                                            .await
-                                            .map_err(|e| {
-                                                ErrorObject::owned(
-                                                    -1,
-                                                    format!(
-                                                        "error fetching execution block \
-                                                        number of beacon slot {slot}: {}",
-                                                        ErrorReporter(e)
-                                                    ),
-                                                    None::<()>,
-                                                )
-                                            })?,
-                                    }),
-                                )),
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::from(FetchBlock { slot: slot + 1 }),
-                                )),
-                            ]))
-                        } else {
-                            // if the block is NOT finalized, wait for it to be finalized
-                            // note that this is the only time we queue a wait - this is to reduce the amount of times a message needs to go through the queue. if we're catching up on fetching blocks, this will significantly reduce the amount of times messages need to be processed before producing a `ChainEvent`.
-
-                            info!(%slot, "block is not finalized");
-
-                            Ok(seq([
-                                call(WaitForHeight {
-                                    chain_id: self.chain_id.clone(),
-                                    height: self.make_height(slot),
-                                }),
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::from(FetchBlock { slot }),
-                                )),
-                            ]))
-                        }
-                    }
+                    ));
                 }
-            }
-            ModuleCall::FetchGetLogs(FetchGetLogs { block_number }) => {
+
+                let latest_height = e
+                    .try_get::<VoyagerClient>()?
+                    .query_latest_height(self.chain_id.clone(), true)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                if latest_height.height() < block_number {
+                    debug!(block_number, "block is not yet finalized");
+
+                    return Ok(seq([
+                        defer(now() + 1),
+                        call(Call::Plugin(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchGetLogs {
+                                block_number,
+                                up_to,
+                            }),
+                        ))),
+                    ]));
+                }
+
                 debug!(%block_number, "fetching logs in execution block");
 
                 let logs = self
@@ -1192,7 +1124,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 info!(%block_number, "found {} logs", logs.len());
 
-                Ok(conc(logs.into_iter().flat_map(|log| {
+                let events = logs.into_iter().flat_map(|log| {
                     let tx_hash = log
                         .transaction_hash
                         .expect("log should have transaction_hash")
@@ -1280,7 +1212,32 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             None
                         }
                     }
-                })))
+                });
+
+                let next_fetch = match up_to {
+                    Some(up_to) => {
+                        if up_to > block_number {
+                            Some(call(Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchGetLogs {
+                                    block_number: block_number + 1,
+                                    up_to: Some(up_to),
+                                }),
+                            ))))
+                        } else {
+                            None
+                        }
+                    }
+                    None => Some(call(Call::Plugin(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchGetLogs {
+                            block_number: block_number + 1,
+                            up_to: None,
+                        }),
+                    )))),
+                };
+
+                Ok(conc(next_fetch.into_iter().chain(events)))
             }
         }
     }

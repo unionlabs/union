@@ -25,7 +25,7 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-chain-module-ethereum",
         "info": {
           "chain_id": "32382"
@@ -64,11 +64,24 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
+        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "chain_id": "stargaze-devnet-1",
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090"
+        }
+      },
+      {
+        "enabled": true,
         "path": "./target/debug/voyager-consensus-module-ethereum",
         "info": {
           "chain_id": "32382",
-          "consensus_type": "ethereum-minimal"
+          "consensus_type": "ethereum"
         },
         "config": {
           "chain_spec": "minimal",
@@ -104,7 +117,7 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-client-module-cometbls",
         "info": {
           "client_type": "cometbls",
@@ -140,12 +153,12 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-client-module-ethereum",
         "info": {
-          "client_type": "ethereum-minimal",
-          "consensus_type": "ethereum-minimal",
-          "ibc_interface": "ibc-go-v8/native"
+          "client_type": "ethereum",
+          "consensus_type": "ethereum",
+          "ibc_interface": "ibc-go-v8/08-wasm"
         },
         "config": {
           "chain_spec": "minimal"
@@ -202,7 +215,7 @@
           "gas_price": "1.0",
           "gas_denom": "muno",
           "gas_multiplier": "1.1",
-          "max_gas": 60000000
+          "max_gas": 10000000
         },
         "ws_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
@@ -234,7 +247,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -357,6 +370,16 @@
         "chain_id": "union-devnet-1",
         "ws_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-ethereum",
+      "config": {
+        "chain_id": "32382",
+        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "eth_rpc_api": "ws://localhost:8546",
+        "eth_beacon_rpc_api": "http://localhost:9596"
       }
     }
   ],

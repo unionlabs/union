@@ -229,27 +229,6 @@ impl Module {
             ))
     }
 
-    async fn latest_height(&self) -> Result<Height, cometbft_rpc::JsonRpcError> {
-        let commit_response = self.tm_client.commit(None).await?;
-
-        let mut height = commit_response
-            .signed_header
-            .header
-            .height
-            .inner()
-            .try_into()
-            .expect("value is >= 0; qed;");
-
-        if !commit_response.canonical {
-            debug!("commit is not canonical, latest finalized height is the previous block");
-            height -= 1;
-        }
-
-        debug!(height, "latest height");
-
-        Ok(self.make_height(height))
-    }
-
     async fn abci_query(&self, path_string: &str, height: Height) -> RpcResult<QueryResponse> {
         self.tm_client
             .abci_query(
@@ -338,57 +317,6 @@ pub struct ChainIdParseError {
 
 #[async_trait]
 impl ChainModuleServer for Module {
-    /// Query the latest finalized height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_height(&self, _: &Extensions) -> RpcResult<Height> {
-        self.latest_height()
-            .await
-            // TODO: Add more context here
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
-    }
-
-    /// Query the latest finalized timestamp of this chain.
-    // TODO: Use a better timestamp type here
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_timestamp(&self, _: &Extensions) -> RpcResult<i64> {
-        let mut commit_response =
-            self.tm_client.commit(None).await.map_err(|err| {
-                ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-            })?;
-
-        if commit_response.canonical {
-            debug!("commit is not canonical, fetching commit at previous block");
-            commit_response = self
-                .tm_client
-                .commit(Some(
-                    (u64::try_from(commit_response.signed_header.header.height.inner() - 1)
-                        .expect("should be fine"))
-                    .try_into()
-                    .expect("should be fine"),
-                ))
-                .await
-                .map_err(|err| {
-                    ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-                })?;
-
-            if !commit_response.canonical {
-                error!(
-                    ?commit_response,
-                    "commit for previous height is not canonical? continuing \
-                    anyways, but this may cause issues downstream"
-                );
-            }
-        }
-
-        Ok(commit_response
-            .signed_header
-            .header
-            .time
-            .as_unix_nanos()
-            .try_into()
-            .expect("should be fine"))
-    }
-
     #[instrument(skip_all, fields(raw_client_id))]
     async fn query_client_prefix(&self, _: &Extensions, raw_client_id: u32) -> RpcResult<String> {
         self.prefix_of_client_id(raw_client_id)
@@ -410,12 +338,7 @@ impl ChainModuleServer for Module {
                 Ok(ClientInfo {
                     client_type: match self.client_type_of_checksum(checksum).await? {
                         Some(ty) => match ty {
-                            WasmClientType::EthereumMinimal => {
-                                ClientType::new(ClientType::ETHEREUM_MINIMAL)
-                            }
-                            WasmClientType::EthereumMainnet => {
-                                ClientType::new(ClientType::ETHEREUM_MAINNET)
-                            }
+                            WasmClientType::Ethereum => ClientType::new(ClientType::ETHEREUM),
                             WasmClientType::Cometbls => {
                                 ClientType::new(ClientType::COMETBLS_GROTH16)
                             }

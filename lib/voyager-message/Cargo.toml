@@ -31,7 +31,6 @@ schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
 serde_json                     = { workspace = true }
-soketto                        = "0.8.0"
 subset-of                      = { workspace = true }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["time", "process", "fs"] }

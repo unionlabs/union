@@ -113,6 +113,8 @@ macro_rules! event {
                             )+
                             // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
                             "msg_index" => {}
+                            "event_index" => {}
+                            "tx_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
@@ -172,7 +174,7 @@ event! {
             client_id: ClientId,
             // TODO: Figure out if there's a better type we can use than string
             client_type: String,
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             consensus_height: Height,
         },
 
@@ -181,7 +183,7 @@ event! {
             #[parse(ClientId::from_str)]
             client_id: ClientId,
             client_type: String,
-            #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
+            #[parse(|s: &str| s.split(',').map(Height::from_str_allow_zero_revision).collect::<Result<_, _>>())]
             consensus_heights: Vec<Height>,
         },
 
@@ -190,7 +192,7 @@ event! {
             #[parse(ClientId::from_str)]
             client_id: ClientId,
             client_type: String,
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             consensus_height: Height,
         },
 
@@ -306,7 +308,7 @@ event! {
         WriteAcknowledgement {
             #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
             packet_data_hex: Bytes,
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
@@ -330,7 +332,7 @@ event! {
         RecvPacket {
             #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
             packet_data_hex: Bytes,
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
@@ -354,7 +356,7 @@ event! {
         SendPacket {
             #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
             packet_data_hex: Bytes,
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
@@ -376,7 +378,7 @@ event! {
 
         #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
         AcknowledgePacket {
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
@@ -398,7 +400,7 @@ event! {
 
         #[event(tag = "timeout_packet")]
         TimeoutPacket {
-            #[parse(Height::from_str)]
+            #[parse(Height::from_str_allow_zero_revision)]
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
@@ -576,8 +578,7 @@ mod tests {
                 }),
                 Err(TryFromTendermintEventError::AttributeValueParse {
                     field: "consensus_heights",
-                    error: "invalid numeric value in height string: invalid digit found in string"
-                        .to_owned()
+                    error: "invalid height string".to_owned()
                 })
             );
         }

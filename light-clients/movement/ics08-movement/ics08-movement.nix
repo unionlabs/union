@@ -7,7 +7,7 @@ _: {
       ...
     }:
     let
-      workspace = crane.buildWasmContract {
+      lc = crane.buildWasmContract {
         crateDirFromRoot = "light-clients/movement/ics08-movement";
         checks = [
           (file_path: ''
@@ -20,6 +20,6 @@ _: {
       };
     in
     {
-      inherit (workspace) packages checks;
+      inherit (lc) packages checks;
     };
 }

@@ -22,11 +22,11 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    ErrorReporter, QueryHeight,
+    ErrorReporter,
 };
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientInfo, ClientType},
+    core::{ChainId, ClientInfo, ClientType, QueryHeight},
     data::{
         AcknowledgePacket, ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm,
         ChannelOpenInit, ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck,

@@ -10,27 +10,20 @@ _: {
       ...
     }:
     let
-      mkEthLc =
-        chain-spec:
-        crane.buildWasmContract {
-          crateDirFromRoot = "light-clients/ethereum-light-client";
-          features = [ (pkgs.lib.strings.toLower chain-spec) ];
-          checks = [
-            (file_path: ''
-              ${ensure-wasm-client-type {
-                inherit file_path;
-                type = "Ethereum${chain-spec}";
-              }}
-            '')
-          ];
-        };
-
-      minimal = mkEthLc "Minimal";
-      mainnet = mkEthLc "Mainnet";
-
+      lc = crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/ethereum-light-client";
+        checks = [
+          (file_path: ''
+            ${ensure-wasm-client-type {
+              inherit file_path;
+              type = "Ethereum";
+            }}
+          '')
+        ];
+      };
     in
     {
-      packages = minimal.packages // mainnet.packages;
-      checks = minimal.checks // mainnet.checks;
+      inherit (lc) packages;
+      inherit (lc) checks;
     };
 }

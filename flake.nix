@@ -223,7 +223,7 @@
         ./site/site.nix
         ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
-        # ./light-clients/ethereum-light-client/ethereum-light-client.nix
+        ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
         # ./light-clients/scroll-light-client/scroll-light-client.nix

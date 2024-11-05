@@ -76,8 +76,7 @@
           };
         };
         lightClients = [
-          # self'.packages.ethereum-light-client-minimal
-          # self'.packages.ethereum-light-client-mainnet
+          self'.packages.ethereum-light-client
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
@@ -88,21 +87,21 @@
           #   code = self'.packages.ucs00-pingpong;
           #   instances = [ ];
           # }
-          {
-            code = self'.packages.ucs01-relay;
-            instances = [
-              {
-                message = {
-                  default_timeout = 10000;
-                  # Todo derive
-                  gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
-                };
-                # salt must be non-prefixed hex string
-                salt = "00";
-                label = "ucs01-relay";
-              }
-            ];
-          }
+          # {
+          #   code = self'.packages.ucs01-relay;
+          #   instances = [
+          #     {
+          #       message = {
+          #         default_timeout = 10000;
+          #         # Todo derive
+          #         gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+          #       };
+          #       # salt must be non-prefixed hex string
+          #       salt = "00";
+          #       label = "ucs01-relay";
+          #     }
+          #   ];
+          # }
           # {
           #   code = self'.packages.ucs02-nft;
           #   instances = [{
