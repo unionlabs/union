@@ -39,6 +39,18 @@ pub mod ethabi {
     const NEXT_SEQ_RECV: U256 = U256::from_limbs([0, 0, 0, 7]);
     const NEXT_SEQ_ACK: U256 = U256::from_limbs([0, 0, 0, 8]);
 
+    pub enum Path {
+        ClientState { client_id: u32 },
+        ConsensusState { client_id: u32, height: u64 },
+        Connection { connection_id: u32 },
+        Channel { channel_id: u32 },
+        Packet { channel_id: u32, hash: H256 },
+        Receipts { channel_id: u32, hash: H256 },
+        NextSeqSend { channel_id: u32 },
+        NextSeqRecv { channel_id: u32 },
+        NextSeqAck { channel_id: u32 },
+    }
+
     #[must_use]
     pub fn client_state_key(client_id: u32) -> H256 {
         Keccak256::new()

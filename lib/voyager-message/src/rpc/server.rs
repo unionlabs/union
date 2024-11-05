@@ -21,6 +21,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter,
 };
+use voyager_core::IbcVersion;
 
 // use valuable::Valuable;
 // use voyager_core::IbcStoreFormat;
@@ -363,8 +364,8 @@ impl Server {
         &self,
         chain_id: &ChainId<'_>,
         height: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
+        path: Bytes,
+        ibc_version: IbcVersion,
     ) -> RpcResult<IbcProof> {
         debug!("fetching ibc state");
 
@@ -377,10 +378,7 @@ impl Server {
         // let height = self.inner.query_height(&chain_id, height).await?;
 
         let proof = chain_module
-            .query_ibc_proof(
-                height,
-                path.clone(), // ibc_store_format
-            )
+            .query_ibc_proof(height, path.clone(), ibc_version)
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
@@ -389,6 +387,7 @@ impl Server {
 
         Ok(IbcProof {
             path,
+            ibc_version,
             height,
             proof,
         })
@@ -452,6 +451,7 @@ impl Server {
         &self,
         client_type: &ClientType<'static>,
         ibc_interface: &IbcInterface<'static>,
+        ibc_version: IbcVersion,
         proof: Value,
     ) -> RpcResult<Bytes> {
         debug!("encoding proof");
@@ -459,7 +459,7 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface, ibc_version)
             .map_err(fatal_error)?;
 
         let proof = client_module

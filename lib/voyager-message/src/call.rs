@@ -30,7 +30,7 @@ use unionlabs::{
     traits::Member,
     DELAY_PERIOD,
 };
-use voyager_core::{ClientType, QueryHeight};
+use voyager_core::{ClientType, IbcVersion, QueryHeight};
 use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
 #[cfg(doc)]
@@ -395,26 +395,40 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
+                let proof_path = match target_client_info.ibc_version {
+                    IbcVersion::V1_0_0 => ConnectionPath {
+                        connection_id: connection_open_ack_event.connection_id.clone(),
+                    }
+                    .to_string()
+                    .into_bytes(),
+                    IbcVersion::UnionIbc => unionlabs::ics24::ethabi::connection_key(
+                        connection_open_ack_event.connection_id.id(),
+                    )
+                    .into_bytes(),
+                };
+
                 // proof of connection_state, encoded for the client on the target chain
                 // this is encoded via the client module for the client on the origin chain
                 // (the chain the event was emitted on)
+                let proof = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        &origin_chain_id,
+                        origin_chain_proof_height,
+                        proof_path.into(),
+                        target_client_info.ibc_version,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?
+                    .proof;
+
                 let connection_proof = ctx
                     .rpc_server
                     .encode_proof(
                         &target_client_info.client_type,
                         &target_client_info.ibc_interface,
-                        ctx.rpc_server
-                            .query_ibc_proof(
-                                &origin_chain_id,
-                                origin_chain_proof_height,
-                                ConnectionPath {
-                                    connection_id: connection_open_ack_event.connection_id.clone(),
-                                }
-                                .into(),
-                            )
-                            .await
-                            .map_err(error_object_to_queue_error)?
-                            .proof,
+                        target_client_info.ibc_version,
+                        proof,
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;

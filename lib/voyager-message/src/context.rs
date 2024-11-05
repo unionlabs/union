@@ -20,7 +20,7 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
-use voyager_core::ConsensusType;
+use voyager_core::{ConsensusType, IbcVersion};
 use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
@@ -556,6 +556,7 @@ impl Modules {
         &'a self,
         client_type: &'b ClientType<'c>,
         ibc_interface: &'b IbcInterface<'c>,
+        ibc_version: IbcVersion,
     ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
         match self.client_modules.get(client_type) {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {

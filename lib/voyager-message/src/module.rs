@@ -15,7 +15,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::Member,
 };
-use voyager_core::ConsensusType;
+use voyager_core::{ConsensusType, IbcVersion};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
@@ -332,12 +332,13 @@ pub trait ChainModule {
 
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
+    // TODO: Pull this out into a module that iself is indexed by IBC version
     #[method(name = "queryIbcProof", with_extensions)]
     async fn query_ibc_proof(
         &self,
         at: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
+        path: Bytes,
+        ibc_version: IbcVersion,
     ) -> RpcResult<Value>;
 }
 

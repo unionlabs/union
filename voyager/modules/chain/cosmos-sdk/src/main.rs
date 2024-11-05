@@ -36,7 +36,7 @@ use unionlabs::{
     parse_wasm_client_type, ErrorReporter, WasmClientType,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
+    core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface, IbcVersion},
     into_value,
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
     run_chain_module_server, ChainModule, FATAL_JSONRPC_ERROR_CODE,
@@ -641,7 +641,13 @@ impl ChainModuleServer for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_proof(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: Path,
+        ibc_version: IbcVersion,
+    ) -> RpcResult<Value> {
         // TODO: This is also in the fn above, move this to somewhere more appropriate (chain-utils perhaps?)
 
         const IBC_STORE_PATH: &str = "store/ibc/key";

@@ -19,6 +19,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter,
 };
+use voyager_core::IbcVersion;
 
 use crate::{
     context::LoadedModulesInfo,
@@ -258,7 +259,8 @@ pub struct IbcState<State = Value> {
 
 #[model]
 pub struct IbcProof {
-    pub path: Path,
+    pub path: Bytes,
+    pub ibc_version: IbcVersion,
     /// The height that the proof was read at.
     pub height: Height,
     pub proof: Value,

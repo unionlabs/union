@@ -36,7 +36,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface, QueryHeight},
+    core::{ChainId, ClientInfo, ClientType, IbcInterface, IbcVersion, QueryHeight},
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     run_chain_module_server, ChainModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
@@ -536,9 +536,12 @@ impl ChainModuleServer for Module {
         &self,
         _: &Extensions,
         at: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
+        path: Bytes,
+        ibc_version: IbcVersion,
     ) -> RpcResult<Value> {
+        // TODO: Don't panic
+        assert!(matches!(ibc_version, IbcVersion::UnionIbc));
+
         let location = ibc_commitment_key(match path {
             Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
             Path::ClientConsensusState(path) => {

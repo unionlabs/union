@@ -46,9 +46,37 @@ impl IbcInterface<'static> {
     /// L2s, berachain, etc).
     pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
 
+    pub const IBC_COSMWASM: &'static str = "ibc-cosmwasm";
+
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
     // lots more to come - near, fuel - stay tuned
+}
+
+/// The IBC version denotes the format for both the store and the datagrams.
+///
+/// Typically, an IBC interface will support exactly one IBC version, however
+/// it is possible to support multiple. For example, the union virtualized IBC
+/// stack on cosmwasm supports both IBC 1.0.0 *and* the union ethabi IBC
+/// specification.
+///
+/// [State lenses] are possible between IBC interfaces that support the same IBC
+/// version.
+///
+/// [State lenses]: https://research.union.build/State-Lenses-9e3d6578ec0e48fca8e502a0d28f485c
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum IbcVersion {
+    /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
+    ///
+    /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
+    #[serde(rename = "1.0.0")]
+    V1_0_0,
+    // TODO: Potantially rename?
+    /// IBC version <TODO>, as per the [union ethabi IBC specification](union-ethabi).
+    ///
+    /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
+    #[serde(rename = "union-ibc")]
+    UnionIbc,
 }
 
 /// Newtype for client types. Clients of the same type have the same client
@@ -182,6 +210,7 @@ pub struct ChainId;
 pub struct ClientInfo {
     pub client_type: ClientType<'static>,
     pub ibc_interface: IbcInterface<'static>,
+    pub ibc_version: IbcVersion,
     /// Additional metadata about this client.
     ///
     /// This is currently only used for threading the checksum for ibc-go
@@ -377,4 +406,9 @@ impl FromStr for QueryHeight {
             _ => s.parse().map(Self::Specific),
         }
     }
+}
+
+pub enum IbcStorePath {
+    Ics24(unionlabs::ics24::Path),
+    EthAbi(unionlabs::ics24::ethabi::Path),
 }
