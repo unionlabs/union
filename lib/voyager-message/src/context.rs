@@ -56,8 +56,8 @@ pub struct Modules {
     /// map of chain id to consensus module.
     consensus_modules: HashMap<ChainId<'static>, ModuleRpcClient>,
 
-    /// map of client type to ibc interface to client module.
-    client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, ModuleRpcClient>>,
+    client_modules:
+        HashMap<(ClientType<'static>, IbcInterface<'static>, IbcVersion), ModuleRpcClient>,
 
     chain_consensus_types: HashMap<ChainId<'static>, ConsensusType<'static>>,
 
@@ -326,19 +326,19 @@ impl Context {
                  client_type,
                  consensus_type,
                  ibc_interface,
+                 ibc_version,
              },
              rpc_client| {
-                let prev = modules
-                    .client_modules
-                    .entry(client_type.clone())
-                    .or_default()
-                    .insert(ibc_interface.clone(), rpc_client.clone());
+                let prev = modules.client_modules.insert(
+                    (client_type.clone(), ibc_interface.clone(), *ibc_version),
+                    rpc_client,
+                );
 
                 if prev.is_some() {
                     return Err(format!(
-                        "multiple client modules configured for \
-                        client type `{client_type}` and IBC \
-                        interface `{ibc_interface}`",
+                        "multiple client modules configured for client \
+                        type `{client_type}`, IBC interface `{ibc_interface}`, \
+                        and IBC version `{ibc_version}`",
                     )
                     .into());
                 }
@@ -491,16 +491,14 @@ impl Modules {
         let client = self
             .client_modules
             .iter()
-            .map(|(client_type, ibc_interfaces)| (client_type, ibc_interfaces.keys()))
-            .flat_map(|(client_type, ibc_interfaces)| {
-                ibc_interfaces
-                    .cloned()
-                    .map(move |ibc_interface| ClientModuleInfo {
-                        consensus_type: self.client_consensus_types[client_type].clone(),
-                        client_type: client_type.clone(),
-                        ibc_interface,
-                    })
-            })
+            .map(
+                |((client_type, ibc_interface, ibc_version), _)| ClientModuleInfo {
+                    consensus_type: self.client_consensus_types[client_type].clone(),
+                    client_type: client_type.clone(),
+                    ibc_interface: ibc_interface.clone(),
+                    ibc_version: *ibc_version,
+                },
+            )
             .collect();
 
         LoadedModulesInfo {
@@ -558,16 +556,15 @@ impl Modules {
         ibc_interface: &'b IbcInterface<'c>,
         ibc_version: IbcVersion,
     ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
-        match self.client_modules.get(client_type) {
-            Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
-                Some(client_module) => Ok(client_module.client()),
-                None => Err(ClientModuleNotFound::IbcInterfaceNotFound {
-                    client_type: client_type.clone().into_owned(),
-                    ibc_interface: ibc_interface.clone().into_owned(),
-                }),
-            },
-            None => Err(ClientModuleNotFound::ClientTypeNotFound {
+        match self
+            .client_modules
+            .get(&(client_type.clone(), ibc_interface.clone(), ibc_version))
+        {
+            Some(client_module) => Ok(client_module.client()),
+            None => Err(ClientModuleNotFound::ModuleNotFound {
                 client_type: client_type.clone().into_owned(),
+                ibc_interface: ibc_interface.clone().into_owned(),
+                ibc_version,
             }),
         }
     }
@@ -764,13 +761,13 @@ pub enum ClientModuleNotFound {
     #[error("no module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType<'static> },
     #[error(
-        "no module loaded supporting IBC interface `{}` and client type `{}`",
-        client_type,
-        ibc_interface
+        "no module loaded for client type `{client_type}`, IBC \
+        interface `{ibc_interface}`, and IBC version `{ibc_version}`"
     )]
-    IbcInterfaceNotFound {
+    ModuleNotFound {
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
     },
 }
 

@@ -1,4 +1,5 @@
 #![feature(trait_alias)]
+#![allow(clippy::too_many_arguments)] // fight me
 
 use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 

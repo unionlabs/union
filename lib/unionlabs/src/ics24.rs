@@ -89,7 +89,7 @@ pub mod ethabi {
     }
 
     #[must_use]
-    pub fn packet_key(channel_id: u32, hash: H256) -> H256 {
+    pub fn packets_key(channel_id: u32, hash: H256) -> H256 {
         Keccak256::new()
             .chain_update(PACKETS.to_be_bytes())
             .chain_update(U256::from(channel_id).to_be_bytes())

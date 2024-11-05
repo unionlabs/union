@@ -64,7 +64,19 @@ impl IbcInterface<'static> {
 /// version.
 ///
 /// [State lenses]: https://research.union.build/State-Lenses-9e3d6578ec0e48fca8e502a0d28f485c
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+)]
 pub enum IbcVersion {
     /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
     ///
@@ -77,6 +89,31 @@ pub enum IbcVersion {
     /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
     #[serde(rename = "union-ibc")]
     UnionIbc,
+}
+
+impl FromStr for IbcVersion {
+    type Err = InvalidIbcVersion;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1.0.0" => Ok(IbcVersion::V1_0_0),
+            "union-ibc" => Ok(IbcVersion::UnionIbc),
+            _ => Err(InvalidIbcVersion(s.to_owned())),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid IBC version `{0}`")]
+pub struct InvalidIbcVersion(String);
+
+impl fmt::Display for IbcVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IbcVersion::V1_0_0 => f.write_str("1.0.0"),
+            IbcVersion::UnionIbc => f.write_str("union-ibc"),
+        }
+    }
 }
 
 /// Newtype for client types. Clients of the same type have the same client

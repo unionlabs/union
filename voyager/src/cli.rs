@@ -5,7 +5,7 @@ use unionlabs::{
     self, bounded::BoundedI64, ibc::core::client::height::Height, id::ClientId, result_unwrap,
 };
 use voyager_message::{
-    core::{ChainId, ClientType, IbcInterface, QueryHeight},
+    core::{ChainId, ClientType, IbcInterface, IbcVersion, QueryHeight},
     module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
     VoyagerMessage,
 };
@@ -224,6 +224,8 @@ pub enum MsgCmd {
         tracking: ChainId<'static>,
         #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
         ibc_interface: IbcInterface<'static>,
+        #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
+        ibc_version: IbcVersion,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
         client_type: ClientType<'static>,
         #[arg(long, default_value_t = QueryHeight::Latest)]

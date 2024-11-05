@@ -15,7 +15,6 @@ use unionlabs::{
         channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
-    ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter,
 };
@@ -191,7 +190,8 @@ pub trait VoyagerRpc {
         &self,
         chain_id: ChainId<'static>,
         height: QueryHeight,
-        path: Path,
+        path: Bytes,
+        ibc_version: IbcVersion,
     ) -> RpcResult<IbcProof>;
 
     // ========================================
@@ -221,6 +221,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         proof: Value,
     ) -> RpcResult<Bytes>;
 
@@ -229,6 +230,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta>;
 
@@ -237,6 +239,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<Value>;
 
@@ -245,6 +248,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         consensus_state: Bytes,
     ) -> RpcResult<Value>;
 }

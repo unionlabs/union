@@ -30,7 +30,7 @@ use unionlabs::{
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
-        NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, Path, ReceiptPath,
+        NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     parse_wasm_client_type, ErrorReporter, WasmClientType,
@@ -330,6 +330,7 @@ impl ChainModuleServer for Module {
             Some(("07-tendermint", _)) => Ok(ClientInfo {
                 client_type: ClientType::new(ClientType::TENDERMINT),
                 ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_NATIVE),
+                ibc_version: IbcVersion::V1_0_0,
                 metadata: Default::default(),
             }),
             Some(("08-wasm", _)) => {
@@ -363,6 +364,7 @@ impl ChainModuleServer for Module {
                         }
                     },
                     ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_08_WASM),
+                    ibc_version: IbcVersion::V1_0_0,
                     metadata: into_value(IbcGo08WasmClientMetadata { checksum }),
                 })
             }
@@ -645,13 +647,9 @@ impl ChainModuleServer for Module {
         &self,
         _: &Extensions,
         at: Height,
-        path: Path,
+        path: Bytes,
         ibc_version: IbcVersion,
     ) -> RpcResult<Value> {
-        // TODO: This is also in the fn above, move this to somewhere more appropriate (chain-utils perhaps?)
-
-        const IBC_STORE_PATH: &str = "store/ibc/key";
-
         let path_string = path.to_string();
 
         let query_result = self

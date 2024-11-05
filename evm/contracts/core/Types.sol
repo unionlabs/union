@@ -37,6 +37,9 @@ struct IBCChannel {
     string version;
 }
 
+// h(seq, chan)
+// h(h(seq, chan) || h(seq, chan) || ..)
+
 struct IBCPacket {
     uint64 sequence;
     uint32 sourceChannel;

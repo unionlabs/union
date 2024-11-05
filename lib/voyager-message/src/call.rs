@@ -1,3 +1,4 @@
+use alloy::sol_types::SolValue;
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
@@ -7,6 +8,7 @@ use serde_utils::Hex;
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     bytes::Bytes,
+    ethereum::keccak256,
     ibc::core::{
         channel::{
             self, channel::Channel, msg_acknowledgement::MsgAcknowledgement,
@@ -150,6 +152,8 @@ pub struct MakeMsgCreateClient {
     pub counterparty_chain_id: ChainId<'static>,
     /// The IBC interface to create the client on.
     pub ibc_interface: IbcInterface<'static>,
+    /// The IBC version that this client supports.
+    pub ibc_version: IbcVersion,
     /// The type of client to create.
     pub client_type: ClientType<'static>,
 }
@@ -459,23 +463,32 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
+                let client_info = ctx
+                    .rpc_server
+                    .client_info(&target_chain_id, event.connection.counterparty.client_id)
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let proof_path = match client_info.ibc_version {
+                    IbcVersion::V1_0_0 => ChannelEndPath {
+                        port_id: event.port_id.clone(),
+                        channel_id: event.channel_id.clone(),
+                    }
+                    .to_string()
+                    .into_bytes(),
+                    IbcVersion::UnionIbc => {
+                        unionlabs::ics24::ethabi::channel_key(event.channel_id.id()).into_bytes()
+                    }
+                };
+
                 let proof_init = ctx
                     .rpc_server
                     .query_ibc_proof(
                         &origin_chain_id,
                         origin_chain_proof_height,
-                        ChannelEndPath {
-                            port_id: event.port_id.clone(),
-                            channel_id: event.channel_id.clone(),
-                        }
-                        .into(),
+                        proof_path.into(),
+                        client_info.ibc_version,
                     )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
-                let client_info = ctx
-                    .rpc_server
-                    .client_info(&target_chain_id, event.connection.counterparty.client_id)
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -484,6 +497,7 @@ impl CallT<VoyagerMessage> for Call {
                     .encode_proof(
                         &client_info.client_type,
                         &client_info.ibc_interface,
+                        client_info.ibc_version,
                         proof_init.proof,
                     )
                     .await
@@ -517,21 +531,6 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_try_event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: channel_open_try_event.port_id.clone(),
-                    channel_id: channel_open_try_event.channel_id.clone(),
-                };
-
-                let proof_try = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.into(),
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
                 let client_info = ctx
                     .rpc_server
                     .client_info(
@@ -541,11 +540,33 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
+                let origin_channel_path = match client_info.ibc_version {
+                    IbcVersion::V1_0_0 => ChannelEndPath {
+                        port_id: channel_open_try_event.port_id.clone(),
+                        channel_id: channel_open_try_event.channel_id.clone(),
+                    }
+                    .to_string()
+                    .into_bytes(),
+                    IbcVersion::UnionIbc => todo!(),
+                };
+
+                let proof_try = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        &origin_chain_id,
+                        origin_chain_proof_height,
+                        origin_channel_path.into(),
+                        client_info.ibc_version,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
                 let encoded_proof_try = ctx
                     .rpc_server
                     .encode_proof(
                         &client_info.client_type,
                         &client_info.ibc_interface,
+                        client_info.ibc_version,
                         proof_try.proof,
                     )
                     .await
@@ -567,21 +588,6 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_ack_event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: channel_open_ack_event.port_id.clone(),
-                    channel_id: channel_open_ack_event.channel_id.clone(),
-                };
-
-                let proof_ack = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.into(),
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
                 let client_info = ctx
                     .rpc_server
                     .client_info(
@@ -591,11 +597,36 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
+                let origin_channel_path = match client_info.ibc_version {
+                    IbcVersion::V1_0_0 => ChannelEndPath {
+                        port_id: channel_open_ack_event.port_id.clone(),
+                        channel_id: channel_open_ack_event.channel_id.clone(),
+                    }
+                    .to_string()
+                    .into_bytes(),
+                    IbcVersion::UnionIbc => unionlabs::ics24::ethabi::channel_key(
+                        channel_open_ack_event.channel_id.id(),
+                    )
+                    .into_bytes(),
+                };
+
+                let proof_ack = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        &origin_chain_id,
+                        origin_chain_proof_height,
+                        origin_channel_path.into(),
+                        client_info.ibc_version,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
                 let encoded_proof_ack = ctx
                     .rpc_server
                     .encode_proof(
                         &client_info.client_type,
                         &client_info.ibc_interface,
+                        client_info.ibc_version,
                         proof_ack.proof,
                     )
                     .await
@@ -637,6 +668,7 @@ impl CallT<VoyagerMessage> for Call {
                 counterparty_chain_id,
                 client_type,
                 ibc_interface,
+                ibc_version,
             }) => {
                 make_msg_create_client(
                     ctx,
@@ -645,6 +677,7 @@ impl CallT<VoyagerMessage> for Call {
                     chain_id,
                     client_type,
                     ibc_interface,
+                    ibc_version,
                     metadata,
                 )
                 .await
@@ -731,11 +764,18 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
 
+                let client_info = ctx
+                    .rpc_server
+                    .client_info(&chain_id, client_id.clone())
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
                 let trusted_client_state_meta = ctx
                     .rpc_server
                     .decode_client_state_meta(
                         &client_state.client_type,
                         &client_state.ibc_interface,
+                        client_info.ibc_version,
                         client_state.bytes,
                     )
                     .await
@@ -823,22 +863,6 @@ async fn make_msg_recv_packet(
         return Ok(noop());
     }
 
-    let proof_commitment = ctx
-        .rpc_server
-        .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            CommitmentPath {
-                port_id: send_packet_event.packet.source_channel.port_id.clone(),
-                channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
-                sequence: send_packet_event.packet.sequence,
-            }
-            .into(),
-        )
-        .await
-        .map_err(error_object_to_queue_error)?
-        .proof;
-
     let client_info = ctx
         .rpc_server
         .client_info(
@@ -852,11 +876,53 @@ async fn make_msg_recv_packet(
         .await
         .map_err(error_object_to_queue_error)?;
 
+    let proof_path = match client_info.ibc_version {
+        IbcVersion::V1_0_0 => CommitmentPath {
+            port_id: send_packet_event.packet.source_channel.port_id.clone(),
+            channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
+            sequence: send_packet_event.packet.sequence,
+        }
+        .to_string()
+        .into_bytes(),
+        IbcVersion::UnionIbc => unionlabs::ics24::ethabi::packets_key(
+            send_packet_event.packet.source_channel.channel_id.id(),
+            keccak256(
+                ibc_solidity::ibc::Packet {
+                    sequence: send_packet_event.packet.sequence.get(),
+                    sourceChannel: send_packet_event.packet.source_channel.channel_id.id(),
+                    destinationChannel: send_packet_event
+                        .packet
+                        .destination_channel
+                        .channel_id
+                        .id(),
+                    data: send_packet_event.packet_data.clone().into(),
+                    timeoutHeight: send_packet_event.packet.timeout_height.height(),
+                    timeoutTimestamp: send_packet_event.packet.timeout_timestamp,
+                }
+                .abi_encode_params(),
+            ),
+        )
+        .into_bytes(),
+    };
+
+    let proof_commitment = ctx
+        .rpc_server
+        .query_ibc_proof(
+            &origin_chain_id,
+            origin_chain_proof_height,
+            proof_path.into(),
+            client_info.ibc_version,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?
+        .proof;
+
     let encoded_proof_commitment = ctx
         .rpc_server
         .encode_proof(
             &client_info.client_type,
             &client_info.ibc_interface,
+            client_info.ibc_version,
             proof_commitment,
         )
         .await
@@ -909,6 +975,19 @@ async fn make_msg_acknowledgement(
         .await
         .map_err(error_object_to_queue_error)?;
 
+    let client_info = ctx
+        .rpc_server
+        .client_info(
+            &target_chain_id,
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .connection
+                .client_id,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?;
+
     let commitment = ctx
         .rpc_server
         .query_commitment(
@@ -935,48 +1014,69 @@ async fn make_msg_acknowledgement(
         return Ok(noop());
     }
 
+    let proof_path = match client_info.ibc_version {
+        IbcVersion::V1_0_0 => AcknowledgementPath {
+            port_id: write_acknowledgement_event
+                .packet
+                .destination_channel
+                .port_id
+                .clone(),
+            channel_id: write_acknowledgement_event
+                .packet
+                .destination_channel
+                .channel_id
+                .clone(),
+            sequence: write_acknowledgement_event.packet.sequence,
+        }
+        .to_string()
+        .into_bytes(),
+        IbcVersion::UnionIbc => unionlabs::ics24::ethabi::packets_key(
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .channel_id
+                .id(),
+            keccak256(
+                ibc_solidity::ibc::Packet {
+                    sequence: write_acknowledgement_event.packet.sequence.get(),
+                    sourceChannel: write_acknowledgement_event
+                        .packet
+                        .source_channel
+                        .channel_id
+                        .id(),
+                    destinationChannel: write_acknowledgement_event
+                        .packet
+                        .destination_channel
+                        .channel_id
+                        .id(),
+                    data: write_acknowledgement_event.packet_data.clone().into(),
+                    timeoutHeight: write_acknowledgement_event.packet.timeout_height.height(),
+                    timeoutTimestamp: write_acknowledgement_event.packet.timeout_timestamp,
+                }
+                .abi_encode_params(),
+            ),
+        )
+        .into_bytes(),
+    };
+
     let proof_acked = ctx
         .rpc_server
         .query_ibc_proof(
             &origin_chain_id,
             origin_chain_proof_height,
-            AcknowledgementPath {
-                port_id: write_acknowledgement_event
-                    .packet
-                    .destination_channel
-                    .port_id
-                    .clone(),
-                channel_id: write_acknowledgement_event
-                    .packet
-                    .destination_channel
-                    .channel_id
-                    .clone(),
-                sequence: write_acknowledgement_event.packet.sequence,
-            }
-            .into(),
+            proof_path.into(),
+            client_info.ibc_version,
         )
         .await
         .map_err(error_object_to_queue_error)?
         .proof;
-
-    let client_info = ctx
-        .rpc_server
-        .client_info(
-            &target_chain_id,
-            write_acknowledgement_event
-                .packet
-                .source_channel
-                .connection
-                .client_id,
-        )
-        .await
-        .map_err(error_object_to_queue_error)?;
 
     let encoded_proof_acked = ctx
         .rpc_server
         .encode_proof(
             &client_info.client_type,
             &client_info.ibc_interface,
+            client_info.ibc_version,
             proof_acked,
         )
         .await
@@ -1021,7 +1121,8 @@ async fn make_msg_create_client(
     height: QueryHeight,
     chain_id: ChainId<'static>,
     client_type: ClientType<'static>,
-    ibc_interface: IbcInterface<'_>,
+    ibc_interface: IbcInterface<'static>,
+    ibc_version: IbcVersion,
     metadata: Value,
 ) -> Result<Op<VoyagerMessage>, QueueError> {
     let height = ctx
@@ -1077,7 +1178,7 @@ async fn make_msg_create_client(
         .rpc_server
         .modules()
         .map_err(error_object_to_queue_error)?
-        .client_module(&client_type, &ibc_interface)?;
+        .client_module(&client_type, &ibc_interface, ibc_version)?;
 
     Ok(data(WithChainId {
         chain_id,
@@ -1170,6 +1271,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .decode_client_state_meta(
             &origin_client_info.client_type,
             &origin_client_info.ibc_interface,
+            origin_client_info.ibc_version,
             client_state.clone(),
         )
         .await?;
@@ -1185,6 +1287,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .client_module(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,
+            target_client_info.ibc_version,
         )?
         .reencode_counterparty_client_state(client_state.clone(), origin_client_info.client_type)
         .await
@@ -1211,16 +1314,25 @@ async fn mk_connection_handshake_state_and_proofs(
         connection_state = %serde_json::to_string(&connection_state).unwrap(),
     );
 
+    let connection_state_proof_path = match target_client_info.ibc_version {
+        IbcVersion::V1_0_0 => ConnectionPath {
+            connection_id: connection_id.clone(),
+        }
+        .to_string()
+        .into_bytes(),
+        IbcVersion::UnionIbc => {
+            unionlabs::ics24::ethabi::connection_key(connection_id.id()).into_bytes()
+        }
+    };
+
     // proof of connection_state, encoded for the client on the target chain
     let connection_proof = ctx
         .rpc_server
         .query_ibc_proof(
             &origin_chain_id,
             origin_chain_proof_height,
-            ConnectionPath {
-                connection_id: connection_id.clone(),
-            }
-            .into(),
+            connection_state_proof_path.into(),
+            target_client_info.ibc_version,
         )
         .await?
         .proof;
@@ -1231,20 +1343,30 @@ async fn mk_connection_handshake_state_and_proofs(
         .encode_proof(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,
+            target_client_info.ibc_version,
             connection_proof,
         )
         .await?;
     debug!(encoded_connection_state_proof = %Hex(&encoded_connection_state_proof));
+
+    let client_state_proof_path = match target_client_info.ibc_version {
+        IbcVersion::V1_0_0 => ClientStatePath {
+            client_id: client_id.clone(),
+        }
+        .to_string()
+        .into_bytes(),
+        IbcVersion::UnionIbc => {
+            unionlabs::ics24::ethabi::client_state_key(client_id.id()).into_bytes()
+        }
+    };
 
     let client_state_proof = ctx
         .rpc_server
         .query_ibc_proof(
             &origin_chain_id,
             origin_chain_proof_height,
-            ClientStatePath {
-                client_id: client_id.clone(),
-            }
-            .into(),
+            client_state_proof_path.into(),
+            target_client_info.ibc_version,
         )
         .await?
         .proof;
@@ -1255,21 +1377,33 @@ async fn mk_connection_handshake_state_and_proofs(
         .encode_proof(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,
+            target_client_info.ibc_version,
             client_state_proof,
         )
         .await?;
     debug!(encoded_client_state_proof = %Hex(&encoded_client_state_proof));
+
+    let consensus_state_proof_path = match target_client_info.ibc_version {
+        IbcVersion::V1_0_0 => ClientConsensusStatePath {
+            client_id: client_id.clone(),
+            height: client_meta.height,
+        }
+        .to_string()
+        .into_bytes(),
+        IbcVersion::UnionIbc => unionlabs::ics24::ethabi::consensus_state_key(
+            client_id.id(),
+            client_meta.height.height(),
+        )
+        .into_bytes(),
+    };
 
     let consensus_state_proof = ctx
         .rpc_server
         .query_ibc_proof(
             &origin_chain_id,
             origin_chain_proof_height,
-            ClientConsensusStatePath {
-                client_id: client_id.clone(),
-                height: client_meta.height,
-            }
-            .into(),
+            consensus_state_proof_path.into(),
+            target_client_info.ibc_version,
         )
         .await?
         .proof;
@@ -1280,6 +1414,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .encode_proof(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,
+            target_client_info.ibc_version,
             consensus_state_proof,
         )
         .await?;

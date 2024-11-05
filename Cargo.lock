@@ -13969,6 +13969,7 @@ dependencies = [
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "chain-utils",
  "clap 4.5.4",
  "contracts",
@@ -13977,6 +13978,7 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "ibc-solidity",
  "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",

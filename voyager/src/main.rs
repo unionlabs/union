@@ -521,6 +521,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                             .decode_client_state(
                                 client_info.client_type,
                                 client_info.ibc_interface,
+                                client_info.ibc_version,
                                 ibc_state.state,
                             )
                             .await?;
@@ -557,6 +558,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                             .decode_consensus_state(
                                 client_info.client_type,
                                 client_info.ibc_interface,
+                                client_info.ibc_version,
                                 ibc_state.state,
                             )
                             .await?;
@@ -577,6 +579,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 on,
                 tracking,
                 ibc_interface,
+                ibc_version,
                 client_type,
                 height,
                 metadata,
@@ -589,6 +592,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     counterparty_chain_id: tracking,
                     ibc_interface,
                     client_type,
+                    ibc_version,
                 });
 
                 if enqueue {

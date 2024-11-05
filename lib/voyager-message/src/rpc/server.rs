@@ -17,7 +17,6 @@ use unionlabs::{
         channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
-    ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter,
 };
@@ -342,7 +341,11 @@ impl Server {
         let meta = self
             .inner
             .modules()?
-            .client_module(&client_info.client_type, &client_info.ibc_interface)
+            .client_module(
+                &client_info.client_type,
+                &client_info.ibc_interface,
+                client_info.ibc_version,
+            )
             .map_err(fatal_error)?
             .decode_client_state_meta(client_state)
             .await
@@ -478,6 +481,7 @@ impl Server {
         &self,
         client_type: &ClientType<'static>,
         ibc_interface: &IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
         debug!("decoding client state meta");
@@ -485,7 +489,7 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface, ibc_version)
             .map_err(fatal_error)?;
 
         let meta = client_module
@@ -507,11 +511,12 @@ impl Server {
         &self,
         client_type: &ClientType<'static>,
         ibc_interface: &IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface, ibc_version)
             .map_err(fatal_error)?
             .decode_client_state(client_state)
             .await
@@ -523,48 +528,17 @@ impl Server {
         &self,
         client_type: &ClientType<'static>,
         ibc_interface: &IbcInterface<'static>,
+        ibc_version: IbcVersion,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface, ibc_version)
             .map_err(fatal_error)?
             .decode_consensus_state(consensus_state)
             .await
             .map_err(json_rpc_error_to_error_object)
     }
-
-    // pub async fn query_ibc_state_typed<
-    //     P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable,
-    // >(
-    //     &self,
-    //     chain_id: &ChainId<'_>,
-    //     at: Height,
-    //     path: P,
-    // ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-    //     debug!(%chain_id, path = path.as_value(), %at, "querying ibc state");
-
-    //     let ibc_state = self.query_state(chain_id, at, path.clone().into()).await?;
-
-    //     Ok(serde_json::from_value::<P::Value>(ibc_state.state.clone())
-    //         .map(|value| IbcState {
-    //             chain_id: ibc_state.chain_id,
-    //             path: path.clone(),
-    //             height: ibc_state.height,
-    //             state: value,
-    //         })
-    //         .map_err(|e| {
-    //             ErrorObject::owned(
-    //                 FATAL_JSONRPC_ERROR_CODE,
-    //                 format!("unable to deserialize state: {}", ErrorReporter(e)),
-    //                 Some(json!({
-    //                     "chain_id": chain_id,
-    //                     "path": path,
-    //                     "state": ibc_state.state
-    //                 })),
-    //             )
-    //         })?)
-    // }
 }
 
 /// rpc impl
@@ -883,15 +857,13 @@ impl VoyagerRpcServer for Server {
         &self,
         chain_id: ChainId<'static>,
         height: QueryHeight,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
+        path: Bytes,
+        ibc_version: IbcVersion,
     ) -> RpcResult<IbcProof> {
         let height = self.query_height(&chain_id, height).await?;
 
-        self.query_ibc_proof(
-            &chain_id, height, path, // ibc_store_format
-        )
-        .await
+        self.query_ibc_proof(&chain_id, height, path, ibc_version)
+            .await
     }
 
     async fn self_client_state(
@@ -917,9 +889,11 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         proof: Value,
     ) -> RpcResult<Bytes> {
-        self.encode_proof(&client_type, &ibc_interface, proof).await
+        self.encode_proof(&client_type, &ibc_interface, ibc_version, proof)
+            .await
     }
 
     // TODO: Use valuable here
@@ -927,9 +901,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        self.decode_client_state_meta(&client_type, &ibc_interface, client_state)
+        self.decode_client_state_meta(&client_type, &ibc_interface, ibc_version, client_state)
             .await
     }
 
@@ -937,9 +912,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         client_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_client_state(&client_type, &ibc_interface, client_state)
+        self.decode_client_state(&client_type, &ibc_interface, ibc_version, client_state)
             .await
     }
 
@@ -947,9 +923,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType<'static>,
         ibc_interface: IbcInterface<'static>,
+        ibc_version: IbcVersion,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_consensus_state(&client_type, &ibc_interface, consensus_state)
+        self.decode_consensus_state(&client_type, &ibc_interface, ibc_version, consensus_state)
             .await
     }
 }

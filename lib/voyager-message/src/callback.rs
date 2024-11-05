@@ -74,6 +74,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                 let ClientInfo {
                     client_type,
                     ibc_interface,
+                    ibc_version,
                     ..
                 } = ctx
                     .rpc_server
@@ -85,7 +86,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .rpc_server
                     .modules()
                     .map_err(error_object_to_queue_error)?
-                    .client_module(&client_type, &ibc_interface)?;
+                    .client_module(&client_type, &ibc_interface, ibc_version)?;
 
                 Ok(voyager_vm::data(OrderedMsgUpdateClients {
                     // REVIEW: Use FuturesOrdered here?

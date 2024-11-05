@@ -11,7 +11,6 @@ use unionlabs::{
         channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
-    ics24::Path,
     id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::Member,
 };
@@ -143,6 +142,9 @@ pub struct ClientModuleInfo {
     /// The IBC interface that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
     pub ibc_interface: IbcInterface<'static>,
+
+    /// The IBC version that this client is on.
+    pub ibc_version: IbcVersion,
 }
 
 impl ClientModuleInfo {

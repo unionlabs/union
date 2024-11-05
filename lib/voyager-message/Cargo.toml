@@ -10,6 +10,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
+alloy = { workspace = true, features = ["sol-types"] }
 chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 contracts                      = { workspace = true, features = ["providers"] }
@@ -17,6 +18,7 @@ enumorph                       = { workspace = true }
 frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }
 hex                            = { workspace = true }
+ibc-solidity.workspace = true
 itertools                      = "0.13.0"
 jaq-core                       = "1.5.1"
 jaq-interpret                  = "1.5.0"

@@ -30,7 +30,6 @@ use unionlabs::{
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, connection_end::ConnectionEnd, version::Version},
     },
-    ics24::{ethabi, Path},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     uint::U256,
     ErrorReporter,
@@ -166,6 +165,7 @@ impl ChainModuleServer for Module {
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_SOLIDITY),
+            ibc_version: IbcVersion::UnionIbc,
             metadata: Default::default(),
         })
     }
@@ -542,31 +542,33 @@ impl ChainModuleServer for Module {
         // TODO: Don't panic
         assert!(matches!(ibc_version, IbcVersion::UnionIbc));
 
-        let location = ibc_commitment_key(match path {
-            Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
-            Path::ClientConsensusState(path) => {
-                ethabi::consensus_state_key(path.client_id.id(), path.height.height())
-            }
-            Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
-            Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
-            Path::Commitment(_path) => {
-                todo!()
-                // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
-            }
-            Path::Acknowledgement(_path) => {
-                todo!()
-                // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
-            }
-            Path::Receipt(_path) => {
-                todo!()
-                // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
-            }
-            Path::NextSequenceSend(_path) => todo!(),
-            Path::NextSequenceRecv(_path) => todo!(),
-            Path::NextSequenceAck(_path) => todo!(),
-            Path::NextConnectionSequence(_path) => todo!(),
-            Path::NextClientSequence(_path) => todo!(),
-        });
+        // let location = ibc_commitment_key(match path {
+        //     Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
+        //     Path::ClientConsensusState(path) => {
+        //         ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+        //     }
+        //     Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
+        //     Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+        //     Path::Commitment(_path) => {
+        //         todo!()
+        //         // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
+        //     }
+        //     Path::Acknowledgement(_path) => {
+        //         todo!()
+        //         // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
+        //     }
+        //     Path::Receipt(_path) => {
+        //         todo!()
+        //         // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
+        //     }
+        //     Path::NextSequenceSend(_path) => todo!(),
+        //     Path::NextSequenceRecv(_path) => todo!(),
+        //     Path::NextSequenceAck(_path) => todo!(),
+        //     Path::NextConnectionSequence(_path) => todo!(),
+        //     Path::NextClientSequence(_path) => todo!(),
+        // });
+
+        let location = ibc_commitment_key(path.try_into().unwrap());
 
         let execution_height = self.execution_height_of_beacon_slot(at.height()).await;
 
