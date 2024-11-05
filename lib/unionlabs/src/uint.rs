@@ -93,6 +93,12 @@ impl U256 {
     // pub const fn from_const_str<const STR: &'static str>() -> Self {}
 }
 
+impl From<u32> for U256 {
+    fn from(value: u32) -> Self {
+        Self(primitive_types::U256::from(value))
+    }
+}
+
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
         Self(primitive_types::U256::from(value))

@@ -19,7 +19,7 @@ pub mod ethabi {
     use sha2::Digest;
     use sha3::Keccak256;
 
-    use crate::hash::H256;
+    use crate::{hash::H256, uint::U256};
 
     /// 0x0100000000000000000000000000000000000000000000000000000000000000
     pub const COMMITMENT_MAGIC: H256 = {
@@ -29,21 +29,21 @@ pub mod ethabi {
     };
     pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
 
-    const CLIENT_STATE: u8 = 0x00;
-    const CONSENSUS_STATE: u8 = 0x01;
-    const CONNECTIONS: u8 = 0x02;
-    const CHANNELS: u8 = 0x03;
-    const PACKETS: u8 = 0x04;
-    const PACKET_ACKS: u8 = 0x05;
-    const NEXT_SEQ_SEND: u8 = 0x06;
-    const NEXT_SEQ_RECV: u8 = 0x07;
-    const NEXT_SEQ_ACK: u8 = 0x08;
+    const CLIENT_STATE: U256 = U256::from_limbs([0, 0, 0, 0]);
+    const CONSENSUS_STATE: U256 = U256::from_limbs([0, 0, 0, 1]);
+    const CONNECTIONS: U256 = U256::from_limbs([0, 0, 0, 2]);
+    const CHANNELS: U256 = U256::from_limbs([0, 0, 0, 3]);
+    const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
+    const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
+    const NEXT_SEQ_SEND: U256 = U256::from_limbs([0, 0, 0, 6]);
+    const NEXT_SEQ_RECV: U256 = U256::from_limbs([0, 0, 0, 7]);
+    const NEXT_SEQ_ACK: U256 = U256::from_limbs([0, 0, 0, 8]);
 
     #[must_use]
     pub fn client_state_key(client_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([CLIENT_STATE])
-            .chain_update(client_id.to_be_bytes())
+            .chain_update(CLIENT_STATE.to_be_bytes())
+            .chain_update(U256::from(client_id).to_be_bytes())
             .finalize()
             .into()
     }
@@ -51,9 +51,9 @@ pub mod ethabi {
     #[must_use]
     pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
         Keccak256::new()
-            .chain_update([CONSENSUS_STATE])
-            .chain_update(client_id.to_be_bytes())
-            .chain_update(height.to_be_bytes())
+            .chain_update(CONSENSUS_STATE.to_be_bytes())
+            .chain_update(U256::from(client_id).to_be_bytes())
+            .chain_update(U256::from(height).to_be_bytes())
             .finalize()
             .into()
     }
@@ -61,8 +61,8 @@ pub mod ethabi {
     #[must_use]
     pub fn connection_key(connection_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([CONNECTIONS])
-            .chain_update(connection_id.to_be_bytes())
+            .chain_update(CONNECTIONS.to_be_bytes())
+            .chain_update(U256::from(connection_id).to_be_bytes())
             .finalize()
             .into()
     }
@@ -70,38 +70,28 @@ pub mod ethabi {
     #[must_use]
     pub fn channel_key(channel_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([CHANNELS])
-            .chain_update(channel_id.to_be_bytes())
+            .chain_update(CHANNELS.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
             .finalize()
             .into()
     }
 
     #[must_use]
-    pub fn commitments_key(channel_id: u32, sequence: u64) -> H256 {
+    pub fn packet_key(channel_id: u32, hash: H256) -> H256 {
         Keccak256::new()
-            .chain_update([PACKETS])
-            .chain_update(channel_id.to_be_bytes())
-            .chain_update(sequence.to_be_bytes())
+            .chain_update(PACKETS.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
+            .chain_update(hash.get())
             .finalize()
             .into()
     }
 
     #[must_use]
-    pub fn acknowledgements_key(channel_id: u32, sequence: u64) -> H256 {
+    pub fn receipts_key(channel_id: u32, hash: H256) -> H256 {
         Keccak256::new()
-            .chain_update([PACKET_ACKS])
-            .chain_update(channel_id.to_be_bytes())
-            .chain_update(sequence.to_be_bytes())
-            .finalize()
-            .into()
-    }
-
-    #[must_use]
-    pub fn receipts_key(channel_id: u32, sequence: u64) -> H256 {
-        Keccak256::new()
-            .chain_update([PACKETS])
-            .chain_update(channel_id.to_be_bytes())
-            .chain_update(sequence.to_be_bytes())
+            .chain_update(PACKET_ACKS.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
+            .chain_update(hash.get())
             .finalize()
             .into()
     }
@@ -109,8 +99,8 @@ pub mod ethabi {
     #[must_use]
     pub fn next_seq_send_key(channel_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([NEXT_SEQ_SEND])
-            .chain_update(channel_id.to_be_bytes())
+            .chain_update(NEXT_SEQ_SEND.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
             .finalize()
             .into()
     }
@@ -118,8 +108,8 @@ pub mod ethabi {
     #[must_use]
     pub fn next_seq_recv_key(channel_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([NEXT_SEQ_RECV])
-            .chain_update(channel_id.to_be_bytes())
+            .chain_update(NEXT_SEQ_RECV.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
             .finalize()
             .into()
     }
@@ -127,8 +117,8 @@ pub mod ethabi {
     #[must_use]
     pub fn next_seq_ack_key(channel_id: u32) -> H256 {
         Keccak256::new()
-            .chain_update([NEXT_SEQ_ACK])
-            .chain_update(channel_id.to_be_bytes())
+            .chain_update(NEXT_SEQ_ACK.to_be_bytes())
+            .chain_update(U256::from(channel_id).to_be_bytes())
             .finalize()
             .into()
     }
@@ -180,13 +170,17 @@ impl Path {
             }
             Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
             Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
-            Path::Commitment(path) => {
-                ethabi::commitments_key(path.channel_id.id(), path.sequence.into())
+            Path::Commitment(_path) => {
+                // ethabi::commitments_key(path.channel_id.id(), path.sequence.into())
+                todo!()
             }
-            Path::Acknowledgement(path) => {
-                ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.into())
+            Path::Acknowledgement(_path) => {
+                // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.into())
+                todo!()
             }
-            Path::Receipt(path) => ethabi::receipts_key(path.channel_id.id(), path.sequence.into()),
+            Path::Receipt(_path) => {
+                todo!()
+            }
             Path::NextSequenceSend(path) => ethabi::next_seq_send_key(path.channel_id.id()),
             Path::NextSequenceRecv(path) => ethabi::next_seq_recv_key(path.channel_id.id()),
             Path::NextSequenceAck(path) => ethabi::next_seq_ack_key(path.channel_id.id()),

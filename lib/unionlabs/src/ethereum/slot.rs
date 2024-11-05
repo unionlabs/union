@@ -59,10 +59,13 @@ fn test() {
     // mapping(uint256 => mapping(uint256 => uint256)[])
     let slot = Slot::Mapping(
         &Slot::Array(
-            &Slot::Mapping(&Slot::Offset(0.into()), MappingKey::Uint256(123.into())),
-            1.into(),
+            &Slot::Mapping(
+                &Slot::Offset(0u32.into()),
+                MappingKey::Uint256(123u32.into()),
+            ),
+            1u32.into(),
         ),
-        MappingKey::Uint256(100.into()),
+        MappingKey::Uint256(100u32.into()),
     )
     .slot();
 
