@@ -5,7 +5,7 @@ use url::Url;
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
     aptos::{context::AptosContext, fetcher_client::AptosFetcherClient},
-    Indexer,
+    FinalizerConfig, Indexer,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
@@ -18,6 +18,8 @@ pub struct Config {
     pub chunk_size: Option<usize>,
     pub rpc_urls: Vec<Url>,
     pub tx_search_max_page_size: Option<u16>,
+    #[serde(default)]
+    pub finalizer: FinalizerConfig,
 }
 
 impl Config {
@@ -27,6 +29,7 @@ impl Config {
             self.indexer_id,
             self.start_height,
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
+            self.finalizer,
             AptosContext {
                 rpc_urls: self.rpc_urls,
                 tx_search_max_page_size: self
