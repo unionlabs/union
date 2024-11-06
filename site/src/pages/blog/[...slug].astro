@@ -1,4 +1,5 @@
 ---
+import ContainedSection from "#/components/ContainedSection.astro"
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
@@ -47,19 +48,17 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
   title={blogPost.fields.title}
   description={blogPost.fields.description}
 >
-  <div class="flex justify-center pt-8">
+  <ContainedSection className="flex flex-col pt-4">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
-      <div class="text-lg flex gap-x-3 h-min">
-        <h1
-          data-contentful-field-id="title"
-          data-contentful-entry-id={entryId}
-          class="text-3xl sm:text-4xl font-extrabold mb-0 font-supermolot uppercase"
-          {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
-        >
-          {blogPost.fields.title}
-        </h1>
-      </div>
-      <div class="flex gap-x-3 mt-1.5">
+      <h1
+        data-contentful-field-id="title"
+        data-contentful-entry-id={entryId}
+        class="text-white text-3xl sm:text-4xl font-bold mb-0 font-supermolot uppercase"
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
+      >
+        {blogPost.fields.title}
+      </h1>
+      <div class="flex gap-x-3 mt-1.5 font-bold">
         <time
           class="text-lg font-mono text-accent-500 font mono"
           data-contentful-field-id="date"
@@ -108,7 +107,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
       >
       </article>
     </div>
-  </div>
+  </ContainedSection>
 </Layout>
 
 <script>
@@ -163,14 +162,10 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
     margin-left: 0;
   }
 
-  h1 {
-    color: white !important; 
-  }
   img {
     width: 100%;
     height: auto;
     object-fit: cover;
-    border-radius: 8px !important;
   }
 
   p > a, ul a:not(header a), ol a:not(header a) {
@@ -206,7 +201,11 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
   }
 
   h2,h3,h4,h5 {
-    margin-top: 2rem;
+    font-family: "Supermolot";
+    font-weight: bold;
+    text-transform: uppercase;
+
+    margin-top: 3rem;
     margin-bottom: 0.5rem;
     font-size: 1.87rem;
     color: #ffffff;
