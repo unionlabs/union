@@ -182,7 +182,7 @@ const { entries } = Astro.props
   </div>
 
   <script>
-    document.addEventListener("astro:page-load", () => {
+    function initScrollHandler() {
       const dot = document.getElementById("scrolling-dot");
       const swimlane = document.getElementById("swim-lane");
 
@@ -194,46 +194,75 @@ const { entries } = Astro.props
         return;
       }
 
+      let lastKnownScrollPosition = 0;
+      let ticking = false;
+
       const handleScroll = () => {
-        try {
-          const documentHeight = Math.max(
-            document.body.scrollHeight,
-            document.body.offsetHeight,
-            document.documentElement.clientHeight,
-            document.documentElement.scrollHeight,
-            document.documentElement.offsetHeight,
-          );
+        lastKnownScrollPosition = window.scrollY;
 
-          const viewportHeight = window.innerHeight;
-          const maxScroll = documentHeight - viewportHeight;
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            try {
+              const documentHeight = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight,
+              );
 
-          const currentScroll = window.scrollY;
-          const scrollPercentage = currentScroll / maxScroll;
+              const viewportHeight = window.innerHeight;
+              const maxScroll = documentHeight - viewportHeight;
 
-          const swimlaneHeight = swimlane.getBoundingClientRect().height;
-          const maxDotPosition = swimlaneHeight - dot.offsetHeight;
-          const newTop = scrollPercentage * maxDotPosition;
+              const scrollPercentage = lastKnownScrollPosition / maxScroll;
 
-          dot.style.top = `${Math.max(0, Math.min(maxDotPosition, newTop))}px`;
-        } catch (error) {
-          console.error("Error in scroll handler:", error);
+              const swimlaneHeight = swimlane.getBoundingClientRect().height;
+              const maxDotPosition = swimlaneHeight - dot.offsetHeight;
+              const newTop = scrollPercentage * maxDotPosition;
+
+              dot.style.transform = `translateY(${Math.max(0, Math.min(maxDotPosition, newTop))}px)`;
+            } catch (error) {
+              console.error("Error in scroll handler:", error);
+            }
+            ticking = false;
+          });
+
+          ticking = true;
         }
       };
 
-      // Add scroll event listener
-      window.addEventListener("scroll", handleScroll);
+      window.addEventListener("scroll", handleScroll, { passive: true });
 
       // Initial position calculation
-      handleScroll();
+      // Delay slightly to ensure DOM is fully ready
+      setTimeout(handleScroll, 0);
 
-      // Clean up the event listener when navigating away
-      document.addEventListener(
-        "astro:before-preparation",
-        () => {
-          window.removeEventListener("scroll", handleScroll);
-        },
-        { once: true },
-      );
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
+    }
+
+    // Handle both direct navigation and view transitions
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        const cleanup = initScrollHandler();
+        document.addEventListener("astro:before-preparation", cleanup, {
+          once: true,
+        });
+      });
+    } else {
+      const cleanup = initScrollHandler();
+      document.addEventListener("astro:before-preparation", cleanup, {
+        once: true,
+      });
+    }
+
+    // Handle view transitions
+    document.addEventListener("astro:page-load", () => {
+      const cleanup = initScrollHandler();
+      document.addEventListener("astro:before-preparation", cleanup, {
+        once: true,
+      });
     });
   </script>
 
