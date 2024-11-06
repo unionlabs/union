@@ -54,17 +54,14 @@ export function setupLivePreview({
   subscriptions: Array<VoidFunction>
 }) {
   const callback = (updatedData: any) => {
-    console.info("updatedData", updatedData)
     const domElement = findElementByDataAttribute({ entryId, fieldId })
     if (!domElement) return
-    console.info(domElement, updatedData.fields, updatedData.fields[fieldId])
     if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
-      console.info(updatedData.fields[fieldId])
       // Check if the content is text
       if (typeof updatedData.fields[fieldId] === "string") {
         domElement.textContent = updatedData.fields[fieldId]
       }
-      console.info(updatedData.fields[fieldId].nodeType)
+
       // Check if the content is rich text
       if (updatedData.fields[fieldId].nodeType === "document") {
         const document = updatedData.fields[fieldId]
@@ -165,65 +162,68 @@ export function displayFieldData<T extends Entry>({
   if (typeof field === "string") {
     domElement.textContent = field
   }
-  if ((field as Document)?.nodeType === "document") {
-    domElement.innerHTML = documentToHtmlString(field as Document, {
-      preserveWhitespace: true,
-      renderMark: {
-        [MARKS["ITALIC"]]: text => `<em>${text}</em>`,
-        [MARKS["UNDERLINE"]]: text => `<u>${text}</u>`,
-        [MARKS["CODE"]]: text => `<code>${text}</code>`,
-        [MARKS["STRIKETHROUGH"]]: text => `<s>${text}</s>`,
-        [MARKS["SUBSCRIPT"]]: text => `<sub>${text}</sub>`,
-        [MARKS["BOLD"]]: text => `<strong>${text}</strong>`,
-        [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`
+  if ((field as Document)?.nodeType !== "document") return
+
+  domElement.innerHTML = documentToHtmlString(field as Document, {
+    preserveWhitespace: true,
+    renderMark: {
+      [MARKS["ITALIC"]]: text => `<em>${text}</em>`,
+      [MARKS["UNDERLINE"]]: text => `<u>${text}</u>`,
+      [MARKS["CODE"]]: text => `<code>${text}</code>`,
+      [MARKS["STRIKETHROUGH"]]: text => `<s>${text}</s>`,
+      [MARKS["SUBSCRIPT"]]: text => `<sub>${text}</sub>`,
+      [MARKS["BOLD"]]: text => `<strong>${text}</strong>`,
+      [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`
+    },
+    renderNode: {
+      [BLOCKS["HEADING_1"]]: (node, next) => {
+        return `<h1>${next(node.content)}</h1>`
       },
-      renderNode: {
-        [BLOCKS["HEADING_1"]]: (node, next) => {
-          console.info(node)
-          return `<h1>${next(node.content)}</h1>`
-        },
-        [BLOCKS["HEADING_2"]]: (node, next) => `<h2>
-                <a href="#${next(node.content)}" id="${next(node.content)}">
-                  ${next(node.content)}
-                </a>
-              </h2>`,
-        [BLOCKS["HEADING_3"]]: (node, next) =>
-          `<h3>
-                <a href="#${next(node.content)}" id="${next(node.content)}">
-                  ${next(node.content)}
-                </a>
-              </h3>`,
-        [BLOCKS["HEADING_4"]]: (node, next) =>
-          `<h4>
-                <a href="#${next(node.content)}" id="${next(node.content)}">
-                  ${next(node.content)}
-                </a>
-              </h4>`,
-        [BLOCKS["HEADING_5"]]: (node, next) => `<h5>${next(node.content)}</h5>`,
-        [BLOCKS["HEADING_6"]]: (node, next) => `<h6>${next(node.content)}</h6>`,
-        [BLOCKS["LIST_ITEM"]]: (node, next) => `<li>${next(node.content)}</li>`,
-        [BLOCKS["TABLE"]]: (node, next) => `<table>${next(node.content)}</table>`,
-        [BLOCKS["TABLE_ROW"]]: (node, next) => `<tr>${next(node.content)}</tr>`,
-        [BLOCKS["TABLE_CELL"]]: (node, next) => `<td>${next(node.content)}</td>`,
-        [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
-        [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
-        [BLOCKS["PARAGRAPH"]]: (node, next) =>
-          `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`,
-        [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
-        [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
-        [BLOCKS["EMBEDDED_ASSET"]]: asset => {
-          const dataFields = asset.data.target.fields
-          const imageUrl = imageWithProtocol(dataFields.file.url)
-          const { width, height } = dataFields.file.details.image
-          return `<img src="${imageUrl}?fm=avif&w=1366" alt="${dataFields.title}"></img>`
-        },
-        [INLINES["HYPERLINK"]]: params => /* html */ `
+      [BLOCKS["HEADING_2"]]: (node, next) => {
+        const text = next(node.content)
+        const slug = text.toLowerCase().replaceAll(" ", "-")
+        return `<h2 id="${slug}">
+                <a href="#${slug}">${text}</a>
+              </h2>`
+      },
+      [BLOCKS["HEADING_3"]]: (node, next) => {
+        const text = next(node.content)
+        const slug = text.toLowerCase().replaceAll(" ", "-")
+        return `<h3 id="${slug}">
+                <a href="#${slug}">${text}</a>
+              </h3>`
+      },
+      [BLOCKS["HEADING_4"]]: (node, next) => {
+        const text = next(node.content)
+        const slug = text.toLowerCase().replaceAll(" ", "-")
+        return `<h4 id="${slug}">
+                <a href="#${slug}">${text}</a>
+              </h4>`
+      },
+      [BLOCKS["HEADING_5"]]: (node, next) => `<h5>${next(node.content)}</h5>`,
+      [BLOCKS["HEADING_6"]]: (node, next) => `<h6>${next(node.content)}</h6>`,
+      [BLOCKS["LIST_ITEM"]]: (node, next) => `<li>${next(node.content)}</li>`,
+      [BLOCKS["TABLE"]]: (node, next) => `<table>${next(node.content)}</table>`,
+      [BLOCKS["TABLE_ROW"]]: (node, next) => `<tr>${next(node.content)}</tr>`,
+      [BLOCKS["TABLE_CELL"]]: (node, next) => `<td>${next(node.content)}</td>`,
+      [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
+      [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
+      [BLOCKS["PARAGRAPH"]]: (node, next) =>
+        `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`,
+      [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
+      [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
+      [BLOCKS["EMBEDDED_ASSET"]]: asset => {
+        const dataFields = asset.data.target.fields
+        const imageUrl = imageWithProtocol(dataFields.file.url)
+        const { width, height } = dataFields.file.details.image
+        return `<img src="${imageUrl}?fm=avif&w=1366" alt="${dataFields.title}"></img>`
+      },
+      [INLINES["HYPERLINK"]]: params => /* html */ `
                   <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-        [INLINES["ENTRY_HYPERLINK"]]: params => /* html */ `
+      [INLINES["ENTRY_HYPERLINK"]]: params => /* html */ `
                     <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-        [INLINES["ASSET_HYPERLINK"]]: params => /* html */ `
+      [INLINES["ASSET_HYPERLINK"]]: params => /* html */ `
                     <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-      }
-    })
-  }
+    }
+  })
 }

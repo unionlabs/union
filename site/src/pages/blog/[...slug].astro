@@ -11,7 +11,7 @@ export const prerender = false
 const { slug } = Astro.params
 
 const {
-  items: [blogPost]
+  items: [blogPost],
 } = await contentfulClient.getEntries<BlogPost>({
   limit: 1,
   "fields.slug": slug,
@@ -26,8 +26,8 @@ const {
     "fields.author",
     "fields.hidden",
     "fields.content",
-    "fields.description"
-  ]
+    "fields.description",
+  ],
 })
 
 // The browser should always check freshness
@@ -111,33 +111,27 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 </Layout>
 
 <script>
-  import { initializeContentfulLivePreview } from "#/lib/contentful/functions.ts";
+  import { initializeContentfulLivePreview } from "#/lib/contentful/functions.ts"
 
-  const subscriptions: Array<VoidFunction> = [];
+  const subscriptions: Array<VoidFunction> = []
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const emElement = document.querySelector("h1[data-contentful-entry-id]");
-    const entryId = emElement?.dataset.contentfulEntryId;
-    if (!entryId) return;
+  document.addEventListener("DOMContentLoaded", async event => {
+    const emElement = document.querySelector("h1[data-contentful-entry-id]")
+    const entryId = emElement?.dataset.contentfulEntryId
+    if (!entryId) return
     initializeContentfulLivePreview({
       entryId,
       subscriptions,
       locale: "en-US",
       debugMode: import.meta.env.MODE === "development",
-      fields: [
-        "date",
-        "date",
-        "title",
-        "cover",
-        "author",
-        "content",
-        "description",
-      ],
-    });
-  });
+      fields: ["date", "title", "cover", "author", "content", "description"],
+    })
+  })
 </script>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
+
+<script is:inline type="module" src="/scripts/scroll-to-anchor.js"></script>
 
 <style is:inline lang="postcss">
   ol {

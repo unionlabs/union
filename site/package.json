@@ -12,7 +12,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "^6.0.0-beta.1",
+    "@astrojs/markdown-remark": "^6.0.0-beta.2",
     "@astrojs/rss": "^4.0.9",
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/svelte": "^5.7.3",
@@ -26,7 +26,7 @@
     "@splinetool/viewer": "^1.9.36",
     "@types/gl-matrix": "^3.2.0",
     "@types/webgl2": "^0.0.11",
-    "astro": "^5.0.0-beta.5",
+    "astro": "^5.0.0-beta.7",
     "astro-capo": "^0.0.1",
     "astro-font": "^0.1.81",
     "astro-seo": "^0.8.4",
@@ -83,6 +83,8 @@
     "is-core-module": "npm:@nolyfill/is-core-module@^1",
     "isarray": "npm:@nolyfill/isarray@^1",
     "side-channel": "npm:@nolyfill/side-channel@^1",
-    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1"
+    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1",
+    "safe-buffer": "npm:@nolyfill/safe-buffer@^1",
+    "safer-buffer": "npm:@nolyfill/safer-buffer@^1"
   }
 }
