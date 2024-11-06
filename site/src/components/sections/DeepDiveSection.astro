@@ -33,6 +33,13 @@ const { entries } = Astro.props
         </div>
       </div>
 
+      <video
+              class="bg-black"
+              src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-v8.mp4"
+              autoplay
+              muted
+              loop></video>
+
       <div id="interoperability">
         <H1>
           <Fragment set:html={renderTitle(entries.secondTitle)} />
@@ -41,6 +48,13 @@ const { entries } = Astro.props
           <Fragment set:html={renderRichText(entries.secondText)} />
         </div>
       </div>
+
+      <video
+              class="bg-black"
+              src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4"
+              autoplay
+              muted
+              loop></video>
 
       <div id="modularity">
         <H1>
@@ -61,6 +75,7 @@ const { entries } = Astro.props
       </div>
 
       <video
+              class="bg-black"
         src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/explain-v1.mp4"
         autoplay
         muted
@@ -82,6 +97,10 @@ const { entries } = Astro.props
         <div class="flex flex-col md:max-w-[576px] w-full gap-8">
           <Fragment set:html={renderRichText(entries.sixthText)} />
         </div>
+      </div>
+
+      <div>
+        
       </div>
 
       <div id="galois">
