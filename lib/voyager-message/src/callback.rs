@@ -120,6 +120,6 @@ impl CallbackT<VoyagerMessage> for Callback {
 /// Required data: [`OrderedHeaders`]
 #[model]
 pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub counterparty_client_id: ClientId,
 }

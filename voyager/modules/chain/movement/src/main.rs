@@ -54,7 +54,7 @@ pub enum Cmd {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub aptos_client: aptos_rest_client::Client,
     pub movement_rpc_url: String,

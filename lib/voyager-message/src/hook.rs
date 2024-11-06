@@ -8,18 +8,18 @@ use crate::{
 };
 
 pub struct UpdateHook<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> {
-    chain_id: &'a ChainId<'static>,
+    chain_id: &'a ChainId,
     mk_msg: F,
 }
 
 impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> UpdateHook<'a, F> {
-    pub fn new(chain_id: &'a ChainId<'static>, mk_msg: F) -> Self {
+    pub fn new(chain_id: &'a ChainId, mk_msg: F) -> Self {
         Self { chain_id, mk_msg }
     }
 }
 
 impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
-    pub fn filter(chain_id: &ChainId<'_>) -> String {
+    pub fn filter(chain_id: &ChainId) -> String {
         format!(
             r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}"] | any"#,
             chain_id

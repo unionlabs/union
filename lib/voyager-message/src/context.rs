@@ -51,17 +51,17 @@ pub struct Context {
 #[derive(Debug, Clone)]
 pub struct Modules {
     /// map of chain id to chain module.
-    chain_modules: HashMap<ChainId<'static>, ModuleRpcClient>,
+    chain_modules: HashMap<ChainId, ModuleRpcClient>,
 
     /// map of chain id to consensus module.
-    consensus_modules: HashMap<ChainId<'static>, ModuleRpcClient>,
+    consensus_modules: HashMap<ChainId, ModuleRpcClient>,
 
     /// map of client type to ibc interface to client module.
-    client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, ModuleRpcClient>>,
+    client_modules: HashMap<ClientType, HashMap<IbcInterface, ModuleRpcClient>>,
 
-    chain_consensus_types: HashMap<ChainId<'static>, ConsensusType<'static>>,
+    chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
-    client_consensus_types: HashMap<ClientType<'static>, ConsensusType<'static>>,
+    client_consensus_types: HashMap<ClientType, ConsensusType>,
 }
 
 impl voyager_vm::Context for Context {}
@@ -512,61 +512,61 @@ impl Modules {
 
     pub fn chain_consensus_type<'a, 'b, 'c: 'a>(
         &'a self,
-        chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a ConsensusType<'static>, ConsensusModuleNotFound> {
+        chain_id: &ChainId,
+    ) -> Result<&'a ConsensusType, ConsensusModuleNotFound> {
         self.chain_consensus_types
             .get(chain_id)
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone()))
     }
 
     pub fn client_consensus_type<'a, 'b, 'c: 'a>(
         &'a self,
-        client_type: &'b ClientType<'c>,
-    ) -> Result<&'a ConsensusType<'static>, ClientModuleNotFound> {
+        client_type: &ClientType,
+    ) -> Result<&'a ConsensusType, ClientModuleNotFound> {
         self.client_consensus_types.get(client_type).ok_or_else(|| {
             ClientModuleNotFound::ClientTypeNotFound {
-                client_type: client_type.clone().into_owned(),
+                client_type: client_type.clone(),
             }
         })
     }
 
     pub fn chain_module<'a, 'b, 'c: 'a>(
         &'a self,
-        chain_id: &'b ChainId<'c>,
+        chain_id: &ChainId,
     ) -> Result<&'a (impl ChainModuleClient + 'a), ChainModuleNotFound> {
         Ok(self
             .chain_modules
             .get(chain_id)
-            .ok_or_else(|| ChainModuleNotFound(chain_id.clone().into_owned()))?
+            .ok_or_else(|| ChainModuleNotFound(chain_id.clone()))?
             .client())
     }
 
     pub fn consensus_module<'a, 'b, 'c: 'a>(
         &'a self,
-        chain_id: &'b ChainId<'c>,
+        chain_id: &ChainId,
     ) -> Result<&'a (impl ConsensusModuleClient + 'a), ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
             .get(chain_id)
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))?
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone()))?
             .client())
     }
 
     pub fn client_module<'a, 'b, 'c: 'a>(
         &'a self,
-        client_type: &'b ClientType<'c>,
-        ibc_interface: &'b IbcInterface<'c>,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
     ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
         match self.client_modules.get(client_type) {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
                 Some(client_module) => Ok(client_module.client()),
                 None => Err(ClientModuleNotFound::IbcInterfaceNotFound {
-                    client_type: client_type.clone().into_owned(),
-                    ibc_interface: ibc_interface.clone().into_owned(),
+                    client_type: client_type.clone(),
+                    ibc_interface: ibc_interface.clone(),
                 }),
             },
             None => Err(ClientModuleNotFound::ClientTypeNotFound {
-                client_type: client_type.clone().into_owned(),
+                client_type: client_type.clone(),
             }),
         }
     }
@@ -716,7 +716,7 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for chain `{0}`")]
-pub struct ChainModuleNotFound(pub ChainId<'static>);
+pub struct ChainModuleNotFound(pub ChainId);
 
 impl From<ChainModuleNotFound> for QueueError {
     fn from(value: ChainModuleNotFound) -> Self {
@@ -738,7 +738,7 @@ impl From<ChainModuleNotFound> for jsonrpsee::core::client::Error {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for consensus on chain `{0}`")]
-pub struct ConsensusModuleNotFound(pub ChainId<'static>);
+pub struct ConsensusModuleNotFound(pub ChainId);
 
 impl From<ConsensusModuleNotFound> for QueueError {
     fn from(value: ConsensusModuleNotFound) -> Self {
@@ -761,15 +761,15 @@ impl From<ConsensusModuleNotFound> for ErrorObjectOwned {
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ClientModuleNotFound {
     #[error("no module loaded for client type `{}`", client_type)]
-    ClientTypeNotFound { client_type: ClientType<'static> },
+    ClientTypeNotFound { client_type: ClientType },
     #[error(
         "no module loaded supporting IBC interface `{}` and client type `{}`",
         client_type,
         ibc_interface
     )]
     IbcInterfaceNotFound {
-        client_type: ClientType<'static>,
-        ibc_interface: IbcInterface<'static>,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
     },
 }
 

@@ -307,7 +307,7 @@ impl ClientModuleServer for Module {
         &self,
         _: &Extensions,
         client_state: Bytes,
-        _client_type: ClientType<'static>,
+        _client_type: ClientType,
     ) -> RpcResult<Bytes> {
         Ok(client_state)
     }
@@ -317,7 +317,7 @@ impl ClientModuleServer for Module {
         &self,
         _: &Extensions,
         consensus_state: Bytes,
-        _client_type: ClientType<'static>,
+        _client_type: ClientType,
     ) -> RpcResult<Bytes> {
         Ok(consensus_state)
     }

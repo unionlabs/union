@@ -12,8 +12,8 @@ use voyager_message::core::ChainId;
 
 #[derive(Debug)]
 pub struct HandshakeCmd {
-    pub chain_a: ChainId<'static>,
-    pub chain_b: ChainId<'static>,
+    pub chain_a: ChainId,
+    pub chain_b: ChainId,
 
     pub ty: HandshakeType,
 }

@@ -197,7 +197,7 @@ pub struct MakeBatchTransaction {
 }
 
 impl MakeBatchTransaction {
-    pub fn call(self, chain_id: ChainId<'static>, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
+    pub fn call(self, chain_id: ChainId, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
         }

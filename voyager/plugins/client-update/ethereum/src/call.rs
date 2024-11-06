@@ -13,5 +13,5 @@ pub enum ModuleCall {
 pub struct FetchUpdate {
     pub from_height: Height,
     pub to_height: Height,
-    pub counterparty_chain_id: ChainId<'static>,
+    pub counterparty_chain_id: ChainId,
 }

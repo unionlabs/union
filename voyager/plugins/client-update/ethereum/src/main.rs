@@ -48,7 +48,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub chain_spec: PresetBaseKind,
 
@@ -61,7 +61,7 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub chain_spec: PresetBaseKind,
 
@@ -74,7 +74,7 @@ pub struct Config {
     pub eth_beacon_rpc_api: String,
 }
 
-fn plugin_name(chain_id: &ChainId<'_>) -> String {
+fn plugin_name(chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
     format!("{PLUGIN_NAME}/{}", chain_id)
@@ -258,7 +258,7 @@ impl Module {
         &self,
         update_from: Height,
         update_to: Height,
-        counterparty_chain_id: ChainId<'static>,
+        counterparty_chain_id: ChainId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         let finality_update = self.beacon_api_client.finality_update().await.unwrap().data;
 
