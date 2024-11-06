@@ -85,7 +85,7 @@ impl Call {
 
 #[model]
 pub struct FetchBlockRange {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub from_height: Height,
     pub to_height: Height,
 }
@@ -107,7 +107,7 @@ pub struct FetchBlockRange {
 /// still hold.
 #[model]
 pub struct FetchBlocks {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub start_height: Height,
 }
 
@@ -126,8 +126,8 @@ pub struct FetchBlocks {
 /// be used to build the actual [`MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {
-    pub chain_id: ChainId<'static>,
-    pub counterparty_chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
+    pub counterparty_chain_id: ChainId,
     pub update_from: Height,
     pub update_to: Height,
 }
@@ -136,7 +136,7 @@ pub struct FetchUpdateHeaders {
 #[model]
 pub struct MakeMsgCreateClient {
     /// The chain to create the client on.
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     /// The height of the counterparty that the client will trust. The
     /// `SelfClientState` and `SelfConsensusState` will be queried at this
     /// height.
@@ -147,21 +147,21 @@ pub struct MakeMsgCreateClient {
     /// [`ClientInfo::metadata`].
     pub metadata: Value,
     /// The chain to create a client of.
-    pub counterparty_chain_id: ChainId<'static>,
+    pub counterparty_chain_id: ChainId,
     /// The IBC interface to create the client on.
-    pub ibc_interface: IbcInterface<'static>,
+    pub ibc_interface: IbcInterface,
     /// The type of client to create.
-    pub client_type: ClientType<'static>,
+    pub client_type: ClientType,
 }
 
 #[model]
 pub struct MakeMsgConnectionOpenTry {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub connection_open_init_event: crate::data::ConnectionOpenInit,
 }
@@ -169,11 +169,11 @@ pub struct MakeMsgConnectionOpenTry {
 #[model]
 pub struct MakeMsgConnectionOpenAck {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub connection_open_try_event: crate::data::ConnectionOpenTry,
 }
@@ -181,11 +181,11 @@ pub struct MakeMsgConnectionOpenAck {
 #[model]
 pub struct MakeMsgConnectionOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub connection_open_ack_event: crate::data::ConnectionOpenAck,
 }
@@ -193,11 +193,11 @@ pub struct MakeMsgConnectionOpenConfirm {
 #[model]
 pub struct MakeMsgChannelOpenTry {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub channel_open_init_event: crate::data::ChannelOpenInit,
 }
@@ -205,11 +205,11 @@ pub struct MakeMsgChannelOpenTry {
 #[model]
 pub struct MakeMsgChannelOpenAck {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub channel_open_try_event: crate::data::ChannelOpenTry,
 }
@@ -217,11 +217,11 @@ pub struct MakeMsgChannelOpenAck {
 #[model]
 pub struct MakeMsgChannelOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub channel_open_ack_event: crate::data::ChannelOpenAck,
 }
@@ -229,11 +229,11 @@ pub struct MakeMsgChannelOpenConfirm {
 #[model]
 pub struct MakeMsgRecvPacket {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub send_packet_event: crate::data::SendPacket,
 }
@@ -241,25 +241,25 @@ pub struct MakeMsgRecvPacket {
 #[model]
 pub struct MakeMsgAcknowledgement {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: ChainId<'static>,
+    pub origin_chain_id: ChainId,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: ChainId<'static>,
+    pub target_chain_id: ChainId,
     /// The original event that was emitted on the origin chain.
     pub write_acknowledgement_event: crate::data::WriteAcknowledgement,
 }
 
 #[model]
 pub struct WaitForHeight {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub height: Height,
     pub finalized: bool,
 }
 
 #[model]
 pub struct WaitForTimestamp {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     /// THIS IS NANOSECONDS
     pub timestamp: i64,
     pub finalized: bool,
@@ -269,7 +269,7 @@ pub struct WaitForTimestamp {
 /// `.height`.
 #[model]
 pub struct WaitForTrustedHeight {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub client_id: ClientId,
     pub height: Height,
 }
@@ -1003,11 +1003,11 @@ async fn make_msg_acknowledgement(
  )]
 async fn make_msg_create_client(
     ctx: &Context,
-    counterparty_chain_id: ChainId<'static>,
+    counterparty_chain_id: ChainId,
     height: QueryHeight,
-    chain_id: ChainId<'static>,
-    client_type: ClientType<'static>,
-    ibc_interface: IbcInterface<'_>,
+    chain_id: ChainId,
+    client_type: ClientType,
+    ibc_interface: IbcInterface,
     metadata: Value,
 ) -> Result<Op<VoyagerMessage>, QueueError> {
     let height = ctx
@@ -1098,8 +1098,8 @@ async fn make_msg_create_client(
 )]
 async fn mk_connection_handshake_state_and_proofs(
     ctx: &Context,
-    origin_chain_id: ChainId<'static>,
-    target_chain_id: ChainId<'static>,
+    origin_chain_id: ChainId,
+    target_chain_id: ChainId,
     client_id: ClientId,
     counterparty_client_id: ClientId,
     connection_id: ConnectionId,

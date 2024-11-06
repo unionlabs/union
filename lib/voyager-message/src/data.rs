@@ -67,11 +67,11 @@ impl Data {
 #[model]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     /// The underlying client of this event, on [`Self::chain_id`].
     pub client_info: ClientInfo,
     /// The chain on the other end of this IBC event.
-    pub counterparty_chain_id: ChainId<'static>,
+    pub counterparty_chain_id: ChainId,
     pub tx_hash: H256,
     /// The "provable height" of the event. This is the minimum height at which
     /// the effect of the IBC action that caused this event is provable in
@@ -216,14 +216,14 @@ impl IbcMessage {
 #[model]
 pub struct CreateClient {
     pub client_id: ClientId,
-    pub client_type: ClientType<'static>,
+    pub client_type: ClientType,
     pub consensus_height: Height,
 }
 
 #[model]
 pub struct UpdateClient {
     pub client_id: ClientId,
-    pub client_type: ClientType<'static>,
+    pub client_type: ClientType,
     pub consensus_heights: Vec<Height>,
 }
 
@@ -404,7 +404,7 @@ pub struct UnfinalizedTrustedClientState {
 #[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct IbcState<P: IbcPath> {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub path: P,
     /// The height that the state was read at.
     pub height: Height,
@@ -476,14 +476,14 @@ pub struct EncodedHeader {
 
 #[model]
 pub struct WithChainId<T> {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub message: T,
 }
 
 #[model]
 pub struct MsgCreateClientData {
     pub msg: MsgCreateClient,
-    pub client_type: ClientType<'static>,
+    pub client_type: ClientType,
 }
 
 pub fn log_msg(chain_id: &str, effect: &IbcMessage) {

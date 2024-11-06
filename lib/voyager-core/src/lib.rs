@@ -20,7 +20,7 @@ pub struct IbcInterface;
 
 /// Well-known IBC interfaces, defined as constants for reusability and to allow
 /// for pattern matching.
-impl IbcInterface<'static> {
+impl IbcInterface {
     /// Native light clients in ibc-go, through the client v1 router. This
     /// entrypoint uses protobuf [`Any`] wrapping to route to the correct
     /// module, such as "/ibc.lightclients.tendermint.v1.ClientState" for native
@@ -58,7 +58,7 @@ pub struct ClientType;
 
 /// Well-known client types, defined as constants for reusability and to allow
 /// for pattern matching.
-impl ClientType<'static> {
+impl ClientType {
     /// A client tracking [CometBLS] consensus, verified by manually verifying the state transition.
     ///
     /// NOTE: This is currently unused. See <https://github.com/unionlabs/union/issues/3066> for more information.
@@ -115,7 +115,7 @@ pub struct ConsensusType;
 
 /// Well-known consensus types, defined as constants for reusability and to allow
 /// for pattern matching.
-impl ConsensusType<'static> {
+impl ConsensusType {
     /// [CometBLS] consensus.
     ///
     /// [CometBLS]: https://github.com/unionlabs/cometbls
@@ -180,8 +180,8 @@ pub struct ChainId;
 /// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
 #[model]
 pub struct ClientInfo {
-    pub client_type: ClientType<'static>,
-    pub ibc_interface: IbcInterface<'static>,
+    pub client_type: ClientType,
+    pub ibc_interface: IbcInterface,
     /// Additional metadata about this client.
     ///
     /// This is currently only used for threading the checksum for ibc-go
@@ -198,7 +198,7 @@ pub struct ClientStateMeta {
     pub height: Height,
 
     /// The chain id of the counterparty chain this client tracks.
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 }
 
 #[model]
@@ -234,65 +234,21 @@ macro_rules! str_newtype {
         // keeping it here for clarity
         #[serde(transparent)]
         #[debug("{}({:?})", stringify!($Struct), self.0)]
-        $vis struct $Struct<'a>(#[doc(hidden)] ::std::borrow::Cow<'a, str>);
+        $vis struct $Struct(#[doc(hidden)] ::std::borrow::Cow<'static, str>);
 
-        impl<'a> ::core::fmt::Display for $Struct<'a> {
+        impl ::core::fmt::Display for $Struct {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::Display::fmt(&self.0, f)
             }
         }
 
         #[allow(unused)]
-        impl<'a> $Struct<'a> {
+        impl $Struct {
             /// Construct a new [`
             #[doc = stringify!($Struct)]
             /// `].
-            ///
-            /// This will capture the lifetime of the passed in value:
-            ///
-            /// ```
-            /// # use voyager_core::*;
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'static> = ",
-                stringify!($Struct),
-                "::new(\"static string\");"
-            )]
-            /// let owned_string: String = "owned string".into();
-            ///
-            /// // not static
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'_> = ",
-                stringify!($Struct),
-                "::new(&owned_string);"
-            )]
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'static> = ",
-                stringify!($Struct),
-                "::new(owned_string);"
-            )]
-            pub fn new(s: impl Into<::std::borrow::Cow<'a, str>>) -> Self {
+            pub fn new(s: impl Into<::std::borrow::Cow<'static, str>>) -> Self {
                 Self(s.into())
-            }
-
-            /// Convert this [`
-            #[doc = concat!(stringify!($Struct))]
-            /// `] into an owned version of itself.
-            ///
-            /// This will allocate if the contained value is not already on the heap even if `'a == 'static`.
-            #[must_use = concat!("converting to an owned version of ", stringify!($Struct), " has no effect other than possibly allocating, if the returned value is not needed then the call to this method can be removed altogether and the value dropped directly")]
-            pub fn into_owned(self) -> $Struct<'static> {
-                use std::borrow::Cow;
-
-                $Struct(match self.0 {
-                    Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
-                    Cow::Owned(x) => Cow::Owned(x),
-                })
             }
 
             /// Extracts a string slice containing the entire contained value.
@@ -300,36 +256,9 @@ macro_rules! str_newtype {
             pub fn as_str(&self) -> &str {
                 self.0.as_ref()
             }
-
-
-            /// Borrow this [`
-            #[doc = stringify!($Struct)]
-            /// `], returning a new owned value pointing to the same data.
-            ///
-            /// ```
-            /// # use voyager_core::*;
-            #[doc = concat!("let t = ", stringify!($Struct), "::new_static(\"static\");")]
-            ///
-            /// takes_ownership(t.borrow());
-            /// takes_ownership(t);
-            ///
-            #[doc = concat!("fn takes_ownership<'a>(c: ", stringify!($Struct), "<'a>) {}")]
-            /// ```
-            #[must_use = "borrowing the inner value has no effect"]
-            pub fn borrow<'b>(&'a self) -> $Struct<'b>
-            where
-                'a: 'b,
-            {
-                use std::borrow::Cow;
-
-                match self.0 {
-                    Cow::Borrowed(s) => Self(Cow::Borrowed(s)),
-                    Cow::Owned(ref s) => Self(Cow::Borrowed(s.as_str())),
-                }
-            }
         }
 
-        impl $Struct<'static> {
+        impl $Struct {
             /// `const`-friendly version of [`Self::new`].
             #[must_use = concat!("constructing a ", stringify!($Struct), " has no effect")]
             pub const fn new_static(ibc_interface: &'static str) -> Self {

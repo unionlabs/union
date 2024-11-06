@@ -86,11 +86,7 @@ impl Server {
     }
 
     #[instrument(skip_all, fields(%height, %chain_id))]
-    pub async fn query_height(
-        &self,
-        chain_id: &ChainId<'_>,
-        height: QueryHeight,
-    ) -> RpcResult<Height> {
+    pub async fn query_height(&self, chain_id: &ChainId, height: QueryHeight) -> RpcResult<Height> {
         match height {
             QueryHeight::Latest => {
                 let latest_height = self
@@ -239,7 +235,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, finalized))]
     pub async fn query_latest_height(
         &self,
-        chain_id: &ChainId<'static>,
+        chain_id: &ChainId,
         finalized: bool,
     ) -> RpcResult<Height> {
         debug!("querying latest height");
@@ -264,7 +260,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, finalized))]
     pub async fn query_latest_timestamp(
         &self,
-        chain_id: &ChainId<'static>,
+        chain_id: &ChainId,
         finalized: bool,
     ) -> RpcResult<i64> {
         debug!("querying latest timestamp");
@@ -286,7 +282,7 @@ impl Server {
     #[instrument(skip_all, fields(chain_id, client_id))]
     pub async fn client_info(
         &self,
-        chain_id: &ChainId<'static>,
+        chain_id: &ChainId,
         client_id: ClientId,
     ) -> RpcResult<ClientInfo> {
         debug!("fetching client info");
@@ -312,7 +308,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, height = %at, %client_id))]
     pub async fn client_meta(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         at: QueryHeight,
         client_id: ClientId,
     ) -> RpcResult<ClientStateMeta> {
@@ -361,7 +357,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, %path, %height))]
     pub async fn query_ibc_proof(
         &self,
-        chain_id: &ChainId<'_>,
+        chain_id: &ChainId,
         height: Height,
         path: Path,
         // ibc_store_format: IbcStoreFormat<'static>,
@@ -397,7 +393,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn self_client_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: Height,
     ) -> RpcResult<SelfClientState> {
         debug!("querying self client state");
@@ -422,7 +418,7 @@ impl Server {
     #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn self_consensus_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
         debug!("querying self consensus state");
@@ -450,8 +446,8 @@ impl Server {
     #[instrument(skip_all, fields(%client_type, %ibc_interface, %proof))]
     pub async fn encode_proof(
         &self,
-        client_type: &ClientType<'static>,
-        ibc_interface: &IbcInterface<'static>,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
         proof: Value,
     ) -> RpcResult<Bytes> {
         debug!("encoding proof");
@@ -476,8 +472,8 @@ impl Server {
     #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn decode_client_state_meta(
         &self,
-        client_type: &ClientType<'static>,
-        ibc_interface: &IbcInterface<'static>,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
         debug!("decoding client state meta");
@@ -505,8 +501,8 @@ impl Server {
     #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn decode_client_state(
         &self,
-        client_type: &ClientType<'static>,
-        ibc_interface: &IbcInterface<'static>,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
         client_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
@@ -521,8 +517,8 @@ impl Server {
     #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn decode_consensus_state(
         &self,
-        client_type: &ClientType<'static>,
-        ibc_interface: &IbcInterface<'static>,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
@@ -538,7 +534,7 @@ impl Server {
     //     P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable,
     // >(
     //     &self,
-    //     chain_id: &ChainId<'_>,
+    //     chain_id: &ChainId,
     //     at: Height,
     //     path: P,
     // ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
@@ -574,25 +570,17 @@ impl VoyagerRpcServer for Server {
         Ok(self.modules()?.info())
     }
 
-    async fn query_latest_height(
-        &self,
-        chain_id: ChainId<'static>,
-        finalized: bool,
-    ) -> RpcResult<Height> {
+    async fn query_latest_height(&self, chain_id: ChainId, finalized: bool) -> RpcResult<Height> {
         self.query_latest_height(&chain_id, finalized).await
     }
 
-    async fn query_latest_timestamp(
-        &self,
-        chain_id: ChainId<'static>,
-        finalized: bool,
-    ) -> RpcResult<i64> {
+    async fn query_latest_timestamp(&self, chain_id: ChainId, finalized: bool) -> RpcResult<i64> {
         self.query_latest_timestamp(&chain_id, finalized).await
     }
 
     async fn query_client_prefix(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         raw_client_id: u32,
     ) -> RpcResult<String> {
         self.modules()?
@@ -602,18 +590,14 @@ impl VoyagerRpcServer for Server {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    async fn client_info(
-        &self,
-        chain_id: ChainId<'static>,
-        client_id: ClientId,
-    ) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, chain_id: ChainId, client_id: ClientId) -> RpcResult<ClientInfo> {
         self.client_info(&chain_id, client_id).await
     }
 
     // #[instrument(skip_all, fields(client_id))]
     // async fn client_type_ibc_store_format(
     //     &self,
-    //     client_type: ClientType<'static>,
+    //     client_type: ClientType,
     // ) -> RpcResult<IbcStoreFormat<'static>> {
     //     Ok(self
     //         .modules()?
@@ -623,7 +607,7 @@ impl VoyagerRpcServer for Server {
 
     async fn client_meta(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         at: QueryHeight,
         client_id: ClientId,
     ) -> RpcResult<ClientStateMeta> {
@@ -632,7 +616,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_client_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         client_id: ClientId,
     ) -> RpcResult<IbcState<Bytes>> {
@@ -652,7 +636,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_client_consensus_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         client_id: ClientId,
         trusted_height: Height,
@@ -673,7 +657,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_connection(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         connection_id: ConnectionId,
     ) -> RpcResult<IbcState<Option<ConnectionEnd>>> {
@@ -693,7 +677,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_channel(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -714,7 +698,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_commitment(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -736,7 +720,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_acknowledgement(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -758,7 +742,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_receipt(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -780,7 +764,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_next_sequence_send(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -801,7 +785,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_next_sequence_recv(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -822,7 +806,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_next_sequence_ack(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -843,7 +827,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_next_connection_sequence(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<IbcState<u64>> {
         let height = self.query_height(&chain_id, height).await?;
@@ -862,7 +846,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_next_client_sequence(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<IbcState<u64>> {
         let height = self.query_height(&chain_id, height).await?;
@@ -881,7 +865,7 @@ impl VoyagerRpcServer for Server {
 
     async fn query_ibc_proof(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
         path: Path,
         // ibc_store_format: IbcStoreFormat<'static>,
@@ -896,7 +880,7 @@ impl VoyagerRpcServer for Server {
 
     async fn self_client_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState> {
         let height = self.query_height(&chain_id, height).await?;
@@ -906,7 +890,7 @@ impl VoyagerRpcServer for Server {
 
     async fn self_consensus_state(
         &self,
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
         self.self_consensus_state(chain_id, height).await
@@ -915,8 +899,8 @@ impl VoyagerRpcServer for Server {
     // TODO: Use valuable here
     async fn encode_proof(
         &self,
-        client_type: ClientType<'static>,
-        ibc_interface: IbcInterface<'static>,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
         proof: Value,
     ) -> RpcResult<Bytes> {
         self.encode_proof(&client_type, &ibc_interface, proof).await
@@ -925,8 +909,8 @@ impl VoyagerRpcServer for Server {
     // TODO: Use valuable here
     async fn decode_client_state_meta(
         &self,
-        client_type: ClientType<'static>,
-        ibc_interface: IbcInterface<'static>,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
         self.decode_client_state_meta(&client_type, &ibc_interface, client_state)
@@ -935,8 +919,8 @@ impl VoyagerRpcServer for Server {
 
     async fn decode_client_state(
         &self,
-        client_type: ClientType<'static>,
-        ibc_interface: IbcInterface<'static>,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
         client_state: Bytes,
     ) -> RpcResult<Value> {
         self.decode_client_state(&client_type, &ibc_interface, client_state)
@@ -945,8 +929,8 @@ impl VoyagerRpcServer for Server {
 
     async fn decode_consensus_state(
         &self,
-        client_type: ClientType<'static>,
-        ibc_interface: IbcInterface<'static>,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
         self.decode_consensus_state(&client_type, &ibc_interface, consensus_state)
@@ -964,7 +948,7 @@ pub(crate) fn fatal_error(t: impl core::error::Error) -> ErrorObjectOwned {
 
 // #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // struct StateQuery {
-//     chain_id: ChainId<'static>,
+//     chain_id: ChainId,
 //     height: Height,
 //     kind: StateQueryKind,
 // }

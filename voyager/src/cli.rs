@@ -66,7 +66,7 @@ pub enum Command {
     /// Construct a `FetchBlocks` op to send to the specified chain.
     InitFetch {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
-        chain_id: ChainId<'static>,
+        chain_id: ChainId,
         /// The height to start fetching blocks at.
         #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
@@ -92,7 +92,7 @@ pub enum Command {
     Msg(MsgCmd),
     // Query {
     //     #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
-    //     on: ChainId<'static>,
+    //     on: ChainId,
     //     #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
     //     height: QueryHeight,
     //     #[command(subcommand)]
@@ -196,7 +196,7 @@ pub enum RpcCmd {
     Info,
     ClientState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-        on: ChainId<'static>,
+        on: ChainId,
         client_id: ClientId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
@@ -205,7 +205,7 @@ pub enum RpcCmd {
     },
     ConsensusState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-        on: ChainId<'static>,
+        on: ChainId,
         client_id: ClientId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
@@ -219,13 +219,13 @@ pub enum RpcCmd {
 pub enum MsgCmd {
     CreateClient {
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-        on: ChainId<'static>,
+        on: ChainId,
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-        tracking: ChainId<'static>,
+        tracking: ChainId,
         #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
-        ibc_interface: IbcInterface<'static>,
+        ibc_interface: IbcInterface,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
-        client_type: ClientType<'static>,
+        client_type: ClientType,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[arg(

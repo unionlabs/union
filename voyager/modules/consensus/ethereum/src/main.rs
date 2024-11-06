@@ -32,7 +32,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub chain_spec: PresetBaseKind,
 

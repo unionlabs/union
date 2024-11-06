@@ -193,7 +193,7 @@ impl ClientModuleServer for Module {
         &self,
         _: &Extensions,
         _client_state: Bytes,
-        _client_type: ClientType<'static>,
+        _client_type: ClientType,
     ) -> RpcResult<Bytes> {
         // match client_type.as_str() {
         //     ClientType::COMETBLS_GROTH16 => {
@@ -222,7 +222,7 @@ impl ClientModuleServer for Module {
         &self,
         _: &Extensions,
         consensus_state: Bytes,
-        _client_type: ClientType<'static>,
+        _client_type: ClientType,
     ) -> RpcResult<Bytes> {
         // match client_type.as_str() {
         //     ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {

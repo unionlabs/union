@@ -33,7 +33,7 @@ use crate::{
 #[derive(clap::Args, JsonSchema)]
 pub struct ChainModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 }
 
 impl ChainModuleInfo {
@@ -61,13 +61,13 @@ fn ok<T>(t: T) -> Result<T, BoxDynError> {
 #[derive(clap::Args, JsonSchema)]
 pub struct ConsensusModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
-    pub consensus_type: ConsensusType<'static>,
+    pub consensus_type: ConsensusType,
     // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily have the same client and consensus state types?
     // /// The type of client this consensus module provides state for.
     // #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
-    // pub client_type: ClientType<'static>,
+    // pub client_type: ClientType,
 }
 
 impl ConsensusModuleInfo {
@@ -104,28 +104,28 @@ impl ConsensusModuleInfo {
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("invalid chain id: expected `{expected}` but the rpc responded with `{found}`")]
 pub struct UnexpectedChainIdError {
-    pub expected: ChainId<'static>,
+    pub expected: ChainId,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedConsensusTypeError {
-    pub expected: ConsensusType<'static>,
+    pub expected: ConsensusType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedClientTypeError {
-    pub expected: ClientType<'static>,
+    pub expected: ClientType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcInterfaceError {
-    pub expected: IbcInterface<'static>,
+    pub expected: IbcInterface,
     pub found: String,
 }
 
@@ -134,15 +134,15 @@ pub struct UnexpectedIbcInterfaceError {
 pub struct ClientModuleInfo {
     /// The client type that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
-    pub client_type: ClientType<'static>,
+    pub client_type: ClientType,
 
     /// The consensus type that this client module verifies.
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
-    pub consensus_type: ConsensusType<'static>,
+    pub consensus_type: ConsensusType,
 
     /// The IBC interface that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
-    pub ibc_interface: IbcInterface<'static>,
+    pub ibc_interface: IbcInterface,
 }
 
 impl ClientModuleInfo {
@@ -344,8 +344,8 @@ pub trait ChainModule {
 /// Raw, un-decoded client state, as queried directly from the client store.
 #[model]
 pub struct RawClientState {
-    pub client_type: ClientType<'static>,
-    pub ibc_interface: IbcInterface<'static>,
+    pub client_type: ClientType,
+    pub ibc_interface: IbcInterface,
     pub bytes: Bytes,
 }
 
@@ -394,7 +394,7 @@ pub trait ClientModule {
     async fn reencode_counterparty_client_state(
         &self,
         client_state: Bytes,
-        client_type: ClientType<'static>,
+        client_type: ClientType,
     ) -> RpcResult<Bytes>;
 
     /// Re-encode the client state of the specified counterparty client type.
@@ -406,7 +406,7 @@ pub trait ClientModule {
     async fn reencode_counterparty_consensus_state(
         &self,
         consensus_state: Bytes,
-        client_type: ClientType<'static>,
+        client_type: ClientType,
     ) -> RpcResult<Bytes>;
 
     /// Encode the header, provided as JSON.

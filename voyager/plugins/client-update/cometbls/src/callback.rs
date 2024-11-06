@@ -22,7 +22,7 @@ pub enum ModuleCallback {
 
 #[model]
 pub struct AggregateHeader {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub signed_header: SignedHeader,
 

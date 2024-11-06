@@ -39,7 +39,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     pub ibc_handler_address: Address,
 
@@ -117,7 +117,7 @@ end
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub rpc_url: String,
     pub ibc_handler_address: Address,
 
@@ -130,7 +130,7 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
     }
 }
 
-fn plugin_name(chain_id: &ChainId<'_>) -> String {
+fn plugin_name(chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
     format!("{PLUGIN_NAME}/{}", chain_id)

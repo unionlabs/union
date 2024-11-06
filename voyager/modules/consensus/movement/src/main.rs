@@ -39,7 +39,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
 
     /// The address of the IBC smart contract.
     pub ibc_handler_address: AccountAddress,

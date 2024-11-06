@@ -56,7 +56,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
@@ -66,7 +66,7 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
+    pub chain_id: ChainId,
     pub keyring: KeyringConfig,
     pub ws_url: String,
     pub grpc_url: String,
@@ -148,7 +148,7 @@ end
     }
 }
 
-fn plugin_name(chain_id: &ChainId<'_>) -> String {
+fn plugin_name(chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
     format!("{PLUGIN_NAME}/{}", chain_id)
