@@ -140,7 +140,7 @@ const menuItems = [
   });
 </script>
 
-<header class="z-[100] w-full flex items-center justify-around">
+<header class="z-[100] w-full flex justify-around">
   <div
     class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl"
   >
@@ -151,138 +151,138 @@ const menuItems = [
     >
       <img class="h-12 py-1" src="/logo-full.svg" />
     </a>
+
+    <div
+      id="overlay"
+      class="overlay sm:hidden"
+      data-description="Overlay to blur the background when the menu is open"
+    >
+    </div>
+
+    <nav class="hidden lg:block flex-1 justify-end">
+      <ul
+        class="flex flex-row gap-8 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
+      >
+        {
+          menuItems.map((menuItem) => (
+            <li>
+              <a
+                href={menuItem.url}
+                class:list={[
+                  "text-normal flex items-center gap-1.5 flex-1 uppercase font-mono font-bold",
+                  { "text-accent-500": menuItem.highlight },
+                ]}
+              >
+                {menuItem.name}
+                {menuItem.external ? (
+                  <ExternalLinkIcon class="-mt-0.5 -mr-2 size-4 text-neutral-500" />
+                ) : (
+                  ""
+                )}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://discord.union.build"
+          >
+            <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
+            <span class="sr-only">Discord</span>
+          </a>
+        </li>
+        <li>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://github.com/unionlabs/union"
+          >
+            <Icon name="tabler:brand-github-filled" color="#fff" size="20px" />
+            <span class="sr-only">GitHub</span>
+          </a>
+        </li>
+        <li>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://x.com/union_build"
+          >
+            <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
+            <span class="sr-only">X</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <nav class="lg:hidden flex flex-1 justify-end">
+      <button
+        id="menu-button"
+        name="menu-button"
+        aria-label="Menu"
+        title="Menu"
+        class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
+      >
+        <Icon name="tabler:menu-2" color="#000000" size="20px" />
+      </button>
+
+      <ul
+        id="menu-items-list"
+        class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
+      >
+        {
+          menuItems.map((menuItem) => (
+            <li class="py-2 px-4">
+              <a
+                href={menuItem.url}
+                class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono"
+              >
+                {menuItem.name}
+                {menuItem.external ? (
+                  <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" />
+                ) : (
+                  ""
+                )}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://discord.union.build"
+            class="flex gap-2 text-lg px-4 py-2 uppercase"
+          >
+            <label>Discord</label>
+            <Icon
+              name="tabler:brand-discord-filled"
+              color="#fff"
+              size="16px"
+              class="my-auto"
+            />
+          </a>
+        </li>
+        <li class="">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://x.com/union_build"
+            class="flex gap-2 text-lg px-4 py-2 uppercase"
+          >
+            <label>X.com</label>
+            <Icon
+              name="fa6-brands:x-twitter"
+              color="#fff"
+              size="18px"
+              class="my-auto"
+            />
+          </a>
+        </li>
+      </ul>
+    </nav>
   </div>
-
-  <div
-    id="overlay"
-    class="overlay sm:hidden"
-    data-description="Overlay to blur the background when the menu is open"
-  >
-  </div>
-
-  <nav class="hidden lg:block flex-1 justify-end">
-    <ul
-      class="flex flex-row gap-8 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
-    >
-      {
-        menuItems.map((menuItem) => (
-          <li>
-            <a
-              href={menuItem.url}
-              class:list={[
-                "text-normal flex items-center gap-1.5 flex-1 uppercase font-mono font-bold",
-                { "text-accent-500": menuItem.highlight },
-              ]}
-            >
-              {menuItem.name}
-              {menuItem.external ? (
-                <ExternalLinkIcon class="-mt-0.5 -mr-2 size-4 text-neutral-500" />
-              ) : (
-                ""
-              )}
-            </a>
-          </li>
-        ))
-      }
-      <li>
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://discord.union.build"
-        >
-          <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
-          <span class="sr-only">Discord</span>
-        </a>
-      </li>
-      <li>
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://github.com/unionlabs/union"
-        >
-          <Icon name="tabler:brand-github-filled" color="#fff" size="20px" />
-          <span class="sr-only">GitHub</span>
-        </a>
-      </li>
-      <li>
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://x.com/union_build"
-        >
-          <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
-          <span class="sr-only">X</span>
-        </a>
-      </li>
-    </ul>
-  </nav>
-
-  <nav class="lg:hidden flex flex-1 justify-end">
-    <button
-      id="menu-button"
-      name="menu-button"
-      aria-label="Menu"
-      title="Menu"
-      class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
-    >
-      <Icon name="tabler:menu-2" color="#000000" size="20px" />
-    </button>
-
-    <ul
-      id="menu-items-list"
-      class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
-    >
-      {
-        menuItems.map((menuItem) => (
-          <li class="py-2 px-4">
-            <a
-              href={menuItem.url}
-              class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono"
-            >
-              {menuItem.name}
-              {menuItem.external ? (
-                <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" />
-              ) : (
-                ""
-              )}
-            </a>
-          </li>
-        ))
-      }
-      <li>
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://discord.union.build"
-          class="flex gap-2 text-lg px-4 py-2 uppercase"
-        >
-          <label>Discord</label>
-          <Icon
-            name="tabler:brand-discord-filled"
-            color="#fff"
-            size="16px"
-            class="my-auto"
-          />
-        </a>
-      </li>
-      <li class="">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://x.com/union_build"
-          class="flex gap-2 text-lg px-4 py-2 uppercase"
-        >
-          <label>X.com</label>
-          <Icon
-            name="fa6-brands:x-twitter"
-            color="#fff"
-            size="18px"
-            class="my-auto"
-          />
-        </a>
-      </li>
-    </ul>
-  </nav>
 </header>
 
 <style is:inline>
