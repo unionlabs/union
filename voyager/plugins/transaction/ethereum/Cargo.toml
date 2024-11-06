@@ -10,7 +10,7 @@ bip32              = { workspace = true }
 chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
-ibc-solidity       = { workspace = true }
+ibc-solidity       = { workspace = true, features = ["rpc"] }
 itertools          = "0.13.0"
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }

@@ -14,8 +14,7 @@ message ClientState {
   bytes l1_rollup_current_l2_timestamp_slot = 6;
   bytes l1_rollup_l2_state_root_hashes_slot = 7;
   bytes l2_ibc_contract_address = 8;
-  bytes l2_ibc_contract_commitment_slot = 9;
-  .ibc.core.client.v1.Height frozen_height = 10;
+  .ibc.core.client.v1.Height frozen_height = 9;
 }
 
 message ConsensusState {

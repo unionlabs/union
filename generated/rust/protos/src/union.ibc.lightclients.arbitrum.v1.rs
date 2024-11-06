@@ -30,8 +30,6 @@ pub struct ClientState {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(bytes = "vec", tag = "10")]
     pub l2_ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "11")]
-    pub l2_ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {
     const NAME: &'static str = "ClientState";

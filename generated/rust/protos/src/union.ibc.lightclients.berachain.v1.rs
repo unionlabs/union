@@ -28,8 +28,6 @@ pub struct ClientState {
     pub upgrade_path: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// ETHEREUM
     #[prost(bytes = "vec", tag = "10")]
-    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "11")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {

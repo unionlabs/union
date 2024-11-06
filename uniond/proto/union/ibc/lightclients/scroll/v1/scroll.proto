@@ -15,7 +15,6 @@ message ClientState {
   bytes l2_finalized_state_roots_slot = 7;
   bytes l2_committed_batches_slot = 8;
   bytes ibc_contract_address = 9;
-  bytes ibc_commitment_slot = 10;
 }
 
 message ConsensusState {

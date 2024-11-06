@@ -76,19 +76,10 @@ impl IbcClient for ScrollLightClient {
             StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
         match value {
-            StorageState::Occupied(value) => do_verify_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-                value,
-            )?,
-            StorageState::Empty => do_verify_non_membership(
-                path,
-                storage_root,
-                client_state.data.ibc_commitment_slot,
-                storage_proof,
-            )?,
+            StorageState::Occupied(value) => {
+                do_verify_membership(path, storage_root, storage_proof, value)?
+            }
+            StorageState::Empty => do_verify_non_membership(path, storage_root, storage_proof)?,
         }
 
         Ok(())
@@ -278,11 +269,10 @@ impl IbcClient for ScrollLightClient {
 fn do_verify_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     storage_proof: StorageProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
-    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
+    check_commitment_key(&path, storage_proof.key)?;
 
     // we store the hash of the data, not the data itself to the commitments map
     let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
@@ -310,10 +300,9 @@ fn do_verify_membership(
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    ibc_commitment_slot: U256,
     storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
+    check_commitment_key(&path, storage_proof.key)?;
 
     scroll_verifier::verify_zktrie_storage_absence(
         storage_root,
@@ -336,7 +325,6 @@ fn check_allowed_fields(
         && subject_client_state.l2_committed_batches_slot
             == substitute_client_state.l2_committed_batches_slot
         && subject_client_state.ibc_contract_address == substitute_client_state.ibc_contract_address
-        && subject_client_state.ibc_commitment_slot == substitute_client_state.ibc_commitment_slot
 }
 
 #[cfg(test)]
@@ -405,7 +393,6 @@ mod test {
                 l2_finalized_state_roots_slot: U256::from(10),
                 l2_committed_batches_slot: U256::from(10),
                 ibc_contract_address: H160::default(),
-                ibc_commitment_slot: U256::from(10),
             },
             latest_height: height,
             checksum: H256::default(),
