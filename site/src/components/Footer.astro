@@ -1,36 +1,72 @@
 ---
-const menuItems = [
+const menuSections = [
   {
-    url: "/blog",
-    name: "Blog"
+    title: "Products",
+    items: [
+      {
+        url: "https://ceremony.union.build",
+        name: "Ceremony"
+      },
+      {
+        url: "https://app.union.build",
+        name: "Testnet App"
+      },
+      {
+        url: "https://graphql.union.build",
+        name: "GraphQL API"
+      }
+    ]
   },
   {
-    url: "/docs",
-    name: "Docs"
+    title: "Resources",
+    items: [
+      {
+        url: "https://docs.union.build",
+        name: "Docs"
+      },
+      {
+        url: "https://research.union.build",
+        name: "Research"
+      },
+      {
+        url: "https://github.com/unionlabs/whitepaper",
+        name: "Whitepaper"
+      }
+    ]
   },
   {
-    url: "/team",
-    name: "Team"
-  },
-  // {
-  //   url: "/brand-kit",
-  //   name: "Brand Kit"
-  // },
-  {
-    url: "https://discord.union.build",
-    name: "Discord"
-  },
-  {
-    url: "https://x.com/union_build",
-    name: "X.com"
-  },
-  {
-    url: "https://github.com/unionlabs/union",
-    name: "GitHub"
+    title: "About",
+    items: [
+      {
+        url: "/blog",
+        name: "Blog"
+      },
+      {
+        url: "/team",
+        name: "Team"
+      },
+      {
+        url: "/ecosystem",
+        name: "Ecosystem"
+      }
+    ]
   },
   {
-    url: "https://app.union.build",
-    name: "Testnet App"
+    title: "Social",
+    items: [
+      {
+        url: "https://x.com/union_build",
+        name: "X.com"
+      },
+      {
+        url: "https://github.com/unionlabs/union",
+        name: "GitHub"
+      },
+      {
+        url: "https://discord.union.build",
+        name: "Discord"
+      }
+    ]
   }
 ]
 
@@ -40,23 +76,33 @@ function isInternal(menuItem: { url: string }): boolean {
 ---
 
 <footer
-  class="font-jetbrains justify-center flex flex-col font-normal items-center gap-4 p-4 mt-16"
+  class="bg-neutral-950 border-t-2 border-neutral-800 font-jetbrains justify-center flex flex-col font-normal items-center gap-4 p-4 mt-16"
 >
-  <ul class="flex flex-wrap gap-x-6 gap-y-4 list-none">
+  <ul class="grid grid-cols-2 sm:grid-cols-4 gap-12 list-none py-4">
     {
-      menuItems.map((menuItem) => (
-        <li>
-          <a
-            href={menuItem.url}
-            target={isInternal(menuItem) ? "" : "_blank"}
-            rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
-            class="text-normal uppercase"
-          >
-            {menuItem.name}
-          </a>
-        </li>
+      menuSections.map((menuSection) => (
+        <section>
+          <h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">
+            {menuSection.title}
+          </h3>
+          {menuSection.items.map((menuItem) => (
+            <li>
+              <a
+                href={menuItem.url}
+                target={isInternal(menuItem) ? "" : "_blank"}
+                rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
+                class="text-normal !text-white !no-underline"
+              >
+                {menuItem.name}
+              </a>
+            </li>
+          ))}
+        </section>
       ))
     }
   </ul>
-  <p class="text-center block text-neutral-300">&copy; Union Labs</p>
+  <p class="text-center block text-white font-bold mt-4">O_______O</p>
+  <p class="text-center font-supermolot font-bold block text-neutral-500 my-4">
+    &copy; Union Labs
+  </p>
 </footer>
