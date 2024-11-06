@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-use aptos_rest_client::{aptos_api_types::Block, Transaction};
+use aptos_rest_client::{aptos_api_types::Block, error::RestError, Transaction};
 use axum::async_trait;
 use color_eyre::Result;
+use reqwest::StatusCode;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
 
@@ -141,13 +142,23 @@ impl AptosFetcherClient {
                 chunk_end_exclusive - 1
             );
 
-            let chunk_transactions = self
+            let chunk_transactions = match self
                 .provider
                 .get_transactions(chunk_start_inclusive, chunk_limit, Some(provider_id))
-                .await?
-                .response
-                .inner()
-                .clone();
+                .await
+            {
+                Ok(result) => result.response.inner().clone(),
+                Err(RestError::Http(StatusCode::PAYLOAD_TOO_LARGE, _)) => {
+                    self.fetch_transactions_one_by_one(
+                        block,
+                        chunk_start_inclusive,
+                        chunk_end_exclusive,
+                        provider_id,
+                    )
+                    .await?
+                }
+                Err(err) => return Err(err.into()),
+            };
 
             result.extend(chunk_transactions);
         }
@@ -159,6 +170,44 @@ impl AptosFetcherClient {
             block.last_version,
             result.len()
         );
+
+        Ok(result)
+    }
+
+    pub async fn fetch_transactions_one_by_one(
+        &self,
+        block: &Block,
+        chunk_start_inclusive: u64,
+        chunk_end_exclusive: u64,
+        provider_id: RpcProviderId,
+    ) -> Result<Vec<Transaction>, IndexerError> {
+        info!(
+            "{}: payload to big for chunk - versions: [{}, {}] => fetching one by one",
+            block.block_height,
+            chunk_start_inclusive,
+            chunk_end_exclusive - 1
+        );
+
+        let mut result = Vec::with_capacity(self.tx_search_max_page_size as usize);
+
+        for transaction_index in chunk_start_inclusive..chunk_end_exclusive {
+            trace!(
+                "fetching chunk for block {} - versions: [{},{}] - one by one: {}",
+                block.block_height,
+                chunk_start_inclusive,
+                chunk_end_exclusive - 1,
+                transaction_index,
+            );
+
+            result.extend(
+                self.provider
+                    .get_transactions(transaction_index, 1, Some(provider_id))
+                    .await?
+                    .response
+                    .inner()
+                    .clone(),
+            );
+        }
 
         Ok(result)
     }
