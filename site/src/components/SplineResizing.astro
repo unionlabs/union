@@ -70,7 +70,6 @@ const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps }
       canvas.style.height = `${targetHeight}px`;
       canvas.width = targetWidth * 2;
       canvas.height = targetHeight * 2;
-      console.log("canvas after resize", canvas);
     }
 
     const observer = new ResizeObserver(() => {

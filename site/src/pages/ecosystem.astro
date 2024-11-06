@@ -21,7 +21,6 @@ try {
     const allCategories = ecosystemData.flatMap(item => {
       if (Array.isArray(item.category)) {
         return item.category.map(cat => {
-          console.log(item)
           return cat.fields.category
         })
       }
