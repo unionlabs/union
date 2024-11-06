@@ -1,5 +1,7 @@
 ---
 import { Image } from "astro:assets"
+import trust from "#/assets/images/spline-holders/trust.png"
+import whale from "#/assets/images/spline-holders/diving-whale.png"
 import H1 from "../typography/h1.astro"
 import smallWhale from "../../assets/images/whale.png"
 import { renderRichText, renderTitle } from "../../lib/contentful/render.ts"
@@ -99,7 +101,11 @@ const { entries } = Astro.props
         </div>
       </div>
 
-      <div></div>
+      <Image
+              src={trust}
+              alt="Trust"
+              class="w-full object-cover h-screen"
+      />
 
       <div id="galois">
         <H1>
@@ -127,6 +133,12 @@ const { entries } = Astro.props
           <Fragment set:html={renderRichText(entries.ninthText)} />
         </div>
       </div>
+
+      <Image
+              src={whale}
+              alt="Whale"
+              class="w-full object-cover h-screen"
+      />
     </div>
 
     <div class="relative col-span-1 hidden lg:block">
