@@ -42,7 +42,7 @@ try {
   title="Ecosystem"
   text="Connecting projects, people, and products into a unified organism of interoperability."
 >
-  <ContainedSection>
+  <ContainedSection className="flex gap-4 align-center  sm:mt-3">
     <!--
       <H1>Union <span class="text-accent-500">Ecosystem</span></H1>
       <QuoteSubTitle
@@ -51,19 +51,11 @@ try {
       </QuoteSubTitle>
        -->
     <!-- search input !-->
-    <div class="mb-2">
-      <label for="searchInput"></label><input
-        type="text"
-        id="searchInput"
-        placeholder="Search by name..."
-        class="px-4 py-2 border-2 bg-transparent text-white placeholder-white font-mono"
-      />
-    </div>
 
-    <div>
+    <div class="flex-1 flex flex-col gap-4">
       <button
         id="filterToggle"
-        class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center"
+        class="pointer-events-auto bg-black flex items-center gap-2 justify-center text-white border px-6 py-2 w-fit font-semibold font-mono uppercase text-md md:text-lg"
       >
         Filter
         <svg
@@ -118,6 +110,14 @@ try {
           ))
         }
       </div>
+    </div>
+    <div>
+      <label for="searchInput"></label><input
+        type="text"
+        id="searchInput"
+        placeholder="Search..."
+        class="pointer-events-auto bg-black flex items-center justify-center text-white border px-6 py-2 w-fit font-semibold font-mono uppercase text-md md:text-lg focus:ring-0 focus:ring-offset-0"
+      />
     </div>
   </ContainedSection>
 
