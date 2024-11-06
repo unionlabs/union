@@ -182,7 +182,7 @@ impl AptosFetcherClient {
         provider_id: RpcProviderId,
     ) -> Result<Vec<Transaction>, IndexerError> {
         info!(
-            "{}: payload to big for chunk - versions: [{}, {}] => fetching one by one",
+            "{}: payload too big for chunk - versions: [{}, {}] => fetching one by one",
             block.block_height,
             chunk_start_inclusive,
             chunk_end_exclusive - 1
