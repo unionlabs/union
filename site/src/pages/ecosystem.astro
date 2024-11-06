@@ -167,6 +167,7 @@ try {
 </AnimationLayout>
 
 <script>
+  document.addEventListener("astro:page-load", () => {
     const searchInput = document.getElementById(
       "searchInput",
     ) as HTMLInputElement;
@@ -186,8 +187,9 @@ try {
       cards.forEach((card) => {
         const name = card.querySelector("h3").textContent.toLowerCase();
         const categoryElements = card.querySelectorAll("#card-cat");
-        const categories = Array.from(categoryElements)
-          .map((el) => el.textContent.toLowerCase().trim()); // Added trim()
+        const categories = Array.from(categoryElements).map((el) =>
+          el.textContent.toLowerCase().trim(),
+        ); // Added trim()
 
         const matchesSearch = name.includes(searchTerm);
         const matchesCategory =
@@ -234,5 +236,5 @@ try {
         filterIcon.classList.remove("rotate-180");
       }
     });
-
+  });
 </script>
