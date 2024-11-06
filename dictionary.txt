@@ -1477,3 +1477,7 @@ zktrie
 zstd
 αlphα
 λpxrx
+playsinline
+oncanplay
+onloadeddata
+onloadedmetadata

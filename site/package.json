@@ -22,7 +22,6 @@
     "@contentful/rich-text-html-renderer": "^17.0.0",
     "@contentful/rich-text-links": "^17.0.0",
     "@contentful/rich-text-types": "^17.0.0",
-    "@netlify/functions": "^2.8.2",
     "@splinetool/runtime": "^1.9.36",
     "@splinetool/viewer": "^1.9.36",
     "@types/gl-matrix": "^3.2.0",
