@@ -15,6 +15,7 @@ pub struct ConnectionEnd {
     pub client_id: u32,
     pub counterparty_client_id: u32,
     pub counterparty_connection_id: ConnectionId,
+    pub version: String
 }
 
 impl TryFrom<ibc_solidity::ibc::Connection> for ConnectionEnd {

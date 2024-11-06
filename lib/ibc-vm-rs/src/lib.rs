@@ -1,3 +1,5 @@
+use core::str::FromStr;
+
 use frame_support_procedural::PartialEqNoBound;
 use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
@@ -15,7 +17,7 @@ use types::{
     connection::ConnectionState,
 };
 use unionlabs::{
-    encoding::{Decode, Encode, Proto},
+    encoding::{Decode, DecodeErrorOf, Encode, Encoding, Proto},
     ibc::core::{
         channel::{self, order::Order, packet::Packet},
         client::height::Height,
@@ -123,8 +125,27 @@ pub enum IbcError {
     IntentOrderedPacket,
 }
 
+pub enum IbcVersion {
+    V1,
+    Union,
+}
+
+impl FromStr for IbcVersion {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1" => Ok(IbcVersion::V1),
+            "union" => Ok(IbcVersion::Union),
+            _ => Err(()),
+        }
+    }
+}
+
 pub trait IbcHost: Sized {
     type Error: core::fmt::Display + core::fmt::Debug + PartialEq + From<IbcError>;
+
+    fn version(&self, connection_id: ConnectionId) -> IbcVersion;
 
     fn caller(&self) -> Vec<u8>;
 
@@ -136,15 +157,26 @@ pub trait IbcHost: Sized {
 
     fn client_state(&self, client_id: &u32) -> Option<Vec<u8>>;
 
-    // this will overtake read soon
-    fn read<T>(&self, key: &[u8]) -> Option<T>;
+    fn read(&self, key: &[u8]) -> Option<Vec<u8>>;
 
-    fn read_raw(&self, key: &[u8]) -> Option<Vec<u8>>;
+    fn read_decode<T: Decode<E>, E: Encoding>(&self, key: &[u8]) -> Result<Option<T>, Self::Error>
+    where
+        Self::Error: From<DecodeErrorOf<E, T>>,
+    {
+        self.read(key)
+            .map(|value| Ok(T::decode(&value)?))
+            .transpose()
+    }
 
-    fn commit_raw(&mut self, key: &[u8], value: Vec<u8>) -> Result<(), Self::Error>;
+    fn commit(&mut self, key: &[u8], value: Vec<u8>) -> Result<(), Self::Error>;
 
-    // TODO(aeryz): generic over encoding
-    fn commit<T>(&mut self, key: &[u8], value: T) -> Result<(), Self::Error>;
+    fn commit_encode<T: Encode<E>, E: Encoding>(
+        &mut self,
+        key: &[u8],
+        value: T,
+    ) -> Result<(), Self::Error> {
+        self.commit(key, value.encode())
+    }
 
     fn delete(&mut self, key: &Path) -> Result<(), Self::Error>;
 
