@@ -935,8 +935,11 @@ omit
 omnichain
 omniflix
 onboarded
+oncanplay
 oneof
 oneshot
+onloadeddata
+onloadedmetadata
 openapi
 openapiv
 opsz
@@ -984,6 +987,7 @@ pkey
 pkgconfig
 pkgs
 planq
+playsinline
 plpgsql
 plxl
 pname
@@ -1477,7 +1481,3 @@ zktrie
 zstd
 αlphα
 λpxrx
-playsinline
-oncanplay
-onloadeddata
-onloadedmetadata
