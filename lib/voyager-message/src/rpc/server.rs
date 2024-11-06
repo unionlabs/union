@@ -21,6 +21,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter,
 };
+use voyager_core::IbcVersionId;
 
 // use valuable::Valuable;
 // use voyager_core::IbcStoreFormat;
@@ -32,7 +33,7 @@ use crate::{
         json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
         VoyagerRpcServer,
     },
-    FATAL_JSONRPC_ERROR_CODE,
+    IbcSpec, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[derive(Debug, Clone)]
@@ -127,108 +128,6 @@ impl ServerInner {
             .map(|x| &**x)
             .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
     }
-
-    // async fn query_state_cached<'a, T: DeserializeOwned>(
-    //     &self,
-    //     chain_id: &ChainId<'a>,
-    //     at: Height,
-    //     query: StateQuery,
-    // ) -> Result<IbcState<T>, jsonrpsee::core::client::Error> {
-    //     let fut = async {
-    //         debug!(%chain_id, path = query.as_value(), %at, "querying ibc state (not yet cached)");
-
-    //         let chain_module = self
-    //             .modules()?
-    //             .chain_module(chain_id)
-    //             .map_err(fatal_error)?;
-
-    //         match query.kind {
-    //             StateQueryKind::ClientState { client_id } => todo!(),
-    //             StateQueryKind::ClientConsensusState {
-    //                 client_id,
-    //                 trusted_height,
-    //             } => todo!(),
-    //             StateQueryKind::Connection { connection_id } => todo!(),
-    //             StateQueryKind::ChannelEnd { channel_id } => todo!(),
-    //             StateQueryKind::Commitment {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::Acknowledgement {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::Receipt {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::NextSequenceSend {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::NextSequenceRecv {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::NextSequenceAck {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::NextConnectionSequence {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //             StateQueryKind::NextClientSequence {
-    //                 channel_id,
-    //                 sequence,
-    //             } => todo!(),
-    //         }
-
-    //         RpcResult::Ok(state)
-    //     }
-    //     .instrument(info_span!("ibc state cache fetcher"));
-
-    //     let state = self
-    //         .ibc_state_cache
-    //         .0
-    //         .entry_by_ref(&query)
-    //         .or_try_insert_with(fut)
-    //         .await
-    //         .map_err(Arc::unwrap_or_clone)?;
-
-    //     let (chain_id, path, height) = key;
-
-    //     if !state.is_fresh() {
-    //         debug!(
-    //             cache = %self.ibc_state_cache.0.name().unwrap_or_default(),
-    //             key.chain_id = %chain_id,
-    //             key.path = path.as_value(),
-    //             key.height = %height,
-    //             // raw_key = %format_args!("chain_id:{chain_id};path:{path};height:{height}"),
-    //             "cache hit"
-    //         );
-    //     }
-
-    //     Ok(IbcState {
-    //         chain_id,
-    //         path,
-    //         height,
-    //         state: state.into_value(),
-    //     })
-
-    //     // Ok(
-    //     //     serde_json::from_value::<P::Value>(state.clone()).map_err(|e| {
-    //     //         ErrorObject::owned(
-    //     //             FATAL_JSONRPC_ERROR_CODE,
-    //     //             format!("unable to deserialize state: {}",
-    //     // ErrorReporter(e)),             Some(json!({
-    //     //                 "path": path,
-    //     //                 "state": state
-    //     //             })),
-    //     //         )
-    //     //     })?,
-    //     // )
-    // }
 }
 
 impl Server {
@@ -354,14 +253,13 @@ impl Server {
         Ok(meta)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %path, %height))]
-    pub async fn query_ibc_proof(
+    // #[instrument(skip_all, fields(%chain_id, %path, %height))]
+    pub async fn query_ibc_proof<V: IbcSpec>(
         &self,
         chain_id: &ChainId,
         height: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
-    ) -> RpcResult<IbcProof> {
+        path: V::StorePath,
+    ) -> RpcResult<V::StoreValue> {
         debug!("fetching ibc state");
 
         let chain_module = self
@@ -655,220 +553,12 @@ impl VoyagerRpcServer for Server {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    async fn query_connection(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        connection_id: ConnectionId,
-    ) -> RpcResult<IbcState<Option<ConnectionEnd>>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_connection(height, connection_id)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_channel(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<IbcState<Option<Channel>>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_channel(height, port_id, channel_id)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_commitment(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<IbcState<Option<H256>>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_commitment(height, port_id, channel_id, sequence)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_acknowledgement(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<IbcState<Option<H256>>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_acknowledgement(height, port_id, channel_id, sequence)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_receipt(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<IbcState<bool>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_receipt(height, port_id, channel_id, sequence)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_next_sequence_send(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<IbcState<u64>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_next_sequence_send(height, port_id, channel_id)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_next_sequence_recv(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<IbcState<u64>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_next_sequence_recv(height, port_id, channel_id)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_next_sequence_ack(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<IbcState<u64>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_next_sequence_ack(height, port_id, channel_id)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_next_connection_sequence(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-    ) -> RpcResult<IbcState<u64>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_next_connection_sequence(height)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
-    async fn query_next_client_sequence(
-        &self,
-        chain_id: ChainId,
-        height: QueryHeight,
-    ) -> RpcResult<IbcState<u64>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        self.modules()?
-            .chain_module(&chain_id)?
-            .query_next_client_sequence(height)
-            .await
-            .map(|state| IbcState {
-                chain_id,
-                height,
-                state,
-            })
-            .map_err(json_rpc_error_to_error_object)
-    }
-
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,
         height: QueryHeight,
         path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
+        ibc_version_id: IbcVersionId<'static>,
     ) -> RpcResult<IbcProof> {
         let height = self.query_height(&chain_id, height).await?;
 

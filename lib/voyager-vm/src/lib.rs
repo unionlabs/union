@@ -402,6 +402,16 @@ pub enum QueueError {
     Retry(#[source] BoxDynError),
 }
 
+impl QueueError {
+    pub fn fatal(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Fatal(Box::new(e))
+    }
+
+    pub fn retry(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Retry(Box::new(e))
+    }
+}
+
 pub trait CallT<T: QueueMessage> {
     fn process(self, store: &T::Context) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }

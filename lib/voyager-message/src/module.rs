@@ -15,7 +15,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     traits::Member,
 };
-use voyager_core::ConsensusType;
+use voyager_core::{ConsensusType, IbcSpec, IbcVersionId};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
@@ -41,6 +41,7 @@ impl ChainModuleInfo {
         format!("chain/{}", self.chain_id)
     }
 
+    // TODO: Add this for ibc_version_id
     pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
         if chain_id.as_ref() != self.chain_id.as_str() {
             Err(UnexpectedChainIdError {
@@ -339,6 +340,22 @@ pub trait ChainModule {
         path: Path,
         // ibc_store_format: IbcStoreFormat<'static>,
     ) -> RpcResult<Value>;
+}
+
+#[rpc(client, server, client_bounds(), server_bounds(), namespace = "proof")]
+pub trait ProofModule<V: IbcSpec> {
+    /// Query a proof of IBC state on this chain, at the specified [`Height`],
+    /// returning the proof as a JSON [`Value`].
+    #[method(name = "queryIbcProof", with_extensions)]
+    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<V::StoreValue>;
+}
+
+#[rpc(client, server, client_bounds(), server_bounds(), namespace = "state")]
+pub trait StateModule<V: IbcSpec> {
+    /// Query a proof of IBC state on this chain, at the specified [`Height`],
+    /// returning the proof as a JSON [`Value`].
+    #[method(name = "queryIbcState", with_extensions)]
+    async fn query_ibc_state(&self, at: Height, path: V::StorePath) -> RpcResult<V::StoreValue>;
 }
 
 /// Raw, un-decoded client state, as queried directly from the client store.

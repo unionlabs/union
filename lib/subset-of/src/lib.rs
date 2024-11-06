@@ -6,3 +6,15 @@ pub trait SubsetOf<T>: Sized {
 
     fn into_super(self) -> T;
 }
+
+pub trait Superset: Sized {
+    fn try_into_sub<T: SubsetOf<Self>>(self) -> Result<T, Self> {
+        T::try_from_super(self)
+    }
+
+    fn from_sub<T: SubsetOf<Self>>(t: T) -> Self {
+        t.into_super()
+    }
+}
+
+impl<T> Superset for T {}
