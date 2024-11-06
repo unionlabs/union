@@ -1,10 +1,6 @@
 ---
 import ContainedSection from "../components/ContainedSection.astro"
-import EcosystemSection from "#/components/sections/EcosystemSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
-import H1 from "#/components/typography/h1.astro"
-import QuoteSubTitle from "#/components/typography/QuoteSubTitle.astro"
-import H3 from "#/components/typography/h3.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
 
@@ -55,7 +51,7 @@ try {
       </QuoteSubTitle>
        -->
     <!-- search input !-->
-    <div>
+    <div class="mb-2">
       <label for="searchInput"></label><input
         type="text"
         id="searchInput"
@@ -132,7 +128,7 @@ try {
         <a
           href={item.url}
           target="_blank"
-          class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full aspect-[3/4]"
+          class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full aspect-[3/4] ecosystem-card"
         >
           <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0" />
           <img
@@ -140,27 +136,27 @@ try {
             alt={item.name}
             class="absolute inset-0 w-full h-full object-cover object-center"
           />
-          <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
+          <div class="p-3 z-10 flex flex-col justify-end w-full h-full">
             <div class="flex flex-row items-end">
               <div class="flex flex-col gap-2 w-full items-start ">
                 <div class="flex flex-col gap-2 items-start justify-start">
                   {item.category.map((cat) => (
                     <div
-                      class="text-sm bg-white text-black uppercase font-mono font-bold px-2 py"
+                      class="text-xs bg-white whitespace-nowrap text-black uppercase font-mono font-bold px-1.5"
                       id="card-cat"
                     >
                       {cat.fields.category}
                     </div>
                   ))}
                 </div>
-                <h3 class="text-4xl uppercase font-supermolot font-bold">
+                <h3 class="text-2xl uppercase font-supermolot font-bold">
                   {item.name}
                 </h3>
               </div>
               <img
                 src={item.logo.fields.file.url}
                 alt={`${item.name} logo`}
-                class="w-24 h-24 object-contain"
+                class="w-16 h-16 object-contain"
               />
             </div>
           </div>
@@ -171,72 +167,72 @@ try {
 </AnimationLayout>
 
 <script>
-  const searchInput = document.getElementById(
-    "searchInput",
-  ) as HTMLInputElement;
-  const checkboxes = document.querySelectorAll(
-    'input[type="checkbox"]',
-  ) as NodeListOf<HTMLInputElement>;
-  const cards = document.querySelectorAll(
-    ".cards-grid > a",
-  ) as NodeListOf<HTMLDivElement>;
+    const searchInput = document.getElementById(
+      "searchInput",
+    ) as HTMLInputElement;
+    const checkboxes = document.querySelectorAll(
+      'input[type="checkbox"]',
+    ) as NodeListOf<HTMLInputElement>;
+    const cards = document.querySelectorAll(
+      ".ecosystem-card",
+    ) as NodeListOf<HTMLDivElement>;
 
-  function filterCards(): void {
-    const searchTerm = searchInput.value.toLowerCase();
-    const selectedCategories = Array.from(checkboxes)
-      .filter((cb) => cb.checked)
-      .map((cb) => cb.value.toLowerCase()); // Convert to lowercase here
+    function filterCards(): void {
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedCategories = Array.from(checkboxes)
+        .filter((cb) => cb.checked)
+        .map((cb) => cb.value.toLowerCase().trim()); // Added trim()
 
-    cards.forEach((card) => {
-      const name = card.querySelector("h3").textContent.toLowerCase();
-      const categoryElements = card.querySelectorAll("#card-cat");
-      const categories = Array.from(categoryElements).map((el) =>
-        el.textContent.toLowerCase(),
-      );
+      cards.forEach((card) => {
+        const name = card.querySelector("h3").textContent.toLowerCase();
+        const categoryElements = card.querySelectorAll("#card-cat");
+        const categories = Array.from(categoryElements)
+          .map((el) => el.textContent.toLowerCase().trim()); // Added trim()
 
-      const matchesSearch = name.includes(searchTerm);
-      const matchesCategory =
-        selectedCategories.length === 0 ||
-        categories.some((cardCat) => selectedCategories.includes(cardCat));
+        const matchesSearch = name.includes(searchTerm);
+        const matchesCategory =
+          selectedCategories.length === 0 ||
+          categories.some((cardCat) => selectedCategories.includes(cardCat));
 
-      if (matchesSearch && matchesCategory) {
-        card.classList.remove("hidden");
-      } else {
-        card.classList.add("hidden");
+        if (matchesSearch && matchesCategory) {
+          card.classList.remove("hidden");
+        } else {
+          card.classList.add("hidden");
+        }
+      });
+    }
+
+    searchInput.addEventListener("input", filterCards);
+    checkboxes.forEach((checkbox) =>
+      checkbox.addEventListener("change", filterCards),
+    );
+
+    const filterToggle = document.getElementById("filterToggle");
+    const filterContent = document.getElementById("filterContent");
+    const filterIcon = filterToggle.querySelector("svg");
+
+    filterToggle.addEventListener("click", () => {
+      filterContent.classList.toggle("hidden");
+      filterIcon.classList.toggle("rotate-180");
+    });
+
+    document.addEventListener("click", (event) => {
+      const isClickInsideFilter =
+        filterToggle.contains(event.target) ||
+        filterContent.contains(event.target);
+      if (!isClickInsideFilter && window.innerWidth < 768) {
+        filterContent.classList.add("hidden");
+        filterIcon.classList.remove("rotate-180");
       }
     });
-  }
 
-  searchInput.addEventListener("input", filterCards);
-  checkboxes.forEach((checkbox) =>
-    checkbox.addEventListener("change", filterCards),
-  );
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 1024) {
+        filterContent.classList.remove("hidden");
+      } else {
+        filterContent.classList.add("hidden");
+        filterIcon.classList.remove("rotate-180");
+      }
+    });
 
-  const filterToggle = document.getElementById("filterToggle");
-  const filterContent = document.getElementById("filterContent");
-  const filterIcon = filterToggle.querySelector("svg");
-
-  filterToggle.addEventListener("click", () => {
-    filterContent.classList.toggle("hidden");
-    filterIcon.classList.toggle("rotate-180");
-  });
-
-  document.addEventListener("click", (event) => {
-    const isClickInsideFilter =
-      filterToggle.contains(event.target) ||
-      filterContent.contains(event.target);
-    if (!isClickInsideFilter && window.innerWidth < 768) {
-      filterContent.classList.add("hidden");
-      filterIcon.classList.remove("rotate-180");
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (window.innerWidth >= 1024) {
-      filterContent.classList.remove("hidden");
-    } else {
-      filterContent.classList.add("hidden");
-      filterIcon.classList.remove("rotate-180");
-    }
-  });
 </script>

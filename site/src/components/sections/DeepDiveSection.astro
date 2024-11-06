@@ -162,31 +162,51 @@ const { entries } = Astro.props
       const container = document.getElementById("swim-container");
       const swimlane = document.getElementById("swim-lane");
 
-      window.addEventListener("scroll", () => {
-        const containerRect = container.getBoundingClientRect();
-        const swimlaneRect = swimlane.getBoundingClientRect();
+      // Check if all required elements exist
+      if (!dot || !container || !swimlane) {
+        console.warn("One or more required elements not found:", {
+          dot: !!dot,
+          container: !!container,
+          swimlane: !!swimlane
+        });
+        return;
+      }
 
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
-        const containerHeight = containerRect.height;
+      const handleScroll = () => {
+        try {
+          const containerRect = container.getBoundingClientRect();
+          const swimlaneRect = swimlane.getBoundingClientRect();
 
-        const swimlaneHeight = swimlaneRect.height;
+          const containerTop = containerRect.top;
+          const containerHeight = containerRect.height;
 
-        // Calculate how much the container is scrolled
-        const scrollPosition = Math.max(
-          0,
-          Math.min(containerHeight, window.innerHeight - containerTop),
-        );
+          const swimlaneHeight = swimlaneRect.height;
 
-        // Calculate the scroll percentage relative to the container's height
-        const scrollPercentage = scrollPosition / containerHeight;
+          const scrollPosition = Math.max(
+            0,
+            Math.min(containerHeight, window.innerHeight - containerTop)
+          );
 
-        // Calculate the new top position of the dot within the swimlane
-        const maxDotPosition = swimlaneHeight - dot.offsetHeight;
-        const newTop = scrollPercentage * maxDotPosition;
+          const scrollPercentage = scrollPosition / containerHeight;
+          const maxDotPosition = swimlaneHeight - dot.offsetHeight;
+          const newTop = scrollPercentage * maxDotPosition;
 
-        dot.style.top = `${newTop}px`;
-      });
+          dot.style.top = `${newTop}px`;
+        } catch (error) {
+          console.error("Error in scroll handler:", error);
+        }
+      };
+
+      // Add scroll event listener
+      window.addEventListener("scroll", handleScroll);
+
+      // Initial position calculation
+      handleScroll();
+
+      // Clean up the event listener when navigating away
+      document.addEventListener("astro:before-preparation", () => {
+        window.removeEventListener("scroll", handleScroll);
+      }, { once: true });
     });
   </script>
 
