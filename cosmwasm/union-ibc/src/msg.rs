@@ -6,8 +6,9 @@ use ibc_solidity::ibc::{
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck,
     MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient,
     MsgIntentPacketRecv, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
-    MsgUpdateClient,
+    MsgUpdateClient, Packet,
 };
+use unionlabs::hash::H256;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct InitMsg {}
@@ -39,4 +40,21 @@ pub enum ExecuteMsg {
     IntentPacketRecv(MsgIntentPacketRecv),
     BatchSend(MsgBatchSend),
     BatchAcks(MsgBatchAcks),
+    PacketSend(MsgSendPacket),
+    WriteAcknowledgement(MsgWriteAcknowledgement),
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct MsgWriteAcknowledgement {
+    pub channel_id: u32,
+    pub packet: Packet,
+    pub acknowledgement: Vec<u8>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct MsgSendPacket {
+    pub source_channel: u32,
+    pub timeout_height: u64,
+    pub timeout_timestamp: u64,
+    pub data: Vec<u8>,
 }

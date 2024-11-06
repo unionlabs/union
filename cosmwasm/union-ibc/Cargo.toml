@@ -22,12 +22,11 @@ cosmwasm-std    = { workspace = true, features = ["abort"] }
 cw-storage-plus = { workspace = true }
 dlmalloc        = { workspace = true, features = ["global"] }
 ethabi          = { workspace = true }
+hex             = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["serde"] }
 serde           = { workspace = true, features = ["derive"] }
+serde_json      = { workspace = true }
 sha2            = { workspace = true }
+sha3            = { workspace = true }
 thiserror       = { workspace = true }
 unionlabs       = { workspace = true, features = ["ethabi"] }
-
-[dev-dependencies]
-hex        = { workspace = true }
-serde_json = { workspace = true }

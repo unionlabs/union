@@ -8,14 +8,17 @@ use ibc_solidity::ibc::{
     Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgChannelCloseConfirm,
     MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
     MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-    MsgConnectionOpenTry, MsgCreateClient, MsgUpdateClient,
+    MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketRecv, MsgUpdateClient,
+    Packet,
 };
-use unionlabs::{ethereum::keccak256, hash::H256, uint::U256};
+use sha2::Digest as _;
+use sha3::Keccak256;
+use unionlabs::{ethereum::keccak256, hash::H256, ics24::ethabi::COMMITMENT_MAGIC, uint::U256};
 
 use crate::{
     lightclient::query::{QueryMsg as LightClientQuery, VerifyClientMessageUpdate},
     module::msg::ExecuteMsg as ModuleMsg,
-    msg::{ExecuteMsg, InitMsg},
+    msg::{ExecuteMsg, InitMsg, MsgSendPacket, MsgWriteAcknowledgement},
     query::QueryMsg,
     state::{
         CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
@@ -630,15 +633,245 @@ pub fn execute(
                     vec![],
                 )?)
         }
-        ExecuteMsg::PacketRecv(msg_packet_recv) => todo!(),
+        ExecuteMsg::PacketRecv(MsgPacketRecv {
+            packets,
+            relayerMsgs,
+            relayer,
+            proof,
+            proofHeight,
+        }) => process_receive(
+            deps,
+            env,
+            packets,
+            relayerMsgs,
+            relayer,
+            proof,
+            proofHeight,
+            false,
+        )?,
         ExecuteMsg::PacketAck(_) => todo!(),
-        ExecuteMsg::PacketTimeout(msg_packet_timeout) => todo!(),
-        ExecuteMsg::IntentPacketRecv(msg_intent_packet_recv) => todo!(),
-        ExecuteMsg::BatchSend(msg_batch_send) => todo!(),
-        ExecuteMsg::BatchAcks(msg_batch_acks) => todo!(),
+        ExecuteMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
+        ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
+            packets,
+            marketMakerMsgs,
+            marketMaker,
+            emptyProof,
+        }) => process_receive(
+            deps,
+            env,
+            packets,
+            marketMakerMsgs,
+            marketMaker,
+            emptyProof,
+            0,
+            true,
+        )?,
+        ExecuteMsg::BatchSend(_msg_batch_send) => todo!(),
+        ExecuteMsg::BatchAcks(_msg_batch_acks) => todo!(),
+        ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+            channel_id,
+            packet,
+            acknowledgement,
+        }) => {
+            // make sure the caller owns the channel
+            let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+            if port_id != info.sender {
+                return Err(ContractError::Unauthorized);
+            }
+
+            let commitment_key =
+                unionlabs::ics24::ethabi::batch_receipts_key(channel_id, commit_packet(&packet));
+
+            // the receipt must present, but ack shouldn't
+            match deps.storage.get(commitment_key.as_ref()) {
+                Some(commitment) => {
+                    if commitment != COMMITMENT_MAGIC.into_bytes() {
+                        return Err(ContractError::AlreadyAcknowledged);
+                    }
+                }
+                None => return Err(ContractError::PacketNotReceived),
+            }
+
+            store_commit(
+                deps.branch(),
+                &commitment_key,
+                &commit_ack(acknowledgement.clone()),
+            )?;
+
+            Response::new().add_event(Event::new("write_acknowledgement").add_attributes([
+                ("packet", serde_json::to_string(&packet).unwrap()),
+                ("acknowledgement", hex::encode(acknowledgement)),
+            ]))
+        }
+        ExecuteMsg::PacketSend(MsgSendPacket {
+            source_channel,
+            timeout_height,
+            timeout_timestamp,
+            data,
+        }) => {
+            if timeout_timestamp == 0 && timeout_height == 0 {
+                return Err(ContractError::TimeoutMustBeSet);
+            }
+
+            let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+            if port_id != info.sender {
+                return Err(ContractError::Unauthorized);
+            }
+
+            let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+            let sequence = generate_packet_sequence(deps.branch(), source_channel)?;
+            let packet = Packet {
+                sequence,
+                sourceChannel: source_channel,
+                destinationChannel: channel.counterpartyChannelId,
+                data: data.into(),
+                timeoutHeight: timeout_height,
+                timeoutTimestamp: timeout_timestamp,
+            };
+
+            store_commit(
+                deps.branch(),
+                &unionlabs::ics24::ethabi::batch_packets_key(
+                    source_channel,
+                    commit_packet(&packet),
+                ),
+                &COMMITMENT_MAGIC,
+            )?;
+
+            Response::new().add_event(
+                Event::new("send_packet")
+                    .add_attribute("packet", serde_json::to_string(&packet).unwrap()),
+            )
+        }
     };
 
     Ok(response)
+}
+
+fn commit_packet(packet: &Packet) -> H256 {
+    Keccak256::new()
+        .chain_update(packet.abi_encode())
+        .finalize()
+        .into()
+}
+
+fn commit_packets(packets: &[Packet]) -> H256 {
+    Keccak256::new()
+        .chain_update(packets.abi_encode())
+        .finalize()
+        .into()
+}
+
+fn process_receive(
+    mut deps: DepsMut,
+    env: Env,
+    packets: Vec<Packet>,
+    relayer_msgs: Vec<alloy::primitives::Bytes>,
+    relayer: String,
+    proof: alloy::primitives::Bytes,
+    proof_height: u64,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    if packets.is_empty() {
+        return Err(ContractError::NoPacketsReceived);
+    }
+
+    let source_channel = packets[0].sourceChannel;
+    let destination_channel = packets[0].destinationChannel;
+
+    let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
+    let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
+
+    if !intent {
+        let proof_commitment_key = match packets.len() {
+            1 => unionlabs::ics24::ethabi::batch_receipts_key(
+                source_channel,
+                commit_packet(&packets[0]),
+            ),
+            _ => unionlabs::ics24::ethabi::batch_receipts_key(
+                source_channel,
+                commit_packets(&packets),
+            ),
+        };
+
+        let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
+        #[allow(dependency_on_unit_never_type_fallback)]
+        deps.querier.query_wasm_smart(
+            &client_impl,
+            &LightClientQuery::VerifyMembership {
+                client_id: connection.clientId,
+                height: proof_height,
+                proof: proof.to_vec().into(),
+                path: proof_commitment_key.into_bytes().into(),
+                value: COMMITMENT_MAGIC.into_bytes().into(),
+            },
+        )?;
+    }
+
+    let mut events = vec![];
+    let mut messages = vec![];
+    let port_id = CHANNEL_OWNER.load(deps.storage, destination_channel)?;
+    for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
+        if packet.timeoutHeight > 0 && (env.block.height >= packet.timeoutHeight) {
+            return Err(ContractError::ReceivedTimedOutPacketHeight {
+                timeout_height: packet.timeoutHeight,
+                current_height: env.block.height,
+            });
+        }
+
+        let current_timestamp = env.block.time.nanos();
+        if packet.timeoutTimestamp != 0 && (current_timestamp >= packet.timeoutTimestamp) {
+            return Err(ContractError::ReceivedTimedOutPacketTimestamp {
+                timeout_timestamp: packet.timeoutTimestamp,
+                current_timestamp,
+            });
+        }
+
+        let commitment_key = unionlabs::ics24::ethabi::batch_receipts_key(
+            destination_channel,
+            commit_packet(&packet),
+        );
+
+        if !set_packet_receive(deps.branch(), commitment_key) {
+            if intent {
+                events.push(Event::new("recv_intent_packet").add_attributes([
+                    ("packet", serde_json::to_string(&packet).unwrap()),
+                    ("maker", relayer.clone()),
+                    // TODO(aeryz): should this be hex?
+                    ("maker_msg", hex::encode(&relayer_msg)),
+                ]));
+
+                messages.push(wasm_execute(
+                    port_id.clone(),
+                    &ModuleMsg::OnIntentRecvPacket {
+                        packet,
+                        market_maker: deps.api.addr_validate(&relayer)?,
+                        market_maker_msg: relayer_msg.to_vec().into(),
+                    },
+                    vec![],
+                )?);
+            } else {
+                events.push(Event::new("recv_packet").add_attributes([
+                    ("packet", serde_json::to_string(&packet).unwrap()),
+                    ("relayer", relayer.clone()),
+                    // TODO(aeryz): should this be hex?
+                    ("relayer_msg", hex::encode(&relayer_msg)),
+                ]));
+
+                messages.push(wasm_execute(
+                    port_id.clone(),
+                    &ModuleMsg::OnRecvPacket {
+                        packet,
+                        relayer: deps.api.addr_validate(&relayer)?,
+                        relayer_msg: relayer_msg.to_vec().into(),
+                    },
+                    vec![],
+                )?);
+            }
+        }
+    }
+
+    Ok(Response::new().add_events(events).add_messages(messages))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -689,6 +922,15 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
     keccak256(bytes)
 }
 
+fn commit_ack(ack: Vec<u8>) -> H256 {
+    merge_ack(Keccak256::new().chain_update(ack).finalize().into())
+}
+
+fn merge_ack(mut ack: H256) -> H256 {
+    ack.get_mut()[0] = 0x01;
+    ack
+}
+
 fn store_commit(deps: DepsMut, key: &H256, value: &H256) -> Result<(), ContractError> {
     deps.storage.set(key.as_ref(), value.as_ref());
     Ok(())
@@ -728,6 +970,47 @@ fn ensure_connection_state(deps: Deps, connection_id: u32) -> Result<Connection,
     } else {
         Ok(connection)
     }
+}
+
+fn ensure_channel_state(deps: Deps, channel_id: u32) -> Result<Channel, ContractError> {
+    let channel = CHANNELS.load(deps.storage, channel_id)?;
+    if channel.state != ChannelState::Open {
+        Err(ContractError::ChannelInvalidState {
+            got: channel.state,
+            expected: ChannelState::Open,
+        })
+    } else {
+        Ok(channel)
+    }
+}
+
+fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
+    if deps.storage.get(commitment_key.as_ref()).is_some() {
+        true
+    } else {
+        deps.storage
+            .set(commitment_key.as_ref(), COMMITMENT_MAGIC.as_ref());
+        false
+    }
+}
+
+fn generate_packet_sequence(deps: DepsMut, channel_id: u32) -> Result<u64, ContractError> {
+    let commitment_key = unionlabs::ics24::ethabi::next_seq_send_key(channel_id);
+    let seq = U256::from_be_bytes(
+        deps.storage
+            .get(commitment_key.as_ref())
+            .ok_or(ContractError::ChannelNotExist(channel_id))?
+            .try_into()
+            .unwrap(),
+    );
+
+    store_commit(
+        deps,
+        &commitment_key,
+        &H256::from((seq + 1.into()).to_be_bytes()),
+    )?;
+
+    Ok(seq.0.as_u128() as u64)
 }
 
 fn initialize_channel_sequences(mut deps: DepsMut, channel_id: u32) -> Result<(), ContractError> {

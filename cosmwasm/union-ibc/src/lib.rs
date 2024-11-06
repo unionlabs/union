@@ -38,4 +38,26 @@ pub enum ContractError {
         got: ChannelState,
         expected: ChannelState,
     },
+    #[error("No packets are received")]
+    NoPacketsReceived,
+    #[error("Received a timed-out packet: (timeout_height ({timeout_height}) >= current_height({current_height})")]
+    ReceivedTimedOutPacketHeight {
+        timeout_height: u64,
+        current_height: u64,
+    },
+    #[error("Received a timed-out packet: (timeout timestamp ({timeout_timestamp}) >= current timestamp({current_timestamp})")]
+    ReceivedTimedOutPacketTimestamp {
+        timeout_timestamp: u64,
+        current_timestamp: u64,
+    },
+    #[error("Caller is not the owner of the channel")]
+    Unauthorized,
+    #[error("Packet not received")]
+    PacketNotReceived,
+    #[error("Packet is already acknowledged")]
+    AlreadyAcknowledged,
+    #[error("Timeout must be set")]
+    TimeoutMustBeSet,
+    #[error("channel ({0}) does not exist")]
+    ChannelNotExist(u32),
 }
