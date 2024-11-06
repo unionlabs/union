@@ -9,6 +9,7 @@ use crate::indexer::{
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 200;
+const DEFAULT_CLIENT_TRACKING: bool = true;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -18,6 +19,7 @@ pub struct Config {
     pub urls: Vec<Url>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
+    pub client_tracking: Option<bool>,
 }
 
 impl Config {
@@ -28,7 +30,10 @@ impl Config {
             self.start_height,
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
             self.finalizer,
-            EthContext { urls: self.urls },
+            EthContext {
+                urls: self.urls,
+                client_tracking: self.client_tracking.unwrap_or(DEFAULT_CLIENT_TRACKING),
+            },
         ))
     }
 }

@@ -233,6 +233,12 @@
                   }
                 );
               };
+              options.client_tracking = mkOption {
+                type = types.nullOr types.bool;
+                description = "control if client tracking is enabled. when enabled it automatically creates client entries which registers the counterparty chain of a client.";
+                example = true;
+                default = null;
+              };
             }
           );
         };

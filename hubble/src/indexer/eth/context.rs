@@ -5,6 +5,7 @@ use url::Url;
 #[derive(Clone)]
 pub struct EthContext {
     pub urls: Vec<Url>,
+    pub client_tracking: bool,
 }
 
 impl Display for EthContext {

@@ -9,6 +9,7 @@ pub struct TmContext {
     pub grpc_urls: Vec<Url>,
     pub filter: Option<Regex>,
     pub tx_search_max_page_size: u8,
+    pub client_tracking: bool,
 }
 
 impl Display for TmContext {

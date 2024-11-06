@@ -284,7 +284,12 @@ impl FetcherClient for EthFetcherClient {
 
             tx.commit().await?;
 
-            schedule_create_client_checker(pg_pool, join_set, provider.clone(), chain_id.db);
+            if context.client_tracking {
+                info!("scheduling client tracking");
+                schedule_create_client_checker(pg_pool, join_set, provider.clone(), chain_id.db);
+            } else {
+                info!("client tracking disabled");
+            }
 
             Ok(EthFetcherClient {
                 chain_id,
