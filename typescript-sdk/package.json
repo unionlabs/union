@@ -38,20 +38,20 @@
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.38"
+    "viem": "^2.21.41"
   },
   "devDependencies": {
     "only-allow": "^1.2.1",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.12",
-    "@types/node": "^22.8.6",
+    "@types/bun": "^1.1.13",
+    "@types/node": "^22.9.0",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "vite-tsconfig-paths": "^5.0.1",
+    "vite-tsconfig-paths": "^5.1.0",
     "vitest": "^2.1.4"
   },
   "repository": {
