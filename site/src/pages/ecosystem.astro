@@ -167,72 +167,72 @@ try {
 </AnimationLayout>
 
 <script>
-    const searchInput = document.getElementById(
-      "searchInput",
-    ) as HTMLInputElement;
-    const checkboxes = document.querySelectorAll(
-      'input[type="checkbox"]',
-    ) as NodeListOf<HTMLInputElement>;
-    const cards = document.querySelectorAll(
-      ".ecosystem-card",
-    ) as NodeListOf<HTMLDivElement>;
+  const searchInput = document.getElementById(
+    "searchInput",
+  ) as HTMLInputElement;
+  const checkboxes = document.querySelectorAll(
+    'input[type="checkbox"]',
+  ) as NodeListOf<HTMLInputElement>;
+  const cards = document.querySelectorAll(
+    ".ecosystem-card",
+  ) as NodeListOf<HTMLDivElement>;
 
-    function filterCards(): void {
-      const searchTerm = searchInput.value.toLowerCase();
-      const selectedCategories = Array.from(checkboxes)
-        .filter((cb) => cb.checked)
-        .map((cb) => cb.value.toLowerCase().trim()); // Added trim()
+  function filterCards(): void {
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedCategories = Array.from(checkboxes)
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value.toLowerCase().trim()); // Added trim()
 
-      cards.forEach((card) => {
-        const name = card.querySelector("h3").textContent.toLowerCase();
-        const categoryElements = card.querySelectorAll("#card-cat");
-        const categories = Array.from(categoryElements)
-          .map((el) => el.textContent.toLowerCase().trim()); // Added trim()
+    cards.forEach((card) => {
+      const name = card.querySelector("h3").textContent.toLowerCase();
+      const categoryElements = card.querySelectorAll("#card-cat");
+      const categories = Array.from(categoryElements).map((el) =>
+        el.textContent.toLowerCase().trim(),
+      ); // Added trim()
 
-        const matchesSearch = name.includes(searchTerm);
-        const matchesCategory =
-          selectedCategories.length === 0 ||
-          categories.some((cardCat) => selectedCategories.includes(cardCat));
+      const matchesSearch = name.includes(searchTerm);
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        categories.some((cardCat) => selectedCategories.includes(cardCat));
 
-        if (matchesSearch && matchesCategory) {
-          card.classList.remove("hidden");
-        } else {
-          card.classList.add("hidden");
-        }
-      });
-    }
-
-    searchInput.addEventListener("input", filterCards);
-    checkboxes.forEach((checkbox) =>
-      checkbox.addEventListener("change", filterCards),
-    );
-
-    const filterToggle = document.getElementById("filterToggle");
-    const filterContent = document.getElementById("filterContent");
-    const filterIcon = filterToggle.querySelector("svg");
-
-    filterToggle.addEventListener("click", () => {
-      filterContent.classList.toggle("hidden");
-      filterIcon.classList.toggle("rotate-180");
-    });
-
-    document.addEventListener("click", (event) => {
-      const isClickInsideFilter =
-        filterToggle.contains(event.target) ||
-        filterContent.contains(event.target);
-      if (!isClickInsideFilter && window.innerWidth < 768) {
-        filterContent.classList.add("hidden");
-        filterIcon.classList.remove("rotate-180");
-      }
-    });
-
-    window.addEventListener("resize", () => {
-      if (window.innerWidth >= 1024) {
-        filterContent.classList.remove("hidden");
+      if (matchesSearch && matchesCategory) {
+        card.classList.remove("hidden");
       } else {
-        filterContent.classList.add("hidden");
-        filterIcon.classList.remove("rotate-180");
+        card.classList.add("hidden");
       }
     });
+  }
 
+  searchInput.addEventListener("input", filterCards);
+  checkboxes.forEach((checkbox) =>
+    checkbox.addEventListener("change", filterCards),
+  );
+
+  const filterToggle = document.getElementById("filterToggle");
+  const filterContent = document.getElementById("filterContent");
+  const filterIcon = filterToggle.querySelector("svg");
+
+  filterToggle.addEventListener("click", () => {
+    filterContent.classList.toggle("hidden");
+    filterIcon.classList.toggle("rotate-180");
+  });
+
+  document.addEventListener("click", (event) => {
+    const isClickInsideFilter =
+      filterToggle.contains(event.target) ||
+      filterContent.contains(event.target);
+    if (!isClickInsideFilter && window.innerWidth < 768) {
+      filterContent.classList.add("hidden");
+      filterIcon.classList.remove("rotate-180");
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 1024) {
+      filterContent.classList.remove("hidden");
+    } else {
+      filterContent.classList.add("hidden");
+      filterIcon.classList.remove("rotate-180");
+    }
+  });
 </script>

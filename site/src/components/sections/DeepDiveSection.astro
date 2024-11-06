@@ -5,123 +5,103 @@ import smallWhale from "../../assets/images/whale.png"
 import { renderRichText, renderTitle } from "../../lib/contentful/render.ts"
 
 const diver = [
-  { text: "What is Union?", meter: "200m" },
-  { text: "What is Interoperability?", meter: "400m" },
-  { text: "What is Modularity?", meter: "600m" },
-  { text: "Union Use Cases", meter: "800m" },
-  { text: "How Union Works", meter: "1000m" },
-  { text: "Trust Verification", meter: "1200m" },
-  { text: "Galois", meter: "1400m" },
-  { text: "CometBLS", meter: "1600m" },
-  { text: "Voyager", meter: "1800m" }
+  { id: "union", text: "What is Union?", meter: "200m" },
+  { id: "interoperability", text: "What is Interoperability?", meter: "400m" },
+  { id: "modularity", text: "What is Modularity?", meter: "600m" },
+  { id: "cases", text: "Union Use Cases", meter: "800m" },
+  { id: "works", text: "How Union Works", meter: "1000m" },
+  { id: "verification", text: "Trust Verification", meter: "1200m" },
+  { id: "galois", text: "Galois", meter: "1400m" },
+  { id: "bls", text: "CometBLS", meter: "1600m" },
+  { id: "voyager", text: "Voyager", meter: "1800m" }
 ]
 
 const { entries } = Astro.props
 ---
 
 <div class="flex justify-center py-24 text-lg font-mono" id="swim-container">
-  <div class="relative grid grid-cols-4 gap-4 max-w-6xl px-6">
+  <div class="relative grid grid-cols-2 gap-4 max-w-6xl px-6">
     <div
-      class="flex flex-col col-span-full md:col-span-3 gap-12 md:gap-24 lg:gap-48"
+      class="flex flex-col col-span-full md:col-span-1 gap-12 md:gap-24 lg:gap-48"
     >
-      <div id="">
+      <div id="union">
         <H1>
           <Fragment set:html={renderTitle(entries.firstTitle)} />
         </H1>
-        <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
-          <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.firstText)} />
-          </div>
-          <div class="object-contain h-auto w-full"></div>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.firstText)} />
         </div>
       </div>
 
-      <div>
+      <div id="union">
         <H1>
           <Fragment set:html={renderTitle(entries.secondTitle)} />
         </H1>
-        <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
-          <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.secondText)} />
-            <H1>
-              <Fragment set:html={renderTitle(entries.thirdTitle)} />
-            </H1>
-            <Fragment set:html={renderRichText(entries.thirdText)} />
-          </div>
-          <div class="object-contain h-auto w-full"></div>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.secondText)} />
         </div>
       </div>
 
-      <div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.thirdTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.thirdText)} />
+        </div>
+      </div>
+
+      <div id="union">
         <H1>
           <Fragment set:html={renderTitle(entries.fourthTitle)} />
         </H1>
-        <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
-          <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-            <Fragment set:html={renderRichText(entries.fourthText)} />
-          </div>
-          <div class="object-contain h-auto w-full w-max-[400px]"></div>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.fourthText)} />
         </div>
       </div>
 
-      <div>
-        <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
-          <div>
-            <H1>
-              <Fragment set:html={renderTitle(entries.fifthTitle)} />
-            </H1>
-            <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
-              <Fragment set:html={renderRichText(entries.fifthText)} />
-            </div>
-          </div>
-          <div class="object-contain w-[300px]"></div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.fifthTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.fifthText)} />
         </div>
       </div>
 
-      <div>
-        <div class="flex flex-col 2xl:flex-row gap-8 w-full">
-          <div>
-            <H1>
-              <Fragment set:html={renderTitle(entries.sixthTitle)} />
-            </H1>
-            <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
-              <Fragment set:html={renderRichText(entries.sixthText)} />
-            </div>
-          </div>
-          <div class="object-contain h-auto w-full max-w-[386px]"></div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.sixthTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.sixthText)} />
         </div>
       </div>
 
-      <div class="flex flex-col gap-12 md:gap-24">
-        <div>
-          <H1>
-            <Fragment set:html={renderTitle(entries.seventhTitle)} />
-          </H1>
-          <div class="flex flex-col 2xl:flex-row w-full pt-5">
-            <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.seventhText)} />
-            </div>
-          </div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.seventhTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.seventhText)} />
         </div>
+      </div>
 
-        <div>
-          <H1>
-            <Fragment set:html={renderTitle(entries.eighthTitle)} />
-          </H1>
-          <div class="flex flex-col 2xl:flex-row w-full pt-5">
-            <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.eighthText)} />
-            </div>
-          </div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.eighthTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.eighthText)} />
         </div>
+      </div>
 
-        <div>
-          <H1> <Fragment set:html={renderTitle(entries.ninthTitle)} /></H1>
-          <div class="flex flex-col 2xl:flex-row w-full pt-5">
-            <div class="flex flex-col md:max-w-[576px] w-full gap-8">
-              <Fragment set:html={renderRichText(entries.ninthText)} />
-            </div>
-          </div>
+      <div id="union">
+        <H1>
+          <Fragment set:html={renderTitle(entries.ninthTitle)} />
+        </H1>
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+          <Fragment set:html={renderRichText(entries.ninthText)} />
         </div>
       </div>
     </div>
@@ -133,7 +113,7 @@ const { entries } = Astro.props
             {
               diver.map((item) => (
                 <div class="h-16 flex items-center">
-                  <a href="#" class="hover:text-accent-500">
+                  <a href={`#${item.id}`} class="hover:text-accent-500">
                     {item.text}
                   </a>
                 </div>
@@ -167,7 +147,7 @@ const { entries } = Astro.props
         console.warn("One or more required elements not found:", {
           dot: !!dot,
           container: !!container,
-          swimlane: !!swimlane
+          swimlane: !!swimlane,
         });
         return;
       }
@@ -184,7 +164,7 @@ const { entries } = Astro.props
 
           const scrollPosition = Math.max(
             0,
-            Math.min(containerHeight, window.innerHeight - containerTop)
+            Math.min(containerHeight, window.innerHeight - containerTop),
           );
 
           const scrollPercentage = scrollPosition / containerHeight;
@@ -204,9 +184,13 @@ const { entries } = Astro.props
       handleScroll();
 
       // Clean up the event listener when navigating away
-      document.addEventListener("astro:before-preparation", () => {
-        window.removeEventListener("scroll", handleScroll);
-      }, { once: true });
+      document.addEventListener(
+        "astro:before-preparation",
+        () => {
+          window.removeEventListener("scroll", handleScroll);
+        },
+        { once: true },
+      );
     });
   </script>
 
