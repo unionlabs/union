@@ -1,46 +1,38 @@
-use std::{collections::VecDeque, num::NonZeroU64};
+use std::collections::VecDeque;
 
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
-use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
-    ibc::core::{
-        channel::channel::Channel, client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
-    ics24::Path,
-    id::{ChannelId, ClientId, ConnectionId, PortId},
-    traits::Member,
-};
-use voyager_core::ConsensusType;
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member};
+use voyager_core::{ConsensusType, IbcVersionId};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
-#[cfg(doc)]
-use {
-    crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
-    unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient,
-};
 
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
     data::Data,
-    VoyagerMessage,
+    IbcSpec, RawClientId, VoyagerMessage,
 };
+
+fn ok<T>(t: T) -> Result<T, BoxDynError> {
+    Ok(t)
+}
 
 #[model]
 #[derive(clap::Args, JsonSchema)]
-pub struct ChainModuleInfo {
+pub struct StateModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId,
+    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+    pub ibc_version_id: IbcVersionId,
 }
 
-impl ChainModuleInfo {
+impl StateModuleInfo {
     pub fn id(&self) -> String {
-        format!("chain/{}", self.chain_id)
+        format!("state/{}/{}", self.ibc_version_id, self.chain_id)
     }
 
+    // TODO: Add this for ibc_version_id
     pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
         if chain_id.as_ref() != self.chain_id.as_str() {
             Err(UnexpectedChainIdError {
@@ -53,8 +45,31 @@ impl ChainModuleInfo {
     }
 }
 
-fn ok<T>(t: T) -> Result<T, BoxDynError> {
-    Ok(t)
+#[model]
+#[derive(clap::Args, JsonSchema)]
+pub struct ProofModuleInfo {
+    #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+    pub chain_id: ChainId,
+    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+    pub ibc_version_id: IbcVersionId,
+}
+
+impl ProofModuleInfo {
+    pub fn id(&self) -> String {
+        format!("proof/{}/{}", self.ibc_version_id, self.chain_id)
+    }
+
+    // TODO: Add this for ibc_version_id
+    pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
+        if chain_id.as_ref() != self.chain_id.as_str() {
+            Err(UnexpectedChainIdError {
+                expected: self.chain_id.clone(),
+                found: chain_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[model]
@@ -99,34 +114,6 @@ impl ConsensusModuleInfo {
             Ok(())
         }
     }
-}
-
-#[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid chain id: expected `{expected}` but the rpc responded with `{found}`")]
-pub struct UnexpectedChainIdError {
-    pub expected: ChainId,
-    pub found: String,
-}
-
-#[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
-pub struct UnexpectedConsensusTypeError {
-    pub expected: ConsensusType,
-    pub found: String,
-}
-
-#[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
-pub struct UnexpectedClientTypeError {
-    pub expected: ClientType,
-    pub found: String,
-}
-
-#[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
-pub struct UnexpectedIbcInterfaceError {
-    pub expected: IbcInterface,
-    pub found: String,
 }
 
 #[model]
@@ -196,6 +183,34 @@ impl ClientModuleInfo {
     }
 }
 
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid chain id: expected `{expected}` but the rpc responded with `{found}`")]
+pub struct UnexpectedChainIdError {
+    pub expected: ChainId,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedConsensusTypeError {
+    pub expected: ConsensusType,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedClientTypeError {
+    pub expected: ClientType,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedIbcInterfaceError {
+    pub expected: IbcInterface,
+    pub found: String,
+}
+
 #[model]
 #[derive(clap::Args, JsonSchema)]
 pub struct PluginInfo {
@@ -226,127 +241,52 @@ pub trait Plugin<C: Member, Cb: Member> {
     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
 }
 
-/// Chain modules provide functionality to interact with a single chain,
-/// providing interfaces to interact with the
-#[rpc(client, server, namespace = "chain")]
-pub trait ChainModule {
-    /// Query the prefix for a client, given it's raw numeric id.
-    #[method(name = "queryClientPrefix", with_extensions)]
-    async fn query_client_prefix(&self, raw_client_id: u32) -> RpcResult<String>;
-
-    /// Query the latest raw, unfinalized trusted client state of the client
-    /// `client_id`.
-    // SEE: <https://github.com/unionlabs/union/issues/1813>
-    #[method(name = "queryRawUnfinalizedTrustedClientState", with_extensions)]
-    async fn query_raw_unfinalized_trusted_client_state(
-        &self,
-        client_id: ClientId,
-    ) -> RpcResult<RawClientState>;
+#[rpc(
+    client,
+    server,
+    client_bounds(Self:),
+    server_bounds(Self:),
+    namespace = "state",
+)]
+pub trait StateModule<V: IbcSpec> {
+    /// Query a proof of IBC state on this chain, at the specified [`Height`],
+    /// returning the proof as a JSON [`Value`].
+    #[method(name = "queryIbcState", with_extensions)]
+    async fn query_ibc_state(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
 
     /// Fetch the client info of a client on this chain.
     #[method(name = "clientInfo", with_extensions)]
-    async fn client_info(&self, client_id: ClientId) -> RpcResult<ClientInfo>;
-
-    #[method(name = "queryClientState", with_extensions)]
-    async fn query_client_state(&self, height: Height, client_id: ClientId) -> RpcResult<Bytes>;
-
-    #[method(name = "queryClientConsensusState", with_extensions)]
-    async fn query_client_consensus_state(
-        &self,
-        height: Height,
-        client_id: ClientId,
-        trusted_height: Height,
-    ) -> RpcResult<Bytes>;
-
-    #[method(name = "queryConnection", with_extensions)]
-    async fn query_connection(
-        &self,
-        height: Height,
-        connection_id: ConnectionId,
-    ) -> RpcResult<Option<ConnectionEnd>>;
-
-    #[method(name = "queryChannelEnd", with_extensions)]
-    async fn query_channel(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<Option<Channel>>;
-
-    #[method(name = "queryCommitment", with_extensions)]
-    async fn query_commitment(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<Option<H256>>;
-
-    #[method(name = "queryAcknowledgement", with_extensions)]
-    async fn query_acknowledgement(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<Option<H256>>;
-
-    #[method(name = "queryReceipt", with_extensions)]
-    async fn query_receipt(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<bool>;
-
-    #[method(name = "queryNextSequenceSend", with_extensions)]
-    async fn query_next_sequence_send(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextSequenceRecv", with_extensions)]
-    async fn query_next_sequence_recv(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextSequenceAck", with_extensions)]
-    async fn query_next_sequence_ack(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextConnectionSequence", with_extensions)]
-    async fn query_next_connection_sequence(&self, height: Height) -> RpcResult<u64>;
-
-    #[method(name = "queryNextClientSequence", with_extensions)]
-    async fn query_next_client_sequence(&self, height: Height) -> RpcResult<u64>;
-
-    /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the proof as a JSON [`Value`].
-    #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(
-        &self,
-        at: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
-    ) -> RpcResult<Value>;
+    async fn client_info(&self, client_id: V::ClientId) -> RpcResult<ClientInfo>;
 }
 
-/// Raw, un-decoded client state, as queried directly from the client store.
-#[model]
-pub struct RawClientState {
-    pub client_type: ClientType,
-    pub ibc_interface: IbcInterface,
-    pub bytes: Bytes,
+/// Type-erased version of [`StateModuleClient`].
+#[rpc(client, namespace = "state")]
+pub trait RawStateModule {
+    #[method(name = "queryIbcState")]
+    async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
+
+    #[method(name = "clientInfo")]
+    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<ClientInfo>;
+}
+
+#[rpc(client,
+    server,
+    client_bounds(Self:),
+    server_bounds(Self:),
+    namespace = "proof",
+)]
+pub trait ProofModule<V: IbcSpec> {
+    /// Query a proof of IBC state on this chain, at the specified [`Height`],
+    /// returning the state as a JSON [`Value`].
+    #[method(name = "queryIbcProof", with_extensions)]
+    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
+}
+
+/// Type-erased version of [`ProofModuleClient`].
+#[rpc(client, namespace = "proof")]
+pub trait RawProofModule {
+    #[method(name = "queryIbcProof")]
+    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 }
 
 /// Client modules provide functionality to interact with a single light client

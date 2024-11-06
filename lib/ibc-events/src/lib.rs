@@ -1,5 +1,7 @@
 use core::{num::NonZeroU64, str::FromStr};
 
+#[doc(hidden)]
+pub use cometbft_types;
 use cometbft_types::abci::event::Event;
 use unionlabs::{
     bytes::Bytes,
@@ -8,6 +10,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
+#[macro_export]
 macro_rules! event {
     (
         pub enum $Enum:ident {
@@ -32,11 +35,11 @@ macro_rules! event {
             )+
         }
 
-        impl IbcEvent {
+        impl $Enum {
             #[must_use]
             pub fn try_from_tendermint_event(
-                event: cometbft_types::abci::event::Event,
-            ) -> Option<Result<Self, TryFromTendermintEventError>> {
+                event: $crate::cometbft_types::abci::event::Event,
+            ) -> Option<Result<Self, $crate::TryFromTendermintEventError>> {
                 // to silence unused variable warnings on the last repetition of the following block
                 let _event = event;
 
@@ -44,7 +47,7 @@ macro_rules! event {
                     let _event = match $Struct::try_from(_event) {
                         Ok(ok) => return Some(Ok(Self::$Struct(ok))),
                         Err(err) => match err {
-                            TryFromTendermintEventError::IncorrectType { expected: _, found } => found,
+                            $crate::TryFromTendermintEventError::IncorrectType { expected: _, found } => found,
                             _ => return Some(Err(err)),
                         },
                     };
@@ -67,13 +70,13 @@ macro_rules! event {
 
 
             impl TryFrom<cometbft_types::abci::event::Event> for $Struct {
-                type Error = TryFromTendermintEventError;
+                type Error = $crate::TryFromTendermintEventError;
 
                 fn try_from(value: cometbft_types::abci::event::Event) -> Result<Self, Self::Error> {
                     const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
 
                     if value.ty != $tag {
-                        return Err(TryFromTendermintEventError::IncorrectType {
+                        return Err($crate::TryFromTendermintEventError::IncorrectType {
                             expected: $tag,
                             found: value,
                         });
@@ -88,7 +91,7 @@ macro_rules! event {
                             $(
                                 stringify!($field) => match $field {
                                     Some(first_occurrence) => {
-                                        return Err(TryFromTendermintEventError::DuplicateField {
+                                        return Err($crate::TryFromTendermintEventError::DuplicateField {
                                             key: attr.key,
                                             first_occurrence: first_occurrence.0,
                                             second_occurrence: idx,
@@ -101,7 +104,7 @@ macro_rules! event {
                                                 #[allow(clippy::redundant_closure_call)]
                                                 (($parse)(&value))
                                                 .map_err(|err| {
-                                                    TryFromTendermintEventError::AttributeValueParse {
+                                                    $crate::TryFromTendermintEventError::AttributeValueParse {
                                                         field: stringify!($field),
                                                         error: unionlabs::ErrorReporter(err).to_string(),
                                                     }
@@ -115,9 +118,10 @@ macro_rules! event {
                             "msg_index" => {}
                             "event_index" => {}
                             "tx_index" => {}
+                            "_contract_address" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
-                                    return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
+                                    return Err($crate::TryFromTendermintEventError::UnknownAttribute(attr.key))
                                 }
                             },
                         }
@@ -126,7 +130,7 @@ macro_rules! event {
                     Ok(Self {
                         $(
                             $field: $field
-                                .ok_or(TryFromTendermintEventError::MissingAttribute(stringify!($field)))?
+                                .ok_or($crate::TryFromTendermintEventError::MissingAttribute(stringify!($field)))?
                                 .1
                         ),+
                     })
@@ -154,7 +158,7 @@ pub enum TryFromTendermintEventError {
     },
     #[error("missing attribute `{0}`")]
     MissingAttribute(&'static str),
-    #[error("missing attribute `{0}`")]
+    #[error("unknown attribute `{0}`")]
     UnknownAttribute(String),
     #[error("unable to parse value for attribute `{field}`: {error}")]
     AttributeValueParse {
@@ -443,6 +447,291 @@ impl IbcEvent {
             IbcEvent::SendPacket(_) => "send_packet",
             IbcEvent::AcknowledgePacket(_) => "acknowledge_packet",
             IbcEvent::TimeoutPacket(_) => "timeout_packet",
+        }
+    }
+}
+
+pub mod union_ibc {
+    use core::str::FromStr;
+
+    event! {
+        pub enum IbcEvent {
+            #[event(tag = "wasm-client_create")]
+            CreateClient {
+                #[parse(u32::from_str)]
+                client_id: u32,
+                // TODO: Figure out if there's a better type we can use than string
+                client_type: String,
+                // #[parse(u64::from_str)]
+                // height: u64,
+            },
+
+            // #[event(tag = "update_client", deprecated("consensus_height", "header"))]
+            // UpdateClient {
+            //     #[parse(u32::from_str)]
+            //     client_id: u32,
+            //     client_type: String,
+            //     #[parse(|s: &str| s.split(',').map(u64::from_str).collect::<Result<_, _>>())]
+            //     consensus_heights: Vec<Height>,
+            // },
+
+            // #[event(tag = "client_misbehaviour")]
+            // ClientMisbehaviour {
+            //     #[parse(u32::from_str)]
+            //     client_id: u32,
+            //     client_type: String,
+            //     #[parse(u64::from_str)]
+            //     consensus_height: Height,
+            // },
+
+            // #[event(tag = "submit_evidence")]
+            // SubmitEvidence { evidence_hash: String },
+
+            #[event(tag = "wasm-connection_open_init")]
+            ConnectionOpenInit {
+                #[parse(u32::from_str)]
+                connection_id: u32,
+                #[parse(u32::from_str)]
+                client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_client_id: u32,
+            },
+
+            // #[event(tag = "connection_open_try")]
+            // ConnectionOpenTry {
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            //     #[parse(u32::from_str)]
+            //     client_id: u32,
+            //     #[parse(u32::from_str)]
+            //     counterparty_client_id: u32,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     counterparty_connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "connection_open_ack")]
+            // ConnectionOpenAck {
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            //     #[parse(u32::from_str)]
+            //     client_id: u32,
+            //     #[parse(ClientId::from_str)]
+            //     counterparty_client_id: ClientId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     counterparty_connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "connection_open_confirm")]
+            // ConnectionOpenConfirm {
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            //     #[parse(u32::from_str)]
+            //     client_id: u32,
+            //     #[parse(ClientId::from_str)]
+            //     counterparty_client_id: ClientId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     counterparty_connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
+            // ChannelOpenInit {
+            //     #[parse(PortId::from_str)]
+            //     port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     channel_id: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     counterparty_port_id: PortId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            //     version: String,
+            // },
+
+            // #[event(tag = "channel_open_try")]
+            // ChannelOpenTry {
+            //     #[parse(PortId::from_str)]
+            //     port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     channel_id: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     counterparty_port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     counterparty_channel_id: ChannelId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            //     version: String,
+            // },
+
+            // #[event(tag = "channel_open_ack")]
+            // ChannelOpenAck {
+            //     #[parse(PortId::from_str)]
+            //     port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     channel_id: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     counterparty_port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     counterparty_channel_id: ChannelId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "channel_open_confirm")]
+            // ChannelOpenConfirm {
+            //     #[parse(PortId::from_str)]
+            //     port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     channel_id: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     counterparty_port_id: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     counterparty_channel_id: ChannelId,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(
+            //     tag = "write_acknowledgement",
+            //     deprecated("packet_data", "packet_ack", "packet_connection")
+            // )]
+            // WriteAcknowledgement {
+            //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            //     packet_data_hex: Bytes,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_height: Height,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_timestamp: u64,
+            //     #[parse(NonZeroU64::from_str)]
+            //     packet_sequence: NonZeroU64,
+            //     #[parse(PortId::from_str)]
+            //     packet_src_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_src_channel: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     packet_dst_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_dst_channel: ChannelId,
+            //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            //     packet_ack_hex: Bytes,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "recv_packet", deprecated("packet_data", "packet_connection"))]
+            // RecvPacket {
+            //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            //     packet_data_hex: Bytes,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_height: Height,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_timestamp: u64,
+            //     #[parse(NonZeroU64::from_str)]
+            //     packet_sequence: NonZeroU64,
+            //     #[parse(PortId::from_str)]
+            //     packet_src_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_src_channel: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     packet_dst_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_dst_channel: ChannelId,
+            //     #[parse(Order::from_str)]
+            //     packet_channel_ordering: Order,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "send_packet", deprecated("packet_data", "packet_connection"))]
+            // SendPacket {
+            //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            //     packet_data_hex: Bytes,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_height: Height,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_timestamp: u64,
+            //     #[parse(NonZeroU64::from_str)]
+            //     packet_sequence: NonZeroU64,
+            //     #[parse(PortId::from_str)]
+            //     packet_src_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_src_channel: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     packet_dst_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_dst_channel: ChannelId,
+            //     #[parse(Order::from_str)]
+            //     packet_channel_ordering: Order,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
+            // AcknowledgePacket {
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_height: Height,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_timestamp: u64,
+            //     #[parse(NonZeroU64::from_str)]
+            //     packet_sequence: NonZeroU64,
+            //     #[parse(PortId::from_str)]
+            //     packet_src_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_src_channel: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     packet_dst_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_dst_channel: ChannelId,
+            //     #[parse(Order::from_str)]
+            //     packet_channel_ordering: Order,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+
+            // #[event(tag = "timeout_packet")]
+            // TimeoutPacket {
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_height: Height,
+            //     #[parse(u64::from_str)]
+            //     packet_timeout_timestamp: u64,
+            //     #[parse(NonZeroU64::from_str)]
+            //     packet_sequence: NonZeroU64,
+            //     #[parse(PortId::from_str)]
+            //     packet_src_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_src_channel: ChannelId,
+            //     #[parse(PortId::from_str)]
+            //     packet_dst_port: PortId,
+            //     #[parse(ChannelId::from_str_prefixed)]
+            //     packet_dst_channel: ChannelId,
+            //     #[parse(Order::from_str)]
+            //     packet_channel_ordering: Order,
+            //     #[parse(ConnectionId::from_str_prefixed)]
+            //     connection_id: ConnectionId,
+            // },
+        }
+    }
+
+    impl IbcEvent {
+        #[must_use]
+        pub fn name(&self) -> &'static str {
+            match self {
+                IbcEvent::CreateClient(_) => "create_client",
+                // IbcEvent::UpdateClient(_) => "update_client",
+                // IbcEvent::ClientMisbehaviour(_) => "client_misbehaviour",
+                // IbcEvent::SubmitEvidence(_) => "submit_evidence",
+                IbcEvent::ConnectionOpenInit(_) => "connection_open_init",
+                // IbcEvent::ConnectionOpenTry(_) => "connection_open_try",
+                // IbcEvent::ConnectionOpenAck(_) => "connection_open_ack",
+                // IbcEvent::ConnectionOpenConfirm(_) => "connection_open_confirm",
+                // IbcEvent::ChannelOpenInit(_) => "channel_open_init",
+                // IbcEvent::ChannelOpenTry(_) => "channel_open_try",
+                // IbcEvent::ChannelOpenAck(_) => "channel_open_ack",
+                // IbcEvent::ChannelOpenConfirm(_) => "channel_open_confirm",
+                // IbcEvent::WriteAcknowledgement(_) => "write_acknowledgement",
+                // IbcEvent::RecvPacket(_) => "recv_packet",
+                // IbcEvent::SendPacket(_) => "send_packet",
+                // IbcEvent::AcknowledgePacket(_) => "acknowledge_packet",
+                // IbcEvent::TimeoutPacket(_) => "timeout_packet",
+            }
         }
     }
 }

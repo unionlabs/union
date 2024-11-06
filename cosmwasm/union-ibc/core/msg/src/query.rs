@@ -6,6 +6,7 @@ pub enum QueryMsg {
     GetConsensusState { client_id: u32, height: u64 },
     GetStatus { client_id: u32 },
     GetClientType { client_id: u32 },
+    GetConnection { connection_id: u32 },
     GetChannel { channel_id: u32 },
     GetChannels { contract: String },
 }

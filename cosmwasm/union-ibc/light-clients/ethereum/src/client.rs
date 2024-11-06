@@ -156,8 +156,7 @@ pub fn verify_membership(
         return Err(Error::StoredValueMismatch {
             expected: value,
             stored: proof_value,
-        }
-        .into());
+        });
     }
 
     verify_storage_proof(
@@ -166,7 +165,7 @@ pub fn verify_membership(
         &rlp::encode(&storage_proof.value),
         &storage_proof.proof,
     )
-    .map_err(|e| Error::VerifyStorageProof(e).into())
+    .map_err(Error::VerifyStorageProof)
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
@@ -197,8 +196,7 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
         Err(Error::InvalidCommitmentKey {
             expected: expected_commitment_key,
             found: key,
-        }
-        .into())
+        })
     } else {
         Ok(())
     }

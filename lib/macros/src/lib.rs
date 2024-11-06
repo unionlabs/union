@@ -1059,6 +1059,8 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
         };
 
         const _: () = {
+            impl Sealed for #ident {}
+
             impl IbcPath for #ident {
                 type Value = #ty;
             }

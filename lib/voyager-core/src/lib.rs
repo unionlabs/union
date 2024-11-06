@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use core::{fmt, str::FromStr};
+use std::fmt::Debug;
 
 use macros::{apply, model};
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,9 @@ impl IbcInterface {
     /// running the EVM as part of their execution layer (ethereum, ethereum
     /// L2s, berachain, etc).
     pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
+
+    /// Light clients running on Union's cosmwasm IBC implementation.
+    pub const IBC_COSMWASM: &'static str = "ibc-cosmwasm";
 
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
@@ -152,6 +156,36 @@ impl ConsensusType {
     // lots more to come - near, linea, polygon - stay tuned
 }
 
+/// The IBC version describes the format for both the store and the datagrams.
+///
+/// Typically, an IBC interface will support exactly one IBC version, however
+/// it is possible to support multiple. For example, the union virtualized IBC
+/// stack on cosmwasm supports both IBC 1.0.0 *and* the union ethabi IBC
+/// specification.
+///
+/// [State lenses] are possible between IBC interfaces that support the same IBC
+/// version.
+///
+/// [State lenses]: https://research.union.build/State-Lenses-9e3d6578ec0e48fca8e502a0d28f485c
+// TODO: maybe rename to IbcSpec or something similar
+#[apply(str_newtype)]
+pub struct IbcVersionId;
+
+/// Well-known IBC version identifiers, defined as constants for reusability and to allow
+/// for pattern matching.
+impl IbcVersionId {
+    /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
+    ///
+    /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
+    pub const V1_0_0: &'static str = "1.0.0";
+
+    // TODO: Potentially rename?
+    /// IBC version <TODO>, as per the [union ethabi IBC specification](union-ethabi).
+    ///
+    /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
+    pub const UNION: &'static str = "union";
+}
+
 /// Identifier used to uniquely identify a chain, as provided by the chain
 /// itself.
 ///
@@ -213,61 +247,6 @@ pub struct IbcGo08WasmClientMetadata {
     pub checksum: H256,
 }
 
-#[macro_export]
-macro_rules! str_newtype {
-    (
-        $(#[doc = $doc:literal])+
-        $vis:vis struct $Struct:ident;
-    ) => {
-        $(#[doc = $doc])+
-        #[derive(
-            macros::Debug,
-            Clone,
-            PartialEq,
-            Eq,
-            Hash,
-            ::serde::Serialize,
-            ::serde::Deserialize,
-            ::schemars::JsonSchema
-        )]
-        // I tested this and apparently it's not required (newtype is automatically transparent?) but
-        // keeping it here for clarity
-        #[serde(transparent)]
-        #[debug("{}({:?})", stringify!($Struct), self.0)]
-        $vis struct $Struct(#[doc(hidden)] ::std::borrow::Cow<'static, str>);
-
-        impl ::core::fmt::Display for $Struct {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                ::core::fmt::Display::fmt(&self.0, f)
-            }
-        }
-
-        #[allow(unused)]
-        impl $Struct {
-            /// Construct a new [`
-            #[doc = stringify!($Struct)]
-            /// `].
-            pub fn new(s: impl Into<::std::borrow::Cow<'static, str>>) -> Self {
-                Self(s.into())
-            }
-
-            /// Extracts a string slice containing the entire contained value.
-            #[must_use = "getting a reference to the contained string slice has no effect"]
-            pub fn as_str(&self) -> &str {
-                self.0.as_ref()
-            }
-        }
-
-        impl $Struct {
-            /// `const`-friendly version of [`Self::new`].
-            #[must_use = concat!("constructing a ", stringify!($Struct), " has no effect")]
-            pub const fn new_static(ibc_interface: &'static str) -> Self {
-                Self(::std::borrow::Cow::Borrowed(ibc_interface))
-            }
-        }
-    };
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryHeight {
     /// The latest, potentially unfinalized block (the head of the chain).
@@ -306,4 +285,71 @@ impl FromStr for QueryHeight {
             _ => s.parse().map(Self::Specific),
         }
     }
+}
+
+#[macro_export]
+macro_rules! str_newtype {
+    (
+        $(#[doc = $doc:literal])+
+        $vis:vis struct $Struct:ident;
+    ) => {
+        $(#[doc = $doc])+
+        #[derive(
+            macros::Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            Hash,
+            ::serde::Serialize,
+            ::serde::Deserialize,
+            ::schemars::JsonSchema
+        )]
+        // I tested this and apparently it's not required (newtype is automatically transparent?) but
+        // keeping it here for clarity
+        #[serde(transparent)]
+        #[debug("{}({:?})", stringify!($Struct), self.0)]
+        $vis struct $Struct(#[doc(hidden)] ::std::borrow::Cow<'static, str>);
+
+        impl ::core::fmt::Display for $Struct {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::Display::fmt(&self.0, f)
+            }
+        }
+
+        impl PartialEq<&$Struct> for $Struct {
+            fn eq(&self, other: &&$Struct) -> bool {
+                self == *other
+            }
+        }
+
+        impl PartialEq<$Struct> for &$Struct {
+            fn eq(&self, other: &$Struct) -> bool {
+                *self == other
+            }
+        }
+
+        #[allow(unused)]
+        impl $Struct {
+            /// Construct a new [`
+            #[doc = stringify!($Struct)]
+            /// `].
+            pub fn new(s: impl Into<::std::borrow::Cow<'static, str>>) -> Self {
+                Self(s.into())
+            }
+
+            /// Extracts a string slice containing the entire contained value.
+            #[must_use = "getting a reference to the contained string slice has no effect"]
+            pub fn as_str(&self) -> &str {
+                self.0.as_ref()
+            }
+        }
+
+        impl $Struct {
+            /// `const`-friendly version of [`Self::new`].
+            #[must_use = concat!("constructing a ", stringify!($Struct), " has no effect")]
+            pub const fn new_static(ibc_interface: &'static str) -> Self {
+                Self(::std::borrow::Cow::Borrowed(ibc_interface))
+            }
+        }
+    };
 }

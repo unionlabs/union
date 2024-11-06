@@ -4,6 +4,7 @@ use unionlabs::{bounded::BoundedI64, bytes::Bytes, hash::hash_v2::Base64};
 use crate::crypto::proof_ops::ProofOps;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct QueryResponse {
     pub code: u32,
     /// nondeterministic
@@ -14,6 +15,7 @@ pub struct QueryResponse {
     pub index: i64,
     pub key: Option<Bytes<Base64>>,
     pub value: Option<Bytes<Base64>>,
+    #[serde(rename = "proofOps")]
     pub proof_ops: Option<ProofOps>,
     #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,

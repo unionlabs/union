@@ -20,7 +20,6 @@ alloy           = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["abort"] }
 cw-storage-plus = { workspace = true }
-dlmalloc        = { workspace = true, features = ["global"] }
 ethabi          = { workspace = true }
 hex             = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["serde"] }

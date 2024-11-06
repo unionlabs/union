@@ -206,8 +206,11 @@ pub fn verify_membership(
 
     // `aptos_std::table` stores the value as bcs encoded
     let given_value = bcs::to_bytes(&value).expect("cannot fail");
-    if proof_value.data() != &given_value {
-        return Err(Error::ProofValueMismatch(proof_value.data().to_vec(), given_value).into());
+    if proof_value.data() != given_value {
+        return Err(Error::ProofValueMismatch(
+            proof_value.data().to_vec(),
+            given_value,
+        ));
     }
 
     let Some(proof_leaf) = proof.proof.leaf.as_ref() else {
@@ -225,10 +228,10 @@ pub fn verify_membership(
         return Err(Error::ProofKeyMismatch);
     }
 
-    Ok(
-        aptos_verifier::verify_membership(proof.proof, state_root.into())
-            .map_err(Into::<Error>::into)?,
-    )
+    Ok(aptos_verifier::verify_membership(
+        proof.proof,
+        state_root.into(),
+    )?)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

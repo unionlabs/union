@@ -15,7 +15,7 @@ use voyager_message::{
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     module::{PluginInfo, PluginServer},
-    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{data, pass::PassResult, BoxDynError, Op, Visit};
 
@@ -29,7 +29,7 @@ pub mod callback;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]

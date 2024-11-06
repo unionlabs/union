@@ -6,29 +6,25 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tracing::instrument;
 use unionlabs::{
     self,
     bytes::Bytes,
     encoding::{DecodeAs, EncodeAs, Proto},
-    google::protobuf::any::Any,
-    ibc::{core::client::height::Height, lightclients::wasm},
+    ibc::core::client::height::Height,
     ErrorReporter,
 };
 use voyager_message::{
-    core::{
-        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
-        IbcGo08WasmClientMetadata, IbcInterface,
-    },
+    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface},
     module::{ClientModuleInfo, ClientModuleServer},
-    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_client_module_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +43,7 @@ impl ClientModule for Module {
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::ETHEREUM)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
-        info.ensure_ibc_interface(IbcInterface::IBC_GO_V8_08_WASM)?;
+        info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Self {
             chain_spec: config.chain_spec,
@@ -55,8 +51,8 @@ impl ClientModule for Module {
     }
 }
 
-type SelfConsensusState = Any<wasm::consensus_state::ConsensusState<ConsensusState>>;
-type SelfClientState = Any<wasm::client_state::ClientState<ClientState>>;
+type SelfConsensusState = ConsensusState;
+type SelfClientState = ClientState;
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
@@ -95,8 +91,8 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            chain_id: ChainId::new(cs.0.data.chain_id.to_string()),
-            height: Module::make_height(cs.0.data.latest_height),
+            chain_id: ChainId::new(cs.chain_id.to_string()),
+            height: Module::make_height(cs.latest_height),
         })
     }
 
@@ -109,7 +105,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: cs.0.data.timestamp,
+            timestamp_nanos: cs.timestamp,
         })
     }
 
@@ -134,14 +130,16 @@ impl ClientModuleServer for Module {
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Bytes> {
-        let IbcGo08WasmClientMetadata { checksum } =
-            serde_json::from_value(metadata).map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize metadata: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?;
+        if !metadata.is_null() {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "metadata was provided, but this client type does not require \
+                metadata for client state encoding",
+                Some(json!({
+                    "provided_metadata": metadata,
+                })),
+            ));
+        }
 
         serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
@@ -151,14 +149,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| {
-                Any(wasm::client_state::ClientState {
-                    latest_height: Module::make_height(cs.latest_height),
-                    data: cs,
-                    checksum,
-                })
-                .encode_as::<Proto>()
-            })
+            .map(|cs| cs.encode_as::<Proto>())
             .map(Into::into)
     }
 
@@ -179,7 +170,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>())
+            .map(|cs| cs.encode_as::<Proto>())
             .map(Into::into)
     }
 
@@ -251,9 +242,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|header| {
-                Any(wasm::client_message::ClientMessage { data: header }).encode_as::<Proto>()
-            })
+            .map(|header| header.encode_as::<Proto>())
             .map(Into::into)
     }
 

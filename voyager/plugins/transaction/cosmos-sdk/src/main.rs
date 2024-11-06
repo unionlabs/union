@@ -37,13 +37,17 @@ use unionlabs::{
 };
 use voyager_message::{
     core::ChainId,
-    data::{Data, IbcMessage, WithChainId},
+    data::{Data, WithChainId},
+    ibc_union, ibc_v1,
     module::{PluginInfo, PluginServer},
-    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, noop, pass::PassResult, Op};
 
-use crate::{call::ModuleCall, callback::ModuleCallback};
+use crate::{
+    call::{IbcMessage, ModuleCall},
+    callback::ModuleCallback,
+};
 
 pub mod call;
 pub mod callback;
@@ -51,12 +55,13 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
+    pub ibc_union_contract_address: String,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
@@ -67,6 +72,7 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub chain_id: ChainId,
+    pub ibc_union_contract_address: String,
     pub keyring: KeyringConfig,
     pub ws_url: String,
     pub grpc_url: String,
@@ -97,6 +103,7 @@ impl Plugin for Module {
         .bech32_prefix;
 
         Ok(Self {
+            ibc_union_contract_address: config.ibc_union_contract_address,
             keyring: CosmosKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
@@ -132,7 +139,7 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
+    ($data."@type" == "identified_ibc_datagram_batch" or $data."@type" == "identified_ibc_datagram")
         and $data."@value".chain_id == "{chain_id}"
 else
     false
@@ -172,7 +179,7 @@ impl Module {
                     // TODO: Figure out a way to thread this value through
                     let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-                    let msgs = process_msgs(msg, signer);
+                    let msgs = process_msgs(msg, signer, self.ibc_union_contract_address.clone());
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
@@ -615,10 +622,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .into_iter()
                 .enumerate()
                 .map(|(idx, msg)| {
-                    (
+                    Ok((
                         vec![idx],
                         match msg {
-                            Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagram(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -626,10 +633,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(vec![message]),
+                                    ModuleCall::SubmitTransaction(vec![
+                                        IbcMessage::from_raw_datagram(message)?,
+                                    ]),
                                 ))
                             }
-                            Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagramBatch(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -637,14 +646,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(message),
+                                    ModuleCall::SubmitTransaction(
+                                        message
+                                            .into_iter()
+                                            .map(IbcMessage::from_raw_datagram)
+                                            .collect::<Result<_, _>>()?,
+                                    ),
                                 ))
                             }
                             _ => panic!("unexpected message: {msg:?}"),
                         },
-                    )
+                    ))
                 })
-                .collect(),
+                .collect::<RpcResult<_>>()?,
         })
     }
 
@@ -700,158 +714,214 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &CosmosSigner,
+    ibc_union_contract_address: String,
 ) -> Vec<(IbcMessage, protos::google::protobuf::Any)> {
     msgs.into_iter()
         .map(|msg| {
             let encoded = match msg.clone() {
-                IbcMessage::ConnectionOpenInit(message) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
-                        client_id: message.client_id.to_string(),
-                        counterparty: Some(message.counterparty.into()),
-                        version: Some(message.version.into()),
-                        signer: signer.to_string(),
-                        delay_period: message.delay_period,
-                    })
-                }
-                #[allow(deprecated)]
-                IbcMessage::ConnectionOpenTry(message) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                        client_id: message.client_id.to_string(),
-                        client_state: Some(
-                            protos::google::protobuf::Any::decode(&*message.client_state)
+                IbcMessage::IbcV1(msg) => match msg {
+                    ibc_v1::IbcMessage::ConnectionOpenInit(message) => {
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+                            client_id: message.client_id.to_string(),
+                            counterparty: Some(message.counterparty.into()),
+                            version: Some(message.version.into()),
+                            signer: signer.to_string(),
+                            delay_period: message.delay_period,
+                        })
+                    }
+                    ibc_v1::IbcMessage::ConnectionOpenTry(message) => {
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+                            client_id: message.client_id.to_string(),
+                            counterparty: Some(message.counterparty.into()),
+                            delay_period: message.delay_period,
+                            counterparty_versions: message
+                                .counterparty_versions
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
+                            proof_height: Some(message.proof_height.into()),
+                            proof_init: message.proof_init.into(),
+                            signer: signer.to_string(),
+                            ..Default::default()
+                        })
+                    }
+                    #[allow(deprecated)]
+                    ibc_v1::IbcMessage::ConnectionOpenAck(message) => {
+                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+                            client_state: Some(
+                                protos::google::protobuf::Any::decode(&*message.client_state)
+                                    .expect("value should be encoded as an `Any`"),
+                            ),
+                            proof_height: Some(message.proof_height.into()),
+                            proof_client: message.proof_client.into(),
+                            proof_consensus: message.proof_consensus.into(),
+                            consensus_height: Some(message.consensus_height.into()),
+                            signer: signer.to_string(),
+                            host_consensus_state_proof: vec![],
+                            connection_id: message.connection_id.to_string(),
+                            counterparty_connection_id: message
+                                .counterparty_connection_id
+                                .to_string(),
+                            version: Some(message.version.into()),
+                            proof_try: message.proof_try.into(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::ConnectionOpenConfirm(message) => mk_any(
+                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                            connection_id: message.connection_id.to_string(),
+                            proof_ack: message.proof_ack.into(),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                        },
+                    ),
+                    ibc_v1::IbcMessage::ChannelOpenInit(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
+                            port_id: message.port_id.to_string(),
+                            channel: Some(message.channel.into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::ChannelOpenTry(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                            port_id: message.port_id.to_string(),
+                            channel: Some(message.channel.into()),
+                            counterparty_version: message.counterparty_version,
+                            proof_init: message.proof_init.into(),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                            ..Default::default()
+                        })
+                    }
+                    ibc_v1::IbcMessage::ChannelOpenAck(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                            port_id: message.port_id.to_string(),
+                            channel_id: message.channel_id.to_string(),
+                            counterparty_version: message.counterparty_version,
+                            counterparty_channel_id: message.counterparty_channel_id.to_string(),
+                            proof_try: message.proof_try.into(),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::ChannelOpenConfirm(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+                            port_id: message.port_id.to_string(),
+                            channel_id: message.channel_id.to_string(),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                            proof_ack: message.proof_ack.into(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::RecvPacket(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                            packet: Some(message.packet.into()),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                            proof_commitment: message.proof_commitment.into(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::AcknowledgePacket(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
+                            packet: Some(message.packet.into()),
+                            acknowledgement: message.acknowledgement.into(),
+                            proof_acked: message.proof_acked.into(),
+                            proof_height: Some(message.proof_height.into()),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::TimeoutPacket(message) => {
+                        mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
+                            packet: Some(message.packet.into()),
+                            proof_unreceived: message.proof_unreceived,
+                            proof_height: Some(message.proof_height.into()),
+                            next_sequence_recv: message.next_sequence_recv.get(),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::CreateClient(message) => {
+                        mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                            client_state: Some(
+                                protos::google::protobuf::Any::decode(&*message.msg.client_state)
+                                    .expect("value should be encoded as an `Any`"),
+                            ),
+                            consensus_state: Some(
+                                protos::google::protobuf::Any::decode(
+                                    &*message.msg.consensus_state,
+                                )
                                 .expect("value should be encoded as an `Any`"),
-                        ),
-                        counterparty: Some(message.counterparty.into()),
-                        delay_period: message.delay_period,
-                        counterparty_versions: message
-                            .counterparty_versions
-                            .into_iter()
-                            .map(Into::into)
-                            .collect(),
-                        proof_height: Some(message.proof_height.into()),
-                        proof_init: message.proof_init.into(),
-                        proof_client: message.proof_client.into(),
-                        proof_consensus: message.proof_consensus.into(),
-                        consensus_height: Some(message.consensus_height.into()),
-                        signer: signer.to_string(),
-                        host_consensus_state_proof: vec![],
-                        ..Default::default()
-                    })
-                }
-                #[allow(deprecated)]
-                IbcMessage::ConnectionOpenAck(message) => {
-                    mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                        client_state: Some(
-                            protos::google::protobuf::Any::decode(&*message.client_state)
-                                .expect("value should be encoded as an `Any`"),
-                        ),
-                        proof_height: Some(message.proof_height.into()),
-                        proof_client: message.proof_client.into(),
-                        proof_consensus: message.proof_consensus.into(),
-                        consensus_height: Some(message.consensus_height.into()),
-                        signer: signer.to_string(),
-                        host_consensus_state_proof: vec![],
-                        connection_id: message.connection_id.to_string(),
-                        counterparty_connection_id: message.counterparty_connection_id.to_string(),
-                        version: Some(message.version.into()),
-                        proof_try: message.proof_try.into(),
-                    })
-                }
-                IbcMessage::ConnectionOpenConfirm(message) => mk_any(
-                    &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                        connection_id: message.connection_id.to_string(),
-                        proof_ack: message.proof_ack.into(),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                    },
-                ),
-                IbcMessage::ChannelOpenInit(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
-                        port_id: message.port_id.to_string(),
-                        channel: Some(message.channel.into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                IbcMessage::ChannelOpenTry(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
-                        port_id: message.port_id.to_string(),
-                        channel: Some(message.channel.into()),
-                        counterparty_version: message.counterparty_version,
-                        proof_init: message.proof_init.into(),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                        ..Default::default()
-                    })
-                }
-                IbcMessage::ChannelOpenAck(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
-                        port_id: message.port_id.to_string(),
-                        channel_id: message.channel_id.to_string(),
-                        counterparty_version: message.counterparty_version,
-                        counterparty_channel_id: message.counterparty_channel_id.to_string(),
-                        proof_try: message.proof_try.into(),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                IbcMessage::ChannelOpenConfirm(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
-                        port_id: message.port_id.to_string(),
-                        channel_id: message.channel_id.to_string(),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                        proof_ack: message.proof_ack.into(),
-                    })
-                }
-                IbcMessage::RecvPacket(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
-                        packet: Some(message.packet.into()),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                        proof_commitment: message.proof_commitment.into(),
-                    })
-                }
-                IbcMessage::AcknowledgePacket(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
-                        packet: Some(message.packet.into()),
-                        acknowledgement: message.acknowledgement.into(),
-                        proof_acked: message.proof_acked.into(),
-                        proof_height: Some(message.proof_height.into()),
-                        signer: signer.to_string(),
-                    })
-                }
-                IbcMessage::TimeoutPacket(message) => {
-                    mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
-                        packet: Some(message.packet.into()),
-                        proof_unreceived: message.proof_unreceived,
-                        proof_height: Some(message.proof_height.into()),
-                        next_sequence_recv: message.next_sequence_recv.get(),
-                        signer: signer.to_string(),
-                    })
-                }
-                IbcMessage::CreateClient(message) => {
-                    mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
-                        client_state: Some(
-                            protos::google::protobuf::Any::decode(&*message.msg.client_state)
-                                .expect("value should be encoded as an `Any`"),
-                        ),
-                        consensus_state: Some(
-                            protos::google::protobuf::Any::decode(&*message.msg.consensus_state)
-                                .expect("value should be encoded as an `Any`"),
-                        ),
-                        signer: signer.to_string(),
-                    })
-                }
-                IbcMessage::UpdateClient(message) => {
-                    mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                        signer: signer.to_string(),
-                        client_id: message.client_id.to_string(),
-                        client_message: Some(
-                            protos::google::protobuf::Any::decode(&*message.client_message)
-                                .expect("value should be encoded as an `Any`"),
-                        ),
-                    })
-                }
+                            ),
+                            signer: signer.to_string(),
+                        })
+                    }
+                    ibc_v1::IbcMessage::UpdateClient(message) => {
+                        mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                            signer: signer.to_string(),
+                            client_id: message.client_id.to_string(),
+                            client_message: Some(
+                                protos::google::protobuf::Any::decode(&*message.client_message)
+                                    .expect("value should be encoded as an `Any`"),
+                            ),
+                        })
+                    }
+                },
+                IbcMessage::IbcUnion(msg) => match msg {
+                    ibc_union::IbcMsg::CreateClient(msg_create_client) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.clone(),
+                            msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
+                                ibc_solidity::cosmwasm::types::ibc::MsgCreateClient {
+                                    clientType: msg_create_client.client_type.to_string(),
+                                    clientStateBytes: msg_create_client.client_state_bytes.into(),
+                                    consensusStateBytes: msg_create_client
+                                        .consensus_state_bytes
+                                        .into(),
+                                    relayer: signer.to_string(),
+                                },
+                            ))
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union::IbcMsg::UpdateClient(_msg_update_client) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenInit(msg_connection_open_init) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.clone(),
+                            msg: serde_json::to_vec(
+                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
+                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenInit {
+                                        clientId: msg_connection_open_init.client_id,
+                                        counterpartyClientId: msg_connection_open_init
+                                            .counterparty_client_id,
+                                        relayer: signer.to_string(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union::IbcMsg::ConnectionOpenTry(_msg_connection_open_try) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenAck(_msg_connection_open_ack) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenConfirm(_msg_connection_open_confirm) => {
+                        todo!()
+                    }
+                    ibc_union::IbcMsg::ChannelOpenInit(_msg_channel_open_init) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenTry(_msg_channel_open_try) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenAck(_msg_channel_open_ack) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenConfirm(_msg_channel_open_confirm) => todo!(),
+                    ibc_union::IbcMsg::ChannelCloseInit(_msg_channel_close_init) => todo!(),
+                    ibc_union::IbcMsg::ChannelCloseConfirm(_msg_channel_close_confirm) => todo!(),
+                    ibc_union::IbcMsg::PacketRecv(_msg_packet_recv) => todo!(),
+                    ibc_union::IbcMsg::PacketAcknowledgement(_msg_packet_acknowledgement) => {
+                        todo!()
+                    }
+                    ibc_union::IbcMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
+                    ibc_union::IbcMsg::IntentPacketRecv(_msg_intent_packet_recv) => todo!(),
+                    ibc_union::IbcMsg::BatchSend(_msg_batch_send) => todo!(),
+                    ibc_union::IbcMsg::BatchAcks(_msg_batch_acks) => todo!(),
+                },
             };
 
             (msg, encoded)

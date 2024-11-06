@@ -24,13 +24,13 @@ use voyager_message::{
         IbcGo08WasmClientMetadata, IbcInterface,
     },
     module::{ClientModuleInfo, ClientModuleServer},
-    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_client_module_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]

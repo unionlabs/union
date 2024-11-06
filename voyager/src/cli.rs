@@ -1,13 +1,11 @@
 use std::{ffi::OsString, str::FromStr};
 
 use clap::{self, Parser, Subcommand};
-use unionlabs::{
-    self, bounded::BoundedI64, ibc::core::client::height::Height, id::ClientId, result_unwrap,
-};
+use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
-    core::{ChainId, ClientType, IbcInterface, QueryHeight},
-    module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
-    VoyagerMessage,
+    core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
+    module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
+    RawClientId, VoyagerMessage,
 };
 use voyager_vm::{BoxDynError, Op};
 
@@ -79,8 +77,6 @@ pub enum Command {
     /// Query and interact with the queue.
     #[command(subcommand, alias = "q")]
     Queue(QueueCmd),
-    #[command(subcommand)]
-    Util(UtilCmd),
     #[command(subcommand)]
     Plugin(PluginCmd),
     #[command(subcommand)]
@@ -157,17 +153,6 @@ pub enum QueueCmd {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum UtilCmd {
-    // /// Compute the EVM IBC commitment key for the given IBC commitment path.
-    // IbcCommitmentKey {
-    //     #[command(subcommand)]
-    //     path: Path,
-    //     #[arg(long, default_value_t = U256::ZERO)]
-    //     commitment_slot: U256,
-    // },
-}
-
-#[derive(Debug, Subcommand)]
 pub enum PluginCmd {
     /// Run the interest filter for the specified plugin on the provided JSON object.
     Interest {
@@ -186,7 +171,8 @@ pub enum PluginCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum ModuleCmd {
-    Chain(ChainModuleInfo),
+    State(StateModuleInfo),
+    Proof(ProofModuleInfo),
     Consensus(ConsensusModuleInfo),
     Client(ClientModuleInfo),
 }
@@ -197,7 +183,10 @@ pub enum RpcCmd {
     ClientState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        client_id: ClientId,
+        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
+        client_id: RawClientId,
+        #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+        ibc_version_id: IbcVersionId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[arg(long, short = 'd', default_value_t = false)]
@@ -206,7 +195,10 @@ pub enum RpcCmd {
     ConsensusState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        client_id: ClientId,
+        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
+        client_id: RawClientId,
+        #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+        ibc_version_id: IbcVersionId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         trusted_height: Height,
@@ -224,6 +216,8 @@ pub enum MsgCmd {
         tracking: ChainId,
         #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
         ibc_interface: IbcInterface,
+        #[arg(long, value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+        ibc_version_id: IbcVersionId,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
         client_type: ClientType,
         #[arg(long, default_value_t = QueryHeight::Latest)]

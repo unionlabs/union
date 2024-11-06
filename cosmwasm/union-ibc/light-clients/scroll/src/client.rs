@@ -155,7 +155,7 @@ pub fn verify_header(
     header: &Header,
 ) -> Result<(), Error> {
     let l1_consensus_state = ctx.read_consensus_state::<EthereumLightClient>(
-        client_state.l1_client_id.clone(),
+        client_state.l1_client_id,
         header.l1_height.height(),
     )?;
     scroll_verifier::verify_header(client_state, header, l1_consensus_state.state_root)?;

@@ -16,6 +16,8 @@ use crate::{
 };
 
 pub mod ethabi {
+    use enumorph::Enumorph;
+    use serde::{Deserialize, Serialize};
     use sha2::Digest;
     use sha3::Keccak256;
 
@@ -36,69 +38,179 @@ pub mod ethabi {
     const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
     const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
 
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Enumorph)]
+    pub enum Path {
+        ClientState(ClientStatePath),
+        ConsensusState(ConsensusStatePath),
+        Connection(ConnectionPath),
+        Channel(ChannelPath),
+        BatchReceipts(BatchReceiptsPath),
+        BatchPackets(BatchPacketsPath),
+    }
+
+    impl Path {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            match self {
+                Path::ClientState(path) => path.key(),
+                Path::ConsensusState(path) => path.key(),
+                Path::Connection(path) => path.key(),
+                Path::Channel(path) => path.key(),
+                Path::BatchReceipts(path) => path.key(),
+                Path::BatchPackets(path) => path.key(),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ClientStatePath {
+        pub client_id: u32,
+    }
+
+    impl ClientStatePath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CLIENT_STATE.to_be_bytes())
+                .chain_update(U256::from(self.client_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ConsensusStatePath {
+        pub client_id: u32,
+        pub height: u64,
+    }
+
+    impl ConsensusStatePath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CONSENSUS_STATE.to_be_bytes())
+                .chain_update(U256::from(self.client_id).to_be_bytes())
+                .chain_update(U256::from(self.height).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ConnectionPath {
+        pub connection_id: u32,
+    }
+
+    impl ConnectionPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CONNECTIONS.to_be_bytes())
+                .chain_update(U256::from(self.connection_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ChannelPath {
+        pub channel_id: u32,
+    }
+
+    impl ChannelPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CHANNELS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct BatchReceiptsPath {
+        pub channel_id: u32,
+        pub batch_hash: H256,
+    }
+
+    impl BatchReceiptsPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(PACKET_ACKS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .chain_update(self.batch_hash)
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct BatchPacketsPath {
+        pub channel_id: u32,
+        pub batch_hash: H256,
+    }
+
+    impl BatchPacketsPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(PACKETS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .chain_update(self.batch_hash)
+                .finalize()
+                .into()
+        }
+    }
+
     #[must_use]
     pub fn client_state_key(client_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CLIENT_STATE.to_be_bytes())
-            .chain_update(U256::from(client_id).to_be_bytes())
-            .finalize()
-            .into()
+        ClientStatePath { client_id }.key()
     }
 
     #[must_use]
     pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
-        Keccak256::new()
-            .chain_update(CONSENSUS_STATE.to_be_bytes())
-            .chain_update(U256::from(client_id).to_be_bytes())
-            .chain_update(U256::from(height).to_be_bytes())
-            .finalize()
-            .into()
+        ConsensusStatePath { client_id, height }.key()
     }
 
     #[must_use]
     pub fn connection_key(connection_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CONNECTIONS.to_be_bytes())
-            .chain_update(U256::from(connection_id).to_be_bytes())
-            .finalize()
-            .into()
+        ConnectionPath { connection_id }.key()
     }
 
     #[must_use]
     pub fn channel_key(channel_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CHANNELS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .finalize()
-            .into()
+        ChannelPath { channel_id }.key()
     }
 
     #[must_use]
     pub fn batch_receipts_key(channel_id: u32, batch_hash: H256) -> H256 {
-        Keccak256::new()
-            .chain_update(PACKET_ACKS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(batch_hash)
-            .finalize()
-            .into()
+        BatchReceiptsPath {
+            channel_id,
+            batch_hash,
+        }
+        .key()
     }
 
     #[must_use]
     pub fn batch_packets_key(channel_id: u32, batch_hash: H256) -> H256 {
-        Keccak256::new()
-            .chain_update(PACKETS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(batch_hash)
-            .finalize()
-            .into()
+        BatchPacketsPath {
+            channel_id,
+            batch_hash,
+        }
+        .key()
     }
 }
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
+#[allow(private_bounds)]
+pub trait IbcPath: Sealed + Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     type Value: Member;
 }
+
+trait Sealed {}
 
 #[model]
 #[derive(Hash, derive_more::Display, enumorph::Enumorph)]
@@ -134,18 +246,29 @@ impl Path {
     #[must_use]
     pub fn into_eth_commitment(self) -> H256 {
         match self {
-            Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
-            Path::ClientConsensusState(path) => {
-                ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+            Path::ClientState(path) => ethabi::ClientStatePath {
+                client_id: path.client_id.id(),
             }
-            Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
-            Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+            .key(),
+            Path::ClientConsensusState(path) => ethabi::ConsensusStatePath {
+                client_id: path.client_id.id(),
+                height: path.height.height(),
+            }
+            .key(),
+            Path::Connection(path) => ethabi::ConnectionPath {
+                connection_id: path.connection_id.id(),
+            }
+            .key(),
+            Path::ChannelEnd(path) => ethabi::ChannelPath {
+                channel_id: path.channel_id.id(),
+            }
+            .key(),
             Path::Commitment(_path) => {
-                // ethabi::commitments_key(path.channel_id.id(), path.sequence.into())
+                // ethabi::commitments(path.channel_id.id(), path.sequence.into())
                 todo!()
             }
             Path::Acknowledgement(_path) => {
-                // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.into())
+                // ethabi::acknowledgements(path.channel_id.id(), path.sequence.into())
                 todo!()
             }
             Path::Receipt(_path) => {
@@ -259,6 +382,8 @@ impl FromStr for ClientConsensusStatePath {
 impl IbcPath for ClientConsensusStatePath {
     type Value = Bytes;
 }
+
+impl Sealed for ClientConsensusStatePath {}
 
 // REVIEW: Make this an `Option`?
 #[ibc_path("connections/{connection_id:#}", Option<ConnectionEnd>)]
