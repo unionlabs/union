@@ -186,84 +186,53 @@ const { entries } = Astro.props
       const dot = document.getElementById("scrolling-dot");
       const swimlane = document.getElementById("swim-lane");
 
-      if (!dot || !swimlane) {
-        console.log("One or more required elements not found:", {
-          dot: !!dot,
-          swimlane: !!swimlane,
-        });
-        return;
-      }
+      if (!dot || !swimlane) return;
 
-      let lastKnownScrollPosition = 0;
-      let ticking = false;
+      const updateDotPosition = () => {
+        const documentHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const maxScroll = documentHeight - viewportHeight;
+        const scrollPercentage = window.scrollY / maxScroll;
 
-      const handleScroll = () => {
-        lastKnownScrollPosition = window.scrollY;
+        const maxDotPosition = swimlane.offsetHeight - dot.offsetHeight;
+        const newPosition = scrollPercentage * maxDotPosition;
 
-        if (!ticking) {
-          window.requestAnimationFrame(() => {
-            try {
-              const documentHeight = Math.max(
-                document.body.scrollHeight,
-                document.body.offsetHeight,
-                document.documentElement.clientHeight,
-                document.documentElement.scrollHeight,
-                document.documentElement.offsetHeight,
-              );
+        dot.style.transform = `translateY(${Math.max(0, Math.min(maxDotPosition, newPosition))}px)`;
+      };
 
-              const viewportHeight = window.innerHeight;
-              const maxScroll = documentHeight - viewportHeight;
-
-              const scrollPercentage = lastKnownScrollPosition / maxScroll;
-
-              const swimlaneHeight = swimlane.getBoundingClientRect().height;
-              const maxDotPosition = swimlaneHeight - dot.offsetHeight;
-              const newTop = scrollPercentage * maxDotPosition;
-
-              dot.style.transform = `translateY(${Math.max(0, Math.min(maxDotPosition, newTop))}px)`;
-            } catch (error) {
-              console.error("Error in scroll handler:", error);
-            }
-            ticking = false;
+      // Throttled scroll handler using requestAnimationFrame
+      let isScrolling = false;
+      const scrollHandler = () => {
+        if (!isScrolling) {
+          requestAnimationFrame(() => {
+            updateDotPosition();
+            isScrolling = false;
           });
-
-          ticking = true;
+          isScrolling = true;
         }
       };
 
-      window.addEventListener("scroll", handleScroll, { passive: true });
+      window.addEventListener("scroll", scrollHandler, { passive: true });
+      setTimeout(updateDotPosition, 0); // Initial position
 
-      // Initial position calculation
-      // Delay slightly to ensure DOM is fully ready
-      setTimeout(handleScroll, 0);
-
-      return () => {
-        window.removeEventListener("scroll", handleScroll);
-      };
+      return () => window.removeEventListener("scroll", scrollHandler);
     }
 
-    // Handle both direct navigation and view transitions
+    // Initialize scroll handler
+    const setup = () => {
+      const cleanup = initScrollHandler();
+      document.addEventListener("astro:before-preparation", cleanup, {
+        once: true,
+      });
+    };
+
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => {
-        const cleanup = initScrollHandler();
-        document.addEventListener("astro:before-preparation", cleanup, {
-          once: true,
-        });
-      });
+      document.addEventListener("DOMContentLoaded", setup);
     } else {
-      const cleanup = initScrollHandler();
-      document.addEventListener("astro:before-preparation", cleanup, {
-        once: true,
-      });
+      setup();
     }
 
-    // Handle view transitions
-    document.addEventListener("astro:page-load", () => {
-      const cleanup = initScrollHandler();
-      document.addEventListener("astro:before-preparation", cleanup, {
-        once: true,
-      });
-    });
+    document.addEventListener("astro:page-load", setup);
   </script>
 
   <style>
