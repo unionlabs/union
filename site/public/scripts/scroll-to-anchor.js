@@ -4,7 +4,7 @@
 
 window.addEventListener(
   "DOMContentLoaded",
-  event => {
+  _event => {
     setTimeout(() => {
       try {
         const url = new URL(window.location.href)

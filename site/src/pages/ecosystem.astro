@@ -2,7 +2,7 @@
 import ContainedSection from "../components/ContainedSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
-import { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
+import type { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
 
 let ecosystemData: Array<EcosystemFields> | null = null
 let ecosystemCategories: Array<CategoryFields> | null = null
