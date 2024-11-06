@@ -23,46 +23,50 @@ const { entries } = Astro.props
 
 <div class="flex justify-center py-24 text-lg font-mono" id="swim-container">
   <div class="relative grid grid-cols-2 gap-4 max-w-6xl px-6">
-    <div
-      class="flex flex-col col-span-full md:col-span-1 gap-8 md:gap-16 lg:gap-24"
-    >
+    <div class="flex flex-col col-span-full lg:col-span-1 gap-16 lg:gap-24">
       <div id="union">
         <H1>
           <Fragment set:html={renderTitle(entries.firstTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.firstText)} />
         </div>
       </div>
 
-      <video
-        class="bg-black"
-        src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-v8.mp4"
-        autoplay
-        muted
-        loop></video>
+      <div class="w-full max-w-md">
+        <div class="relative aspect-video w-full">
+          <video
+            src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-v8.mp4"
+            autoplay
+            muted
+            loop></video>
+        </div>
+      </div>
 
       <div id="interoperability">
         <H1>
           <Fragment set:html={renderTitle(entries.secondTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.secondText)} />
         </div>
       </div>
 
-      <video
-        class="bg-black"
-        src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4"
-        autoplay
-        muted
-        loop></video>
+      <div class="w-full max-w-md">
+        <div class="relative aspect-video w-full">
+          <video
+            src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4"
+            autoplay
+            muted
+            loop></video>
+        </div>
+      </div>
 
       <div id="modularity">
         <H1>
           <Fragment set:html={renderTitle(entries.thirdTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.thirdText)} />
         </div>
       </div>
@@ -71,23 +75,26 @@ const { entries } = Astro.props
         <H1>
           <Fragment set:html={renderTitle(entries.fourthTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.fourthText)} />
         </div>
       </div>
 
-      <video
-        class="bg-black"
-        src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/explain-v1.mp4"
-        autoplay
-        muted
-        loop></video>
+      <div class="w-full max-w-md">
+        <div class="relative aspect-video w-full">
+          <video
+            src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/explain-v1.mp4"
+            autoplay
+            muted
+            loop></video>
+        </div>
+      </div>
 
       <div id="works">
         <H1>
           <Fragment set:html={renderTitle(entries.fifthTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.fifthText)} />
         </div>
       </div>
@@ -96,18 +103,22 @@ const { entries } = Astro.props
         <H1>
           <Fragment set:html={renderTitle(entries.sixthTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.sixthText)} />
         </div>
       </div>
 
-      <Image src={trust} alt="Trust" class="w-full object-cover h-screen" />
+      <div class="w-full max-w-md">
+        <div class="relative w-full">
+          <Image src={trust} alt="Trust" class="w-full h-full object-cover" />
+        </div>
+      </div>
 
       <div id="galois">
         <H1>
           <Fragment set:html={renderTitle(entries.seventhTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.seventhText)} />
         </div>
       </div>
@@ -116,7 +127,7 @@ const { entries } = Astro.props
         <H1>
           <Fragment set:html={renderTitle(entries.eighthTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.eighthText)} />
         </div>
       </div>
@@ -125,12 +136,16 @@ const { entries } = Astro.props
         <H1>
           <Fragment set:html={renderTitle(entries.ninthTitle)} />
         </H1>
-        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+        <div class="flex flex-col md:max-w-[576px] w-full gap-8 mt-4">
           <Fragment set:html={renderRichText(entries.ninthText)} />
         </div>
       </div>
 
-      <Image src={whale} alt="Whale" class="w-full object-cover h-screen" />
+      <div class="w-full max-w-md">
+        <div class="relative w-full">
+          <Image src={whale} alt="Whale" class="w-full h-full object-cover" />
+        </div>
+      </div>
     </div>
 
     <div class="relative col-span-1 hidden lg:block">
