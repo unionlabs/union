@@ -10,7 +10,7 @@ use voyager_message::{
     call::{
         MakeMsgAcknowledgement, MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm,
         MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
-        MakeMsgConnectionOpenTry, MakeMsgRecvPacket, WaitForTrustedHeight,
+        MakeMsgConnectionOpenTry, MakeMsgRecvPacket, VersionMessage, WaitForTrustedHeight,
     },
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
@@ -113,14 +113,15 @@ pub fn make_msgs(
 
                 // in this context, we are the destination - the counterparty of the source is the destination
                 match batchable_event.event {
-                    Event::ConnectionOpenInit(connection_open_init_event) => {
-                        call(MakeMsgConnectionOpenTry {
+                    Event::ConnectionOpenInit(connection_open_init_event) => call(VersionMessage {
+                        ibc_version_id: IbcVersionId::V1_0_0,
+                        data: into_value(V1_0_0Call::Msg(MakeMsgConnectionOpenTry {
                             origin_chain_id,
                             origin_chain_proof_height: new_trusted_height,
                             target_chain_id,
                             connection_open_init_event,
-                        })
-                    }
+                        })),
+                    }),
                     Event::ConnectionOpenTry(connection_open_try_event) => {
                         call(MakeMsgConnectionOpenAck {
                             origin_chain_id,

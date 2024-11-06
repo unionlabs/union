@@ -1,6 +1,8 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
+    fmt::Debug,
     path::{Path, PathBuf},
+    pin::Pin,
     process::Stdio,
     sync::Arc,
     time::Duration,
@@ -11,7 +13,10 @@ use futures::{
     stream::{self, FuturesUnordered},
     Future, StreamExt, TryStreamExt,
 };
-use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
+use jsonrpsee::{
+    core::async_trait,
+    types::{ErrorObject, ErrorObjectOwned},
+};
 use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -20,23 +25,24 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
-use voyager_core::ConsensusType;
-use voyager_vm::{BoxDynError, QueueError};
+use voyager_core::{ConsensusType, IbcVersionId};
+use voyager_vm::{BoxDynError, Op, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
+    data::Data,
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
         ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    FATAL_JSONRPC_ERROR_CODE,
+    VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
 pub const STARTUP_ERROR_EXIT_CODE: u8 = 14;
 
-#[derive(Debug)]
+#[derive(macros::Debug)]
 pub struct Context {
     pub rpc_server: Server,
 
@@ -46,9 +52,13 @@ pub struct Context {
 
     cancellation_token: CancellationToken,
     // module_servers: Vec<ModuleRpcServer>,
+
+    // ibc version id => handler
+    #[debug(skip)]
+    pub ibc_spec_handlers: HashMap<IbcVersionId<'static>, IbcSpecHandler>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Modules {
     /// map of chain id to chain module.
     chain_modules: HashMap<ChainId, ModuleRpcClient>,
@@ -62,6 +72,25 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
     client_consensus_types: HashMap<ClientType, ConsensusType>,
+}
+
+pub struct IbcSpecHandler {
+    pub call: fn(
+        &crate::rpc::server::Server,
+        // call
+        Value,
+    ) -> Pin<
+        Box<dyn Future<Output = Result<Op<VoyagerMessage>, QueueError>> + Send + Sync>,
+    >,
+    pub callback: fn(
+        &crate::rpc::server::Server,
+        // callback
+        Value,
+        // data[]
+        Value,
+    ) -> Pin<
+        Box<dyn Future<Output = Result<Op<VoyagerMessage>, QueueError>> + Send + Sync>,
+    >,
 }
 
 impl voyager_vm::Context for Context {}
@@ -427,7 +456,15 @@ impl Context {
             plugins,
             interest_filters,
             cancellation_token,
-            // module_servers,
+            ibc_spec_handlers: [(
+                IbcVersionId::new(IbcVersionId::V1_0_0),
+                IbcSpecHandler {
+                    call: ibc_v1_call_handler,
+                    callback: todo!(),
+                },
+            )]
+            .into_iter()
+            .collect(), // module_servers,
         })
     }
 
@@ -713,6 +750,8 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
         attempt += 1;
     }
 }
+
+pub struct StateModuleNotFound {}
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for chain `{0}`")]

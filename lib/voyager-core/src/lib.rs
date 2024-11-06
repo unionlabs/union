@@ -1,9 +1,10 @@
 #![warn(clippy::pedantic)]
 
 use core::{fmt, str::FromStr};
+use std::fmt::Debug;
 
 use macros::{apply, model};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{
     hash::H256,
@@ -45,6 +46,9 @@ impl IbcInterface {
     /// running the EVM as part of their execution layer (ethereum, ethereum
     /// L2s, berachain, etc).
     pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
+
+    /// Light clients running on Union's cosmwasm IBC implementation.
+    pub const IBC_COSMWASM: &'static str = "ibc-cosmwasm";
 
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
@@ -152,6 +156,36 @@ impl ConsensusType {
     // lots more to come - near, linea, polygon - stay tuned
 }
 
+/// The IBC version describes the format for both the store and the datagrams.
+///
+/// Typically, an IBC interface will support exactly one IBC version, however
+/// it is possible to support multiple. For example, the union virtualized IBC
+/// stack on cosmwasm supports both IBC 1.0.0 *and* the union ethabi IBC
+/// specification.
+///
+/// [State lenses] are possible between IBC interfaces that support the same IBC
+/// version.
+///
+/// [State lenses]: https://research.union.build/State-Lenses-9e3d6578ec0e48fca8e502a0d28f485c
+// TODO: maybe rename to IbcSpec or something similar
+#[apply(str_newtype)]
+pub struct IbcVersionId;
+
+/// Well-known IBC version identifiers, defined as constants for reusability and to allow
+/// for pattern matching.
+impl IbcVersionId<'static> {
+    /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
+    ///
+    /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
+    pub const V1_0_0: &'static str = "1.0.0";
+
+    // TODO: Potantially rename?
+    /// IBC version <TODO>, as per the [union ethabi IBC specification](union-ethabi).
+    ///
+    /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
+    pub const UNION: &'static str = "union";
+}
+
 /// Identifier used to uniquely identify a chain, as provided by the chain
 /// itself.
 ///
@@ -213,6 +247,46 @@ pub struct IbcGo08WasmClientMetadata {
     pub checksum: H256,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum QueryHeight {
+    /// The latest, potentially unfinalized block (the head of the chain).
+    #[serde(rename = "latest")]
+    Latest,
+    /// The latest finalized block.
+    #[serde(rename = "finalized")]
+    Finalized,
+    /// A specific block that may or not be finalized.
+    #[serde(untagged)]
+    Specific(Height),
+}
+
+impl From<Height> for QueryHeight {
+    fn from(height: Height) -> Self {
+        Self::Specific(height)
+    }
+}
+
+impl fmt::Display for QueryHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            QueryHeight::Latest => f.write_str("latest"),
+            QueryHeight::Finalized => f.write_str("finalized"),
+            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
+        }
+    }
+}
+
+impl FromStr for QueryHeight {
+    type Err = HeightFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "latest" => Ok(Self::Latest),
+            _ => s.parse().map(Self::Specific),
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! str_newtype {
     (
@@ -266,44 +340,4 @@ macro_rules! str_newtype {
             }
         }
     };
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum QueryHeight {
-    /// The latest, potentially unfinalized block (the head of the chain).
-    #[serde(rename = "latest")]
-    Latest,
-    /// The latest finalized block.
-    #[serde(rename = "finalized")]
-    Finalized,
-    /// A specific block that may or not be finalized.
-    #[serde(untagged)]
-    Specific(Height),
-}
-
-impl From<Height> for QueryHeight {
-    fn from(height: Height) -> Self {
-        Self::Specific(height)
-    }
-}
-
-impl fmt::Display for QueryHeight {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            QueryHeight::Latest => f.write_str("latest"),
-            QueryHeight::Finalized => f.write_str("finalized"),
-            QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
-        }
-    }
-}
-
-impl FromStr for QueryHeight {
-    type Err = HeightFromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "latest" => Ok(Self::Latest),
-            _ => s.parse().map(Self::Specific),
-        }
-    }
 }

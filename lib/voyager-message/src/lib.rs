@@ -21,6 +21,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{traits::Member, ErrorReporter};
+use voyager_core::IbcVersionId;
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -52,6 +53,8 @@ pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
+pub mod ibc_v1;
+
 pub enum VoyagerMessage {}
 
 impl QueueMessage for VoyagerMessage {
@@ -62,6 +65,22 @@ impl QueueMessage for VoyagerMessage {
     type Filter = JaqInterestFilter;
 
     type Context = Context;
+}
+
+pub trait IbcSpec {
+    const ID: IbcVersionId<'static>;
+
+    /// The type used to index into the IBC store.
+    type StorePath: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+
+    /// The values stored under [`IbcVersionT::StorePath`].
+    type StoreValue: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+
+    /// The messages submitted on chain.
+    type Datagram: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+
+    /// Events emitted on chain.
+    type Event: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
 }
 
 /// Error code for fatal errors. If a plugin or module responds with this error
