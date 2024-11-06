@@ -4,7 +4,10 @@ use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
 use beacon_api_types::{
     execution_payload_header::ExecutionPayloadHeader, ExecutionPayloadHeaderSsz, Mainnet,
 };
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{eyre, Report},
+    Result,
+};
 use cometbft_rpc::{rpc_types::AbciQueryResponse, Client};
 use tracing::info;
 use unionlabs::encoding::DecodeAs;
@@ -82,16 +85,24 @@ impl Bera {
         // https://github.com/unionlabs/union/blob/2ce63ba3e94b13444d69ac03995958dc74b8f8c9/lib/unionlabs/src/berachain.rs#L9
         pub const LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX: u8 = 17;
 
-        let header = ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
-            &self
-                .beacon_store_abci_query([LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX], slot, false)
-                .await?
-                .response
-                .value
-                .unwrap(),
-        )?;
-
-        Ok(header.into())
+        match self
+            .beacon_store_abci_query([LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX], slot, false)
+            .await
+        {
+            Ok(abci_query_response) => match abci_query_response.response.value {
+                Some(data) => {
+                    Ok(ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(&data)?.into())
+                }
+                None => {
+                    info!("no value in response: {:?}", abci_query_response);
+                    Err(Report::msg("no value in response"))
+                }
+            },
+            Err(report) => {
+                info!("error querying for execution header {:?}", report);
+                Err(report)
+            }
+        }
     }
 }
 
