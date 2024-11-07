@@ -4820,7 +4820,9 @@ dependencies = [
  "base64 0.21.7",
  "beacon-api-types",
  "bytes",
+ "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
  "ethereum-light-client-types",
  "ethereum-verifier",
  "ethers-contract-derive",
@@ -4841,6 +4843,7 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror",
  "tiny-keccak",
+ "union-ibc",
  "unionlabs",
 ]
 

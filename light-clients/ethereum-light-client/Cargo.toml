@@ -38,6 +38,9 @@ sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
+cosmwasm-schema = { workspace = true }
+union-ibc = { workspace = true }
+cw-storage-plus = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

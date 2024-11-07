@@ -1,4 +1,3 @@
-use alloy::sol_types::SolValue;
 use beacon_api_types::{ChainSpec, PresetBaseKind};
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client_types::{
@@ -25,14 +24,11 @@ use unionlabs::{
     encoding::{DecodeAs, Proto},
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
-    hash::H256,
+    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
-        channel::{self, channel::Channel},
         client::{genesis_metadata::GenesisMetadata, height::Height},
         commitment::merkle_path::MerklePath,
-        connection::{self, connection_end::ConnectionEnd},
     },
-    ics24::Path,
     uint::U256,
 };
 
@@ -47,248 +43,185 @@ type WasmConsensusState =
 
 pub struct EthereumLightClient;
 
-impl IbcClient for EthereumLightClient {
-    type Error = Error;
+// impl IbcClient for EthereumLightClient {
+//     type Error = Error;
 
-    type CustomQuery = UnionCustomQuery;
+//     type CustomQuery = UnionCustomQuery;
 
-    type Header = Header;
+//     type Header = Header;
 
-    type Misbehaviour = Misbehaviour;
+//     type Misbehaviour = Misbehaviour;
 
-    type ClientState = ClientState;
+//     type ClientState = ClientState;
 
-    type ConsensusState = ConsensusState;
+//     type ConsensusState = ConsensusState;
 
-    type Encoding = Proto;
+//     type Encoding = Proto;
 
-    fn verify_membership(
-        deps: Deps<Self::CustomQuery>,
-        height: Height,
-        _delay_time_period: u64,
-        _delay_block_period: u64,
-        proof: Vec<u8>,
-        mut path: MerklePath,
-        value: ics008_wasm_client::StorageState,
-    ) -> Result<(), IbcClientError<Self>> {
-        let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+//     fn verify_misbehaviour(
+//         deps: Deps<Self::CustomQuery>,
+//         env: Env,
+//         misbehaviour: Self::Misbehaviour,
+//     ) -> Result<(), IbcClientError<Self>> {
+//         let client_state = read_client_state(deps)?.data;
 
-        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
+//         match client_state.chain_spec {
+//             PresetBaseKind::Minimal => verify_misbehaviour::<beacon_api_types::Minimal>(
+//                 client_state,
+//                 deps,
+//                 env,
+//                 misbehaviour,
+//             ),
+//             PresetBaseKind::Mainnet => verify_misbehaviour::<beacon_api_types::Mainnet>(
+//                 client_state,
+//                 deps,
+//                 env,
+//                 misbehaviour,
+//             ),
+//         }
+//     }
 
-        // This storage root is verified during the header update, so we don't need to verify it again.
-        let storage_root = consensus_state.data.storage_root;
+//     fn update_state_on_misbehaviour(
+//         deps: DepsMut<Self::CustomQuery>,
+//         _env: Env,
+//         _client_message: Vec<u8>,
+//     ) -> Result<(), IbcClientError<Self>> {
+//         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+//         client_state.data.frozen_height = FROZEN_HEIGHT;
+//         save_client_state::<Self>(deps, client_state);
 
-        let storage_proof =
-            StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
+//         Ok(())
+//     }
 
-        match value {
-            StorageState::Occupied(value) => {
-                do_verify_membership(path, storage_root, storage_proof, value)?
-            }
-            StorageState::Empty => do_verify_non_membership(path, storage_root, storage_proof)?,
-        }
+//     fn check_for_misbehaviour_on_header(
+//         deps: Deps<Self::CustomQuery>,
+//         header: Self::Header,
+//     ) -> Result<bool, IbcClientError<Self>> {
+//         let consensus_update = header.consensus_update.update_data();
 
-        Ok(())
-    }
+//         let height = Height::new(consensus_update.attested_header.beacon.slot);
 
-    fn verify_header(
-        deps: Deps<Self::CustomQuery>,
-        env: Env,
-        header: Header,
-    ) -> Result<(), IbcClientError<Self>> {
-        let client_state = read_client_state(deps)?.data;
+//         if let Some(consensus_state) = read_consensus_state::<Self>(deps, &height)? {
+//             // New header is given with the same height but the storage roots don't match.
+//             if consensus_state.data.storage_root != header.ibc_account_proof.storage_root
+//                 || consensus_state.data.slot != consensus_update.attested_header.beacon.slot
+//             {
+//                 return Ok(true);
+//             }
 
-        match client_state.chain_spec {
-            PresetBaseKind::Minimal => {
-                verify_header::<beacon_api_types::Minimal>(client_state, deps, env, header)
-            }
-            PresetBaseKind::Mainnet => {
-                verify_header::<beacon_api_types::Mainnet>(client_state, deps, env, header)
-            }
-        }
-    }
+//             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
+//             // thn slot and we already check the slot.
 
-    fn verify_misbehaviour(
-        deps: Deps<Self::CustomQuery>,
-        env: Env,
-        misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), IbcClientError<Self>> {
-        let client_state = read_client_state(deps)?.data;
+//             // NOTE(aeryz): we don't check the next sync committee because it's not being signed with
+//             // a header. so it should be an error during the state update not a misbehaviour.
+//         }
 
-        match client_state.chain_spec {
-            PresetBaseKind::Minimal => verify_misbehaviour::<beacon_api_types::Minimal>(
-                client_state,
-                deps,
-                env,
-                misbehaviour,
-            ),
-            PresetBaseKind::Mainnet => verify_misbehaviour::<beacon_api_types::Mainnet>(
-                client_state,
-                deps,
-                env,
-                misbehaviour,
-            ),
-        }
-    }
+//         Ok(false)
+//     }
 
-    fn update_state(
-        deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
-        header: Self::Header,
-    ) -> Result<Vec<Height>, IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps.as_ref())?;
+//     fn check_for_misbehaviour_on_misbehaviour(
+//         _deps: Deps<Self::CustomQuery>,
+//         misbehaviour: Self::Misbehaviour,
+//     ) -> Result<bool, IbcClientError<Self>> {
+//         let update_1 = misbehaviour.update_1.update_data();
+//         let update_2 = misbehaviour.update_2.update_data();
+//         if update_1.attested_header.beacon.slot == update_2.attested_header.beacon.slot {
+//             // TODO(aeryz): this will be the finalized header when we implement justified
+//             // This ensures that there are no conflicting justified/finalized headers at the same height
+//             if update_1.attested_header != update_2.attested_header {
+//                 return Ok(true);
+//             }
+//         }
 
-        match client_state.data.chain_spec {
-            PresetBaseKind::Minimal => {
-                update_state::<beacon_api_types::Minimal>(client_state, deps, header)
-            }
-            PresetBaseKind::Mainnet => {
-                update_state::<beacon_api_types::Mainnet>(client_state, deps, header)
-            }
-        }
-    }
+//         Ok(false)
+//     }
 
-    fn update_state_on_misbehaviour(
-        deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
-        _client_message: Vec<u8>,
-    ) -> Result<(), IbcClientError<Self>> {
-        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        client_state.data.frozen_height = FROZEN_HEIGHT;
-        save_client_state::<Self>(deps, client_state);
+//     fn verify_upgrade_and_update_state(
+//         _deps: DepsMut<Self::CustomQuery>,
+//         _upgrade_client_state: Self::ClientState,
+//         _upgrade_consensus_state: Self::ConsensusState,
+//         _proof_upgrade_client: Vec<u8>,
+//         _proof_upgrade_consensus_state: Vec<u8>,
+//     ) -> Result<(), IbcClientError<Self>> {
+//         Err(Error::Unimplemented.into())
+//     }
 
-        Ok(())
-    }
+//     fn migrate_client_store(
+//         mut deps: DepsMut<Self::CustomQuery>,
+//     ) -> Result<(), IbcClientError<Self>> {
+//         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
+//         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
 
-    fn check_for_misbehaviour_on_header(
-        deps: Deps<Self::CustomQuery>,
-        header: Self::Header,
-    ) -> Result<bool, IbcClientError<Self>> {
-        let consensus_update = header.consensus_update.update_data();
+//         ensure(
+//             substitute_client_state.data.frozen_height == ZERO_HEIGHT,
+//             Error::SubstituteClientFrozen,
+//         )?;
 
-        let height = Height::new(consensus_update.attested_header.beacon.slot);
+//         ensure(
+//             migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
+//             Error::MigrateFieldsChanged,
+//         )?;
 
-        if let Some(consensus_state) = read_consensus_state::<Self>(deps, &height)? {
-            // New header is given with the same height but the storage roots don't match.
-            if consensus_state.data.storage_root != header.ibc_account_proof.storage_root
-                || consensus_state.data.slot != consensus_update.attested_header.beacon.slot
-            {
-                return Ok(true);
-            }
+//         let substitute_consensus_state: WasmConsensusState =
+//             read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
+//                 .ok_or(Error::ConsensusStateNotFound(
+//                     substitute_client_state.latest_height,
+//                 ))?;
 
-            // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
-            // thn slot and we already check the slot.
+//         save_subject_consensus_state::<Self>(
+//             deps.branch(),
+//             substitute_consensus_state,
+//             &substitute_client_state.latest_height,
+//         );
 
-            // NOTE(aeryz): we don't check the next sync committee because it's not being signed with
-            // a header. so it should be an error during the state update not a misbehaviour.
-        }
+//         let scs = substitute_client_state.data;
+//         save_subject_client_state::<Self>(
+//             deps,
+//             WasmClientState {
+//                 data: ClientState {
+//                     chain_id: scs.chain_id,
+//                     fork_parameters: scs.fork_parameters,
+//                     latest_slot: scs.latest_slot,
+//                     ibc_commitment_slot: scs.ibc_commitment_slot,
+//                     ibc_contract_address: scs.ibc_contract_address,
+//                     frozen_height: ZERO_HEIGHT,
+//                     ..subject_client_state.data
+//                 },
+//                 latest_height: substitute_client_state.latest_height,
+//                 checksum: subject_client_state.checksum,
+//             },
+//         );
 
-        Ok(false)
-    }
+//         Ok(())
+//     }
 
-    fn check_for_misbehaviour_on_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, IbcClientError<Self>> {
-        let update_1 = misbehaviour.update_1.update_data();
-        let update_2 = misbehaviour.update_2.update_data();
-        if update_1.attested_header.beacon.slot == update_2.attested_header.beacon.slot {
-            // TODO(aeryz): this will be the finalized header when we implement justified
-            // This ensures that there are no conflicting justified/finalized headers at the same height
-            if update_1.attested_header != update_2.attested_header {
-                return Ok(true);
-            }
-        }
+//     fn status(deps: Deps<Self::CustomQuery>, _: &Env) -> Result<Status, IbcClientError<Self>> {
+//         let client_state: WasmClientState = read_client_state(deps)?;
 
-        Ok(false)
-    }
+//         if client_state.data.frozen_height != ZERO_HEIGHT {
+//             return Ok(Status::Frozen);
+//         }
 
-    fn verify_upgrade_and_update_state(
-        _deps: DepsMut<Self::CustomQuery>,
-        _upgrade_client_state: Self::ClientState,
-        _upgrade_consensus_state: Self::ConsensusState,
-        _proof_upgrade_client: Vec<u8>,
-        _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
-    }
+//         Ok(Status::Active)
+//     }
 
-    fn migrate_client_store(
-        mut deps: DepsMut<Self::CustomQuery>,
-    ) -> Result<(), IbcClientError<Self>> {
-        let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
-        let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
+//     fn export_metadata(
+//         _deps: Deps<Self::CustomQuery>,
+//         _env: &Env,
+//     ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
+//         Ok(Vec::new())
+//     }
 
-        ensure(
-            substitute_client_state.data.frozen_height == ZERO_HEIGHT,
-            Error::SubstituteClientFrozen,
-        )?;
-
-        ensure(
-            migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
-            Error::MigrateFieldsChanged,
-        )?;
-
-        let substitute_consensus_state: WasmConsensusState =
-            read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
-                .ok_or(Error::ConsensusStateNotFound(
-                    substitute_client_state.latest_height,
-                ))?;
-
-        save_subject_consensus_state::<Self>(
-            deps.branch(),
-            substitute_consensus_state,
-            &substitute_client_state.latest_height,
-        );
-
-        let scs = substitute_client_state.data;
-        save_subject_client_state::<Self>(
-            deps,
-            WasmClientState {
-                data: ClientState {
-                    chain_id: scs.chain_id,
-                    fork_parameters: scs.fork_parameters,
-                    latest_slot: scs.latest_slot,
-                    ibc_contract_address: scs.ibc_contract_address,
-                    frozen_height: ZERO_HEIGHT,
-                    ..subject_client_state.data
-                },
-                latest_height: substitute_client_state.latest_height,
-                checksum: subject_client_state.checksum,
-            },
-        );
-
-        Ok(())
-    }
-
-    fn status(deps: Deps<Self::CustomQuery>, _: &Env) -> Result<Status, IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps)?;
-
-        if client_state.data.frozen_height != ZERO_HEIGHT {
-            return Ok(Status::Frozen);
-        }
-
-        Ok(Status::Active)
-    }
-
-    fn export_metadata(
-        _deps: Deps<Self::CustomQuery>,
-        _env: &Env,
-    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
-        Ok(Vec::new())
-    }
-
-    fn timestamp_at_height(
-        deps: Deps<Self::CustomQuery>,
-        height: Height,
-    ) -> Result<u64, IbcClientError<Self>> {
-        Ok(read_consensus_state::<Self>(deps, &height)?
-            .ok_or(Error::ConsensusStateNotFound(height))?
-            .data
-            .timestamp)
-    }
-}
+//     fn timestamp_at_height(
+//         deps: Deps<Self::CustomQuery>,
+//         height: Height,
+//     ) -> Result<u64, IbcClientError<Self>> {
+//         Ok(read_consensus_state::<Self>(deps, &height)?
+//             .ok_or(Error::ConsensusStateNotFound(height))?
+//             .data
+//             .timestamp)
+//     }
+// }
 
 fn migrate_check_allowed_fields(
     subject_client_state: &ClientState,
@@ -300,24 +233,31 @@ fn migrate_check_allowed_fields(
 }
 
 pub fn do_verify_membership(
-    path: String,
+    key: Vec<u8>,
     storage_root: H256,
     storage_proof: StorageProof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
-    // we store the hash of the data, not the data itself to the commitments map
-    let (key, value) = canonicalize_commitment(path, raw_value)?;
+    // check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
-    // TODO(aeryz): figure out how is this gonna work now
-    check_commitment_key(key, storage_proof.key)?;
+    let raw_value = H256::try_from(raw_value).unwrap();
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
-    let expected_value_hash = keccak256(value);
-    if expected_value_hash != proof_value {
+    if raw_value != proof_value {
         return Err(StoredValueMismatch {
-            expected: expected_value_hash,
+            expected: raw_value,
             stored: proof_value,
+        }
+        .into());
+    }
+
+    let key = U256::from_be_bytes(*H256::<HexUnprefixed>::try_from(key).unwrap().get());
+
+    if key != storage_proof.key {
+        return Err(InvalidCommitmentKey {
+            expected: key,
+            found: storage_proof.key,
         }
         .into());
     }
@@ -331,100 +271,22 @@ pub fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
-/// ibc-go passes the path as the expected ics24 commitment path, so we need to decode that path and reencode it to the ethabi spec (TODO: link to the union IBC spec)
-pub fn canonicalize_commitment(
-    path: String,
-    raw_value: Vec<u8>,
-) -> Result<(H256, Vec<u8>), CanonicalizeStoredValueError> {
-    let path = path
-        .parse::<Path>()
-        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
-
-    // Connection and channel are constructed and passed in by ibc-go as the expected *protobuf* encoded values; we need to decode them and reencode to the ethabi spec. All other values are passed verbatim.
-    let canonical_value = match path {
-        Path::Connection(_) => {
-            let connection = ConnectionEnd::decode_as::<Proto>(raw_value.as_ref())
-                .map_err(CanonicalizeStoredValueError::ConnectionEnd)?;
-
-            ibc_solidity::ibc::Connection {
-                clientId: connection.client_id.id(),
-                state: match connection.state {
-                    connection::state::State::UninitializedUnspecified => {
-                        ibc_solidity::ibc::ConnectionState::Unspecified
-                    }
-                    connection::state::State::Init => ibc_solidity::ibc::ConnectionState::Init,
-                    connection::state::State::Tryopen => {
-                        ibc_solidity::ibc::ConnectionState::TryOpen
-                    }
-                    connection::state::State::Open => ibc_solidity::ibc::ConnectionState::Open,
-                },
-                counterpartyClientId: connection.counterparty.client_id.id(),
-                counterpartyConnectionId: connection
-                    .counterparty
-                    .connection_id
-                    .map_or_else(u32::default, |c| c.id()),
-            }
-            .abi_encode_params()
-        }
-        Path::ChannelEnd(_) => {
-            let channel = Channel::decode_as::<Proto>(raw_value.as_ref())
-                .map_err(CanonicalizeStoredValueError::Channel)?;
-
-            ibc_solidity::ibc::Channel {
-                state: match channel.state {
-                    channel::state::State::UninitializedUnspecified => {
-                        ibc_solidity::ibc::ChannelState::Unspecified
-                    }
-                    channel::state::State::Init => ibc_solidity::ibc::ChannelState::Init,
-                    channel::state::State::Tryopen => ibc_solidity::ibc::ChannelState::TryOpen,
-                    channel::state::State::Open => ibc_solidity::ibc::ChannelState::Open,
-                    channel::state::State::Closed => ibc_solidity::ibc::ChannelState::Closed,
-                    state => {
-                        return Err(CanonicalizeStoredValueError::UnsupportedChannelState(state))
-                    }
-                },
-                ordering: match channel.ordering {
-                    channel::order::Order::NoneUnspecified => {
-                        ibc_solidity::ibc::ChannelOrder::Unspecified
-                    }
-                    channel::order::Order::Unordered => ibc_solidity::ibc::ChannelOrder::Unordered,
-                    channel::order::Order::Ordered => ibc_solidity::ibc::ChannelOrder::Ordered,
-                },
-                connectionId: match channel.connection_hops.len() {
-                    1 => channel.connection_hops[0].id(),
-                    _ => {
-                        return Err(CanonicalizeStoredValueError::InvalidConnectionHops(
-                            channel.connection_hops,
-                        ))
-                    }
-                },
-                counterpartyChannelId: channel
-                    .counterparty
-                    .channel_id
-                    .map_or_else(u32::default, |c| c.id()),
-                counterpartyPortId: channel.counterparty.port_id.to_string(),
-                version: channel.version,
-            }
-            .abi_encode_params()
-        }
-        _ => raw_value,
-    };
-
-    Ok((path.into_eth_commitment(), canonical_value))
-}
-
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 pub fn do_verify_non_membership(
-    path: String,
+    key: Vec<u8>,
     storage_root: H256,
     storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    let key = path
-        .parse::<Path>()
-        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?
-        .into_eth_commitment();
+    // check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
+    let key = U256::from_be_bytes(*H256::<HexUnprefixed>::try_from(key).unwrap().get());
 
-    check_commitment_key(key, storage_proof.key)?;
+    if key != storage_proof.key {
+        return Err(InvalidCommitmentKey {
+            expected: key,
+            found: storage_proof.key,
+        }
+        .into());
+    }
 
     if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
         .map_err(Error::VerifyStorageAbsence)?
@@ -435,8 +297,13 @@ pub fn do_verify_non_membership(
     }
 }
 
-pub fn check_commitment_key(path: H256, key: U256) -> Result<(), InvalidCommitmentKey> {
-    let expected_commitment_key = ibc_commitment_key(path);
+pub fn check_commitment_key(
+    _path: &str,
+    ibc_commitment_slot: U256,
+    key: U256,
+) -> Result<(), InvalidCommitmentKey> {
+    // TODO: Fix this @aeryz
+    let expected_commitment_key = ibc_commitment_key(H256::default(), ibc_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
@@ -449,16 +316,13 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), InvalidCommitme
     }
 }
 
-fn verify_header<C: ChainSpec>(
+pub fn verify_header<C: ChainSpec>(
     client_state: ClientState,
+    consensus_state: ConsensusState,
     deps: Deps<UnionCustomQuery>,
     env: Env,
     header: Header,
-) -> Result<(), IbcClientError<EthereumLightClient>> {
-    let consensus_state = read_consensus_state(deps, &header.trusted_height)?
-        .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?
-        .data;
-
+) -> Result<(u64, ClientState, ConsensusState), Error> {
     // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
     // at the current timestamp.
     let current_slot =
@@ -488,7 +352,7 @@ fn verify_header<C: ChainSpec>(
         Error::NotEnoughSignatures,
     )?;
 
-    let proof_data = header.ibc_account_proof;
+    let proof_data = &header.ibc_account_proof;
 
     verify_account_storage_root(
         update_data.attested_header.execution.state_root,
@@ -498,25 +362,21 @@ fn verify_header<C: ChainSpec>(
     )
     .map_err(Error::VerifyAccountStorageRoot)?;
 
-    Ok(())
+    update_state::<C>(client_state, consensus_state, header)
 }
 
 fn update_state<C: ChainSpec>(
-    mut client_state: WasmClientState,
-    mut deps: DepsMut<UnionCustomQuery>,
+    mut client_state: ClientState,
+    mut consensus_state: ConsensusState,
     header: Header,
-) -> Result<Vec<Height>, IbcClientError<EthereumLightClient>> {
+) -> Result<(u64, ClientState, ConsensusState), Error> {
     let trusted_height = header.trusted_height;
-
-    let mut consensus_state: WasmConsensusState =
-        read_consensus_state(deps.as_ref(), &trusted_height)?
-            .ok_or(Error::ConsensusStateNotFound(trusted_height))?;
 
     let consensus_update = header.consensus_update.update_data();
 
     if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
-        consensus_state.data.current_sync_committee = consensus_state.data.next_sync_committee;
-        consensus_state.data.next_sync_committee = update.next_sync_committee.aggregate_pubkey;
+        consensus_state.current_sync_committee = consensus_state.next_sync_committee;
+        consensus_state.next_sync_committee = update.next_sync_committee.aggregate_pubkey;
     }
 
     // TODO(aeryz): we should ditch this functionality as it complicates the light client and we don't use it
@@ -527,98 +387,93 @@ fn update_state<C: ChainSpec>(
         consensus_update.attested_header.beacon.slot,
     );
 
-    if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
-        consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
+    if consensus_update.attested_header.beacon.slot > consensus_state.slot {
+        consensus_state.slot = consensus_update.attested_header.beacon.slot;
 
-        consensus_state.data.state_root = consensus_update.attested_header.execution.state_root;
-        consensus_state.data.storage_root = header.ibc_account_proof.storage_root;
+        consensus_state.state_root = consensus_update.attested_header.execution.state_root;
+        consensus_state.storage_root = header.ibc_account_proof.storage_root;
 
         // Normalize to nanoseconds to be ibc-go compliant
-        consensus_state.data.timestamp = compute_timestamp_at_slot::<C>(
-            client_state.data.genesis_time,
+        consensus_state.timestamp = compute_timestamp_at_slot::<C>(
+            client_state.genesis_time,
             consensus_update.attested_header.beacon.slot,
         ) * 1_000_000_000;
 
-        if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
-            client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
-            update_client_state::<EthereumLightClient>(deps.branch(), client_state, updated_height);
+        if client_state.latest_slot < consensus_update.attested_header.beacon.slot {
+            client_state.latest_slot = consensus_update.attested_header.beacon.slot;
         }
     }
 
-    let updated_height = Height::new(updated_height);
-
-    save_consensus_state::<EthereumLightClient>(deps, consensus_state, &updated_height);
-
-    Ok(vec![updated_height])
+    Ok((updated_height, client_state, consensus_state))
 }
 
-fn verify_misbehaviour<C: ChainSpec>(
-    client_state: ClientState,
-    deps: Deps<UnionCustomQuery>,
-    env: Env,
-    misbehaviour: Misbehaviour,
-) -> Result<(), IbcClientError<EthereumLightClient>> {
-    // There is no point to check for misbehaviour when the headers are not for the same height
-    // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
-    let (slot_1, slot_2) = (
-        misbehaviour
-            .update_1
-            .update_data()
-            .attested_header
-            .beacon
-            .slot,
-        misbehaviour
-            .update_2
-            .update_data()
-            .attested_header
-            .beacon
-            .slot,
-    );
-    ensure(
-        slot_1 == slot_2,
-        Error::MisbehaviourCannotExist(slot_1, slot_2),
-    )?;
+// fn verify_misbehaviour<C: ChainSpec>(
+//     client_state: ClientState,
+//     deps: Deps<UnionCustomQuery>,
+//     env: Env,
+//     misbehaviour: Misbehaviour,
+// ) -> Result<(), Error> {
+//     // There is no point to check for misbehaviour when the headers are not for the same height
+//     // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
+//     let (slot_1, slot_2) = (
+//         misbehaviour
+//             .update_1
+//             .update_data()
+//             .attested_header
+//             .beacon
+//             .slot,
+//         misbehaviour
+//             .update_2
+//             .update_data()
+//             .attested_header
+//             .beacon
+//             .slot,
+//     );
+//     ensure(
+//         slot_1 == slot_2,
+//         Error::MisbehaviourCannotExist(slot_1, slot_2),
+//     )?;
 
-    let wasm_consensus_state = read_consensus_state(deps, &misbehaviour.trusted_height)?
-        .ok_or(Error::ConsensusStateNotFound(misbehaviour.trusted_height))?;
+//     let wasm_consensus_state = read_consensus_state(deps, &misbehaviour.trusted_height)?
+//         .ok_or(Error::ConsensusStateNotFound(misbehaviour.trusted_height))?;
 
-    let current_slot =
-        compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
-            .ok_or(Error::IntegerOverflow)?;
+//     let current_slot =
+//         compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
+//             .ok_or(Error::IntegerOverflow)?;
 
-    let (current_sync_committee, next_sync_committee) =
-        misbehaviour.update_1.currently_trusted_sync_committee();
+//     let (current_sync_committee, next_sync_committee) =
+//         misbehaviour.update_1.currently_trusted_sync_committee();
 
-    // Make sure both headers would have been accepted by the light client
-    validate_light_client_update::<C, VerificationContext>(
-        &misbehaviour.update_1.clone().into(),
-        current_sync_committee,
-        next_sync_committee,
-        current_slot,
-        wasm_consensus_state.data.slot,
-        client_state.genesis_validators_root,
-        &client_state.fork_parameters,
-        VerificationContext { deps },
-    )
-    .map_err(Error::ValidateLightClient)?;
+//     // Make sure both headers would have been accepted by the light client
+//     validate_light_client_update::<C, VerificationContext>(
+//         &misbehaviour.update_1.clone().into(),
+//         current_sync_committee,
+//         next_sync_committee,
+//         current_slot,
+//         wasm_consensus_state.data.slot,
+//         client_state.genesis_validators_root,
+//         &client_state.fork_parameters,
+//         VerificationContext { deps },
+//     )
+//     .map_err(Error::ValidateLightClient)?;
 
-    let (current_sync_committee, next_sync_committee) =
-        misbehaviour.update_2.currently_trusted_sync_committee();
+//     let (current_sync_committee, next_sync_committee) =
+//         misbehaviour.update_2.currently_trusted_sync_committee();
 
-    validate_light_client_update::<C, VerificationContext>(
-        &misbehaviour.update_2.clone().into(),
-        current_sync_committee,
-        next_sync_committee,
-        current_slot,
-        wasm_consensus_state.data.slot,
-        client_state.genesis_validators_root,
-        &client_state.fork_parameters,
-        VerificationContext { deps },
-    )
-    .map_err(Error::ValidateLightClient)?;
+//     validate_light_client_update::<C, VerificationContext>(
+//         &misbehaviour.update_2.clone().into(),
+//         current_sync_committee,
+//         next_sync_committee,
+//         current_slot,
+//         wasm_consensus_state.data.slot,
+//         client_state.genesis_validators_root,
+//         &client_state.fork_parameters,
+//         VerificationContext { deps },
+//     )
+//     .map_err(Error::ValidateLightClient)?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 // #[cfg(test)]
 // mod test {
