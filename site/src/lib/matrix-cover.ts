@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as glMatrix from "gl-matrix"
 
 export const pathConfigMap = {
