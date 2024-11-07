@@ -4,7 +4,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
-use ibc_solidity::ibc::{
+use ibc_solidity::cosmwasm::types::ibc::{
     Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgBatchAcks, MsgBatchSend,
     MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
     MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
@@ -59,82 +59,84 @@ pub fn execute(
             clientType,
             clientStateBytes,
             consensusStateBytes,
-            relayer: _,
-        }) => create_client(
-            deps.branch(),
-            clientType,
-            clientStateBytes.to_vec(),
-            consensusStateBytes.to_vec(),
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            create_client(
+                deps.branch(),
+                clientType,
+                clientStateBytes.to_vec(),
+                consensusStateBytes.to_vec(),
+                relayer,
+            )
+        }
         ExecuteMsg::UpdateClient(MsgUpdateClient {
             clientId,
             clientMessage,
-            relayer: _,
-        }) => update_client(
-            deps.branch(),
-            clientId,
-            clientMessage.to_vec(),
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            update_client(deps.branch(), clientId, clientMessage.to_vec(), relayer)
+        }
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             clientId,
             counterpartyClientId,
-            relayer: _,
-        }) => connection_open_init(
-            deps.branch(),
-            clientId,
-            counterpartyClientId,
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            connection_open_init(deps.branch(), clientId, counterpartyClientId, relayer)
+        }
         ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
             counterpartyClientId,
             counterpartyConnectionId,
             clientId,
             proofInit,
             proofHeight,
-            relayer: _,
-        }) => connection_open_try(
-            deps.branch(),
-            counterpartyClientId,
-            counterpartyConnectionId,
-            clientId,
-            proofInit.to_vec(),
-            proofHeight,
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            connection_open_try(
+                deps.branch(),
+                counterpartyClientId,
+                counterpartyConnectionId,
+                clientId,
+                proofInit.to_vec(),
+                proofHeight,
+                relayer,
+            )
+        }
         ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
             connectionId,
             counterpartyConnectionId,
             proofTry,
             proofHeight,
-            relayer: _,
-        }) => connection_open_ack(
-            deps.branch(),
-            connectionId,
-            counterpartyConnectionId,
-            proofTry.to_vec(),
-            proofHeight,
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            connection_open_ack(
+                deps.branch(),
+                connectionId,
+                counterpartyConnectionId,
+                proofTry.to_vec(),
+                proofHeight,
+                relayer,
+            )
+        }
         ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connectionId,
             proofAck,
             proofHeight,
-            relayer: _,
-        }) => connection_open_confirm(
-            deps.branch(),
-            connectionId,
-            proofAck.to_vec(),
-            proofHeight,
-            // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
-            Addr::unchecked("addr"),
-        ),
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            connection_open_confirm(
+                deps.branch(),
+                connectionId,
+                proofAck.to_vec(),
+                proofHeight,
+                relayer,
+            )
+        }
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             portId,
             counterpartyPortId,
@@ -263,8 +265,6 @@ pub fn execute(
             packet,
             proof,
             proofHeight,
-            // remove after having refactored to ordered only
-            nextSequenceRecv: _,
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
@@ -818,9 +818,6 @@ fn channel_open_init(
     relayer: Addr,
 ) -> ContractResult {
     let port_id = deps.api.addr_validate(&port_id)?;
-    if ordering != ChannelOrder::Ordered && ordering != ChannelOrder::Unordered {
-        return Err(ContractError::ChannelInvalidOrdering { got: ordering });
-    }
     ensure_connection_state(deps.as_ref(), connection_id)?;
     let channel_id = next_channel_id(deps.branch())?;
     let channel = Channel {
@@ -864,11 +861,6 @@ fn channel_open_try(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    if channel.ordering != ChannelOrder::Ordered && channel.ordering != ChannelOrder::Unordered {
-        return Err(ContractError::ChannelInvalidOrdering {
-            got: channel.ordering,
-        });
-    }
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,

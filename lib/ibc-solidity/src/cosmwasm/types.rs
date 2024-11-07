@@ -198,7 +198,6 @@ pub mod ibc {
             Packet packet;
             bytes proof;
             uint64 proofHeight;
-            uint64 nextSequenceRecv;
             string relayer;
         }
 

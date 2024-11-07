@@ -6,7 +6,7 @@ pub mod query;
 pub mod state;
 
 use cosmwasm_std::StdError;
-use ibc_solidity::ibc::{ChannelOrder, ChannelState, ConnectionState};
+use ibc_solidity::cosmwasm::types::ibc::{ChannelState, ConnectionState};
 use thiserror::Error;
 
 #[global_allocator]
@@ -30,8 +30,6 @@ pub enum ContractError {
         got: ConnectionState,
         expected: ConnectionState,
     },
-    #[error("Channel ordering is invalid: got {got:?}")]
-    ChannelInvalidOrdering { got: ChannelOrder },
     #[error("Channel state is invalid: expected {expected:?}, got {got:?}")]
     ChannelInvalidState {
         got: ChannelState,

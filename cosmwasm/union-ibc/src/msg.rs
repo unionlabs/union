@@ -1,5 +1,5 @@
 use cosmwasm_std::Addr;
-use ibc_solidity::ibc::{
+use ibc_solidity::cosmwasm::types::ibc::{
     MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck,
     MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient,

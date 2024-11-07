@@ -1,5 +1,5 @@
 use cosmwasm_std::{Addr, Binary};
-use ibc_solidity::ibc::{ChannelOrder, Packet};
+use ibc_solidity::cosmwasm::types::ibc::{ChannelOrder, Packet};
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ExecuteMsg {
