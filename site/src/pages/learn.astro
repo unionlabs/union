@@ -1,9 +1,8 @@
 ---
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro"
 import { contentfulClient } from "../lib/contentful/client.ts"
-import { renderRichText, renderTitle } from "../lib/contentful/render.ts"
-import type { LearningPageFields } from "../lib/contentful/types.ts"
-import AnimationLayout from "../layouts/AnimationLayout.astro"
+import type { LearningPageFields } from "#/lib/contentful/types.ts"
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
 
 export const prerender = false
 

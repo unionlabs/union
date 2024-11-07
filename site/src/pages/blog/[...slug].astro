@@ -20,7 +20,6 @@ const {
     "sys.id", // entry id
     "fields.date",
     "fields.slug",
-    "fields.date",
     "fields.title",
     "fields.cover",
     "fields.author",
@@ -115,7 +114,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 
   const subscriptions: Array<VoidFunction> = [];
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async (event) => {
     const emElement = document.querySelector("h1[data-contentful-entry-id]");
     const entryId = emElement?.dataset.contentfulEntryId;
     if (!entryId) return;
@@ -124,20 +123,14 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
       subscriptions,
       locale: "en-US",
       debugMode: import.meta.env.MODE === "development",
-      fields: [
-        "date",
-        "date",
-        "title",
-        "cover",
-        "author",
-        "content",
-        "description",
-      ],
+      fields: ["date", "title", "cover", "author", "content", "description"],
     });
   });
 </script>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
+
+<script is:inline type="module" src="/scripts/scroll-to-anchor.js"></script>
 
 <style is:inline lang="postcss">
   ol {

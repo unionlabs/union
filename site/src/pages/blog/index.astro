@@ -1,10 +1,8 @@
 ---
 import Card from "#/components/Card.astro"
 import type { BlogPost } from "#/lib/types.ts"
-import H3 from "#/components/typography/h3.astro"
-import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
-import AnimationLayout from "../../layouts/AnimationLayout.astro"
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
 import ContainedSection from "#/components/ContainedSection.astro"
 
 export const prerender = false
@@ -30,7 +28,6 @@ const imageWithProtocol = (url: string) => `https:${url}`
   title="Development blog"
   text="Stay updated on our technical progress, partnerships, and ecosystem growth."
 >
-  <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
   <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
     {
       publishedBlogPosts.map((blogPostEntry: BlogPost) => (
