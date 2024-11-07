@@ -17,4 +17,4 @@ serde    = { workspace = true, features = ["derive"], optional = true }
 default  = ["rpc"]
 rpc      = ["alloy/contract"]
 schemars = ["dep:schemars"]
-serde   = ["dep:serde", "alloy/serde"]
+serde    = ["dep:serde", "alloy/serde"]

@@ -303,7 +303,7 @@ pub fn check_commitment_key(
     key: U256,
 ) -> Result<(), InvalidCommitmentKey> {
     // TODO: Fix this @aeryz
-    let expected_commitment_key = ibc_commitment_key(H256::default(), ibc_commitment_slot);
+    let expected_commitment_key = ibc_commitment_key(H256::default());
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
