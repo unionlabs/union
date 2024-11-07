@@ -614,8 +614,6 @@ function initWebGL() {
   }
 
   document.addEventListener("mousemove", updateMousePosition)
-  canvas.addEventListener("touchstart", handleTouch)
-  canvas.addEventListener("touchmove", handleTouch)
 
   return () => {
     document.removeEventListener("mousemove", updateMousePosition)
