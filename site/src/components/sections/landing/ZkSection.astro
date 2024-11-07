@@ -45,43 +45,78 @@ const textHtml = renderRichText(text)
 
 <script>
   let fadeInTimeout: Timer;
+  let observer: IntersectionObserver;
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const whale = document.getElementById("whale-image");
-        const content = document.getElementById("content-section");
+  function setupAnimation() {
+    // Clear any existing observer
+    if (observer) {
+      observer.disconnect();
+    }
 
-        if (entry.isIntersecting) {
-          // Staggered fade in
-          whale?.classList.remove("scale-[1.3]", "md:scale-[0.8]");
-          whale?.classList.add("opacity-100", "scale-[1.5]", "md:scale-100");
-
-          clearTimeout(fadeInTimeout);
-          fadeInTimeout = setTimeout(() => {
-            content?.classList.add("opacity-100", "translate-y-0");
-          }, 400);
-        } else {
-          // Ensure both elements fade out
-          clearTimeout(fadeInTimeout);
-          whale?.classList.remove("opacity-100", "scale-[1.5]", "md:scale-100");
-          whale?.classList.add("scale-[1.3]", "md:scale-[0.8]");
-          content?.classList.remove("opacity-100", "translate-y-0");
-        }
-      });
-    },
-    {
-      threshold: [0.2, 0.8],
-      rootMargin: "-10%",
-    },
-  );
-
-  // Observe the container
-  const container = document.getElementById("animation-container");
-  if (container) observer.observe(container);
-
-  // Cleanup on page navigation
-  document.addEventListener("astro:page-load", () => {
+    // Clear any existing timeout
     clearTimeout(fadeInTimeout);
+
+    // Reset elements to initial state
+    const whale = document.getElementById("whale-image");
+    const content = document.getElementById("content-section");
+
+    whale?.classList.remove("opacity-100", "scale-[1.5]", "md:scale-100");
+    whale?.classList.add("scale-[1.3]", "md:scale-[0.8]", "opacity-0");
+    content?.classList.remove("opacity-100", "translate-y-0");
+    content?.classList.add("opacity-0", "translate-y-6");
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const whale = document.getElementById("whale-image");
+          const content = document.getElementById("content-section");
+
+          if (entry.isIntersecting) {
+            // Staggered fade in
+            whale?.classList.remove("scale-[1.3]", "md:scale-[0.8]");
+            whale?.classList.add("opacity-100", "scale-[1.5]", "md:scale-100");
+
+            clearTimeout(fadeInTimeout);
+            fadeInTimeout = setTimeout(() => {
+              content?.classList.add("opacity-100", "translate-y-0");
+            }, 400);
+          } else {
+            // Ensure both elements fade out
+            clearTimeout(fadeInTimeout);
+            whale?.classList.remove(
+              "opacity-100",
+              "scale-[1.5]",
+              "md:scale-100",
+            );
+            whale?.classList.add("scale-[1.3]", "md:scale-[0.8]");
+            content?.classList.remove("opacity-100", "translate-y-0");
+          }
+        });
+      },
+      {
+        threshold: [0.2, 0.8],
+        rootMargin: "-10%",
+      },
+    );
+
+    // Start observing
+    const container = document.getElementById("animation-container");
+    if (container) observer.observe(container);
+  }
+
+  // Initial setup
+  setupAnimation();
+
+  // Handle client-side navigation
+  document.addEventListener("astro:page-load", () => {
+    setupAnimation();
+  });
+
+  // Cleanup
+  document.addEventListener("astro:before-preparation", () => {
+    clearTimeout(fadeInTimeout);
+    if (observer) {
+      observer.disconnect();
+    }
   });
 </script>
