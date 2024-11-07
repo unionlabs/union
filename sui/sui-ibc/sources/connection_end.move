@@ -74,7 +74,7 @@ module ibc::connection_end {
 
     // Encode and decode functions (empty for now)
     public fun encode(connection: &ConnectionEnd): vector<u8> {
-        // TODO: fix here 
+        // TODO: fix here
 
         let buf = vector::empty();
 
