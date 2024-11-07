@@ -732,7 +732,7 @@ module ibc::ibc {
         );
     }
 
-    public entry fun channel_open_init(
+    public fun channel_open_init(
         ibc_store: &mut IBCStore,
         port_id: String,
         connection_id: u32,
@@ -788,12 +788,14 @@ module ibc::ibc {
             }
         );
     }
-    public entry fun channel_open_try(
+    public fun channel_open_try(
         ibc_store: &mut IBCStore,
         port_id: String,
-        channel_id: u32,
+        channel_state: u8,
+        channel_order: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
+        counterparty_version: vector<u8>,
         version: vector<u8>,
         proof_init: vector<u8>,
         proof_height: u64
@@ -804,25 +806,18 @@ module ibc::ibc {
             connection_end::state(connection) == CONN_STATE_OPEN,
             E_INVALID_CONNECTION_STATE
         );
-
-        // Check that the channel is in the INIT state
-        let mut channel = ibc_store.channels.borrow_mut(channel_id);
-        assert!(
-            channel::state(channel) == CHAN_STATE_INIT,
-            E_INVALID_CHANNEL_STATE
-        );
+        let client_id = connection_end::client_id(connection);
 
         // Construct the expected channel state to verify against the proof
         let expected_channel = channel::new(
             CHAN_STATE_INIT,
-            channel::ordering(channel),
+            channel_order,
             connection_id,
             counterparty_channel_id,
             version
         );
 
         // Verify the channel state using the provided proof and expected state
-        let client_id = connection_end::client_id(connection);
         let verification_result = verify_channel_state(
             client_id,
             proof_height,
@@ -832,14 +827,43 @@ module ibc::ibc {
         );
         assert!(verification_result == 0, verification_result);
 
-        // Update the channel state to TRYOPEN
-        channel::set_state(channel, CHAN_STATE_TRYOPEN);
+        // Generate a new channel ID
+        let channel_id = ibc_store.generate_channel_identifier();
+
+        // Create a new channel and set its properties
+        let mut channel = channel::default();
+        channel::set_state(&mut channel, channel_state);
+        channel::set_ordering(&mut channel, channel_order);
+        channel::set_connection_id(&mut channel, connection_id);
+        channel::set_counterparty_channel_id(&mut channel, counterparty_channel_id);
+        channel::set_version(&mut channel, version);
+
+        // Add initial sequence values for send, receive, and acknowledgment
+
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+            commitment::next_sequence_send_commitment_key(channel_id),
+            bcs::to_bytes(&1)
+        );
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+            commitment::next_sequence_recv_commitment_key(channel_id),
+            bcs::to_bytes(&1)
+        );
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+            commitment::next_sequence_ack_commitment_key(channel_id),
+            bcs::to_bytes(&1)
+        );
+    
+        // Store the new channel in the IBCStore
+        add_or_update_table<u32, Channel>(&mut ibc_store.channels,
+            channel_id,
+            channel
+        );
 
         // Emit an event for the channel open try
         event::emit(
             ChannelOpenTry {
                 port_id: port_id,
-                channel_id: channel_id,
+                channel_id: counterparty_channel_id,
                 counterparty_channel_id: counterparty_channel_id,
                 connection_id: connection_id,
                 version: version
@@ -847,17 +871,17 @@ module ibc::ibc {
         );
 
         // Commit the updated channel to storage
-        ibc_store.commit_channel(channel_id, *channel);
+        ibc_store.commit_channel(channel_id, channel);
     }
 
-    public entry fun channel_open_ack(
+    public fun channel_open_ack(
         ibc_store: &mut IBCStore,
         port_id: String,
         channel_id: u32,
+        counterparty_version: vector<u8>,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64,
-        version: vector<u8>
     ) {
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
@@ -880,7 +904,7 @@ module ibc::ibc {
             channel::ordering(channel),
             connection_id,
             counterparty_channel_id,
-            version
+            counterparty_version
         );
 
         // Verify the channel state using the provided proof and expected state
@@ -897,7 +921,7 @@ module ibc::ibc {
         // Update the channel state to OPEN and set the counterparty channel ID
         channel::set_state(channel, CHAN_STATE_OPEN);
         channel::set_counterparty_channel_id(channel, counterparty_channel_id);
-        channel::set_version(channel, version);
+        channel::set_version(channel, counterparty_version);
 
         // Emit an event for the channel open acknowledgment
         event::emit(
@@ -913,7 +937,7 @@ module ibc::ibc {
         ibc_store.commit_channel(channel_id, *channel);
     }
 
-    public entry fun channel_open_confirm(
+    public fun channel_open_confirm(
         ibc_store: &mut IBCStore,
         port_id: String,
         channel_id: u32,
@@ -973,7 +997,7 @@ module ibc::ibc {
     }
 
     /// Function to send a packet through an open channel
-    public entry fun send_packet(
+    public fun send_packet(
         ibc_store: &mut IBCStore,
         source_port: address,
         source_channel: u32,
@@ -1038,7 +1062,6 @@ module ibc::ibc {
     public fun recv_packet(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
-        ctx: &mut TxContext,
         port_id: address,
         packets: vector<Packet>,
         proof: vector<u8>,
@@ -1048,7 +1071,6 @@ module ibc::ibc {
         process_receive(
             ibc_store,
             clock,
-            ctx,
             packets,
             proof_height,
             proof,
@@ -1060,7 +1082,6 @@ module ibc::ibc {
     public fun process_receive(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
-        ctx: &mut TxContext,
         packets: vector<Packet>,
         proof_height: u64,
         proof: vector<u8>,
@@ -1691,28 +1712,48 @@ module ibc::ibc {
         // Use the mock function to create a valid connection
         let connection_id = mock_valid_connection(&mut ibc_store);
 
-        // Initialize the channel first
+        // Set up necessary inputs for channel_open_try
         let port_id = utf8(b"test_port");
-        let ordering = CHAN_ORDERING_ORDERED;
+        let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
+        let channel_order = CHAN_ORDERING_ORDERED;
         let version = b"test_version";
-        channel_open_init(&mut ibc_store, port_id, connection_id, ordering, version);
-
-        // Prepare inputs for channel_open_try
-        let channel_id = 0;
+        let counterparty_version = b"counterparty_version";
         let counterparty_channel_id = 1;
         let proof_init = b"proof";
         let proof_height = 1;
 
         // Call channel_open_try
-        channel_open_try(&mut ibc_store, port_id, channel_id, connection_id, counterparty_channel_id, version, proof_init, proof_height);
+        channel_open_try(
+            &mut ibc_store,
+            port_id,
+            channel_state,
+            channel_order,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_version,
+            version,
+            proof_init,
+            proof_height
+        );
 
-        // Verify state transition to TRYOPEN
+        // Retrieve the generated channel ID for verification (assuming it starts from 0)
+        let channel_id = 0;
         let channel = ibc_store.channels.borrow(channel_id);
+
+        // Verify that the channel state is set to TRYOPEN
         assert!(channel::state(channel) == CHAN_STATE_TRYOPEN, E_INVALID_CHANNEL_STATE);
+
+        // Verify that the ordering and connection ID are correctly set
+        assert!(channel::ordering(channel) == channel_order, E_UNKNOWN_CHANNEL_ORDERING);
+        assert!(channel::connection_id(channel) == connection_id, E_CONNECTION_DOES_NOT_EXIST);
+
+        // Verify the version is set as expected
+        assert!(channel::version(channel) == version, E_UNSUPPORTED_VERSION);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
     }
+
 
     #[test]
     fun test_channel_open_ack() {
@@ -1727,19 +1768,43 @@ module ibc::ibc {
 
         // Initialize and try-open the channel first
         let port_id = utf8(b"test_port");
-        let ordering = CHAN_ORDERING_ORDERED;
+        let channel_state = CHAN_STATE_TRYOPEN; // Channel state for try
+        let channel_order = CHAN_ORDERING_ORDERED;
         let version = b"test_version";
-        channel_open_init(&mut ibc_store, port_id, connection_id, ordering, version);
-        channel_open_try(&mut ibc_store, port_id, 0, connection_id, 1, version, b"proof", 1);
-
-        // Prepare inputs for channel_open_ack
-        let channel_id = 0;
+        let counterparty_version = b"counterparty_version";
         let counterparty_channel_id = 1;
-        let proof_try = b"proof";
+        let proof_init = b"proof";
         let proof_height = 1;
 
+        // Call channel_open_try to set up the channel
+        channel_open_try(
+            &mut ibc_store,
+            port_id,
+            channel_state,
+            channel_order,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_version,
+            version,
+            proof_init,
+            proof_height
+        );
+
+        // Prepare inputs for channel_open_ack
+        let channel_id = 0; // Assuming the generated ID is 0 for the first channel
+        let proof_try = b"proof";
+        let proof_height_ack = 1;
+
         // Call channel_open_ack
-        channel_open_ack(&mut ibc_store, port_id, channel_id, counterparty_channel_id, proof_try, proof_height, version);
+        channel_open_ack(
+            &mut ibc_store,
+            port_id,
+            channel_id,
+            version,
+            counterparty_channel_id,
+            proof_try,
+            proof_height_ack
+        );
 
         // Verify state transition to OPEN
         let channel = ibc_store.channels.borrow(channel_id);
@@ -1748,6 +1813,7 @@ module ibc::ibc {
         test_scenario::return_shared(ibc_store);
         test_case.end();
     }
+
 
     #[test]
     fun test_channel_open_confirm() {
@@ -1762,18 +1828,48 @@ module ibc::ibc {
 
         // Initialize, try-open, and ack the channel first
         let port_id = utf8(b"test_port");
-        let ordering = CHAN_ORDERING_ORDERED;
+        let channel_state = CHAN_STATE_TRYOPEN;
+        let channel_order = CHAN_ORDERING_ORDERED;
         let version = b"test_version";
-        channel_open_init(&mut ibc_store, port_id, connection_id, ordering, version);
-        channel_open_try(&mut ibc_store, port_id, 0, connection_id, 1, version, b"proof", 1);
+        let counterparty_version = b"counterparty_version";
+        let counterparty_channel_id = 1;
+        let proof_init = b"proof";
+        let proof_height_try = 1;
+
+        // Call channel_open_try to set up the channel
+        channel_open_try(
+            &mut ibc_store,
+            port_id,
+            channel_state,
+            channel_order,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_version,
+            version,
+            proof_init,
+            proof_height_try
+        );
+
+        // Call channel_open_ack to move to the open state
+        let channel_id = 0;
+        // let proof_try = b"proof";
+        // let proof_height_ack = 1;
+        // channel_open_ack(
+        //     &mut ibc_store,
+        //     port_id,
+        //     channel_id,
+        //     version,
+        //     counterparty_channel_id,
+        //     proof_try,
+        //     proof_height_ack
+        // );
 
         // Prepare inputs for channel_open_confirm
-        let channel_id = 0;
         let proof_ack = b"proof";
-        let proof_height = 1;
+        let proof_height_confirm = 1;
 
         // Call channel_open_confirm
-        channel_open_confirm(&mut ibc_store, port_id, channel_id, proof_ack, proof_height);
+        channel_open_confirm(&mut ibc_store, port_id, channel_id, proof_ack, proof_height_confirm);
 
         // Verify final state is OPEN
         let channel = ibc_store.channels.borrow(channel_id);
@@ -1782,6 +1878,7 @@ module ibc::ibc {
         test_scenario::return_shared(ibc_store);
         test_case.end();
     }
+
 
     #[test]
     fun test_send_packet() {
@@ -1894,12 +1991,11 @@ module ibc::ibc {
             COMMITMENT_NULL
         );
         let mut clock = clock::create_for_testing(&mut ctx);
-        clock.set_for_testing(1000000);
+        clock.set_for_testing(99);
 
         process_receive(
             &mut ibc_store,
             &clock,
-            &mut ctx,
             packets,
             proof_height,
             proof,
