@@ -1,4 +1,5 @@
 ---
+import BlinkWhale from "./BlinkWhale.astro"
 const menuSections = [
   {
     title: "Products",
@@ -101,7 +102,10 @@ function isInternal(menuItem: { url: string }): boolean {
       ))
     }
   </ul>
-  <p class="text-center block text-white font-bold mt-4">O_______O</p>
+
+  <p class="text-center block font-bold mt-4 font-supermolot text-accent-500">
+    <BlinkWhale />
+  </p>
   <p class="text-center font-supermolot font-bold block text-neutral-500 my-4">
     &copy; Union Labs
   </p>
