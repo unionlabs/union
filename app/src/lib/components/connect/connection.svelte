@@ -25,10 +25,6 @@ export let onDisconnectClick: $$Props["onDisconnectClick"]
 export let connectedWalletId: $$Props["connectedWalletId"]
 export let chainWalletsInformation: $$Props["chainWalletsInformation"]
 
-$: {
-  console.info("address", address)
-}
-
 $: connectText =
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"

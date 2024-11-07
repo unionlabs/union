@@ -10,8 +10,8 @@ import type { ChainWalletStore } from "../types.ts"
  */
 
 export function getAptosWallet() {
-  if (Object.hasOwn(window, "aptos")) return window.aptos
   if (Object.hasOwn(window, "petra")) return window.petra
+  if (Object.hasOwn(window, "aptos")) return window.aptos
 
   window.open("https://petra.app/", "_blank", "noopener noreferrer")
 }
@@ -77,12 +77,12 @@ export function createAptosStore(
       }))
     },
     disconnect: async () => {
-      const aptosWalletId = get({ subscribe }).connectedWallet as AptosWalletId
+      const aptosWallet = get({ subscribe })
       const wallet = getAptosWallet()
       console.info(`[aptos] aptosDisconnectClick`, get(aptosStore))
 
       const isConnected = await wallet?.isConnected()
-      if (isConnected) {
+      if (isConnected || aptosWallet.connectionStatus !== 'disconnected') {
         await wallet?.disconnect()
 
         update(_ => ({
