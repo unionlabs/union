@@ -4,6 +4,7 @@ import Card from "#/components/Card.astro"
 interface Props {
   person: {
     twitterHandle: string
+    twitterPicture: unknown
     name: string
     profilePicture: unknown
     title: string
@@ -11,28 +12,47 @@ interface Props {
 }
 
 const { person } = Astro.props
+
+console.log(person)
 ---
 
 <Card hoverScale>
   <a
-    href={`https://x.com/${person.twitterHandle}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    class="flex flex-col"
+          href={`https://x.com/${person.twitterHandle}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex flex-col group"
   >
-    <div class="object-cover overflow-hidden">
-      <!-- We don't have a picture for every person !-->
-      {
-        person?.profilePicture?.fields?.file?.url ? (
-          <img
-            class="w-full aspect-[1/1]"
-            src={person?.profilePicture?.fields?.file?.url}
-            alt={`${person.name} - Union worker`}
-          />
-        ) : (
-          <div class="bg-neutral-900 aspect-1 w-full" />
-        )
-      }
+    <div class="object-cover overflow-hidden relative">
+      <!-- Default profile picture -->
+      <div class="transition-opacity duration-300 ease-in-out group-hover:opacity-0">
+        {
+          person?.profilePicture?.fields?.file?.url ? (
+                  <img
+                          class="w-full aspect-[1/1]"
+                          src={person?.profilePicture?.fields?.file?.url}
+                          alt={`${person.name} - Union worker`}
+                  />
+          ) : (
+                  <div class="bg-neutral-900 aspect-1 w-full" />
+          )
+        }
+      </div>
+
+      <!-- Twitter picture or grey background that shows on hover -->
+      <div class="absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
+        {
+          person?.twitterPicture ? (
+                  <img
+                          class="w-full h-full object-cover"
+                          src={person?.twitterPicture?.fields?.file?.url}
+                          alt={`${person.name} - Twitter profile`}
+                  />
+          ) : (
+                  <div class="bg-gray-600 w-full h-full" />
+          )
+        }
+      </div>
     </div>
     <div class="leading-tight flex flex-col gap p-2 sm:p-4 uppercase font-mono">
       <h1 class="text-2xl font-bold font-supermolot uppercase">
