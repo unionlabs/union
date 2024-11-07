@@ -33,16 +33,16 @@ export const aptosWalletsInformation = (
     }
   ] as const
 )
-/**
- * Temporary filtering out reasons:
- * 
- * `okxwallet` because it uses the deprecated payload API where
- * instead of `.signAndSubmitTransaction({ payload: ... })`, it uses `.signAndSubmitTransaction({ ... })`.
- * In our SDK we use the current, non-deprecated API.
- *
- * `martian` because it doesn't implement `.getNetwork()` and `.getAccount()` methods yet.
- * We will stop filtering them out once they use the new API.
- */
+  /**
+   * Temporary filtering out reasons:
+   *
+   * `okxwallet` because it uses the deprecated payload API where
+   * instead of `.signAndSubmitTransaction({ payload: ... })`, it uses `.signAndSubmitTransaction({ ... })`.
+   * In our SDK we use the current, non-deprecated API.
+   *
+   * `martian` because it doesn't implement `.getNetwork()` and `.getAccount()` methods yet.
+   * We will stop filtering them out once they use the new API.
+   */
   .filter(wallet => !["okxwallet", "martian"].includes(wallet.id))
 
 export type AptosWalletId = (typeof aptosWalletsInformation)[number]["id"]

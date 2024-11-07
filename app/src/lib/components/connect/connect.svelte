@@ -18,7 +18,7 @@ import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
-    import { onMount } from 'svelte'
+import { onMount } from "svelte"
 
 let buttonText: string
 
