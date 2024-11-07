@@ -14041,6 +14041,8 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "ibc-events",
+ "ibc-solidity",
  "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",

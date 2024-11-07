@@ -286,6 +286,7 @@ pub mod ibc {
                 error ErrInvalidInitialConsensusState();
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             enum ConnectionState {
                 Unspecified,
                 Init,
@@ -293,6 +294,7 @@ pub mod ibc {
                 Open
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct Connection {
                 ConnectionState state;
                 uint32 clientId;
@@ -300,6 +302,7 @@ pub mod ibc {
                 uint32 counterpartyConnectionId;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             enum ChannelState {
                 Unspecified,
                 Init,
@@ -325,6 +328,7 @@ pub mod ibc {
                 uint64 timeoutTimestamp;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgCreateClient {
                 string clientType;
                 bytes clientStateBytes;
@@ -332,18 +336,21 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgUpdateClient {
                 uint32 clientId;
                 bytes clientMessage;
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgConnectionOpenInit {
                 uint32 clientId;
                 uint32 counterpartyClientId;
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgConnectionOpenTry {
                 uint32 counterpartyClientId;
                 uint32 counterpartyConnectionId;
@@ -353,6 +360,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgConnectionOpenAck {
                 uint32 connectionId;
                 uint32 counterpartyConnectionId;
@@ -361,6 +369,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgConnectionOpenConfirm {
                 uint32 connectionId;
                 bytes proofAck;
@@ -368,6 +377,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelOpenInit {
                 address portId;
                 bytes counterpartyPortId;
@@ -376,6 +386,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelOpenTry {
                 Channel channel;
                 string counterpartyVersion;
@@ -384,6 +395,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelOpenAck {
                 uint32 channelId;
                 string counterpartyVersion;
@@ -393,6 +405,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelOpenConfirm {
                 uint32 channelId;
                 bytes proofAck;
@@ -400,11 +413,13 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelCloseInit {
                 uint32 channelId;
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgChannelCloseConfirm {
                 uint32 channelId;
                 bytes proofInit;
@@ -412,6 +427,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgPacketRecv {
                 Packet[] packets;
                 bytes[] relayerMsgs;
@@ -420,6 +436,7 @@ pub mod ibc {
                 uint64 proofHeight;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgPacketAcknowledgement {
                 Packet[] packets;
                 bytes[] acknowledgements;
@@ -428,6 +445,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgPacketTimeout {
                 Packet packet;
                 bytes proof;
@@ -435,6 +453,7 @@ pub mod ibc {
                 address relayer;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgIntentPacketRecv {
                 Packet[] packets;
                 bytes[] marketMakerMsgs;
@@ -442,11 +461,13 @@ pub mod ibc {
                 bytes emptyProof;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgBatchSend {
                 uint32 sourceChannel;
                 Packet[] packets;
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct MsgBatchAcks {
                 uint32 sourceChannel;
                 Packet[] packets;

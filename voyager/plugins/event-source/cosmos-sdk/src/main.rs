@@ -35,6 +35,7 @@ use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, QueryHeight},
     data::{ChainEvent, ChannelMetadata, ConnectionMetadata, Data, PacketMetadata},
+    ibc_v1::IbcV1,
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
     run_plugin_server, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
@@ -356,13 +357,18 @@ impl Module {
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info(self.chain_id.clone(), self_connection.client_id.clone())
+            .client_info(
+                self.chain_id.clone(),
+                IbcV1::ID,
+                self_connection.client_id.clone(),
+            )
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
         let client_meta = voyager_rpc_client
             .client_meta(
                 self.chain_id.clone(),
+                IbcV1::ID,
                 event_height.into(),
                 self_connection.client_id.clone(),
             )

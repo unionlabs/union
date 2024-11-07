@@ -1,40 +1,20 @@
-use std::num::NonZeroU64;
-
 use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
-use tracing::info;
 use unionlabs::{
     bytes::Bytes,
     hash::H256,
-    ibc::core::{
-        channel::{
-            msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
-            msg_channel_open_confirm::MsgChannelOpenConfirm,
-            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket, msg_timeout::MsgTimeout, order::Order,
-        },
-        client::{
-            height::Height, msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient,
-        },
-        connection::{
-            connection_end::ConnectionEnd, msg_connection_open_ack::MsgConnectionOpenAck,
-            msg_connection_open_confirm::MsgConnectionOpenConfirm,
-            msg_connection_open_init::MsgConnectionOpenInit,
-            msg_connection_open_try::MsgConnectionOpenTry,
-        },
-    },
-    ics24::{ClientConsensusStatePath, ClientStatePath, IbcPath, Path},
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    ibc::core::client::{height::Height, msg_update_client::MsgUpdateClient},
+    ics24::{IbcPath, Path},
     traits::Member,
 };
 use voyager_core::IbcVersionId;
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta},
-    PluginMessage,
+    core::{ChainId, ClientInfo, ClientStateMeta},
+    into_value, IbcSpec, PluginMessage,
 };
 
 #[model]
@@ -65,6 +45,21 @@ impl Data {
     }
 }
 
+// #[model]
+// pub struct VersionMessage {
+//     pub ibc_version_id: IbcVersionId,
+//     pub data: Value,
+// }
+
+// impl VersionMessage {
+//     pub fn new<V: IbcSpec>(data: Value) -> Self {
+//         Self {
+//             ibc_version_id: V::ID,
+//             data,
+//         }
+//     }
+// }
+
 #[model]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
@@ -79,7 +74,7 @@ pub struct ChainEvent {
     /// the state root of the chain identified by [`Self::chain_id`].
     pub provable_height: Height,
 
-    pub ibc_version_id: IbcVersionId<'static>,
+    pub ibc_version_id: IbcVersionId,
     /// The full IBC event, encoded as JSON value. This is really [`IbcSpec::Event`],
     /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
     pub event: Value,
@@ -87,10 +82,27 @@ pub struct ChainEvent {
 
 #[model]
 pub struct IbcDatagram {
-    pub ibc_version_id: IbcVersionId<'static>,
+    pub ibc_version_id: IbcVersionId,
     /// The IBC datagram, encoded as JSON value. This is really [`IbcSpec::Datagram`],
     /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
-    pub event: Value,
+    pub datagram: Value,
+}
+
+impl IbcDatagram {
+    pub fn decode_datagram<V: IbcSpec>(&self) -> Option<Result<V::Datagram, serde_json::Error>> {
+        if self.ibc_version_id == V::ID {
+            Some(serde_json::from_value(self.datagram.clone()))
+        } else {
+            None
+        }
+    }
+
+    pub fn new<V: IbcSpec>(datagram: V::Datagram) -> Self {
+        Self {
+            ibc_version_id: V::ID,
+            datagram: into_value(datagram),
+        }
+    }
 }
 
 #[model]
