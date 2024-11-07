@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::{Item, Map};
 use ibc_solidity::ibc::{Channel, Connection};
 
@@ -8,9 +8,9 @@ pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
 
 pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
 
-pub const CLIENT_STATES: Map<u32, Vec<u8>> = Map::new("client_states");
+pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
 
-pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Vec<u8>> = Map::new("client_consensus_states");
+pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
 
 // From client type to contract implementation
 pub const CLIENT_REGISTRY: Map<&str, Addr> = Map::new("client_registry");

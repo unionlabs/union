@@ -576,11 +576,11 @@ fn create_client(
             consensus_state: consensus_state_bytes.to_vec().into(),
         },
     )?;
-    CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec())?;
+    CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
     CLIENT_CONSENSUS_STATES.save(
         deps.storage,
         (client_id, latest_height),
-        &consensus_state_bytes.to_vec(),
+        &consensus_state_bytes.to_vec().into(),
     )?;
     store_commit(
         deps.branch(),
