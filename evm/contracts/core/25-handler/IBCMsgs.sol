@@ -51,7 +51,7 @@ library IBCMsgs {
 
     struct MsgChannelOpenInit {
         address portId;
-        string counterpartyPortId;
+        bytes counterpartyPortId;
         uint32 connectionId;
         string version;
         address relayer;

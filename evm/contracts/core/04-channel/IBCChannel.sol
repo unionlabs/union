@@ -11,44 +11,44 @@ import "../../lib/Hex.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 connectionId,
         string version
     );
     event ChannelOpenTry(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
         string version
     );
     event ChannelOpenAck(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelOpenConfirm(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelCloseInit(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
     event ChannelCloseConfirm(
-        string portId,
+        address portId,
         uint32 channelId,
-        string counterpartyPortId,
+        bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
 }
@@ -78,7 +78,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.connectionId, channelId, msg_.version, msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenInit(
-            msg_.portId.toHexString(),
+            msg_.portId,
             channelId,
             channel.counterpartyPortId,
             msg_.connectionId,
@@ -101,7 +101,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Init,
             counterpartyChannelId: 0,
             connectionId: getCounterpartyConnection(msg_.channel.connectionId),
-            counterpartyPortId: msg_.portId.toHexString(),
+            counterpartyPortId: abi.encodePacked(msg_.portId),
             version: msg_.counterpartyVersion
         });
         if (
@@ -128,7 +128,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenTry(
-            msg_.portId.toHexString(),
+            msg_.portId,
             channelId,
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
@@ -154,7 +154,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.TryOpen,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-            counterpartyPortId: portId.toHexString(),
+            counterpartyPortId: abi.encodePacked(portId),
             version: msg_.counterpartyVersion
         });
         if (
@@ -179,7 +179,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenAck(
-            portId.toHexString(),
+            portId,
             msg_.channelId,
             channel.counterpartyPortId,
             msg_.counterpartyChannelId,
@@ -203,7 +203,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Open,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-            counterpartyPortId: portId.toHexString(),
+            counterpartyPortId: abi.encodePacked(portId),
             version: channel.version
         });
         if (
@@ -221,7 +221,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitChannel(msg_.channelId, channel);
         IIBCModule(portId).onChanOpenConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelOpenConfirm(
-            portId.toHexString(),
+            portId,
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId,
@@ -245,7 +245,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         address portId = channelOwner[msg_.channelId];
         IIBCModule(portId).onChanCloseInit(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelCloseInit(
-            portId.toHexString(),
+            portId,
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId
@@ -269,7 +269,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Closed,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-            counterpartyPortId: portId.toHexString(),
+            counterpartyPortId: abi.encodePacked(portId),
             version: channel.version
         });
         if (
@@ -287,7 +287,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitChannel(msg_.channelId, channel);
         IIBCModule(portId).onChanCloseConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelCloseConfirm(
-            portId.toHexString(),
+            portId,
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId

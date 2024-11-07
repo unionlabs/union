@@ -2,8 +2,7 @@
 
 pub mod ibc {
     alloy::sol! {
-        // #![sol(cfg_attr(feature = "rpc", rpc))]
-        #![sol(rpc, all_derives)]
+        #![sol(all_derives)]
 
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -37,7 +36,7 @@ pub mod ibc {
             ChannelState state;
             uint32 connectionId;
             uint32 counterpartyChannelId;
-            string counterpartyPortId;
+            bytes counterpartyPortId;
             string version;
         }
 
@@ -109,7 +108,7 @@ pub mod ibc {
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         struct MsgChannelOpenInit {
             string portId;
-            string counterpartyPortId;
+            bytes counterpartyPortId;
             uint32 connectionId;
             string version;
             string relayer;

@@ -189,49 +189,49 @@ pub mod ibc {
 
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelOpenInit(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 connectionId,
                 string version
             );
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelOpenTry(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 counterpartyChannelId,
                 uint32 connectionId,
                 string version
             );
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelOpenAck(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 counterpartyChannelId,
                 uint32 connectionId
             );
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelOpenConfirm(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 counterpartyChannelId,
                 uint32 connectionId
             );
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelCloseInit(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 counterpartyChannelId
             );
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             event ChannelCloseConfirm(
-                string portId,
+                address portId,
                 uint32 channelId,
-                string counterpartyPortId,
+                bytes counterpartyPortId,
                 uint32 counterpartyChannelId
             );
 
@@ -311,7 +311,7 @@ pub mod ibc {
             ChannelState state;
             uint32 connectionId;
             uint32 counterpartyChannelId;
-            string counterpartyPortId;
+            bytes counterpartyPortId;
             string version;
         }
 
@@ -369,7 +369,7 @@ pub mod ibc {
 
         struct MsgChannelOpenInit {
             address portId;
-            string counterpartyPortId;
+            bytes counterpartyPortId;
             uint32 connectionId;
             string version;
             address relayer;

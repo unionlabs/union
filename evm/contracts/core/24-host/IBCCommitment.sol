@@ -7,9 +7,6 @@ library IBCCommitment {
     uint256 public constant CHANNELS = 0x03;
     uint256 public constant PACKETS = 0x04;
     uint256 public constant PACKET_ACKS = 0x05;
-    uint256 public constant NEXT_SEQ_SEND = 0x06;
-    uint256 public constant NEXT_SEQ_RECV = 0x07;
-    uint256 public constant NEXT_SEQ_ACK = 0x08;
 
     function clientStatePath(
         uint32 clientId

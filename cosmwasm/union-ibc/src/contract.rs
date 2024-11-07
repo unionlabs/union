@@ -4,6 +4,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
+use cw_storage_plus::Item;
 use ibc_solidity::cosmwasm::types::ibc::{
     Channel, ChannelState, Connection, ConnectionState, MsgBatchAcks, MsgBatchSend,
     MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
@@ -450,20 +451,16 @@ fn acknowledge_packet(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    if packets.is_empty() {
-        return Err(ContractError::NotEnoughPackets);
-    }
-
-    let source_channel = packets[0].sourceChannel;
-    let destination_channel = packets[0].destinationChannel;
+    let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
+    let source_channel = first.sourceChannel;
+    let destination_channel = first.destinationChannel;
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
 
     let commitment_key = match packets.len() {
-        1 => unionlabs::ics24::ethabi::batch_receipts_key(
-            destination_channel,
-            commit_packet(&packets[0]),
-        ),
+        1 => {
+            unionlabs::ics24::ethabi::batch_receipts_key(destination_channel, commit_packet(first))
+        }
         _ => unionlabs::ics24::ethabi::batch_receipts_key(
             destination_channel,
             commit_packets(&packets),
@@ -806,7 +803,7 @@ fn connection_open_confirm(
 fn channel_open_init(
     mut deps: DepsMut,
     port_id: String,
-    counterparty_port_id: String,
+    counterparty_port_id: Bytes,
     connection_id: u32,
     version: String,
     relayer: Addr,
@@ -827,7 +824,7 @@ fn channel_open_init(
         .add_event(Event::new("channel_open_init").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", counterparty_port_id),
+            ("counterparty_port_id", hex::encode(&counterparty_port_id)),
             ("connection_id", connection_id.to_string()),
             ("version", version.clone()),
         ]))
@@ -863,7 +860,7 @@ fn channel_open_try(
         state: ChannelState::Init,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: 0,
-        counterpartyPortId: port_id.clone(),
+        counterpartyPortId: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
@@ -887,7 +884,10 @@ fn channel_open_try(
         .add_event(Event::new("channel_open_try").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", channel.counterpartyPortId),
+            (
+                "counterparty_port_id",
+                hex::encode(&channel.counterpartyPortId),
+            ),
             (
                 "counterparty_channel_id",
                 channel.counterpartyChannelId.to_string(),
@@ -930,7 +930,7 @@ fn channel_open_ack(
         state: ChannelState::TryOpen,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
-        counterpartyPortId: port_id.to_string(),
+        counterpartyPortId: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
@@ -954,7 +954,10 @@ fn channel_open_ack(
         .add_event(Event::new("channel_open_ack").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", channel.counterpartyPortId),
+            (
+                "counterparty_port_id",
+                hex::encode(&channel.counterpartyPortId),
+            ),
             (
                 "counterparty_channel_id",
                 channel.counterpartyChannelId.to_string(),
@@ -993,7 +996,7 @@ fn channel_open_confirm(
         state: ChannelState::Open,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
-        counterpartyPortId: port_id.to_string(),
+        counterpartyPortId: port_id.clone().as_bytes().to_vec().into(),
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
@@ -1015,7 +1018,10 @@ fn channel_open_confirm(
         .add_event(Event::new("channel_open_confirm").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", channel.counterpartyPortId),
+            (
+                "counterparty_port_id",
+                hex::encode(&channel.counterpartyPortId),
+            ),
             (
                 "counterparty_channel_id",
                 channel.counterpartyChannelId.to_string(),
@@ -1048,7 +1054,10 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
         .add_event(Event::new("channel_close_init").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", channel.counterpartyPortId),
+            (
+                "counterparty_port_id",
+                hex::encode(&channel.counterpartyPortId),
+            ),
             (
                 "counterparty_channel_id",
                 channel.counterpartyChannelId.to_string(),
@@ -1084,7 +1093,7 @@ fn channel_close_confirm(
         state: ChannelState::Closed,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
-        counterpartyPortId: port_id.to_string(),
+        counterpartyPortId: port_id.as_bytes().to_vec().into(),
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
@@ -1111,7 +1120,10 @@ fn channel_close_confirm(
         .add_event(Event::new("channel_close_confirm").add_attributes([
             ("port_id", port_id.to_string()),
             ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", channel.counterpartyPortId),
+            (
+                "counterparty_port_id",
+                hex::encode(&channel.counterpartyPortId),
+            ),
             (
                 "counterparty_channel_id",
                 channel.counterpartyChannelId.to_string(),
@@ -1138,22 +1150,16 @@ fn process_receive(
     proof_height: u64,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    if packets.is_empty() {
-        return Err(ContractError::NoPacketsReceived);
-    }
-
-    let source_channel = packets[0].sourceChannel;
-    let destination_channel = packets[0].destinationChannel;
+    let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
+    let source_channel = first.sourceChannel;
+    let destination_channel = first.destinationChannel;
 
     let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
 
     if !intent {
         let proof_commitment_key = match packets.len() {
-            1 => unionlabs::ics24::ethabi::batch_receipts_key(
-                source_channel,
-                commit_packet(&packets[0]),
-            ),
+            1 => unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packet(first)),
             _ => unionlabs::ics24::ethabi::batch_receipts_key(
                 source_channel,
                 commit_packets(&packets),
@@ -1322,39 +1328,22 @@ fn send_packet(
         .set_data(to_json_binary(&packet)?))
 }
 
+fn increment(deps: DepsMut, item: Item<u32>) -> Result<u32, ContractError> {
+    item.update(deps.storage, |item| {
+        item.checked_add(1).ok_or(ContractError::ArithmeticOverflow)
+    })
+}
+
 fn next_channel_id(deps: DepsMut) -> Result<u32, ContractError> {
-    let channel_id = NEXT_CHANNEL_ID.may_load(deps.storage)?.unwrap_or_default();
-    NEXT_CHANNEL_ID.save(
-        deps.storage,
-        &channel_id
-            .checked_add(1)
-            .ok_or(ContractError::ArithmeticOverflow)?,
-    )?;
-    Ok(channel_id)
+    increment(deps, NEXT_CHANNEL_ID)
 }
 
 fn next_connection_id(deps: DepsMut) -> Result<u32, ContractError> {
-    let connection_id = NEXT_CONNECTION_ID
-        .may_load(deps.storage)?
-        .unwrap_or_default();
-    NEXT_CONNECTION_ID.save(
-        deps.storage,
-        &connection_id
-            .checked_add(1)
-            .ok_or(ContractError::ArithmeticOverflow)?,
-    )?;
-    Ok(connection_id)
+    increment(deps, NEXT_CONNECTION_ID)
 }
 
 fn next_client_id(deps: DepsMut) -> Result<u32, ContractError> {
-    let client_id = NEXT_CLIENT_ID.may_load(deps.storage)?.unwrap_or_default();
-    NEXT_CLIENT_ID.save(
-        deps.storage,
-        &client_id
-            .checked_add(1)
-            .ok_or(ContractError::ArithmeticOverflow)?,
-    )?;
-    Ok(client_id)
+    increment(deps, NEXT_CLIENT_ID)
 }
 
 fn client_impl(deps: Deps, client_id: u32) -> Result<Addr, ContractError> {

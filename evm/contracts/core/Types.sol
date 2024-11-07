@@ -26,7 +26,7 @@ struct IBCChannel {
     IBCChannelState state;
     uint32 connectionId;
     uint32 counterpartyChannelId;
-    string counterpartyPortId;
+    bytes counterpartyPortId;
     string version;
 }
 

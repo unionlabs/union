@@ -12,7 +12,7 @@ contract IBCChannelTests is Test {
     using LibString for *;
 
     string public constant CLIENT_TYPE = "zkgm";
-    string public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
+    bytes public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
 
     TestIBCHandler handler;
     TestLightClient lightClient;
@@ -70,7 +70,7 @@ contract IBCChannelTests is Test {
         });
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenInit(
-            msg_.portId.toHexString(),
+            msg_.portId,
             0,
             msg_.counterpartyPortId,
             msg_.connectionId,
@@ -144,7 +144,7 @@ contract IBCChannelTests is Test {
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenTry(
-            msg_.portId.toHexString(),
+            msg_.portId,
             0,
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
@@ -283,7 +283,7 @@ contract IBCChannelTests is Test {
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenAck(
-            msgInit_.portId.toHexString(),
+            msgInit_.portId,
             0,
             msgInit_.counterpartyPortId,
             counterpartyChannelId,
@@ -383,7 +383,7 @@ contract IBCChannelTests is Test {
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenConfirm(
-            msgTry_.portId.toHexString(),
+            msgTry_.portId,
             0,
             msgTry_.channel.counterpartyPortId,
             counterpartyChannelId,

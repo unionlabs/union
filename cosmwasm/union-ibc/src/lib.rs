@@ -35,8 +35,6 @@ pub enum ContractError {
         got: ChannelState,
         expected: ChannelState,
     },
-    #[error("No packets are received")]
-    NoPacketsReceived,
     #[error("Received a timed-out packet: (timeout_height ({timeout_height}) >= current_height({current_height})")]
     ReceivedTimedOutPacketHeight {
         timeout_height: u64,

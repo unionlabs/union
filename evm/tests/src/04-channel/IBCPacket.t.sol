@@ -12,7 +12,7 @@ contract IBCPacketTests is Test {
     string public constant CLIENT_TYPE = "zkgm";
     string public constant VERSION = "zkgm-1";
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
-    string public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
+    bytes public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
 
     TestIBCHandler handler;
     TestLightClient lightClient;
