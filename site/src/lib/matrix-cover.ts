@@ -77,7 +77,7 @@ let targetMouseY = 0
 let displayWidth = 1000
 let displayHeight = 1000
 const RETINA_ENABLED = true
-const WIDTH = 80 // Must be even
+const WIDTH = 120 // Must be even
 const endRotationY = Math.PI / 4 // Ending rotation angle
 const endRotationX = Math.PI / 4 // Ending rotation angle
 
