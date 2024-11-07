@@ -94,7 +94,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
         transform-origin: center;
     }
 
-    @media (max-width: 1366px) {
+    @media (max-width: 1366px), (hover: none), (pointer: coarse) {
         .glow-effect {
             animation: rotate-glow 8s linear infinite;
         }
@@ -234,7 +234,13 @@ const currentPath = pathname.slice(1) // remove the first "/"
   let isTablet = false;
 
   function checkDeviceSize() {
-    isTablet = window.matchMedia("(max-width: 1366px)").matches;
+    // Check for tablet/mobile sizes
+    const isTablet = window.matchMedia("(max-width: 1366px)").matches;
+
+    const hasTouch = window.matchMedia("(hover: none)").matches;
+    const hasMouse = window.matchMedia("(pointer: fine)").matches;
+
+    return isTablet || hasTouch || !hasMouse;
   }
 
   function initializeGlowEffect() {
