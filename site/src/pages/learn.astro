@@ -31,10 +31,7 @@ try {
       <p>{error}</p>
     </div>
   ) : learningData ? (
-    <AnimationLayout
-      title="Learn"
-      text="Study Union."
-    >
+    <AnimationLayout title="Learn" text="Study Union.">
       <DeepDiveSection entries={learningData} />
     </AnimationLayout>
   ) : (
