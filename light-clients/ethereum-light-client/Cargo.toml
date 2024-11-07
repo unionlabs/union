@@ -19,7 +19,9 @@ crate-type = ["cdylib", "rlib"]
 alloy                       = { workspace = true, features = ["sol-types"] }
 beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
+cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
+cw-storage-plus             = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
 ethereum-verifier           = { workspace = true }
 ethers-contract-derive      = { workspace = true }
@@ -37,10 +39,8 @@ serde_json                  = { workspace = true, optional = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
+union-ibc                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
-cosmwasm-schema = { workspace = true }
-union-ibc = { workspace = true }
-cw-storage-plus = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

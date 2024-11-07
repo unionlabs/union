@@ -50,11 +50,11 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    let response = match msg {
+    match msg {
         ExecuteMsg::RegisterClient(MsgRegisterClient {
             client_type,
             client_address,
-        }) => register_client(deps.branch(), client_type, client_address)?,
+        }) => register_client(deps.branch(), client_type, client_address),
         ExecuteMsg::CreateClient(MsgCreateClient {
             clientType,
             clientStateBytes,
@@ -67,7 +67,7 @@ pub fn execute(
             consensusStateBytes.to_vec(),
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::UpdateClient(MsgUpdateClient {
             clientId,
             clientMessage,
@@ -78,7 +78,7 @@ pub fn execute(
             clientMessage.to_vec(),
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             clientId,
             counterpartyClientId,
@@ -89,7 +89,7 @@ pub fn execute(
             counterpartyClientId,
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
             counterpartyClientId,
             counterpartyConnectionId,
@@ -106,7 +106,7 @@ pub fn execute(
             proofHeight,
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
             connectionId,
             counterpartyConnectionId,
@@ -121,7 +121,7 @@ pub fn execute(
             proofHeight,
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connectionId,
             proofAck,
@@ -134,7 +134,7 @@ pub fn execute(
             proofHeight,
             // FIXME(aeryz): we shouldn't use sol types directly bc of the address type
             Addr::unchecked("addr"),
-        )?,
+        ),
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             portId,
             counterpartyPortId,
@@ -152,7 +152,7 @@ pub fn execute(
                 ordering,
                 version,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
             portId,
@@ -171,7 +171,7 @@ pub fn execute(
                 proofInit.to_vec(),
                 proofHeight,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
             channelId,
@@ -190,7 +190,7 @@ pub fn execute(
                 proofTry.to_vec(),
                 proofHeight,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
             channelId,
@@ -205,11 +205,11 @@ pub fn execute(
                 proofAck.to_vec(),
                 proofHeight,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::ChannelCloseInit(MsgChannelCloseInit { channelId, relayer }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_init(deps.branch(), channelId, relayer)?
+            channel_close_init(deps.branch(), channelId, relayer)
         }
         ExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
             channelId,
@@ -224,7 +224,7 @@ pub fn execute(
                 proofInit.to_vec(),
                 proofHeight,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::PacketRecv(MsgPacketRecv {
             packets,
@@ -241,7 +241,7 @@ pub fn execute(
             proof,
             proofHeight,
             false,
-        )?,
+        ),
         ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
             packets,
             acknowledgements,
@@ -257,7 +257,7 @@ pub fn execute(
                 proof.to_vec(),
                 proofHeight,
                 relayer,
-            )?
+            )
         }
         ExecuteMsg::PacketTimeout(MsgPacketTimeout {
             packet,
@@ -268,7 +268,7 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            timeout_packet(deps.branch(), packet, proof.to_vec(), proofHeight, relayer)?
+            timeout_packet(deps.branch(), packet, proof.to_vec(), proofHeight, relayer)
         }
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
@@ -284,7 +284,7 @@ pub fn execute(
             emptyProof,
             0,
             true,
-        )?,
+        ),
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             channel_id,
             packet,
@@ -295,7 +295,7 @@ pub fn execute(
             channel_id,
             packet,
             acknowledgement,
-        )?,
+        ),
         ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel,
             timeout_height,
@@ -308,19 +308,17 @@ pub fn execute(
             timeout_height,
             timeout_timestamp,
             data,
-        )?,
+        ),
         ExecuteMsg::BatchSend(MsgBatchSend {
             sourceChannel,
             packets,
-        }) => batch_send(deps, sourceChannel, packets)?,
+        }) => batch_send(deps, sourceChannel, packets),
         ExecuteMsg::BatchAcks(MsgBatchAcks {
             sourceChannel,
             packets,
             acks,
-        }) => batch_acks(deps, sourceChannel, packets, acks)?,
-    };
-
-    Ok(response)
+        }) => batch_acks(deps, sourceChannel, packets, acks),
+    }
 }
 
 fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {
