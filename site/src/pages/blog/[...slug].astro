@@ -69,7 +69,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
           {saneDateTime(blogPost.fields.date)}
         </time>
         <p
-          class="m-0 font-lg font-mono uppercase"
+          class="m-0 font-lg font-mono"
           data-contentful-field-id="author"
           data-contentful-entry-id={entryId}
           {...ContentfulLivePreview.getProps({ entryId, fieldId: "author" })}
