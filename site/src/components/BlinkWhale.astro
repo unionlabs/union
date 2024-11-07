@@ -74,9 +74,10 @@ const { loading = false, sleep = false, love = false } = Astro.props
 </style>
 
 <script>
-  let blinkInterval;
+  let currentObserver: MutationObserver | null = null;
+  let currentInterval: number | null = null;
 
-  function blinkEye(faceElement) {
+  function blinkEye(faceElement: HTMLElement) {
     const sleep = faceElement.dataset.sleep === "true";
     const love = faceElement.dataset.love === "true";
 
@@ -94,10 +95,12 @@ const { loading = false, sleep = false, love = false } = Astro.props
     }
   }
 
-  function startRandomBlinking(faceElement) {
-    clearInterval(blinkInterval);
+  function startRandomBlinking(faceElement: HTMLElement) {
+    if (currentInterval) {
+      clearInterval(currentInterval);
+    }
 
-    blinkInterval = setInterval(() => {
+    currentInterval = window.setInterval(() => {
       const sleep = faceElement.dataset.sleep === "true";
       const love = faceElement.dataset.love === "true";
 
@@ -107,16 +110,22 @@ const { loading = false, sleep = false, love = false } = Astro.props
     }, 200);
   }
 
-  function updateEyes(faceElement) {
+  function updateEyes(faceElement: HTMLElement) {
     const sleep = faceElement.dataset.sleep === "true";
     const love = faceElement.dataset.love === "true";
     const eyeElements = faceElement.querySelectorAll(".eye");
 
     if (sleep) {
-      clearInterval(blinkInterval);
+      if (currentInterval) {
+        clearInterval(currentInterval);
+        currentInterval = null;
+      }
       eyeElements.forEach((el) => (el.textContent = "×"));
     } else if (love) {
-      clearInterval(blinkInterval);
+      if (currentInterval) {
+        clearInterval(currentInterval);
+        currentInterval = null;
+      }
       eyeElements.forEach((el) => (el.textContent = "♡"));
     } else {
       eyeElements.forEach((el) => (el.textContent = "0"));
@@ -124,15 +133,28 @@ const { loading = false, sleep = false, love = false } = Astro.props
     }
   }
 
-  // Initialize and handle updates
+  function cleanup() {
+    if (currentInterval) {
+      clearInterval(currentInterval);
+      currentInterval = null;
+    }
+    if (currentObserver) {
+      currentObserver.disconnect();
+      currentObserver = null;
+    }
+  }
+
   function initFace() {
+    // Clean up any existing instances
+    cleanup();
+
     const faceElement = document.getElementById("animate-face");
     if (!faceElement) return;
 
     updateEyes(faceElement);
 
     // Create an observer to watch for attribute changes
-    const observer = new MutationObserver((mutations) => {
+    currentObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "attributes") {
           updateEyes(faceElement);
@@ -141,19 +163,19 @@ const { loading = false, sleep = false, love = false } = Astro.props
     });
 
     // Start observing
-    observer.observe(faceElement, {
+    currentObserver.observe(faceElement, {
       attributes: true,
       attributeFilter: ["data-sleep", "data-love", "data-loading"],
     });
-
-    // Cleanup when page changes
-    document.addEventListener("astro:before-swap", () => {
-      clearInterval(blinkInterval);
-      observer.disconnect();
-    });
   }
 
-  // Initialize when the DOM is ready
+  // Cleanup before view transitions
+  document.addEventListener("astro:before-swap", cleanup);
+
+  // Initialize on each page load
+  document.addEventListener("astro:page-load", initFace);
+
+  // Initial load
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initFace);
   } else {
