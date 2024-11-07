@@ -72,7 +72,6 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.connectionId = msg_.connectionId;
         channel.version = msg_.version;
         channel.counterpartyPortId = msg_.counterpartyPortId;
-        initializeChannelSequences(channelId);
         commitChannel(channelId, channel);
         claimChannel(msg_.portId, channelId);
         IIBCModule(msg_.portId).onChanOpenInit(
@@ -118,7 +117,6 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         uint32 channelId = generateChannelIdentifier();
         channels[channelId] = msg_.channel;
-        initializeChannelSequences(channelId);
         commitChannelCalldata(channelId, msg_.channel);
         claimChannel(msg_.portId, channelId);
         IIBCModule(msg_.portId).onChanOpenTry(
@@ -352,16 +350,5 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitments[nextChannelSequencePath] =
             bytes32(uint256(nextChannelSequence + 1));
         return nextChannelSequence;
-    }
-
-    function initializeChannelSequences(
-        uint32 channelId
-    ) internal {
-        commitments[IBCCommitment.nextSequenceSendCommitmentKey(channelId)] =
-            bytes32(uint256(1));
-        commitments[IBCCommitment.nextSequenceRecvCommitmentKey(channelId)] =
-            bytes32(uint256(1));
-        commitments[IBCCommitment.nextSequenceAckCommitmentKey(channelId)] =
-            bytes32(uint256(1));
     }
 }

@@ -445,7 +445,9 @@ contract UCS02NFT is
         bool isLocal = nftClass == address(0);
         uint256 tokenIdsLength = packet.tokenIds.length;
         if (isLocal) {
-            decreaseOutstanding(ibcPacket.sourceChannel, nftClass, tokenIdsLength);
+            decreaseOutstanding(
+                ibcPacket.sourceChannel, nftClass, tokenIdsLength
+            );
         }
         for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];

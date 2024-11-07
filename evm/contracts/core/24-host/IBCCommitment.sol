@@ -50,24 +50,6 @@ library IBCCommitment {
         return abi.encode(PACKET_ACKS, channelId, batchHash);
     }
 
-    function nextSequenceSendCommitmentPath(
-        uint32 channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encode(NEXT_SEQ_SEND, channelId);
-    }
-
-    function nextSequenceRecvCommitmentPath(
-        uint32 channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encode(NEXT_SEQ_RECV, channelId);
-    }
-
-    function nextSequenceAckCommitmentPath(
-        uint32 channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encode(NEXT_SEQ_ACK, channelId);
-    }
-
     // Key generators for Commitment mapping
 
     function clientStateCommitmentKey(
@@ -107,23 +89,5 @@ library IBCCommitment {
         bytes32 batchHash
     ) internal pure returns (bytes32) {
         return keccak256(batchReceiptsCommitmentPath(channelId, batchHash));
-    }
-
-    function nextSequenceSendCommitmentKey(
-        uint32 channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceSendCommitmentPath(channelId));
-    }
-
-    function nextSequenceRecvCommitmentKey(
-        uint32 channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceRecvCommitmentPath(channelId));
-    }
-
-    function nextSequenceAckCommitmentKey(
-        uint32 channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceAckCommitmentPath(channelId));
     }
 }
