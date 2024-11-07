@@ -41,7 +41,7 @@ try {
   title="Ecosystem"
   text="Connecting projects, people, and products into a unified organism of interoperability."
 >
-  <ContainedSection className="flex gap-4 align-center  sm:mt-3">
+  <ContainedSection className="flex gap-4 items-start  sm:mt-3">
     <!--
       <H1>Union <span class="text-accent-500">Ecosystem</span></H1>
       <QuoteSubTitle
@@ -58,7 +58,7 @@ try {
       >
         Filter
         <svg
-          class="w-5 h-5 transform transition-transform duration-200"
+          class="w-5 h-5 min-w-5 min-h-5 transform transition-transform duration-200"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -71,63 +71,65 @@ try {
             d="M19 9l-7 7-7-7"></path>
         </svg>
       </button>
-
-      <div id="filterContent" class="hidden">
-        {
-          ecosystemCategories.map((category) => (
-            <div class="mb-2">
-              <label class="inline-flex items-center cursor-pointer font-mono uppercase">
-                <input
-                  type="checkbox"
-                  name="category"
-                  value={category}
-                  class="sr-only peer"
-                />
-                <div
-                  class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
-                     peer-checked:bg-accent-500 peer-checked:border-accent-500
-                     bg-transparent transition-colors duration-200 ease-in-out mr-2"
-                >
-                  <svg
-                    class="w-3 h-3 text-white hidden peer-checked:block"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                {category}
-              </label>
-            </div>
-          ))
-        }
-      </div>
     </div>
-    <div>
-      <label for="searchInput"></label><input
-        type="text"
-        id="searchInput"
-        placeholder="Search..."
-        class="pointer-events-auto bg-black flex items-center justify-center text-white border px-6 py-2 w-fit font-semibold font-mono uppercase text-md md:text-lg focus:ring-0 focus:ring-offset-0"
-      />
-    </div>
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search..."
+      class="pointer-events-auto min-w-0 bg-black flex items-center justify-center text-white border px-6 py-2 font-semibold font-mono text-md md:text-lg focus:ring-0 focus:ring-offset-0"
+    />
   </ContainedSection>
 
+  <ContainedSection className="mt-4">
+    <div id="filterContent" class="hidden">
+      {
+        ecosystemCategories.map((category) => (
+          <div class="mb-2">
+            <label class="inline-flex items-center cursor-pointer font-mono uppercase">
+              <input
+                type="checkbox"
+                name="category"
+                value={category}
+                class="sr-only peer"
+              />
+              <div
+                class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
+                   peer-checked:bg-accent-500 peer-checked:border-accent-500
+                   bg-transparent transition-colors duration-200 ease-in-out mr-2"
+              >
+                <svg
+                  class="w-3 h-3 text-white hidden peer-checked:block"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              {category}
+            </label>
+          </div>
+        ))
+      }
+    </div>
+  </ContainedSection>
   <!-- Cards Grid -->
-  <ContainedSection grid className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+  <ContainedSection
+    grid
+    className="place-content-evenly grid-cols-1 ssm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+  >
     {
       ecosystemData.map((item) => (
         <a
           href={item.url}
           target="_blank"
-          class="relative flex border-2 border-neutral-800 rounded-tl-[4rem] overflow-hidden w-full aspect-[3/4] ecosystem-card"
+          class="place-self-center relative flex border-2 border-neutral-800 max-w-[240px] ssm:max-w-full rounded-tl-[4rem] overflow-hidden w-full aspect-[3/4] ecosystem-card"
         >
           <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0" />
           <img
@@ -227,13 +229,13 @@ try {
       }
     });
 
-    window.addEventListener("resize", () => {
-      if (window.innerWidth >= 1024) {
-        filterContent.classList.remove("hidden");
-      } else {
-        filterContent.classList.add("hidden");
-        filterIcon.classList.remove("rotate-180");
-      }
-    });
+    //window.addEventListener("resize", () => {
+    //  if (window.innerWidth >= 1024) {
+    //    filterContent.classList.remove("hidden");
+    //  } else {
+    //    filterContent.classList.add("hidden");
+    //    filterIcon.classList.remove("rotate-180");
+    //  }
+    //});
   });
 </script>

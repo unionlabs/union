@@ -11,7 +11,7 @@ const { className, grid } = Astro.props
   <div
     class:list={[
       `max-w-6xl w-full z-10 px-4 overflow-hidden ${className}`,
-      grid ? "grid gap-4 sm:gap-8 lg:gap-12 py-2 sm:py-4 lg:py-8" : "",
+      grid ? "grid gap-4 gap-y-8 sm:gap-8 lg:gap-12 py-2 sm:py-4 lg:py-8" : "",
     ]}
   >
     <slot />
