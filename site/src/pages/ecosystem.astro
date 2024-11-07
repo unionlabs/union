@@ -168,7 +168,16 @@ try {
 </AnimationLayout>
 
 <script>
-  document.addEventListener("astro:page-load", () => {
+  let globalClickHandler: ((event: MouseEvent) => void) | null = null;
+
+  function initializeFilters() {
+    // Clean up existing event listeners if they exist
+    if (globalClickHandler) {
+      document.removeEventListener("click", globalClickHandler);
+      globalClickHandler = null;
+    }
+
+    // Get all required elements
     const searchInput = document.getElementById(
       "searchInput",
     ) as HTMLInputElement;
@@ -178,19 +187,52 @@ try {
     const cards = document.querySelectorAll(
       ".ecosystem-card",
     ) as NodeListOf<HTMLDivElement>;
+    const filterToggle = document.getElementById("filterToggle");
+    const filterContent = document.getElementById("filterContent");
+
+    // Guard clause - if required elements aren't found, exit early
+    if (!searchInput || !filterToggle || !filterContent) {
+      console.warn("Required elements not found. Check HTML IDs.");
+      return;
+    }
+
+    const filterIcon = filterToggle.querySelector("svg");
+
+    // Remove existing event listeners from elements
+    const oldInput = searchInput.cloneNode(true) as HTMLInputElement;
+    searchInput.parentNode?.replaceChild(oldInput, searchInput);
+
+    checkboxes.forEach((checkbox) => {
+      const oldCheckbox = checkbox.cloneNode(true) as HTMLInputElement;
+      checkbox.parentNode?.replaceChild(oldCheckbox, checkbox);
+    });
+
+    const oldFilterToggle = filterToggle.cloneNode(true);
+    filterToggle.parentNode?.replaceChild(oldFilterToggle, filterToggle);
+
+    // Get fresh references after replacement
+    const newSearchInput = document.getElementById(
+      "searchInput",
+    ) as HTMLInputElement;
+    const newCheckboxes = document.querySelectorAll(
+      'input[type="checkbox"]',
+    ) as NodeListOf<HTMLInputElement>;
+    const newFilterToggle = document.getElementById("filterToggle");
+    const newFilterIcon = newFilterToggle?.querySelector("svg");
 
     function filterCards(): void {
-      const searchTerm = searchInput.value.toLowerCase();
-      const selectedCategories = Array.from(checkboxes)
+      const searchTerm = newSearchInput.value.toLowerCase();
+      const selectedCategories = Array.from(newCheckboxes)
         .filter((cb) => cb.checked)
-        .map((cb) => cb.value.toLowerCase().trim()); // Added trim()
+        .map((cb) => cb.value.toLowerCase().trim());
 
       cards.forEach((card) => {
-        const name = card.querySelector("h3").textContent.toLowerCase();
+        const nameElement = card.querySelector("h3");
+        const name = nameElement?.textContent?.toLowerCase() || "";
         const categoryElements = card.querySelectorAll("#card-cat");
-        const categories = Array.from(categoryElements).map((el) =>
-          el.textContent.toLowerCase().trim(),
-        ); // Added trim()
+        const categories = Array.from(categoryElements).map(
+          (el) => el.textContent?.toLowerCase().trim() || "",
+        );
 
         const matchesSearch = name.includes(searchTerm);
         const matchesCategory =
@@ -205,37 +247,35 @@ try {
       });
     }
 
-    searchInput.addEventListener("input", filterCards);
-    checkboxes.forEach((checkbox) =>
+    // Add new event listeners
+    newSearchInput.addEventListener("input", filterCards);
+    newCheckboxes.forEach((checkbox) =>
       checkbox.addEventListener("change", filterCards),
     );
 
-    const filterToggle = document.getElementById("filterToggle");
-    const filterContent = document.getElementById("filterContent");
-    const filterIcon = filterToggle.querySelector("svg");
-
-    filterToggle.addEventListener("click", () => {
+    newFilterToggle?.addEventListener("click", () => {
       filterContent.classList.toggle("hidden");
-      filterIcon.classList.toggle("rotate-180");
+      newFilterIcon?.classList.toggle("rotate-180");
     });
 
-    document.addEventListener("click", (event) => {
+    // Create and store new global click handler
+    globalClickHandler = (event: MouseEvent) => {
+      const target = event.target as Node;
       const isClickInsideFilter =
-        filterToggle.contains(event.target) ||
-        filterContent.contains(event.target);
+        newFilterToggle?.contains(target) || filterContent.contains(target);
+
       if (!isClickInsideFilter && window.innerWidth < 768) {
         filterContent.classList.add("hidden");
-        filterIcon.classList.remove("rotate-180");
+        newFilterIcon?.classList.remove("rotate-180");
       }
-    });
+    };
 
-    //window.addEventListener("resize", () => {
-    //  if (window.innerWidth >= 1024) {
-    //    filterContent.classList.remove("hidden");
-    //  } else {
-    //    filterContent.classList.add("hidden");
-    //    filterIcon.classList.remove("rotate-180");
-    //  }
-    //});
-  });
+    document.addEventListener("click", globalClickHandler);
+  }
+
+  // Initialize on page load
+  document.addEventListener("astro:page-load", initializeFilters);
+
+  // Re-initialize on client-side navigation
+  document.addEventListener("astro:after-swap", initializeFilters);
 </script>
