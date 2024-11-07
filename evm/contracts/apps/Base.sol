@@ -39,7 +39,6 @@ abstract contract IBCAppBase is IIBCModule {
      * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenInit(
-        IBCChannelOrder,
         uint32,
         uint32,
         string calldata,
@@ -52,7 +51,6 @@ abstract contract IBCAppBase is IIBCModule {
      * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenTry(
-        IBCChannelOrder,
         uint32,
         uint32,
         uint32,

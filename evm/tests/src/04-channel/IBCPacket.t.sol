@@ -65,7 +65,6 @@ contract IBCPacketTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: VERSION,
             relayer: address(this)
         });
@@ -94,24 +93,6 @@ contract IBCPacketTests is Test {
         handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
     }
 
-    function test_sendPacket_increaseSequence(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
-        bytes calldata packet
-    ) public {
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.prank(address(module));
-        uint64 sequence = handler.sendPacket(
-            channelId, timeoutTimestamp, timeoutHeight, packet
-        );
-        assertEq(
-            handler.commitments(
-                IBCCommitment.nextSequenceSendCommitmentKey(channelId)
-            ),
-            bytes32(uint256(sequence + 1))
-        );
-    }
-
     function test_sendPacket_commitmentSaved(
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
@@ -119,11 +100,8 @@ contract IBCPacketTests is Test {
     ) public {
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.prank(address(module));
-        uint64 sequence = handler.sendPacket(
-            channelId, timeoutHeight, timeoutTimestamp, message
-        );
+        handler.sendPacket(channelId, timeoutHeight, timeoutTimestamp, message);
         IBCPacket memory packet = IBCPacket({
-            sequence: sequence,
             sourceChannel: channelId,
             destinationChannel: COUNTERPARTY_CHANNEL_ID,
             data: message,
@@ -183,10 +161,9 @@ contract IBCPacketTests is Test {
         bytes[] memory relayerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sequence: i,
                 sourceChannel: sourceChannel,
                 destinationChannel: channelId,
-                data: message,
+                data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
             });
@@ -403,10 +380,9 @@ contract IBCPacketTests is Test {
         bytes[] memory marketMakerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sequence: i,
                 sourceChannel: sourceChannel,
                 destinationChannel: channelId,
-                data: message,
+                data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
             });
@@ -565,10 +541,9 @@ contract IBCPacketTests is Test {
         bytes[] memory acknowledgements = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sequence: i,
                 sourceChannel: channelId,
                 destinationChannel: destinationChannel,
-                data: message,
+                data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
             });
@@ -740,7 +715,6 @@ contract IBCPacketTests is Test {
         bytes calldata message
     ) internal view returns (IBCMsgs.MsgPacketTimeout memory) {
         IBCPacket memory packet = IBCPacket({
-            sequence: 0xC0DE,
             sourceChannel: channelId,
             destinationChannel: destinationChannel,
             data: message,
@@ -751,8 +725,7 @@ contract IBCPacketTests is Test {
             packet: packet,
             relayer: address(this),
             proof: hex"",
-            proofHeight: 0,
-            nextSequenceRecv: 0
+            proofHeight: 0
         });
         return msg_;
     }
@@ -1052,11 +1025,10 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.prank(address(module));
             bytes memory message = abi.encodePacked(i);
-            uint64 sequence = handler.sendPacket(
+            handler.sendPacket(
                 channelId, timeoutHeight, timeoutTimestamp, message
             );
             IBCPacket memory packet = IBCPacket({
-                sequence: sequence,
                 sourceChannel: channelId,
                 destinationChannel: COUNTERPARTY_CHANNEL_ID,
                 data: message,
@@ -1158,11 +1130,10 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.prank(address(module));
             bytes memory message = abi.encodePacked(i);
-            uint64 sequence = handler.sendPacket(
+            handler.sendPacket(
                 channelId, timeoutHeight, timeoutTimestamp, message
             );
             IBCPacket memory packet = IBCPacket({
-                sequence: sequence,
                 sourceChannel: channelId,
                 destinationChannel: COUNTERPARTY_CHANNEL_ID,
                 data: message,

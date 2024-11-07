@@ -22,15 +22,8 @@ enum IBCChannelState {
     Closed
 }
 
-enum IBCChannelOrder {
-    Unspecified,
-    Unordered,
-    Ordered
-}
-
 struct IBCChannel {
     IBCChannelState state;
-    IBCChannelOrder ordering;
     uint32 connectionId;
     uint32 counterpartyChannelId;
     string counterpartyPortId;
@@ -38,7 +31,6 @@ struct IBCChannel {
 }
 
 struct IBCPacket {
-    uint64 sequence;
     uint32 sourceChannel;
     uint32 destinationChannel;
     bytes data;
@@ -52,24 +44,19 @@ library IBCErrors {
     error ErrInvalidProof();
     error ErrInvalidConnectionState();
     error ErrInvalidChannelState();
-    error ErrInvalidChannelOrdering();
     error ErrUnauthorized();
     error ErrLatestTimestampNotFound();
     error ErrTimeoutMustBeSet();
     error ErrHeightTimeout();
     error ErrTimestampTimeout();
-    error ErrPacketSequenceNextSequenceMismatch();
-    error ErrPacketSequenceAckSequenceMismatch();
     error ErrAcknowledgementIsEmpty();
     error ErrPacketNotReceived();
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
-    error ErrNextSequenceMustBeLEQThanTimeoutSequence();
     error ErrNotEnoughPackets();
     error ErrCommittedAckNotPresent();
-    error ErrCannotIntentOrderedPacket();
     error ErrClientNotFound();
     error ErrModuleNotFound();
 }

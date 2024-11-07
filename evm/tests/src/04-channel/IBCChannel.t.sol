@@ -65,7 +65,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             relayer: relayer
         });
@@ -89,7 +88,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             relayer: relayer
         });
@@ -103,7 +101,6 @@ contract IBCChannelTests is Test {
     ) public {
         IBCChannel memory channel = IBCChannel({
             state: IBCChannelState.Init,
-            ordering: IBCChannelOrder.Unordered,
             connectionId: connectionId,
             counterpartyChannelId: 0,
             counterpartyPortId: COUNTERPARTY_PORT_ID,
@@ -113,7 +110,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: channel.connectionId,
-            ordering: channel.ordering,
             version: channel.version,
             relayer: relayer
         });
@@ -135,7 +131,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             channel: IBCChannel({
                 state: IBCChannelState.TryOpen,
-                ordering: IBCChannelOrder.Unordered,
                 connectionId: connectionId,
                 counterpartyChannelId: counterpartyChannelId,
                 counterpartyPortId: COUNTERPARTY_PORT_ID,
@@ -171,7 +166,6 @@ contract IBCChannelTests is Test {
             channel: IBCChannel({
                 state: IBCChannelState.Unspecified,
                 connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
                 version: version,
                 counterpartyPortId: COUNTERPARTY_PORT_ID,
                 counterpartyChannelId: counterpartyChannelId
@@ -182,31 +176,6 @@ contract IBCChannelTests is Test {
             relayer: relayer
         });
         vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
-        handler.channelOpenTry(msg_);
-    }
-
-    function test_channelOpenTry_invalidOrdering(
-        uint32 counterpartyChannelId,
-        string calldata version,
-        string calldata counterpartyVersion,
-        address relayer
-    ) public {
-        IBCMsgs.MsgChannelOpenTry memory msg_ = IBCMsgs.MsgChannelOpenTry({
-            portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.TryOpen,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unspecified,
-                version: version,
-                counterpartyPortId: COUNTERPARTY_PORT_ID,
-                counterpartyChannelId: counterpartyChannelId
-            }),
-            counterpartyVersion: counterpartyVersion,
-            proofInit: hex"",
-            proofHeight: 0,
-            relayer: relayer
-        });
-        vm.expectRevert(IBCErrors.ErrInvalidChannelOrdering.selector);
         handler.channelOpenTry(msg_);
     }
 
@@ -221,7 +190,6 @@ contract IBCChannelTests is Test {
             channel: IBCChannel({
                 state: IBCChannelState.TryOpen,
                 connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
                 version: version,
                 counterpartyPortId: COUNTERPARTY_PORT_ID,
                 counterpartyChannelId: counterpartyChannelId
@@ -246,7 +214,6 @@ contract IBCChannelTests is Test {
             channel: IBCChannel({
                 state: IBCChannelState.TryOpen,
                 connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
                 version: version,
                 counterpartyPortId: COUNTERPARTY_PORT_ID,
                 counterpartyChannelId: counterpartyChannelId
@@ -270,7 +237,6 @@ contract IBCChannelTests is Test {
         IBCChannel memory channel = IBCChannel({
             state: IBCChannelState.TryOpen,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             counterpartyChannelId: counterpartyChannelId
@@ -302,7 +268,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             relayer: relayer
         });
@@ -355,7 +320,6 @@ contract IBCChannelTests is Test {
         IBCChannel memory channel = IBCChannel({
             state: IBCChannelState.Init,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             counterpartyChannelId: counterpartyChannelId
@@ -364,7 +328,6 @@ contract IBCChannelTests is Test {
             portId: address(module),
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: channel.connectionId,
-            ordering: channel.ordering,
             version: channel.version,
             relayer: relayer
         });
@@ -399,7 +362,6 @@ contract IBCChannelTests is Test {
             channel: IBCChannel({
                 state: IBCChannelState.TryOpen,
                 connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
                 version: version,
                 counterpartyPortId: COUNTERPARTY_PORT_ID,
                 counterpartyChannelId: counterpartyChannelId
@@ -456,7 +418,6 @@ contract IBCChannelTests is Test {
         IBCChannel memory channel = IBCChannel({
             state: IBCChannelState.TryOpen,
             connectionId: connectionId,
-            ordering: IBCChannelOrder.Unordered,
             version: version,
             counterpartyPortId: COUNTERPARTY_PORT_ID,
             counterpartyChannelId: counterpartyChannelId

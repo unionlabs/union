@@ -7,7 +7,6 @@ import "../Types.sol";
 // https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
 interface IIBCModule {
     function onChanOpenInit(
-        IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
         string calldata version,
@@ -15,7 +14,6 @@ interface IIBCModule {
     ) external;
 
     function onChanOpenTry(
-        IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
         uint32 counterpartyChannelId,

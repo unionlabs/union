@@ -131,7 +131,6 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanOpenInit(
-        IBCChannelOrder,
         uint32,
         uint32,
         string calldata,
@@ -144,7 +143,6 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanOpenTry(
-        IBCChannelOrder,
         uint32,
         uint32,
         uint32,
