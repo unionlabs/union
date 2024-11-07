@@ -20,8 +20,8 @@ ibc = { local = "../sui-ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc       = "_"
-ping_pong = "_"
+ibc       = "0x0"
+ping_pong = "0x0"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
