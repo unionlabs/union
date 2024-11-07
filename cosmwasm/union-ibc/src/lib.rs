@@ -60,4 +60,6 @@ pub enum ContractError {
     TimeoutMustBeSet,
     #[error("channel ({0}) does not exist")]
     ChannelNotExist(u32),
+    #[error("No packets are acked")]
+    NoPacketsAcked,
 }

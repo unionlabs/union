@@ -8,8 +8,8 @@ use ibc_solidity::ibc::{
     Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgChannelCloseConfirm,
     MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
     MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-    MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketRecv, MsgUpdateClient,
-    Packet,
+    MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketAcknowledgement,
+    MsgPacketRecv, MsgUpdateClient, Packet,
 };
 use sha2::Digest as _;
 use sha3::Keccak256;
@@ -239,7 +239,23 @@ pub fn execute(
             proofHeight,
             false,
         )?,
-        ExecuteMsg::PacketAck(_) => todo!(),
+        ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
+            packets,
+            acknowledgements,
+            proof,
+            proofHeight,
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            acknowledge_packet(
+                deps.branch(),
+                packets,
+                acknowledgements,
+                proof.to_vec(),
+                proofHeight,
+                relayer,
+            )?
+        }
         ExecuteMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
@@ -285,6 +301,60 @@ pub fn execute(
     };
 
     Ok(response)
+}
+
+fn acknowledge_packet(
+    mut deps: DepsMut,
+    packets: Vec<Packet>,
+    acknowledgements: Vec<alloy::primitives::Bytes>,
+    proof: Vec<u8>,
+    proof_height: u64,
+    relayer: Addr,
+) -> ContractResult {
+    if packets.is_empty() {
+        return Err(ContractError::NoPacketsAcked);
+    }
+
+    let source_channel = packets[0].sourceChannel;
+    let destination_channel = packets[0].destinationChannel;
+    let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+    let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
+
+    let commitment_key = match packets.len() {
+        1 => unionlabs::ics24::ethabi::batch_receipts_key(
+            destination_channel,
+            commit_packet(&packets[0]),
+        ),
+        _ => unionlabs::ics24::ethabi::batch_receipts_key(
+            destination_channel,
+            commit_packets(&packets),
+        ),
+    };
+
+    let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
+    #[allow(dependency_on_unit_never_type_fallback)]
+    deps.querier.query_wasm_smart(
+        &client_impl,
+        &LightClientQuery::VerifyMembership {
+            client_id: connection.clientId,
+            height: proof_height,
+            proof: proof.to_vec().into(),
+            path: commitment_key.into_bytes().into(),
+            value: commit_acks(&acknowledgements).into_bytes().into(),
+        },
+    )?;
+
+    for (packet, ack) in packets.into_iter().zip(acknowledgements) {
+        delete_packet_commitment(deps.branch(), source_channel, packet)?;
+    }
+
+    todo!()
+}
+
+fn delete_packet_commitment(deps: DepsMut, source_channel: u32, packet: &Packet) -> ContractResult {
+    let commitment_key =
+        unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(packet));
+    deps.storage.get(commitment_key.as_ref())?;
 }
 
 fn commit_packet(packet: &Packet) -> H256 {
@@ -1155,6 +1225,15 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 
 fn commit_ack(ack: Vec<u8>) -> H256 {
     merge_ack(Keccak256::new().chain_update(ack).finalize().into())
+}
+
+fn commit_acks(ack: &Vec<alloy::primitives::Bytes>) -> H256 {
+    merge_ack(
+        Keccak256::new()
+            .chain_update(ack.abi_encode())
+            .finalize()
+            .into(),
+    )
 }
 
 fn merge_ack(mut ack: H256) -> H256 {
