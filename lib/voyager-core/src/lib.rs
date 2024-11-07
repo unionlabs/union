@@ -173,7 +173,7 @@ pub struct IbcVersionId;
 
 /// Well-known IBC version identifiers, defined as constants for reusability and to allow
 /// for pattern matching.
-impl IbcVersionId<'static> {
+impl IbcVersionId {
     /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
     ///
     /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
@@ -216,6 +216,7 @@ pub struct ChainId;
 pub struct ClientInfo {
     pub client_type: ClientType,
     pub ibc_interface: IbcInterface,
+    pub ibc_version_id: IbcVersionId,
     /// Additional metadata about this client.
     ///
     /// This is currently only used for threading the checksum for ibc-go

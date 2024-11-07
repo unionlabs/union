@@ -1,27 +1,12 @@
-use std::{collections::VecDeque, num::NonZeroU64};
+use std::collections::VecDeque;
 
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
-use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
-    ibc::core::{
-        channel::channel::Channel, client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
-    ics24::Path,
-    id::{ChannelId, ClientId, ConnectionId, PortId},
-    traits::Member,
-};
-use voyager_core::{ConsensusType, IbcSpec, IbcVersionId};
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, id::ClientId, traits::Member};
+use voyager_core::ConsensusType;
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
-#[cfg(doc)]
-use {
-    crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
-    unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient,
-};
 
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
@@ -247,115 +232,22 @@ pub trait ChainModule {
     /// Fetch the client info of a client on this chain.
     #[method(name = "clientInfo", with_extensions)]
     async fn client_info(&self, client_id: ClientId) -> RpcResult<ClientInfo>;
-
-    #[method(name = "queryClientState", with_extensions)]
-    async fn query_client_state(&self, height: Height, client_id: ClientId) -> RpcResult<Bytes>;
-
-    #[method(name = "queryClientConsensusState", with_extensions)]
-    async fn query_client_consensus_state(
-        &self,
-        height: Height,
-        client_id: ClientId,
-        trusted_height: Height,
-    ) -> RpcResult<Bytes>;
-
-    #[method(name = "queryConnection", with_extensions)]
-    async fn query_connection(
-        &self,
-        height: Height,
-        connection_id: ConnectionId,
-    ) -> RpcResult<Option<ConnectionEnd>>;
-
-    #[method(name = "queryChannelEnd", with_extensions)]
-    async fn query_channel(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<Option<Channel>>;
-
-    #[method(name = "queryCommitment", with_extensions)]
-    async fn query_commitment(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<Option<H256>>;
-
-    #[method(name = "queryAcknowledgement", with_extensions)]
-    async fn query_acknowledgement(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<Option<H256>>;
-
-    #[method(name = "queryReceipt", with_extensions)]
-    async fn query_receipt(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: NonZeroU64,
-    ) -> RpcResult<bool>;
-
-    #[method(name = "queryNextSequenceSend", with_extensions)]
-    async fn query_next_sequence_send(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextSequenceRecv", with_extensions)]
-    async fn query_next_sequence_recv(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextSequenceAck", with_extensions)]
-    async fn query_next_sequence_ack(
-        &self,
-        height: Height,
-        port_id: PortId,
-        channel_id: ChannelId,
-    ) -> RpcResult<u64>;
-
-    #[method(name = "queryNextConnectionSequence", with_extensions)]
-    async fn query_next_connection_sequence(&self, height: Height) -> RpcResult<u64>;
-
-    #[method(name = "queryNextClientSequence", with_extensions)]
-    async fn query_next_client_sequence(&self, height: Height) -> RpcResult<u64>;
-
-    /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the proof as a JSON [`Value`].
-    #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(
-        &self,
-        at: Height,
-        path: Path,
-        // ibc_store_format: IbcStoreFormat<'static>,
-    ) -> RpcResult<Value>;
 }
 
-#[rpc(client, server, client_bounds(), server_bounds(), namespace = "proof")]
-pub trait ProofModule<V: IbcSpec> {
+#[rpc(client, server, namespace = "proof")]
+pub trait ProofModule<StorePath> {
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the proof as a JSON [`Value`].
+    /// returning the state as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<V::StoreValue>;
+    async fn query_ibc_proof(&self, at: Height, path: StorePath) -> RpcResult<Value>;
 }
 
-#[rpc(client, server, client_bounds(), server_bounds(), namespace = "state")]
-pub trait StateModule<V: IbcSpec> {
+#[rpc(client, server, namespace = "state")]
+pub trait StateModule<StorePath> {
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcState", with_extensions)]
-    async fn query_ibc_state(&self, at: Height, path: V::StorePath) -> RpcResult<V::StoreValue>;
+    async fn query_ibc_state(&self, at: Height, path: StorePath) -> RpcResult<Value>;
 }
 
 /// Raw, un-decoded client state, as queried directly from the client store.

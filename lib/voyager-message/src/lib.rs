@@ -20,7 +20,7 @@ use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
-use unionlabs::{traits::Member, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member, ErrorReporter};
 use voyager_core::IbcVersionId;
 use voyager_vm::{QueueError, QueueMessage};
 
@@ -53,6 +53,7 @@ pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
+pub mod ibc_union;
 pub mod ibc_v1;
 
 pub enum VoyagerMessage {}
@@ -68,23 +69,37 @@ impl QueueMessage for VoyagerMessage {
 }
 
 pub trait IbcSpec {
-    const ID: IbcVersionId<'static>;
+    const ID: IbcVersionId;
+
+    type ClientId: Member;
+
+    type Height: Member;
 
     /// The type used to index into the IBC store.
-    type StorePath: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
-
-    /// The values stored under [`IbcVersionT::StorePath`].
-    type StoreValue: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type StorePath: Member;
 
     /// The messages submitted on chain.
-    type Datagram: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type Datagram: Member;
 
     /// Events emitted on chain.
-    type Event: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type Event: Member;
+
+    fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
+    fn consensus_state_path(client_id: Self::ClientId, height: Self::Height) -> Self::StorePath;
+}
+
+pub trait IbcStorePathKey:
+    Member
+    + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
+    + Into<<Self::Spec as IbcSpec>::StorePath>
+{
+    type Spec: IbcSpec;
+
+    type Value: Member;
 }
 
 /// Error code for fatal errors. If a plugin or module responds with this error
-/// code, it will be treated as failed and not retried.
+/// code, it will be treated as fatal and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
 /// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm`

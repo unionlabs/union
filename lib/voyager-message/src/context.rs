@@ -13,10 +13,7 @@ use futures::{
     stream::{self, FuturesUnordered},
     Future, StreamExt, TryStreamExt,
 };
-use jsonrpsee::{
-    core::async_trait,
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -24,19 +21,24 @@ use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
-use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
+use unionlabs::{
+    ethereum::keccak256, hash::hash_v2::HexUnprefixed, ibc::core::client::height::Height,
+    id::ClientId, traits::Member, ErrorReporter,
+};
 use voyager_core::{ConsensusType, IbcVersionId};
-use voyager_vm::{BoxDynError, Op, QueueError};
+use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
-    data::Data,
+    ibc_v1::IbcV1,
+    into_value,
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
-        ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo,
+        ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo, ProofModuleClient,
+        StateModuleClient,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    IbcSpec, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -52,13 +54,9 @@ pub struct Context {
 
     cancellation_token: CancellationToken,
     // module_servers: Vec<ModuleRpcServer>,
-
-    // ibc version id => handler
-    #[debug(skip)]
-    pub ibc_spec_handlers: HashMap<IbcVersionId<'static>, IbcSpecHandler>,
 }
 
-#[derive(Debug)]
+#[derive(macros::Debug)]
 pub struct Modules {
     /// map of chain id to chain module.
     chain_modules: HashMap<ChainId, ModuleRpcClient>,
@@ -72,25 +70,27 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
     client_consensus_types: HashMap<ClientType, ConsensusType>,
+
+    // ibc version id => handler
+    #[debug(skip)]
+    pub ibc_spec_handlers: HashMap<IbcVersionId, IbcSpecHandler>,
 }
 
+/// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
 pub struct IbcSpecHandler {
-    pub call: fn(
-        &crate::rpc::server::Server,
-        // call
-        Value,
-    ) -> Pin<
-        Box<dyn Future<Output = Result<Op<VoyagerMessage>, QueueError>> + Send + Sync>,
-    >,
-    pub callback: fn(
-        &crate::rpc::server::Server,
-        // callback
-        Value,
-        // data[]
-        Value,
-    ) -> Pin<
-        Box<dyn Future<Output = Result<Op<VoyagerMessage>, QueueError>> + Send + Sync>,
-    >,
+    client_state_path: fn(ClientId) -> Value,
+    consensus_state_path: fn(ClientId, Height) -> Value,
+}
+
+impl IbcSpecHandler {
+    pub const fn new<T: IbcSpec>() -> Self {
+        Self {
+            client_state_path: |client_id| into_value(T::client_state_path(client_id)),
+            consensus_state_path: |client_id, height| {
+                into_value(T::consensus_state_path(client_id, height))
+            },
+        }
+    }
 }
 
 impl voyager_vm::Context for Context {}
@@ -214,6 +214,9 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
+            ibc_spec_handlers: [(IbcV1::ID, IbcSpecHandler::new::<IbcV1>())]
+                .into_iter()
+                .collect(),
         };
 
         let mut plugins = HashMap::default();
@@ -456,15 +459,6 @@ impl Context {
             plugins,
             interest_filters,
             cancellation_token,
-            ibc_spec_handlers: [(
-                IbcVersionId::new(IbcVersionId::V1_0_0),
-                IbcSpecHandler {
-                    call: ibc_v1_call_handler,
-                    callback: todo!(),
-                },
-            )]
-            .into_iter()
-            .collect(), // module_servers,
         })
     }
 
@@ -576,6 +570,22 @@ impl Modules {
             .get(chain_id)
             .ok_or_else(|| ChainModuleNotFound(chain_id.clone()))?
             .client())
+    }
+
+    pub fn state_module<'a, 'b, 'c: 'a, StorePath>(
+        &'a self,
+        chain_id: &ChainId,
+        ibc_version_id: &IbcVersionId,
+    ) -> Result<&'a (impl StateModuleClient<StorePath> + 'a), ChainModuleNotFound> {
+        todo!()
+    }
+
+    pub fn proof_module<'a, 'b, 'c: 'a, StorePath>(
+        &'a self,
+        chain_id: &ChainId,
+        ibc_version_id: &IbcVersionId,
+    ) -> Result<&'a (impl ProofModuleClient<StorePath> + 'a), ChainModuleNotFound> {
+        todo!()
     }
 
     pub fn consensus_module<'a, 'b, 'c: 'a>(

@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use unionlabs::{
     ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId, traits::Member,
 };
-use voyager_core::ClientInfo;
+use voyager_core::{ClientInfo, IbcVersionId};
 use voyager_vm::{CallbackT, Op, QueueError};
 
 use crate::{
@@ -48,6 +48,7 @@ impl CallbackT<VoyagerMessage> for Callback {
         match self {
             Callback::AggregateMsgUpdateClientsFromOrderedHeaders(
                 AggregateMsgUpdateClientsFromOrderedHeaders {
+                    ibc_version_id,
                     chain_id,
                     counterparty_client_id,
                 },
@@ -74,10 +75,11 @@ impl CallbackT<VoyagerMessage> for Callback {
                 let ClientInfo {
                     client_type,
                     ibc_interface,
+                    ibc_version_id,
                     ..
                 } = ctx
                     .rpc_server
-                    .client_info(&chain_id, counterparty_client_id.clone())
+                    .client_info(&chain_id, &ibc_version_id, counterparty_client_id.clone())
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -120,6 +122,7 @@ impl CallbackT<VoyagerMessage> for Callback {
 /// Required data: [`OrderedHeaders`]
 #[model]
 pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
+    pub ibc_version_id: IbcVersionId,
     pub chain_id: ChainId,
     pub counterparty_client_id: ClientId,
 }
