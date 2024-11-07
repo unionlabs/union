@@ -120,7 +120,10 @@ try {
     </div>
   </ContainedSection>
   <!-- Cards Grid -->
-  <ContainedSection grid className="place-content-evenly grid-cols-1 ssm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+  <ContainedSection
+    grid
+    className="place-content-evenly grid-cols-1 ssm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+  >
     {
       ecosystemData.map((item) => (
         <a
@@ -226,13 +229,13 @@ try {
       }
     });
 
-    window.addEventListener("resize", () => {
-      if (window.innerWidth >= 1024) {
-        filterContent.classList.remove("hidden");
-      } else {
-        filterContent.classList.add("hidden");
-        filterIcon.classList.remove("rotate-180");
-      }
-    });
+    //window.addEventListener("resize", () => {
+    //  if (window.innerWidth >= 1024) {
+    //    filterContent.classList.remove("hidden");
+    //  } else {
+    //    filterContent.classList.add("hidden");
+    //    filterIcon.classList.remove("rotate-180");
+    //  }
+    //});
   });
 </script>
