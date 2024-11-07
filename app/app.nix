@@ -18,13 +18,8 @@ _: {
     in
     {
       packages = {
-<<<<<<< HEAD
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-3tyAPb9zEspcukQwGFkb6tkSvphQBiihDwpxMs+8KGs=";
-=======
-        app = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-wbkEIJl8mLPGkbzloIlBa9/d+HKagjuXAOQbP69Ef9A=";
->>>>>>> c877a51e8 (feat: transfer form update)
           src = ./.;
           sourceRoot = "app";
           npmFlags = [
