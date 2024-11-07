@@ -28,11 +28,11 @@ let connectedWallets = derived(
       $sepoliaStore.connectionStatus,
       $cosmosStore.connectionStatus,
       $aptosStore.connectionStatus
-    ].filter(status => status === "connected" || status === "connecting").length
+    ].filter(status => status === "connected").length
   }
 )
 
-$: if ($connectedWallets > 1) {
+$: if ($connectedWallets >= 1) {
   buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
 } else {
   buttonText = "Connect Wallet"

@@ -34,7 +34,7 @@ $: connectText =
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
       : chain === "aptos"
-        ? truncateEvmAddress(address, 20)
+        ? address
         : truncateUnionAddress(address, -1)
     : ""
 
