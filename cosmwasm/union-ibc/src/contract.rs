@@ -409,7 +409,6 @@ fn timeout_packet(
         unionlabs::ics24::ethabi::batch_receipts_key(destination_channel, commit_packet(&packet));
 
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    #[allow(dependency_on_unit_never_type_fallback)]
     deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyNonMembership {
@@ -475,7 +474,6 @@ fn acknowledge_packet(
     };
 
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    #[allow(dependency_on_unit_never_type_fallback)]
     deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
@@ -1142,6 +1140,7 @@ fn channel_close_confirm(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_receive(
     mut deps: DepsMut,
     env: Env,
@@ -1175,7 +1174,6 @@ fn process_receive(
         };
 
         let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-        #[allow(dependency_on_unit_never_type_fallback)]
         deps.querier.query_wasm_smart::<()>(
             &client_impl,
             &LightClientQuery::VerifyMembership {
@@ -1399,7 +1397,7 @@ fn save_connection(
     connection_id: u32,
     connection: &Connection,
 ) -> Result<(), ContractError> {
-    CONNECTIONS.save(deps.storage, connection_id, &connection)?;
+    CONNECTIONS.save(deps.storage, connection_id, connection)?;
     store_commit(
         deps,
         &unionlabs::ics24::ethabi::connection_key(connection_id),
@@ -1409,7 +1407,7 @@ fn save_connection(
 }
 
 fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(), ContractError> {
-    CHANNELS.save(deps.storage, channel_id, &channel)?;
+    CHANNELS.save(deps.storage, channel_id, channel)?;
     store_commit(
         deps,
         &unionlabs::ics24::ethabi::channel_key(channel_id),
@@ -1495,9 +1493,7 @@ fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u6
     let consensus_state = CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
     let timestamp = deps.querier.query_wasm_smart(
         client_impl,
-        &LightClientQuery::GetTimestamp {
-            consensus_state: consensus_state.into(),
-        },
+        &LightClientQuery::GetTimestamp { consensus_state },
     )?;
     Ok(timestamp)
 }
@@ -1513,24 +1509,22 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
             let latest_height = deps.querier.query_wasm_smart::<u64>(
                 client_impl,
-                &LightClientQuery::GetLatestHeight {
-                    client_state: client_state.into(),
-                },
+                &LightClientQuery::GetLatestHeight { client_state },
             )?;
             Ok(to_json_binary(&latest_height)?)
         }
         QueryMsg::GetClientState { client_id } => {
-            let client_state = Binary::from(CLIENT_STATES.load(deps.storage, client_id)?);
+            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
             Ok(to_json_binary(&client_state)?)
         }
         QueryMsg::GetConsensusState { client_id, height } => {
             let consensus_state =
-                Binary::from(CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?);
+                CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
             Ok(to_json_binary(&consensus_state)?)
         }
         QueryMsg::GetStatus { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let client_state = Binary::from(CLIENT_STATES.load(deps.storage, client_id)?);
+            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
             Ok(deps
                 .querier
                 .query_wasm_smart(client_impl, &LightClientQuery::GetStatus { client_state })?)
