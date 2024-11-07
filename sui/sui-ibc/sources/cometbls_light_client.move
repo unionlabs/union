@@ -15,32 +15,38 @@ module ibc::light_client {
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
-    ): (vector<u8>, vector<u8>) {
-        (vector::empty(), vector::empty())
+    ): Client {
+        let mut consensus_states = table::new(ctx);
+        consensus_states.add(0, consensus_state_bytes);
+        Client {
+            id: object::new(ctx),
+            client_state: client_state_bytes,
+            consensus_states: consensus_states
+        }
     }
 
     public(package) fun status(
-        _client_id: u32,
+        _client: &Client,
     ): u64 {
         0
     }
 
-    public(package) fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool {
+    public(package) fun check_for_misbehaviour(client: &Client, header: vector<u8>): bool {
         false
     }
 
     public(package) fun report_misbehaviour(
-        client_id: u32, misbehaviour: vector<u8>
+        client: &Client, misbehaviour: vector<u8>
     ){
 
     }
 
-    public(package) fun get_timestamp_at_height(client_id: u32, height: u64): u64  {
+    public(package) fun get_timestamp_at_height(client: &Client, height: u64): u64  {
         0
     }
 
     public(package) fun verify_non_membership(
-        _client_id: u32,
+        _client: &Client,
         _height: u64,
         _proof: vector<u8>,
         _path: vector<u8>
@@ -49,19 +55,19 @@ module ibc::light_client {
     }
 
     public(package) fun update_client(
-        client_id: u32, client_msg: vector<u8>
+        client: &Client, client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
         (vector::empty(), vector::empty(), vector::empty())
     }
 
     public(package) fun latest_height(
-        client_id: u32
+        client: &Client
     ): u64 {
         0
     }
 
     public(package) fun verify_membership(
-        client_id: u32,
+        client: &Client,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>,
