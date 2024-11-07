@@ -39,7 +39,7 @@ serde_json                  = { workspace = true, optional = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
-union-ibc                   = { workspace = true }
+union-ibc                   = { workspace = true, features = ["library"] }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
