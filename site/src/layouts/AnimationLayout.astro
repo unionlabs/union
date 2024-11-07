@@ -198,6 +198,10 @@ const currentPath = pathname.slice(1) // remove the first "/"
     };
 
     if (toConfig.index) {
+      if (toConfig.index === fromConfig.index) {
+        return;
+      }
+
       isNavigating = true;
       navigationDirection =
         toConfig.index > fromConfig.index ? "left" : "right";
