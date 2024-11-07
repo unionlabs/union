@@ -33,16 +33,8 @@ pub mod ibc {
 
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-        enum ChannelOrder {
-            Unordered,
-            Ordered
-        }
-
-        #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
-        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         struct Channel {
             ChannelState state;
-            ChannelOrder ordering;
             uint32 connectionId;
             uint32 counterpartyChannelId;
             string counterpartyPortId;
@@ -51,7 +43,6 @@ pub mod ibc {
 
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         struct Packet {
-            uint64 sequence;
             uint32 sourceChannel;
             uint32 destinationChannel;
             bytes data;
@@ -120,7 +111,6 @@ pub mod ibc {
             string portId;
             string counterpartyPortId;
             uint32 connectionId;
-            ChannelOrder ordering;
             string version;
             string relayer;
         }

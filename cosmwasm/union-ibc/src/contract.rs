@@ -5,7 +5,7 @@ use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
 use ibc_solidity::cosmwasm::types::ibc::{
-    Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgBatchAcks, MsgBatchSend,
+    Channel, ChannelState, Connection, ConnectionState, MsgBatchAcks, MsgBatchSend,
     MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
     MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
     MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv,
@@ -15,7 +15,6 @@ use unionlabs::{
     ethereum::keccak256,
     hash::{hash_v2::HexPrefixed, H256},
     ics24::ethabi::COMMITMENT_MAGIC,
-    uint::U256,
 };
 
 use crate::{
@@ -141,7 +140,6 @@ pub fn execute(
             portId,
             counterpartyPortId,
             connectionId,
-            ordering,
             version,
             relayer,
         }) => {
@@ -151,7 +149,6 @@ pub fn execute(
                 portId,
                 counterpartyPortId,
                 connectionId,
-                ordering,
                 version,
                 relayer,
             )
@@ -811,7 +808,6 @@ fn channel_open_init(
     port_id: String,
     counterparty_port_id: String,
     connection_id: u32,
-    ordering: ChannelOrder,
     version: String,
     relayer: Addr,
 ) -> ContractResult {
@@ -820,7 +816,6 @@ fn channel_open_init(
     let channel_id = next_channel_id(deps.branch())?;
     let channel = Channel {
         state: ChannelState::Init,
-        ordering,
         connectionId: connection_id,
         counterpartyChannelId: 0,
         counterpartyPortId: counterparty_port_id.clone(),
@@ -828,7 +823,6 @@ fn channel_open_init(
     };
     save_channel(deps.branch(), channel_id, &channel)?;
     CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
-    initialize_channel_sequences(deps.branch(), channel_id)?;
     Ok(Response::new()
         .add_event(Event::new("channel_open_init").add_attributes([
             ("port_id", port_id.to_string()),
@@ -840,7 +834,6 @@ fn channel_open_init(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::OnChannelOpenInit {
-                order: channel.ordering,
                 connection_id,
                 channel_id,
                 version,
@@ -868,7 +861,6 @@ fn channel_open_try(
     let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
     let expected_channel = Channel {
         state: ChannelState::Init,
-        ordering: channel.ordering,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: 0,
         counterpartyPortId: port_id.clone(),
@@ -891,7 +883,6 @@ fn channel_open_try(
     let port_id = deps.api.addr_validate(&port_id)?;
     save_channel(deps.branch(), channel_id, &channel)?;
     CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
-    initialize_channel_sequences(deps.branch(), channel_id)?;
     Ok(Response::new()
         .add_event(Event::new("channel_open_try").add_attributes([
             ("port_id", port_id.to_string()),
@@ -907,7 +898,6 @@ fn channel_open_try(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::OnChannelOpenTry {
-                order: channel.ordering,
                 connection_id: channel.connectionId,
                 channel_id,
                 version: channel.version,
@@ -938,7 +928,6 @@ fn channel_open_ack(
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::TryOpen,
-        ordering: channel.ordering,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
         counterpartyPortId: port_id.to_string(),
@@ -1002,7 +991,6 @@ fn channel_open_confirm(
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::Open,
-        ordering: channel.ordering,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
         counterpartyPortId: port_id.to_string(),
@@ -1094,7 +1082,6 @@ fn channel_close_confirm(
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::Closed,
-        ordering: channel.ordering,
         connectionId: connection.counterpartyConnectionId,
         counterpartyChannelId: channel_id,
         counterpartyPortId: port_id.to_string(),
@@ -1310,9 +1297,7 @@ fn send_packet(
     }
 
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
-    let sequence = generate_packet_sequence(deps.branch(), source_channel)?;
     let packet = Packet {
-        sequence,
         sourceChannel: source_channel,
         destinationChannel: channel.counterpartyChannelId,
         data: data.into(),
@@ -1326,9 +1311,12 @@ fn send_packet(
         &COMMITMENT_MAGIC,
     )?;
 
-    Ok(Response::new().add_event(
-        Event::new("send_packet").add_attribute("packet", serde_json::to_string(&packet).unwrap()),
-    ))
+    Ok(Response::new()
+        .add_event(
+            Event::new("send_packet")
+                .add_attribute("packet", serde_json::to_string(&packet).unwrap()),
+        )
+        .set_data(to_json_binary(&packet)?))
 }
 
 fn next_channel_id(deps: DepsMut) -> Result<u32, ContractError> {
@@ -1448,44 +1436,6 @@ fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
             .set(commitment_key.as_ref(), COMMITMENT_MAGIC.as_ref());
         false
     }
-}
-
-fn generate_packet_sequence(deps: DepsMut, channel_id: u32) -> Result<u64, ContractError> {
-    let commitment_key = unionlabs::ics24::ethabi::next_seq_send_key(channel_id);
-    let seq = U256::from_be_bytes(
-        deps.storage
-            .get(commitment_key.as_ref())
-            .ok_or(ContractError::ChannelNotExist(channel_id))?
-            .try_into()
-            .unwrap(),
-    );
-
-    store_commit(
-        deps,
-        &commitment_key,
-        &H256::from((seq + 1.into()).to_be_bytes()),
-    )?;
-
-    Ok(seq.0.as_u128() as u64)
-}
-
-fn initialize_channel_sequences(mut deps: DepsMut, channel_id: u32) -> Result<(), ContractError> {
-    store_commit(
-        deps.branch(),
-        &unionlabs::ics24::ethabi::next_seq_recv_key(channel_id),
-        &H256::from(U256::from(1u64).to_be_bytes()),
-    )?;
-    store_commit(
-        deps.branch(),
-        &unionlabs::ics24::ethabi::next_seq_send_key(channel_id),
-        &H256::from(U256::from(1u64).to_be_bytes()),
-    )?;
-    store_commit(
-        deps.branch(),
-        &unionlabs::ics24::ethabi::next_seq_ack_key(channel_id),
-        &H256::from(U256::from(1u64).to_be_bytes()),
-    )?;
-    Ok(())
 }
 
 fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u64, ContractError> {

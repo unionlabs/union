@@ -1,17 +1,15 @@
 use cosmwasm_std::{Addr, Binary};
-use ibc_solidity::cosmwasm::types::ibc::{ChannelOrder, Packet};
+use ibc_solidity::cosmwasm::types::ibc::Packet;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ExecuteMsg {
     OnChannelOpenInit {
-        order: ChannelOrder,
         connection_id: u32,
         channel_id: u32,
         version: String,
         relayer: Addr,
     },
     OnChannelOpenTry {
-        order: ChannelOrder,
         connection_id: u32,
         channel_id: u32,
         version: String,
