@@ -16,7 +16,8 @@ export default {
     current: "currentColor",
     extend: {
       screens: {
-        xs: "320px"
+        xs: "320px",
+        ssm: "500px"
       },
       height: {
         "screen-minus-header": "calc(100svh - var(--header-height))"
