@@ -197,11 +197,8 @@ const currentPath = pathname.slice(1) // remove the first "/"
       saturation: 100,
     };
 
-    if (toConfig.index) {
-      if (toConfig.index === fromConfig.index) {
-        return;
-      }
-
+    // Only set isNavigating and perform animations if indices are different
+    if (toConfig.index && toConfig.index !== fromConfig.index) {
       isNavigating = true;
       navigationDirection =
         toConfig.index > fromConfig.index ? "left" : "right";
@@ -212,11 +209,15 @@ const currentPath = pathname.slice(1) // remove the first "/"
       if (slideThis) {
         slideThis.style.animation = `slideOut${navigationDirection.charAt(0).toUpperCase() + navigationDirection.slice(1)} 0.5s ease-out forwards`;
       }
+    } else {
+      // For same-index pages or no index
+      isNavigating = false;
     }
   });
 
   document.addEventListener("astro:after-swap", () => {
     toggleCollapsed(window.location.pathname === "/");
+    // Only perform slide-in animation if we're actually navigating between different indices
     if (isNavigating) {
       const slideThis = document.querySelector(".slide-this");
       if (slideThis) {
