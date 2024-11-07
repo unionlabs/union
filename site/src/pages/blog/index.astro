@@ -24,10 +24,7 @@ Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate"
 const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
-<AnimationLayout
-  title="Blog"
-  text="Stay updated on our progress."
->
+<AnimationLayout title="Blog" text="Stay updated on our progress.">
   <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
     {
       publishedBlogPosts.map((blogPostEntry: BlogPost) => (
