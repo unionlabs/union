@@ -1,5 +1,4 @@
 pub mod contract;
-pub mod ibc;
 pub mod lightclient;
 pub mod module;
 pub mod msg;
@@ -58,8 +57,16 @@ pub enum ContractError {
     AlreadyAcknowledged,
     #[error("Timeout must be set")]
     TimeoutMustBeSet,
+    #[error("Timestamp timeout not yet reached")]
+    TimeoutTimestampNotReached,
+    #[error("Height timeout not yet reached")]
+    TimeoutHeightNotReached,
     #[error("channel ({0}) does not exist")]
     ChannelNotExist(u32),
     #[error("No packets are acked")]
     NoPacketsAcked,
+    #[error("Packet commitment not found")]
+    PacketCommitmentNotFound,
+    #[error("Packet timeout proof timestamp not found")]
+    TimeoutProofTimestampNotFound,
 }

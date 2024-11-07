@@ -1,20 +1,22 @@
-use alloy::{primitives::Bytes, sol_types::SolValue};
+use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
 };
 use ibc_solidity::ibc::{
     Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgChannelCloseConfirm,
     MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
     MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
     MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketAcknowledgement,
-    MsgPacketRecv, MsgUpdateClient, Packet,
+    MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient, Packet,
 };
-use sha2::Digest as _;
-use sha3::Keccak256;
-use unionlabs::{ethereum::keccak256, hash::H256, ics24::ethabi::COMMITMENT_MAGIC, uint::U256};
+use unionlabs::{
+    ethereum::keccak256,
+    hash::{hash_v2::HexPrefixed, H256},
+    ics24::ethabi::COMMITMENT_MAGIC,
+    uint::U256,
+};
 
 use crate::{
     lightclient::query::{QueryMsg as LightClientQuery, VerifyClientMessageUpdate},
@@ -257,7 +259,17 @@ pub fn execute(
                 relayer,
             )?
         }
-        ExecuteMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
+        ExecuteMsg::PacketTimeout(MsgPacketTimeout {
+            packet,
+            proof,
+            proofHeight,
+            // remove after having refactored to ordered only
+            nextSequenceRecv: _,
+            relayer,
+        }) => {
+            let relayer = deps.api.addr_validate(&relayer)?;
+            timeout_packet(deps.branch(), packet, proof.to_vec(), proofHeight, relayer)?
+        }
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
             marketMakerMsgs,
@@ -273,8 +285,6 @@ pub fn execute(
             0,
             true,
         )?,
-        ExecuteMsg::BatchSend(_msg_batch_send) => todo!(),
-        ExecuteMsg::BatchAcks(_msg_batch_acks) => todo!(),
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             channel_id,
             packet,
@@ -299,9 +309,70 @@ pub fn execute(
             timeout_timestamp,
             data,
         )?,
+        ExecuteMsg::BatchSend(_msg_batch_send) => todo!(),
+        ExecuteMsg::BatchAcks(_msg_batch_acks) => todo!(),
     };
 
     Ok(response)
+}
+
+fn timeout_packet(
+    mut deps: DepsMut,
+    packet: Packet,
+    proof: Vec<u8>,
+    proof_height: u64,
+    relayer: Addr,
+) -> ContractResult {
+    let source_channel = packet.sourceChannel;
+    let destination_channel = packet.destinationChannel;
+    let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+    let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
+
+    let proof_timestamp =
+        get_timestamp_at_height(deps.as_ref(), connection.clientId, proof_height)?;
+    if proof_timestamp == 0 {
+        return Err(ContractError::TimeoutProofTimestampNotFound);
+    }
+
+    let commitment_key =
+        unionlabs::ics24::ethabi::batch_receipts_key(destination_channel, commit_packet(&packet));
+
+    let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
+    #[allow(dependency_on_unit_never_type_fallback)]
+    deps.querier.query_wasm_smart::<()>(
+        &client_impl,
+        &LightClientQuery::VerifyNonMembership {
+            client_id: connection.clientId,
+            height: proof_height,
+            proof: proof.to_vec().into(),
+            path: commitment_key.into_bytes().into(),
+        },
+    )?;
+    delete_packet_commitment(deps.branch(), source_channel, &packet)?;
+
+    if packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0 {
+        return Err(ContractError::TimeoutMustBeSet);
+    }
+
+    if packet.timeoutTimestamp > 0 && packet.timeoutTimestamp > proof_timestamp {
+        return Err(ContractError::TimeoutTimestampNotReached);
+    }
+
+    if packet.timeoutHeight > 0 && packet.timeoutHeight > proof_height {
+        return Err(ContractError::TimeoutHeightNotReached);
+    }
+
+    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    Ok(Response::new()
+        .add_event(Event::new("timeout_packet").add_attributes([
+            ("packet", serde_json::to_string(&packet).unwrap()),
+            ("relayer", relayer.to_string()),
+        ]))
+        .add_message(wasm_execute(
+            port_id,
+            &ModuleMsg::OnTimeoutPacket { packet, relayer },
+            vec![],
+        )?))
 }
 
 fn acknowledge_packet(
@@ -334,7 +405,7 @@ fn acknowledge_packet(
 
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
     #[allow(dependency_on_unit_never_type_fallback)]
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -345,31 +416,54 @@ fn acknowledge_packet(
         },
     )?;
 
+    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let mut events = Vec::with_capacity(packets.len());
+    let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
-        delete_packet_commitment(deps.branch(), source_channel, packet)?;
+        delete_packet_commitment(deps.branch(), source_channel, &packet)?;
+        events.push(Event::new("acknowledge_packet").add_attributes([
+            ("packet", serde_json::to_string(&packet).unwrap()),
+            ("acknowledgement", hex::encode(&ack)),
+            ("relayer", relayer.clone().to_string()),
+        ]));
+        messages.push(wasm_execute(
+            port_id.clone(),
+            &ModuleMsg::OnAcknowledgementPacket {
+                packet,
+                acknowledgement: ack.to_vec().into(),
+                relayer: relayer.clone(),
+            },
+            vec![],
+        )?);
     }
 
-    todo!()
+    Ok(Response::new().add_events(events).add_messages(messages))
 }
 
-fn delete_packet_commitment(deps: DepsMut, source_channel: u32, packet: &Packet) -> ContractResult {
+fn delete_packet_commitment(
+    deps: DepsMut,
+    source_channel: u32,
+    packet: &Packet,
+) -> Result<(), ContractError> {
     let commitment_key =
         unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(packet));
-    deps.storage.get(commitment_key.as_ref())?;
+    let commitment = deps
+        .storage
+        .get(commitment_key.as_ref())
+        .unwrap_or(H256::<HexPrefixed>::default().into_bytes());
+    if commitment != COMMITMENT_MAGIC.as_ref() {
+        return Err(ContractError::PacketCommitmentNotFound);
+    }
+    deps.storage.remove(commitment_key.as_ref());
+    Ok(())
 }
 
 fn commit_packet(packet: &Packet) -> H256 {
-    Keccak256::new()
-        .chain_update(packet.abi_encode())
-        .finalize()
-        .into()
+    commit(packet.abi_encode())
 }
 
 fn commit_packets(packets: &[Packet]) -> H256 {
-    Keccak256::new()
-        .chain_update(packets.abi_encode())
-        .finalize()
-        .into()
+    commit(packets.abi_encode())
 }
 
 fn register_client(
@@ -513,7 +607,7 @@ fn connection_open_try(
         counterpartyConnectionId: 0,
     };
     let client_impl = client_impl(deps.as_ref(), client_id)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id,
@@ -561,7 +655,7 @@ fn connection_open_ack(
         counterpartyConnectionId: connection_id,
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -613,7 +707,7 @@ fn connection_open_confirm(
         counterpartyConnectionId: connection_id,
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -720,7 +814,7 @@ fn channel_open_try(
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -790,7 +884,7 @@ fn channel_open_ack(
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -854,7 +948,7 @@ fn channel_open_confirm(
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -946,7 +1040,7 @@ fn channel_close_confirm(
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
-    deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart::<()>(
         &client_impl,
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
@@ -1019,7 +1113,7 @@ fn process_receive(
 
         let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
         #[allow(dependency_on_unit_never_type_fallback)]
-        deps.querier.query_wasm_smart(
+        deps.querier.query_wasm_smart::<()>(
             &client_impl,
             &LightClientQuery::VerifyMembership {
                 client_id: connection.clientId,
@@ -1220,16 +1314,11 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 }
 
 fn commit_ack(ack: Vec<u8>) -> H256 {
-    merge_ack(Keccak256::new().chain_update(ack).finalize().into())
+    merge_ack(commit(ack))
 }
 
-fn commit_acks(ack: &Vec<alloy::primitives::Bytes>) -> H256 {
-    merge_ack(
-        Keccak256::new()
-            .chain_update(ack.abi_encode())
-            .finalize()
-            .into(),
-    )
+fn commit_acks(acks: &Vec<alloy::primitives::Bytes>) -> H256 {
+    merge_ack(commit(acks.abi_encode()))
 }
 
 fn merge_ack(mut ack: H256) -> H256 {
@@ -1338,21 +1427,24 @@ fn initialize_channel_sequences(mut deps: DepsMut, channel_id: u32) -> Result<()
     Ok(())
 }
 
+fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u64, ContractError> {
+    let client_impl = client_impl(deps, client_id)?;
+    let consensus_state = CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
+    let timestamp = deps.querier.query_wasm_smart(
+        client_impl,
+        &LightClientQuery::GetTimestamp {
+            consensus_state: consensus_state.into(),
+        },
+    )?;
+    Ok(timestamp)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::GetTimestampAtHeight { client_id, height } => {
-            let client_impl = client_impl(deps, client_id)?;
-            let consensus_state =
-                CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
-            let timestamp = deps.querier.query_wasm_smart::<u64>(
-                client_impl,
-                &LightClientQuery::GetTimestamp {
-                    consensus_state: consensus_state.into(),
-                },
-            )?;
-            Ok(to_json_binary(&timestamp)?)
-        }
+        QueryMsg::GetTimestampAtHeight { client_id, height } => Ok(to_json_binary(
+            &get_timestamp_at_height(deps, client_id, height)?,
+        )?),
         QueryMsg::GetLatestHeight { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
             let client_state = CLIENT_STATES.load(deps.storage, client_id)?;

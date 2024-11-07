@@ -1,6 +1,4 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, IbcMsg, IbcTimeout, Timestamp};
-use ethabi::{ParamType, Token};
+use cosmwasm_std::Addr;
 use ibc_solidity::ibc::{
     MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck,
@@ -8,7 +6,6 @@ use ibc_solidity::ibc::{
     MsgIntentPacketRecv, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
     MsgUpdateClient, Packet,
 };
-use unionlabs::hash::H256;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct InitMsg {}
