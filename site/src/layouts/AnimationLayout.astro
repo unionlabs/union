@@ -178,11 +178,8 @@ const currentPath = pathname.slice(1) // remove the first "/"
 </style>
 
 <script>
-  import {
-    pathConfigMap,
-    rotateCamera,
-    updateSaturation,
-  } from "../lib/matrix-cover";
+  import { rotateCamera, updateColors } from "../lib/matrix-cover";
+  import { pathConfigMap } from "../lib/constants/pages";
 
   let isNavigating = false;
   let navigationDirection: "left" | "right";
@@ -190,34 +187,33 @@ const currentPath = pathname.slice(1) // remove the first "/"
   document.addEventListener("astro:before-preparation", (event: any) => {
     const fromConfig = pathConfigMap[event.from.pathname] ?? {
       index: 0,
-      saturation: 100,
+      colors: pathConfigMap["/"].colors, // Use default colors
     };
     const toConfig = pathConfigMap[event.to.pathname] ?? {
       index: 0,
-      saturation: 100,
+      colors: pathConfigMap["/"].colors, // Use default colors
     };
 
-    // Only set isNavigating and perform animations if indices are different
     if (toConfig.index && toConfig.index !== fromConfig.index) {
+      console.log(toConfig);
       isNavigating = true;
       navigationDirection =
         toConfig.index > fromConfig.index ? "left" : "right";
+
       rotateCamera(navigationDirection);
-      updateSaturation(toConfig.saturation);
+      updateColors(toConfig.colors);
 
       const slideThis = document.querySelector(".slide-this");
       if (slideThis) {
         slideThis.style.animation = `slideOut${navigationDirection.charAt(0).toUpperCase() + navigationDirection.slice(1)} 0.5s ease-out forwards`;
       }
     } else {
-      // For same-index pages or no index
       isNavigating = false;
     }
   });
 
   document.addEventListener("astro:after-swap", () => {
     toggleCollapsed(window.location.pathname === "/");
-    // Only perform slide-in animation if we're actually navigating between different indices
     if (isNavigating) {
       const slideThis = document.querySelector(".slide-this");
       if (slideThis) {
