@@ -1,6 +1,5 @@
 use cosmwasm_std::StdError;
 use ethereum_light_client_types::{client_state, consensus_state, StorageProof};
-use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
@@ -13,8 +12,6 @@ use unionlabs::{
     id::ConnectionId,
     uint::U256,
 };
-
-use crate::client::EthereumLightClient;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
@@ -129,12 +126,6 @@ pub struct InvalidCommitmentKey {
 pub struct StoredValueMismatch {
     pub expected: H256,
     pub stored: H256,
-}
-
-impl From<Error> for IbcClientError<EthereumLightClient> {
-    fn from(value: Error) -> Self {
-        IbcClientError::ClientSpecific(value)
-    }
 }
 
 impl From<Error> for StdError {
