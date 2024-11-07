@@ -18,6 +18,8 @@ macro_rules! maybe_sol_attr {
     };
 }
 
+pub mod cosmwasm;
+
 pub mod ibc {
     maybe_sol_attr! {
         alloy::sol! {
@@ -188,49 +190,49 @@ pub mod ibc {
 
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelOpenInit(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 connectionId,
                     string version
                 );
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelOpenTry(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 counterpartyChannelId,
                     uint32 connectionId,
                     string version
                 );
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelOpenAck(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 counterpartyChannelId,
                     uint32 connectionId
                 );
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelOpenConfirm(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 counterpartyChannelId,
                     uint32 connectionId
                 );
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelCloseInit(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 counterpartyChannelId
                 );
                 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
                 event ChannelCloseConfirm(
-                    string portId,
+                    address portId,
                     uint32 channelId,
-                    string counterpartyPortId,
+                    bytes counterpartyPortId,
                     uint32 counterpartyChannelId
                 );
 
@@ -259,18 +261,14 @@ pub mod ibc {
                 error ErrHeightTimeout();
                 error ErrTimestampTimeout();
                 error ErrInvalidProof();
-                error ErrPacketSequenceNextSequenceMismatch();
-                error ErrPacketSequenceAckSequenceMismatch();
                 error ErrAcknowledgementIsEmpty();
                 error ErrPacketNotReceived();
                 error ErrAcknowledgementAlreadyExists();
                 error ErrPacketCommitmentNotFound();
                 error ErrTimeoutHeightNotReached();
                 error ErrTimeoutTimestampNotReached();
-                error ErrNextSequenceMustBeLEQThanTimeoutSequence();
                 error ErrNotEnoughPackets();
                 error ErrCommittedAckNotPresent();
-                error ErrCannotIntentOrderedPacket();
 
                 // COMETBLS CLIENT
 
@@ -310,24 +308,16 @@ pub mod ibc {
                 Closed
             }
 
-            enum ChannelOrder {
-                Unspecified,
-                Unordered,
-                Ordered
-            }
-
             struct Channel {
                 ChannelState state;
-                ChannelOrder ordering;
                 uint32 connectionId;
                 uint32 counterpartyChannelId;
-                string counterpartyPortId;
+                bytes counterpartyPortId;
                 string version;
             }
 
             #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct Packet {
-                uint64 sequence;
                 uint32 sourceChannel;
                 uint32 destinationChannel;
                 bytes data;
@@ -380,9 +370,8 @@ pub mod ibc {
 
             struct MsgChannelOpenInit {
                 address portId;
-                string counterpartyPortId;
+                bytes counterpartyPortId;
                 uint32 connectionId;
-                ChannelOrder ordering;
                 string version;
                 address relayer;
             }
@@ -443,7 +432,6 @@ pub mod ibc {
                 Packet packet;
                 bytes proof;
                 uint64 proofHeight;
-                uint64 nextSequenceRecv;
                 address relayer;
             }
 

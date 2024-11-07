@@ -12,14 +12,6 @@ _: {
     let
       lc = crane.buildWasmContract {
         crateDirFromRoot = "light-clients/ethereum-light-client";
-        checks = [
-          (file_path: ''
-            ${ensure-wasm-client-type {
-              inherit file_path;
-              type = "Ethereum";
-            }}
-          '')
-        ];
       };
     in
     {

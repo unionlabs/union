@@ -35,9 +35,6 @@ pub mod ethabi {
     const CHANNELS: U256 = U256::from_limbs([0, 0, 0, 3]);
     const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
     const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
-    const NEXT_SEQ_SEND: U256 = U256::from_limbs([0, 0, 0, 6]);
-    const NEXT_SEQ_RECV: U256 = U256::from_limbs([0, 0, 0, 7]);
-    const NEXT_SEQ_ACK: U256 = U256::from_limbs([0, 0, 0, 8]);
 
     #[must_use]
     pub fn client_state_key(client_id: u32) -> H256 {
@@ -77,48 +74,21 @@ pub mod ethabi {
     }
 
     #[must_use]
-    pub fn packet_key(channel_id: u32, hash: H256) -> H256 {
-        Keccak256::new()
-            .chain_update(PACKETS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(hash.get())
-            .finalize()
-            .into()
-    }
-
-    #[must_use]
-    pub fn receipts_key(channel_id: u32, hash: H256) -> H256 {
+    pub fn batch_receipts_key(channel_id: u32, batch_hash: H256) -> H256 {
         Keccak256::new()
             .chain_update(PACKET_ACKS.to_be_bytes())
             .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(hash.get())
+            .chain_update(batch_hash)
             .finalize()
             .into()
     }
 
     #[must_use]
-    pub fn next_seq_send_key(channel_id: u32) -> H256 {
+    pub fn batch_packets_key(channel_id: u32, batch_hash: H256) -> H256 {
         Keccak256::new()
-            .chain_update(NEXT_SEQ_SEND.to_be_bytes())
+            .chain_update(PACKETS.to_be_bytes())
             .chain_update(U256::from(channel_id).to_be_bytes())
-            .finalize()
-            .into()
-    }
-
-    #[must_use]
-    pub fn next_seq_recv_key(channel_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(NEXT_SEQ_RECV.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .finalize()
-            .into()
-    }
-
-    #[must_use]
-    pub fn next_seq_ack_key(channel_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(NEXT_SEQ_ACK.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
+            .chain_update(batch_hash)
             .finalize()
             .into()
     }
@@ -181,9 +151,9 @@ impl Path {
             Path::Receipt(_path) => {
                 todo!()
             }
-            Path::NextSequenceSend(path) => ethabi::next_seq_send_key(path.channel_id.id()),
-            Path::NextSequenceRecv(path) => ethabi::next_seq_recv_key(path.channel_id.id()),
-            Path::NextSequenceAck(path) => ethabi::next_seq_ack_key(path.channel_id.id()),
+            Path::NextSequenceSend(_path) => todo!(),
+            Path::NextSequenceRecv(_path) => todo!(),
+            Path::NextSequenceAck(_path) => todo!(),
             // TODO(aeryz): check these out
             Path::NextConnectionSequence(_path) => H256::default(),
             Path::NextClientSequence(_path) => H256::default(),

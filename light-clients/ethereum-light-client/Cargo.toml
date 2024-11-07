@@ -19,13 +19,15 @@ crate-type = ["cdylib", "rlib"]
 alloy                       = { workspace = true, features = ["sol-types"] }
 beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
+cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
+cw-storage-plus             = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
 ethereum-verifier           = { workspace = true }
 ethers-contract-derive      = { workspace = true }
 ethers-core                 = { workspace = true }
 hex                         = { workspace = true }
-ibc-solidity.workspace      = true
+ibc-solidity                = { workspace = true, default-features = false, features = ["serde"] }
 ics008-wasm-client          = { workspace = true }
 prost                       = { workspace = true }
 protos                      = { workspace = true }
@@ -37,6 +39,7 @@ serde_json                  = { workspace = true, optional = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
+union-ibc                   = { workspace = true, features = ["library"] }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

@@ -14,13 +14,11 @@ use chain_utils::{
     BoxDynError,
 };
 use ibc_solidity::ibc::{
-    ChannelOrder, ChannelState,
     Ibc::{self, IbcErrors},
     MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
     MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
     MsgCreateClient, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient,
 };
-use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -30,7 +28,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
     hash::{H160, H256},
-    ibc::core::channel::{channel::Channel, order::Order, packet::Packet, state::State},
+    ibc::core::channel::{channel::Channel, packet::Packet},
     id::PortId,
     ErrorReporter,
 };
@@ -528,13 +526,19 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         .channelOpenInit(MsgChannelOpenInit {
                             portId: parse_port_id(data.port_id)?,
                             relayer: relayer.into(),
-                            counterpartyPortId: data.channel.counterparty.port_id.to_string(),
+                            counterpartyPortId: data
+                                .channel
+                                .counterparty
+                                .port_id
+                                .to_string()
+                                .into_bytes()
+                                .into(),
                             connectionId: data.channel.connection_hops[0].id(),
-                            ordering: match data.channel.ordering {
-                                Order::NoneUnspecified => ChannelOrder::Unspecified,
-                                Order::Unordered => ChannelOrder::Unordered,
-                                Order::Ordered => ChannelOrder::Ordered,
-                            },
+                            // ordering: match data.channel.ordering {
+                            //     Order::NoneUnspecified => ChannelOrder::Unspecified,
+                            //     Order::Unordered => ChannelOrder::Unordered,
+                            //     Order::Ordered => ChannelOrder::Ordered,
+                            // },
                             version: data.channel.version,
                         })
                         .clear_decoder(),
@@ -606,7 +610,6 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                             packet: convert_packet(data.packet)?,
                             proof: data.proof_unreceived.into(),
                             proofHeight: data.proof_height.height(),
-                            nextSequenceRecv: data.next_sequence_recv.get(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -653,60 +656,64 @@ fn parse_port_id(s: PortId) -> RpcResult<alloy::primitives::Address> {
     })
 }
 
-fn convert_packet(packet: Packet) -> RpcResult<ibc_solidity::ibc::Packet> {
-    Ok(ibc_solidity::ibc::Packet {
-        sequence: packet.sequence.get(),
-        sourceChannel: packet.source_channel.id(),
-        destinationChannel: packet.destination_channel.id(),
-        data: packet.data.into(),
-        timeoutHeight: packet.timeout_height.height(),
-        timeoutTimestamp: packet.timeout_timestamp,
-    })
+fn convert_packet(_packet: Packet) -> RpcResult<ibc_solidity::ibc::Packet> {
+    // Ok(ibc_solidity::ibc::Packet {
+    //     sequence: packet.sequence.get(),
+    //     sourceChannel: packet.source_channel.id(),
+    //     destinationChannel: packet.destination_channel.id(),
+    //     data: packet.data.into(),
+    //     timeoutHeight: packet.timeout_height.height(),
+    //     timeoutTimestamp: packet.timeout_timestamp,
+    // })
+
+    todo!()
 }
 
-fn convert_channel(channel: Channel) -> RpcResult<ibc_solidity::ibc::Channel> {
-    Ok(ibc_solidity::ibc::Channel {
-        state: match channel.state {
-            State::UninitializedUnspecified => {
-                return Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "channel is in an invalid state",
-                    None::<()>,
-                ))
-            }
-            State::Init => ChannelState::Init,
-            State::Tryopen => ChannelState::TryOpen,
-            State::Open => ChannelState::Open,
-            State::Closed => ChannelState::Closed,
-            _ => panic!(),
-        },
-        ordering: match channel.ordering {
-            Order::NoneUnspecified => {
-                return Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "channel order is invalid",
-                    None::<()>,
-                ))
-            }
-            Order::Unordered => ChannelOrder::Unordered,
-            Order::Ordered => ChannelOrder::Ordered,
-        },
-        connectionId: channel
-            .connection_hops
-            .into_iter()
-            .exactly_one()
-            .map_err(|e| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("channel connection hops are invalid: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })
-            .map(|c| c.id())?,
-        counterpartyChannelId: channel.counterparty.channel_id.unwrap().id(),
-        counterpartyPortId: channel.counterparty.port_id.to_string(),
-        version: channel.version,
-    })
+fn convert_channel(_channel: Channel) -> RpcResult<ibc_solidity::ibc::Channel> {
+    // Ok(ibc_solidity::ibc::Channel {
+    //     state: match channel.state {
+    //         State::UninitializedUnspecified => {
+    //             return Err(ErrorObject::owned(
+    //                 FATAL_JSONRPC_ERROR_CODE,
+    //                 "channel is in an invalid state",
+    //                 None::<()>,
+    //             ))
+    //         }
+    //         State::Init => ChannelState::Init,
+    //         State::Tryopen => ChannelState::TryOpen,
+    //         State::Open => ChannelState::Open,
+    //         State::Closed => ChannelState::Closed,
+    //         _ => panic!(),
+    //     },
+    //     ordering: match channel.ordering {
+    //         Order::NoneUnspecified => {
+    //             return Err(ErrorObject::owned(
+    //                 FATAL_JSONRPC_ERROR_CODE,
+    //                 "channel order is invalid",
+    //                 None::<()>,
+    //             ))
+    //         }
+    //         Order::Unordered => ChannelOrder::Unordered,
+    //         Order::Ordered => ChannelOrder::Ordered,
+    //     },
+    //     connectionId: channel
+    //         .connection_hops
+    //         .into_iter()
+    //         .exactly_one()
+    //         .map_err(|e| {
+    //             ErrorObject::owned(
+    //                 FATAL_JSONRPC_ERROR_CODE,
+    //                 format!("channel connection hops are invalid: {}", ErrorReporter(e)),
+    //                 None::<()>,
+    //             )
+    //         })
+    //         .map(|c| c.id())?,
+    //     counterpartyChannelId: channel.counterparty.channel_id.unwrap().id(),
+    //     counterpartyPortId: channel.counterparty.port_id.to_string().into_bytes().into(),
+    //     version: channel.version,
+    // })
+
+    todo!()
 }
 
 pub mod multicall {

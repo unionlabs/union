@@ -1,5 +1,5 @@
+use cosmwasm_std::StdError;
 use ethereum_light_client_types::{client_state, consensus_state, StorageProof};
-use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
@@ -13,9 +13,7 @@ use unionlabs::{
     uint::U256,
 };
 
-use crate::client::EthereumLightClient;
-
-#[derive(thiserror::Error, Debug, Clone, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
@@ -97,6 +95,9 @@ pub enum Error {
 
     #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
     MisbehaviourCannotExist(u64, u64),
+
+    #[error(transparent)]
+    StdError(#[from] StdError),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
@@ -127,8 +128,8 @@ pub struct StoredValueMismatch {
     pub stored: H256,
 }
 
-impl From<Error> for IbcClientError<EthereumLightClient> {
+impl From<Error> for StdError {
     fn from(value: Error) -> Self {
-        IbcClientError::ClientSpecific(value)
+        StdError::generic_err(value.to_string())
     }
 }

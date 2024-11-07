@@ -68,27 +68,18 @@ library RelayLib {
     error ErrUnauthorized();
     error ErrInvalidAcknowledgement();
     error ErrInvalidProtocolVersion();
-    error ErrInvalidProtocolOrdering();
     error ErrInvalidCounterpartyProtocolVersion();
     error ErrInvalidAmount();
     error ErrUnstoppable();
-
-    IBCChannelOrder public constant ORDER = IBCChannelOrder.Unordered;
 
     string public constant VERSION = "ucs01-relay-1";
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
 
-    event DenomCreated(
-        uint64 indexed packetSequence,
-        uint32 channelId,
-        string denom,
-        address token
-    );
+    event DenomCreated(IBCPacket packet, string denom, address token);
     event Received(
-        uint64 packetSequence,
-        uint32 channelId,
+        IBCPacket packet,
         string sender,
         address indexed receiver,
         string denom,
@@ -96,8 +87,7 @@ library RelayLib {
         uint256 amount
     );
     event FeePaid(
-        uint64 packetSequence,
-        uint32 channelId,
+        IBCPacket packet,
         string sender,
         address indexed receiver,
         string denom,
@@ -105,8 +95,7 @@ library RelayLib {
         uint256 amount
     );
     event Sent(
-        uint64 packetSequence,
-        uint32 channelId,
+        IBCPacket packet,
         address indexed sender,
         string receiver,
         string denom,
@@ -114,8 +103,7 @@ library RelayLib {
         uint256 amount
     );
     event Refunded(
-        uint64 packetSequence,
-        uint32 channelId,
+        IBCPacket packet,
         address indexed sender,
         string receiver,
         string denom,
@@ -319,15 +307,14 @@ contract UCS01Relay is
             tokens: normalizedTokens,
             extension: extension
         });
-        uint64 packetSequence = ibcHandler.sendPacket(
+        IBCPacket memory ibcPacket = ibcHandler.sendPacket(
             sourceChannel, timeoutHeight, timeoutTimestamp, packet.encode()
         );
         for (uint256 i; i < tokensLength; i++) {
             LocalToken calldata localToken = tokens[i];
             Token memory normalizedToken = normalizedTokens[i];
             emit RelayLib.Sent(
-                packetSequence,
-                sourceChannel,
+                ibcPacket,
                 msg.sender,
                 receiver.toHexString(),
                 normalizedToken.denom,
@@ -338,17 +325,17 @@ contract UCS01Relay is
     }
 
     function refundTokens(
-        uint64 sequence,
-        uint32 channelId,
-        RelayPacket calldata packet
+        IBCPacket calldata ibcPacket
     ) internal {
+        RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
-            address denomAddress = denomToAddress[channelId][token.denom];
+            address denomAddress =
+                denomToAddress[ibcPacket.sourceChannel][token.denom];
             if (denomAddress != address(0)) {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
@@ -359,12 +346,13 @@ contract UCS01Relay is
 
                 // It's an ERC20 string 0x prefixed hex address
                 denomAddress = Hex.hexToAddress(token.denom);
-                decreaseOutstanding(channelId, denomAddress, token.amount);
+                decreaseOutstanding(
+                    ibcPacket.sourceChannel, denomAddress, token.amount
+                );
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
             emit RelayLib.Refunded(
-                sequence,
-                channelId,
+                ibcPacket,
                 userToRefund,
                 receiver,
                 token.denom,
@@ -403,23 +391,20 @@ contract UCS01Relay is
     }
 
     function onRecvRemoteTransfer(
-        uint64 sequence,
-        uint32 destinationChannel,
+        IBCPacket calldata packet,
         string memory denom,
         address receiver,
         uint256 amount,
         address relayer,
         uint256 feeAmount
     ) internal returns (address) {
-        address denomAddress = denomToAddress[destinationChannel][denom];
+        address denomAddress = denomToAddress[packet.destinationChannel][denom];
         if (denomAddress == address(0)) {
             denomAddress =
                 address(new ERC20Denom{salt: keccak256(bytes(denom))}(denom));
-            denomToAddress[destinationChannel][denom] = denomAddress;
-            addressToDenom[destinationChannel][denomAddress] = denom;
-            emit RelayLib.DenomCreated(
-                sequence, destinationChannel, denom, denomAddress
-            );
+            denomToAddress[packet.destinationChannel][denom] = denomAddress;
+            addressToDenom[packet.destinationChannel][denomAddress] = denom;
+            emit RelayLib.DenomCreated(packet, denom, denomAddress);
         }
         IERC20Denom(denomAddress).mint(receiver, amount);
         if (feeAmount > 0) {
@@ -468,19 +453,12 @@ contract UCS01Relay is
                     ibcPacket.destinationChannel, token.denom
                 );
                 denomAddress = onRecvRemoteTransfer(
-                    ibcPacket.sequence,
-                    ibcPacket.destinationChannel,
-                    denom,
-                    receiver,
-                    actualAmount,
-                    relayer,
-                    feeAmount
+                    ibcPacket, denom, receiver, actualAmount, relayer, feeAmount
                 );
             }
             string memory senderAddress = packet.sender.toHexString();
             emit RelayLib.Received(
-                ibcPacket.sequence,
-                ibcPacket.destinationChannel,
+                ibcPacket,
                 senderAddress,
                 receiver,
                 denom,
@@ -489,8 +467,7 @@ contract UCS01Relay is
             );
             if (feeAmount > 0) {
                 emit RelayLib.FeePaid(
-                    ibcPacket.sequence,
-                    ibcPacket.destinationChannel,
+                    ibcPacket,
                     senderAddress,
                     relayer,
                     denom,
@@ -542,11 +519,7 @@ contract UCS01Relay is
         }
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
-            refundTokens(
-                ibcPacket.sequence,
-                ibcPacket.sourceChannel,
-                RelayPacketLib.decode(ibcPacket.data)
-            );
+            refundTokens(ibcPacket);
         }
     }
 
@@ -554,15 +527,10 @@ contract UCS01Relay is
         IBCPacket calldata ibcPacket,
         address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
-        refundTokens(
-            ibcPacket.sequence,
-            ibcPacket.sourceChannel,
-            RelayPacketLib.decode(ibcPacket.data)
-        );
+        refundTokens(ibcPacket);
     }
 
     function onChanOpenInit(
-        IBCChannelOrder order,
         uint32,
         uint32,
         string calldata version,
@@ -571,13 +539,9 @@ contract UCS01Relay is
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
         }
-        if (order != RelayLib.ORDER) {
-            revert RelayLib.ErrInvalidProtocolOrdering();
-        }
     }
 
     function onChanOpenTry(
-        IBCChannelOrder order,
         uint32,
         uint32,
         uint32,
@@ -587,9 +551,6 @@ contract UCS01Relay is
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
-        }
-        if (order != RelayLib.ORDER) {
-            revert RelayLib.ErrInvalidProtocolOrdering();
         }
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();

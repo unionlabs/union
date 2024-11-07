@@ -13,7 +13,7 @@ interface IIBCPacket {
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external returns (uint64);
+    ) external returns (IBCPacket memory packet);
 
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet

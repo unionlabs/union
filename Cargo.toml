@@ -7,6 +7,8 @@ members = [
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
+  "cosmwasm/union-ibc",
+
   "devnet-compose",
 
   "e2e/ensure-blocks",
@@ -198,6 +200,7 @@ linea-verifier           = { path = "lib/linea-verifier", default-features = fal
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
 ibc-solidity = { path = "lib/ibc-solidity", default-features = false }
+union-ibc    = { path = "cosmwasm/union-ibc", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }

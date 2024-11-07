@@ -1,0 +1,32 @@
+[package]
+authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "union-ibc"
+repository   = "https://github.com/unionlabs/union"
+version      = "1.0.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+alloy           = { workspace = true, features = ["sol-types"] }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort"] }
+cw-storage-plus = { workspace = true }
+dlmalloc        = { workspace = true, features = ["global"] }
+ethabi          = { workspace = true }
+hex             = { workspace = true }
+ibc-solidity    = { workspace = true, features = ["serde"] }
+serde           = { workspace = true, features = ["derive"] }
+serde_json      = { workspace = true }
+sha2            = { workspace = true }
+sha3            = { workspace = true }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true, features = ["ethabi"] }

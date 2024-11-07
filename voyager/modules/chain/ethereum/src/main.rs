@@ -9,7 +9,7 @@ use alloy::{
 use beacon_api::client::BeaconApiClient;
 use ethereum_light_client_types::StorageProof;
 use ibc_solidity::ibc::{
-    ChannelOrder, ChannelState, ConnectionState, ILightClient,
+    ChannelState, ConnectionState, ILightClient,
     Ibc::{self, IbcInstance},
 };
 use jsonrpsee::{
@@ -364,14 +364,9 @@ impl ChainModuleServer for Module {
                 ChannelState::Closed => channel::state::State::Closed,
                 _ => todo!(),
             },
-            ordering: match raw.ordering {
-                ChannelOrder::Unspecified => Order::NoneUnspecified,
-                ChannelOrder::Unordered => Order::Unordered,
-                ChannelOrder::Ordered => Order::Ordered,
-                _ => todo!(),
-            },
+            ordering: Order::Unordered,
             counterparty: channel::counterparty::Counterparty {
-                port_id: PortId::new(raw.counterpartyPortId).unwrap(),
+                port_id: PortId::new(raw.counterpartyPortId.to_string()).unwrap(),
                 channel_id: Some(ChannelId::new(raw.counterpartyChannelId)),
             },
             connection_hops: vec![ConnectionId::new(raw.connectionId)],
