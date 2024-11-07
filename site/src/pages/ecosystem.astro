@@ -270,9 +270,9 @@ try {
     document.addEventListener("click", globalClickHandler);
   }
 
-  // Initialize on page load
   document.addEventListener("astro:page-load", initializeFilters);
-
   // Re-initialize on client-side navigation
   document.addEventListener("astro:after-swap", initializeFilters);
+  // Initial call to set up filters
+  initializeFilters();
 </script>
