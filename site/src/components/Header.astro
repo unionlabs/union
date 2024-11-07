@@ -49,7 +49,7 @@ const menuItems = [
 
 <script>
   let cleanupListeners: (() => void)[] = [];
-  let menuOpen = false; // Track menu state globally
+  let menuOpen = false;
   let overlay: HTMLElement | null = null;
   let menuItemsList: HTMLElement | null = null;
 
@@ -60,15 +60,26 @@ const menuItems = [
     overlay = document.getElementById("overlay");
     const menuButton = document.getElementById("menu-button");
     menuItemsList = document.getElementById("menu-items-list");
-    const menuLinks = document.querySelectorAll(".menu-link");
+    const menuLinks = document.querySelectorAll("a"); // Changed to catch all links
 
     if (!overlay || !menuButton || !menuItemsList) {
       console.error("Required elements not found");
       return;
     }
 
-    const toggleMenu = (open: boolean) => {
+    const toggleMenu = (open: boolean, instant = false) => {
       menuOpen = open;
+
+      if (instant) {
+        // Instant close - no animations
+        menuItemsList!.style.transition = "none";
+        overlay!.style.transition = "none";
+      } else {
+        // Normal open/close with animations
+        menuItemsList!.style.transition = "max-height 0.2s ease-out";
+        overlay!.style.transition = "opacity 0.3s ease";
+      }
+
       menuItemsList!.style.display = menuOpen ? "flex" : "none";
       menuItemsList!.style.maxHeight = menuOpen
         ? `${menuItemsList!.scrollHeight}px`
@@ -81,6 +92,14 @@ const menuItems = [
         overlay!.classList.remove("show");
         overlay!.style.visibility = "hidden";
       }
+
+      // Reset transitions after instant close
+      if (instant) {
+        setTimeout(() => {
+          menuItemsList!.style.transition = "max-height 0.2s ease-out";
+          overlay!.style.transition = "opacity 0.3s ease";
+        }, 0);
+      }
     };
 
     const handleMenuClick = () => {
@@ -92,7 +111,7 @@ const menuItems = [
     };
 
     const handleLinkClick = (e: Event) => {
-      toggleMenu(false);
+      toggleMenu(false, true); // true for instant close
     };
 
     const handleResize = () => {
@@ -121,11 +140,19 @@ const menuItems = [
 
   function closeMenu() {
     if (menuOpen && overlay && menuItemsList) {
+      menuItemsList.style.transition = "none";
+      overlay.style.transition = "none";
+
       menuItemsList.style.display = "none";
       menuItemsList.style.maxHeight = "0";
       overlay.classList.remove("show");
       overlay.style.visibility = "hidden";
       menuOpen = false;
+
+      setTimeout(() => {
+        menuItemsList.style.transition = "max-height 0.2s ease-out";
+        overlay.style.transition = "opacity 0.3s ease";
+      }, 0);
     }
   }
 
