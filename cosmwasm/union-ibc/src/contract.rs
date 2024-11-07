@@ -1,15 +1,15 @@
-use alloy::sol_types::SolValue;
+use alloy::{primitives::Bytes, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
 use ibc_solidity::ibc::{
-    Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgChannelCloseConfirm,
-    MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-    MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-    MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketAcknowledgement,
-    MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient, Packet,
+    Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgBatchAcks, MsgBatchSend,
+    MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
+    MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+    MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv,
+    MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient, Packet,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -309,11 +309,84 @@ pub fn execute(
             timeout_timestamp,
             data,
         )?,
-        ExecuteMsg::BatchSend(_msg_batch_send) => todo!(),
-        ExecuteMsg::BatchAcks(_msg_batch_acks) => todo!(),
+        ExecuteMsg::BatchSend(MsgBatchSend {
+            sourceChannel,
+            packets,
+        }) => batch_send(deps, sourceChannel, packets)?,
+        ExecuteMsg::BatchAcks(MsgBatchAcks {
+            sourceChannel,
+            packets,
+            acks,
+        }) => batch_acks(deps, sourceChannel, packets, acks)?,
     };
 
     Ok(response)
+}
+
+fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {
+    if packets.len() < 2 {
+        return Err(ContractError::NotEnoughPackets);
+    }
+    for packet in &packets {
+        let commitment_key =
+            unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(packet));
+        let commitment = deps
+            .storage
+            .get(commitment_key.as_ref())
+            .unwrap_or(H256::<HexPrefixed>::default().into_bytes());
+        if commitment != COMMITMENT_MAGIC.as_ref() {
+            return Err(ContractError::PacketCommitmentNotFound);
+        }
+    }
+    store_commit(
+        deps,
+        &unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packets(&packets)),
+        &COMMITMENT_MAGIC,
+    )?;
+    Ok(
+        Response::new().add_event(Event::new("batch_send").add_attributes([
+            ("channel_id", source_channel.to_string()),
+            ("packets", serde_json::to_string(&packets).unwrap()),
+        ])),
+    )
+}
+
+fn batch_acks(
+    deps: DepsMut,
+    source_channel: u32,
+    packets: Vec<Packet>,
+    acks: Vec<Bytes>,
+) -> ContractResult {
+    if packets.len() < 2 {
+        return Err(ContractError::NotEnoughPackets);
+    }
+    for (packet, ack) in packets.iter().zip(acks.iter()) {
+        let commitment_key =
+            unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packet(packet));
+        let commitment = deps.storage.get(commitment_key.as_ref());
+        match commitment {
+            Some(acknowledgement) => {
+                if acknowledgement == COMMITMENT_MAGIC.as_ref() {
+                    return Err(ContractError::AcknowledgementIsEmpty);
+                } else if acknowledgement != commit_ack(ack.to_vec()).as_ref() {
+                    return Err(ContractError::AcknowledgementMismatch);
+                }
+            }
+            None => return Err(ContractError::PacketCommitmentNotFound),
+        }
+    }
+    store_commit(
+        deps,
+        &unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packets(&packets)),
+        &commit_acks(&acks),
+    )?;
+    Ok(
+        Response::new().add_event(Event::new("batch_acks").add_attributes([
+            ("channel_id", source_channel.to_string()),
+            ("packets", serde_json::to_string(&packets).unwrap()),
+            ("acks", serde_json::to_string(&acks).unwrap()),
+        ])),
+    )
 }
 
 fn timeout_packet(
@@ -384,7 +457,7 @@ fn acknowledge_packet(
     relayer: Addr,
 ) -> ContractResult {
     if packets.is_empty() {
-        return Err(ContractError::NoPacketsAcked);
+        return Err(ContractError::NotEnoughPackets);
     }
 
     let source_channel = packets[0].sourceChannel;

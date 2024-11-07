@@ -63,10 +63,14 @@ pub enum ContractError {
     TimeoutHeightNotReached,
     #[error("channel ({0}) does not exist")]
     ChannelNotExist(u32),
-    #[error("No packets are acked")]
-    NoPacketsAcked,
     #[error("Packet commitment not found")]
     PacketCommitmentNotFound,
     #[error("Packet timeout proof timestamp not found")]
     TimeoutProofTimestampNotFound,
+    #[error("No packets provided")]
+    NotEnoughPackets,
+    #[error("Packet acknowledgement is empty")]
+    AcknowledgementIsEmpty,
+    #[error("Packet acknowledgement doesn't match")]
+    AcknowledgementMismatch,
 }
