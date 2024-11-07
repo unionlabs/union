@@ -1,7 +1,7 @@
-use beacon_api_types::{ChainSpec, PresetBaseKind};
-use cosmwasm_std::{Deps, DepsMut, Env};
+use beacon_api_types::ChainSpec;
+use cosmwasm_std::{Deps, Env};
 use ethereum_light_client_types::{
-    ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
+    ClientState, ConsensusState, Header, LightClientUpdate, StorageProof,
 };
 use ethereum_verifier::{
     utils::{
@@ -10,36 +10,22 @@ use ethereum_verifier::{
     validate_light_client_update, verify_account_storage_root, verify_storage_absence,
     verify_storage_proof,
 };
-use ics008_wasm_client::{
-    storage_utils::{
-        read_client_state, read_consensus_state, read_subject_client_state,
-        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
-        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
-        update_client_state,
-    },
-    IbcClient, IbcClientError, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
-};
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, Proto},
     ensure,
-    ethereum::{ibc_commitment_key, keccak256},
+    ethereum::ibc_commitment_key,
     hash::{hash_v2::HexUnprefixed, H256},
-    ibc::core::{
-        client::{genesis_metadata::GenesisMetadata, height::Height},
-        commitment::merkle_path::MerklePath,
-    },
     uint::U256,
 };
 
 use crate::{
     custom_query::VerificationContext,
-    errors::{CanonicalizeStoredValueError, Error, InvalidCommitmentKey, StoredValueMismatch},
+    errors::{Error, InvalidCommitmentKey, StoredValueMismatch},
 };
 
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
+// type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
+// type WasmConsensusState =
+//     unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
 
 pub struct EthereumLightClient;
 
@@ -223,14 +209,14 @@ pub struct EthereumLightClient;
 //     }
 // }
 
-fn migrate_check_allowed_fields(
-    subject_client_state: &ClientState,
-    substitute_client_state: &ClientState,
-) -> bool {
-    subject_client_state.genesis_time == substitute_client_state.genesis_time
-        && subject_client_state.genesis_validators_root
-            == substitute_client_state.genesis_validators_root
-}
+// fn migrate_check_allowed_fields(
+//     subject_client_state: &ClientState,
+//     substitute_client_state: &ClientState,
+// ) -> bool {
+//     subject_client_state.genesis_time == substitute_client_state.genesis_time
+//         && subject_client_state.genesis_validators_root
+//             == substitute_client_state.genesis_validators_root
+// }
 
 pub fn do_verify_membership(
     key: Vec<u8>,

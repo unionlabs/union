@@ -22,7 +22,7 @@ pub enum ContractError {
     OnlyOrderedChannel {},
     #[error("The client type has been registered already")]
     ClientTypeAlreadyExists,
-    #[error("An arithmetic overflow occured")]
+    #[error("An arithmetic overflow occurred")]
     ArithmeticOverflow,
 
     #[error("Connection state is invalid: expected {expected:?}, got {got:?}")]

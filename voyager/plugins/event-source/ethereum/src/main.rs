@@ -1,6 +1,6 @@
 // #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, num::NonZeroU64};
 
 use alloy::{
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -605,7 +605,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
-                        let port_id = PortId::new(raw_event.portId).unwrap();
+                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
                         let channel_id = ChannelId::new(raw_event.channelId);
 
                         let channel = voyager_client
@@ -629,8 +629,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: ChannelOpenInit {
                                 port_id,
                                 channel_id,
-                                counterparty_port_id: PortId::new(raw_event.counterpartyPortId)
-                                    .unwrap(),
+                                counterparty_port_id: PortId::new(
+                                    raw_event.counterpartyPortId.to_string(),
+                                )
+                                .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -663,7 +665,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
-                        let port_id = PortId::new(raw_event.portId).unwrap();
+                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
                         let channel_id = ChannelId::new(raw_event.channelId);
 
                         let channel = voyager_client
@@ -687,8 +689,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: ChannelOpenTry {
                                 port_id,
                                 channel_id,
-                                counterparty_port_id: PortId::new(raw_event.counterpartyPortId)
-                                    .unwrap(),
+                                counterparty_port_id: PortId::new(
+                                    raw_event.counterpartyPortId.to_string(),
+                                )
+                                .unwrap(),
                                 counterparty_channel_id: ChannelId::new(
                                     raw_event.counterpartyChannelId,
                                 ),
@@ -724,7 +728,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
-                        let port_id = PortId::new(raw_event.portId).unwrap();
+                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
                         let channel_id = ChannelId::new(raw_event.channelId);
 
                         let channel = voyager_client
@@ -748,8 +752,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: ChannelOpenAck {
                                 port_id,
                                 channel_id,
-                                counterparty_port_id: PortId::new(raw_event.counterpartyPortId)
-                                    .unwrap(),
+                                counterparty_port_id: PortId::new(
+                                    raw_event.counterpartyPortId.to_string(),
+                                )
+                                .unwrap(),
                                 counterparty_channel_id: ChannelId::new(
                                     raw_event.counterpartyChannelId,
                                 ),
@@ -785,7 +791,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
 
-                        let port_id = PortId::new(raw_event.portId).unwrap();
+                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
                         let channel_id = ChannelId::new(raw_event.channelId);
 
                         let channel = voyager_client
@@ -861,7 +867,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: voyager_message::data::SendPacket {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet: PacketMetadata {
-                                    sequence: event.packet.sequence.try_into().unwrap(),
+                                    sequence: NonZeroU64::new(1).unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
@@ -907,7 +913,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             event: voyager_message::data::TimeoutPacket {
                                 packet: PacketMetadata {
-                                    sequence: event.packet.sequence.try_into().unwrap(),
+                                    sequence: NonZeroU64::new(1).unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
@@ -953,7 +959,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             event: voyager_message::data::AcknowledgePacket {
                                 packet: PacketMetadata {
-                                    sequence: event.packet.sequence.try_into().unwrap(),
+                                    sequence: NonZeroU64::new(1).unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
@@ -1002,7 +1008,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet_ack: event.acknowledgement.to_vec().into(),
                                 packet: PacketMetadata {
-                                    sequence: event.packet.sequence.try_into().unwrap(),
+                                    sequence: NonZeroU64::new(1).unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
@@ -1049,7 +1055,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: voyager_message::data::RecvPacket {
                                 packet_data: event.packet.data.to_vec().into(),
                                 packet: PacketMetadata {
-                                    sequence: event.packet.sequence.try_into().unwrap(),
+                                    sequence: NonZeroU64::new(1).unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
