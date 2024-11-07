@@ -2,7 +2,8 @@ use alloy::{primitives::Bytes, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdResult,
 };
 use ibc_solidity::ibc::{
     Channel, ChannelOrder, ChannelState, Connection, ConnectionState, MsgChannelCloseConfirm,
@@ -1175,11 +1176,6 @@ fn send_packet(
     ))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    todo!()
-}
-
 fn next_channel_id(deps: DepsMut) -> Result<u32, ContractError> {
     let channel_id = NEXT_CHANNEL_ID.may_load(deps.storage)?.unwrap_or_default();
     NEXT_CHANNEL_ID.save(
@@ -1340,4 +1336,49 @@ fn initialize_channel_sequences(mut deps: DepsMut, channel_id: u32) -> Result<()
         &H256::from(U256::from(1u64).to_be_bytes()),
     )?;
     Ok(())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::GetTimestampAtHeight { client_id, height } => {
+            let client_impl = client_impl(deps, client_id)?;
+            let consensus_state =
+                CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
+            let timestamp = deps.querier.query_wasm_smart::<u64>(
+                client_impl,
+                &LightClientQuery::GetTimestamp {
+                    consensus_state: consensus_state.into(),
+                },
+            )?;
+            Ok(to_json_binary(&timestamp)?)
+        }
+        QueryMsg::GetLatestHeight { client_id } => {
+            let client_impl = client_impl(deps, client_id)?;
+            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
+            let latest_height = deps.querier.query_wasm_smart::<u64>(
+                client_impl,
+                &LightClientQuery::GetLatestHeight {
+                    client_state: client_state.into(),
+                },
+            )?;
+            Ok(to_json_binary(&latest_height)?)
+        }
+        QueryMsg::GetClientState { client_id } => {
+            let client_state = Binary::from(CLIENT_STATES.load(deps.storage, client_id)?);
+            Ok(to_json_binary(&client_state)?)
+        }
+        QueryMsg::GetConsensusState { client_id, height } => {
+            let consensus_state =
+                Binary::from(CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?);
+            Ok(to_json_binary(&consensus_state)?)
+        }
+        QueryMsg::GetStatus { client_id } => {
+            let client_impl = client_impl(deps, client_id)?;
+            let client_state = Binary::from(CLIENT_STATES.load(deps.storage, client_id)?);
+            Ok(deps
+                .querier
+                .query_wasm_smart(client_impl, &LightClientQuery::GetStatus { client_state })?)
+        }
+    }
 }
