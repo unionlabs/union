@@ -1,75 +1,45 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { setMode } from "mode-watcher"
-import { navigating } from "$app/stores"
-import Sun from "virtual:icons/lucide/sun"
-import Moon from "virtual:icons/lucide/moon"
-import Connection from "./connection.svelte"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { Label } from "$lib/components/ui/label"
-import * as Sheet from "$lib/components/ui/sheet"
-import { Switch } from "$lib/components/ui/switch"
-import { Button } from "$lib/components/ui/button"
-import * as Avatar from "$lib/components/ui/avatar"
-import WalletIcon from "virtual:icons/lucide/wallet"
-import { showUnsupported } from "$lib/stores/user.ts"
-import { crtEffectEnabled } from "$lib/stores/user.ts"
-import { getAptosWallet } from "$lib/wallet/aptos/config"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
-import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
-import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
-import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
+  import { setMode } from "mode-watcher"
+  import { derived } from "svelte/store"
+  import { navigating } from "$app/stores"
+  import Sun from "virtual:icons/lucide/sun"
+  import Moon from "virtual:icons/lucide/moon"
+  import Connection from "./connection.svelte"
+  import { cn } from "$lib/utilities/shadcn.ts"
+  import { Label } from "$lib/components/ui/label"
+  import * as Sheet from "$lib/components/ui/sheet"
+  import { Switch } from "$lib/components/ui/switch"
+  import { Button } from "$lib/components/ui/button"
+  import * as Avatar from "$lib/components/ui/avatar"
+  import WalletIcon from "virtual:icons/lucide/wallet"
+  import { showUnsupported } from "$lib/stores/user.ts"
+  import { crtEffectEnabled } from "$lib/stores/user.ts"
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
+  import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
+  import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
+  import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 
-let buttonText: string
-let connectedWallets = [
-  $sepoliaStore.connectionStatus,
-  $cosmosStore.connectionStatus,
-  $aptosStore.connectionStatus
-].filter(status => status === "connected").length
+  let buttonText: string
 
-onMount(() => {
-  const aptosWallet = getAptosWallet()
-  if (aptosWallet && $aptosStore.connectionStatus === "connected") {
-    aptosWallet.connect().then(account => {
-      aptosStore.update(v => ({
-        ...v,
+  let connectedWallets = derived(
+    [sepoliaStore, cosmosStore, aptosStore],
+    ([$sepoliaStore, $cosmosStore, $aptosStore]) => {
+      return [
+        $sepoliaStore.connectionStatus,
+        $cosmosStore.connectionStatus,
+        $aptosStore.connectionStatus,
+      ].filter(status => status === "connected" || status === "connecting").length
+    },
+  )
 
-        connectedWallet: "petra",
-        address: account?.address as `0x${string}`,
-        connectionStatus: account?.address ? "connected" : "disconnected"
-      }))
-    })
+  $: if ($connectedWallets > 1) {
+    buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
+  } else {
+    buttonText = "Connect Wallet"
   }
 
-  connectedWallets = [
-    $sepoliaStore.connectionStatus,
-    $cosmosStore.connectionStatus,
-    $aptosStore.connectionStatus
-  ].filter(status => status === "connected").length
-})
-
-// $: if (connectedWallets === 1) {
-//   buttonText = "Connected"
-//   connectedWallets = 2
-// } else if (
-//   $sepoliaStore.connectionStatus === "connected" ||
-//   $cosmosStore.connectionStatus === "connected"
-// ) {
-//   buttonText = "Connected"
-//   connectedWallets = 1
-// } else {
-//   buttonText = "Connect Wallet"
-//   connectedWallets = 0
-// }
-
-$: if (connectedWallets > 1) {
-  buttonText = "Connected"
-} else {
-  buttonText = "Connect Wallet"
-}
-
-let sheetOpen = false
-$: if ($navigating) sheetOpen = false
+  let sheetOpen = false
+  $: if ($navigating) sheetOpen = false
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
@@ -77,7 +47,7 @@ $: if ($navigating) sheetOpen = false
     <Button
       builders={[builder]}
       class={cn(
-        connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
+        $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
         "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
         "hover:bg-cyan-300/90",
         $sepoliaStore.connectionStatus === "connected" &&
@@ -90,9 +60,9 @@ $: if ($navigating) sheetOpen = false
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span class={cn(connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
+      <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
         <!-- {connectedWallets === 1 ? "1/2" : ""} -->
-        {connectedWallets === 3 ? "" : connectedWallets > 1 ? `${connectedWallets}/3` : ""}
+        {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
       </span>
     </Button>
   </Sheet.Trigger>

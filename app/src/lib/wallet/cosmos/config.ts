@@ -1,10 +1,9 @@
-import type { Address } from "viem"
 import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
 import type { UserAddressCosmos } from "$lib/types"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { derived, get, type Readable } from "svelte/store"
-import { bytesToHex, type OfflineSigner } from "@unionlabs/client"
+import { type OfflineSigner, bech32AddressToHex } from "@unionlabs/client"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 
 export const cosmosWalletsInformation = [
@@ -133,12 +132,12 @@ export const userAddrCosmos: Readable<UserAddressCosmos | null> = derived(
   [cosmosStore],
   ([$cosmosStore]) => {
     if ($cosmosStore?.rawAddress && $cosmosStore?.address) {
-      const cosmos_normalized = bytesToHex($cosmosStore.rawAddress)
+      const cosmos_normalized = bech32AddressToHex({ address: $cosmosStore.address })
       return {
         canonical: $cosmosStore.address,
         normalized: cosmos_normalized,
         bytes: $cosmosStore.rawAddress,
-        normalized_prefixed: `0x${cosmos_normalized}` as Address
+        normalized_prefixed: cosmos_normalized
       }
     }
 

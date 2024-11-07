@@ -34,23 +34,9 @@ $: connectText =
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
       : chain === "aptos"
-        ? address
+        ? truncateEvmAddress(address, 20)
         : truncateUnionAddress(address, -1)
     : ""
-// : chain === "evm"
-//   ? "EVM"
-//   : chain === "cosmos"
-//     ? "Cosmos"
-//     : "Aptos"
-
-// $: if (connectStatus === "connected" && address && address?.length > 0) {
-
-// }
-
-$: {
-  // console.info("chain", "connectStatus", "connectText")
-  // console.info(chain, connectStatus, connectText)
-}
 
 let copyClicked = false
 const toggleCopy = () => (copyClicked = !copyClicked)

@@ -1,6 +1,6 @@
 import { isHex } from "viem"
-import { bech32, hex } from "@scure/base"
 import { raise } from "./utilities/index.ts"
+import { bech32, hex, bytes } from "@scure/base"
 import type { Bech32Address, HexAddress } from "./types.ts"
 import { isValidBech32Address } from "./utilities/address.ts"
 
@@ -33,7 +33,7 @@ export function hexAddressToBech32({
   bech32Prefix
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
   if (!isHex(address)) raise("Invalid hex address")
-  const words = bech32.toWords(hexToBytes(address.slice(2)))
+  const words = bech32.toWords(hexToBytes(address))
   return bech32.encode(bech32Prefix, words, false)
 }
 
@@ -94,5 +94,5 @@ export const bytesToHex = (bytes: Uint8Array): string => hex.encode(bytes)
  * ```
  */
 export function hexToBytes(hexString: string): Uint8Array {
-  return hex.decode(hexString.indexOf("0x") === 0 ? hexString.slice(2) : hexString)
+  return bytes("hex", hexString.indexOf("0x") === 0 ? hexString.slice(2) : hexString)
 }
