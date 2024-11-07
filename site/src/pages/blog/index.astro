@@ -38,7 +38,7 @@ const imageWithProtocol = (url: string) => `https:${url}`
           >
             <div>
               <img
-                class="grayscale group-hover:grayscale-0 transition  w-full h-full object-cover border-none"
+                class="group-hover:grayscale transition  w-full h-full object-cover border-none"
                 loading="eager"
                 alt={blogPostEntry.fields.cover.fields.title}
                 src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
