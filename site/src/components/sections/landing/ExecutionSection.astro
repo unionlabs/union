@@ -17,26 +17,31 @@ const textHtml = renderRichText(text)
 ---
 
 <ContainedSection>
-  <div class="flex flex-col-reverse md:flex-row gap-12 py-12">
-    <div class="flex flex-col justify-center gap-4">
-      <H1><Fragment set:html={titleHtml} /></H1>
-      <div class="max-w-[672px]">
+  <div class="flex flex-col-reverse md:flex-row lg:gap-12">
+    <div class="flex flex-col justify-center gap-4 flex-1">
+      <H1>
+        <Fragment set:html={titleHtml} />
+      </H1>
+      <div class="max-w-[438px]">
         <QuoteSubTitle>
           <Fragment set:html={textHtml} />
         </QuoteSubTitle>
       </div>
       <ButtonA href="/ecosystem">Our Ecosystem</ButtonA>
     </div>
-    <video
-      class="bg-black"
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4"
-      autoplay
-      muted
-      autoplay
-      playsinline
-      oncanplay="true"
-      onloadeddata="true"
-      onloadedmetadata="true"
-      loop></video>
+    <div class="flex justify-center md:justify-start flex-1">
+      <div class="relative max-w-md md:max-w-2xl">
+        <video
+          class="w-full h-full object-cover"
+          src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4"
+          autoplay
+          muted
+          playsinline
+          oncanplay="true"
+          onloadeddata="true"
+          onloadedmetadata="true"
+          loop></video>
+      </div>
+    </div>
   </div>
 </ContainedSection>

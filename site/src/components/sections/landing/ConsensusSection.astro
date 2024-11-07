@@ -1,5 +1,5 @@
 ---
-import H1 from "../../typography/h1.astro"
+import H1 from "../../typography/h2.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 import ContainedSection from "../../ContainedSection.astro"
@@ -27,18 +27,21 @@ const textHtml = renderRichText(text)
           <Fragment set:html={textHtml} />
         </QuoteSubTitle>
       </div>
-      <ButtonA>Learn More</ButtonA>
+      <ButtonA href="/learn">Learn More</ButtonA>
     </div>
-    <video
-      class="bg-black flex-1 flex items-center"
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-v8.mp4"
-      autoplay
-      muted
-      autoplay
-      playsinline
-      oncanplay="true"
-      onloadeddata="true"
-      onloadedmetadata="true"
-      loop></video>
+    <div class="flex justify-center md:justify-start flex-1">
+      <div class="relative max-w-md md:max-w-2xl">
+        <video
+          class="w-full h-full object-cover"
+          src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-v8.mp4"
+          autoplay
+          muted
+          playsinline
+          oncanplay="true"
+          onloadeddata="true"
+          onloadedmetadata="true"
+          loop></video>
+      </div>
+    </div>
   </div>
 </ContainedSection>

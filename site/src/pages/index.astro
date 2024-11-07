@@ -105,12 +105,14 @@ try {
           text={landingData.fourthText}
         />
         <ContainedSection>
-          <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
-          <MarqueeSection
-            title={"Our partners."}
-            reverse={true}
-            data={partners}
-          />
+          <div class="py-16">
+            <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
+            <MarqueeSection
+              title={"Our partners."}
+              reverse={true}
+              data={partners}
+            />
+          </div>
         </ContainedSection>
       </SectionsContainer>
     </AnimationLayout>

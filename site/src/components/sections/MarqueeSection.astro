@@ -11,26 +11,30 @@ interface Props {
 const { title, data, reverse } = Astro.props
 ---
 
-  <article>
-    <div class:list={[
-      'marquee',
-      {'marquee--reverse': reverse}
-    ]}>
-      <div class="marquee__group">
-        {
-          data.map(item => 
-            <img src={item.logo.src} alt={item.name}></img>
-          )
-        }
-      </div>
+<section class="relative">
+  <!-- Fade overlay -->
+  <div class="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-black/0 z-10"></div>
+  <div class="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-black/0 z-10"></div>
 
-      <div aria-hidden="true" class="marquee__group">
-        {
-          data.map(item => (
-                  <img src={item.logo.src} alt={item.name}></img>
-          ))
-        }
-      </div>
+  <div class:list={[
+    'marquee',
+    {'marquee--reverse': reverse}
+  ]}>
+    <div class="marquee__group">
+      {
+        data.map(item =>
+                <img src={item.logo.src} class="grayscale" alt={item.name}></img>
+        )
+      }
     </div>
-  </article>
+
+    <div aria-hidden="true" class="marquee__group">
+      {
+        data.map(item => (
+                <img src={item.logo.src} class="grayscale" alt={item.name}></img>
+        ))
+      }
+    </div>
+  </div>
+</section>
 
