@@ -238,7 +238,7 @@ const transfer = async () => {
       return
     }
 
-    const wallet = getAptosWallet()
+    const wallet = getAptosWallet(connectedWallet)
     if (!wallet) {
       transferState.set({
         kind: "SWITCHING_TO_CHAIN",

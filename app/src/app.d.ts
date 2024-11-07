@@ -12,6 +12,10 @@ declare module "@tanstack/svelte-table" {
 interface AptosWindow {
   aptos: AptosBrowserWallet
   petra: AptosBrowserWallet
+  martian: AptosBrowserWallet
+  okxwallet: {
+    aptos: AptosBrowserWallet
+  }
 }
 
 declare global {

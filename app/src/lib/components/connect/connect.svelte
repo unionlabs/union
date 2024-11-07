@@ -18,6 +18,7 @@ import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
+    import { onMount } from 'svelte'
 
 let buttonText: string
 
@@ -31,6 +32,10 @@ let connectedWallets = derived(
     ].filter(status => status === "connected").length
   }
 )
+
+onMount(() => {
+  console.info($aptosStore)
+})
 
 $: if ($connectedWallets >= 1) {
   buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
