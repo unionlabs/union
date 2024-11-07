@@ -59,4 +59,5 @@ library IBCErrors {
     error ErrCommittedAckNotPresent();
     error ErrClientNotFound();
     error ErrModuleNotFound();
+    error ErrPacketAlreadyExist();
 }

@@ -1305,11 +1305,14 @@ fn send_packet(
         timeoutTimestamp: timeout_timestamp,
     };
 
-    store_commit(
-        deps.branch(),
-        &unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(&packet)),
-        &COMMITMENT_MAGIC,
-    )?;
+    let commitment_key =
+        unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(&packet));
+
+    if deps.storage.get(commitment_key.as_ref()).is_some() {
+        return Err(ContractError::PacketCommitmentAlreadyExist);
+    }
+
+    store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC)?;
 
     Ok(Response::new()
         .add_event(

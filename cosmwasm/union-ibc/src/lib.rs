@@ -71,4 +71,6 @@ pub enum ContractError {
     AcknowledgementIsEmpty,
     #[error("Packet acknowledgement doesn't match")]
     AcknowledgementMismatch,
+    #[error("The packet already exist")]
+    PacketCommitmentAlreadyExist,
 }

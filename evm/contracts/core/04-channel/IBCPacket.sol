@@ -165,10 +165,16 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
         });
-        commitments[IBCCommitment.batchPacketsCommitmentKey(
+        bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
             sourceChannel, IBCPacketLib.commitPacketMemory(packet)
-        )] = IBCPacketLib.COMMITMENT_MAGIC;
+        );
+        if (commitments[commitmentKey] != IBCPacketLib.COMMITMENT_NULL) {
+            revert IBCErrors.ErrPacketAlreadyExist();
+        }
+        commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
+
         emit IBCPacketLib.SendPacket(packet);
+
         return packet;
     }
 
