@@ -69,7 +69,7 @@ module ibc::channel {
 
     // Encode and decode functions (empty for now)
     public fun encode(channel: &Channel): vector<u8> {
-        // TODO: fix here 
+        // TODO: fix here
         let buf = vector::empty<u8>();
 
         // ethabi::encode_uint<u8>(&mut buf, channel.state);
@@ -88,9 +88,8 @@ module ibc::channel {
     }
 
     public fun decode(buf: vector<u8>): Option<Channel> {
-        // TODO: fix here 
+        // TODO: fix here
         option::none()
-        
         // let index = 0;
 
         // let state = (ethabi::decode_uint(&buf, &mut index) as u8);

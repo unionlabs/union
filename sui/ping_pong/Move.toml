@@ -1,6 +1,6 @@
 [package]
-name = "ping-pong"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+name    = "ping-pong"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
@@ -38,4 +38,3 @@ ping_pong = "0x1111"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"
-

@@ -60,7 +60,7 @@ module ibc::packet {
     }
 
     public fun encode(packet: &Packet): vector<u8> {
-        // TODO: fix here 
+        // TODO: fix here
         let buf = vector::empty();
 
         // ethabi::encode_uint(&mut buf, packet.sequence);
@@ -75,7 +75,6 @@ module ibc::packet {
         buf
     }
 
-
     #[test]
     fun test_packet_creation() {
         let sequence = 1;
@@ -84,7 +83,15 @@ module ibc::packet {
         let data = vector[10, 20, 30];
         let timeout_height = 100;
         let timeout_timestamp = 200;
-        let packet = new(sequence, source_channel, destination_channel, data, timeout_height, timeout_timestamp);
+        let packet =
+            new(
+                sequence,
+                source_channel,
+                destination_channel,
+                data,
+                timeout_height,
+                timeout_timestamp
+            );
 
         assert!(sequence(&packet) == sequence, 1);
         assert!(source_channel(&packet) == source_channel, 2);
@@ -92,12 +99,11 @@ module ibc::packet {
         assert!(data(&packet) == data, 4);
         assert!(timeout_height(&packet) == timeout_height, 5);
         assert!(timeout_timestamp(&packet) == timeout_timestamp, 6);
-        let data  = data(&packet);
+        let data = data(&packet);
         assert!(data[0] == 10, 7);
         assert!(data[1] == 20, 8);
-        assert!(data[2] == 30, 9); 
+        assert!(data[2] == 30, 9);
     }
-
 
     #[test]
     fun test_encode_packet() {
