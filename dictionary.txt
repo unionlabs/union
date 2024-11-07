@@ -832,6 +832,7 @@ lowp
 lspec
 lucide
 mapstructure
+martian
 matchall
 mathjax
 maxage
@@ -936,6 +937,7 @@ oceanlewis
 octas
 ofetch
 offchain
+okxwallet
 omit
 omnichain
 omniflix
