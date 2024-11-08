@@ -508,6 +508,7 @@ deferredacktypes
 defi
 delegators
 dels
+deno
 denoms
 denum
 depinject
