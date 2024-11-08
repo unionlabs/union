@@ -1,23 +1,18 @@
 _: {
   perSystem =
     {
-      biome,
-      pkgs,
-      unstablePkgs,
       lib,
+      pkgs,
+      jsPkgs,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      pkgsDeps = with pkgs; [
-        pkg-config
-        biome
-      ];
-      nodeDeps = with unstablePkgs; [
+      deps = with jsPkgs; [
         vips
+        pkg-config
         nodePackages_latest.nodejs
       ];
-      combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       apps = {
@@ -25,19 +20,18 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "pre-commit";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
 
               echo "Applying nix fmt (through fmt-site)"
               nix run .#fmt-site
 
-              # seems deprecated
-              # echo "Applying biome fmt"
-              # ${lib.getExe biome} check . --write --unsafe \
-              #   --log-level="info" \
-              #   --log-kind="pretty" \
-              #   --diagnostic-level="info"
+              echo "Applying biome fmt"
+              ${jsPkgs.biome}/bin/biome check . --write --unsafe \
+                --log-level="info" \
+                --log-kind="pretty" \
+                --diagnostic-level="info"
 
               echo "Checking spelling"
               nix build .\#checks.${pkgs.system}.spellcheck -L
