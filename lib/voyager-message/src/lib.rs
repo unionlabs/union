@@ -25,10 +25,10 @@ use jsonrpsee::{
 use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member, ErrorReporter};
-use voyager_core::IbcVersionId;
+use voyager_core::{ChainId, IbcVersionId, QueryHeight};
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -42,6 +42,7 @@ use crate::{
         PluginInfo, PluginServer, ProofModuleInfo, ProofModuleServer, StateModuleInfo,
         StateModuleServer,
     },
+    rpc::{json_rpc_error_to_error_object, IbcState, VoyagerRpcClient},
 };
 
 pub mod call;
@@ -267,7 +268,7 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError>;
 
-    async fn run(self) {
+    async fn run() {
         init_log();
 
         match <ModuleApp as clap::Parser>::parse() {
@@ -304,7 +305,7 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError>;
 
-    async fn run(self) {
+    async fn run() {
         init_log();
 
         match <ModuleApp as clap::Parser>::parse() {
@@ -341,7 +342,7 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError>;
 
-    async fn run(self) {
+    async fn run() {
         init_log();
 
         match <ModuleApp as clap::Parser>::parse() {
@@ -378,7 +379,7 @@ pub trait ClientModule: ClientModuleServer + Sized {
 
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError>;
 
-    async fn run(self) {
+    async fn run() {
         init_log();
 
         match <ModuleApp as clap::Parser>::parse() {
@@ -426,6 +427,36 @@ impl VoyagerClient {
             }
         });
         Self(client)
+    }
+
+    pub async fn query_spec_ibc_state<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
+        height: QueryHeight,
+        path: P,
+    ) -> RpcResult<IbcState<P::Value>> {
+        let ibc_state = self
+            .query_ibc_state(
+                chain_id,
+                P::Spec::ID,
+                height,
+                into_value(<P::Spec as IbcSpec>::StorePath::from(path.into())),
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(IbcState {
+            height: ibc_state.height,
+            state: serde_json::from_value(ibc_state.state.clone()).map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("error decoding IBC state: {}", ErrorReporter(e)),
+                    Some(json!({
+                        "raw_state": ibc_state.state
+                    })),
+                )
+            })?,
+        })
     }
 }
 

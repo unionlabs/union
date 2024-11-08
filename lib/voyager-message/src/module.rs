@@ -11,7 +11,7 @@ use voyager_vm::{pass::PassResult, BoxDynError, Op};
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
     data::Data,
-    IbcSpec, VoyagerMessage,
+    IbcSpec, RawClientId, VoyagerMessage,
 };
 
 fn ok<T>(t: T) -> Result<T, BoxDynError> {
@@ -241,20 +241,18 @@ pub trait Plugin<C: Member, Cb: Member> {
     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
 }
 
-#[rpc(client,
-    server,
-    client_bounds(Self:),
-    server_bounds(Self:),
-    namespace = "proof",
-)]
-pub trait ProofModule<V: IbcSpec> {
-    /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the state as a JSON [`Value`].
-    #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
+/// Type-erased version of [`StateModuleClient`].
+#[rpc(client, namespace = "state")]
+pub trait RawStateModule {
+    #[method(name = "queryIbcState")]
+    async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
+
+    #[method(name = "clientInfo")]
+    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<ClientInfo>;
 }
 
-#[rpc(client,
+#[rpc(
+    client,
     server,
     client_bounds(Self:),
     server_bounds(Self:),
@@ -271,12 +269,24 @@ pub trait StateModule<V: IbcSpec> {
     async fn client_info(&self, client_id: V::ClientId) -> RpcResult<ClientInfo>;
 }
 
-/// Raw, un-decoded client state, as queried directly from the client store.
-#[model]
-pub struct RawClientState {
-    pub client_type: ClientType,
-    pub ibc_interface: IbcInterface,
-    pub bytes: Bytes,
+#[rpc(client,
+    server,
+    client_bounds(Self:),
+    server_bounds(Self:),
+    namespace = "proof",
+)]
+pub trait ProofModule<V: IbcSpec> {
+    /// Query a proof of IBC state on this chain, at the specified [`Height`],
+    /// returning the state as a JSON [`Value`].
+    #[method(name = "queryIbcProof", with_extensions)]
+    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
+}
+
+/// Type-erased version of [`ProofModuleClient`].
+#[rpc(client, namespace = "proof")]
+pub trait RawProofModule {
+    #[method(name = "queryIbcProof")]
+    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 }
 
 /// Client modules provide functionality to interact with a single light client

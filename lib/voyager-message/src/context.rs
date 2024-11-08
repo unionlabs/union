@@ -30,11 +30,11 @@ use crate::{
     into_value,
     module::{
         ClientModuleClient, ClientModuleInfo, ConsensusModuleClient, ConsensusModuleInfo,
-        PluginClient, PluginInfo, ProofModuleClient, ProofModuleInfo, StateModuleClient,
+        PluginClient, PluginInfo, ProofModuleInfo, RawProofModuleClient, RawStateModuleClient,
         StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    IbcSpec, FATAL_JSONRPC_ERROR_CODE,
+    IbcSpec, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -74,17 +74,19 @@ pub struct Modules {
 
 /// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
 pub struct IbcSpecHandler {
-    pub client_state_path: fn(String) -> Result<Value, BoxDynError>,
-    pub consensus_state_path: fn(String, String) -> Result<Value, BoxDynError>,
+    pub client_state_path: fn(RawClientId) -> Result<Value, BoxDynError>,
+    pub consensus_state_path: fn(RawClientId, String) -> Result<Value, BoxDynError>,
 }
 
 impl IbcSpecHandler {
     pub const fn new<T: IbcSpec>() -> Self {
         Self {
-            client_state_path: |client_id| Ok(into_value(T::client_state_path(client_id.parse()?))),
+            client_state_path: |client_id| {
+                Ok(into_value(T::client_state_path(client_id.0.parse()?)))
+            },
             consensus_state_path: |client_id, height| {
                 Ok(into_value(T::consensus_state_path(
-                    client_id.parse()?,
+                    client_id.0.parse()?,
                     height.parse()?,
                 )))
             },
@@ -620,11 +622,11 @@ impl Modules {
     //         .client())
     // }
 
-    pub fn state_module<'a, 'b, 'c: 'a, V: IbcSpec>(
+    pub fn state_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
         ibc_version_id: &IbcVersionId,
-    ) -> Result<&'a (impl StateModuleClient<V> + 'a), StateModuleNotFound> {
+    ) -> Result<&'a (impl RawStateModuleClient + 'a), StateModuleNotFound> {
         Ok(self
             .state_modules
             .get(&(chain_id.clone(), ibc_version_id.clone()))
@@ -635,11 +637,11 @@ impl Modules {
             .client())
     }
 
-    pub fn proof_module<'a, 'b, 'c: 'a, V: IbcSpec>(
+    pub fn proof_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
         ibc_version_id: &IbcVersionId,
-    ) -> Result<&'a (impl ProofModuleClient<V> + 'a), ProofModuleNotFound> {
+    ) -> Result<&'a (impl RawProofModuleClient + 'a), ProofModuleNotFound> {
         Ok(self
             .proof_modules
             .get(&(chain_id.clone(), ibc_version_id.clone()))
