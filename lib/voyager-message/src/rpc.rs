@@ -5,7 +5,8 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
 };
 use macros::model;
-use serde_json::Value;
+use serde::de::DeserializeOwned;
+use serde_json::{json, Value};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
 use voyager_core::IbcVersionId;
 
@@ -141,19 +142,19 @@ pub struct IbcState<State> {
     pub state: State,
 }
 
-// impl IbcState {
-//     pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
-//         serde_json::from_value(self.state.clone()).map_err(|e| {
-//             ErrorObject::owned(
-//                 FATAL_JSONRPC_ERROR_CODE,
-//                 format!("error decoding IBC state: {}", ErrorReporter(e)),
-//                 Some(json!({
-//                     "raw_state": self.state
-//                 })),
-//             )
-//         })
-//     }
-// }
+impl IbcState<Value> {
+    pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
+        serde_json::from_value(self.state.clone()).map_err(|e| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("error decoding IBC state: {}", ErrorReporter(e)),
+                Some(json!({
+                    "raw_state": self.state
+                })),
+            )
+        })
+    }
+}
 
 #[model]
 pub struct IbcProof {

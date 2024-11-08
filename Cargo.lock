@@ -13635,32 +13635,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-chain-module-cosmos-sdk"
-version = "0.1.0"
-dependencies = [
- "clap 4.5.4",
- "cometbft-rpc",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
- "itertools 0.13.0",
- "jsonrpsee",
- "macros",
- "prost 0.12.6",
- "protos",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-chain-module-ethereum"
 version = "0.1.0"
 dependencies = [
@@ -14108,6 +14082,32 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-state-module-cosmos-sdk"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",

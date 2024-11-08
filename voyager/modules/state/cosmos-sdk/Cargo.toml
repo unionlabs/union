@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-chain-module-cosmos-sdk"
+name    = "voyager-state-module-cosmos-sdk"
 version = "0.1.0"
 
 [dependencies]

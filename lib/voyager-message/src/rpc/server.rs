@@ -15,11 +15,12 @@ use voyager_core::IbcVersionId;
 // use valuable::Valuable;
 // use voyager_core::IbcStoreFormat;
 use crate::{
-    any_ibc_spec,
     context::{LoadedModulesInfo, Modules},
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
-    ibc_v1::IbcV1,
-    module::{ClientModuleClient, ConsensusModuleClient, ProofModuleClient, StateModuleClient},
+    into_value,
+    module::{
+        ClientModuleClient, ConsensusModuleClient, RawProofModuleClient, RawStateModuleClient,
+    },
     rpc::{
         json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
         VoyagerRpcServer,
@@ -178,19 +179,14 @@ impl Server {
     ) -> RpcResult<ClientInfo> {
         debug!("fetching client info");
 
-        let client_info = any_ibc_spec! {
-            ibc_version_id,
-            ThisSpec,
-            self
-                .inner
-                .modules()?
-                .state_module::<ThisSpec>(chain_id, ibc_version_id)
-                .map_err(fatal_error)?
-                .client_info(client_id.0.parse().unwrap())
-                .await
-                .map_err(json_rpc_error_to_error_object)?,
-            panic!()
-        };
+        let client_info = self
+            .inner
+            .modules()?
+            .state_module(chain_id, ibc_version_id)
+            .map_err(fatal_error)?
+            .client_info_raw(client_id.clone())
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(
             %client_info.ibc_interface,
@@ -215,36 +211,26 @@ impl Server {
 
         let modules = self.inner.modules()?;
 
-        let (client_state, client_info) = any_ibc_spec! {
-            ibc_version_id,
-            ThisSpec,
-            {
-                let state_module = modules
-                    .state_module::<ThisSpec>(chain_id, ibc_version_id)?;
+        let state_module = modules.state_module(chain_id, ibc_version_id)?;
 
-                let client_info = state_module
-                    .client_info(client_id.0.parse().unwrap())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+        let client_info = state_module
+            .client_info_raw(client_id.clone())
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
-                let client_state = state_module
-                    .query_ibc_state(
-                        height,
-                        // (self
-                        //     .modules()?
-                        //     .ibc_spec_handlers
-                        //     .get(&ibc_version_id)
-                        //     .unwrap()
-                        //     .client_state_path)(client_id),
-                        IbcV1::client_state_path(client_id.0.parse().unwrap())
-                    )
-                    .await
-                    .map_err(fatal_error)?;
-
-                (client_state, client_info)
-            },
-            panic!()
-        };
+        let client_state = state_module
+            .query_ibc_state_raw(
+                height,
+                (self
+                    .modules()?
+                    .ibc_spec_handlers
+                    .get(ibc_version_id)
+                    .unwrap()
+                    .client_state_path)(client_id.clone())
+                .unwrap(),
+            )
+            .await
+            .map_err(fatal_error)?;
 
         let meta = modules
             .client_module(&client_info.client_type, &client_info.ibc_interface)
@@ -276,16 +262,13 @@ impl Server {
         let state_module = self
             .inner
             .modules()?
-            .state_module::<P::Spec>(chain_id, &P::Spec::ID)
+            .state_module(chain_id, &P::Spec::ID)
             .map_err(fatal_error)?;
 
         // let height = self.inner.query_height(&chain_id, height).await?;
 
         let state = state_module
-            .query_ibc_state(
-                height,
-                path.clone(), // ibc_store_format
-            )
+            .query_ibc_state_raw(height, into_value(path.clone()))
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
@@ -310,16 +293,13 @@ impl Server {
         let proof_module = self
             .inner
             .modules()?
-            .proof_module::<P::Spec>(chain_id, &P::Spec::ID)
+            .proof_module(chain_id, &P::Spec::ID)
             .map_err(fatal_error)?;
 
         // let height = self.inner.query_height(&chain_id, height).await?;
 
         let proof = proof_module
-            .query_ibc_proof(
-                height,
-                path.clone(), // ibc_store_format
-            )
+            .query_ibc_proof_raw(height, into_value(path.clone()))
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
@@ -598,34 +578,21 @@ impl VoyagerRpcServer for Server {
 
         debug!("fetching ibc state");
 
-        any_ibc_spec! {
-            ibc_version_id,
-            ThisSpec,
-            {
-                let state_module = self
-                    .inner
-                    .modules()?
-                    .state_module::<ThisSpec>(&chain_id, &ibc_version_id)
-                    .map_err(fatal_error)?;
+        let state_module = self
+            .inner
+            .modules()?
+            .state_module(&chain_id, &ibc_version_id)
+            .map_err(fatal_error)?;
 
-                let state = state_module
-                    .query_ibc_state(
-                        height,
-                        serde_json::from_value(path).unwrap()
-                    )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+        let state = state_module
+            .query_ibc_state_raw(height, path)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
-                // TODO: Use valuable here
-                debug!(%state, "fetched ibc state");
+        // TODO: Use valuable here
+        debug!(%state, "fetched ibc state");
 
-                Ok(IbcState {
-                    height,
-                    state
-                })
-            },
-            panic!()
-        }
+        Ok(IbcState { height, state })
     }
 
     async fn query_ibc_proof(
@@ -637,34 +604,21 @@ impl VoyagerRpcServer for Server {
     ) -> RpcResult<IbcProof> {
         let height = self.query_height(&chain_id, height).await?;
 
-        any_ibc_spec! {
-            ibc_version_id,
-            ThisSpec,
-            {
-                let proof_module = self
-                    .inner
-                    .modules()?
-                    .proof_module::<ThisSpec>(&chain_id, &ibc_version_id)
-                    .map_err(fatal_error)?;
+        let proof_module = self
+            .inner
+            .modules()?
+            .proof_module(&chain_id, &ibc_version_id)
+            .map_err(fatal_error)?;
 
-                let proof = proof_module
-                    .query_ibc_proof(
-                        height,
-                        serde_json::from_value(path).unwrap()
-                    )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+        let proof = proof_module
+            .query_ibc_proof_raw(height, path)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
-                // TODO: Use valuable here
-                debug!(%proof, "fetched ibc state");
+        // TODO: Use valuable here
+        debug!(%proof, "fetched ibc state");
 
-                Ok(IbcProof {
-                    height,
-                    proof
-                })
-            },
-            panic!()
-        }
+        Ok(IbcProof { height, proof })
     }
 
     async fn self_client_state(

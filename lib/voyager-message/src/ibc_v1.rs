@@ -23,11 +23,12 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
+    ics24::IbcPath,
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 use voyager_core::{ClientType, IbcVersionId};
 
-use crate::IbcSpec;
+use crate::{IbcSpec, IbcStorePathKey};
 
 pub enum IbcV1 {}
 
@@ -41,7 +42,7 @@ impl IbcSpec for IbcV1 {
 
     type Datagram = IbcMessage;
 
-    type Event = ibc_events::IbcEvent;
+    type Event = FullIbcEvent;
 
     fn client_state_path(client_id: Self::ClientId) -> Self::StorePath {
         unionlabs::ics24::ClientStatePath { client_id }.into()
@@ -50,6 +51,15 @@ impl IbcSpec for IbcV1 {
     fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath {
         unionlabs::ics24::ClientConsensusStatePath { client_id, height }.into()
     }
+}
+
+impl<T> IbcStorePathKey for T
+where
+    T: IbcPath,
+{
+    type Spec = IbcV1;
+
+    type Value = <Self as IbcPath>::Value;
 }
 
 #[model]

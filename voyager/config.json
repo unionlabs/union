@@ -1,0 +1,55 @@
+{
+  "modules": {
+    "state": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-state-module-cosmos-sdk",
+        "info": {
+          "chain_id": "union-testnet-8",
+          "ibc_version_id": "1.0.0"
+        },
+        "config": {
+          "ws_url": "https://rpc.testnet-8.union.build",
+          "grpc_url": "https://grpc.testnet-8.union.build"
+        }
+      }
+    ],
+    "proof": [],
+    "consensus": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "info": {
+          "chain_id": "union-testnet-8",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "ws_url": "https://rpc.testnet-8.union.build",
+          "grpc_url": "https://grpc.testnet-8.union.build"
+        }
+      }
+    ],
+    "client": []
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-testnet-8",
+        "ws_url": "https://rpc.testnet-8.union.build",
+        "grpc_url": "https://grpc.testnet-8.union.build"
+      }
+    }
+  ],
+  "voyager": {
+    "num_workers": 50,
+    "queue": {
+      "type": "pg-queue",
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "max_connections": 50,
+      "min_connections": 50
+    },
+    "optimizer_delay_milliseconds": 100
+  }
+}
