@@ -16,10 +16,8 @@
   },
   "dependencies": {
     "temporal-polyfill": "^0.2.5",
-    
     "mode-watcher": "^0.4.1",
     "svelte-sonner": "^0.3.27",
-
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
@@ -33,7 +31,6 @@
     "@unionlabs/client": "^0.0.39",
     "@wagmi/connectors": "^5.3.5",
     "@wagmi/core": "^2.14.3",
-
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.7",
@@ -51,7 +48,6 @@
     "@iconify-json/lucide": "^1.2.3",
     "@iconify-json/mdi": "^1.2.0",
     "@iconify-json/tabler": "^1.2.1",
-
     "@keplr-wallet/types": "^0.12.127",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
