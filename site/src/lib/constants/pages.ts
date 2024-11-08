@@ -11,10 +11,10 @@ export const pathConfigMap = {
   "/learn": {
     index: 2,
     colors: {
-      primary: hexToWebGL("#0B1A40"),
-      mid: hexToWebGL("#030711"),
-      dark: hexToWebGL("#000102"),
-      border: hexToRGB("#0B1A40")
+      primary: hexToWebGL("#0d1e49"),
+      mid: hexToWebGL("#040b18"),
+      dark: hexToWebGL("#020c17"),
+      border: hexToRGB("#0d1e49")
     }
   },
   "/ecosystem": {
