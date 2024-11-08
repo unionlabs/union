@@ -1,35 +1,32 @@
 _: {
   perSystem =
     {
-      pkgs,
-      unstablePkgs,
       lib,
+      pkgs,
+      jsPkgs,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      pkgsDeps = with pkgs; [
-        pkg-config
+      deps = with jsPkgs; [
         python3
-      ];
-      nodeDeps = with unstablePkgs; [
+        pkg-config
         nodePackages_latest.nodejs
         nodePackages_latest."patch-package"
       ];
-      combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        app = unstablePkgs.buildNpmPackage {
+        app = jsPkgs.buildNpmPackage {
           npmDepsHash = "sha256-yrqA4Qp7iiGvSo/Xk0G5adXdVqgK8nGYGdXtvLp7EPk=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--enable-pre-post-scripts" ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
-          nativeBuildInputs = combinedDeps;
-          buildInputs = combinedDeps;
+          nativeBuildInputs = deps;
+          buildInputs = deps;
           installPhase = ''
             mkdir -p $out
             cp -r ./build/* $out
@@ -44,7 +41,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "app-dev-server";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
@@ -58,7 +55,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "app-dev-server";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
@@ -72,7 +69,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "deploy-app-ipfs";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/

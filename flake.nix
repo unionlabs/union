@@ -12,6 +12,8 @@
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Track a separate nixpkgs for JS/TS toolchains
+    nixpkgs-js.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
     process-compose.url = "github:F1bonacc1/process-compose";
@@ -94,11 +96,6 @@
       url = "github:CosmWasm/wasmvm/v2.1.3";
       flake = false;
     };
-    biome = {
-      url = "github:biomejs/biome/cli/v1.9.3";
-      flake = false;
-    };
-
     stargaze = {
       url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
       flake = false;
@@ -247,7 +244,6 @@
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
-        ./tools/biome/biome.nix
         ./tools/docgen/docgen.nix
         ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
@@ -272,7 +268,6 @@
           rust,
           system,
           lib,
-          biome,
           ...
         }:
         let
@@ -295,6 +290,7 @@
           };
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
+          jsPkgs = import inputs.nixpkgs-js { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
         in
         {
@@ -306,6 +302,7 @@
                 get-flake
                 uniondBundleVersions
                 goPkgs
+                jsPkgs
                 unstablePkgs
                 mkCi
                 ;
@@ -496,10 +493,8 @@
                 self'.packages.tdc
                 yq
               ])
-              ++ (with unstablePkgs; [
-                wasm-tools
+              ++ (with jsPkgs; [
                 bun # for running TypeScript files on the fly
-                postgresql
                 emmet-language-server
                 nodePackages.graphqurl
                 nodePackages_latest.nodejs
@@ -510,6 +505,8 @@
                 nodePackages_latest.vscode-langservers-extracted
               ])
               ++ (with unstablePkgs; [
+                wasm-tools
+                postgresql
                 go_1_23
                 gopls
                 go-tools
@@ -554,8 +551,8 @@
               pkgs
               unstablePkgs
               goPkgs
+              jsPkgs
               rust
-              biome
               ;
           };
         };

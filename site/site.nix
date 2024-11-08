@@ -2,29 +2,30 @@ _: {
   perSystem =
     {
       pkgs,
-      unstablePkgs,
       lib,
-      ensureAtRepositoryRoot,
       mkCi,
+      jsPkgs,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
-      pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
-      combinedDeps = pkgsDeps ++ nodeDeps;
+      deps = with jsPkgs; [
+        pkg-config
+        nodePackages_latest.nodejs
+      ];
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         site = mkCi false (
-          unstablePkgs.buildNpmPackage {
+          jsPkgs.buildNpmPackage {
             npmDepsHash = "sha256-Q9HbeXkrLI3aomqLxcpIAk+f72KWHOusQdQjRoz/tj4=";
             src = ./.;
             sourceRoot = "site";
             pname = packageJSON.name;
             inherit (packageJSON) version;
-            nativeBuildInputs = combinedDeps;
-            buildInputs = combinedDeps;
+            nativeBuildInputs = deps;
+            buildInputs = deps;
             installPhase = ''
               mkdir -p $out
               cp -r ./.vercel/output/* $out
@@ -42,7 +43,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-dev-server";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
@@ -57,7 +58,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "fmt-site";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
@@ -80,7 +81,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-check";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/

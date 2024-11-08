@@ -2,8 +2,8 @@
 {
   pkgs,
   rust,
-  biome,
   goPkgs,
+  jsPkgs,
   unstablePkgs,
   movefmt,
 }:
@@ -23,7 +23,7 @@
     taplo.enable = true;
     biome = {
       enable = true;
-      package = biome;
+      package = jsPkgs.biome;
     };
     yamlfmt = {
       enable = true;
