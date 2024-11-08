@@ -23,23 +23,6 @@
         "type": "github"
       }
     },
-    "biome": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1727789707,
-        "narHash": "sha256-GZV8M/yUDMom6xvSvSfDRjcMGm+thiaTR3fggkBLmRE=",
-        "owner": "biomejs",
-        "repo": "biome",
-        "rev": "d5034515f48f9052fe4c47a60d43f05ed7986105",
-        "type": "github"
-      },
-      "original": {
-        "owner": "biomejs",
-        "ref": "cli/v1.9.3",
-        "repo": "biome",
-        "type": "github"
-      }
-    },
     "bls-eth-go": {
       "flake": false,
       "locked": {
@@ -449,6 +432,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-js": {
+      "locked": {
+        "lastModified": 1730785428,
+        "narHash": "sha256-Zwl8YgTVJTEum+L+0zVAWvXAGbWAuXHax3KzuejaDyo=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "4aa36568d413aca0ea84a1684d2d46f55dbabad7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lnav": {
       "locked": {
         "lastModified": 1713467351,
@@ -585,7 +584,6 @@
     "root": {
       "inputs": {
         "arion": "arion",
-        "biome": "biome",
         "bls-eth-go": "bls-eth-go",
         "blst": "blst",
         "cometbls": "cometbls",
@@ -605,6 +603,7 @@
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
+        "nixpkgs-js": "nixpkgs-js",
         "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-solc": "nixpkgs-solc",
         "nixpkgs-unstable": "nixpkgs-unstable",

@@ -4,23 +4,22 @@ _: {
       lib,
       pkgs,
       mkCi,
-      unstablePkgs,
+      jsPkgs,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [
+      deps = with jsPkgs; [
         vips
+        pkg-config
         nodePackages_latest.nodejs
       ];
-      combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         docs = mkCi false (
-          unstablePkgs.buildNpmPackage {
+          jsPkgs.buildNpmPackage {
             npmDepsHash = "sha256-v2rwxCCKmbtwxAynUryTigfg0V4cmARh6HgfKTwFQds=";
             src = ./.;
             srcs = [
@@ -30,8 +29,8 @@ _: {
             sourceRoot = "docs";
             pname = packageJSON.name;
             inherit (packageJSON) version;
-            nativeBuildInputs = combinedDeps;
-            buildInputs = combinedDeps;
+            nativeBuildInputs = deps;
+            buildInputs = deps;
             installPhase = ''
               mkdir -p $out
               cp -r ./dist/* $out
@@ -49,7 +48,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "docs-dev-server";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd docs/
@@ -64,7 +63,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "docs-check";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               biome check docs --error-on-warnings --write --unsafe
@@ -84,7 +83,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "deploy-docs-ipfs";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd docs/

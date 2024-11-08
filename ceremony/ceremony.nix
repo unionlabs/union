@@ -1,32 +1,31 @@
 _: {
   perSystem =
     {
-      pkgs,
-      unstablePkgs,
       lib,
+      pkgs,
+      jsPkgs,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      pkgsDeps = with pkgs; [
+      deps = with jsPkgs; [
         pkg-config
         python3
+        nodePackages_latest.nodejs
       ];
-      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
-      combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        ceremony = unstablePkgs.buildNpmPackage {
+        ceremony = jsPkgs.buildNpmPackage {
           npmDepsHash = "sha256-2s556is4PJaGmxQhIUPZLINh6J6ngeTf32bwDtl+v6Q=";
           src = ./.;
           sourceRoot = "ceremony";
           npmFlags = [ "--legacy-peer-deps" ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
-          nativeBuildInputs = combinedDeps;
-          buildInputs = combinedDeps;
+          nativeBuildInputs = deps;
+          buildInputs = deps;
           installPhase = ''
             mkdir -p $out
             cp -r ./build/* $out
@@ -44,7 +43,7 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "ceremony-dev-server";
-            runtimeInputs = combinedDeps;
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd ceremony/
