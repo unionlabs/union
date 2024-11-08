@@ -16,7 +16,7 @@ _: {
               ${ensureAtRepositoryRoot}
 
               cd typescript-sdk
-              nix shell github:nixos/nixpkgs/nixpkgs-unstable#deno --command deno publish
+              ${unstablePkgs.deno} publish
             '';
           };
         };
