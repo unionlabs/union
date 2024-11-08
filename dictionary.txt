@@ -777,6 +777,7 @@ keypreimage
 keyup
 keyval
 kichain
+knip
 kujira
 kvstoreservice
 kwallet
