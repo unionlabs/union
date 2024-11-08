@@ -14,15 +14,13 @@ library IBCPacketLib {
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
     event SendPacket(IBCPacket packet);
-    event RecvPacket(IBCPacket packets, address relayer, bytes relayerMsg);
-    event RecvIntentPacket(
-        IBCPacket packet, address marketMaker, bytes marketMakerMsg
-    );
+    event RecvPacket(IBCPacket packets, address maker, bytes makerMsg);
+    event RecvIntentPacket(IBCPacket packet, address maker, bytes makerMsg);
     event WriteAcknowledgement(IBCPacket packet, bytes acknowledgement);
     event AcknowledgePacket(
-        IBCPacket packet, bytes acknowledgement, address relayer
+        IBCPacket packet, bytes acknowledgement, address maker
     );
-    event TimeoutPacket(IBCPacket packet, address relayer);
+    event TimeoutPacket(IBCPacket packet, address maker);
 
     function commitAcksMemory(
         bytes[] memory acks

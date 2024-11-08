@@ -99,28 +99,26 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
                 client_state: client_state.encode_as::<Proto>().into(),
             })
         }
-        QueryMsg::GetLatestHeight { client_state } => to_json_binary(
-            &ClientState::decode_as::<Proto>(&client_state)
-                .unwrap()
-                .latest_slot,
-        ),
-        QueryMsg::GetTimestamp { consensus_state } => to_json_binary(
-            &ConsensusState::decode_as::<Proto>(&consensus_state)
-                .unwrap()
-                .timestamp,
-        ),
-        QueryMsg::GetStatus { client_state } => to_json_binary(
-            if ClientState::decode_as::<Proto>(&client_state)
-                .unwrap()
-                .frozen_height
-                .height()
-                != 0
-            {
-                &Status::Frozen
+        QueryMsg::GetLatestHeight { client_id } => {
+            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let client_state = read_client_state(deps, &ibc_host, client_id)?;
+            to_json_binary(&client_state.latest_slot)
+        }
+        QueryMsg::GetTimestamp { client_id, height } => {
+            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let consensus_state = read_consensus_state(deps, &ibc_host, client_id, height)?;
+            to_json_binary(&consensus_state.timestamp)
+        }
+        QueryMsg::GetStatus { client_id } => {
+            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let client_state = read_client_state(deps, &ibc_host, client_id)?;
+            let status = if client_state.frozen_height.height() == 0 {
+                Status::Active
             } else {
-                &Status::Active
-            },
-        ),
+                Status::Frozen
+            };
+            to_json_binary(&status)
+        }
         QueryMsg::VerifyCreation {
             client_state,
             consensus_state,

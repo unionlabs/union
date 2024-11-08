@@ -19,11 +19,11 @@ pub struct VerifyClientMessageUpdate {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(u64)]
-    GetTimestamp { consensus_state: Binary },
+    GetTimestamp { client_id: u32, height: u64 },
     #[returns(u64)]
-    GetLatestHeight { client_state: Binary },
+    GetLatestHeight { client_id: u32 },
     #[returns(Status)]
-    GetStatus { client_state: Binary },
+    GetStatus { client_id: u32 },
     #[returns(u64)]
     VerifyCreation {
         client_id: u32,

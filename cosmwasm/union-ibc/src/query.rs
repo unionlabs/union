@@ -16,4 +16,6 @@ pub enum QueryMsg {
     GetConsensusState { client_id: u32, height: u64 },
     #[returns(Status)]
     GetStatus { client_id: u32 },
+    #[returns(String)]
+    GetClientType { client_id: u32 },
 }
