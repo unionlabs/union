@@ -4,7 +4,8 @@ export const pathConfigMap = {
     colors: {
       primary: hexToWebGL("#7ce9ff"),
       mid: hexToWebGL("#D0F7FF"),
-      dark: hexToWebGL("#025C70")
+      dark: hexToWebGL("#025C70"),
+      border: hexToRGB("#7ce9ff")
     }
   },
   "/learn": {
@@ -12,7 +13,8 @@ export const pathConfigMap = {
     colors: {
       primary: hexToWebGL("#0B1A40"),
       mid: hexToWebGL("#030711"),
-      dark: hexToWebGL("#000102")
+      dark: hexToWebGL("#000102"),
+      border: hexToRGB("#0B1A40")
     }
   },
   "/ecosystem": {
@@ -20,7 +22,8 @@ export const pathConfigMap = {
     colors: {
       primary: hexToWebGL("#3D3D3D"),
       mid: hexToWebGL("#151515"),
-      dark: hexToWebGL("#2A2A2A")
+      dark: hexToWebGL("#2A2A2A"),
+      border: hexToRGB("#3D3D3D")
     }
   },
   "/blog": {
@@ -28,7 +31,8 @@ export const pathConfigMap = {
     colors: {
       primary: hexToWebGL("#66919A"),
       mid: hexToWebGL("#4E737B"),
-      dark: hexToWebGL("#2E4449")
+      dark: hexToWebGL("#2E4449"),
+      border: hexToRGB("#66919A")
     }
   },
   "/team": {
@@ -36,10 +40,11 @@ export const pathConfigMap = {
     colors: {
       primary: hexToWebGL("#FAF7F7"),
       mid: hexToWebGL("#B7B7B7"),
-      dark: hexToWebGL("#7A7A7A")
+      dark: hexToWebGL("#7A7A7A"),
+      border: hexToRGB("#FAF7F7")
     }
   }
-} as const
+} as const;
 
 function hexToWebGL(hex: string) {
   hex = hex.replace("#", "")
@@ -50,3 +55,14 @@ function hexToWebGL(hex: string) {
 
   return [r, g, b, 1.0]
 }
+
+function hexToRGB(hex: string): string {
+  hex = hex.replace("#", "")
+
+  const r = Number.parseInt(hex.substring(0, 2), 16)
+  const g = Number.parseInt(hex.substring(2, 4), 16)
+  const b = Number.parseInt(hex.substring(4, 6), 16)
+
+  return `${r}, ${g}, ${b}`
+}
+

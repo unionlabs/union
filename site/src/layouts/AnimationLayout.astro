@@ -184,24 +184,33 @@ const currentPath = pathname.slice(1) // remove the first "/"
   let isNavigating = false;
   let navigationDirection: "left" | "right";
 
+  function updateBorderGradient(rgbColor: string) {
+    const glowEffect = document.querySelector(".glow-effect");
+    if (glowEffect) {
+      glowEffect.style.background = `
+        conic-gradient(
+          from 0deg at 50% 50%,
+          rgba(${rgbColor}, 1) 15deg,
+          rgba(${rgbColor}, 0) 15deg,
+          rgba(${rgbColor}, 0) 55deg,
+          rgba(${rgbColor}, 0) 345deg,
+          rgba(${rgbColor}, 1) 345deg
+        )
+      `;
+    }
+  }
+
   document.addEventListener("astro:before-preparation", (event: any) => {
-    const fromConfig = pathConfigMap[event.from.pathname] ?? {
-      index: 0,
-      colors: pathConfigMap["/"].colors, // Use default colors
-    };
-    const toConfig = pathConfigMap[event.to.pathname] ?? {
-      index: 0,
-      colors: pathConfigMap["/"].colors, // Use default colors
-    };
+    const fromConfig = pathConfigMap[event.from.pathname] ?? pathConfigMap["/"];
+    const toConfig = pathConfigMap[event.to.pathname] ?? pathConfigMap["/"];
 
     if (toConfig.index && toConfig.index !== fromConfig.index) {
-      console.log(toConfig);
       isNavigating = true;
-      navigationDirection =
-        toConfig.index > fromConfig.index ? "left" : "right";
+      navigationDirection = toConfig.index > fromConfig.index ? "left" : "right";
 
       rotateCamera(navigationDirection);
       updateColors(toConfig.colors);
+      updateBorderGradient(toConfig.colors.border);
 
       const slideThis = document.querySelector(".slide-this");
       if (slideThis) {
@@ -243,6 +252,10 @@ const currentPath = pathname.slice(1) // remove the first "/"
     headerGrid = document.querySelector(".header-grid");
     glowEffect = document.querySelector(".glow-effect");
     checkDeviceSize();
+
+    const currentPath = window.location.pathname;
+    const currentConfig = pathConfigMap[currentPath] ?? pathConfigMap["/"];
+    updateBorderGradient(currentConfig.colors.border);
 
     if (headerGrid && glowEffect) {
       mouseMoveHandler = (e) => {
