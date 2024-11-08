@@ -54,10 +54,12 @@ export type AptosWalletId = (typeof aptosWalletsInformation)[number]["id"]
 
 export function getAptosWallet(walletId: AptosWalletId = "petra") {
   // handle okx wallet special case since it's nested
-  if (walletId === "okxwallet") {
-    if (Object.hasOwn(window, "okxwallet") && Object.hasOwn(window.okxwallet, "aptos")) {
-      return window.okxwallet.aptos
-    }
+  if (
+    walletId === "okxwallet" &&
+    Object.hasOwn(window, "okxwallet") &&
+    Object.hasOwn(window.okxwallet, "aptos")
+  ) {
+    return window.okxwallet.aptos
   }
   if (Object.hasOwn(window, walletId)) return window[walletId] as AptosBrowserWallet
   if (Object.hasOwn(window, "aptos")) return window.aptos

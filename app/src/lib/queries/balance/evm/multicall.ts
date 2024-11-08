@@ -53,6 +53,7 @@ export async function erc20ReadMulticall({
 
       const currentResult = accumulator.at(-1)
       const fn = functionNames[index % functionNames.length]
+      if (!currentResult) return accumulator
       currentResult[fn === "balanceOf" ? "balance" : fn] = result ?? (fn === "decimals" ? 0 : "")
       return accumulator
     },
