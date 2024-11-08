@@ -13,51 +13,29 @@ library IBCChannelLib {
     event ChannelOpenInit(
         address portId,
         uint32 channelId,
-<<<<<<< HEAD
         bytes counterpartyPortId,
-=======
-        string counterpartyPortId,
->>>>>>> a3eb489a8 (fix: ci)
         uint32 connectionId,
         string version
     );
     event ChannelOpenTry(
-<<<<<<< HEAD
         address portId,
         uint32 channelId,
         bytes counterpartyPortId,
-=======
-        string portId,
-        uint32 channelId,
-        string counterpartyPortId,
->>>>>>> a3eb489a8 (fix: ci)
         uint32 counterpartyChannelId,
         uint32 connectionId,
         string version
     );
     event ChannelOpenAck(
-<<<<<<< HEAD
         address portId,
         uint32 channelId,
         bytes counterpartyPortId,
-=======
-        string portId,
-        uint32 channelId,
-        string counterpartyPortId,
->>>>>>> a3eb489a8 (fix: ci)
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelOpenConfirm(
-<<<<<<< HEAD
         address portId,
         uint32 channelId,
         bytes counterpartyPortId,
-=======
-        string portId,
-        uint32 channelId,
-        string counterpartyPortId,
->>>>>>> a3eb489a8 (fix: ci)
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
@@ -73,21 +51,6 @@ library IBCChannelLib {
         bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
-<<<<<<< HEAD
-    event ChannelCloseInit(
-        address portId,
-        uint32 channelId,
-        bytes counterpartyPortId,
-        uint32 counterpartyChannelId
-    );
-    event ChannelCloseConfirm(
-        address portId,
-        uint32 channelId,
-        bytes counterpartyPortId,
-        uint32 counterpartyChannelId
-    );
-=======
->>>>>>> a3eb489a8 (fix: ci)
 }
 
 /**
@@ -115,11 +78,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.connectionId, channelId, msg_.version, msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenInit(
-<<<<<<< HEAD
             msg_.portId,
-=======
-            msg_.portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             channelId,
             channel.counterpartyPortId,
             msg_.connectionId,
@@ -142,11 +101,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Init,
             counterpartyChannelId: 0,
             connectionId: getCounterpartyConnection(msg_.channel.connectionId),
-<<<<<<< HEAD
             counterpartyPortId: abi.encodePacked(msg_.portId),
-=======
-            counterpartyPortId: msg_.portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             version: msg_.counterpartyVersion
         });
         if (
@@ -165,10 +120,6 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitChannelCalldata(channelId, msg_.channel);
         claimChannel(msg_.portId, channelId);
         IIBCModule(msg_.portId).onChanOpenTry(
-<<<<<<< HEAD
-=======
-            msg_.channel.ordering,
->>>>>>> a3eb489a8 (fix: ci)
             msg_.channel.connectionId,
             channelId,
             msg_.channel.counterpartyChannelId,
@@ -177,11 +128,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenTry(
-<<<<<<< HEAD
             msg_.portId,
-=======
-            msg_.portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             channelId,
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
@@ -207,11 +154,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.TryOpen,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-<<<<<<< HEAD
             counterpartyPortId: abi.encodePacked(portId),
-=======
-            counterpartyPortId: portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             version: msg_.counterpartyVersion
         });
         if (
@@ -236,11 +179,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenAck(
-<<<<<<< HEAD
             portId,
-=======
-            portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             msg_.channelId,
             channel.counterpartyPortId,
             msg_.counterpartyChannelId,
@@ -264,11 +203,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Open,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-<<<<<<< HEAD
             counterpartyPortId: abi.encodePacked(portId),
-=======
-            counterpartyPortId: portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             version: channel.version
         });
         if (
@@ -286,11 +221,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitChannel(msg_.channelId, channel);
         IIBCModule(portId).onChanOpenConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelOpenConfirm(
-<<<<<<< HEAD
             portId,
-=======
-            portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId,
@@ -314,11 +245,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         address portId = channelOwner[msg_.channelId];
         IIBCModule(portId).onChanCloseInit(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelCloseInit(
-<<<<<<< HEAD
             portId,
-=======
-            portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId
@@ -342,11 +269,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             state: IBCChannelState.Closed,
             counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
-<<<<<<< HEAD
             counterpartyPortId: abi.encodePacked(portId),
-=======
-            counterpartyPortId: portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             version: channel.version
         });
         if (
@@ -364,11 +287,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         commitChannel(msg_.channelId, channel);
         IIBCModule(portId).onChanCloseConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelCloseConfirm(
-<<<<<<< HEAD
             portId,
-=======
-            portId.toHexString(),
->>>>>>> a3eb489a8 (fix: ci)
             msg_.channelId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId
