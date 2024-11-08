@@ -19,13 +19,13 @@ import {
   scrollSepolia,
   arbitrumSepolia,
   berachainTestnetbArtio
-} from "./client/evm.ts"
+} from "./evm/client.ts"
 import {
   cosmosChainId,
   type CosmosChainId,
   createCosmosClient,
   type CosmosClientParameters
-} from "./client/cosmos.ts"
+} from "./cosmos/client.ts"
 import {
   aptosChainId,
   type AptosChainId,

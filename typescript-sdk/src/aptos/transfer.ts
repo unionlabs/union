@@ -11,12 +11,13 @@ import {
   type PendingTransactionResponse,
   type InputGenerateTransactionPayloadData
 } from "@aptos-labs/ts-sdk"
+import type { Prettify } from "../types.ts"
 import { err, ok, type Result, ResultAsync } from "neverthrow"
 import { isValidBech32Address } from "../utilities/address.ts"
 import type { AptosBrowserWallet, AuthAccess } from "./wallet.ts"
 import { bech32AddressToHex, bech32ToBytes, hexToBytes } from "../convert.ts"
 
-export type { AptosAccount, AptosTransferParams, AptosPublicAccountInfo }
+export type { AptosAccount, AptosPublicAccountInfo }
 
 type AptosPublicAccountInfo = { address: string; publicKey: string }
 
@@ -32,10 +33,12 @@ type AptosTransferBaseParams = {
   signer?: AptosAccount | AptosBrowserWallet
 }
 
-type AptosTransferParams = AptosTransferBaseParams & {
-  sourceChannel: string
-  relayContractAddress: string
-}
+type AptosTransferParams = Prettify<
+  AptosTransferBaseParams & {
+    sourceChannel: string
+    relayContractAddress: string
+  }
+>
 
 export const waitForTransactionReceipt: (args: { aptos: Aptos; hash: string }) => ResultAsync<
   string,
@@ -54,7 +57,7 @@ export const waitForTransactionReceipt: (args: { aptos: Aptos; hash: string }) =
   error => new Error(`Waiting for transaction failed: ${error}`, { cause: error })
 )
 
-export const buildSimpleTransaction: (args: {
+const buildSimpleTransaction: (args: {
   aptos: Aptos
   accountAddress: AccountAddressInput
   data: InputGenerateTransactionPayloadData
@@ -67,7 +70,7 @@ export const buildSimpleTransaction: (args: {
   error => new Error(`Build simple transaction failed`, { cause: error })
 )
 
-export const submitSimpleTransaction: (args: {
+const submitSimpleTransaction: (args: {
   aptos: Aptos
   transaction: AnyRawTransaction
   accountAuthenticator: AccountAuthenticator
@@ -80,7 +83,7 @@ export const submitSimpleTransaction: (args: {
   error => new Error(`Submit simple transaction failed`, { cause: error })
 )
 
-export const simulateSimpleTransaction: (args: {
+const simulateSimpleTransaction: (args: {
   aptos: Aptos
   signerPublicKey: PublicKey
   transaction: AnyRawTransaction

@@ -1,9 +1,7 @@
 import {
   erc20Abi,
-  type Hex,
   getAddress,
   type Account,
-  type Address,
   publicActions,
   type HttpTransport,
   createWalletClient,
@@ -15,13 +13,13 @@ import {
   transferAssetFromEvm,
   evmApproveTransferAsset,
   transferAssetFromEvmSimulate
-} from "../transfer/evm.ts"
-import { cosmosChainId } from "./cosmos.ts"
+} from "./transfer.ts"
 import { err, ok, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
-import type { TransferAssetsParameters } from "../types.ts"
+import { cosmosChainId } from "../cosmos/client.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
+import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
@@ -32,9 +30,11 @@ export const evmChainId = [
   `${berachainTestnetbArtio.id}`
 ] as const
 
-export const evmChainFromChainId = (chainId: string) => evmChains.find(c => `${c.id}` === chainId)
-
 export type EvmChainId = `${(typeof evmChainId)[number]}`
+
+export function evmChainFromChainId(chainId: LooseAutocomplete<EvmChainId>) {
+  return evmChains.find(c => `${c.id}` === chainId)
+}
 
 export interface EvmClientParameters {
   chainId: EvmChainId
@@ -42,15 +42,10 @@ export interface EvmClientParameters {
   transport: FallbackTransport | HttpTransport | CustomTransport
 }
 
-export const chainIdToChain = (chainId: EvmChainId) =>
-  [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio].find(
-    chain => chain.id === Number(chainId)
-  )
-
 export const createEvmClient = (parameters: EvmClientParameters) => {
   return createWalletClient({
     ...parameters,
-    chain: chainIdToChain(parameters.chainId)
+    chain: evmChainFromChainId(parameters.chainId)
   })
     .extend(publicActions)
     .extend(client => ({
@@ -125,7 +120,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         simulate = true,
         destinationChainId
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
-        let _receiver: Address
+        let _receiver: HexAddress
 
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
         // otherwise, it's the relayer contract address from ucs config

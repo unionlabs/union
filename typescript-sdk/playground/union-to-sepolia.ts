@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import "#patch.ts"
+import "scripts/patch.ts"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
