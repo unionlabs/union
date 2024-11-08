@@ -1,0 +1,6 @@
+{
+  "$schema": "https://esm.sh/knip/schema.json",
+  "entry": ["src/mod.{js,ts,tsx}"],
+  "project": ["src/**/*.{js,ts,d.ts}"],
+  "ignoreDependencies": ["tsx", "jsr", "consola", "cosmjs-types"]
+}
