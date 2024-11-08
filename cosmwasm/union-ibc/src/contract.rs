@@ -1534,6 +1534,9 @@ fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u6
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
+        QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
+            &CLIENT_TYPES.load(deps.storage, client_id)?,
+        )?),
         QueryMsg::GetTimestampAtHeight { client_id, height } => Ok(to_json_binary(
             &get_timestamp_at_height(deps, client_id, height)?,
         )?),
