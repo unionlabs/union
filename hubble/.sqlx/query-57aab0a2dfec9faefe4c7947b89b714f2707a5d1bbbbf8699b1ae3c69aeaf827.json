@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT height height\n        FROM hubble.block_status\n        WHERE indexer_id = $1 AND height > $2\n        AND updated_at < $3\n        ORDER BY updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "57aab0a2dfec9faefe4c7947b89b714f2707a5d1bbbbf8699b1ae3c69aeaf827"
+}
