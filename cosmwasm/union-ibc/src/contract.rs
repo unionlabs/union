@@ -33,6 +33,57 @@ use crate::{
 
 type ContractResult = Result<Response, ContractError>;
 
+pub mod events {
+    pub mod client {
+        pub const REGISTER: &str = "client_register";
+        pub const CREATE: &str = "client_create";
+        pub const UPDATE: &str = "client_update";
+    }
+    pub mod connection {
+        pub const OPEN_INIT: &str = "connection_open_init";
+        pub const OPEN_TRY: &str = "connection_open_try";
+        pub const OPEN_ACK: &str = "connection_open_ack";
+        pub const OPEN_CONFIRM: &str = "connection_open_confirm";
+    }
+    pub mod channel {
+        pub const OPEN_INIT: &str = "channel_open_init";
+        pub const OPEN_TRY: &str = "channel_open_try";
+        pub const OPEN_ACK: &str = "channel_open_ack";
+        pub const OPEN_CONFIRM: &str = "channel_open_confirm";
+        pub const CLOSE_INIT: &str = "channel_close_init";
+        pub const CLOSE_CONFIRM: &str = "channel_close_confirm";
+    }
+    pub mod packet {
+        pub const SEND: &str = "packet_send";
+        pub const RECV: &str = "packet_recv";
+        pub const INTENT_RECV: &str = "packet_intent_recv";
+        pub const ACK: &str = "packet_ack";
+        pub const TIMEOUT: &str = "packet_timeout";
+        pub const BATCH_SEND: &str = "batch_send";
+        pub const BATCH_ACKS: &str = "batch_acks";
+    }
+    pub mod attribute {
+        pub const CLIENT_ID: &str = "client_id";
+        pub const CONNECTION_ID: &str = "connection_id";
+        pub const CHANNEL_ID: &str = "channel_id";
+        pub const COUNTERPARTY_CHANNEL_ID: &str = "counterpary_channel_id";
+        pub const HEIGHT: &str = "height";
+        pub const PACKET: &str = "packet";
+        pub const PACKETS: &str = "packets";
+        pub const ACKS: &str = "acks";
+        pub const MAKER: &str = "maker";
+        pub const MAKER_MSG: &str = "maker_msg";
+        pub const ACKNOWLEDGEMENT: &str = "acknowledgement";
+        pub const CLIENT_TYPE: &str = "client_type";
+        pub const CLIENT_ADDRESS: &str = "client_address";
+        pub const COUNTERPARTY_CLIENT_ID: &str = "counterparty_client_id";
+        pub const COUNTERPARTY_CONNECTION_ID: &str = "counterparty_connection_id";
+        pub const PORT_ID: &str = "port_id";
+        pub const COUNTERPARTY_PORT_ID: &str = "port_id";
+        pub const VERSION: &str = "version";
+    }
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
@@ -340,9 +391,12 @@ fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> Contr
         &COMMITMENT_MAGIC,
     )?;
     Ok(
-        Response::new().add_event(Event::new("batch_send").add_attributes([
-            ("channel_id", source_channel.to_string()),
-            ("packets", serde_json::to_string(&packets).unwrap()),
+        Response::new().add_event(Event::new(events::packet::BATCH_SEND).add_attributes([
+            (events::attribute::CHANNEL_ID, source_channel.to_string()),
+            (
+                events::attribute::PACKETS,
+                serde_json::to_string(&packets).unwrap(),
+            ),
         ])),
     )
 }
@@ -377,10 +431,16 @@ fn batch_acks(
         &commit_acks(&acks),
     )?;
     Ok(
-        Response::new().add_event(Event::new("batch_acks").add_attributes([
-            ("channel_id", source_channel.to_string()),
-            ("packets", serde_json::to_string(&packets).unwrap()),
-            ("acks", serde_json::to_string(&acks).unwrap()),
+        Response::new().add_event(Event::new(events::packet::BATCH_ACKS).add_attributes([
+            (events::attribute::CHANNEL_ID, source_channel.to_string()),
+            (
+                events::attribute::PACKETS,
+                serde_json::to_string(&packets).unwrap(),
+            ),
+            (
+                events::attribute::ACKS,
+                serde_json::to_string(&acks).unwrap(),
+            ),
         ])),
     )
 }
@@ -432,9 +492,12 @@ fn timeout_packet(
 
     let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
     Ok(Response::new()
-        .add_event(Event::new("timeout_packet").add_attributes([
-            ("packet", serde_json::to_string(&packet).unwrap()),
-            ("relayer", relayer.to_string()),
+        .add_event(Event::new(events::packet::TIMEOUT).add_attributes([
+            (
+                events::attribute::PACKET,
+                serde_json::to_string(&packet).unwrap(),
+            ),
+            (events::attribute::MAKER, relayer.to_string()),
         ]))
         .add_message(wasm_execute(
             port_id,
@@ -484,10 +547,13 @@ fn acknowledge_packet(
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
         delete_packet_commitment(deps.branch(), source_channel, &packet)?;
-        events.push(Event::new("acknowledge_packet").add_attributes([
-            ("packet", serde_json::to_string(&packet).unwrap()),
-            ("acknowledgement", hex::encode(&ack)),
-            ("relayer", relayer.clone().to_string()),
+        events.push(Event::new(events::packet::ACK).add_attributes([
+            (
+                events::attribute::PACKET,
+                serde_json::to_string(&packet).unwrap(),
+            ),
+            (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
+            (events::attribute::MAKER, relayer.clone().to_string()),
         ]));
         messages.push(wasm_execute(
             port_id.clone(),
@@ -543,9 +609,9 @@ fn register_client(
     CLIENT_REGISTRY.save(deps.storage, &client_type, &client_address)?;
 
     Ok(Response::new().add_event(
-        Event::new("client_registered")
-            .add_attribute("client_type", client_type)
-            .add_attribute("client_address", client_address),
+        Event::new(events::client::REGISTER)
+            .add_attribute(events::attribute::CLIENT_TYPE, client_type)
+            .add_attribute(events::attribute::CLIENT_ADDRESS, client_address),
     ))
 }
 
@@ -585,9 +651,9 @@ fn create_client(
         &commit(consensus_state_bytes),
     )?;
     Ok(
-        Response::new().add_event(Event::new("client_created").add_attributes([
-            ("client_type", client_type),
-            ("client_id", client_id.to_string()),
+        Response::new().add_event(Event::new(events::client::CREATE).add_attributes([
+            (events::attribute::CLIENT_TYPE, client_type),
+            (events::attribute::CLIENT_ID, client_id.to_string()),
         ])),
     )
 }
@@ -617,9 +683,9 @@ fn update_client(
         &commit(update.consensus_state),
     )?;
     Ok(
-        Response::new().add_event(Event::new("client_updated").add_attributes([
-            ("client_id", client_id.to_string()),
-            ("height", update.height.to_string()),
+        Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
+            (events::attribute::CLIENT_ID, client_id.to_string()),
+            (events::attribute::HEIGHT, update.height.to_string()),
         ])),
     )
 }
@@ -639,10 +705,13 @@ fn connection_open_init(
     };
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
-        Response::new().add_event(Event::new("connection_open_init").add_attributes([
-            ("connection_id", connection_id.to_string()),
-            ("client_id", client_id.to_string()),
-            ("counterparty_client_id", counterparty_client_id.to_string()),
+        Response::new().add_event(Event::new(events::connection::OPEN_INIT).add_attributes([
+            (events::attribute::CONNECTION_ID, connection_id.to_string()),
+            (events::attribute::CLIENT_ID, client_id.to_string()),
+            (
+                events::attribute::COUNTERPARTY_CLIENT_ID,
+                counterparty_client_id.to_string(),
+            ),
         ])),
     )
 }
@@ -684,12 +753,15 @@ fn connection_open_try(
     )?;
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
-        Response::new().add_event(Event::new("connection_open_try").add_attributes([
-            ("connection_id", connection_id.to_string()),
-            ("client_id", client_id.to_string()),
-            ("counterparty_client_id", counterparty_client_id.to_string()),
+        Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
+            (events::attribute::CONNECTION_ID, connection_id.to_string()),
+            (events::attribute::CLIENT_ID, client_id.to_string()),
             (
-                "counterparty_connection_id",
+                events::attribute::COUNTERPARTY_CLIENT_ID,
+                counterparty_client_id.to_string(),
+            ),
+            (
+                events::attribute::COUNTERPARTY_CONNECTION_ID,
                 counterparty_connection_id.to_string(),
             ),
         ])),
@@ -734,15 +806,18 @@ fn connection_open_ack(
     connection.counterpartyConnectionId = counterparty_connection_id;
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
-        Response::new().add_event(Event::new("connection_open_ack").add_attributes([
-            ("connection_id", connection_id.to_string()),
-            ("client_id", connection.clientId.to_string()),
+        Response::new().add_event(Event::new(events::connection::OPEN_ACK).add_attributes([
+            (events::attribute::CONNECTION_ID, connection_id.to_string()),
             (
-                "counterparty_client_id",
+                events::attribute::CLIENT_ID,
+                connection.clientId.to_string(),
+            ),
+            (
+                events::attribute::COUNTERPARTY_CLIENT_ID,
                 connection.counterpartyClientId.to_string(),
             ),
             (
-                "counterparty_connection_id",
+                events::attribute::COUNTERPARTY_CONNECTION_ID,
                 connection.counterpartyConnectionId.to_string(),
             ),
         ])),
@@ -784,20 +859,23 @@ fn connection_open_confirm(
     )?;
     connection.state = ConnectionState::Open;
     save_connection(deps.branch(), connection_id, &connection)?;
-    Ok(
-        Response::new().add_event(Event::new("connection_open_confirm").add_attributes([
-            ("connection_id", connection_id.to_string()),
-            ("client_id", connection.clientId.to_string()),
+    Ok(Response::new().add_event(
+        Event::new(events::connection::OPEN_CONFIRM).add_attributes([
+            (events::attribute::CONNECTION_ID, connection_id.to_string()),
             (
-                "counterparty_client_id",
+                events::attribute::CLIENT_ID,
+                connection.clientId.to_string(),
+            ),
+            (
+                events::attribute::COUNTERPARTY_CLIENT_ID,
                 connection.counterpartyClientId.to_string(),
             ),
             (
-                "counterparty_connection_id",
+                events::attribute::COUNTERPARTY_CONNECTION_ID,
                 connection.counterpartyConnectionId.to_string(),
             ),
-        ])),
-    )
+        ]),
+    ))
 }
 
 fn channel_open_init(
@@ -821,12 +899,15 @@ fn channel_open_init(
     save_channel(deps.branch(), channel_id, &channel)?;
     CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
     Ok(Response::new()
-        .add_event(Event::new("channel_open_init").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
-            ("counterparty_port_id", hex::encode(&counterparty_port_id)),
-            ("connection_id", connection_id.to_string()),
-            ("version", version.clone()),
+        .add_event(Event::new(events::channel::OPEN_INIT).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
+            (
+                events::attribute::COUNTERPARTY_PORT_ID,
+                hex::encode(&counterparty_port_id),
+            ),
+            (events::attribute::CONNECTION_ID, connection_id.to_string()),
+            (events::attribute::VERSION, version.clone()),
         ]))
         .add_message(wasm_execute(
             port_id,
@@ -881,15 +962,15 @@ fn channel_open_try(
     save_channel(deps.branch(), channel_id, &channel)?;
     CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
     Ok(Response::new()
-        .add_event(Event::new("channel_open_try").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
+        .add_event(Event::new(events::channel::OPEN_TRY).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
-                "counterparty_port_id",
+                events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterpartyPortId),
             ),
             (
-                "counterparty_channel_id",
+                events::attribute::COUNTERPARTY_CHANNEL_ID,
                 channel.counterpartyChannelId.to_string(),
             ),
             ("connection_id", channel.connectionId.to_string()),
@@ -951,15 +1032,15 @@ fn channel_open_ack(
     channel.counterpartyChannelId = counterparty_channel_id;
     save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
-        .add_event(Event::new("channel_open_ack").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
+        .add_event(Event::new(events::channel::OPEN_ACK).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
-                "counterparty_port_id",
+                events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterpartyPortId),
             ),
             (
-                "counterparty_channel_id",
+                events::attribute::COUNTERPARTY_CHANNEL_ID,
                 channel.counterpartyChannelId.to_string(),
             ),
             ("connection_id", channel.connectionId.to_string()),
@@ -1015,15 +1096,15 @@ fn channel_open_confirm(
     channel.state = ChannelState::Open;
     save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
-        .add_event(Event::new("channel_open_confirm").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
+        .add_event(Event::new(events::channel::OPEN_CONFIRM).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
-                "counterparty_port_id",
+                events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterpartyPortId),
             ),
             (
-                "counterparty_channel_id",
+                events::attribute::COUNTERPARTY_CHANNEL_ID,
                 channel.counterpartyChannelId.to_string(),
             ),
             ("connection_id", channel.connectionId.to_string()),
@@ -1051,15 +1132,15 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
     save_channel(deps.branch(), channel_id, &channel)?;
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     Ok(Response::new()
-        .add_event(Event::new("channel_close_init").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
+        .add_event(Event::new(events::channel::CLOSE_INIT).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
-                "counterparty_port_id",
+                events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterpartyPortId),
             ),
             (
-                "counterparty_channel_id",
+                events::attribute::COUNTERPARTY_CHANNEL_ID,
                 channel.counterpartyChannelId.to_string(),
             ),
         ]))
@@ -1117,15 +1198,15 @@ fn channel_close_confirm(
         &commit(channel.abi_encode()),
     )?;
     Ok(Response::new()
-        .add_event(Event::new("channel_close_confirm").add_attributes([
-            ("port_id", port_id.to_string()),
-            ("channel_id", channel_id.to_string()),
+        .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
+            (events::attribute::PORT_ID, port_id.to_string()),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
-                "counterparty_port_id",
+                events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterpartyPortId),
             ),
             (
-                "counterparty_channel_id",
+                events::attribute::COUNTERPARTY_CHANNEL_ID,
                 channel.counterpartyChannelId.to_string(),
             ),
         ]))
@@ -1205,11 +1286,13 @@ fn process_receive(
 
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
-                events.push(Event::new("recv_intent_packet").add_attributes([
-                    ("packet", serde_json::to_string(&packet).unwrap()),
-                    ("maker", relayer.clone()),
-                    // TODO(aeryz): should this be hex?
-                    ("maker_msg", hex::encode(&relayer_msg)),
+                events.push(Event::new(events::packet::INTENT_RECV).add_attributes([
+                    (
+                        events::attribute::PACKET,
+                        serde_json::to_string(&packet).unwrap(),
+                    ),
+                    (events::attribute::MAKER, relayer.clone()),
+                    (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
                 ]));
 
                 messages.push(wasm_execute(
@@ -1222,11 +1305,13 @@ fn process_receive(
                     vec![],
                 )?);
             } else {
-                events.push(Event::new("recv_packet").add_attributes([
-                    ("packet", serde_json::to_string(&packet).unwrap()),
-                    ("relayer", relayer.clone()),
-                    // TODO(aeryz): should this be hex?
-                    ("relayer_msg", hex::encode(&relayer_msg)),
+                events.push(Event::new(events::packet::RECV).add_attributes([
+                    (
+                        events::attribute::PACKET,
+                        serde_json::to_string(&packet).unwrap(),
+                    ),
+                    (events::attribute::MAKER, relayer.clone()),
+                    (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
                 ]));
 
                 messages.push(wasm_execute(
@@ -1279,8 +1364,14 @@ fn write_acknowledgement(
 
     Ok(
         Response::new().add_event(Event::new("write_acknowledgement").add_attributes([
-            ("packet", serde_json::to_string(&packet).unwrap()),
-            ("acknowledgement", hex::encode(acknowledgement)),
+            (
+                events::attribute::PACKET,
+                serde_json::to_string(&packet).unwrap(),
+            ),
+            (
+                events::attribute::ACKNOWLEDGEMENT,
+                hex::encode(acknowledgement),
+            ),
         ])),
     )
 }
@@ -1321,10 +1412,10 @@ fn send_packet(
     store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC)?;
 
     Ok(Response::new()
-        .add_event(
-            Event::new("send_packet")
-                .add_attribute("packet", serde_json::to_string(&packet).unwrap()),
-        )
+        .add_event(Event::new("send_packet").add_attribute(
+            events::attribute::PACKET,
+            serde_json::to_string(&packet).unwrap(),
+        ))
         .set_data(to_json_binary(&packet)?))
 }
 
