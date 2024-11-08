@@ -224,6 +224,7 @@
         "noSecrets": "off",
         "noProcessEnv": "off",
         "useStrictMode": "off",
+        "useExplicitType": "off",
         "noNestedTernary": "off",
         "noExportedImports": "off",
         "useImportRestrictions": "off",

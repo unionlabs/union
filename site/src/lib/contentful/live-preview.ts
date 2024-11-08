@@ -49,11 +49,13 @@ export function setupLivePreview({
 }) {
   const callback = (updatedData: any) => {
     const domElement = findElementByDataAttribute({ entryId, fieldId })
-    if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
-      // Check if the content is text
-      if (typeof updatedData.fields[fieldId] === "string") {
-        domElement.textContent = updatedData.fields[fieldId]
-      }
+    if (
+      domElement &&
+      updatedData.fields &&
+      updatedData.fields[fieldId] &&
+      typeof updatedData.fields[fieldId] === "string"
+    ) {
+      domElement.textContent = updatedData.fields[fieldId]
     }
   }
   const unsubscribe = ContentfulLivePreview.subscribe({
