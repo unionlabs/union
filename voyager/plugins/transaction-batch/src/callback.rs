@@ -13,9 +13,10 @@ use voyager_message::{
         MakeMsgConnectionOpenTry, MakeMsgRecvPacket, VersionMessage, WaitForTrustedHeight,
     },
     core::{ChainId, ClientStateMeta, QueryHeight},
-    data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
+    data::{Data, IbcMessage, OrderedClientUpdates, WithChainId},
+    ibc_v1::IbcV1,
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    IbcSpec, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, promise, seq, Op};
 
@@ -45,7 +46,7 @@ impl MakeIbcMessagesFromUpdate {
         module_server: &Module,
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let updates @ OrderedMsgUpdateClients { .. } = datas
+        let updates @ OrderedClientUpdates { .. } = datas
             .into_iter()
             .exactly_one()
             .map_err(|found| serde_json::to_string(&found.collect::<Vec<_>>()).unwrap())
@@ -68,6 +69,7 @@ impl MakeIbcMessagesFromUpdate {
         let client_meta = voyager_client
             .client_meta(
                 module_server.chain_id.clone(),
+                IbcV1::ID,
                 QueryHeight::Latest,
                 self.client_id.clone(),
             )
@@ -98,7 +100,7 @@ pub fn make_msgs(
     client_id: ClientId,
     batches: Vec<Vec<BatchableEvent>>,
 
-    updates: Option<OrderedMsgUpdateClients>,
+    updates: Option<OrderedClientUpdates>,
 
     client_meta: ClientStateMeta,
     new_trusted_height: Height,
@@ -194,7 +196,7 @@ pub struct MakeBatchTransaction {
     // NOTE: We could technically fetch this from the information in the callback data messages, but this is just so much easier
     pub client_id: ClientId,
     /// Updates to send before the messages in this message's callback data. If this is `None`, then that means the updates have been included in a previous batch, and this will instead be enqueued with a WaitForTrustedHeight in front of it.
-    pub updates: Option<OrderedMsgUpdateClients>,
+    pub updates: Option<OrderedClientUpdates>,
 }
 
 impl MakeBatchTransaction {
@@ -243,7 +245,8 @@ impl MakeBatchTransaction {
                     seq([
                         call(WaitForTrustedHeight {
                             chain_id: chain_id.clone(),
-                            client_id: self.client_id,
+                            client_id: RawClientId(self.client_id.to_string()),
+                            ibc_version_id: IbcV1::ID,
                             height: required_consensus_height,
                         }),
                         data(WithChainId {

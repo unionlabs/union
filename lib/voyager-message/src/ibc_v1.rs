@@ -2,7 +2,6 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::model;
-use serde_json::Value;
 use subset_of::SubsetOf;
 use tracing::info;
 use unionlabs::{
@@ -26,7 +25,7 @@ use unionlabs::{
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
-use voyager_core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight};
+use voyager_core::{ClientType, IbcVersionId};
 
 use crate::IbcSpec;
 
@@ -36,7 +35,7 @@ impl IbcSpec for IbcV1 {
     const ID: IbcVersionId = IbcVersionId::new_static(IbcVersionId::V1_0_0);
 
     type ClientId = ClientId;
-    type Height = Height;
+    // type Height = Height;
 
     type StorePath = unionlabs::ics24::Path;
 
@@ -48,7 +47,7 @@ impl IbcSpec for IbcV1 {
         unionlabs::ics24::ClientStatePath { client_id }.into()
     }
 
-    fn consensus_state_path(client_id: Self::ClientId, height: Self::Height) -> Self::StorePath {
+    fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath {
         unionlabs::ics24::ClientConsensusStatePath { client_id, height }.into()
     }
 }

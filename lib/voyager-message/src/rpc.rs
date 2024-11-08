@@ -1,5 +1,3 @@
-use std::num::NonZeroU64;
-
 use jsonrpsee::{
     self,
     core::RpcResult,
@@ -7,26 +5,14 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
 };
 use macros::model;
-use serde::de::DeserializeOwned;
-use serde_json::{json, Value};
-use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
-    ibc::core::{
-        channel::channel::Channel, client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
-    ics24::Path,
-    id::{ChannelId, ClientId, ConnectionId, PortId},
-    ErrorReporter,
-};
+use serde_json::Value;
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
 use voyager_core::IbcVersionId;
-use voyager_vm::QueueError;
 
 use crate::{
     context::LoadedModulesInfo,
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
-    FATAL_JSONRPC_ERROR_CODE,
+    RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub mod server;
@@ -48,21 +34,11 @@ pub trait VoyagerRpc {
     // =========
 
     #[method(name = "queryLatestHeight")]
-    async fn query_latest_height(
-        &self,
-        chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
-        finalized: bool,
-    ) -> RpcResult<Height>;
+    async fn query_latest_height(&self, chain_id: ChainId, finalized: bool) -> RpcResult<Height>;
 
     #[method(name = "queryLatestTimestamp")]
     // TODO: Make this return a better type than i64
-    async fn query_latest_timestamp(
-        &self,
-        chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
-        finalized: bool,
-    ) -> RpcResult<i64>;
+    async fn query_latest_timestamp(&self, chain_id: ChainId, finalized: bool) -> RpcResult<i64>;
 
     // =================
     // IBC state queries
@@ -73,7 +49,7 @@ pub trait VoyagerRpc {
         &self,
         chain_id: ChainId,
         ibc_version_id: IbcVersionId,
-        client_id: ClientId,
+        client_id: RawClientId,
     ) -> RpcResult<ClientInfo>;
 
     #[method(name = "clientMeta")]
@@ -82,7 +58,7 @@ pub trait VoyagerRpc {
         chain_id: ChainId,
         ibc_version_id: IbcVersionId,
         at: QueryHeight,
-        client_id: ClientId,
+        client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta>;
 
     #[method(name = "queryIbcState")]
@@ -92,7 +68,7 @@ pub trait VoyagerRpc {
         ibc_version_id: IbcVersionId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcState<Bytes>>;
+    ) -> RpcResult<IbcState<Value>>;
 
     #[method(name = "queryIbcProof")]
     async fn query_ibc_proof(
@@ -165,19 +141,19 @@ pub struct IbcState<State> {
     pub state: State,
 }
 
-impl IbcState {
-    pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
-        serde_json::from_value(self.state.clone()).map_err(|e| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("error decoding IBC state: {}", ErrorReporter(e)),
-                Some(json!({
-                    "raw_state": self.state
-                })),
-            )
-        })
-    }
-}
+// impl IbcState {
+//     pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
+//         serde_json::from_value(self.state.clone()).map_err(|e| {
+//             ErrorObject::owned(
+//                 FATAL_JSONRPC_ERROR_CODE,
+//                 format!("error decoding IBC state: {}", ErrorReporter(e)),
+//                 Some(json!({
+//                     "raw_state": self.state
+//                 })),
+//             )
+//         })
+//     }
+// }
 
 #[model]
 pub struct IbcProof {

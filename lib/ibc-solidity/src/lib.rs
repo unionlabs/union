@@ -311,6 +311,7 @@ pub mod ibc {
                 Closed
             }
 
+            #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
             struct Channel {
                 ChannelState state;
                 uint32 connectionId;
