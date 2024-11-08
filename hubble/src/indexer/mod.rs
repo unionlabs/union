@@ -15,6 +15,7 @@ use api::{
 };
 use color_eyre::eyre::Report;
 use futures::{pin_mut, StreamExt};
+use serde::{Deserialize, Deserializer};
 use tokio::{task::JoinSet, time::sleep};
 use tracing::{error, info, info_span, Instrument};
 
@@ -36,7 +37,7 @@ pub struct Indexer<T: FetcherClient> {
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct FinalizerConfig {
     // how many blocks to wait until a block is considered finalized (ie. there should be no reorgs).
-    // compensates for height differences between rpcs
+    // this safety margin compensates for height differences between rpcs
     // default: 5
     #[serde(default = "FinalizerConfig::default_delay_blocks")]
     pub delay_blocks: usize,
@@ -45,6 +46,22 @@ pub struct FinalizerConfig {
     // default: true
     #[serde(default = "FinalizerConfig::default_reload")]
     pub reload: bool,
+    // minimum time (in seconds) between checking hash changes of non finalized blocks.
+    // default: 1 minute
+    #[serde(
+        rename = "min_seconds_between_monitor_checks",
+        default = "FinalizerConfig::default_min_duration_between_monitor_checks",
+        deserialize_with = "FinalizerConfig::deserialize_seconds"
+    )]
+    pub min_duration_between_monitor_checks: Duration,
+    // sleep time (in seconds) when there is nothing to finalize.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_later_sleep_seconds",
+        default = "FinalizerConfig::default_retry_later_sleep",
+        deserialize_with = "FinalizerConfig::deserialize_seconds"
+    )]
+    pub retry_later_sleep: Duration,
 }
 
 impl FinalizerConfig {
@@ -55,6 +72,22 @@ impl FinalizerConfig {
     pub fn default_reload() -> bool {
         true
     }
+
+    pub fn default_min_duration_between_monitor_checks() -> Duration {
+        Duration::from_secs(60)
+    }
+
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    fn deserialize_seconds<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let seconds = u64::deserialize(deserializer)?;
+        Ok(Duration::from_secs(seconds))
+    }
 }
 
 impl Default for FinalizerConfig {
@@ -62,6 +95,9 @@ impl Default for FinalizerConfig {
         FinalizerConfig {
             delay_blocks: FinalizerConfig::default_delay_blocks(),
             reload: FinalizerConfig::default_reload(),
+            min_duration_between_monitor_checks:
+                FinalizerConfig::default_min_duration_between_monitor_checks(),
+            retry_later_sleep: FinalizerConfig::default_retry_later_sleep(),
         }
     }
 }

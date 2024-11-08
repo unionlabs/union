@@ -1,6 +1,10 @@
 use std::fmt::Display;
 
-use aptos_rest_client::{aptos_api_types::Block, error::RestError, Transaction};
+use aptos_rest_client::{
+    aptos_api_types::{AptosErrorCode, Block},
+    error::RestError,
+    Transaction,
+};
 use axum::async_trait;
 use color_eyre::Result;
 use reqwest::StatusCode;
@@ -84,7 +88,17 @@ impl AptosFetcherClient {
         let result = self
             .provider
             .get_block_by_height(height, provider_id)
-            .await?;
+            .await
+            .map_err(|err| {
+                // map error to NoBlock if block not found, so it's not reported
+                if let RestError::Api(api_err) = &err {
+                    if let AptosErrorCode::BlockNotFound = api_err.error.error_code {
+                        return IndexerError::NoBlock(BlockSelection::Height(height));
+                    }
+                }
+                err.into()
+            })?;
+
         let block = result.response.inner();
 
         trace!(

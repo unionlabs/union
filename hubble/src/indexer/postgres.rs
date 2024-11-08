@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use sqlx::Postgres;
 use time::OffsetDateTime;
 
@@ -69,20 +71,23 @@ pub async fn get_block_range_to_finalize(
     })
 }
 
-pub async fn get_next_block_to_refresh(
+pub async fn get_next_block_to_monitor(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     indexer_id: IndexerId,
     consensus_height: BlockHeight,
+    min_duration_between_monitor_checks: Duration,
 ) -> sqlx::Result<Option<BlockHeight>> {
     let record = sqlx::query!(
         "
         SELECT height height
         FROM hubble.block_status
         WHERE indexer_id = $1 AND height > $2
+        AND updated_at < $3
         ORDER BY updated_at
         ",
         indexer_id,
         consensus_height as i64,
+        OffsetDateTime::now_utc() - min_duration_between_monitor_checks,
     )
     .fetch_optional(tx.as_mut())
     .await?;

@@ -222,12 +222,24 @@
                   types.submodule {
                     options = {
                       delay_blocks = mkOption {
-                        type = types.int;
+                        type = types.nullOr types.int;
+                        default = null;
                         description = "how many blocks to wait until a block is considered finalized (ie. there should be no reorgs). compensates for height differences between rpcs.";
                       };
                       reload = mkOption {
-                        type = types.bool;
+                        type = types.nullOr types.bool;
+                        default = null;
                         description = "reload all block data after a block is considered finalized. compensates for rpcs returning inconsistent results for non-finalized blocks.";
+                      };
+                      min_seconds_between_monitor_checks = mkOption {
+                        type = types.nullOr types.int;
+                        default = null;
+                        description = "minimum time (in seconds) between checking hash changes of non finalized blocks.";
+                      };
+                      retry_later_sleep_seconds = mkOption {
+                        type = types.nullOr types.int;
+                        default = null;
+                        description = "sleep time (in seconds) when there is nothing to finalize.";
                       };
                     };
                   }
