@@ -129,7 +129,7 @@ contract IBCConnectionTests is Test {
             msgAck_.connectionId,
             msg_.clientId,
             msg_.counterpartyClientId,
-            // The connectionId of the counterpary must be updated after the ack.
+            // The connectionId of the counterparty must be updated after the ack.
             msgAck_.counterpartyConnectionId
         );
         vm.resumeGasMetering();

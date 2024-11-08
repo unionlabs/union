@@ -66,7 +66,7 @@ pub mod events {
         pub const CLIENT_ID: &str = "client_id";
         pub const CONNECTION_ID: &str = "connection_id";
         pub const CHANNEL_ID: &str = "channel_id";
-        pub const COUNTERPARTY_CHANNEL_ID: &str = "counterpary_channel_id";
+        pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
         pub const HEIGHT: &str = "height";
         pub const PACKET: &str = "packet";
         pub const PACKETS: &str = "packets";
