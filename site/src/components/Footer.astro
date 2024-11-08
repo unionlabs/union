@@ -82,12 +82,12 @@ function isInternal(menuItem: { url: string }): boolean {
   <ul class="grid grid-cols-2 sm:grid-cols-4 gap-12 list-none py-4">
     {
       menuSections.map((menuSection) => (
-        <section>
+        <li>
           <h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">
             {menuSection.title}
           </h3>
           {menuSection.items.map((menuItem) => (
-            <li>
+            <div>
               <a
                 href={menuItem.url}
                 target={isInternal(menuItem) ? "" : "_blank"}
@@ -96,9 +96,9 @@ function isInternal(menuItem: { url: string }): boolean {
               >
                 {menuItem.name}
               </a>
-            </li>
+            </div>
           ))}
-        </section>
+        </li>
       ))
     }
   </ul>

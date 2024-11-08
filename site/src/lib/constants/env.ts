@@ -16,7 +16,9 @@ function getEnvVariable<T extends keyof ImportMetaEnv>(
 ): ImportMetaEnv[T] {
   const value = import.meta.env[name]
   if (optional && value === undefined) {
-    console.warn(`Missing environment variable ${name}`)
+    if (import.meta.env.MODE === "development") {
+      console.warn(`Missing environment variable ${name}`)
+    }
     return undefined
   }
   return value ?? raise(`Missing environment variable ${name}`)
