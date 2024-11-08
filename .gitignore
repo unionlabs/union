@@ -81,10 +81,5 @@ move/*/build
 docs/generated
 dev-dist
 .zed
-
-<<<<<<< HEAD
 rust-ice*
 .docs
-=======
->>>>>>> 1c4be81c6 (fix: conflict)
-rustc-ice*
