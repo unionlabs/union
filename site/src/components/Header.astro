@@ -201,6 +201,12 @@ const menuItems = [
                   "text-normal flex items-center gap-1.5 flex-1 uppercase font-mono font-bold",
                   { "text-accent-500": menuItem.highlight },
                 ]}
+                {...(menuItem.external
+                  ? {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    }
+                  : {})}
               >
                 {menuItem.name}
                 {menuItem.external ? (
@@ -266,6 +272,12 @@ const menuItems = [
               <a
                 href={menuItem.url}
                 class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono"
+                {...(menuItem.external
+                  ? {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    }
+                  : {})}
               >
                 {menuItem.name}
                 {menuItem.external ? (
