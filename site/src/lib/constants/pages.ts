@@ -10,9 +10,9 @@ export const pathConfigMap = {
   "/learn": {
     index: 2,
     colors: {
-      primary: hexToWebGL("#00b5ff"),
-      mid: hexToWebGL("#0033ff"),
-      dark: hexToWebGL("#04c3fd")
+      primary: hexToWebGL("#0B1A40"),
+      mid: hexToWebGL("#030711"),
+      dark: hexToWebGL("#000102")
     }
   },
   "/ecosystem": {
