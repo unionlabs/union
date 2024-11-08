@@ -201,10 +201,22 @@ const currentPath = pathname.slice(1) // remove the first "/"
   }
 
   document.addEventListener("astro:before-preparation", (event: any) => {
-    const fromConfig = pathConfigMap[event.from.pathname] ?? pathConfigMap["/"];
-    const toConfig = pathConfigMap[event.to.pathname] ?? pathConfigMap["/"];
+    const getBasePath = (path: string) => {
+      const firstSegment = path.split("/")[1];
+      return firstSegment ? `/${firstSegment}` : "/";
+    };
 
-    if (toConfig.index && toConfig.index !== fromConfig.index) {
+    const fromBasePath = getBasePath(event.from.pathname);
+    const toBasePath = getBasePath(event.to.pathname);
+
+    const fromConfig = pathConfigMap[fromBasePath] ?? pathConfigMap["/"];
+    const toConfig = pathConfigMap[toBasePath] ?? pathConfigMap["/"];
+    
+    if (
+      toConfig.index &&
+      toConfig.index !== fromConfig.index &&
+      fromBasePath !== toBasePath
+    ) {
       isNavigating = true;
       navigationDirection =
         toConfig.index > fromConfig.index ? "left" : "right";
