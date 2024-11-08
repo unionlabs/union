@@ -13,7 +13,7 @@ import {
 } from "@aptos-labs/ts-sdk"
 import { err, ok, type Result, ResultAsync } from "neverthrow"
 import { isValidBech32Address } from "../utilities/address.ts"
-import type { AptosBrowserWallet, AuthAccess } from "#aptos/wallet.ts"
+import type { AptosBrowserWallet, AuthAccess } from "./wallet.ts"
 import { bech32AddressToHex, bech32ToBytes, hexToBytes } from "../convert.ts"
 
 export type { AptosAccount, AptosTransferParams, AptosPublicAccountInfo }
