@@ -5,6 +5,7 @@ import type { BlogPost } from "#/lib/types.ts"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 
 export const prerender = false
 
@@ -102,6 +103,7 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         class="font-mono"
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
+        set:html={documentToHtmlString(blogPost.fields.content)}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
       >
       </article>
