@@ -140,14 +140,14 @@ impl Provider {
             .map(Into::into)
     }
 
-    pub async fn commit(
+    pub async fn block(
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<tendermint_rpc::endpoint::commit::Response>, tendermint_rpc::error::Error>
+    ) -> Result<RpcResult<tendermint_rpc::endpoint::block::Response>, tendermint_rpc::error::Error>
     {
         self.rpc_client
-            .race(provider_id.map(Into::into), |c| c.commit(height as u32))
+            .race(provider_id.map(Into::into), |c| c.block(height as u32))
             .await
             .map(Into::into)
     }
