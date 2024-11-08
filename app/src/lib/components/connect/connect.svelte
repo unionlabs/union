@@ -1,5 +1,6 @@
 <script lang="ts">
 import { setMode } from "mode-watcher"
+import { derived } from "svelte/store"
 import { navigating } from "$app/stores"
 import Sun from "virtual:icons/lucide/sun"
 import Moon from "virtual:icons/lucide/moon"
@@ -15,26 +16,31 @@ import { showUnsupported } from "$lib/stores/user.ts"
 import { crtEffectEnabled } from "$lib/stores/user.ts"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
+import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
+import { onMount } from "svelte"
 
 let buttonText: string
-let connectedWallets = 0
 
-$: if (
-  $sepoliaStore.connectionStatus === "connected" &&
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected"
-  connectedWallets = 2
-} else if (
-  $sepoliaStore.connectionStatus === "connected" ||
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected"
-  connectedWallets = 1
+let connectedWallets = derived(
+  [sepoliaStore, cosmosStore, aptosStore],
+  ([$sepoliaStore, $cosmosStore, $aptosStore]) => {
+    return [
+      $sepoliaStore.connectionStatus,
+      $cosmosStore.connectionStatus,
+      $aptosStore.connectionStatus
+    ].filter(status => status === "connected").length
+  }
+)
+
+onMount(() => {
+  console.info($aptosStore)
+})
+
+$: if ($connectedWallets >= 1) {
+  buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
 } else {
   buttonText = "Connect Wallet"
-  connectedWallets = 0
 }
 
 let sheetOpen = false
@@ -46,7 +52,7 @@ $: if ($navigating) sheetOpen = false
     <Button
       builders={[builder]}
       class={cn(
-        connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
+        $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
         "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
         "hover:bg-cyan-300/90",
         $sepoliaStore.connectionStatus === "connected" &&
@@ -59,8 +65,9 @@ $: if ($navigating) sheetOpen = false
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span class={cn(connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
-        {connectedWallets === 1 ? "1/2" : ""}
+      <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
+        <!-- {connectedWallets === 1 ? "1/2" : ""} -->
+        {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
       </span>
     </Button>
   </Sheet.Trigger>
@@ -88,6 +95,16 @@ $: if ($navigating) sheetOpen = false
         </h2>
       </Sheet.Title>
     </Sheet.Header>
+    <Connection
+      address={$aptosStore.address}
+      chain="aptos"
+      chainWalletsInformation={aptosWalletsInformation}
+      connectStatus={$aptosStore.connectionStatus}
+      connectedWalletId={$aptosStore.connectedWallet}
+      hoverState={$aptosStore.hoverState}
+      onConnectClick={aptosStore.connect}
+      onDisconnectClick={aptosStore.disconnect}
+    />
     <Connection
       address={$sepoliaStore.address}
       chain="evm"

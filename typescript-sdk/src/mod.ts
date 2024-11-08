@@ -1,12 +1,12 @@
 export type * from "./types.ts"
 export {
+  hexToBytes,
   bytesToHex,
+  bech32ToBytes,
   bech32AddressToHex,
   hexAddressToBech32,
   bytesToBech32Address,
-  bech32ToBech32Address,
-  hexStringToUint8Array,
-  uint8ArrayToHexString
+  bech32ToBech32Address
 } from "./convert.ts"
 import {
   evmChains,
@@ -26,6 +26,13 @@ import {
   createCosmosClient,
   type CosmosClientParameters
 } from "./client/cosmos.ts"
+import {
+  aptosChainId,
+  type AptosChainId,
+  createAptosClient,
+  type AptosBrowserWallet,
+  type AptosClientParameters
+} from "./aptos/client.ts"
 export {
   truncateAddress,
   isValidEvmTxHash,
@@ -36,7 +43,7 @@ export {
 } from "./utilities/address.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
-import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
+import type { ChainId, TransferAssetsParameters } from "./types.ts"
 export { http, fallback } from "viem"
 /**
  * @module
@@ -58,6 +65,7 @@ export { http, fallback } from "viem"
 
 type EvmClient = ReturnType<typeof createEvmClient>
 type CosmosClient = ReturnType<typeof createCosmosClient>
+type AptosClient = ReturnType<typeof createAptosClient>
 
 /**
  * @example
@@ -80,10 +88,10 @@ export function createUnionClient(
  * @example
  * ```ts
  * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
- * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ * import { createUnionClient, hexToBytes } from "@union/client"
  *
  * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
- *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
  *   "stride"
  * )
  *
@@ -98,6 +106,29 @@ export function createUnionClient(
   parameters: CosmosClientParameters
 ): ReturnType<typeof createCosmosClient>
 
+// TODO(kaancaglan): Change the example when example is actually done.
+/**
+ * @example
+ * ```ts
+ * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+ * import { createUnionClient, hexToBytes } from "@union/client"
+ *
+ * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
+ *   "stride"
+ * )
+ *
+ * const client = createUnionClient({
+ *   account: cosmosAccount,
+ *   chainId: "stride-internal-1",
+ *   transport: http("stride.testnet-1.stridenet.co"),
+ * })
+ * ```
+ */
+export function createUnionClient(
+  parameters: AptosClientParameters
+): ReturnType<typeof createAptosClient>
+
 /**
  * @example
  * ```ts
@@ -111,12 +142,23 @@ export function createUnionClient(
  * })
  * ```
  */
-export function createUnionClient(parameters: EvmClientParameters | CosmosClientParameters) {
+/**
+ * Create Union Client for EVM, Cosmos, and Aptos
+ */
+export function createUnionClient(
+  parameters: EvmClientParameters | CosmosClientParameters | AptosClientParameters
+):
+  | ReturnType<typeof createEvmClient>
+  | ReturnType<typeof createCosmosClient>
+  | ReturnType<typeof createAptosClient> {
   if (evmChainId.includes(parameters.chainId)) {
     return createEvmClient(parameters as EvmClientParameters)
   }
   if (cosmosChainId.includes(parameters.chainId)) {
     return createCosmosClient(parameters as CosmosClientParameters)
+  }
+  if (aptosChainId.includes(parameters.chainId)) {
+    return createAptosClient(parameters as AptosClientParameters)
   }
   throw new Error("Invalid chain id")
 }
@@ -126,10 +168,10 @@ export function createUnionClient(parameters: EvmClientParameters | CosmosClient
  * ```ts
  * import { privateKeyToAccount } from "viem/accounts"
  * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
- * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ * import { createUnionClient, hexToBytes } from "@union/client"
  *
  * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
- *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
  *   "stride"
  * )
  *
@@ -150,17 +192,37 @@ export function createUnionClient(parameters: EvmClientParameters | CosmosClient
 export function createMultiUnionClient<TChainId extends ChainId>(
   parameters: Array<
     {
-      [KChainId in TChainId]: (EvmClientParameters | CosmosClientParameters) & { chainId: KChainId }
+      [KChainId in TChainId]: (
+        | EvmClientParameters
+        | CosmosClientParameters
+        | AptosClientParameters
+      ) & { chainId: KChainId }
     }[TChainId]
   >
-): { [KChainId in TChainId]: KChainId extends EvmChainId ? EvmClient : CosmosClient } {
+): {
+  [KChainId in TChainId]: KChainId extends EvmChainId
+    ? EvmClient
+    : KChainId extends CosmosChainId
+      ? CosmosClient
+      : KChainId extends AptosChainId
+        ? AptosClient
+        : never
+} {
   return parameters.reduce(
     (accumulator, parameter) => {
       // @ts-expect-error
       accumulator[parameter.chainId] = createUnionClient(parameter)
       return accumulator
     },
-    {} as { [KChainId in TChainId]: KChainId extends EvmChainId ? EvmClient : CosmosClient }
+    {} as {
+      [KChainId in TChainId]: KChainId extends EvmChainId
+        ? EvmClient
+        : KChainId extends CosmosChainId
+          ? CosmosClient
+          : KChainId extends AptosChainId
+            ? AptosClient
+            : never
+    }
   )
 }
 
@@ -169,11 +231,15 @@ export {
   evmChainId,
   type ChainId,
   cosmosChainId,
+  aptosChainId,
   type EvmChainId,
   type CosmosChainId,
+  type AptosChainId,
   evmChainFromChainId,
   type EvmClientParameters,
+  type AptosBrowserWallet,
   type CosmosClientParameters,
+  type AptosClientParameters,
   type TransferAssetsParameters,
   sepolia,
   scrollSepolia,

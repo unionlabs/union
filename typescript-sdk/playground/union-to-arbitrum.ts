@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
+import { hexToBytes } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
@@ -26,7 +26,7 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "union"
 )
 

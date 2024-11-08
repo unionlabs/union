@@ -1,6 +1,6 @@
 import { ofetch } from "ofetch"
+import type { ChainId } from "../../types.ts"
 import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
-import type { ChainId } from "../../client/types.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 

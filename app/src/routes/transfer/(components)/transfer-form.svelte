@@ -1,20 +1,16 @@
 <script lang="ts">
 import {
+  http,
   type ChainId,
   createPfmMemo,
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
   evmChainFromChainId,
-  bech32ToBech32Address
+  bech32ToBech32Address,
+  type AptosBrowserWallet,
+  type TransferAssetsParameters
 } from "@unionlabs/client"
-import {
-  http,
-  custom,
-  switchChain,
-  getConnectorClient,
-  waitForTransactionReceipt
-} from "@wagmi/core"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
@@ -44,16 +40,20 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
+import { aptosStore, userAddressAptos, getAptosWallet } from "$lib/wallet/aptos"
 import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
+import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
 
 export let chains: Array<Chain>
+
 let userAddress: Readable<UserAddresses> = derived(
-  [userAddrCosmos, userAddrEvm],
-  ([$userAddrCosmos, $userAddrEvm]) => ({
+  [userAddrCosmos, userAddrEvm, userAddressAptos],
+  ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
     evm: $userAddrEvm,
-    cosmos: $userAddrCosmos
+    cosmos: $userAddrCosmos,
+    aptos: $userAddressAptos
   })
 )
 
@@ -138,6 +138,9 @@ let receiver = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
         toPrefix: $toChain.addr_prefix
       })
     }
+    case "aptos": {
+      return $userAddress.aptos?.canonical
+    }
     default:
       return null
   }
@@ -212,13 +215,91 @@ const transfer = async () => {
     return toast.error("No evm wallet connected")
   if ($fromChain.rpc_type === "cosmos" && !$userAddress.cosmos)
     return toast.error("No cosmos wallet connected")
+
+  if ($fromChain.rpc_type === "aptos" && !$userAddress.aptos)
+    return toast.error("No aptos wallet connected")
+
   if (!$receiver) return toast.error("Invalid receiver")
 
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
 
-  if ($fromChain.rpc_type === "cosmos") {
+  /** --- APTOS START --- */
+  if ($fromChain?.rpc_type === "aptos") {
+    const { connectedWallet, connectionStatus } = get(aptosStore)
+    if ($userAddressAptos === null) return toast.error("No aptos user address found")
+
+    if (connectionStatus !== "connected" || !connectedWallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error("No wallet connected")
+      })
+      return
+    }
+
+    const wallet = getAptosWallet(connectedWallet)
+    if (!wallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error(`${connectedWallet} wallet not found`)
+      })
+      return
+    }
+
+    // @ts-ignore
+    transferState.set({ kind: "SWITCHING_TO_CHAIN" })
+
+    const rpcUrl = $fromChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain?.display_name}`)
+
+    if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
+      const chainInfo = await wallet.getNetwork()
+
+      if (chainInfo?.chainId.toString() !== $fromChainId) {
+        transferState.set({
+          kind: "SWITCHING_TO_CHAIN",
+          warning: new Error("Failed to switch chain")
+        })
+        return
+      }
+
+      // @ts-ignore
+      transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    }
+
+    if (stepBefore($transferState, "TRANSFERRING")) {
+      try {
+        const client = createUnionClient({
+          chainId: "2",
+          account: await wallet?.getAccount(),
+          transport: wallet as AptosBrowserWallet
+        })
+
+        const transferPayload = {
+          simulate: true,
+          receiver: $receiver,
+          amount: parsedAmount,
+          authAccess: "wallet",
+          denomAddress: $assetAddress,
+          destinationChainId: $toChain.chain_id as ChainId
+        } satisfies TransferAssetsParameters<"2">
+
+        const transfer = await client.transferAsset(transferPayload)
+
+        if (transfer.isErr()) throw transfer.error
+        transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
+      } catch (error) {
+        if (error instanceof Error) {
+          // @ts-ignore
+          transferState.set({ kind: "CONFIRMING_TRANSFER", error })
+        }
+        return
+      }
+    }
+
+    /** --- APTOS END --- */
+  } else if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -280,9 +361,6 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        // const cosmosOfflineSigner = (await wallet.getOfflineSignerAuto($fromChainId, {
-        //   disableBalanceCheck: false
-        // })) as OfflineSigner
         const cosmosOfflineSigner = await getCosmosOfflineSigner({
           connectedWallet,
           chainId: $fromChainId
@@ -490,6 +568,7 @@ const transfer = async () => {
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
+
 onMount(() => {
   const source = $page.url.searchParams.get("source")
   const asset = $page.url.searchParams.get("asset")
@@ -714,7 +793,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
       )
     ] as Array<Step>
   }
-  if ($fromChain?.rpc_type === "cosmos") {
+  if ($fromChain?.rpc_type === "cosmos" || $fromChain?.rpc_type === "aptos") {
     return [
       stateToStatus(
         $transferState,
@@ -794,27 +873,27 @@ const resetInput = () => {
 
 <div
   class={cn(
-    "size-full duration-1000 transition-colors dark:bg-muted",
-    $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "",
+    'size-full duration-1000 transition-colors dark:bg-muted',
+    $transferState.kind !== 'PRE_TRANSFER' ? 'bg-black/60' : '',
   )}
 ></div>
 
 <div class="cube-scene" id="scene">
   <div
-    class={cn("cube ", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}
+    class={cn('cube ', $transferState.kind !== 'PRE_TRANSFER' ? 'cube--flipped' : 'no-transition')}
   >
     <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">
       UNION TESTNET
     </div>
-    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
+    <Card.Root class={cn($transferState.kind === 'PRE_TRANSFER' ? 'no-transition' : 'cube-front')}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-      <Card.Content class={cn("flex flex-col gap-4")}>
+      <Card.Content class={cn('flex flex-col gap-4')}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenFromChain}>
-            {$fromChain?.display_name ?? "Select chain"}
+            {$fromChain?.display_name ?? 'Select chain'}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
@@ -826,7 +905,7 @@ const resetInput = () => {
             bind:dialogOpen={dialogOpenToChain}
             disabled={!($sendableBalances && $fromChain)}
           >
-            {$toChain?.display_name ?? "Select chain"}
+            {$toChain?.display_name ?? 'Select chain'}
           </ChainButton>
         </section>
         <section>
@@ -849,7 +928,7 @@ const resetInput = () => {
                       ? supportedAsset.display_symbol
                       : $assetSymbol
                         ? $assetSymbol
-                        : "Select Asset",
+                        : 'Select Asset',
                     12,
                   )}
                 </div>
@@ -860,7 +939,7 @@ const resetInput = () => {
           {:else}
             Select a chain to send from.
           {/if}
-          {#if $assetSymbol !== "" && $sendableBalances !== null && $asset?.address}
+          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
               <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b>
               balance on
@@ -880,8 +959,8 @@ const resetInput = () => {
             inputmode="decimal"
             bind:value={amount}
             class={cn(
-              !balanceCoversAmount && amount ? "border-red-500" : "",
-              "focus:ring-0 focus-visible:ring-0 disabled:bg-black/30",
+              !balanceCoversAmount && amount ? 'border-red-500' : '',
+              'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
             )}
             disabled={!$asset}
             maxlength={64}
@@ -902,7 +981,7 @@ const resetInput = () => {
                   autocorrect="off"
                   bind:value={address}
                   class="disabled:bg-black/30"
-                  disabled={inputState === "locked"}
+                  disabled={inputState === 'locked'}
                   id="address"
                   on:input={handleInput}
                   placeholder="Select chain"
@@ -928,17 +1007,19 @@ const resetInput = () => {
       </Card.Content>
       <Card.Footer class="flex flex-col gap-4 items-start">
         <Button
-          disabled={!amount ||
+          disabled={
+          !amount ||
             !$asset ||
             !$toChainId ||
             !$receiver ||
             !$assetSymbol ||
             !$fromChainId ||
             !amountLargerThanZero ||
-            // >= because need some sauce for gas
-            !balanceCoversAmount}
+          // >= because need some sauce for gas
+          !balanceCoversAmount
+}
           on:click={async event => {
-            event.preventDefault()
+             event.preventDefault()
             transferState.set({ kind: "FLIPPING" })
             await sleep(1200)
             transfer()
@@ -950,12 +1031,12 @@ const resetInput = () => {
       </Card.Footer>
     </Card.Root>
 
-    {#if $transferState.kind !== "PRE_TRANSFER"}
-      <Card.Root class={cn("cube-back p-6")}>
+    {#if $transferState.kind !== 'PRE_TRANSFER'}
+      <Card.Root class={cn('cube-back p-6')}>
         {#if $fromChain}
           <Stepper
             steps={stepperSteps}
-            on:cancel={() => transferState.set({ kind: "PRE_TRANSFER" })}
+            on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
             onRetry={() => {
               transferState.update(ts => {
                 // @ts-ignore

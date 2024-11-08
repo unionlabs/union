@@ -19,10 +19,13 @@ _: {
     {
       packages = {
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yrqA4Qp7iiGvSo/Xk0G5adXdVqgK8nGYGdXtvLp7EPk=";
+          npmDepsHash = "sha256-8UgNUADgd8yrpePKD/DzDrwdiXhFTRBJKbD64GW7QNU=";
           src = ./.;
           sourceRoot = "app";
-          npmFlags = [ "--enable-pre-post-scripts" ];
+          npmFlags = [
+            "--loglevel=verbose"
+            "--enable-pre-post-scripts"
+          ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
           nativeBuildInputs = deps;

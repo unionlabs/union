@@ -4,7 +4,7 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { createUnionClient } from "#mod.ts"
 import { raise } from "#utilities/index.ts"
-import { hexStringToUint8Array } from "#convert.ts"
+import { hexToBytes } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /* `bun playground/union-to-union.ts --private-key "..."` --estimate-gas */
@@ -22,7 +22,7 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "union"
 )
 

@@ -12,7 +12,7 @@ import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
-export let chain: "cosmos" | "evm"
+export let chain: "cosmos" | "evm" | "aptos"
 type T = $$Generic<typeof chain>
 
 type $$Props = Props<T>
@@ -29,10 +29,10 @@ $: connectText =
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
-      : truncateUnionAddress(address, -1)
-    : chain === "evm"
-      ? "EVM"
-      : "Cosmos"
+      : chain === "aptos"
+        ? address
+        : truncateUnionAddress(address, -1)
+    : ""
 
 let copyClicked = false
 const toggleCopy = () => (copyClicked = !copyClicked)
@@ -115,7 +115,11 @@ let metamaskAlertDialogOpen = false
               metamaskAlertDialogOpen = true
             }
 
-            if (connectStatus === "disconnected") return onConnectClick(walletIdentifier)
+            if (connectStatus === "disconnected") {
+              console.info("disconnected, calling onConnectClick")
+              return onConnectClick(walletIdentifier)
+            }
+            console.info("connected, calling onDisconnectClick")
             return onDisconnectClick()
           }}
         >

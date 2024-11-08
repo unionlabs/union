@@ -1,5 +1,6 @@
 import { isAddress, type Address } from "viem"
 import { raise } from "$lib/utilities/index.ts"
+import { getAptosChainBalances } from "./aptos.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { createQueries } from "@tanstack/svelte-query"
 import { erc20ReadMulticall } from "./evm/multicall.ts"
@@ -23,7 +24,8 @@ export function userBalancesQuery({
         "balances",
         chain.chain_id,
         userAddr?.evm?.normalized,
-        userAddr?.cosmos?.normalized
+        userAddr?.cosmos?.normalized,
+        userAddr.aptos?.canonical
       ],
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
@@ -78,6 +80,13 @@ export function userBalancesQuery({
           })
 
           return getCosmosChainBalances({ url, walletAddress: bech32Address })
+        }
+
+        if (chain.rpc_type === "aptos" && userAddr.aptos) {
+          const url = chain.rpcs.filter(rpc => rpc.type === "rpc").at(0)?.url
+          if (!url) raise(`No RPC available for chain ${chain.chain_id}`)
+
+          return getAptosChainBalances({ url, walletAddress: userAddr.aptos.canonical })
         }
 
         return []

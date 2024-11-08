@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.27",
+  "version": "0.0.39",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -19,39 +19,41 @@
   "scripts": {
     "build": "tsup --config='tsup.config.ts'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "publish-jsr": "bun ./scripts/publish.ts",
-    "publish-jsr-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
     "test": "vitest --run",
     "test:typecheck": "vitest --typecheck.only",
     "check-package": "bunx publint@latest --strict && bunx @arethetypeswrong/cli --pack --ignore-rules 'cjs-resolves-to-esm'",
     "clean": "rm -rf dist node_modules",
+    "knip": "knip --config='knip.json'",
     "postinstall": "patch-package",
-    "prepublish": "bun run build"
+    "prepublish": "bun run build",
+    "typedoc": "bun x typedoc@latest --out .docs ./src/mod.ts"
   },
   "dependencies": {
-    "@cosmjs/tendermint-rpc": "^0.32.4",
+    "@scure/base": "^1.1.9",
+    "neverthrow": "^8.1.1",
+    "ofetch": "^1.4.1",
+    "patch-package": "^8.0.0",
+    "@aptos-labs/ts-sdk": "^1.31.0",
+    "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "0.32.4",
-    "@cosmjs/amino": "^0.32.4",
-    "@scure/base": "^1.1.8",
-    "patch-package": "^8.0.0",
-    "neverthrow": "^8.0.0",
-    "ofetch": "^1.3.4",
-    "viem": "^2.21.8"
+    "@cosmjs/tendermint-rpc": "^0.32.4",
+    "viem": "^2.21.43"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.9",
-    "@types/node": "^22.5.5",
+    "@types/bun": "^1.1.13",
+    "@types/node": "^22.9.0",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "tsup": "^8.3.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
-    "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.1"
+    "knip": "^5.36.3",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite-tsconfig-paths": "^5.1.0",
+    "vitest": "^2.1.4"
   },
   "repository": {
     "type": "git",
@@ -63,5 +65,6 @@
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "keywords": ["web3", "cross-chain", "ibc"]
 }

@@ -73,3 +73,21 @@ export async function getCosmosAccountTransactions({
     total: Number.parseInt(sent.result.total_count) + Number.parseInt(received.result.total_count)
   }
 }
+
+export async function getAptosAccountTransactions({
+  address,
+  rpcUrl
+}: { address: string; rpcUrl: string }) {
+  const response = await fetch(`${rpcUrl}/accounts/${address}/transactions`, {
+    headers: queryHeaders
+  })
+  const data = (await response.json()) as
+    // TODO: add types
+    Array<any> | { error_code: string; message: string; vm_error_code: null }
+
+  if (!Array.isArray(data)) {
+    return data
+  }
+
+  return data
+}

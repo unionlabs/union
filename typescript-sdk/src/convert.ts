@@ -1,21 +1,8 @@
 import { isHex } from "viem"
-import { bech32, hex } from "@scure/base"
 import { raise } from "./utilities/index.ts"
+import { bech32, hex, bytes } from "@scure/base"
 import type { Bech32Address, HexAddress } from "./types.ts"
 import { isValidBech32Address } from "./utilities/address.ts"
-
-/**
- * convert a byte array to a hex string
- * @example
- * ```ts
- * bytesToHex(new Uint8Array([1, 2, 3]))
- * ```
- */
-export const bytesToHex = (byteArray: Uint8Array): string =>
-  `${Array.from(byteArray)
-    .map(index => index.toString(16).padStart(2, "0"))
-    .join("")
-    .toLowerCase()}`
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
@@ -46,7 +33,7 @@ export function hexAddressToBech32({
   bech32Prefix
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
   if (!isHex(address)) raise("Invalid hex address")
-  const words = bech32.toWords(hexStringToUint8Array(address.slice(2)))
+  const words = bech32.toWords(hexToBytes(address))
   return bech32.encode(bech32Prefix, words, false)
 }
 
@@ -91,22 +78,21 @@ export function bech32ToBytes(bech32Address: string): Uint8Array {
 }
 
 /**
- * convert a hex string to a byte array
+ * convert a byte array to a hex string
  * @example
  * ```ts
- * hexStringToUint8Array("0x779877A7B0D9E8603169DdbD7836e478b4624789")
+ * bytesToHex(new Uint8Array([1, 2, 3]))
  * ```
  */
-export const uint8ArrayToHexString = (uintArray: Uint8Array): string => hex.encode(uintArray)
+export const bytesToHex = (bytes: Uint8Array): string => hex.encode(bytes)
 
 /**
  * convert a hex string to a byte array
  * @example
  * ```ts
- * hexStringToUint8Array("0x779877A7B0D9E8603169DdbD7836e478b4624789")
+ * hexToBytes("0x779877A7B0D9E8603169DdbD7836e478b4624789")
  * ```
  */
-export function hexStringToUint8Array(hexString: string): Uint8Array {
-  hexString = hexString.indexOf("0x") === 0 ? hexString.slice(2) : hexString
-  return hex.decode(hexString)
+export function hexToBytes(hexString: string): Uint8Array {
+  return bytes("hex", hexString.indexOf("0x") === 0 ? hexString.slice(2) : hexString)
 }

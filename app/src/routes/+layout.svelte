@@ -63,10 +63,8 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
-    <DeprecationNotice/>
-    <!--
+    <!-- <DeprecationNotice /> -->
     <slot />
-    !-->
   </div>
   <Footer />
 

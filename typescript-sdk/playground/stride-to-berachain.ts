@@ -3,12 +3,11 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
-import { createUnionClient } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
+import { hexToBytes } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import type { TransferAssetsParameters } from "#client/types.ts"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/stride-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -27,7 +26,7 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "stride"
 )
 

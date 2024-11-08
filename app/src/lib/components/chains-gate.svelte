@@ -27,12 +27,8 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       display_name = chain.display_name
     }
 
-    let rpc_type: "evm" | "cosmos" = "cosmos"
-    if (chain.rpc_type !== "evm" && chain.rpc_type !== "cosmos") {
-      console.error("invalid rpc type for chain", chain)
-    } else {
-      rpc_type = chain.rpc_type
-    }
+    let rpcType = chain.rpc_type
+    if (!rpcType) console.error("no rpc type found")
 
     let addr_prefix = ""
     if (chain.addr_prefix === null) {
@@ -71,7 +67,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       enabled_staging: chain.enabled_staging,
       ucs1_configurations,
       display_name,
-      rpc_type,
+      rpc_type: rpcType,
       rpcs: chain.rpcs,
       addr_prefix,
       testnet: !!chain.testnet,

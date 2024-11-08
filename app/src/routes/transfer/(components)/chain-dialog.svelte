@@ -2,29 +2,27 @@
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { Badge } from "$lib/components/ui/badge"
-import type { UserAddresses } from "$lib/types.ts"
 import * as Dialog from "$lib/components/ui/dialog"
+import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 
 export let kind: "from" | "to"
 export let dialogOpen = false
 export let onChainSelect: (newSelectedChain: string) => void
-export let chains: Array<{ chain_id: string; display_name: string; rpc_type: string }>
+export let chains: Array<Chain>
 export let selectedChain: string
 export let userAddress: UserAddresses | null
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 
-function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
-  if (chain.rpc_type === "evm" && !userAddress?.evm) {
-    toast.info(`Connect EVM wallet`)
-    return
-  }
+function selectChain(chain: Chain) {
+  if (chain.rpc_type === "aptos" && !userAddress?.aptos) return toast.info(`Connect Aptos wallet`)
 
-  if (chain.rpc_type === "cosmos" && !userAddress?.cosmos) {
-    toast.info(`Connect Cosmos wallet`)
-    return
-  }
+  if (chain.rpc_type === "evm" && !userAddress?.evm) return toast.info(`Connect EVM wallet`)
+
+  if (chain.rpc_type === "cosmos" && !userAddress?.cosmos)
+    return toast.info(`Connect Cosmos wallet`)
+
   onChainSelect(chain.chain_id)
   dialogOpen = false
 }
@@ -60,7 +58,10 @@ function selectChain(chain: { chain_id: string; display_name: string; rpc_type: 
               <span class="text-lg font-bold">
                 {chain.display_name}
               </span>
-              {#if (chain.rpc_type === 'evm' && !userAddress?.evm) || (chain.rpc_type === 'cosmos' && !userAddress?.cosmos)}
+              {#if (chain.rpc_type === 'evm' && !userAddress?.evm) 
+                || (chain.rpc_type === 'cosmos' && !userAddress?.cosmos)
+                || (chain.rpc_type === 'aptos' && !userAddress?.aptos)
+              }
                 <Badge variant={selected ? 'secondary' : 'default'}>Disconnected</Badge>
               {:else}
                 <Badge variant={selected ? 'secondary' : 'default'}>Connected</Badge>

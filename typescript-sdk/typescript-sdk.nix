@@ -8,6 +8,18 @@ _: {
     }:
     {
       apps = {
+        ts-sdk-publish = {
+          type = "app";
+          program = unstablePkgs.writeShellApplication {
+            name = "ts-sdk-publish";
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              cd typescript-sdk
+              ${unstablePkgs.deno} publish
+            '';
+          };
+        };
         ts-sdk-check = {
           type = "app";
           program = unstablePkgs.writeShellApplication {

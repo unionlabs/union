@@ -17,6 +17,12 @@ export interface TransferAsset {
 export type UserAddresses = {
   cosmos: UserAddressCosmos | null
   evm: UserAddressEvm | null
+  aptos: UserAddressAptos | null
+}
+
+export type UserAddressAptos = {
+  canonical: string
+  bytes: Uint8Array
 }
 
 export type UserAddressCosmos = {
@@ -38,7 +44,7 @@ export type Chain = {
   testnet: boolean
   enabled: boolean
   enabled_staging: boolean
-  rpc_type: "evm" | "cosmos"
+  rpc_type: "evm" | "cosmos" | "aptos"
   rpcs: Array<{
     type: string
     url: string

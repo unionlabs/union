@@ -19,13 +19,13 @@ import {
 import { cosmosChainId } from "./cosmos.ts"
 import { err, ok, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
-import type { TransferAssetsParameters } from "./types.ts"
+import type { TransferAssetsParameters } from "../types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
-export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = [
+export const evmChainId = [
   `${sepolia.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
@@ -66,7 +66,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         relayContractAddress
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
-
+        console.log(`EVM client created for chainId: ${parameters.chainId}`)
         // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
         if (parameters.chainId === destinationChainId) {
           const transfer = await evmSameChainTransfer(client, {
@@ -114,7 +114,6 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           autoApprove,
           denomAddress,
           sourceChannel,
-          destinationChainId,
           relayContractAddress
         })
       },

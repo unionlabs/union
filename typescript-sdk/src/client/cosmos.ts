@@ -7,12 +7,11 @@ import {
   cosmosSameChainTransferSimulate
 } from "../transfer/cosmos.ts"
 import { err, type Result } from "neverthrow"
-import type { OfflineSigner } from "../types.ts"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
-import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { fallback, createClient, type HttpTransport } from "viem"
+import type { OfflineSigner, TransferAssetsParameters } from "../types.ts"
 
 export const cosmosChainId = [
   "mocha-4",
@@ -53,7 +52,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
+      if (sourceChainId === destinationChainId) {
         const transfer = await cosmosSameChainTransfer({
           rpcUrl,
           account,
@@ -158,8 +157,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      // Union to Union
-      if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
+      if (sourceChainId === destinationChainId) {
         return await cosmosSameChainTransferSimulate({
           receiver,
           account,
