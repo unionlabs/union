@@ -127,5 +127,5 @@ export function formatWaitTime(minutes: number) {
     return parts[0]
   }
 
-  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
+  return `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`
 }
