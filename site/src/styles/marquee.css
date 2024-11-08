@@ -1,10 +1,9 @@
 :root {
-  --size: clamp(10rem, 1rem + 30vmin, 20rem);
-  --gap: calc(var(--size) / 14);
+  --size: 12rem;
+  --gap: 2rem;
   --duration: 60s;
   --scroll-start: 0;
   --scroll-end: calc(-100% - var(--gap));
-
   --header-height: 68px;
 }
 
@@ -21,6 +20,14 @@
     hsl(0 0% 0% / 1) 80%,
     hsl(0 0% 0% / 0)
   );
+  -webkit-mask-image: linear-gradient(
+    var(--mask-direction),
+    to right,
+    hsl(0 0% 0% / 0),
+    hsl(0 0% 0% / 1) 20%,
+    hsl(0 0% 0% / 1) 80%,
+    hsl(0 0% 0% / 0)
+  );
 }
 
 .marquee__group {
@@ -29,8 +36,9 @@
   align-items: center;
   justify-content: space-around;
   gap: var(--gap);
-  min-width: 100%;
+  min-width: calc(100% + var(--gap));
   animation: scroll-x var(--duration) linear infinite;
+  -webkit-animation: scroll-x var(--duration) linear infinite;
 }
 
 .marquee--vertical {
@@ -44,6 +52,7 @@
 
 .marquee--vertical .marquee__group {
   animation-name: scroll-y;
+  -webkit-animation-name: scroll-y;
 }
 
 .marquee--reverse .marquee__group {
@@ -60,15 +69,40 @@
   }
 }
 
+@-webkit-keyframes scroll-x {
+  from {
+    transform: translateX(var(--scroll-start));
+  }
+  to {
+    transform: translateX(var(--scroll-end));
+  }
+}
+
+/* Container div for each image */
+.marquee__item {
+  width: var(--size); /* Set the desired width */
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Image styling to fit within the container */
 .marquee img {
-  display: grid;
-  place-items: center;
-  /* width: var(--size); */
-  padding: calc(var(--size) / 20);
-  max-height: 80px;
+  max-width: 100%;
+  max-height: 60px;
+  object-fit: contain;
 }
 
 @keyframes fade {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@-webkit-keyframes fade {
   to {
     opacity: 0;
     visibility: hidden;

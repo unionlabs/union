@@ -1,33 +1,36 @@
 // @ts-nocheck
 import * as glMatrix from "gl-matrix"
+import { pathConfigMap } from "#/lib/constants/pages.ts"
 
-export const pathConfigMap = {
-  "/": {
-    index: 1,
-    saturation: 100
-  },
-  "/learn": {
-    index: 2,
-    saturation: 90
-  },
-  "/ecosystem": {
-    index: 3,
-    saturation: 60
-  },
-  "/blog": {
-    index: 4,
-    saturation: 30
-  },
-  "/team": {
-    index: 5,
-    saturation: 0
-  }
-} as const
-
-const colorSet = {
-  primary: [0.71, 0.94, 0.99, 1.0], // Cyan
+let currentColors = {
+  primary: [0.71, 0.94, 0.99, 1.0],
   mid: [0.51, 0.94, 0.99, 1.0],
   dark: [0.37, 0.87, 0.99, 1.0]
+}
+
+let targetColors = {
+  primary: [0.71, 0.94, 0.99, 1.0],
+  mid: [0.51, 0.94, 0.99, 1.0],
+  dark: [0.37, 0.87, 0.99, 1.0]
+}
+
+let isTransitioning = false
+let transitionStartTime = 0
+const COLOR_TRANSITION_DURATION = 1200
+
+export function updateColors(newColors) {
+  targetColors = newColors
+  isTransitioning = true
+  transitionStartTime = performance.now()
+}
+
+function lerpColor(start, end, t) {
+  return [
+    start[0] + (end[0] - start[0]) * t,
+    start[1] + (end[1] - start[1]) * t,
+    start[2] + (end[2] - start[2]) * t,
+    start[3] + (end[3] - start[3]) * t
+  ]
 }
 
 let currentPlaneRotation = 0
@@ -64,21 +67,6 @@ export function rotateCamera(direction: "left" | "right") {
     targetPlaneRotation =
       currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
   }
-}
-
-let currentSaturation = 100
-let targetSaturation = 100
-let isSaturating = false
-let saturationStartTime = 0
-const SATURATION_DURATION = 1200
-
-export function updateSaturation(saturationValue: number) {
-  saturationValue = Math.max(0, Math.min(100, saturationValue))
-  if (saturationValue === currentSaturation) return
-
-  targetSaturation = saturationValue
-  isSaturating = true
-  saturationStartTime = performance.now()
 }
 
 let canvas: HTMLCanvasElement
@@ -178,8 +166,9 @@ class PerlinNoise {
 
 function initWebGL() {
   const currentPath = window.location.pathname
-  const initialConfig = pathConfigMap[currentPath] ?? { index: 0, saturation: 100 }
-  currentSaturation = initialConfig.saturation
+  const initialConfig = pathConfigMap[currentPath] ?? pathConfigMap["/"]
+  currentColors = initialConfig.colors
+  targetColors = initialConfig.colors
   canvas = document.querySelector("#waveCanvas") // Make sure we're using querySelector
   if (!canvas) {
     console.error("Canvas not found")
@@ -198,19 +187,12 @@ function initWebGL() {
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
   uniform float uYOffset;
-  uniform float uSaturation;
   varying lowp vec4 vColor;
-  
-  vec4 adjustSaturation(vec4 color, float saturation) {
-    float grey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-    return vec4(mix(vec3(grey), color.rgb, saturation), color.a);
-  }
   
   void main(void) {
     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
     float fadeAmount = smoothstep(-0.5, 0.5, uYOffset);
-    vec4 baseColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
-    vColor = adjustSaturation(baseColor, uSaturation);
+    vColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
   }
 `
 
@@ -276,8 +258,8 @@ function initWebGL() {
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset"),
-      saturation: gl.getUniformLocation(shaderProgram, "uSaturation")
+      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset")
+      // Remove saturation uniform
     }
   }
 
@@ -302,7 +284,7 @@ function initWebGL() {
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
-    const colors = generateColors(colorSet)
+    const colors = generateColors(currentColors)
     const colorBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
@@ -421,21 +403,29 @@ function initWebGL() {
       }
     }
 
-    // Handle saturation transition
-    if (isSaturating) {
-      const elapsed = performance.now() - saturationStartTime
-      const progress = Math.min(elapsed / SATURATION_DURATION, 1)
+    if (isTransitioning) {
+      const elapsed = performance.now() - transitionStartTime
+      const progress = Math.min(elapsed / COLOR_TRANSITION_DURATION, 1)
 
-      // Use same easing as rotation
+      // Smooth easing function
       let easeProgress =
         progress < 0.5 ? (progress * 2) ** EASE_POWER / 2 : 1 - (2 - progress * 2) ** EASE_POWER / 2
 
-      currentSaturation += (targetSaturation - currentSaturation) * easeProgress
+      // Update current colors
+      currentColors = {
+        primary: lerpColor(currentColors.primary, targetColors.primary, easeProgress),
+        mid: lerpColor(currentColors.mid, targetColors.mid, easeProgress),
+        dark: lerpColor(currentColors.dark, targetColors.dark, easeProgress)
+      }
 
       if (progress >= 1) {
-        currentSaturation = targetSaturation
-        isSaturating = false
+        isTransitioning = false
       }
+
+      // Update color buffer with new colors
+      const colors = generateColors(currentColors)
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
     }
 
     mouseX += (targetMouseX - mouseX) * 0.1
@@ -487,9 +477,6 @@ function initWebGL() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices)
     gl.useProgram(programInfo.program)
-
-    // Set the saturation uniform before drawing
-    gl.uniform1f(programInfo.uniformLocations.saturation, currentSaturation / 100)
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix)
 
@@ -623,12 +610,12 @@ function initWebGL() {
 
 function generateColors(colorSet) {
   const faceColors = [
-    colorSet.primary, // Front face
-    colorSet.primary, // Back face
-    colorSet.dark, // Top face
-    colorSet.dark, // Bottom face
-    colorSet.mid, // Right face
-    colorSet.mid // Left face
+    colorSet.mid, // Front face
+    colorSet.mid, // Back face
+    colorSet.primary, // Top face
+    colorSet.primary, // Bottom face
+    colorSet.dark, // Right face
+    colorSet.dark // Left face
   ]
 
   let colors: Array<number> = []
