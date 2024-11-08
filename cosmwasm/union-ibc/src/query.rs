@@ -17,5 +17,5 @@ pub enum QueryMsg {
     #[returns(Status)]
     GetStatus { client_id: u32 },
     #[returns(String)]
-    GetClientType { client_id: u32 }
+    GetClientType { client_id: u32 },
 }

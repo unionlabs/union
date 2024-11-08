@@ -19,7 +19,7 @@ use unionlabs::{
 };
 
 use crate::{
-    lightclient::query::{QueryMsg as LightClientQuery, VerifyClientMessageUpdate},
+    lightclient::query::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
     module::msg::ExecuteMsg as ModuleMsg,
     msg::{ExecuteMsg, InitMsg, MsgRegisterClient, MsgSendPacket, MsgWriteAcknowledgement},
     query::QueryMsg,
@@ -1260,8 +1260,8 @@ fn process_receive(
         )?;
     }
 
-    let mut events = vec![];
-    let mut messages = vec![];
+    let mut events = Vec::with_capacity(packets.len());
+    let mut messages = Vec::with_capacity(packets.len());
     let port_id = CHANNEL_OWNER.load(deps.storage, destination_channel)?;
     for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
         if packet.timeoutHeight > 0 && (env.block.height >= packet.timeoutHeight) {
@@ -1523,10 +1523,9 @@ fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
 
 fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u64, ContractError> {
     let client_impl = client_impl(deps, client_id)?;
-    let consensus_state = CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
     let timestamp = deps.querier.query_wasm_smart(
         client_impl,
-        &LightClientQuery::GetTimestamp { consensus_state },
+        &LightClientQuery::GetTimestamp { client_id, height },
     )?;
     Ok(timestamp)
 }
@@ -1542,10 +1541,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         )?),
         QueryMsg::GetLatestHeight { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
             let latest_height = deps.querier.query_wasm_smart::<u64>(
                 client_impl,
-                &LightClientQuery::GetLatestHeight { client_state },
+                &LightClientQuery::GetLatestHeight { client_id },
             )?;
             Ok(to_json_binary(&latest_height)?)
         }
@@ -1560,10 +1558,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         }
         QueryMsg::GetStatus { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
-            Ok(deps
-                .querier
-                .query_wasm_smart(client_impl, &LightClientQuery::GetStatus { client_state })?)
+            let status = deps.querier.query_wasm_smart::<Status>(
+                client_impl,
+                &LightClientQuery::GetStatus { client_id },
+            )?;
+            Ok(to_json_binary(&status)?)
         }
     }
 }
