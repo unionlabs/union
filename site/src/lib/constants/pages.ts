@@ -44,7 +44,7 @@ export const pathConfigMap = {
       border: hexToRGB("#FAF7F7")
     }
   }
-} as const;
+} as const
 
 function hexToWebGL(hex: string) {
   hex = hex.replace("#", "")
@@ -65,4 +65,3 @@ function hexToRGB(hex: string): string {
 
   return `${r}, ${g}, ${b}`
 }
-

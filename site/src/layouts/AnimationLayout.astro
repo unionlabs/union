@@ -206,7 +206,8 @@ const currentPath = pathname.slice(1) // remove the first "/"
 
     if (toConfig.index && toConfig.index !== fromConfig.index) {
       isNavigating = true;
-      navigationDirection = toConfig.index > fromConfig.index ? "left" : "right";
+      navigationDirection =
+        toConfig.index > fromConfig.index ? "left" : "right";
 
       rotateCamera(navigationDirection);
       updateColors(toConfig.colors);
