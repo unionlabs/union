@@ -2,14 +2,13 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use tracing::{debug, error, info};
-use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member};
+use unionlabs::{ibc::core::client::height::Height, traits::Member};
+use voyager_core::{IbcVersionId, QueryHeight};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    core::ChainId,
-    error_object_to_queue_error, json_rpc_error_to_queue_error,
-    module::{ChainModuleClient, PluginClient},
-    Context, PluginMessage, VoyagerMessage,
+    core::ChainId, error_object_to_queue_error, json_rpc_error_to_queue_error,
+    module::PluginClient, Context, PluginMessage, RawClientId, VoyagerMessage,
 };
 
 #[model]
@@ -108,7 +107,8 @@ pub struct WaitForTimestamp {
 #[model]
 pub struct WaitForTrustedHeight {
     pub chain_id: ChainId,
-    pub client_id: ClientId,
+    pub ibc_version_id: IbcVersionId,
+    pub client_id: RawClientId,
     pub height: Height,
 }
 
@@ -243,24 +243,17 @@ impl CallT<VoyagerMessage> for Call {
 
             Call::WaitForTrustedHeight(WaitForTrustedHeight {
                 chain_id,
+                ibc_version_id,
                 client_id,
                 height,
             }) => {
-                let client_state = ctx
-                    .rpc_server
-                    .modules()
-                    .map_err(error_object_to_queue_error)?
-                    .chain_module(&chain_id)?
-                    .query_raw_unfinalized_trusted_client_state(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_queue_error)?;
-
                 let trusted_client_state_meta = ctx
                     .rpc_server
-                    .decode_client_state_meta(
-                        &client_state.client_type,
-                        &client_state.ibc_interface,
-                        client_state.bytes,
+                    .client_meta(
+                        &chain_id,
+                        &ibc_version_id,
+                        QueryHeight::Latest,
+                        client_id.clone(),
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -279,6 +272,7 @@ impl CallT<VoyagerMessage> for Call {
                         defer(now() + 1),
                         call(WaitForTrustedHeight {
                             chain_id,
+                            ibc_version_id,
                             client_id,
                             height,
                         }),

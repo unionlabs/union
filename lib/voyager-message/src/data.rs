@@ -14,7 +14,7 @@ use voyager_core::IbcVersionId;
 
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta},
-    into_value, IbcSpec, PluginMessage,
+    into_value, IbcSpec, PluginMessage, RawClientId,
 };
 
 #[model]
@@ -28,7 +28,7 @@ pub enum Data {
     IdentifiedIbcDatagramBatch(WithChainId<Vec<IbcDatagram>>),
 
     OrderedHeaders(OrderedHeaders),
-    OrderedMsgUpdateClients(OrderedMsgUpdateClients),
+    OrderedMsgUpdateClients(OrderedClientUpdates),
 
     Plugin(PluginMessage),
 }
@@ -150,8 +150,14 @@ pub struct OrderedHeaders {
 }
 
 #[model]
-pub struct OrderedMsgUpdateClients {
-    pub updates: Vec<(DecodedHeaderMeta, MsgUpdateClient)>,
+pub struct OrderedClientUpdates {
+    pub updates: Vec<(DecodedHeaderMeta, ClientUpdate)>,
+}
+
+#[model]
+pub struct ClientUpdate {
+    pub client_id: RawClientId,
+    pub client_message: Bytes,
 }
 
 #[model]

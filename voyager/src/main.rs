@@ -26,7 +26,7 @@ use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use voyager_message::{
-    call::{FetchBlocks, MakeMsgCreateClient},
+    call::FetchBlocks,
     context::{get_plugin_info, Context, ModulesConfig},
     core::QueryHeight,
     filter::{make_filter, run_filter},
@@ -148,7 +148,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 schema: None,
                 plugins: vec![],
                 modules: ModulesConfig {
-                    chain: vec![],
+                    state: vec![],
+                    proof: vec![],
                     consensus: vec![],
                     client: vec![],
                 },
@@ -249,7 +250,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             },
         },
         Command::Module(cmd) => match cmd {
-            ModuleCmd::Chain(_) => todo!(),
+            ModuleCmd::State(_) => todo!(),
+            ModuleCmd::Proof(_) => todo!(),
             ModuleCmd::Consensus(_) => todo!(),
             ModuleCmd::Client(_) => todo!(),
         },
@@ -490,12 +492,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 print_json(&op);
             }
         }
-        Command::Util(util) => match util {
-            // UtilCmd::IbcCommitmentKey {
-            //     path,
-            //     commitment_slot,
-            // } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
-        },
         Command::Rpc(rpc) => {
             let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(format!(
                 "http://{}",
@@ -507,68 +503,76 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 RpcCmd::ClientState {
                     on,
                     client_id,
+                    ibc_version_id,
                     height,
                     decode,
                 } => {
-                    let ibc_state = voyager_client
-                        .query_client_state(on.clone(), height, client_id.clone())
-                        .await?;
+                    // let ibc_state = voyager_client
+                    //     .query_client_state(on.clone(), height, client_id.clone())
+                    //     .await?;
 
-                    if decode {
-                        let client_info = voyager_client.client_info(on, client_id).await?;
+                    // if decode {
+                    //     let client_info = voyager_client
+                    //         .client_info(on, ibc_version_id, client_id)
+                    //         .await?;
 
-                        let decoded = voyager_client
-                            .decode_client_state(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                ibc_state.state,
-                            )
-                            .await?;
+                    //     let decoded = voyager_client
+                    //         .decode_client_state(
+                    //             client_info.client_type,
+                    //             client_info.ibc_interface,
+                    //             ibc_state.state,
+                    //         )
+                    //         .await?;
 
-                        print_json(&IbcState {
-                            chain_id: ibc_state.chain_id,
-                            height: ibc_state.height,
-                            state: decoded,
-                        });
-                    } else {
-                        print_json(&ibc_state);
-                    }
+                    //     print_json(&IbcState {
+                    //         height: ibc_state.height,
+                    //         state: decoded,
+                    //     });
+                    // } else {
+                    //     print_json(&ibc_state);
+                    // }
+
+                    todo!()
                 }
                 RpcCmd::ConsensusState {
                     on,
                     client_id,
+                    ibc_version_id,
                     trusted_height,
                     height,
                     decode,
                 } => {
-                    let ibc_state = voyager_client
-                        .query_client_consensus_state(
-                            on.clone(),
-                            height,
-                            client_id.clone(),
-                            trusted_height,
-                        )
-                        .await?;
+                    // let ibc_state = voyager_client
+                    //     .query_client_consensus_state(
+                    //         on.clone(),
+                    //         height,
+                    //         client_id.clone(),
+                    //         trusted_height,
+                    //     )
+                    //     .await?;
 
-                    if decode {
-                        let client_info = voyager_client.client_info(on, client_id).await?;
+                    // if decode {
+                    //     let client_info = voyager_client
+                    //         .client_info(on, ibc_version_id, client_id)
+                    //         .await?;
 
-                        let decoded = voyager_client
-                            .decode_consensus_state(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                ibc_state.state,
-                            )
-                            .await?;
+                    //     let decoded = voyager_client
+                    //         .decode_consensus_state(
+                    //             client_info.client_type,
+                    //             client_info.ibc_interface,
+                    //             ibc_state.state,
+                    //         )
+                    //         .await?;
 
-                        print_json(&IbcState {
-                            chain_id: ibc_state.chain_id,
-                            height: ibc_state.height,
-                            state: decoded,
-                        });
-                    } else {
-                        print_json(&ibc_state);
-                    }
+                    //     print_json(&IbcState {
+                    //         height: ibc_state.height,
+                    //         state: decoded,
+                    //     });
+                    // } else {
+                    //     print_json(&ibc_state);
+                    // }
+
+                    todo!()
                 }
             }
         }
@@ -577,26 +581,29 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 on,
                 tracking,
                 ibc_interface,
+                ibc_version_id,
                 client_type,
                 height,
                 metadata,
                 enqueue,
             } => {
-                let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
-                    chain_id: on,
-                    height,
-                    metadata,
-                    counterparty_chain_id: tracking,
-                    ibc_interface,
-                    client_type,
-                });
+                // let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
+                //     chain_id: on,
+                //     height,
+                //     metadata,
+                //     counterparty_chain_id: tracking,
+                //     ibc_interface,
+                //     client_type,
+                // });
 
-                if enqueue {
-                    println!("enqueueing msg");
-                    send_enqueue(&get_voyager_config()?.voyager.rest_laddr, msg).await?;
-                } else {
-                    print_json(&msg);
-                }
+                // if enqueue {
+                //     println!("enqueueing msg");
+                //     send_enqueue(&get_voyager_config()?.voyager.rest_laddr, msg).await?;
+                // } else {
+                //     print_json(&msg);
+                // }
+
+                todo!()
             }
         },
     }

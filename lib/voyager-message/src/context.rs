@@ -1,8 +1,7 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     fmt::Debug,
     path::{Path, PathBuf},
-    pin::Pin,
     process::Stdio,
     sync::Arc,
     time::Duration,
@@ -21,10 +20,7 @@ use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
-use unionlabs::{
-    ethereum::keccak256, hash::hash_v2::HexUnprefixed, ibc::core::client::height::Height,
-    id::ClientId, traits::Member, ErrorReporter,
-};
+use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
 use voyager_core::{ConsensusType, IbcVersionId};
 use voyager_vm::{BoxDynError, QueueError};
 
@@ -33,9 +29,9 @@ use crate::{
     ibc_v1::IbcV1,
     into_value,
     module::{
-        ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
-        ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo, ProofModuleClient,
-        StateModuleClient,
+        ClientModuleClient, ClientModuleInfo, ConsensusModuleClient, ConsensusModuleInfo,
+        PluginClient, PluginInfo, ProofModuleClient, ProofModuleInfo, StateModuleClient,
+        StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
     IbcSpec, FATAL_JSONRPC_ERROR_CODE,
@@ -58,8 +54,8 @@ pub struct Context {
 
 #[derive(macros::Debug)]
 pub struct Modules {
-    /// map of chain id to chain module.
-    chain_modules: HashMap<ChainId, ModuleRpcClient>,
+    state_modules: HashMap<(ChainId, IbcVersionId), ModuleRpcClient>,
+    proof_modules: HashMap<(ChainId, IbcVersionId), ModuleRpcClient>,
 
     /// map of chain id to consensus module.
     consensus_modules: HashMap<ChainId, ModuleRpcClient>,
@@ -78,16 +74,19 @@ pub struct Modules {
 
 /// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
 pub struct IbcSpecHandler {
-    client_state_path: fn(ClientId) -> Value,
-    consensus_state_path: fn(ClientId, Height) -> Value,
+    pub client_state_path: fn(String) -> Result<Value, BoxDynError>,
+    pub consensus_state_path: fn(String, String) -> Result<Value, BoxDynError>,
 }
 
 impl IbcSpecHandler {
     pub const fn new<T: IbcSpec>() -> Self {
         Self {
-            client_state_path: |client_id| into_value(T::client_state_path(client_id)),
+            client_state_path: |client_id| Ok(into_value(T::client_state_path(client_id.parse()?))),
             consensus_state_path: |client_id, height| {
-                into_value(T::consensus_state_path(client_id, height))
+                Ok(into_value(T::consensus_state_path(
+                    client_id.parse()?,
+                    height.parse()?,
+                )))
             },
         }
     }
@@ -176,7 +175,8 @@ pub struct PluginConfig {
 #[model]
 #[derive(JsonSchema)]
 pub struct ModulesConfig {
-    pub chain: Vec<ModuleConfig<ChainModuleInfo>>,
+    pub state: Vec<ModuleConfig<StateModuleInfo>>,
+    pub proof: Vec<ModuleConfig<ProofModuleInfo>>,
     pub consensus: Vec<ModuleConfig<ConsensusModuleInfo>>,
     pub client: Vec<ModuleConfig<ClientModuleInfo>>,
 }
@@ -209,7 +209,8 @@ impl Context {
         let cancellation_token = CancellationToken::new();
 
         let mut modules = Modules {
-            chain_modules: Default::default(),
+            state_modules: Default::default(),
+            proof_modules: Default::default(),
             client_modules: Default::default(),
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
@@ -295,17 +296,50 @@ impl Context {
             .await?;
 
         module_startup(
-            module_configs.chain,
+            module_configs.state,
             cancellation_token.clone(),
             main_rpc_server.clone(),
             |info| info.id(),
-            |ChainModuleInfo { chain_id }, rpc_client| {
-                let prev = modules.chain_modules.insert(chain_id.clone(), rpc_client);
+            |StateModuleInfo {
+                 chain_id,
+                 ibc_version_id,
+             },
+             rpc_client| {
+                let prev = modules
+                    .state_modules
+                    .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
 
                 if prev.is_some() {
                     return Err(format!(
-                        "multiple chain modules configured for chain id `{}`",
-                        chain_id
+                        "multiple state modules configured for chain id \
+                        `{chain_id}` and IBC version `{ibc_version_id}`",
+                    )
+                    .into());
+                }
+
+                Ok(())
+            },
+        )
+        .await?;
+
+        module_startup(
+            module_configs.proof,
+            cancellation_token.clone(),
+            main_rpc_server.clone(),
+            |info| info.id(),
+            |ProofModuleInfo {
+                 chain_id,
+                 ibc_version_id,
+             },
+             rpc_client| {
+                let prev = modules
+                    .proof_modules
+                    .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
+
+                if prev.is_some() {
+                    return Err(format!(
+                        "multiple proof modules configured for chain id \
+                        `{chain_id}` and IBC version `{ibc_version_id}`",
                     )
                     .into());
                 }
@@ -502,11 +536,24 @@ impl Context {
 
 impl Modules {
     pub fn info(&self) -> LoadedModulesInfo {
-        let chain = self
-            .chain_modules
+        let state = self
+            .state_modules
             .keys()
             .cloned()
-            .map(|chain_id| ChainModuleInfo { chain_id })
+            .map(|(chain_id, ibc_version_id)| StateModuleInfo {
+                chain_id,
+                ibc_version_id,
+            })
+            .collect();
+
+        let proof = self
+            .proof_modules
+            .keys()
+            .cloned()
+            .map(|(chain_id, ibc_version_id)| ProofModuleInfo {
+                chain_id,
+                ibc_version_id,
+            })
             .collect();
 
         let consensus = self
@@ -535,7 +582,8 @@ impl Modules {
             .collect();
 
         LoadedModulesInfo {
-            chain,
+            state,
+            proof,
             consensus,
             client,
         }
@@ -561,31 +609,45 @@ impl Modules {
         })
     }
 
-    pub fn chain_module<'a, 'b, 'c: 'a>(
+    // pub fn chain_module<'a, 'b, 'c: 'a>(
+    //     &'a self,
+    //     chain_id: &ChainId,
+    // ) -> Result<&'a (impl ChainModuleClient + 'a), ChainModuleNotFound> {
+    //     Ok(self
+    //         .chain_modules
+    //         .get(chain_id)
+    //         .ok_or_else(|| ChainModuleNotFound(chain_id.clone()))?
+    //         .client())
+    // }
+
+    pub fn state_module<'a, 'b, 'c: 'a, V: IbcSpec>(
         &'a self,
         chain_id: &ChainId,
-    ) -> Result<&'a (impl ChainModuleClient + 'a), ChainModuleNotFound> {
+        ibc_version_id: &IbcVersionId,
+    ) -> Result<&'a (impl StateModuleClient<V> + 'a), StateModuleNotFound> {
         Ok(self
-            .chain_modules
-            .get(chain_id)
-            .ok_or_else(|| ChainModuleNotFound(chain_id.clone()))?
+            .state_modules
+            .get(&(chain_id.clone(), ibc_version_id.clone()))
+            .ok_or_else(|| StateModuleNotFound {
+                chain_id: chain_id.clone(),
+                ibc_version_id: ibc_version_id.clone(),
+            })?
             .client())
     }
 
-    pub fn state_module<'a, 'b, 'c: 'a, StorePath>(
+    pub fn proof_module<'a, 'b, 'c: 'a, V: IbcSpec>(
         &'a self,
         chain_id: &ChainId,
         ibc_version_id: &IbcVersionId,
-    ) -> Result<&'a (impl StateModuleClient<StorePath> + 'a), ChainModuleNotFound> {
-        todo!()
-    }
-
-    pub fn proof_module<'a, 'b, 'c: 'a, StorePath>(
-        &'a self,
-        chain_id: &ChainId,
-        ibc_version_id: &IbcVersionId,
-    ) -> Result<&'a (impl ProofModuleClient<StorePath> + 'a), ChainModuleNotFound> {
-        todo!()
+    ) -> Result<&'a (impl ProofModuleClient<V> + 'a), ProofModuleNotFound> {
+        Ok(self
+            .proof_modules
+            .get(&(chain_id.clone(), ibc_version_id.clone()))
+            .ok_or_else(|| ProofModuleNotFound {
+                chain_id: chain_id.clone(),
+                ibc_version_id: ibc_version_id.clone(),
+            })?
+            .client())
     }
 
     pub fn consensus_module<'a, 'b, 'c: 'a>(
@@ -621,9 +683,10 @@ impl Modules {
 
 #[model]
 pub struct LoadedModulesInfo {
-    chain: Vec<ChainModuleInfo>,
-    consensus: Vec<ConsensusModuleInfo>,
-    client: Vec<ClientModuleInfo>,
+    pub state: Vec<StateModuleInfo>,
+    pub proof: Vec<ProofModuleInfo>,
+    pub consensus: Vec<ConsensusModuleInfo>,
+    pub client: Vec<ClientModuleInfo>,
 }
 
 #[instrument(skip_all, fields(%name))]
@@ -761,51 +824,51 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
     }
 }
 
-pub struct StateModuleNotFound {}
+macro_rules! module_error {
+    ($Error:ident) => {
+        impl From<$Error> for QueueError {
+            fn from(value: $Error) -> Self {
+                Self::Fatal(Box::new(value))
+            }
+        }
+
+        impl From<$Error> for ErrorObjectOwned {
+            fn from(value: $Error) -> Self {
+                ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
+            }
+        }
+
+        impl From<$Error> for jsonrpsee::core::client::Error {
+            fn from(value: $Error) -> Self {
+                ErrorObject::from(value).into()
+            }
+        }
+    };
+}
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for chain `{0}`")]
-pub struct ChainModuleNotFound(pub ChainId);
-
-impl From<ChainModuleNotFound> for QueueError {
-    fn from(value: ChainModuleNotFound) -> Self {
-        Self::Fatal(Box::new(value))
-    }
+#[error("no module loaded for state on chain `{chain_id}` and IBC version `{ibc_version_id}`")]
+pub struct StateModuleNotFound {
+    pub chain_id: ChainId,
+    pub ibc_version_id: IbcVersionId,
 }
 
-impl From<ChainModuleNotFound> for ErrorObjectOwned {
-    fn from(value: ChainModuleNotFound) -> Self {
-        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
-    }
+module_error!(StateModuleNotFound);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("no module loaded for proofs on chain `{chain_id}` and IBC version `{ibc_version_id}`")]
+pub struct ProofModuleNotFound {
+    pub chain_id: ChainId,
+    pub ibc_version_id: IbcVersionId,
 }
 
-impl From<ChainModuleNotFound> for jsonrpsee::core::client::Error {
-    fn from(value: ChainModuleNotFound) -> Self {
-        ErrorObject::from(value).into()
-    }
-}
+module_error!(ProofModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for consensus on chain `{0}`")]
 pub struct ConsensusModuleNotFound(pub ChainId);
 
-impl From<ConsensusModuleNotFound> for QueueError {
-    fn from(value: ConsensusModuleNotFound) -> Self {
-        Self::Fatal(Box::new(value))
-    }
-}
-
-impl From<ConsensusModuleNotFound> for jsonrpsee::core::client::Error {
-    fn from(value: ConsensusModuleNotFound) -> Self {
-        ErrorObject::from(value).into()
-    }
-}
-
-impl From<ConsensusModuleNotFound> for ErrorObjectOwned {
-    fn from(value: ConsensusModuleNotFound) -> Self {
-        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
-    }
-}
+module_error!(ConsensusModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ClientModuleNotFound {
@@ -822,23 +885,7 @@ pub enum ClientModuleNotFound {
     },
 }
 
-impl From<ClientModuleNotFound> for QueueError {
-    fn from(value: ClientModuleNotFound) -> Self {
-        Self::Fatal(Box::new(value))
-    }
-}
-
-impl From<ClientModuleNotFound> for jsonrpsee::core::client::Error {
-    fn from(value: ClientModuleNotFound) -> Self {
-        ErrorObject::from(value).into()
-    }
-}
-
-impl From<ClientModuleNotFound> for ErrorObjectOwned {
-    fn from(value: ClientModuleNotFound) -> Self {
-        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
-    }
-}
+module_error!(ClientModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("plugin `{name}` not found")]
@@ -846,23 +893,7 @@ pub struct PluginNotFound {
     pub name: String,
 }
 
-impl From<PluginNotFound> for QueueError {
-    fn from(value: PluginNotFound) -> Self {
-        Self::Fatal(Box::new(value))
-    }
-}
-
-impl From<PluginNotFound> for ErrorObjectOwned {
-    fn from(value: PluginNotFound) -> Self {
-        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
-    }
-}
-
-impl From<PluginNotFound> for jsonrpsee::core::client::Error {
-    fn from(value: PluginNotFound) -> Self {
-        ErrorObject::from(value).into()
-    }
-}
+module_error!(PluginNotFound);
 
 pub fn get_plugin_info(module_config: &PluginConfig) -> Result<PluginInfo, String> {
     debug!(

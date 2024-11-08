@@ -4,7 +4,7 @@ use core::{fmt, str::FromStr};
 use std::fmt::Debug;
 
 use macros::{apply, model};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{
     hash::H256,
@@ -216,7 +216,6 @@ pub struct ChainId;
 pub struct ClientInfo {
     pub client_type: ClientType,
     pub ibc_interface: IbcInterface,
-    pub ibc_version_id: IbcVersionId,
     /// Additional metadata about this client.
     ///
     /// This is currently only used for threading the checksum for ibc-go
@@ -314,6 +313,18 @@ macro_rules! str_newtype {
         impl ::core::fmt::Display for $Struct {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::Display::fmt(&self.0, f)
+            }
+        }
+
+        impl PartialEq<&$Struct> for $Struct {
+            fn eq(&self, other: &&$Struct) -> bool {
+                self == *other
+            }
+        }
+
+        impl PartialEq<$Struct> for &$Struct {
+            fn eq(&self, other: &$Struct) -> bool {
+                *self == other
             }
         }
 

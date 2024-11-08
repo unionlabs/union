@@ -17,43 +17,43 @@ fn bench_normalize(c: &mut Criterion) {
 
 fn mk_msg() -> Op<VoyagerMessage> {
     seq([
-        promise(
-            [
-                data(PluginMessage::new("", "")),
-                call(FetchBlocks {
-                    chain_id: ChainId::new("chain"),
-                    start_height: Height::new_with_revision(1, 1),
-                }),
-                conc([
-                    noop(),
-                    data(PluginMessage::new("", "")),
-                    call(FetchBlocks {
-                        chain_id: ChainId::new("chain"),
-                        start_height: Height::new_with_revision(1, 1),
-                    }),
-                ]),
-            ],
-            [],
-            AggregateMsgUpdateClientsFromOrderedHeaders {
-                chain_id: ChainId::new("chain"),
-                counterparty_client_id: "counterparty_chain".parse().unwrap(),
-            },
-        ),
-        seq([
-            data(PluginMessage::new("", "")),
-            call(FetchBlocks {
-                chain_id: ChainId::new("chain"),
-                start_height: Height::new_with_revision(1, 1),
-            }),
-            conc([
-                noop(),
-                data(PluginMessage::new("", "")),
-                call(FetchBlocks {
-                    chain_id: ChainId::new("chain"),
-                    start_height: Height::new_with_revision(1, 1),
-                }),
-            ]),
-        ]),
+        // promise(
+        //     [
+        //         data(PluginMessage::new("", "")),
+        //         call(FetchBlocks {
+        //             chain_id: ChainId::new("chain"),
+        //             start_height: Height::new_with_revision(1, 1),
+        //         }),
+        //         conc([
+        //             noop(),
+        //             data(PluginMessage::new("", "")),
+        //             call(FetchBlocks {
+        //                 chain_id: ChainId::new("chain"),
+        //                 start_height: Height::new_with_revision(1, 1),
+        //             }),
+        //         ]),
+        //     ],
+        //     [],
+        //     AggregateMsgUpdateClientsFromOrderedHeaders {
+        //         chain_id: ChainId::new("chain"),
+        //         counterparty_client_id: "counterparty_chain".parse().unwrap(),
+        //     },
+        // ),
+        // seq([
+        //     data(PluginMessage::new("", "")),
+        //     call(FetchBlocks {
+        //         chain_id: ChainId::new("chain"),
+        //         start_height: Height::new_with_revision(1, 1),
+        //     }),
+        //     conc([
+        //         noop(),
+        //         data(PluginMessage::new("", "")),
+        //         call(FetchBlocks {
+        //             chain_id: ChainId::new("chain"),
+        //             start_height: Height::new_with_revision(1, 1),
+        //         }),
+        //     ]),
+        // ]),
     ])
 }
 
