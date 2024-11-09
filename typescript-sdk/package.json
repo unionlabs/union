@@ -16,8 +16,7 @@
     "./package.json": "./package.json"
   },
   "files": ["dist", "LICENSE", "README.md", "package.json"],
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
     "@scure/base": "^1.1.9",
     "neverthrow": "^8.1.1",
