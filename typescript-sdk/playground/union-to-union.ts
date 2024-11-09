@@ -26,6 +26,9 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   "union"
 )
 
+const [account] = await cosmosAccount.getAccounts()
+if (!account) raise("no account found")
+
 try {
   const client = createUnionClient({
     account: cosmosAccount,

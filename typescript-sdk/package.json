@@ -17,16 +17,6 @@
   },
   "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
-    "build": "tsup --config='tsup.config.ts'",
-    "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "vitest --run",
-    "test:typecheck": "vitest --typecheck.only",
-    "check-package": "bunx publint@latest --strict && bunx @arethetypeswrong/cli --pack --ignore-rules 'cjs-resolves-to-esm'",
-    "clean": "rm -rf dist node_modules",
-    "knip": "knip --config='knip.json'",
-    "postinstall": "patch-package",
-    "prepublish": "bun run build",
-    "typedoc": "bun x typedoc@latest --out .docs ./src/mod.ts"
   },
   "dependencies": {
     "@scure/base": "^1.1.9",
