@@ -1,11 +1,9 @@
 use beacon_api_types::{Mainnet, Minimal, PresetBaseKind};
 use cosmwasm_std::{
-    entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult, WasmQuery,
+    entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
-use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
-use protos::ibc::lightclients::wasm::v1::{
-    ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
+use ethereum_light_client_types::{
+    ClientState, ConsensusState, Header, Misbehaviour, StorageProof,
 };
 use union_ibc::{
     lightclient::query::{Status, VerifyClientMessageUpdate},
@@ -14,11 +12,10 @@ use union_ibc::{
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, Proto},
-    ibc::core::client::height::Height,
 };
 
 use crate::{
-    client::{do_verify_membership, do_verify_non_membership, verify_header, EthereumLightClient},
+    client::{verify_header, verify_membership, verify_misbehaviour, verify_non_membership},
     errors::Error,
     msg::{InstantiateMsg, QueryMsg},
     state::IBC_HOST,
@@ -56,7 +53,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            do_verify_membership(path.to_vec(), storage_root, storage_proof, value.to_vec())?;
+            verify_membership(path.to_vec(), storage_root, storage_proof, value.to_vec())?;
 
             to_json_binary(&Binary::from(vec![]))
         }
@@ -74,7 +71,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            do_verify_non_membership(path.to_vec(), storage_root, storage_proof)?;
+            verify_non_membership(path.to_vec(), storage_root, storage_proof)?;
 
             to_json_binary(&Binary::from(vec![]))
         }
@@ -129,7 +126,38 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let _ = ConsensusState::decode_as::<Proto>(&consensus_state).unwrap();
             to_json_binary(&client_state.latest_slot)
         }
-        _ => Ok(vec![].into()),
+        QueryMsg::CheckForMisbehavior { client_id, message } => {
+            let misbehavior = Misbehaviour::decode_as::<Proto>(&message).unwrap();
+
+            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let client_state = read_client_state(deps, &ibc_host, client_id)?;
+            let consensus_state = read_consensus_state(
+                deps,
+                &ibc_host,
+                client_id,
+                misbehavior.trusted_height.height(),
+            )?;
+
+            if client_state.chain_spec == PresetBaseKind::Minimal {
+                verify_misbehaviour::<Minimal>(
+                    client_state,
+                    consensus_state,
+                    deps,
+                    env,
+                    misbehavior,
+                )?
+            } else {
+                verify_misbehaviour::<Mainnet>(
+                    client_state,
+                    consensus_state,
+                    deps,
+                    env,
+                    misbehavior,
+                )?
+            };
+
+            to_json_binary(&true)
+        }
     }
 }
 
