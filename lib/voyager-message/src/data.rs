@@ -6,7 +6,7 @@ use subset_of::SubsetOf;
 use unionlabs::{
     bytes::Bytes,
     hash::H256,
-    ibc::core::client::{height::Height, msg_update_client::MsgUpdateClient},
+    ibc::core::client::height::Height,
     ics24::{IbcPath, Path},
     traits::Member,
 };

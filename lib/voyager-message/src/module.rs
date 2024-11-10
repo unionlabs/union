@@ -4,7 +4,7 @@ use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
-use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, id::ClientId, traits::Member};
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ConsensusType, IbcVersionId};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 

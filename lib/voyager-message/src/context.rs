@@ -415,7 +415,7 @@ impl Context {
                     .client_consensus_types
                     .insert(client_type.clone(), consensus_type.clone())
                 {
-                    if &previous_consensus_type != consensus_type {
+                    if previous_consensus_type != consensus_type {
                         return Err(format!(
                             "inconsistency in client consensus types: \
                             client type `{client_type}` is registered \

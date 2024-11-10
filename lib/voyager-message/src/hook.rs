@@ -30,7 +30,7 @@ impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
 impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for UpdateHook<'_, F> {
     fn visit_call(&mut self, c: &mut Call) {
         match c {
-            Call::FetchUpdateHeaders(fetch) if &fetch.chain_id == self.chain_id => {
+            Call::FetchUpdateHeaders(fetch) if fetch.chain_id == self.chain_id => {
                 info!(
                     "hooking for update (`{}`, {} to {})",
                     fetch.counterparty_chain_id, fetch.update_from, fetch.update_to
