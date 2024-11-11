@@ -96,6 +96,13 @@ contract TestLightClient is ILightClient {
         });
     }
 
+    function misbehaviour(
+        uint32 clientId,
+        bytes calldata clientMessageBytes
+    ) external {
+        revert();
+    }
+
     function verifyMembership(
         uint32,
         uint64,

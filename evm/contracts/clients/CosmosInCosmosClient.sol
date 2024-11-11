@@ -45,6 +45,7 @@ library CosmosInCosmosLib {
     error ErrClientFrozen();
     error ErrInvalidL1Proof();
     error ErrInvalidInitialConsensusState();
+    error ErrInvalidMisbehaviour();
 
     function encode(
         ConsensusState memory consensusState
@@ -195,6 +196,13 @@ contract CosmosInCosmosClient is
             consensusStateCommitment: consensusState.commit(),
             height: header.l2Height
         });
+    }
+
+    function misbehaviour(
+        uint32 clientId,
+        bytes calldata clientMessageBytes
+    ) external override onlyIBC {
+        revert CosmosInCosmosLib.ErrInvalidMisbehaviour();
     }
 
     function verifyMembership(
