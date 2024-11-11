@@ -280,8 +280,8 @@ pub mod ibc {
                 error ErrMaxClockDriftExceeded();
                 error ErrInvalidZKP();
                 error ErrInvalidUntrustedValidatorsHash();
-                error ErrInvalidMisbehaviorHeadersSequence();
-                error ErrInvalidMisbehavior();
+                error ErrInvalidMisbehaviourHeadersSequence();
+                error ErrInvalidMisbehaviour();
                 error ErrClientFrozen();
                 error ErrInvalidInitialConsensusState();
             }
