@@ -6,7 +6,8 @@ use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
-use tracing::{debug, info};
+use reqwest::StatusCode;
+use tracing::{debug, info, trace};
 
 use crate::consensus::{Indexer, Querier};
 
@@ -61,7 +62,17 @@ impl Beacon {
         let url = &self.url;
         let url = format!("{url}{path}");
 
-        let val: serde_json::Value = self.client.clone().get(&url).send().await?.json().await?;
+        trace!("get block request: {url}");
+        let response = self.client.clone().get(&url).send().await?;
+        let response_status = response.status();
+        trace!("get block response status: {response_status}");
+
+        if let StatusCode::NOT_FOUND = response_status {
+            return Ok(None);
+        }
+
+        let val: serde_json::Value = response.json().await?;
+        trace!("get block body: {val}");
 
         if val.get("statusCode").is_none() {
             Ok(Some(serde_json::from_value(val).unwrap()))
