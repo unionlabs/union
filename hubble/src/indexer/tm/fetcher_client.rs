@@ -20,7 +20,7 @@ use tendermint_rpc::{
 };
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
-use tracing::{debug, info, info_span, Instrument};
+use tracing::{debug, info, info_span, trace, Instrument};
 
 use crate::{
     indexer::{
@@ -305,14 +305,11 @@ impl TmFetcherClient {
                 .map(|response| Some((response.provider_id, response.response.into()))),
             BlockSelection::Height(height) => match self
                 .provider
-                .commit(height, provider_id)
+                .block(height, provider_id)
                 .inspect_err(|e| debug!(?e, "error fetching block at {}", height))
                 .await
             {
-                Ok(result) => match result.response.canonical {
-                    true => Ok(Some((result.provider_id, result.response.into()))),
-                    false => Ok(None),
-                },
+                Ok(result) => Ok(Some((result.provider_id, result.response.into()))),
                 Err(err) => match err.detail() {
                     // TODO: cleanup
                     // The RPC will return an internal error on queries for blocks exceeding the current height.
@@ -325,6 +322,7 @@ impl TmFetcherClient {
                             && (message.contains("must be less than or equal to")
                                 | message.contains("could not find results for height"))
                         {
+                            trace!("{}: no block: beyond tip error: {}", selection, message,);
                             Ok(None)
                         } else {
                             Err(err)

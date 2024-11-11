@@ -78,18 +78,6 @@
                 example = "amazing-testnet";
                 default = null;
               };
-              options.internal_chain_id = mkOption {
-                type = types.nullOr types.number;
-                description = "Hubble internal chain id, used to fetch the current height when migrating to fetchers.";
-                example = "4";
-                default = null;
-              };
-              options.new_chain_override = mkOption {
-                type = types.nullOr types.bool;
-                description = "Indicator that this is a new chain, so the current height must not be used when migrating to fetchers.";
-                example = "false";
-                default = null;
-              };
               options.label = mkOption {
                 type = types.str;
                 example = "something-custom";
