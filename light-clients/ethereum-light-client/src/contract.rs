@@ -126,7 +126,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let _ = ConsensusState::decode_as::<Proto>(&consensus_state).unwrap();
             to_json_binary(&client_state.latest_slot)
         }
-        QueryMsg::CheckForMisbehavior { client_id, message } => {
+        QueryMsg::Misbehaviour { client_id, message } => {
             let misbehavior = Misbehaviour::decode_as::<Proto>(&message).unwrap();
 
             let ibc_host = IBC_HOST.load(deps.storage)?;
@@ -156,7 +156,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
                 )?
             };
 
-            to_json_binary(&true)
+            to_json_binary(&())
         }
     }
 }
