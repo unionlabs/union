@@ -320,7 +320,7 @@ impl TmFetcherClient {
                         let message = inner.data().unwrap_or_default();
                         if matches!(code, Code::InternalError)
                             && (message.contains("must be less than or equal to")
-                                | message.contains("could not find results for height"))
+                                || message.contains("could not find results for height"))
                         {
                             trace!("{}: no block: beyond tip error: {}", selection, message,);
                             Ok(None)
