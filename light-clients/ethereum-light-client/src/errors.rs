@@ -68,6 +68,12 @@ pub enum Error {
     #[error(transparent)]
     InvalidCommitmentKey(#[from] InvalidCommitmentKey),
 
+    #[error("commitment key must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentKeyLength(Vec<u8>),
+
+    #[error("commitment value must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentValueLength(Vec<u8>),
+
     #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,
 

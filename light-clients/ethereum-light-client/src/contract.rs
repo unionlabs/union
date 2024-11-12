@@ -12,6 +12,7 @@ use union_ibc::{
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, Proto},
+    hash::H256,
 };
 
 use crate::{
@@ -53,7 +54,14 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            verify_membership(path.to_vec(), storage_root, storage_proof, value.to_vec())?;
+            verify_membership(
+                H256::try_from(&path.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentKeyLength(path.to_vec()))?,
+                storage_root,
+                storage_proof,
+                H256::try_from(&value.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentValueLength(path.to_vec()))?,
+            )?;
 
             to_json_binary(&Binary::from(vec![]))
         }
@@ -71,7 +79,12 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            verify_non_membership(path.to_vec(), storage_root, storage_proof)?;
+            verify_non_membership(
+                H256::try_from(&path.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentKeyLength(path.to_vec()))?,
+                storage_root,
+                storage_proof,
+            )?;
 
             to_json_binary(&Binary::from(vec![]))
         }
