@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO hubble.consensus_heights (chain_id, consensus_height, execution_height)\n        SELECT $1, unnest($2::bigint[]), unnest($3::bigint[])\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8Array",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "756d1197cb882426bf4b2495e65259e1336fe68e60c3c28abe13b1c4dd920fbe"
+}

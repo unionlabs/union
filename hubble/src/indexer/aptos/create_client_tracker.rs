@@ -97,7 +97,7 @@ pub fn schedule_create_client_checker(
 
                     sqlx::query!(
                         r#"
-                        INSERT INTO v0.clients (chain_id, client_id, counterparty_chain_id)
+                        INSERT INTO hubble.clients (chain_id, client_id, counterparty_chain_id)
                         VALUES ($1, $2, $3)
                         ON CONFLICT DO NOTHING
                         "#,

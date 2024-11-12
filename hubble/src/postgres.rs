@@ -70,7 +70,7 @@ pub async fn fetch_or_insert_chain_id_tx(
 ) -> sqlx::Result<FetchOrCreated<ChainId>> {
     use FetchOrCreated::*;
     let db_chain_id = if let Some(chain_id) = sqlx::query!(
-        "SELECT id FROM \"v0\".chains WHERE chain_id = $1 LIMIT 1",
+        "SELECT id FROM \"hubble\".chains WHERE chain_id = $1 LIMIT 1",
         canonical.to_string()
     )
     .fetch_optional(tx.as_mut())
@@ -79,7 +79,7 @@ pub async fn fetch_or_insert_chain_id_tx(
         Fetched(ChainId::new(chain_id.id, canonical.leak()))
     } else {
         let id = sqlx::query!(
-            "INSERT INTO \"v0\".chains (chain_id) VALUES ($1) RETURNING id",
+            "INSERT INTO \"hubble\".chains (chain_id) VALUES ($1) RETURNING id",
             canonical.to_string()
         )
         .fetch_one(tx.as_mut())
@@ -96,7 +96,7 @@ pub async fn get_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
 ) -> sqlx::Result<Option<ChainId>> {
     let mut conn = db.acquire().await?;
     let id = sqlx::query!(
-        "SELECT id FROM \"v0\".chains WHERE chain_id = $1 LIMIT 1",
+        "SELECT id FROM \"hubble\".chains WHERE chain_id = $1 LIMIT 1",
         canonical.to_string()
     )
     .fetch_optional(&mut *conn)
@@ -114,7 +114,7 @@ pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postg
     let mut conn = db.acquire().await?;
     sqlx::query!(
         "
-        INSERT INTO v0.consensus_heights (chain_id, consensus_height, execution_height)
+        INSERT INTO hubble.consensus_heights (chain_id, consensus_height, execution_height)
         SELECT $1, unnest($2::bigint[]), unnest($3::bigint[])
         ",
         chain_id.db,
@@ -151,7 +151,7 @@ pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(
     let mut conn = db.acquire().await?;
     let height = sqlx::query!(
         "
-        SELECT MAX(consensus_height) as height from v0.consensus_heights
+        SELECT MAX(consensus_height) as height from hubble.consensus_heights
         WHERE chain_id = $1
         ",
         chain_id.db
@@ -174,7 +174,7 @@ pub async fn insert_client_mapping<'a, A: Acquire<'a, Database = Postgres>>(
     sqlx::query!(
         r#"
         INSERT INTO
-            v0.clients (chain_id, client_id, counterparty_chain_id)
+            hubble.clients (chain_id, client_id, counterparty_chain_id)
         VALUES
             ($1, $2, $3)
         ON CONFLICT DO NOTHING
@@ -194,7 +194,7 @@ pub async fn get_chain_ids_and_ids<'a, A: Acquire<'a, Database = Postgres>>(
 ) -> sqlx::Result<std::collections::HashMap<String, i32>> {
     let mut conn = db.acquire().await?;
 
-    let rows = sqlx::query!("SELECT chain_id, id FROM v0.chains")
+    let rows = sqlx::query!("SELECT chain_id, id FROM hubble.chains")
         .fetch_all(&mut *conn)
         .await?;
 
@@ -236,7 +236,7 @@ pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
 
     sqlx::query!(
         r#"
-        INSERT INTO v0.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token)
+        INSERT INTO hubble.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token)
         SELECT 
             unnest($1::bigint[]), 
             unnest($2::text[]), 
