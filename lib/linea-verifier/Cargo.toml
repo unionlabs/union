@@ -12,8 +12,8 @@ workspace = true
 test-include = ["lib/scroll-verifier/tests"]
 
 [dependencies]
-ethereum-sync-protocol = { workspace = true }
 ethers-core              = { workspace = true }
+evm-storage-verifier     = { workspace = true }
 gnark-mimc               = { workspace = true }
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }

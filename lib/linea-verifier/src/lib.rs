@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
+use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use linea_light_client_types::{ClientState, Header};
 use unionlabs::{
@@ -13,13 +13,13 @@ use unionlabs::{
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("invalid rollup contract proof {0}")]
-    InvalidRollupContractProof(ethereum_verifier::error::Error),
+    InvalidRollupContractProof(evm_storage_verifier::error::Error),
     #[error("invalid l2 block number proof {0}")]
-    InvalidL2BlockNumberProof(ethereum_verifier::error::Error),
+    InvalidL2BlockNumberProof(evm_storage_verifier::error::Error),
     #[error("invalid l2 timestamp proof {0}")]
-    InvalidL2TimestampProof(ethereum_verifier::error::Error),
+    InvalidL2TimestampProof(evm_storage_verifier::error::Error),
     #[error("invalid l2 state root {0}")]
-    InvalidL2StateRootProof(ethereum_verifier::error::Error),
+    InvalidL2StateRootProof(evm_storage_verifier::error::Error),
     #[error("invalid l2 ibc contract proof {0}")]
     InvalidL2IbcContractProof(linea_zktrie::verify::Error),
 }

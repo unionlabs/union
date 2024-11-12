@@ -1,6 +1,6 @@
 use trie_db::TrieError;
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(
         "proof is invalid due to value mismatch, expected: {expected}, actual: {actual}",

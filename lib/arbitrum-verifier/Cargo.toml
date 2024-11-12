@@ -13,8 +13,8 @@ workspace = true
 
 [dependencies]
 arbitrum-light-client-types.workspace = true
-evm-storage-verifier = { workspace = true }
 ethers-core                           = { workspace = true }
+evm-storage-verifier                  = { workspace = true }
 hex                                   = { workspace = true }
 hex-literal                           = { workspace = true }
 rlp                                   = { workspace = true }

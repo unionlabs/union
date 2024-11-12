@@ -7402,8 +7402,8 @@ dependencies = [
 name = "linea-verifier"
 version = "0.1.0"
 dependencies = [
- "ethereum-sync-protocol",
  "ethers-core",
+ "evm-storage-verifier",
  "gnark-mimc",
  "hex",
  "hex-literal",

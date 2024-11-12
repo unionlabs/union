@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use arbitrum_light_client_types::{ClientState, Header};
-use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
+use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
@@ -12,13 +12,13 @@ use unionlabs::{
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
     #[error("invalid contract address proof")]
-    InvalidContractAddressProof(#[source] ethereum_verifier::error::Error),
+    InvalidContractAddressProof(#[source] evm_storage_verifier::error::Error),
     #[error("invalid _latestConfirmed proof")]
-    InvalidNextNodeNumSlotProof(#[source] ethereum_verifier::error::Error),
+    InvalidNextNodeNumSlotProof(#[source] evm_storage_verifier::error::Error),
     #[error("invalid _nodes[_latestConfirmed].confirmData proof")]
-    InvalidNodeConfirmDataProof(#[source] ethereum_verifier::error::Error),
+    InvalidNodeConfirmDataProof(#[source] evm_storage_verifier::error::Error),
     #[error("invalid L2 proof")]
-    InvalidL2Proof(#[source] ethereum_verifier::error::Error),
+    InvalidL2Proof(#[source] evm_storage_verifier::error::Error),
 }
 
 pub fn verify_header(
