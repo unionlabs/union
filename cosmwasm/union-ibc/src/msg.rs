@@ -1,4 +1,3 @@
-use cosmwasm_std::Addr;
 use ibc_solidity::cosmwasm::types::ibc::{
     MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck,
@@ -13,7 +12,7 @@ pub struct InitMsg {}
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct MsgRegisterClient {
     pub client_type: String,
-    pub client_address: Addr,
+    pub client_address: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
