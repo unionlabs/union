@@ -137,7 +137,6 @@ import (
 	"github.com/spf13/cast"
 
 	unioncustomquery "union/app/custom_query"
-	ibcunion "union/app/ibc"
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 	"union/docs"
 	unionstaking "union/x/staking"
@@ -313,7 +312,7 @@ func NewUnionApp(
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey,
 		icahosttypes.StoreKey, capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey,
 		consensusparamtypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
-		pooltypes.StoreKey, accounts.StoreKey, ibcunion.StoreKey,
+		pooltypes.StoreKey, accounts.StoreKey,
 	)
 
 	// register streaming services
@@ -452,16 +451,10 @@ func NewUnionApp(
 		runtime.NewEnvironment(runtime.NewKVStoreService(keys[upgradetypes.StoreKey]), logger.With(log.ModuleKey, "x/upgrade"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())),
 		skipUpgradeHeights, appCodec, homePath, app.BaseApp, govModuleAddr, app.ConsensusParamsKeeper)
 
-	doubleCommitStore := ibcunion.NewDoubleCommitStoreService(
-		appCodec,
-		keys[ibcunion.StoreKey],
-		keys[ibcexported.StoreKey],
-	)
-
 	// Create IBC Keeper
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec,
-		doubleCommitStore,
+		runtime.NewKVStoreService(keys[ibcexported.StoreKey]),
 		app.GetSubspace(ibcexported.ModuleName),
 		app.StakingKeeper,
 		app.UpgradeKeeper,
@@ -507,12 +500,6 @@ func NewUnionApp(
 	transferModule := transfer.NewAppModule(appCodec, app.TransferKeeper)
 	var transferIBCModule ibcporttypes.IBCModule
 	transferIBCModule = transfer.NewIBCModule(app.TransferKeeper)
-	transferIBCModule = ibcunion.NewDoubleCommitMiddleware(
-		app.IBCKeeper,
-		transferIBCModule,
-		app.IBCFeeKeeper,
-		doubleCommitStore,
-	)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec,
@@ -543,12 +530,6 @@ func NewUnionApp(
 	icaModule := ica.NewAppModule(appCodec, &icaControllerKeeper, &app.ICAHostKeeper)
 	var icaHostIBCModule ibcporttypes.IBCModule
 	icaHostIBCModule = icahost.NewIBCModule(app.ICAHostKeeper)
-	icaHostIBCModule = ibcunion.NewDoubleCommitMiddleware(
-		app.IBCKeeper,
-		icaHostIBCModule,
-		app.IBCFeeKeeper,
-		doubleCommitStore,
-	)
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -660,12 +641,6 @@ func NewUnionApp(
 	var wasmStack ibcporttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCFeeKeeper)
 	wasmStack = ibcfee.NewIBCMiddleware(wasmStack, app.IBCFeeKeeper)
-	wasmStack = ibcunion.NewDoubleCommitMiddleware(
-		app.IBCKeeper,
-		wasmStack,
-		app.IBCFeeKeeper,
-		doubleCommitStore,
-	)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
