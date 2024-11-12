@@ -3,12 +3,14 @@ use cosmwasm_std::{Deps, Env};
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
 };
-use ethereum_verifier::{
+use ethereum_sync_protocol::{
     utils::{
         compute_slot_at_timestamp, compute_timestamp_at_slot, validate_signature_supermajority,
     },
-    validate_light_client_update, verify_account_storage_root, verify_storage_absence,
-    verify_storage_proof,
+    validate_light_client_update,
+};
+use evm_storage_verifier::{
+    verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery, ensure, ethereum::ibc_commitment_key,

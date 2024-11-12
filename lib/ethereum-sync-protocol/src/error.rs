@@ -1,5 +1,4 @@
 use milagro_bls::AmclError;
-use trie_db::TrieError;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     hash::H256,
@@ -101,19 +100,6 @@ pub enum Error {
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[error(
-        "proof is invalid due to value mismatch, expected: {expected}, actual: {actual}",
-        expected = serde_utils::to_hex(expected),
-        actual = serde_utils::to_hex(actual)
-    )]
-    ValueMismatch { expected: Vec<u8>, actual: Vec<u8> },
-    #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
-    ValueMissing { value: Vec<u8> },
-    #[error("trie error ({0:?})")]
-    Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
-    // we us debug here because the display implementation for rlp::DecoderError is stupid
-    #[error("rlp decoding failed: {0:?}")]
-    RlpDecode(#[from] rlp::DecoderError),
     #[error("custom query error: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
@@ -129,12 +115,5 @@ pub enum Error {
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {
         Error::Bls(e)
-    }
-}
-
-// NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement core::error::Error
-impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
-    fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
-        Error::Trie(e)
     }
 }

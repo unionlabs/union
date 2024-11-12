@@ -60,6 +60,7 @@ members = [
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-sync-protocol",
+  "lib/evm-storage-verifier",
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
@@ -141,7 +142,7 @@ members = [
   "lib/subset-of",
   "lib/cometbft-types",
   "lib/galois-rpc",
-  "lib/beacon-api-types",
+  "lib/beacon-api-types"
 ]
 
 [workspace.package]
@@ -180,6 +181,7 @@ scroll-light-client-types = { path = "light-clients/scroll-light-client/types", 
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
+evm-storage-verifier = { path = "lib/evm-storage-verifier", default-features = false }
 ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
 ethereum-sync-protocol = { path = "lib/ethereum-sync-protocol", default-features = false }
