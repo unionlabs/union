@@ -921,10 +921,10 @@ func (app *UnionApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 func (app *UnionApp) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap()); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return app.ModuleManager.InitGenesis(ctx, genesisState)
 }
@@ -1064,7 +1064,6 @@ func (app *UnionApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 }
 
 // ValidatorKeyProvider returns a function that generates a validator key
-// Supported key types are those supported by Comet: ed25519, secp256k1, bls12-381
 func (app *UnionApp) ValidatorKeyProvider() runtime.KeyGenF {
 	return func() (cmtcrypto.PrivKey, error) {
 		return bn254.GenPrivKey(), nil
