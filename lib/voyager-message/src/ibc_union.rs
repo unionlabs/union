@@ -1,3 +1,32 @@
+use voyager_core::IbcVersionId;
+
+use crate::IbcSpec;
+
+pub enum IbcUnion {}
+
+impl IbcSpec for IbcUnion {
+    const ID: IbcVersionId = IbcVersionId::new_static(IbcVersionId::UNION);
+
+    type ClientId = u32;
+
+    type StorePath;
+
+    type Datagram;
+
+    type Event;
+
+    fn client_state_path(client_id: Self::ClientId) -> Self::StorePath {
+        todo!()
+    }
+
+    fn consensus_state_path(
+        client_id: Self::ClientId,
+        height: unionlabs::ibc::core::client::height::Height,
+    ) -> Self::StorePath {
+        todo!()
+    }
+}
+
 // use std::num::NonZeroU64;
 
 // use enumorph::Enumorph;

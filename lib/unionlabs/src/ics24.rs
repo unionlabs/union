@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub mod ethabi {
+    use serde::{Deserialize, Serialize};
     use sha2::Digest;
     use sha3::Keccak256;
 
@@ -36,61 +37,116 @@ pub mod ethabi {
     const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
     const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
 
-    #[must_use]
-    pub fn client_state_key(client_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CLIENT_STATE.to_be_bytes())
-            .chain_update(U256::from(client_id).to_be_bytes())
-            .finalize()
-            .into()
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub enum Path {
+        ClientState(ClientStatePath),
+        ConsensusState(ConsensusStatePath),
+        Connection(ConnectionPath),
+        Channel(ChannelPath),
+        BatchReceipts(BatchReceiptsPath),
+        BatchPackets(BatchPacketsPath),
     }
 
-    #[must_use]
-    pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
-        Keccak256::new()
-            .chain_update(CONSENSUS_STATE.to_be_bytes())
-            .chain_update(U256::from(client_id).to_be_bytes())
-            .chain_update(U256::from(height).to_be_bytes())
-            .finalize()
-            .into()
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ClientStatePath {
+        client_id: u32,
     }
 
-    #[must_use]
-    pub fn connection_key(connection_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CONNECTIONS.to_be_bytes())
-            .chain_update(U256::from(connection_id).to_be_bytes())
-            .finalize()
-            .into()
+    impl ClientStatePath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CLIENT_STATE.to_be_bytes())
+                .chain_update(U256::from(self.client_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
     }
 
-    #[must_use]
-    pub fn channel_key(channel_id: u32) -> H256 {
-        Keccak256::new()
-            .chain_update(CHANNELS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .finalize()
-            .into()
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ConsensusStatePath {
+        client_id: u32,
+        height: u64,
     }
 
-    #[must_use]
-    pub fn batch_receipts_key(channel_id: u32, batch_hash: H256) -> H256 {
-        Keccak256::new()
-            .chain_update(PACKET_ACKS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(batch_hash)
-            .finalize()
-            .into()
+    impl ConsensusStatePath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CONSENSUS_STATE.to_be_bytes())
+                .chain_update(U256::from(self.client_id).to_be_bytes())
+                .chain_update(U256::from(self.height).to_be_bytes())
+                .finalize()
+                .into()
+        }
     }
 
-    #[must_use]
-    pub fn batch_packets_key(channel_id: u32, batch_hash: H256) -> H256 {
-        Keccak256::new()
-            .chain_update(PACKETS.to_be_bytes())
-            .chain_update(U256::from(channel_id).to_be_bytes())
-            .chain_update(batch_hash)
-            .finalize()
-            .into()
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ConnectionPath {
+        connection_id: u32,
+    }
+
+    impl ConnectionPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CONNECTIONS.to_be_bytes())
+                .chain_update(U256::from(self.connection_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct ChannelPath {
+        channel_id: u32,
+    }
+
+    impl ChannelPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(CHANNELS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct BatchReceiptsPath {
+        channel_id: u32,
+        batch_hash: H256,
+    }
+
+    impl BatchReceiptsPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(PACKET_ACKS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .chain_update(self.batch_hash)
+                .finalize()
+                .into()
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct BatchPacketsPath {
+        channel_id: u32,
+        batch_hash: H256,
+    }
+
+    impl BatchReceiptsPath {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            Keccak256::new()
+                .chain_update(PACKETS.to_be_bytes())
+                .chain_update(U256::from(self.channel_id).to_be_bytes())
+                .chain_update(self.batch_hash)
+                .finalize()
+                .into()
+        }
     }
 }
 

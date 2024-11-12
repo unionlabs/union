@@ -10,6 +10,7 @@
 )]
 
 use std::{
+    collections::HashMap,
     ffi::OsString,
     fmt::{Debug, Write},
     fs::read_to_string,
@@ -27,11 +28,12 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 use voyager_message::{
     call::FetchBlocks,
-    context::{get_plugin_info, Context, ModulesConfig},
+    context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
     core::QueryHeight,
     filter::{make_filter, run_filter},
+    ibc_v1::IbcV1,
     rpc::{IbcState, VoyagerRpcClient},
-    VoyagerMessage,
+    IbcSpec, VoyagerMessage,
 };
 use voyager_vm::{call, filter::FilterResult, BoxDynError, Op, Queue};
 
@@ -507,32 +509,41 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     height,
                     decode,
                 } => {
-                    // let ibc_state = voyager_client
-                    //     .query_client_state(on.clone(), height, client_id.clone())
-                    //     .await?;
+                    let ibc_handlers = [(IbcV1::ID, IbcSpecHandler::new::<IbcV1>())]
+                        .into_iter()
+                        .collect::<HashMap<_, _>>();
 
-                    // if decode {
-                    //     let client_info = voyager_client
-                    //         .client_info(on, ibc_version_id, client_id)
-                    //         .await?;
+                    let ibc_state = voyager_client
+                        .query_ibc_state(
+                            on.clone(),
+                            ibc_version_id.clone(),
+                            height,
+                            (ibc_handlers.get(&ibc_version_id).unwrap().client_state_path)(
+                                client_id.clone(),
+                            )?,
+                        )
+                        .await?;
 
-                    //     let decoded = voyager_client
-                    //         .decode_client_state(
-                    //             client_info.client_type,
-                    //             client_info.ibc_interface,
-                    //             ibc_state.state,
-                    //         )
-                    //         .await?;
+                    if decode {
+                        let client_info = voyager_client
+                            .client_info(on, ibc_version_id, client_id)
+                            .await?;
 
-                    //     print_json(&IbcState {
-                    //         height: ibc_state.height,
-                    //         state: decoded,
-                    //     });
-                    // } else {
-                    //     print_json(&ibc_state);
-                    // }
+                        let decoded = voyager_client
+                            .decode_client_state(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                serde_json::from_value(ibc_state.state).unwrap(),
+                            )
+                            .await?;
 
-                    todo!()
+                        print_json(&IbcState {
+                            height: ibc_state.height,
+                            state: decoded,
+                        });
+                    } else {
+                        print_json(&ibc_state);
+                    }
                 }
                 RpcCmd::ConsensusState {
                     on,
