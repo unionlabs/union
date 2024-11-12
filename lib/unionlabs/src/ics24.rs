@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub mod ethabi {
+    use enumorph::Enumorph;
     use serde::{Deserialize, Serialize};
     use sha2::Digest;
     use sha3::Keccak256;
@@ -37,7 +38,7 @@ pub mod ethabi {
     const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
     const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
 
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Enumorph)]
     pub enum Path {
         ClientState(ClientStatePath),
         ConsensusState(ConsensusStatePath),
@@ -49,7 +50,7 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct ClientStatePath {
-        client_id: u32,
+        pub client_id: u32,
     }
 
     impl ClientStatePath {
@@ -65,8 +66,8 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct ConsensusStatePath {
-        client_id: u32,
-        height: u64,
+        pub client_id: u32,
+        pub height: u64,
     }
 
     impl ConsensusStatePath {
@@ -83,7 +84,7 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct ConnectionPath {
-        connection_id: u32,
+        pub connection_id: u32,
     }
 
     impl ConnectionPath {
@@ -99,7 +100,7 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct ChannelPath {
-        channel_id: u32,
+        pub channel_id: u32,
     }
 
     impl ChannelPath {
@@ -115,8 +116,8 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct BatchReceiptsPath {
-        channel_id: u32,
-        batch_hash: H256,
+        pub channel_id: u32,
+        pub batch_hash: H256,
     }
 
     impl BatchReceiptsPath {
@@ -133,11 +134,11 @@ pub mod ethabi {
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct BatchPacketsPath {
-        channel_id: u32,
-        batch_hash: H256,
+        pub channel_id: u32,
+        pub batch_hash: H256,
     }
 
-    impl BatchReceiptsPath {
+    impl BatchPacketsPath {
         #[must_use]
         pub fn key(&self) -> H256 {
             Keccak256::new()
@@ -148,13 +149,54 @@ pub mod ethabi {
                 .into()
         }
     }
+
+    #[must_use]
+    pub fn client_state_key(client_id: u32) -> H256 {
+        ClientStatePath { client_id }.key()
+    }
+
+    #[must_use]
+    pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
+        ConsensusStatePath { client_id, height }.key()
+    }
+
+    #[must_use]
+    pub fn connection_key(connection_id: u32) -> H256 {
+        ConnectionPath { connection_id }.key()
+    }
+
+    #[must_use]
+    pub fn channel_key(channel_id: u32) -> H256 {
+        ChannelPath { channel_id }.key()
+    }
+
+    #[must_use]
+    pub fn batch_receipts_key(channel_id: u32, batch_hash: H256) -> H256 {
+        BatchReceiptsPath {
+            channel_id,
+            batch_hash,
+        }
+        .key()
+    }
+
+    #[must_use]
+    pub fn batch_packets_key(channel_id: u32, batch_hash: H256) -> H256 {
+        BatchPacketsPath {
+            channel_id,
+            batch_hash,
+        }
+        .key()
+    }
 }
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
+#[allow(private_bounds)]
+pub trait IbcPath: Sealed + Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     type Value: Member;
 }
+
+trait Sealed {}
 
 #[model]
 #[derive(Hash, derive_more::Display, enumorph::Enumorph)]
@@ -190,18 +232,29 @@ impl Path {
     #[must_use]
     pub fn into_eth_commitment(self) -> H256 {
         match self {
-            Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
-            Path::ClientConsensusState(path) => {
-                ethabi::consensus_state_key(path.client_id.id(), path.height.height())
+            Path::ClientState(path) => ethabi::ClientStatePath {
+                client_id: path.client_id.id(),
             }
-            Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
-            Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
+            .key(),
+            Path::ClientConsensusState(path) => ethabi::ConsensusStatePath {
+                client_id: path.client_id.id(),
+                height: path.height.height(),
+            }
+            .key(),
+            Path::Connection(path) => ethabi::ConnectionPath {
+                connection_id: path.connection_id.id(),
+            }
+            .key(),
+            Path::ChannelEnd(path) => ethabi::ChannelPath {
+                channel_id: path.channel_id.id(),
+            }
+            .key(),
             Path::Commitment(_path) => {
-                // ethabi::commitments_key(path.channel_id.id(), path.sequence.into())
+                // ethabi::commitments(path.channel_id.id(), path.sequence.into())
                 todo!()
             }
             Path::Acknowledgement(_path) => {
-                // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.into())
+                // ethabi::acknowledgements(path.channel_id.id(), path.sequence.into())
                 todo!()
             }
             Path::Receipt(_path) => {
@@ -315,6 +368,8 @@ impl FromStr for ClientConsensusStatePath {
 impl IbcPath for ClientConsensusStatePath {
     type Value = Bytes;
 }
+
+impl Sealed for ClientConsensusStatePath {}
 
 // REVIEW: Make this an `Option`?
 #[ibc_path("connections/{connection_id:#}", Option<ConnectionEnd>)]

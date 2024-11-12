@@ -23,7 +23,11 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
-    ics24::IbcPath,
+    ics24::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath, NextConnectionSequencePath, NextSequenceAckPath,
+        NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath,
+    },
     id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 use voyager_core::{ClientType, IbcVersionId};
@@ -53,14 +57,31 @@ impl IbcSpec for IbcV1 {
     }
 }
 
-impl<T> IbcStorePathKey for T
-where
-    T: IbcPath,
-{
-    type Spec = IbcV1;
+macro_rules! impl_ibc_store_path_key_via_ibc_path {
+    ($($ty:ty,)*) => {
+        $(
+            impl IbcStorePathKey for $ty {
+                type Spec = IbcV1;
 
-    type Value = <Self as IbcPath>::Value;
+                type Value = <Self as IbcPath>::Value;
+            }
+        )*
+    };
 }
+
+impl_ibc_store_path_key_via_ibc_path!(
+    ClientStatePath,
+    ClientConsensusStatePath,
+    ConnectionPath,
+    ChannelEndPath,
+    CommitmentPath,
+    AcknowledgementPath,
+    ReceiptPath,
+    NextSequenceSendPath,
+    NextSequenceRecvPath,
+    NextSequenceAckPath,
+    NextConnectionSequencePath,
+);
 
 #[model]
 #[derive(Enumorph)]
