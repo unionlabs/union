@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT cc.transaction_version, cc.height, cc.client_id\n        FROM   v1_aptos.client_created_event cc\n        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id\n        WHERE  cc.internal_chain_id = $1\n        AND    cl.chain_id IS NULL\n        ",
+  "query": "\n        SELECT cc.transaction_version, cc.height, cc.client_id\n        FROM   v1_aptos.client_created_event cc\n        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id\n        WHERE  cc.internal_chain_id = $1\n        AND    cl.chain_id IS NULL\n        ",
   "describe": {
     "columns": [
       {
@@ -30,5 +30,5 @@
       true
     ]
   },
-  "hash": "aff1de4110423e520db56c096b2de7ed912d76296ddfcb170ef05f9e5da25eaf"
+  "hash": "3c55d14fd1a19b95bf8e99146daf94b4106de3a00a5b85ed3cfd2b2f06eb7e71"
 }

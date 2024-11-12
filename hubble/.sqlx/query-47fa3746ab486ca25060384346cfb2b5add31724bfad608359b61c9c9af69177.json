@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT chain_id, id FROM v0.chains",
+  "query": "SELECT chain_id, id FROM hubble.chains",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "77d199d197e607f8b597d0876c7815e4524dfabbb0b153fc1b37f394b786c45f"
+  "hash": "47fa3746ab486ca25060384346cfb2b5add31724bfad608359b61c9c9af69177"
 }

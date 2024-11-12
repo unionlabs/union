@@ -71,14 +71,14 @@ pub async fn insert_batch_logs(
     match mode {
         InsertMode::Insert => {
             sqlx::query!("
-                INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
+                INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
                 SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
                 ", &chain_ids, &hashes, &data, &height, &time)
             .execute(tx.as_mut()).await?;
         }
         InsertMode::Upsert => {
             sqlx::query!("
-                INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
+                INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
                 SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
                 ON CONFLICT (chain_id, height) DO 
                 UPDATE SET
@@ -116,7 +116,7 @@ pub async fn delete_eth_log(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        DELETE FROM v0.logs WHERE chain_id = $1 AND height = $2
+        DELETE FROM v1_evm.logs WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
         height as i32
@@ -143,7 +143,7 @@ pub async fn unmapped_clients(
         r#"
         SELECT cc.transaction_hash, cc.height, cc.client_id
         FROM   v1_evm.client_created cc
-        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
+        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
         WHERE  cc.internal_chain_id = $1
         AND    cl.chain_id IS NULL
         "#,

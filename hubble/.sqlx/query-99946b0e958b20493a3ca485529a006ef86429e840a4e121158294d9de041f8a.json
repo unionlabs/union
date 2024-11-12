@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO\n            hubble.clients (chain_id, client_id, counterparty_chain_id)\n        VALUES\n            ($1, $2, $3)\n        ON CONFLICT DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "99946b0e958b20493a3ca485529a006ef86429e840a4e121158294d9de041f8a"
+}

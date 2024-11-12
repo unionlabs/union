@@ -209,7 +209,7 @@ pub async fn unmapped_clients(
         r#"
         SELECT cc.transaction_version, cc.height, cc.client_id
         FROM   v1_aptos.client_created_event cc
-        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
+        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
         WHERE  cc.internal_chain_id = $1
         AND    cl.chain_id IS NULL
         "#,

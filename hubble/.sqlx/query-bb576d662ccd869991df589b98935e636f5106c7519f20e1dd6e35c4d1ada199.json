@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT MAX(consensus_height) as height from v0.consensus_heights\n        WHERE chain_id = $1\n        ",
+  "query": "\n        SELECT MAX(consensus_height) as height from hubble.consensus_heights\n        WHERE chain_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       null
     ]
   },
-  "hash": "c061f1ca24f16bce114054325a266d49bbc57af2c51fd1ceee3a0903cd6fd346"
+  "hash": "bb576d662ccd869991df589b98935e636f5106c7519f20e1dd6e35c4d1ada199"
 }

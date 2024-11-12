@@ -9,7 +9,7 @@ use crate::{
 
 type TransactionHash = String;
 
-/// DTO corresponding to the v0.blocks table.
+/// DTO corresponding to the v1_cosmos.blocks table.
 #[derive(Clone)]
 pub struct PgBlock {
     pub chain_id: ChainId,
@@ -19,7 +19,7 @@ pub struct PgBlock {
     pub data: serde_json::Value,
 }
 
-/// DTO corresponding to the v0.transactions table.
+/// DTO corresponding to the v1_cosmos.transactions table.
 #[derive(Clone)]
 pub struct PgTransaction {
     pub chain_id: ChainId,
@@ -32,7 +32,7 @@ pub struct PgTransaction {
     pub index: i32,
 }
 
-/// DTO corresponding to the v0.events table.
+/// DTO corresponding to the v1_cosmos.events table.
 #[derive(Clone)]
 pub struct PgEvent {
     pub chain_id: ChainId,
@@ -61,7 +61,7 @@ pub async fn insert_batch_blocks(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v0.blocks (chain_id, hash, data, height, time)
+        INSERT INTO v1_cosmos.blocks (chain_id, hash, data, height, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
         ", &chain_ids, &hashes, &data, &height, &time)
     .execute(tx.as_mut()).await?;
@@ -96,7 +96,7 @@ pub async fn insert_batch_transactions(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index) 
+        INSERT INTO v1_cosmos.transactions (chain_id, block_hash, height, hash, data, index) 
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
         ", 
         &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
@@ -145,7 +145,7 @@ pub async fn insert_batch_events(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
+        INSERT INTO v1_cosmos.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
         ", 
         &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
@@ -161,7 +161,7 @@ pub async fn delete_tm_block_transactions_events(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        DELETE FROM v0.events WHERE chain_id = $1 AND height = $2
+        DELETE FROM v1_cosmos.events WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
         height as i32
@@ -171,7 +171,7 @@ pub async fn delete_tm_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v0.transactions WHERE chain_id = $1 AND height = $2
+        DELETE FROM v1_cosmos.transactions WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
         height as i32
@@ -181,7 +181,7 @@ pub async fn delete_tm_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v0.blocks WHERE chain_id = $1 AND height = $2
+        DELETE FROM v1_cosmos.blocks WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
         height as i32
@@ -202,7 +202,7 @@ pub async fn unmapped_client_ids(
         r#"
         SELECT    cc.client_id
         FROM      v1_cosmos.create_client cc
-        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
+        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
         WHERE     cc.internal_chain_id = $1
         AND       cl.chain_id IS NULL
         "#,
