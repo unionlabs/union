@@ -47,7 +47,7 @@ impl LightClientUpdate {
         }
     }
 
-    /// `ethereum-verifier` takes both `current_sync_committee` and `next_sync_committee` as a parameter.
+    /// `ethereum-sync-protocol` takes both `current_sync_committee` and `next_sync_committee` as a parameter.
     /// Although theoretically it can work when both params to be `Some`, for optimization reasons, the client
     /// will only pass one at a time based on the update type. This function returns the currently trusted sync committee
     /// in tuple format ready to be passed in to the verifier.

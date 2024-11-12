@@ -59,7 +59,7 @@ members = [
 
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
-  "lib/ethereum-verifier",
+  "lib/ethereum-sync-protocol",
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
@@ -182,7 +182,7 @@ contracts = { path = "generated/rust/contracts", default-features = false }
 
 ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
-ethereum-verifier           = { path = "lib/ethereum-verifier", default-features = false }
+ethereum-sync-protocol = { path = "lib/ethereum-sync-protocol", default-features = false }
 
 scroll-api      = { path = "lib/scroll-api", default-features = false }
 scroll-codec    = { path = "lib/scroll-codec", default-features = false }
