@@ -266,6 +266,43 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     fn info(config: Self::Config) -> PluginInfo;
 
     async fn cmd(config: Self::Config, cmd: Self::Cmd);
+
+    async fn run() {
+        init_log();
+
+        let app = <PluginApp<Self::Cmd> as clap::Parser>::parse();
+
+        match app {
+            PluginApp::Run {
+                socket,
+                voyager_socket,
+                config,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = Self::info(config.clone());
+
+                let name = info.name;
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    config,
+                    socket,
+                    Self::new,
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_plugin_server", %name))
+                .await
+            }
+            PluginApp::Info { config } => {
+                let info = Self::info(must_parse(&config));
+
+                print!("{}", serde_json::to_string(&info).unwrap())
+            }
+            PluginApp::Cmd { cmd, config } => Self::cmd(must_parse(&config), cmd).await,
+        }
+    }
 }
 
 #[allow(async_fn_in_trait)]
@@ -559,43 +596,6 @@ fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
             error!("invalid config: {}", ErrorReporter(err));
             std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
         }
-    }
-}
-
-pub async fn run_plugin_server<T: Plugin>() {
-    init_log();
-
-    let app = <PluginApp<T::Cmd> as clap::Parser>::parse();
-
-    match app {
-        PluginApp::Run {
-            socket,
-            voyager_socket,
-            config,
-        } => {
-            let config = must_parse::<T::Config>(&config);
-
-            let info = T::info(config.clone());
-
-            let name = info.name;
-
-            run_server(
-                name.clone(),
-                voyager_socket,
-                config,
-                socket,
-                T::new,
-                T::into_rpc,
-            )
-            .instrument(debug_span!("run_plugin_server", %name))
-            .await
-        }
-        PluginApp::Info { config } => {
-            let info = T::info(must_parse(&config));
-
-            print!("{}", serde_json::to_string(&info).unwrap())
-        }
-        PluginApp::Cmd { cmd, config } => T::cmd(must_parse(&config), cmd).await,
     }
 }
 
