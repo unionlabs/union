@@ -36,8 +36,8 @@ use voyager_message::{
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    run_plugin_server, DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId,
-    VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient,
+    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, defer, noop, now, pass::PassResult, seq, BoxDynError, Op};
 
@@ -52,7 +52,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
