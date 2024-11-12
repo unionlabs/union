@@ -10,6 +10,7 @@ library IBCClientLib {
     event ClientRegistered(string clientType, address clientAddress);
     event ClientCreated(string clientType, uint32 clientId);
     event ClientUpdated(uint32 clientId, uint64 height);
+    event Misbehaviour(uint32 clientId);
 }
 
 /**
@@ -68,6 +69,18 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             msg_.clientId, update.height
         )] = update.consensusStateCommitment;
         emit IBCClientLib.ClientUpdated(msg_.clientId, update.height);
+    }
+
+    /**
+     * @dev misbehaviour submits a misbehaviour to the client for it to take action if it is correct
+     */
+    function misbehaviour(
+        IBCMsgs.MsgMisbehaviour calldata msg_
+    ) external override {
+        getClientInternal(msg_.clientId).misbehaviour(
+            msg_.clientId, msg_.clientMessage
+        );
+        emit IBCClientLib.Misbehaviour(msg_.clientId);
     }
 
     function generateClientIdentifier() internal returns (uint32) {

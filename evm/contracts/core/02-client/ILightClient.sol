@@ -56,6 +56,15 @@ interface ILightClient {
     ) external returns (ConsensusStateUpdate memory update);
 
     /**
+     * @dev misbehaviour is used for submitting a misbehaviour to `clientId`.
+     * If succeeded, the client should freeze itself to prevent getting further updates.
+     */
+    function misbehaviour(
+        uint32 clientId,
+        bytes calldata clientMessageBytes
+    ) external;
+
+    /**
      * @dev verifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
      * The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
      */

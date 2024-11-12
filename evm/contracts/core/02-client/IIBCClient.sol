@@ -25,4 +25,11 @@ interface IIBCClient {
     function updateClient(
         IBCMsgs.MsgUpdateClient calldata msg_
     ) external;
+
+    /**
+     * @dev misbehaviour submits a misbehaviour to the client for it to take action if it is correct
+     */
+    function misbehaviour(
+        IBCMsgs.MsgMisbehaviour calldata msg_
+    ) external;
 }

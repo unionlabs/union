@@ -43,6 +43,11 @@ struct ConsensusState {
     bytes32 nextValidatorsHash;
 }
 
+struct Misbehaviour {
+    Header headerA;
+    Header headerB;
+}
+
 library CometblsClientLib {
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
@@ -52,8 +57,8 @@ library CometblsClientLib {
     error ErrMaxClockDriftExceeded();
     error ErrInvalidZKP();
     error ErrInvalidUntrustedValidatorsHash();
-    error ErrInvalidMisbehaviorHeadersSequence();
-    error ErrInvalidMisbehavior();
+    error ErrInvalidMisbehaviourHeadersSequence();
+    error ErrInvalidMisbehaviour();
     error ErrClientFrozen();
     error ErrInvalidInitialConsensusState();
 
@@ -89,6 +94,16 @@ library CometblsClientLib {
             header := bz.offset
         }
         return header;
+    }
+
+    function decodeMisbehaviour(
+        bytes calldata bz
+    ) internal pure returns (Misbehaviour calldata) {
+        Misbehaviour calldata misbehaviour;
+        assembly {
+            misbehaviour := bz.offset
+        }
+        return misbehaviour;
     }
 
     function encodeMemory(
@@ -211,29 +226,30 @@ contract CometblsClient is
         });
     }
 
-    function misbehavior(
+    function misbehaviour(
         uint32 clientId,
-        Header calldata headerA,
-        Header calldata headerB
-    ) public {
+        bytes calldata clientMessageBytes
+    ) external override onlyIBC {
+        Misbehaviour calldata m = clientMessageBytes.decodeMisbehaviour();
         ClientState storage clientState = clientStates[clientId];
-        bool fraud = checkMisbehavior(clientId, clientState, headerA, headerB);
+        bool fraud =
+            checkMisbehaviour(clientId, clientState, m.headerA, m.headerB);
         if (!fraud) {
-            revert CometblsClientLib.ErrInvalidMisbehavior();
+            revert CometblsClientLib.ErrInvalidMisbehaviour();
         }
         // Similar to tendermint https://github.com/cosmos/ibc-go/blob/bbdcc8c6e965c8a2f607dfb2b61cd13712dd966a/modules/light-clients/07-tendermint/misbehaviour.go#L19
         clientState.frozenHeight = 1;
     }
 
-    function checkMisbehavior(
+    function checkMisbehaviour(
         uint32 clientId,
         ClientState storage clientState,
         Header calldata headerA,
         Header calldata headerB
     ) internal returns (bool) {
-        // Ensures that A > B to simplify the misbehavior of time violation check
+        // Ensures that A > B to simplify the misbehaviour of time violation check
         if (headerA.signedHeader.height < headerB.signedHeader.height) {
-            revert CometblsClientLib.ErrInvalidMisbehaviorHeadersSequence();
+            revert CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence();
         }
 
         ConsensusState storage consensusStateA =
@@ -251,13 +267,13 @@ contract CometblsClient is
             bytes32 hashA = keccak256(abi.encode(headerA.signedHeader));
             bytes32 hashB = keccak256(abi.encode(headerB.signedHeader));
             if (hashA != hashB) {
-                // Misbehavior of a fork
+                // Misbehaviour of a fork
                 return true;
             }
         } else {
             // Guarantee that A > B
             if (untrustedTimestampA <= untrustedTimestampB) {
-                // Misbehavior of time violation
+                // Misbehaviour of time violation
                 return true;
             }
         }

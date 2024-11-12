@@ -134,4 +134,9 @@ library IBCMsgs {
         IBCPacket[] packets;
         bytes[] acks;
     }
+
+    struct MsgMisbehaviour {
+        uint32 clientId;
+        bytes clientMessage;
+    }
 }

@@ -47,6 +47,6 @@ pub enum QueryMsg {
     },
     #[returns(VerifyClientMessageUpdate)]
     VerifyClientMessage { client_id: u32, message: Binary },
-    #[returns(bool)]
-    CheckForMisbehavior { client_id: u32, message: Binary },
+    #[returns(())]
+    Misbehaviour { client_id: u32, message: Binary },
 }
