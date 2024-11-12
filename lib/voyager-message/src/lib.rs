@@ -112,6 +112,12 @@ pub trait IbcStorePathKey:
 #[serde(transparent)]
 pub struct RawClientId(pub String);
 
+impl RawClientId {
+    pub fn new(t: impl Display) -> Self {
+        Self(t.to_string())
+    }
+}
+
 impl From<String> for RawClientId {
     fn from(value: String) -> Self {
         Self(value)
