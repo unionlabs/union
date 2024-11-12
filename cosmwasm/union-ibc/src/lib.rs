@@ -9,6 +9,7 @@ use cosmwasm_std::StdError;
 use ibc_solidity::cosmwasm::types::ibc::{ChannelState, ConnectionState};
 use thiserror::Error;
 
+#[cfg(not(feature = "library"))]
 #[global_allocator]
 static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 

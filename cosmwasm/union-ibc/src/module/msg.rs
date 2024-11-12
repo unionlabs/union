@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, Binary};
 use ibc_solidity::cosmwasm::types::ibc::Packet;
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub enum ExecuteMsg {
+pub enum UnionIbcMsg {
     OnChannelOpenInit {
         connection_id: u32,
         channel_id: u32,
@@ -53,4 +53,9 @@ pub enum ExecuteMsg {
         packet: Packet,
         relayer: Addr,
     },
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub enum ExecuteMsg {
+    UnionIbcMsg(UnionIbcMsg),
 }

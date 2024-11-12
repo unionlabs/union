@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::{Item, Map};
 use ibc_solidity::cosmwasm::types::ibc::{Channel, Connection};
@@ -5,6 +7,8 @@ use ibc_solidity::cosmwasm::types::ibc::{Channel, Connection};
 pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
 
 pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
+
+pub const CONTRACT_CHANNELS: Map<Addr, BTreeSet<u32>> = Map::new("contract_channels");
 
 pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
 

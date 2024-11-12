@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use alloy::{primitives::Bytes, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -20,13 +22,13 @@ use unionlabs::{
 
 use crate::{
     lightclient::query::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
-    module::msg::ExecuteMsg as ModuleMsg,
+    module::msg::{ExecuteMsg as ModuleMsg, UnionIbcMsg},
     msg::{ExecuteMsg, InitMsg, MsgRegisterClient, MsgSendPacket, MsgWriteAcknowledgement},
     query::QueryMsg,
     state::{
         CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
-        CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, NEXT_CHANNEL_ID, NEXT_CLIENT_ID,
-        NEXT_CONNECTION_ID,
+        CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, CONTRACT_CHANNELS, NEXT_CHANNEL_ID,
+        NEXT_CLIENT_ID, NEXT_CONNECTION_ID,
     },
     ContractError,
 };
@@ -105,7 +107,10 @@ pub fn execute(
         ExecuteMsg::RegisterClient(MsgRegisterClient {
             client_type,
             client_address,
-        }) => register_client(deps.branch(), client_type, client_address),
+        }) => {
+            let address = deps.api.addr_validate(&client_address)?;
+            register_client(deps.branch(), client_type, address)
+        }
         ExecuteMsg::CreateClient(MsgCreateClient {
             clientType,
             clientStateBytes,
@@ -501,7 +506,7 @@ fn timeout_packet(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnTimeoutPacket { packet, relayer },
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket { packet, relayer }),
             vec![],
         )?))
 }
@@ -557,11 +562,11 @@ fn acknowledge_packet(
         ]));
         messages.push(wasm_execute(
             port_id.clone(),
-            &ModuleMsg::OnAcknowledgementPacket {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnAcknowledgementPacket {
                 packet,
                 acknowledgement: ack.to_vec().into(),
                 relayer: relayer.clone(),
-            },
+            }),
             vec![],
         )?);
     }
@@ -888,16 +893,15 @@ fn channel_open_init(
 ) -> ContractResult {
     let port_id = deps.api.addr_validate(&port_id)?;
     ensure_connection_state(deps.as_ref(), connection_id)?;
-    let channel_id = next_channel_id(deps.branch())?;
-    let channel = Channel {
-        state: ChannelState::Init,
-        connectionId: connection_id,
-        counterpartyChannelId: 0,
-        counterpartyPortId: counterparty_port_id.clone(),
-        version: version.clone(),
-    };
-    save_channel(deps.branch(), channel_id, &channel)?;
-    CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
+    let (channel_id, _) = create_channel(
+        deps.branch(),
+        port_id.clone(),
+        ChannelState::Init,
+        connection_id,
+        0,
+        counterparty_port_id.clone(),
+        version.clone(),
+    )?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_INIT).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -911,12 +915,12 @@ fn channel_open_init(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelOpenInit {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenInit {
                 connection_id,
                 channel_id,
                 version,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -957,10 +961,16 @@ fn channel_open_try(
             value: commit(expected_channel.abi_encode()).into_bytes().into(),
         },
     )?;
-    let channel_id = next_channel_id(deps.branch())?;
     let port_id = deps.api.addr_validate(&port_id)?;
-    save_channel(deps.branch(), channel_id, &channel)?;
-    CHANNEL_OWNER.save(deps.storage, channel_id, &port_id)?;
+    let (channel_id, channel) = create_channel(
+        deps.branch(),
+        port_id.clone(),
+        channel.state,
+        channel.connectionId,
+        channel.counterpartyChannelId,
+        channel.counterpartyPortId,
+        channel.version,
+    )?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_TRY).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -978,13 +988,13 @@ fn channel_open_try(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelOpenTry {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenTry {
                 connection_id: channel.connectionId,
                 channel_id,
                 version: channel.version,
                 counterparty_version,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -1047,12 +1057,12 @@ fn channel_open_ack(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelOpenAck {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenAck {
                 channel_id,
                 counterparty_channel_id,
                 counterparty_version,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -1111,10 +1121,10 @@ fn channel_open_confirm(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelOpenConfirm {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
                 channel_id,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -1146,10 +1156,10 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelCloseInit {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelCloseInit {
                 channel_id,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -1212,10 +1222,10 @@ fn channel_close_confirm(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::OnChannelOpenConfirm {
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
                 channel_id,
                 relayer,
-            },
+            }),
             vec![],
         )?))
 }
@@ -1297,11 +1307,11 @@ fn process_receive(
 
                 messages.push(wasm_execute(
                     port_id.clone(),
-                    &ModuleMsg::OnIntentRecvPacket {
+                    &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnIntentRecvPacket {
                         packet,
                         market_maker: deps.api.addr_validate(&relayer)?,
                         market_maker_msg: relayer_msg.to_vec().into(),
-                    },
+                    }),
                     vec![],
                 )?);
             } else {
@@ -1316,11 +1326,11 @@ fn process_receive(
 
                 messages.push(wasm_execute(
                     port_id.clone(),
-                    &ModuleMsg::OnRecvPacket {
+                    &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnRecvPacket {
                         packet,
                         relayer: deps.api.addr_validate(&relayer)?,
                         relayer_msg: relayer_msg.to_vec().into(),
-                    },
+                    }),
                     vec![],
                 )?);
             }
@@ -1477,6 +1487,38 @@ fn save_connection(
     Ok(())
 }
 
+fn create_channel(
+    mut deps: DepsMut,
+    owner: Addr,
+    state: ChannelState,
+    connection_id: u32,
+    counterparty_channel_id: u32,
+    counterparty_port_id: Bytes,
+    version: String,
+) -> Result<(u32, Channel), ContractError> {
+    let channel_id = next_channel_id(deps.branch())?;
+    let channel = Channel {
+        state,
+        connectionId: connection_id,
+        counterpartyChannelId: counterparty_channel_id,
+        counterpartyPortId: counterparty_port_id,
+        version,
+    };
+    CHANNEL_OWNER.save(deps.storage, channel_id, &owner)?;
+    CONTRACT_CHANNELS.update(deps.storage, owner, |v| -> Result<_, ContractError> {
+        Ok(match v {
+            Some(mut set) => {
+                let inserted = set.insert(channel_id);
+                assert!(inserted, "impossible, channel has been just created");
+                set
+            }
+            None => BTreeSet::from([channel_id]),
+        })
+    })?;
+    save_channel(deps, channel_id, &channel)?;
+    Ok((channel_id, channel))
+}
+
 fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(), ContractError> {
     CHANNELS.save(deps.storage, channel_id, channel)?;
     store_commit(
@@ -1563,6 +1605,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
                 &LightClientQuery::GetStatus { client_id },
             )?;
             Ok(to_json_binary(&status)?)
+        }
+        QueryMsg::GetChannels { contract } => {
+            let channels = CONTRACT_CHANNELS.load(deps.storage, contract)?;
+            Ok(to_json_binary(&channels)?)
+        }
+        QueryMsg::GetChannel { channel_id } => {
+            let channel = CHANNELS.load(deps.storage, channel_id)?;
+            Ok(to_json_binary(&channel)?)
         }
     }
 }
