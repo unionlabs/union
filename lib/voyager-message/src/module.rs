@@ -241,16 +241,6 @@ pub trait Plugin<C: Member, Cb: Member> {
     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
 }
 
-/// Type-erased version of [`StateModuleClient`].
-#[rpc(client, namespace = "state")]
-pub trait RawStateModule {
-    #[method(name = "queryIbcState")]
-    async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
-
-    #[method(name = "clientInfo")]
-    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<ClientInfo>;
-}
-
 #[rpc(
     client,
     server,
@@ -267,6 +257,16 @@ pub trait StateModule<V: IbcSpec> {
     /// Fetch the client info of a client on this chain.
     #[method(name = "clientInfo", with_extensions)]
     async fn client_info(&self, client_id: V::ClientId) -> RpcResult<ClientInfo>;
+}
+
+/// Type-erased version of [`StateModuleClient`].
+#[rpc(client, namespace = "state")]
+pub trait RawStateModule {
+    #[method(name = "queryIbcState")]
+    async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
+
+    #[method(name = "clientInfo")]
+    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<ClientInfo>;
 }
 
 #[rpc(client,
