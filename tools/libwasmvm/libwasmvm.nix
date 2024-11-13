@@ -31,8 +31,8 @@
         channel = "nightly-2024-01-27";
         targets = [ CARGO_BUILD_TARGET ];
       };
-      rustToolchain-2024-09-17 = rust.mkNightly {
-        channel = "nightly-2024-09-17";
+      rustToolchain-1-82 = rust.mkNightly {
+        channel = "1.82.0";
         targets = [ CARGO_BUILD_TARGET ];
       };
 
@@ -85,7 +85,7 @@
               inherit CARGO_BUILD_TARGET;
               pname = "libwasmvm";
               version = wasmvm.rev;
-              buildInputs = [ rustToolchain-2024-09-17 ];
+              buildInputs = [ rustToolchain-1-82 ];
               src = "${wasmvm}/libwasmvm";
               installCargoArtifactsMode = "use-zstd";
             }
@@ -110,7 +110,7 @@
               else
                 throwBadSystem
             );
-          craneLib = crane.lib.overrideToolchain rustToolchain-2024-09-17;
+          craneLib = crane.lib.overrideToolchain rustToolchain-1-82;
         in
         craneLib.buildPackage (
           attrs
