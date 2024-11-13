@@ -405,7 +405,7 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
 
                 let info = must_parse::<ConsensusModuleInfo>(&info);
 
-                let name = format!("chain/{}", info.chain_id);
+                let name = format!("consensus/{}", info.chain_id);
 
                 run_server(
                     name.clone(),
@@ -442,17 +442,17 @@ pub trait ClientModule: ClientModuleServer + Sized {
 
                 let info = must_parse::<ClientModuleInfo>(&info);
 
-                let id = info.id();
+                let name = format!("client/{}", info.id());
 
                 run_server(
-                    id.clone(),
+                    name.clone(),
                     voyager_socket,
                     (config, info),
                     socket,
                     |(config, info)| Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_client_module_server", %id))
+                .instrument(debug_span!("run_client_module_server", %name))
                 .await
             }
         }
