@@ -20,7 +20,7 @@ alloy                       = { workspace = true, features = ["sol-types"] }
 beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
 cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["abort"] }
+cosmwasm-std                = { workspace = true, features = [] }
 cw-storage-plus             = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
 ethereum-sync-protocol      = { workspace = true }

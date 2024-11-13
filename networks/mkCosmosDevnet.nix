@@ -857,7 +857,7 @@ let
                   --api.address            tcp://0.0.0.0:1317 \
                   --api.rpc-max-body-bytes 100000000 \
                   --grpc.address           0.0.0.0:9090 \
-                  --log_level rpc-server:warn,*:info
+                  --log_level rpc-server:warn,p2p:info,consensus:info,*:debug
               ''
             else
               startCommandOverwrite
