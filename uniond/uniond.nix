@@ -76,7 +76,7 @@
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-1VFtDDDjhDn/WBy7rW0DOHd/R3/wle7zCNqV+a3hk8w=";
+                vendorHash = "sha256-P+/F+JkEDcnQtTxLTesMGYWv4O33/poZ0iirsyJPUWU=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
