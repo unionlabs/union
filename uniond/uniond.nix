@@ -15,7 +15,7 @@
       ...
     }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_3_1;
+      libwasmvm = self'.packages.libwasmvm-2_1_3;
       CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
 
@@ -76,7 +76,7 @@
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-YRRY6CCgzgNl3Q8PtXtQx01VaIxNZGejdUX0MyTqQ7I=";
+                vendorHash = "sha256-06cNrrFUNr9RqRDPjYTEN4+xL5xoTGvZCztCGsho+8Y=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
@@ -88,7 +88,6 @@
                     # Statically link if we're on linux
                     nativeBuildInputs = [ pkgs.musl ];
                     ldflags = [
-                      "-checklinkname=0"
                       "-linkmode external"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"

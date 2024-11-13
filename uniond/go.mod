@@ -286,6 +286,8 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20241018173625-c2982236c557
 )
 
+replace github.com/tunabay/go-bitarray => github.com/poisonphang/go-bitarray v0.0.0-20240912214703-d6127bb4d1bd
+
 // CosmWasm
 replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241014162235-cc7764ecf9b9
 
