@@ -6,7 +6,7 @@ repository   = { workspace = true }
 version      = "0.1.0"
 
 [dependencies]
-aptos-verifier              = { workspace = true }
+# aptos-verifier              = { workspace = true }
 bcs                         = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }

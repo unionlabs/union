@@ -29,10 +29,10 @@
         #   code = self'.packages.ucs00-pingpong;
         #   instances = [ ];
         # }
-        {
-          code = self'.packages.ucs01-relay;
-          instances = [ ];
-        }
+        # {
+        #   code = self'.packages.ucs01-relay;
+        #   instances = [ ];
+        # }
         # {
         #   code = self'.packages.ucs02-nft;
         #   instances = [ ];
@@ -76,7 +76,7 @@
           };
         };
         lightClients = [
-          self'.packages.ethereum-light-client
+          # self'.packages.ethereum-light-client
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
@@ -175,7 +175,7 @@
         keyType = "ed25519";
         validatorCount = 4;
         lightClients = [
-          self'.packages.cometbls-light-client
+          # self'.packages.cometbls-light-client
         ];
         inherit cosmwasmContracts;
         portIncrease = 300;

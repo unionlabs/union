@@ -13359,7 +13359,6 @@ version = "0.1.0"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
- "aptos-verifier",
  "bcs 0.1.6",
  "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
