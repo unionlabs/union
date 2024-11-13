@@ -9,6 +9,7 @@ members = [
   "cosmwasm/ucs02-nft",
   "cosmwasm/union-ibc",
   "cosmwasm/union-ibc-msg",
+  "cosmwasm/union-ibc-light-client",
 
   "devnet-compose",
 

@@ -13321,6 +13321,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "union-ibc-light-client"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std 1.5.2",
+ "frame-support-procedural",
+ "macros",
+ "serde-utils",
+ "thiserror",
+ "union-ibc",
+ "unionlabs",
+]
+
+[[package]]
 name = "union-ibc-movement-lc"
 version = "0.1.0"
 dependencies = [
