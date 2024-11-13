@@ -912,6 +912,16 @@ func NewUnionApp(
 	return app
 }
 
+// Close closes all necessary application resources.
+// It implements servertypes.Application.
+func (app *UnionApp) Close() error {
+	if err := app.BaseApp.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Name returns the name of the App
 func (app *UnionApp) Name() string { return app.BaseApp.Name() }
 
@@ -1032,7 +1042,7 @@ func (app *UnionApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 
 // GetSubspace returns a param subspace for a given module name.
 //
-// NOTE: This is solely to be used for testing purposes.
+// NOTE: Still used by ibc-go until it's fully upgraded to v0.52
 func (app *UnionApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
