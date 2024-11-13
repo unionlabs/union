@@ -1,10 +1,8 @@
 <script lang="ts">
 import "temporal-polyfill/global"
-interface Props {
-  children?: import("svelte").Snippet
-}
+console.info("transfers layout")
 
-let { children }: Props = $props()
+let { children } = $props()
 </script>
 
 {@render children?.()}

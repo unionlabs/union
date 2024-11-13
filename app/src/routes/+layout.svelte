@@ -1,6 +1,4 @@
 <script lang="ts">
-import { run } from "svelte/legacy"
-
 import "$lib/polyfill.ts"
 import "$styles/index.css"
 import { onMount } from "svelte"
@@ -21,11 +19,8 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import DeprecationNotice from "$lib/components/deprecation-notice.svelte"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
-interface Props {
-  children?: import("svelte").Snippet
-}
 
-let { children }: Props = $props()
+let { children } = $props()
 
 const { queryClient, QueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -35,7 +30,7 @@ onMount(() => {
   disablePinchToZoom()
 })
 
-run(() => {
+$effect(() => {
   updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 })
 </script>
