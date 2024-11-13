@@ -104,6 +104,7 @@ impl Plugin for Module {
         .bech32_prefix;
 
         Ok(Self {
+            ibc_union_contract_address: config.ibc_union_contract_address,
             keyring: CosmosKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
@@ -139,7 +140,7 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
+    ($data."@type" == "identified_ibc_datagram_batch" or $data."@type" == "identified_ibc_datagram")
         and $data."@value".chain_id == "{chain_id}"
 else
     false
@@ -179,7 +180,7 @@ impl Module {
                     // TODO: Figure out a way to thread this value through
                     let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-                    let msgs = process_msgs(msg, signer);
+                    let msgs = process_msgs(msg, signer, self.ibc_union_contract_address.clone());
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
