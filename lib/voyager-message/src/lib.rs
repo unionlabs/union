@@ -2,10 +2,8 @@
 
 use std::{
     env::VarError,
-    error::Error,
-    fmt::{Debug, Display},
+    fmt::Debug,
     future::Future,
-    str::FromStr,
     time::Duration,
 };
 
