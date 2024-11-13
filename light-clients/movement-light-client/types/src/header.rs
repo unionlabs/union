@@ -38,7 +38,7 @@ pub mod proto {
     impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
         fn from(value: Header) -> Self {
             Self {
-                // TODO(aeryz): fix this or yeet proto
+                // TODO(aeryz): fix this or remove proto
                 l1_height: None,
                 trusted_height: Some(value.trusted_height.into()),
                 state_proof: Some(value.state_proof.into()),
