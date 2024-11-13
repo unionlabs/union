@@ -122,6 +122,7 @@ impl Module {
             .on_builtin(&config.eth_rpc_api)
             .await?;
 
+        // TODO: Assert chain id is correct
         let chain_id = provider.get_chain_id().await?;
 
         Ok(Self {

@@ -80,7 +80,7 @@ impl QueueMessage for VoyagerMessage {
 pub trait IbcSpec {
     const ID: IbcVersionId;
 
-    type ClientId: FromStr<Err: Error + Send + Sync + 'static> + Display + Member;
+    type ClientId: Member;
 
     // type Height: FromStr<Err: Error + Send + Sync + 'static> + Display + Member;
 
@@ -107,20 +107,26 @@ pub trait IbcStorePathKey:
     type Value: Member;
 }
 
-/// Simple wrapper around a `String` for raw client ids.
+/// Simple wrapper around a [`Value`] for raw client ids.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct RawClientId(pub String);
+pub struct RawClientId(Value);
 
 impl RawClientId {
-    pub fn new(t: impl Display) -> Self {
-        Self(t.to_string())
+    pub fn new(t: impl Serialize) -> Self {
+        Self(serde_json::to_value(t).unwrap())
     }
 }
 
 impl From<String> for RawClientId {
     fn from(value: String) -> Self {
-        Self(value)
+        Self(Value::String(value))
+    }
+}
+
+impl From<u32> for RawClientId {
+    fn from(value: u32) -> Self {
+        Self(Value::Number(value.into()))
     }
 }
 

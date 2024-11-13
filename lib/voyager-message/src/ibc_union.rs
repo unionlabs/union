@@ -78,30 +78,113 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Value = H256;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Enumorph)]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum IbcMsg {
-    CreateClient(ibc_solidity::ibc::MsgCreateClient),
-    UpdateClient(ibc_solidity::ibc::MsgUpdateClient),
-    ConnectionOpenInit(ibc_solidity::ibc::MsgConnectionOpenInit),
-    ConnectionOpenTry(ibc_solidity::ibc::MsgConnectionOpenTry),
-    ConnectionOpenAck(ibc_solidity::ibc::MsgConnectionOpenAck),
-    ConnectionOpenConfirm(ibc_solidity::ibc::MsgConnectionOpenConfirm),
-    ChannelOpenInit(ibc_solidity::ibc::MsgChannelOpenInit),
-    ChannelOpenTry(ibc_solidity::ibc::MsgChannelOpenTry),
-    ChannelOpenAck(ibc_solidity::ibc::MsgChannelOpenAck),
-    ChannelOpenConfirm(ibc_solidity::ibc::MsgChannelOpenConfirm),
-    ChannelCloseInit(ibc_solidity::ibc::MsgChannelCloseInit),
-    ChannelCloseConfirm(ibc_solidity::ibc::MsgChannelCloseConfirm),
-    PacketRecv(ibc_solidity::ibc::MsgPacketRecv),
-    PacketAcknowledgement(ibc_solidity::ibc::MsgPacketAcknowledgement),
-    PacketTimeout(ibc_solidity::ibc::MsgPacketTimeout),
-    IntentPacketRecv(ibc_solidity::ibc::MsgIntentPacketRecv),
-    BatchSend(ibc_solidity::ibc::MsgBatchSend),
-    BatchAcks(ibc_solidity::ibc::MsgBatchAcks),
+    CreateClient(MsgCreateClient),
+    UpdateClient(MsgUpdateClient),
+    ConnectionOpenInit(MsgConnectionOpenInit),
+    ConnectionOpenTry(MsgConnectionOpenTry),
+    ConnectionOpenAck(MsgConnectionOpenAck),
+    ConnectionOpenConfirm(MsgConnectionOpenConfirm),
+    ChannelOpenInit(MsgChannelOpenInit),
+    ChannelOpenTry(MsgChannelOpenTry),
+    ChannelOpenAck(MsgChannelOpenAck),
+    ChannelOpenConfirm(MsgChannelOpenConfirm),
+    ChannelCloseInit(MsgChannelCloseInit),
+    ChannelCloseConfirm(MsgChannelCloseConfirm),
+    PacketRecv(MsgPacketRecv),
+    PacketAcknowledgement(MsgPacketAcknowledgement),
+    PacketTimeout(MsgPacketTimeout),
+    IntentPacketRecv(MsgIntentPacketRecv),
+    BatchSend(MsgBatchSend),
+    BatchAcks(MsgBatchAcks),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Enumorph)]
+impl IbcMsg {
+    pub fn name(&self) -> &'static str {
+        match self {
+            IbcMsg::CreateClient(_) => "create_client",
+            IbcMsg::UpdateClient(_) => "update_client",
+            IbcMsg::ConnectionOpenInit(_) => "connection_open_init",
+            IbcMsg::ConnectionOpenTry(_) => "connection_open_try",
+            IbcMsg::ConnectionOpenAck(_) => "connection_open_ack",
+            IbcMsg::ConnectionOpenConfirm(_) => "connection_open_confirm",
+            IbcMsg::ChannelOpenInit(_) => "channel_open_init",
+            IbcMsg::ChannelOpenTry(_) => "channel_open_try",
+            IbcMsg::ChannelOpenAck(_) => "channel_open_ack",
+            IbcMsg::ChannelOpenConfirm(_) => "channel_open_confirm",
+            IbcMsg::ChannelCloseInit(_) => "channel_close_init",
+            IbcMsg::ChannelCloseConfirm(_) => "channel_close_confirm",
+            IbcMsg::PacketRecv(_) => "packet_recv",
+            IbcMsg::PacketAcknowledgement(_) => "packet_acknowledgement",
+            IbcMsg::PacketTimeout(_) => "packet_timeout",
+            IbcMsg::IntentPacketRecv(_) => "intent_packet_recv",
+            IbcMsg::BatchSend(_) => "batch_send",
+            IbcMsg::BatchAcks(_) => "batch_acks",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgCreateClient {
+    pub client_type: ClientType,
+    pub client_state_bytes: Bytes,
+    pub consensus_state_bytes: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgUpdateClient {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgConnectionOpenInit {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgConnectionOpenTry {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgConnectionOpenAck {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgConnectionOpenConfirm {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelOpenInit {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelOpenTry {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelOpenAck {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelOpenConfirm {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelCloseInit {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgChannelCloseConfirm {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgPacketRecv {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgPacketAcknowledgement {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgPacketTimeout {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgIntentPacketRecv {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgBatchSend {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MsgBatchAcks {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Enumorph)]
 #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
 pub enum FullIbcEvent {
     ClientRegistered(ClientRegistered),
@@ -129,33 +212,33 @@ type ClientId = u32;
 type ConnectionId = u32;
 type ChannelId = u32;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientRegistered {
     pub client_type: ClientType,
     pub client_address: H160,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientCreated {
     pub client_type: ClientType,
     pub client_id: ClientId,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientUpdated {
     pub client_type: ClientType,
     pub client_id: ClientId,
     pub height: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionOpenInit {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
     pub counterparty_client_id: ClientId,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionOpenTry {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -163,7 +246,7 @@ pub struct ConnectionOpenTry {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -171,7 +254,7 @@ pub struct ConnectionOpenAck {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionOpenConfirm {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -179,7 +262,7 @@ pub struct ConnectionOpenConfirm {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenInit {
     pub port_id: H160,
     pub channel_id: ChannelId,
@@ -188,7 +271,7 @@ pub struct ChannelOpenInit {
     pub version: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenTry {
     pub port_id: H160,
     pub channel_id: ChannelId,
@@ -198,7 +281,7 @@ pub struct ChannelOpenTry {
     pub version: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenAck {
     pub port_id: H160,
     pub channel_id: ChannelId,
@@ -208,7 +291,7 @@ pub struct ChannelOpenAck {
     pub version: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenConfirm {
     pub port_id: H160,
     pub channel_id: ChannelId,
@@ -218,20 +301,20 @@ pub struct ChannelOpenConfirm {
     pub version: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelCloseInit {}
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelCloseConfirm {}
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendPacket {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecvPacket {
     pub packet_data: Bytes,
 
@@ -241,7 +324,7 @@ pub struct RecvPacket {
     pub relayer_msg: Bytes,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecvIntentPacket {
     pub packet_data: Bytes,
 
@@ -251,7 +334,7 @@ pub struct RecvIntentPacket {
     pub marker_maker_msg: Bytes,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WriteAcknowledgement {
     pub packet_data: Bytes,
 
@@ -260,7 +343,7 @@ pub struct WriteAcknowledgement {
     pub acknowledgement: Bytes,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AcknowledgePacket {
     pub packet_data: Bytes,
 
@@ -270,7 +353,7 @@ pub struct AcknowledgePacket {
     pub acknowledgement: Bytes,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeoutPacket {
     pub packet_data: Bytes,
 
@@ -281,7 +364,7 @@ pub struct TimeoutPacket {
 
 // metadata
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PacketMetadata {
     pub source_channel: ChannelMetadata,
     pub destination_channel: ChannelMetadata,
@@ -290,7 +373,7 @@ pub struct PacketMetadata {
     pub timeout_timestamp: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelMetadata {
     pub channel_id: ChannelId,
     // REVIEW: Can this be different on either end of a channel?
@@ -298,7 +381,7 @@ pub struct ChannelMetadata {
     pub connection: ConnectionMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
