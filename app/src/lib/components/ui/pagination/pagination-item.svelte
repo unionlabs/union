@@ -1,16 +1,10 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import { cn } from "$lib/utilities/shadcn.js"
+import type { HTMLLiAttributes } from "svelte/elements"
+import type { WithElementRef } from "bits-ui"
 
-type $$Props = HTMLAttributes<HTMLLIElement>
-
-let className: $$Props["class"] = undefined
-
-export { className as class }
+let { ref = $bindable(null), children, ...restProps }: WithElementRef<HTMLLiAttributes> = $props()
 </script>
 
-<li 
-class={cn("", className)} {...$$restProps}
->
-  <slot />
+<li bind:this={ref} {...restProps}>
+	{@render children?.()}
 </li>

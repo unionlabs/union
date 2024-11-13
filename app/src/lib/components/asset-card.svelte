@@ -6,13 +6,17 @@ import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 
-//Create correct type here
-export let asset: { symbol: string; balance: string | bigint; denom?: string; address: string }
-export let chain: Chain
+interface Props {
+  //Create correct type here
+  asset: { symbol: string; balance: string | bigint; denom?: string; address: string }
+  chain: Chain
+}
+
+let { asset, chain }: Props = $props()
 
 //Finds the asset in chains.assets and checks if supported,
 const identifier = asset.denom ? asset.denom : asset.address
-$: supportedAsset = getSupportedAsset(chain, identifier)
+let supportedAsset = $derived(getSupportedAsset(chain, identifier))
 </script>
 
 {#if supportedAsset || $showUnsupported}

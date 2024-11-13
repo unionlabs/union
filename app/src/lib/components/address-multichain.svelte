@@ -3,8 +3,12 @@ import type { Chain } from "$lib/types"
 import { hexAddressToBech32 } from "@unionlabs/client"
 import { Badge } from "$lib/components/ui/badge/index.ts"
 
-export let address: { address: string; normalizedAddress: string }
-export let chains: Array<Chain>
+interface Props {
+  address: { address: string; normalizedAddress: string }
+  chains: Array<Chain>
+}
+
+let { address, chains }: Props = $props()
 
 const addressChain = chains.find(c => address.address.startsWith(c.addr_prefix)) as Chain
 
@@ -43,7 +47,7 @@ const longestPrefix = Math.max.apply(
   0,
   allCosmosAddresses.map(pair => pair.prefix.length)
 )
-let addressIndex = 0
+let addressIndex = $state(0)
 setInterval(() => {
   //logic goes here
   addressIndex = (addressIndex + 1) % (allCosmosAddresses.length - 1)

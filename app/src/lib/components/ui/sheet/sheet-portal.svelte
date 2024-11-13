@@ -4,10 +4,15 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = SheetPrimitive.PortalProps
 
-let className: $$Props["class"] = undefined
-export { className as class }
+interface Props {
+  class?: $$Props["class"]
+  children?: import("svelte").Snippet
+  [key: string]: any
+}
+
+let { class: className = undefined, children, ...rest }: Props = $props()
 </script>
 
-<SheetPrimitive.Portal class={cn(className)} {...$$restProps}>
-  <slot />
+<SheetPrimitive.Portal class={cn(className)} {...rest}>
+  {@render children?.()}
 </SheetPrimitive.Portal>

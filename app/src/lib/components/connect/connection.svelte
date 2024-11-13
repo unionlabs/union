@@ -5,27 +5,42 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import CopyIcon from "virtual:icons/lucide/copy"
 import CheckIcon from "virtual:icons/lucide/check"
 import { Button } from "$lib/components/ui/button"
-import { copyTextAction } from "$lib/actions/copy.ts"
+import { copyTextAction } from "$lib/actions/copy.svelte.ts"
 import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
 import MetamaskMobileAlert from "$lib/components/connect/metamask-mobile-alert.svelte"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
-export let chain: "cosmos" | "evm" | "aptos"
 type T = $$Generic<typeof chain>
 
 type $$Props = Props<T>
 
-export let address: $$Props["address"]
-export let hoverState: $$Props["hoverState"]
-export let connectStatus: $$Props["connectStatus"]
-export let onConnectClick: $$Props["onConnectClick"]
-export let onDisconnectClick: $$Props["onDisconnectClick"]
-export let connectedWalletId: $$Props["connectedWalletId"]
-export let chainWalletsInformation: $$Props["chainWalletsInformation"]
+interface Props_1 {
+  chain: "cosmos" | "evm" | "aptos"
+  address: $$Props["address"]
+  hoverState: $$Props["hoverState"]
+  connectStatus: $$Props["connectStatus"]
+  onConnectClick: $$Props["onConnectClick"]
+  onDisconnectClick: $$Props["onDisconnectClick"]
+  connectedWalletId: $$Props["connectedWalletId"]
+  chainWalletsInformation: $$Props["chainWalletsInformation"]
+  [key: string]: any
+}
 
-$: connectText =
+let {
+  chain,
+  address,
+  hoverState = $bindable(),
+  connectStatus,
+  onConnectClick,
+  onDisconnectClick,
+  connectedWalletId,
+  chainWalletsInformation,
+  ...rest
+}: Props_1 = $props()
+
+let connectText = $derived(
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
@@ -33,8 +48,9 @@ $: connectText =
         ? address
         : truncateUnionAddress(address, -1)
     : ""
+)
 
-let copyClicked = false
+let copyClicked = $state(false)
 const toggleCopy = () => (copyClicked = !copyClicked)
 const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
@@ -45,30 +61,32 @@ let sanitizeWalletInformation =
       array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
   ) ?? chainWalletsInformation
 
-$: walletListToRender =
+let walletListToRender = $derived(
   connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
+)
 
-let metamaskAlertDialogOpen = false
+let metamaskAlertDialogOpen = $state(false)
 </script>
 
 <MetamaskMobileAlert {metamaskAlertDialogOpen} />
 
 <h3 class="uppercase font-supermolot font-bold text-xl">{chain}</h3>
 <Button
-  {...$$restProps}
-  builders={[{ action: node => copyTextAction(node, { text: address }) }]}
+  {...rest}
   class={cn(
     "px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start",
     connectStatus !== "connected" &&
-      "hover:bg-transparent pointer-events-none text-md font-bold hidden",
+    "hover:bg-transparent pointer-events-none text-md font-bold hidden",
   )}
   id={`${chain}-connect`}
-  on:click={_event => onCopyClick()}
+  onclick={_event => onCopyClick()}
+
   tabindex={0}
   data-connect-button=""
   variant={connectStatus === "connected" ? "default" : "ghost"}
 >
   <div
+
     class={cn(
       "w-full text-left font-mono",
       connectText === "EVM" || connectText === "Cosmos" ? "hidden" : "text-sm sm:text-[15.5px]",
@@ -93,8 +111,8 @@ let metamaskAlertDialogOpen = false
         role="row"
         tabindex={0}
         data-index={index}
-        on:mouseleave={() => (hoverState = connectedWalletId === id ? "none" : "none")}
-        on:mouseenter={() => (hoverState = connectedWalletId === id ? "hover" : "none")}
+        onmouseleave={() => (hoverState = connectedWalletId === id ? "none" : "none")}
+        onmouseenter={() => (hoverState = connectedWalletId === id ? "hover" : "none")}
         class={cn("flex flex-col w-full justify-start mb-3")}
       >
         <Button
@@ -110,7 +128,7 @@ let metamaskAlertDialogOpen = false
               connectedWalletId === id &&
               "hover:text-destructive border-destructive hover:bg-transparent dark:hover:text-white",
           )}
-          on:click={async () => {
+          onclick={async () => {
             if (walletIdentifier === OFFENDING_WALLET_ID) {
               metamaskAlertDialogOpen = true
             }

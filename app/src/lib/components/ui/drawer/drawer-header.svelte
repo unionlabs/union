@@ -1,19 +1,20 @@
 <script lang="ts">
+import type { WithElementRef } from "bits-ui"
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utilities/shadcn.js"
 
-type $$Props = HTMLAttributes<HTMLDivElement> & {
-  el?: HTMLDivElement
-}
-export let el: $$Props["el"] = undefined
-let className: $$Props["class"] = undefined
-export { className as class }
+let {
+  ref = $bindable(null),
+  class: className,
+  children,
+  ...restProps
+}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props()
 </script>
 
 <div
-  bind:this={el}
-  class={cn('grid gap-1.5 p-4 text-center sm:text-left', className)}
-  {...$$restProps}
+	bind:this={ref}
+	class={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
+	{...restProps}
 >
-  <slot />
+	{@render children?.()}
 </div>

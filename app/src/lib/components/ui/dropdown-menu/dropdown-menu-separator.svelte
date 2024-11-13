@@ -2,13 +2,15 @@
 import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui"
 import { cn } from "$lib/utilities/shadcn.js"
 
-type $$Props = DropdownMenuPrimitive.SeparatorProps
-
-let className: $$Props["class"] = undefined
-export { className as class }
+let {
+  ref = $bindable(null),
+  class: className,
+  ...restProps
+}: DropdownMenuPrimitive.SeparatorProps = $props()
 </script>
 
 <DropdownMenuPrimitive.Separator
-	class={cn("-mx-1 my-1 h-px bg-muted", className)}
-	{...$$restProps}
+	bind:ref
+	class={cn("bg-muted -mx-1 my-1 h-px", className)}
+	{...restProps}
 />

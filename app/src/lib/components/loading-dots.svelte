@@ -1,6 +1,9 @@
 <script lang="ts">
-let className: string | undefined = "size-12"
-export { className as class }
+interface Props {
+  class?: string | undefined
+}
+
+let { class: className = "size-12" }: Props = $props()
 </script>
 
 <div>

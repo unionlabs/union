@@ -35,7 +35,7 @@ let channels = createQuery({
     }))
 })
 
-let channelsDataStore = derived(channels, $channels => $channels.data ?? [])
+let channelsDataStore = $state(derived(channels, $channels => $channels.data ?? []))
 
 type DataRow = UnwrapReadable<typeof channelsDataStore>[number]
 

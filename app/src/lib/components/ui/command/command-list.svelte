@@ -1,15 +1,12 @@
 <script lang="ts">
-import { Command as CommandPrimitive } from "cmdk-sv"
+import { Command as CommandPrimitive } from "bits-ui"
 import { cn } from "$lib/utilities/shadcn.js"
 
-type $$Props = CommandPrimitive.ListProps
-let className: string | undefined | null = undefined
-export { className as class }
+let { ref = $bindable(null), class: className, ...restProps }: CommandPrimitive.ListProps = $props()
 </script>
 
 <CommandPrimitive.List
 	class={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
-	{...$$restProps}
->
-	<slot />
-</CommandPrimitive.List>
+	{...restProps}
+	bind:ref
+/>

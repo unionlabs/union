@@ -3,6 +3,11 @@ import { toast } from "svelte-sonner"
 import { toggleMode } from "mode-watcher"
 import { shortcut } from "@svelte-put/shortcut"
 import { useQueryClient } from "@tanstack/svelte-query"
+interface Props {
+  children?: import("svelte").Snippet
+}
+
+let { children }: Props = $props()
 
 const queryClient = useQueryClient()
 </script>
@@ -47,5 +52,5 @@ const queryClient = useQueryClient()
 />
 
 {#if import.meta.env.MODE === "development"}
-  <slot />
+  {@render children?.()}
 {/if}

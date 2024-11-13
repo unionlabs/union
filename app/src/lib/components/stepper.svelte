@@ -8,8 +8,12 @@ import { toIsoString } from "$lib/utilities/date"
 import Truncate from "$lib/components/truncate.svelte"
 import { createEventDispatcher } from "svelte"
 
-export let steps: Readable<Array<Step>>
-export let onRetry: (() => void) | undefined = undefined
+interface Props {
+  steps: Readable<Array<Step>>
+  onRetry?: (() => void) | undefined
+}
+
+let { steps, onRetry = undefined }: Props = $props()
 
 const dispatch = createEventDispatcher()
 

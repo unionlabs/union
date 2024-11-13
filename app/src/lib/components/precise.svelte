@@ -3,11 +3,15 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 import type { Chain } from "$lib/types.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
-export let chain: Chain
-export let asset: any
-export let displayDecimals = 2
-export let showToolTip = false
-export let showSymbol = false
+interface Props {
+  chain: Chain
+  asset: any
+  displayDecimals?: number
+  showToolTip?: boolean
+  showSymbol?: boolean
+}
+
+let { chain, asset, displayDecimals = 2, showToolTip = false, showSymbol = false }: Props = $props()
 
 const formatBalance = (
   balance: bigint | string,
@@ -48,15 +52,18 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: supportedAsset = asset ? getSupportedAsset(chain, asset.address) : null
+let supportedAsset = $derived(asset ? getSupportedAsset(chain, asset.address) : null)
 
-$: balance = asset ? (asset.balance ?? BigInt(0)) : BigInt(0)
-$: decimals = asset && supportedAsset ? supportedAsset.decimals : asset ? asset.decimals : 0
-$: symbol =
+let balance = $derived(asset ? (asset.balance ?? BigInt(0)) : BigInt(0))
+let decimals = $derived(
+  asset && supportedAsset ? supportedAsset.decimals : asset ? asset.decimals : 0
+)
+let symbol = $derived(
   asset && supportedAsset ? supportedAsset.display_symbol : asset ? asset.symbol : "Unknown"
+)
 
-$: formatted = formatBalance(balance, decimals, true)
-$: precise = formatBalance(balance, decimals, false)
+let formatted = $derived(formatBalance(balance, decimals, true))
+let precise = $derived(formatBalance(balance, decimals, false))
 </script>
 
 {#key formatted}

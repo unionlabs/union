@@ -2,7 +2,7 @@
 import { onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 
-let [progress, visible] = [0, false]
+let [progress, visible] = $state([0, false])
 onMount(() => {
   visible = true
   const next = () => {
@@ -19,14 +19,14 @@ onMount(() => {
     <div
       style="width: {progress * 100}%"
       class={cn(['absolute h-full bg-union-accent-600 transition-[width] duration-500 left-0 top-0'])}
-    />
+></div>
   </div>
 {/if}
 
 {#if progress >= 0.4}
   <div
     class="fixed size-full bg-[rgba(234,248,255,0.04)] pointer-events-none z-[998] animate-[fade_0.4s]"
-  />
+></div>
 {/if}
 
 <style lang="postcss">

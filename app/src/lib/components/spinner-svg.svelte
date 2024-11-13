@@ -1,6 +1,9 @@
 <script lang="ts">
-export let className: string
-//Add this through our icon package instead
+interface Props {
+  className: string //Add this through our icon package instead
+}
+
+let { className }: Props = $props()
 </script>
 
 <svg class={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

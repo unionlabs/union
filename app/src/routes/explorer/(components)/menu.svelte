@@ -5,7 +5,11 @@ import type { LayoutData } from "../$types.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { derived } from "svelte/store"
 
-export let tableRoutes: LayoutData["tables"]
+interface Props {
+  tableRoutes: LayoutData["tables"]
+}
+
+let { tableRoutes }: Props = $props()
 
 const selectedTable = derived(page, $page => $page.route.id?.split("/").at(2))
 
@@ -29,7 +33,8 @@ let alwaysCollapsedWidth = 580
       )}
     >
       <span>[</span>
-      <svelte:component this={icon} class={"size-3.5"} />
+      {@const SvelteComponent = icon}
+      <SvelteComponent class={"size-3.5"} />
       <div>{route.replaceAll("-", " ")}</div>
       <span>]</span>
     </Button>

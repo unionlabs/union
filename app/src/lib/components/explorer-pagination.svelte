@@ -1,3 +1,11 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: live = $timestamp === null` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: live = $timestamp === null` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: live = $timestamp === null` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: live = $timestamp === null` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 import { Label } from "$lib/components/ui/label"
@@ -43,7 +51,7 @@ const onCurrentClick = () => {
   <Button
     size="sm"
     variant="default"
-    on:click={onCurrentClick}
+    onclick={onCurrentClick}
     disabled={live}
     title={live ? "Already on the newest page" : "Go to the first page"}
   >
@@ -54,7 +62,7 @@ const onCurrentClick = () => {
       size="sm"
       variant="secondary"
       title={live ? "Already on the newest page" : "Go to the previous page"}
-      on:click={onNewerPage}
+      onclick={onNewerPage}
       class="pl-2"
     >
       <ChevronLeft class="size-6" />
@@ -65,7 +73,7 @@ const onCurrentClick = () => {
   <Button
     size="sm"
     variant="secondary"
-    on:click={onOlderPage}
+    onclick={onOlderPage}
     class="pr-2"
   >
     Older

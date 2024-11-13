@@ -1,3 +1,6 @@
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
 <script lang="ts"> 
   import Square from './spinning-logo/square.svelte';
 	let cubeWidth = 64;
@@ -5,7 +8,7 @@
 	let gap = 64;
 	let logoWidth= cubeWidth * cubeCount + gap * (cubeCount - 1);
 	let cubesY = cubeWidth * 2 + gap;
-	$: cubeDelta = (20 - cubeWidth) / 2;
+	let cubeDelta = $derived((20 - cubeWidth) / 2);
 	let strokeWidth = 4;
 </script>
 

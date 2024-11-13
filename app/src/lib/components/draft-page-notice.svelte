@@ -2,7 +2,11 @@
 import { cn } from "$/lib/utilities/shadcn.ts"
 import { Badge } from "$lib/components/ui/badge"
 
-export let className = ""
+interface Props {
+  className?: string
+}
+
+let { className = "" }: Props = $props()
 </script>
 
 <Badge

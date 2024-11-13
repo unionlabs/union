@@ -1,4 +1,6 @@
 <script lang="ts">
+import { run } from "svelte/legacy"
+
 import { setMode } from "mode-watcher"
 import { derived } from "svelte/store"
 import { navigating } from "$app/stores"
@@ -19,8 +21,9 @@ import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { onMount } from "svelte"
+import { buttonVariants } from "$lib/components/ui/button/index.js"
 
-let buttonText: string
+let buttonText = $state("Connect Wallet")
 
 let connectedWallets = derived(
   [sepoliaStore, cosmosStore, aptosStore],
@@ -33,60 +36,55 @@ let connectedWallets = derived(
   }
 )
 
-onMount(() => {
-  console.info($aptosStore)
+run(() => {
+  if ($connectedWallets >= 1) {
+    buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
+  } else {
+    buttonText = "Connect Wallet"
+  }
 })
 
-$: if ($connectedWallets >= 1) {
-  buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
-} else {
-  buttonText = "Connect Wallet"
-}
-
-let sheetOpen = false
-$: if ($navigating) sheetOpen = false
+let sheetOpen = $state(false)
+$effect(() => {
+  if ($navigating) sheetOpen = false
+})
 </script>
 
-<Sheet.Root bind:open={sheetOpen}>
-  <Sheet.Trigger asChild class="w-full" let:builder>
-    <Button
-      builders={[builder]}
-      class={cn(
-        $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
-        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
-        "hover:bg-cyan-300/90",
-        $sepoliaStore.connectionStatus === "connected" &&
-          $cosmosStore.connectionStatus === "connected",
-      )}
-      on:click={() => (sheetOpen = !sheetOpen)}
-      size="sm"
-    >
-      <WalletIcon class="size-6 text-black" />
-      <span class="font-supermolot font-bold uppercase lg:block hidden">
-        {buttonText}
-      </span>
-      <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
-        <!-- {connectedWallets === 1 ? "1/2" : ""} -->
-        {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
-      </span>
-    </Button>
+<Sheet.Root>
+  <Sheet.Trigger
+    class={cn(
+      $connectedWallets === 1 ? 'w-[75px]' : 'w-[50px]',
+      'space-x-1.5 lg:w-[180px] text-md bg-accent text-black dark:text-white ml-auto flex',
+      'hover:bg-cyan-300/90',
+      $sepoliaStore.connectionStatus === 'connected' &&
+        $cosmosStore.connectionStatus === 'connected',
+    )}
+  >
+    <WalletIcon class="size-6 text-black dark:text-white" />
+    <span class="font-supermolot font-bold uppercase lg:block hidden">
+      {buttonText}
+    </span>
+    <span class={cn($connectedWallets === 1 ? 'font-supermolot font-bold uppercase' : 'hidden')}>
+      {$connectedWallets === 3 ? '' : $connectedWallets > 1 ? `${$connectedWallets}/3` : ''}
+    </span>
   </Sheet.Trigger>
+
   <Sheet.Content
     class={cn(
-      "h-full border-solid border-left flex flex-col justify-start",
-      "min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]",
-      "overflow-y-auto",
+      'h-full border-solid border-left flex flex-col justify-start',
+      'min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]',
+      'overflow-y-auto',
     )}
   >
     <Sheet.Header>
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn("size-10", $sepoliaStore.connectionStatus !== "connected" && "hidden")}
+          class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
         >
           <Avatar.Image
             alt="ethereum avatar"
-            src={`https://effigy.im/a/${$sepoliaStore.address || "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"}.png`}
+            src={`https://effigy.im/a/${$sepoliaStore.address || '0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd'}.png`}
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
@@ -135,13 +133,8 @@ $: if ($navigating) sheetOpen = false
         <Label for="unsupported-assets">CRT effect</Label>
       </div>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            builders={[builder]}
-            variant="default"
-            size="icon"
-            class="hover:text-black hover:bg-accent"
-          >
+        <DropdownMenu.Trigger>
+          <Button variant="default" size="icon" class="hover:text-black hover:bg-accent">
             <Sun
               class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
             />
@@ -151,15 +144,15 @@ $: if ($navigating) sheetOpen = false
             <span class="sr-only">Toggle theme</span>
           </Button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
+        <DropdownMenu.Content class="w-fit rounded-none bg-secondary pr-2 text-black dark:text-white">
           <DropdownMenu.Group>
-            <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
+            <DropdownMenu.Item onclick="() => setMode('system')" class="cursor-pointer">
               System
             </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
+            <DropdownMenu.Item onclick="() => setMode('dark')" class="cursor-pointer">
               Dark
             </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
+            <DropdownMenu.Item onclick="() => setMode('light')" class="cursor-pointer">
               Light
             </DropdownMenu.Item>
           </DropdownMenu.Group>

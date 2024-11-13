@@ -20,6 +20,8 @@ import DeprecationNotice from "$lib/components/deprecation-notice.svelte"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 
+let { children } = $props()
+
 const { queryClient, QueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
@@ -28,7 +30,9 @@ onMount(() => {
   disablePinchToZoom()
 })
 
-$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
+$effect(() => {
+  updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
+})
 </script>
 
 <svelte:head>
@@ -64,7 +68,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
     <!-- <DeprecationNotice /> -->
-    <slot />
+    {@render children?.()}
   </div>
   <Footer />
 

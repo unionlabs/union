@@ -7,8 +7,10 @@ import TransferForm from "./(components)/transfer-form.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
-<ChainsGate let:chains>
-  <div class="w-full flex flex-col items-center">
-    <TransferForm {chains}/>
-  </div>
+<ChainsGate >
+  {#snippet children({ chains })}
+    <div class="w-full flex flex-col items-center">
+      <TransferForm {chains}/>
+    </div>
+  {/snippet}
 </ChainsGate>

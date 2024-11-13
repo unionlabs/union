@@ -12,7 +12,7 @@ import { onMount } from "svelte"
 const statsData = statsQuery()
 const transfersPerDayData = transfersPerDayQuery(30)
 
-let show = 0
+let show = $state(0)
 let interval: any
 
 onMount(() => {

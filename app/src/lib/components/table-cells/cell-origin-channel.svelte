@@ -2,16 +2,21 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import CellCopy from "./cell-copy.svelte"
 
-export let value: {
-  chain_display_name: string | undefined
-  chain_id: string | undefined
-  connection_id: string | undefined
-  channel_id: string | undefined
-  port_id: string | undefined
+interface Props {
+  value: {
+    chain_display_name: string | undefined
+    chain_id: string | undefined
+    connection_id: string | undefined
+    channel_id: string | undefined
+    port_id: string | undefined
+  }
+  [key: string]: any
 }
+
+let { value, ...rest }: Props = $props()
 </script>
 
-<div {...$$restProps} class={cn("flex flex-col ")}>
+<div {...rest} class={cn("flex flex-col ")}>
   {#if value.chain_display_name}<CellCopy value={value.chain_display_name}/>{/if}
   {#if value.chain_id}<CellCopy value={value.chain_id}/>{/if}
   {#if value.connection_id}<CellCopy value={value.connection_id}/>{/if}

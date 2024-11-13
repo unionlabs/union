@@ -2,8 +2,12 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Dialog from "$lib/components/ui/dialog"
 
-export let dialogOpen = false
-export let title: string
+interface Props {
+  dialogOpen?: boolean
+  title: string
+}
+
+let { dialogOpen = $bindable(false), title }: Props = $props()
 </script>
 
 <Dialog.Root

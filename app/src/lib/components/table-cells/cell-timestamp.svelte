@@ -4,7 +4,11 @@ import { Duration } from "svelte-ux"
 import { DurationUnits } from "svelte-ux"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 
-export let value: Date | undefined
+interface Props {
+  value: Date | undefined
+}
+
+let { value }: Props = $props()
 </script>
 
 {#if value}{toPrettyDateTimeFormat(value, { local: true })}{:else}-{/if}

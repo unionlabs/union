@@ -1,10 +1,14 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
 
-export let amount: number
-export let decimals: number
-export let displayDecimals = 2
-export let showToolTip = false
+interface Props {
+  amount: number
+  decimals: number
+  displayDecimals?: number
+  showToolTip?: boolean
+}
+
+let { amount, decimals, displayDecimals = 2, showToolTip = false }: Props = $props()
 
 const formatBalance = (
   balance: bigint | string | number,
@@ -52,10 +56,10 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
   return num.toFixed(displayDecimals)
 }
 
-$: balance = amount ?? BigInt(0)
+let balance = $derived(amount ?? BigInt(0))
 
-$: formatted = formatBalance(balance, decimals, true)
-$: precise = formatBalance(balance, decimals, false)
+let formatted = $derived(formatBalance(balance, decimals, true))
+let precise = $derived(formatBalance(balance, decimals, false))
 </script>
 
 {#key formatted}

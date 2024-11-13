@@ -3,7 +3,11 @@ import type { Chain } from "$lib/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import ExternalLinkIcon from "virtual:icons/lucide/external-link"
 
-export let chains: Array<Chain>
+interface Props {
+  chains: Array<Chain>
+}
+
+let { chains }: Props = $props()
 
 let chainsWithFaucets = chains.filter(
   chain => chain.assets.filter(asset => asset.faucets.length > 0).length > 0

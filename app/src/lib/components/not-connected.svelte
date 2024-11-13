@@ -1,22 +1,26 @@
 <script lang="ts">
+import { run } from "svelte/legacy"
+
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Connect } from "$lib/components/connect"
 import { sepoliaStore } from "$lib/wallet/evm"
 import { cosmosStore } from "$lib/wallet/cosmos"
 
-let title: string
-let text: string
+let title: string = $state()
+let text: string = $state()
 
-$: if (
-  $sepoliaStore.connectionStatus !== "connected" &&
-  $cosmosStore.connectionStatus !== "connected"
-) {
-  title = "Connect Wallet"
-  text = "Please connect a wallet to continue using the app."
-} else {
-  title = ""
-  text = ""
-}
+run(() => {
+  if (
+    $sepoliaStore.connectionStatus !== "connected" &&
+    $cosmosStore.connectionStatus !== "connected"
+  ) {
+    title = "Connect Wallet"
+    text = "Please connect a wallet to continue using the app."
+  } else {
+    title = ""
+    text = ""
+  }
+})
 </script>
 
 <section class="max-w-lg">

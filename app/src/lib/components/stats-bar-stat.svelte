@@ -3,9 +3,14 @@ import { deviceWidth } from "$lib/utilities/device.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import LoadingDots from "$lib/components/loading-dots.svelte"
 
-export let label: string
-export let value: number | string
-export let blink: boolean
+interface Props {
+  label: string
+  value: number | string
+  blink: boolean
+  children?: import("svelte").Snippet
+}
+
+let { label, value, blink, children }: Props = $props()
 
 function formatValue(value: number | string): string {
   if (typeof value === "number") {
@@ -16,7 +21,7 @@ function formatValue(value: number | string): string {
 </script>
 
 <div class={cn("uppercase  flex px-6 py-4 border-none", $deviceWidth >= 888 ? "w-fit" : "w-full")}>
-  <div class="text-xl pt-2 font-bold divide-y" on:copy={(event) => {
+  <div class="text-xl pt-2 font-bold divide-y" oncopy={(event) => {
       event?.clipboardData?.setData('text/plain', value.toString());
       event.preventDefault();
     }}>
@@ -31,7 +36,7 @@ function formatValue(value: number | string): string {
       {/key}
     {/if}
   </div>
-  <slot/>
+  {@render children?.()}
 </div>
 
 <style>

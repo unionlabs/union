@@ -152,10 +152,25 @@ export default (<Config>{
         "text-gradient": "text-gradient 1.5s linear infinite",
         "background-shine": "background-shine 2s linear infinite",
         "pulse-slow": "pulse 6s infinite cubic-bezier(0.4, 0, 0.6, 1)",
-        "border-width": "border-width 3s infinite alternate"
+        "border-width": "border-width 3s infinite alternate",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "caret-blink": "caret-blink 1.25s ease-out infinite"
       }),
       animationDuration: { "2s": "2s" },
       keyframes: _ => ({
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" }
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" }
+        },
+        "caret-blink": {
+          "0%,70%,100%": { opacity: "1" },
+          "20%,50%": { opacity: "0" }
+        },
         "text-gradient": {
           to: { backgroundPosition: "200% center" }
         },

@@ -37,7 +37,7 @@ let connections = createQuery({
   }
 })
 
-let connectionsDataStore = derived(connections, $connections => $connections.data ?? [])
+let connectionsDataStore = $state(derived(connections, $connections => $connections.data ?? []))
 
 type DataRow = UnwrapReadable<typeof connectionsDataStore>[number]
 

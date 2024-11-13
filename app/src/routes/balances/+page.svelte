@@ -5,12 +5,18 @@ import ChainsGate from "$lib/components/chains-gate.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
-<ChainsGate let:chains>
-  <WalletGateCosmos>
-    <WalletGateEvm slot="connected" let:userAddrCosmos>
-      <div class="max-w-full w-full" slot="connected" let:userAddrEvm>
-        <BalancesOverview {chains} userAddr={({evm: userAddrEvm, cosmos: userAddrCosmos})}/>
-      </div>
-    </WalletGateEvm>
-  </WalletGateCosmos>
+<ChainsGate >
+  {#snippet children({ chains })}
+    <WalletGateCosmos>
+      {#snippet connected({ userAddrCosmos })}
+        <WalletGateEvm  >
+          {#snippet connected({ userAddrEvm })}
+            <div class="max-w-full w-full"  >
+              <BalancesOverview {chains} userAddr={({evm: userAddrEvm, cosmos: userAddrCosmos})}/>
+            </div>
+          {/snippet}
+        </WalletGateEvm>
+      {/snippet}
+    </WalletGateCosmos>
+  {/snippet}
 </ChainsGate>
