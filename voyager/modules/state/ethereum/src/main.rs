@@ -4,7 +4,6 @@ use alloy::{
     providers::{Provider, ProviderBuilder, RootProvider},
     transports::BoxTransport,
 };
-use beacon_api::client::BeaconApiClient;
 use ibc_solidity::ibc::{
     Channel, Connection, ILightClient,
     Ibc::{self, IbcInstance},
@@ -16,7 +15,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, info, instrument};
+use tracing::{info, instrument};
 use unionlabs::{
     bytes::Bytes,
     hash::{H160, H256},
@@ -45,7 +44,6 @@ pub struct Module {
     pub ibc_handler_address: H160,
 
     pub provider: RootProvider<BoxTransport>,
-    pub beacon_api_client: BeaconApiClient,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,8 +54,6 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub eth_rpc_api: String,
-    /// The RPC endpoint for the beacon chain.
-    pub eth_beacon_rpc_api: String,
 }
 
 impl StateModule<IbcUnion> for Module {
@@ -76,7 +72,6 @@ impl StateModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
         })
     }
 }
@@ -89,19 +84,6 @@ impl Module {
 
     fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
         Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
-    }
-
-    #[instrument(skip(self))]
-    pub async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
-        let execution_height = self
-            .beacon_api_client
-            .execution_height(beacon_api::client::BlockId::Slot(slot))
-            .await
-            .unwrap();
-
-        debug!("beacon slot {slot} is execution height {execution_height}");
-
-        execution_height
     }
 
     #[instrument(skip(self))]
@@ -132,7 +114,7 @@ impl Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
     async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Bytes> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let client_address = self.client_address(client_id, execution_height).await?;
 
@@ -165,7 +147,7 @@ impl Module {
         client_id: u32,
         trusted_height: u64,
     ) -> RpcResult<Bytes> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let client_address = self.client_address(client_id, execution_height).await?;
 
@@ -195,7 +177,7 @@ impl Module {
         height: Height,
         connection_id: u32,
     ) -> RpcResult<Option<Connection>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
 
@@ -218,7 +200,7 @@ impl Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
     async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
 
@@ -246,7 +228,7 @@ impl Module {
         channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
 
@@ -281,7 +263,7 @@ impl Module {
         channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
-        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
+        let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
 
@@ -386,7 +368,7 @@ impl StateModuleServer<IbcUnion> for Module {
     //         Path::NextClientSequence(_path) => todo!(),
     //     });
 
-    //     let execution_height = self.execution_height_of_beacon_slot(at.height()).await;
+    //     let execution_height = height.height();
 
     //     let proof = self
     //         .provider

@@ -40,8 +40,7 @@ use voyager_message::{
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    run_plugin_server, ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient,
-    VoyagerMessage,
+    ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
@@ -58,7 +57,7 @@ const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(10));
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(clap::Subcommand)]

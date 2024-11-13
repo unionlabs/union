@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt::Debug,
     path::{Path, PathBuf},
     process::Stdio,
     sync::Arc,
@@ -26,6 +25,7 @@ use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
+    ibc_union::IbcUnion,
     ibc_v1::IbcV1,
     into_value,
     module::{
@@ -82,11 +82,13 @@ impl IbcSpecHandler {
     pub const fn new<T: IbcSpec>() -> Self {
         Self {
             client_state_path: |client_id| {
-                Ok(into_value(T::client_state_path(client_id.0.parse()?)))
+                Ok(into_value(T::client_state_path(serde_json::from_value(
+                    client_id.0,
+                )?)))
             },
             consensus_state_path: |client_id, height| {
                 Ok(into_value(T::consensus_state_path(
-                    client_id.0.parse()?,
+                    serde_json::from_value(client_id.0)?,
                     height.parse()?,
                 )))
             },
@@ -131,9 +133,18 @@ impl ModuleRpcClient {
     }
 
     fn make_socket_path(name: &str) -> String {
+        let pid = std::process::id();
+
         format!(
             "/tmp/voyager-to-module-{}.sock",
-            keccak256(name).into_encoding::<HexUnprefixed>()
+            keccak256(
+                name.as_bytes()
+                    .iter()
+                    .chain(pid.to_be_bytes().iter())
+                    .copied()
+                    .collect::<Vec<_>>()
+            )
+            .into_encoding::<HexUnprefixed>()
         )
     }
 
@@ -159,9 +170,18 @@ async fn module_rpc_server(
 }
 
 fn make_module_rpc_server_socket_path(name: &str) -> String {
+    let pid = std::process::id();
+
     format!(
         "/tmp/module-to-voyager-{}.sock",
-        keccak256(name).into_encoding::<HexUnprefixed>()
+        keccak256(
+            name.as_bytes()
+                .iter()
+                .chain(pid.to_be_bytes().iter())
+                .copied()
+                .collect::<Vec<_>>()
+        )
+        .into_encoding::<HexUnprefixed>()
     )
 }
 
@@ -217,9 +237,12 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
-            ibc_spec_handlers: [(IbcV1::ID, IbcSpecHandler::new::<IbcV1>())]
-                .into_iter()
-                .collect(),
+            ibc_spec_handlers: [
+                (IbcV1::ID, IbcSpecHandler::new::<IbcV1>()),
+                (IbcUnion::ID, IbcSpecHandler::new::<IbcUnion>()),
+            ]
+            .into_iter()
+            .collect(),
         };
 
         let mut plugins = HashMap::default();
@@ -874,12 +897,12 @@ module_error!(ConsensusModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ClientModuleNotFound {
-    #[error("no module loaded for client type `{}`", client_type)]
+    #[error("no client module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType },
     #[error(
-        "no module loaded supporting IBC interface `{}` and client type `{}`",
-        client_type,
-        ibc_interface
+        "no client module loaded supporting IBC interface `{}` and client type `{}`",
+        ibc_interface,
+        client_type
     )]
     IbcInterfaceNotFound {
         client_type: ClientType,
