@@ -3,18 +3,22 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import type { Chain, UserAddressCosmos } from "$lib/types.ts"
 import Precise from "$lib/components/precise.svelte"
 
-export let chains: Array<Chain>
-export let userAddrCosmos: UserAddressCosmos
-export let symbol: string
+  interface Props {
+    chains: Array<Chain>;
+    userAddrCosmos: UserAddressCosmos;
+    symbol: string;
+  }
+
+  let { chains, userAddrCosmos, symbol }: Props = $props();
 
 let chain = chains.filter(c => c.chain_id === "union-testnet-8")
-$: userBalances = userBalancesQuery({
+let userBalances = $derived(userBalancesQuery({
   userAddr: { cosmos: userAddrCosmos, evm: null },
   chains: chain,
   connected: true
-})
-$: unionBalances = $userBalances.at(0)?.data ?? []
-$: asset = unionBalances.find(balance => balance.symbol.toLowerCase() === symbol.toLowerCase())
+}))
+let unionBalances = $derived($userBalances.at(0)?.data ?? [])
+let asset = $derived(unionBalances.find(balance => balance.symbol.toLowerCase() === symbol.toLowerCase()))
 </script>
 
 {#if asset}

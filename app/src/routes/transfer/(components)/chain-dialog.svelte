@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { Badge } from "$lib/components/ui/badge"
@@ -6,14 +8,27 @@ import * as Dialog from "$lib/components/ui/dialog"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 
-export let kind: "from" | "to"
-export let dialogOpen = false
-export let onChainSelect: (newSelectedChain: string) => void
-export let chains: Array<Chain>
-export let selectedChain: string
-export let userAddress: UserAddresses | null
+  interface Props {
+    kind: "from" | "to";
+    dialogOpen?: boolean;
+    onChainSelect: (newSelectedChain: string) => void;
+    chains: Array<Chain>;
+    selectedChain: string;
+    userAddress: UserAddresses | null;
+  }
 
-$: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
+  let {
+    kind,
+    dialogOpen = $bindable(false),
+    onChainSelect,
+    chains,
+    selectedChain,
+    userAddress
+  }: Props = $props();
+
+run(() => {
+    document.body.style.overflow = dialogOpen ? "hidden" : "auto"
+  });
 
 function selectChain(chain: Chain) {
   if (chain.rpc_type === "aptos" && !userAddress?.aptos) return toast.info(`Connect Aptos wallet`)
@@ -60,8 +75,7 @@ function selectChain(chain: Chain) {
               </span>
               {#if (chain.rpc_type === 'evm' && !userAddress?.evm) 
                 || (chain.rpc_type === 'cosmos' && !userAddress?.cosmos)
-                || (chain.rpc_type === 'aptos' && !userAddress?.aptos)
-              }
+                || (chain.rpc_type === 'aptos' && !userAddress?.aptos)}
                 <Badge variant={selected ? 'secondary' : 'default'}>Disconnected</Badge>
               {:else}
                 <Badge variant={selected ? 'secondary' : 'default'}>Connected</Badge>

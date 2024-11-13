@@ -7,21 +7,31 @@ import { cn } from "$lib/utilities/shadcn.js"
 type $$Props = PaginationPrimitive.NextButtonProps
 type $$Events = PaginationPrimitive.NextButtonEvents
 
-let className: $$Props["class"] = undefined
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let { class: className = undefined, children, ...rest }: Props = $props();
+
+
+	const children_render = $derived(children);
 </script>
 
-<PaginationPrimitive.NextButton asChild let:builder>
-	<Button
-		variant="ghost"
-		class={cn("gap-1 pr-2.5", className)}
-		builders={[builder]}
-		on:click
-		{...$$restProps}
-	>
-		<slot>
-			<span>Next</span>
-			<ChevronRight class="h-4 w-4" />
-		</slot>
-	</Button>
+<PaginationPrimitive.NextButton asChild >
+	{#snippet children({ builder })}
+		<Button
+			variant="ghost"
+			class={cn("gap-1 pr-2.5", className)}
+			builders={[builder]}
+			on:click
+			{...rest}
+		>
+			{#if children_render}{@render children_render()}{:else}
+				<span>Next</span>
+				<ChevronRight class="h-4 w-4" />
+			{/if}
+		</Button>
+	{/snippet}
 </PaginationPrimitive.NextButton>

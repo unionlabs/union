@@ -4,10 +4,16 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = HTMLAttributes<HTMLUListElement>
 
-let className: $$Props["class"] = undefined
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let { class: className = undefined, children, ...rest }: Props = $props();
+
 </script>
 
-<ul class={cn("flex flex-row items-center gap-1", className)} {...$$restProps}>
-	<slot />
+<ul class={cn("flex flex-row items-center gap-1", className)} {...rest}>
+	{@render children?.()}
 </ul>

@@ -12,9 +12,13 @@ import { timestamp } from "$lib/stores/page.ts"
 
 import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
 
-export let chains: Array<Chain>
-export let normalizedAddresses: Array<string> | null = null
-export let pageSize: number // must be even
+  interface Props {
+    chains: Array<Chain>;
+    normalizedAddresses?: Array<string> | null;
+    pageSize: number;
+  }
+
+  let { chains, normalizedAddresses = null, pageSize }: Props = $props();
 
 const transfers = transfersQuery(normalizedAddresses, timestamp, pageSize)
 

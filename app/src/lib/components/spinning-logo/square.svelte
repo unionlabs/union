@@ -1,8 +1,17 @@
 <script lang="ts">
-export let size: number
-export let x: number
-export let y: number
-export let strokeWidth: number
+	interface Props {
+		size: number;
+		x: number;
+		y: number;
+		strokeWidth: number;
+	}
+
+	let {
+		size,
+		x,
+		y,
+		strokeWidth
+	}: Props = $props();
 </script>
 
 

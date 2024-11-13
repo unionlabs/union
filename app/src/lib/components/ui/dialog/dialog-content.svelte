@@ -6,17 +6,31 @@ import { cn, flyAndScale } from "$lib/utilities/shadcn.js"
 
 type $$Props = DialogPrimitive.ContentProps
 
-let className: $$Props["class"] = undefined
-export let overlayClass: $$Props["class"] = undefined
 
-export let transition: $$Props["transition"] = flyAndScale
-export let transitionConfig: $$Props["transitionConfig"] = {
+
+  interface Props {
+    class?: $$Props["class"];
+    overlayClass?: $$Props["class"];
+    transition?: $$Props["transition"];
+    transitionConfig?: $$Props["transitionConfig"];
+    backdropFilter?: $$Props["style"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
+
+  let {
+    class: className = undefined,
+    overlayClass = undefined,
+    transition = flyAndScale,
+    transitionConfig = {
   duration: 200
-}
+},
+    backdropFilter = undefined,
+    children,
+    ...rest
+  }: Props = $props();
 
-export let backdropFilter: $$Props["style"] = undefined
 
-export { className as class }
 </script>
 
 <Dialog.Portal>
@@ -34,9 +48,9 @@ export { className as class }
       "fixed left-[50%] top-[50%] z-40 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-4 sm: md:w-full",
       className,
     )}
-    {...$$restProps}
+    {...rest}
   >
-    <slot />
+    {@render children?.()}
     <DialogPrimitive.Close
       class={cn(
         "absolute right-3 top-4 rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none",

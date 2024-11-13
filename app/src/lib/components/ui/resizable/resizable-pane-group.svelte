@@ -4,11 +4,24 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = ResizablePrimitive.PaneGroupProps
 
-let className: $$Props["class"] = undefined
-export let direction: $$Props["direction"]
-export let paneGroup: $$Props["paneGroup"] = undefined
-export let el: $$Props["el"] = undefined
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		direction: $$Props["direction"];
+		paneGroup?: $$Props["paneGroup"];
+		el?: $$Props["el"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let {
+		class: className = undefined,
+		direction,
+		paneGroup = $bindable(undefined),
+		el = $bindable(undefined),
+		children,
+		...rest
+	}: Props = $props();
+
 </script>
 
 <ResizablePrimitive.PaneGroup
@@ -16,7 +29,7 @@ export { className as class }
 	bind:paneGroup
 	{direction}
 	class={cn("flex h-full w-full data-[direction=vertical]:flex-col", className)}
-	{...$$restProps}
+	{...rest}
 >
-	<slot />
+	{@render children?.()}
 </ResizablePrimitive.PaneGroup>

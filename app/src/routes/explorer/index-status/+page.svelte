@@ -24,7 +24,7 @@ let indexStatus = createQuery({
   }
 })
 
-let indexStatusDataStore = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
+let indexStatusDataStore = $state(derived(indexStatus, $indexStatus => $indexStatus.data ?? []))
 
 type DataRow = UnwrapReadable<typeof indexStatusDataStore>[number]
 
@@ -54,7 +54,7 @@ const columns: Array<ColumnDef<DataRow>> = [
 </script>
 
 
-{#if $indexStatus.data }
+{#if $indexStatus.data}
   <Table bind:dataStore={indexStatusDataStore} {columns} />
 {:else if $indexStatus.isLoading}
   <LoadingLogo class="size-16" />

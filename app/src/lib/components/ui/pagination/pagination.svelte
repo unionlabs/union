@@ -6,14 +6,30 @@ import { cn } from "$lib/utilities/shadcn.js"
 type $$Props = PaginationPrimitive.Props
 type $$Events = PaginationPrimitive.Events
 
-let className: $$Props["class"] = undefined
-export let count: $$Props["count"] = 0
-export let perPage: $$Props["perPage"] = 10
-export let page: $$Props["page"] = 1
-export let siblingCount: $$Props["siblingCount"] = 1
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		count?: $$Props["count"];
+		perPage?: $$Props["perPage"];
+		page?: $$Props["page"];
+		siblingCount?: $$Props["siblingCount"];
+		children?: import('svelte').Snippet<[any]>;
+		[key: string]: any
+	}
 
-$: currentPage = page
+	let {
+		class: className = undefined,
+		count = 0,
+		perPage = 10,
+		page = $bindable(1),
+		siblingCount = 1,
+		children,
+		...rest
+	}: Props = $props();
+
+
+let currentPage = $derived(page)
+
+	const children_render = $derived(children);
 </script>
 
 <PaginationPrimitive.Root
@@ -21,13 +37,15 @@ $: currentPage = page
 	{perPage}
 	{siblingCount}
 	bind:page
-	let:builder
-	let:pages
-	let:range
+	
+	
+	
 	asChild
-	{...$$restProps}
+	{...rest}
 >
-	<nav {...builder} class={cn("flex w-full flex-col items-center", className)}>
-		<slot {pages} {range} {currentPage} />
-	</nav>
+	{#snippet children({ builder, pages, range })}
+		<nav {...builder} class={cn("flex w-full flex-col items-center", className)}>
+			{@render children_render?.({ pages, range, currentPage, })}
+		</nav>
+	{/snippet}
 </PaginationPrimitive.Root>

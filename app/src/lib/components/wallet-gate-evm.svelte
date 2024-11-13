@@ -3,6 +3,12 @@ import { derived, type Readable } from "svelte/store"
 import type { UserAddressEvm } from "$lib/types"
 import type { Address } from "viem"
 import { userAddrEvm } from "$lib/wallet/evm"
+  interface Props {
+    connected?: import('svelte').Snippet<[any]>;
+    disconnected?: import('svelte').Snippet;
+  }
+
+  let { connected, disconnected }: Props = $props();
 
 let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddrEvm, $userAddr => {
   return (
@@ -16,11 +22,11 @@ let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddrEvm, $userAddr
 </script>
 
 {#if $userAddrEvm}
-  <slot name="connected" userAddrEvm={$confirmedUserAddr} />
+  {@render connected?.({ userAddrEvm: $confirmedUserAddr, })}
 {:else}
-  <slot name="disconnected">
+  {#if disconnected}{@render disconnected()}{:else}
     <span>Connect your EVM wallet to continue</span>
-  </slot>
+  {/if}
 {/if}
 
 

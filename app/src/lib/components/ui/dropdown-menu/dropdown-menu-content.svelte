@@ -5,11 +5,24 @@ import { cn, flyAndScale } from "$lib/utilities/shadcn.js"
 type $$Props = DropdownMenuPrimitive.ContentProps
 type $$Events = DropdownMenuPrimitive.ContentEvents
 
-let className: $$Props["class"] = undefined
-export let sideOffset: $$Props["sideOffset"] = 4
-export let transition: $$Props["transition"] = flyAndScale
-export let transitionConfig: $$Props["transitionConfig"] = undefined
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		sideOffset?: $$Props["sideOffset"];
+		transition?: $$Props["transition"];
+		transitionConfig?: $$Props["transitionConfig"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let {
+		class: className = undefined,
+		sideOffset = 4,
+		transition = flyAndScale,
+		transitionConfig = undefined,
+		children,
+		...rest
+	}: Props = $props();
+
 </script>
 
 <DropdownMenuPrimitive.Content
@@ -20,8 +33,8 @@ export { className as class }
 		"z-50 min-w-[8rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md focus:outline-none",
 		className
 	)}
-	{...$$restProps}
+	{...rest}
 	on:keydown
 >
-	<slot />
+	{@render children?.()}
 </DropdownMenuPrimitive.Content>

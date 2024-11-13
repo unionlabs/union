@@ -1,10 +1,14 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
 
-export let data: Array<{ count: number; day: Date }> = []
+  interface Props {
+    data?: Array<{ count: number; day: Date }>;
+  }
 
-$: minValue = 0
-$: maxValue = data.length > 0 ? Math.max(...data.map(d => d.count)) : 0
+  let { data = [] }: Props = $props();
+
+let minValue = $derived(0)
+let maxValue = $derived(data.length > 0 ? Math.max(...data.map(d => d.count)) : 0)
 
 function normalize(
   value: number,
@@ -17,13 +21,13 @@ function normalize(
   return ((value - min) / (max - min)) * (newMax - newMin) + newMin
 }
 
-$: normalizedData =
-  data.length > 0
+let normalizedData =
+  $derived(data.length > 0
     ? data.map(d => ({
         ...d,
         normalizedValue: Math.floor(normalize(d.count, minValue, maxValue, 0, 9))
       }))
-    : []
+    : [])
 </script>
 
 <div class="flex flex-row-reverse items-end gap-[2.5px]">

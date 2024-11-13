@@ -3,9 +3,9 @@ import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 
-let innerWidth = window.innerWidth
+let innerWidth = $state(window.innerWidth)
 
-$: shouldRedirect = innerWidth >= 640
+let shouldRedirect = $derived(innerWidth >= 640)
 
 onMount(() => {
   if (!shouldRedirect) return

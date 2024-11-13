@@ -6,14 +6,20 @@ type $$Props = DropdownMenuPrimitive.LabelProps & {
   inset?: boolean
 }
 
-let className: $$Props["class"] = undefined
-export let inset: $$Props["inset"] = undefined
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		inset?: $$Props["inset"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let { class: className = undefined, inset = undefined, children, ...rest }: Props = $props();
+
 </script>
 
 <DropdownMenuPrimitive.Label
 	class={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)}
-	{...$$restProps}
+	{...rest}
 >
-	<slot />
+	{@render children?.()}
 </DropdownMenuPrimitive.Label>

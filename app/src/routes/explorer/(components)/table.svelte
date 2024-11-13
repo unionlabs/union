@@ -1,3 +1,10 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  overscan: 20,
+  count: $rows.length,
+  estimateSize: () => 34,
+  getScrollElement: () => virtualListElement
+})` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
 import { onDestroy } from "svelte"
 import { derived } from "svelte/store"

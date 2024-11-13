@@ -3,10 +3,15 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import ExplorerPrecise from "$lib/components/explorer-precise.svelte"
 
-export let value: object
+  interface Props {
+    value: object;
+    [key: string]: any
+  }
+
+  let { value, ...rest }: Props = $props();
 </script>
 
-<div {...$$restProps} class={cn("flex flex-col")}>
+<div {...rest} class={cn("flex flex-col")}>
   {#each Object.entries(value) as [denom, data]}
     {#if data.asset}
       <div>

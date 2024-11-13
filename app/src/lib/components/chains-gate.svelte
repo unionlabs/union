@@ -3,6 +3,11 @@ import type { Chain } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
+  interface Props {
+    children?: import('svelte').Snippet<[any]>;
+  }
+
+  let { children }: Props = $props();
 
 let chains = chainsQuery()
 
@@ -82,7 +87,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 </script>
 
 {#if !!$chains.data}
-  <slot chains={$checkedChains} />
+  {@render children?.({ chains: $checkedChains, })}
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $chains.isError}

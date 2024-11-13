@@ -2,9 +2,14 @@
 import type { SvelteComponent } from "svelte"
 import Button from "$lib/components/ui/button/button.svelte"
 
-export let icon: { class: string; component: typeof SvelteComponent }
+  interface Props {
+    icon: { class: string; component: typeof SvelteComponent };
+    [key: string]: any
+  }
+
+  let { icon, ...rest }: Props = $props();
 </script>
 
-<Button {...$$restProps}>
-  <svelte:component this={icon.component} class={icon.class} />
+<Button {...rest}>
+  <icon.component class={icon.class} />
 </Button>

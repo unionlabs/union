@@ -4,13 +4,19 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = SheetPrimitive.TitleProps
 
-let className: $$Props["class"] = undefined
-export { className as class }
+  interface Props {
+    class?: $$Props["class"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
+
+  let { class: className = undefined, children, ...rest }: Props = $props();
+
 </script>
 
 <SheetPrimitive.Title
   class={cn('text-lg font-semibold text-foreground', className)}
-  {...$$restProps}
+  {...rest}
 >
-  <slot />
+  {@render children?.()}
 </SheetPrimitive.Title>

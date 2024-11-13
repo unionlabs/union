@@ -10,7 +10,11 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { Button } from "$lib/components/ui/button"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 
-export let chains: Array<Chain>
+  interface Props {
+    chains: Array<Chain>;
+  }
+
+  let { chains }: Props = $props();
 
 let fromChainId = writable("")
 let toChainId = writable("")
@@ -25,8 +29,8 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
-let dialogOpenToChain = false
-let dialogOpenFromChain = false
+let dialogOpenToChain = $state(false)
+let dialogOpenFromChain = $state(false)
 
 let userAddr: Readable<UserAddresses> = derived(
   [userAddrCosmos, userAddrEvm],
@@ -104,61 +108,63 @@ const BERACHAIN_CONTRACTS = {
 </script>
 
 
-<ChainsGate let:chains>
-  <div class="size-full flex flex-col items-center gap-6 m-6">
-    <Card.Root class="max-w-xl flex flex-col w-full">
-    <Card.Header>
-      <Card.Title>From</Card.Title>
-      <Card.Description>
-        Chain to start the swap from
-      </Card.Description>
-    </Card.Header>
-      <Card.Content>
-        <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>{$fromChain?.display_name ?? "Select from chain"}</ChainButton>
-      </Card.Content>
-    </Card.Root>
-    <Card.Root class="max-w-xl flex flex-col w-full">
-    <Card.Header>
-      <Card.Title>To</Card.Title>
-      <Card.Description>
-        Chain to swap where the swap will be performed on
-      </Card.Description>
-    </Card.Header>
-      <Card.Content>
-        <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>{$toChain?.display_name ?? "Select chain"}</ChainButton>
-      </Card.Content>
-    </Card.Root>
-    <Button
-      on:click={async event => {
-        // swap()
+<ChainsGate >
+  {#snippet children({ chains })}
+    <div class="size-full flex flex-col items-center gap-6 m-6">
+      <Card.Root class="max-w-xl flex flex-col w-full">
+      <Card.Header>
+        <Card.Title>From</Card.Title>
+        <Card.Description>
+          Chain to start the swap from
+        </Card.Description>
+      </Card.Header>
+        <Card.Content>
+          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>{$fromChain?.display_name ?? "Select from chain"}</ChainButton>
+        </Card.Content>
+      </Card.Root>
+      <Card.Root class="max-w-xl flex flex-col w-full">
+      <Card.Header>
+        <Card.Title>To</Card.Title>
+        <Card.Description>
+          Chain to swap where the swap will be performed on
+        </Card.Description>
+      </Card.Header>
+        <Card.Content>
+          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>{$toChain?.display_name ?? "Select chain"}</ChainButton>
+        </Card.Content>
+      </Card.Root>
+      <Button
+        on:click={async event => {
+          // swap()
+        }}
+        type="button"
+      >
+        Swap
+      </Button>
+    </div>
+
+
+    <ChainDialog
+      bind:dialogOpen={dialogOpenFromChain}
+      chains={chains.filter(c => c.enabled_staging)}
+      kind="from"
+      onChainSelect={newSelectedChain => {
+        fromChainId.set(newSelectedChain)
       }}
-      type="button"
-    >
-      Swap
-    </Button>
-  </div>
+      selectedChain={$fromChainId}
+      userAddress={$userAddr}
+    />
 
-
-  <ChainDialog
-    bind:dialogOpen={dialogOpenFromChain}
-    chains={chains.filter(c => c.enabled_staging)}
-    kind="from"
-    onChainSelect={newSelectedChain => {
-      fromChainId.set(newSelectedChain)
-    }}
-    selectedChain={$fromChainId}
-    userAddress={$userAddr}
-  />
-
-  <ChainDialog
-    bind:dialogOpen={dialogOpenToChain}
-    chains={chains.filter(c => c.enabled_staging)}
-    kind="to"
-    onChainSelect={newSelectedChain => {
-      toChainId.set(newSelectedChain)
-    }}
-    selectedChain={$toChainId}
-    userAddress={$userAddr}
-  />
-  
+    <ChainDialog
+      bind:dialogOpen={dialogOpenToChain}
+      chains={chains.filter(c => c.enabled_staging)}
+      kind="to"
+      onChainSelect={newSelectedChain => {
+        toChainId.set(newSelectedChain)
+      }}
+      selectedChain={$toChainId}
+      userAddress={$userAddr}
+    />
+    
+  {/snippet}
 </ChainsGate>

@@ -4,15 +4,21 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = DrawerPrimitive.DescriptionProps
 
-export let el: $$Props["el"] = undefined
-let className: $$Props["class"] = undefined
-export { className as class }
+  interface Props {
+    el?: $$Props["el"];
+    class?: $$Props["class"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
+
+  let { el = $bindable(undefined), class: className = undefined, children, ...rest }: Props = $props();
+
 </script>
 
 <DrawerPrimitive.Description
   bind:el
   class={cn('text-sm text-muted-foreground', className)}
-  {...$$restProps}
+  {...rest}
 >
-  <slot />
+  {@render children?.()}
 </DrawerPrimitive.Description>

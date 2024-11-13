@@ -5,13 +5,24 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = DialogPrimitive.OverlayProps
 
-let className: $$Props["class"] = undefined
-export let transition: $$Props["transition"] = fade
-export let transitionConfig: $$Props["transitionConfig"] = {
+  interface Props {
+    class?: $$Props["class"];
+    transition?: $$Props["transition"];
+    transitionConfig?: $$Props["transitionConfig"];
+    backdropFilter?: $$Props["style"];
+    [key: string]: any
+  }
+
+  let {
+    class: className = undefined,
+    transition = fade,
+    transitionConfig = {
   duration: 150
-}
-export let backdropFilter: $$Props["style"] = undefined
-export { className as class }
+},
+    backdropFilter = undefined,
+    ...rest
+  }: Props = $props();
+
 </script>
 
 <DialogPrimitive.Overlay
@@ -19,5 +30,5 @@ export { className as class }
   {transitionConfig}
   style={`backdrop-filter: ${backdropFilter}`}
   class={cn('fixed inset-0 z-40 bg-muted/60', className)}
-  {...$$restProps}
+  {...rest}
 />

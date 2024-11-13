@@ -6,14 +6,30 @@ import { cn } from "$lib/utilities/shadcn.js"
 type $$Props = Props
 type $$Events = Events
 
-let className: $$Props["class"] = undefined
-export let value: $$Props["value"] = ""
-export let variant: $$Props["variant"] = "default"
-export let size: $$Props["size"] = "default"
-export let builders: $$Props["builders"] = []
-export let name: $$Props["name"] = "button"
-export let disabled: $$Props["disabled"] = false
-export { className as class }
+  interface Props_1 {
+    class?: $$Props["class"];
+    value?: $$Props["value"];
+    variant?: $$Props["variant"];
+    size?: $$Props["size"];
+    builders?: $$Props["builders"];
+    name?: $$Props["name"];
+    disabled?: $$Props["disabled"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
+
+  let {
+    class: className = undefined,
+    value = "",
+    variant = "default",
+    size = "default",
+    builders = [],
+    name = "button",
+    disabled = false,
+    children,
+    ...rest
+  }: Props_1 = $props();
+
 </script>
 
 <ButtonPrimitive.Root
@@ -22,11 +38,11 @@ export { className as class }
   {disabled}
   class={cn(buttonVariants({ variant, size, className }))}
   type="button"
-  {...$$restProps}
+  {...rest}
   on:click
   on:keydown
 >
-  <slot>
+  {#if children}{@render children()}{:else}
     {value}
-  </slot>
+  {/if}
 </ButtonPrimitive.Root>

@@ -29,7 +29,7 @@ let cosmosBlocks = createQuery({
   }
 })
 
-let blocksDataStore = derived(cosmosBlocks, $cosmosBlocks => $cosmosBlocks.data ?? [])
+let blocksDataStore = $state(derived(cosmosBlocks, $cosmosBlocks => $cosmosBlocks.data ?? []))
 
 type DataRow = UnwrapReadable<typeof blocksDataStore>[number]
 

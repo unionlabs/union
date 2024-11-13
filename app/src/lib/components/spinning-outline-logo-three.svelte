@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import * as THREE from "three"
 import Square from "./spinning-logo/square.svelte"
 import { onMount } from "svelte"
@@ -14,11 +16,11 @@ let cubeCount = 16
 // let cubeCount = 16;
 let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1)
 let cubesY = cubeWidth * 2 + gap
-$: cubeDelta = (20 - cubeWidth) / 2
+let cubeDelta = $derived((20 - cubeWidth) / 2)
 let strokeWidth = 2.5
 
-let threeContainer: HTMLElement
-let threeCanvas: HTMLCanvasElement
+let threeContainer: HTMLElement = $state()
+let threeCanvas: HTMLCanvasElement = $state()
 
 const render = (mode: string | undefined) => {
   if (!browser) return
@@ -120,7 +122,9 @@ const render = (mode: string | undefined) => {
 }
 
 onMount(() => render($mode))
-$: render($mode)
+run(() => {
+    render($mode)
+  });
 </script>
 
 <div class="relative flex-1">

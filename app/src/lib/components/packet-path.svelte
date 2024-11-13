@@ -3,8 +3,9 @@ import { cn } from "$lib/utilities/shadcn"
 import type { Chain } from "$lib/types"
 import { toDisplayName } from "$lib/utilities/chains"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
-export let chains: Array<Chain>
-export let packet: {
+  interface Props {
+    chains: Array<Chain>;
+    packet: {
   source_chain_id: string
   source_connection_id: string
   source_channel_id: string
@@ -13,7 +14,10 @@ export let packet: {
   destination_connection_id: string
   destination_channel_id: string
   destination_sequence: string
-}
+};
+  }
+
+  let { chains, packet }: Props = $props();
 </script>
 
 <section class="flex flex-col sm:flex-row">

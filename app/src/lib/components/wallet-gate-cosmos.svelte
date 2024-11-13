@@ -3,6 +3,12 @@ import { derived, type Readable } from "svelte/store"
 import type { UserAddressCosmos } from "$lib/types"
 import type { Address } from "viem"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
+  interface Props {
+    connected?: import('svelte').Snippet<[any]>;
+    disconnected?: import('svelte').Snippet;
+  }
+
+  let { connected, disconnected }: Props = $props();
 
 let confirmedUserAddr: Readable<UserAddressCosmos> = derived(userAddrCosmos, $userAddr => {
   return (
@@ -17,11 +23,11 @@ let confirmedUserAddr: Readable<UserAddressCosmos> = derived(userAddrCosmos, $us
 </script>
 
 {#if $userAddrCosmos}
-  <slot name="connected" userAddrCosmos={$confirmedUserAddr} />
+  {@render connected?.({ userAddrCosmos: $confirmedUserAddr, })}
 {:else}
-  <slot name="disconnected">
+  {#if disconnected}{@render disconnected()}{:else}
     <span>Connect your Cosmos wallet to continue</span>
-  </slot>
+  {/if}
 {/if}
 
 

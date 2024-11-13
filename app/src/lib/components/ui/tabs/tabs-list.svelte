@@ -4,8 +4,14 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = TabsPrimitive.ListProps
 
-let className: $$Props["class"] = undefined
-export { className as class }
+  interface Props {
+    class?: $$Props["class"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
+
+  let { class: className = undefined, children, ...rest }: Props = $props();
+
 </script>
 
 <TabsPrimitive.List
@@ -13,7 +19,7 @@ export { className as class }
     'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
     className,
   )}
-  {...$$restProps}
+  {...rest}
 >
-  <slot />
+  {@render children?.()}
 </TabsPrimitive.List>

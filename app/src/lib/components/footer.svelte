@@ -12,7 +12,7 @@ const onWalletClick = () => document.querySelector("button[data-dialog-trigger]"
 
 const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-accent"
 
-$: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
+let isCurrentPage = $derived((route: string) => $page.route.id?.split("/")[1] === route)
 
 let buttons = [
   { displayName: "home", href: "", icon: HomeIcon },
@@ -44,8 +44,7 @@ let buttons = [
           : 'bg-transparent dark:hover:text-black',
       )}
     >
-      <svelte:component
-        this={button.icon}
+      <button.icon
         class="size-7 min-w-6 text-zinc-accent"
       />
       <div>{button.displayName}</div>

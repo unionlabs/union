@@ -7,10 +7,14 @@ type $$Props = ResizablePrimitive.PaneResizerProps & {
   withHandle?: boolean
 }
 
-export let withHandle: $$Props["withHandle"] = false
-export let el: $$Props["el"] = undefined
-let className: $$Props["class"] = undefined
-export { className as class }
+	interface Props {
+		withHandle?: $$Props["withHandle"];
+		el?: $$Props["el"];
+		class?: $$Props["class"];
+	}
+
+	let { withHandle = false, el = $bindable(undefined), class: className = undefined }: Props = $props();
+
 </script>
 
 <ResizablePrimitive.PaneResizer

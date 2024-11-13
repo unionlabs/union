@@ -5,9 +5,14 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = CommandPrimitive.InputProps
 
-let className: string | undefined | null = undefined
-export { className as class }
-export let value = ""
+
+	interface Props {
+		class?: string | undefined | null;
+		value?: string;
+		[key: string]: any
+	}
+
+	let { class: className = undefined, value = $bindable(""), ...rest }: Props = $props();
 </script>
 
 <div class="bg-muted text-foreground flex items-center border-b px-2" data-cmdk-input-wrapper="">
@@ -18,7 +23,7 @@ export let value = ""
 			"flex h-11 w-full bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50",
 			className
 		)}
-		{...$$restProps}
+		{...rest}
 		bind:value
 	/>
 </div>

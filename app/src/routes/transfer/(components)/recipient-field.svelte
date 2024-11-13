@@ -6,9 +6,13 @@ import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.ts"
 import Button from "$lib/components/ui/button/button.svelte"
 
-export let recipient: Writable<string>
+  interface Props {
+    recipient: Writable<string>;
+  }
 
-let recipientInputState: "locked" | "unlocked" | "invalid" = "unlocked"
+  let { recipient = $bindable() }: Props = $props();
+
+let recipientInputState: "locked" | "unlocked" | "invalid" = $state("unlocked")
 
 const onUnlockClick = (_event: MouseEvent) => {
   if (recipientInputState === "locked") {

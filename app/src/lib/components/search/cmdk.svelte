@@ -28,9 +28,9 @@ import HubbleStatusIcon from "$lib/components/union-icons/mono/icon-hubblestatus
 let searchInput = writable("")
 searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
 
-let commandDialogOpen = false
+let commandDialogOpen = $state(false)
 
-let windowSize = { width: window.innerWidth, height: window.innerHeight }
+let windowSize = $state({ width: window.innerWidth, height: window.innerHeight })
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
@@ -191,7 +191,7 @@ const DISABLE_TAB_INDEX = -1
 
       <Command.Group heading="Interact with the testnet" class={cn("text-black bg-background")}>
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer group",
@@ -202,23 +202,25 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <FaucetIcon class="mr-2 size-5" />
-          <span>Get tokens from faucet</span>
-          {#if $page.route.id?.startsWith("/faucet")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <FaucetIcon class="mr-2 size-5" />
+            <span>Get tokens from faucet</span>
+            {#if $page.route.id?.startsWith("/faucet")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
 
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -229,27 +231,29 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <TransfersIcon class="mr-2 size-5" />
-          <span>Transfer assets across chains</span>
-          {#if $page.route.id?.startsWith("/transfer")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <TransfersIcon class="mr-2 size-5" />
+            <span>Transfer assets across chains</span>
+            {#if $page.route.id?.startsWith("/transfer")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
       </Command.Group>
       <Command.Separator />
 
       <Command.Group heading="Explore Data" class={cn("text-black bg-background")}>
         {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -261,22 +265,24 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UserTransfersIcon class="mr-2 size-5" />
-          <span>Your transfers</span>
-          {#if $page.route.id?.startsWith("/explorer/address")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <UserTransfersIcon class="mr-2 size-5" />
+            <span>Your transfers</span>
+            {#if $page.route.id?.startsWith("/explorer/address")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -287,22 +293,24 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <ChannelIcon class="mr-2 size-5" />
-          <span>All transfers</span>
-          {#if $page.route.id?.startsWith("/explorer/transfers")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <ChannelIcon class="mr-2 size-5" />
+            <span>All transfers</span>
+            {#if $page.route.id?.startsWith("/explorer/transfers")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -313,23 +321,25 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <IbcConnectionsIcon class="mr-2 size-5" />
-          <span>IBC connections</span>
-          {#if $page.route.id?.startsWith("/explorer/connections")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <IbcConnectionsIcon class="mr-2 size-5" />
+            <span>IBC connections</span>
+            {#if $page.route.id?.startsWith("/explorer/connections")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
 
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -340,23 +350,25 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <IbcChannelsIcon class="mr-2 size-5" />
-          <span>IBC channels</span>
-          {#if $page.route.id?.startsWith("/explorer/channels")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <IbcChannelsIcon class="mr-2 size-5" />
+            <span>IBC channels</span>
+            {#if $page.route.id?.startsWith("/explorer/channels")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
 
         <Command.Item
-          let:attrs
+          
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
             "hover:cursor-pointer",
@@ -367,20 +379,22 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <HubbleStatusIcon class="mr-2 size-5" />
-          <span>Hubble index status</span>
-          {#if $page.route.id?.startsWith("/explorer/index-status")}
-            <Badge
-              variant="outline"
-              class={cn(
-                "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-                attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
+          {#snippet children({ attrs })}
+                    <HubbleStatusIcon class="mr-2 size-5" />
+            <span>Hubble index status</span>
+            {#if $page.route.id?.startsWith("/explorer/index-status")}
+              <Badge
+                variant="outline"
+                class={cn(
+                  "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+                  attrs["data-selected"] ? "text-black bg-union-accent" : "bg-primary-foreground",
+                )}
+              >
+                active page
+              </Badge>
+            {/if}
+                            {/snippet}
+                </Command.Item>
       </Command.Group>
     </Command.List>
   </Command.Root>

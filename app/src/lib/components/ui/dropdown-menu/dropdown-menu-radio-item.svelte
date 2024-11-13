@@ -6,9 +6,15 @@ import { cn } from "$lib/utilities/shadcn.js"
 type $$Props = DropdownMenuPrimitive.RadioItemProps
 type $$Events = DropdownMenuPrimitive.RadioItemEvents
 
-let className: $$Props["class"] = undefined
-export let value: $$Props["value"]
-export { className as class }
+	interface Props {
+		class?: $$Props["class"];
+		value: $$Props["value"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let { class: className = undefined, value, children, ...rest }: Props = $props();
+
 </script>
 
 <DropdownMenuPrimitive.RadioItem
@@ -17,7 +23,7 @@ export { className as class }
 		className
 	)}
 	{value}
-	{...$$restProps}
+	{...rest}
 	on:click
 	on:keydown
 	on:focusin
@@ -31,5 +37,5 @@ export { className as class }
 			<Circle class="h-2 w-2 fill-current" />
 		</DropdownMenuPrimitive.RadioIndicator>
 	</span>
-	<slot />
+	{@render children?.()}
 </DropdownMenuPrimitive.RadioItem>

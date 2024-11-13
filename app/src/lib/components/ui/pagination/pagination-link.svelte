@@ -10,12 +10,25 @@ type $$Props = PaginationPrimitive.PageProps &
 
 type $$Events = PaginationPrimitive.PageEvents
 
-let className: $$Props["class"] = undefined
-export let page: $$Props["page"]
-export let size: $$Props["size"] = "icon"
-export let isActive: $$Props["isActive"] = false
+	interface Props_1 {
+		class?: $$Props["class"];
+		page: $$Props["page"];
+		size?: $$Props["size"];
+		isActive?: $$Props["isActive"];
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
 
-export { className as class }
+	let {
+		class: className = undefined,
+		page = $bindable(),
+		size = "icon",
+		isActive = false,
+		children,
+		...rest
+	}: Props_1 = $props();
+
+
 </script>
 
 <PaginationPrimitive.Page
@@ -27,8 +40,8 @@ export { className as class }
 		}),
 		className
 	)}
-	{...$$restProps}
+	{...rest}
 	on:click
 >
-	<slot>{page.value}</slot>
+	{#if children}{@render children()}{:else}{page.value}{/if}
 </PaginationPrimitive.Page>

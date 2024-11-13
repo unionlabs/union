@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { preventDefault, once } from 'svelte/legacy';
+
 import request from "graphql-request"
 import { onDestroy, onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -33,7 +35,7 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-let address = ""
+let address = $state("")
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
@@ -168,7 +170,7 @@ const requestUnoFromFaucet = async () => {
           method="POST"
           class="flex flex-col w-full gap-4"
           name="faucet-form"
-          on:submit|preventDefault|once={requestUnoFromFaucet}
+          onsubmit={once(preventDefault(requestUnoFromFaucet))}
         >
           <div>
             <Label for="address">Address</Label>
@@ -197,27 +199,33 @@ const requestUnoFromFaucet = async () => {
                 </div>
                 <div class="flex justify-between px-1">
                   <div class="text-xs">
-                    <ChainsGate let:chains>
-                      <WalletGateCosmos>
-                        <p slot="connected" let:userAddrCosmos>
-                          <span class="text-muted-foreground">Balance: </span>
-                            <TokenBalance
-                              {chains}
-                              {userAddrCosmos}
-                              symbol="muno"
-                            />
-                        </p>
+                    <ChainsGate >
+                      {#snippet children({ chains })}
+                                                <WalletGateCosmos>
+                          {#snippet connected({ userAddrCosmos })}
+                                                    <p  >
+                              <span class="text-muted-foreground">Balance: </span>
+                                <TokenBalance
+                                  {chains}
+                                  {userAddrCosmos}
+                                  symbol="muno"
+                                />
+                            </p>
+                                                  {/snippet}
 
-                        <p slot="disconnected">
-                            Connect cosmos wallet
-                        </p>
-                      </WalletGateCosmos>
-                    </ChainsGate>
+                          {#snippet disconnected()}
+                                                    <p >
+                                Connect cosmos wallet
+                            </p>
+                                                  {/snippet}
+                        </WalletGateCosmos>
+                                                                    {/snippet}
+                                            </ChainsGate>
                   </div>
                   {#if address !== $cosmosStore.address}
                     <button
                       type="button"
-                      on:click={resetInput}
+                      onclick={resetInput}
                       class="text-xs text-muted-foreground hover:text-primary transition"
                     >
                       Reset
@@ -273,7 +281,9 @@ const requestUnoFromFaucet = async () => {
   <!-- dydx faucet -->
   <DydxFaucet />
   <StrideFaucet />
-  <ChainsGate let:chains>
-    <ExternalFaucets {chains} />
-  </ChainsGate>
+  <ChainsGate >
+    {#snippet children({ chains })}
+        <ExternalFaucets {chains} />
+          {/snippet}
+    </ChainsGate>
 </main>

@@ -14,15 +14,17 @@ let normalizedAddresses = derived(addresses, $addresses =>
 </script>
 
 
-<ChainsGate let:chains>
-  <section class="flex gap-4 flex-col mb-8 items-center">
-    {#each $addresses as address }
-      <AddressMultichain {address} {chains}/>
-    {/each}
-  </section>
-  <TableTransfers
-    {chains}
-    pageSize={24}
-    normalizedAddresses={$normalizedAddresses}
-  />
+<ChainsGate >
+  {#snippet children({ chains })}
+    <section class="flex gap-4 flex-col mb-8 items-center">
+      {#each $addresses as address }
+        <AddressMultichain {address} {chains}/>
+      {/each}
+    </section>
+    <TableTransfers
+      {chains}
+      pageSize={24}
+      normalizedAddresses={$normalizedAddresses}
+    />
+  {/snippet}
 </ChainsGate>

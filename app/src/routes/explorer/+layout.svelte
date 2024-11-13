@@ -8,11 +8,16 @@ import Menu from "./(components)/menu.svelte"
 import StatsBar from "./(components)/stats-bar.svelte"
 import ExplorerBreadcrumbs from "$lib/components/explorer-breadcrumbs.svelte"
 
-export let data: LayoutData
+  interface Props {
+    data: LayoutData;
+    children?: import('svelte').Snippet;
+  }
 
-let explorerRoute = $page.route.id?.split("/").at(2) ?? null
-$: explorerPageDescription =
-  data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
+  let { data, children }: Props = $props();
+
+let explorerRoute = $state($page.route.id?.split("/").at(2) ?? null)
+let explorerPageDescription =
+  $derived(data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null)
 
 onNavigate(navigation => {
   if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
@@ -78,7 +83,7 @@ onMount(() => {
             {explorerPageDescription}
           </p>
         </div>
-        <slot />
+        {@render children?.()}
       </div>
     </div>
   </main>

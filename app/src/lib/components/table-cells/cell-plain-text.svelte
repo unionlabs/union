@@ -1,5 +1,10 @@
 <script lang="ts">
-export let value: string
+	interface Props {
+		value: string;
+		[key: string]: any
+	}
+
+	let { value, ...rest }: Props = $props();
 </script>
 
-<p {...$$restProps}>{value}</p>
+<p {...rest}>{value}</p>

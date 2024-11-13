@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: Cannot subscribe to stores that are not declared at the top level of the component -->
 <script lang="ts">
 import { page } from "$app/stores"
 import ChainsGate from "$lib/components/chains-gate.svelte"

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { setMode } from "mode-watcher"
 import { derived } from "svelte/store"
 import { navigating } from "$app/stores"
@@ -20,7 +22,7 @@ import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { onMount } from "svelte"
 
-let buttonText: string
+let buttonText: string = $state()
 
 let connectedWallets = derived(
   [sepoliaStore, cosmosStore, aptosStore],
@@ -37,40 +39,46 @@ onMount(() => {
   console.info($aptosStore)
 })
 
-$: if ($connectedWallets >= 1) {
-  buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
-} else {
-  buttonText = "Connect Wallet"
-}
+run(() => {
+    if ($connectedWallets >= 1) {
+    buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
+  } else {
+    buttonText = "Connect Wallet"
+  }
+  });
 
-let sheetOpen = false
-$: if ($navigating) sheetOpen = false
+let sheetOpen = $state(false)
+run(() => {
+    if ($navigating) sheetOpen = false
+  });
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
-  <Sheet.Trigger asChild class="w-full" let:builder>
-    <Button
-      builders={[builder]}
-      class={cn(
-        $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
-        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
-        "hover:bg-cyan-300/90",
-        $sepoliaStore.connectionStatus === "connected" &&
-          $cosmosStore.connectionStatus === "connected",
-      )}
-      on:click={() => (sheetOpen = !sheetOpen)}
-      size="sm"
-    >
-      <WalletIcon class="size-6 text-black" />
-      <span class="font-supermolot font-bold uppercase lg:block hidden">
-        {buttonText}
-      </span>
-      <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
-        <!-- {connectedWallets === 1 ? "1/2" : ""} -->
-        {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
-      </span>
-    </Button>
-  </Sheet.Trigger>
+  <Sheet.Trigger asChild class="w-full" >
+    {#snippet children({ builder })}
+        <Button
+        builders={[builder]}
+        class={cn(
+          $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
+          "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
+          "hover:bg-cyan-300/90",
+          $sepoliaStore.connectionStatus === "connected" &&
+            $cosmosStore.connectionStatus === "connected",
+        )}
+        on:click={() => (sheetOpen = !sheetOpen)}
+        size="sm"
+      >
+        <WalletIcon class="size-6 text-black" />
+        <span class="font-supermolot font-bold uppercase lg:block hidden">
+          {buttonText}
+        </span>
+        <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
+          <!-- {connectedWallets === 1 ? "1/2" : ""} -->
+          {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
+        </span>
+      </Button>
+          {/snippet}
+    </Sheet.Trigger>
   <Sheet.Content
     class={cn(
       "h-full border-solid border-left flex flex-col justify-start",
@@ -135,22 +143,24 @@ $: if ($navigating) sheetOpen = false
         <Label for="unsupported-assets">CRT effect</Label>
       </div>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            builders={[builder]}
-            variant="default"
-            size="icon"
-            class="hover:text-black hover:bg-accent"
-          >
-            <Sun
-              class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-            />
-            <Moon
-              class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-            />
-            <span class="sr-only">Toggle theme</span>
-          </Button>
-        </DropdownMenu.Trigger>
+        <DropdownMenu.Trigger asChild >
+          {#snippet children({ builder })}
+                    <Button
+              builders={[builder]}
+              variant="default"
+              size="icon"
+              class="hover:text-black hover:bg-accent"
+            >
+              <Sun
+                class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+              />
+              <Moon
+                class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+              />
+              <span class="sr-only">Toggle theme</span>
+            </Button>
+                            {/snippet}
+                </DropdownMenu.Trigger>
         <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
           <DropdownMenu.Group>
             <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">

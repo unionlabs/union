@@ -4,13 +4,19 @@ import { cn } from "$lib/utilities/shadcn.js"
 
 type $$Props = HTMLAttributes<HTMLLIElement>
 
-let className: $$Props["class"] = undefined
+  interface Props {
+    class?: $$Props["class"];
+    children?: import('svelte').Snippet;
+    [key: string]: any
+  }
 
-export { className as class }
+  let { class: className = undefined, children, ...rest }: Props = $props();
+
+
 </script>
 
 <li 
-class={cn("", className)} {...$$restProps}
+class={cn("", className)} {...rest}
 >
-  <slot />
+  {@render children?.()}
 </li>

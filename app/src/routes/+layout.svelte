@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import "$lib/polyfill.ts"
 import "$styles/index.css"
 import { onMount } from "svelte"
@@ -19,6 +21,11 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import DeprecationNotice from "$lib/components/deprecation-notice.svelte"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
 
 const { queryClient, QueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -28,7 +35,9 @@ onMount(() => {
   disablePinchToZoom()
 })
 
-$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
+run(() => {
+    updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
+  });
 </script>
 
 <svelte:head>
@@ -64,7 +73,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
     <!-- <DeprecationNotice /> -->
-    <slot />
+    {@render children?.()}
   </div>
   <Footer />
 

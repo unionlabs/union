@@ -1,9 +1,14 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 
-export let className: string
+  interface Props {
+    class: string;
+    children?: import('svelte').Snippet;
+  }
 
-export { className as class }
+  let { class: className, children }: Props = $props();
+
+
 </script>
 
 <kbd
@@ -13,7 +18,7 @@ export { className as class }
     className
   )}
 >
-  <slot />
+  {@render children?.()}
 </kbd>
 
 <style lang="postcss"></style>

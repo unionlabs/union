@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { preventDefault, once } from 'svelte/legacy';
+
 import { URLS } from "$lib/constants"
 import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -176,7 +178,7 @@ let dydxBalance = createQuery(
         method="POST"
         name="faucet-form"
         class="flex flex-col w-full gap-4"
-        on:submit|preventDefault|once={requestDydxFromFaucet}
+        onsubmit={once(preventDefault(requestDydxFromFaucet))}
       >
         <div>
           <Label for="address">Address</Label>

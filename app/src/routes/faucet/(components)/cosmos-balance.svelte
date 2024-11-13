@@ -3,10 +3,19 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { truncate } from "$lib/utilities/format.ts"
 
-export let userAddr: UserAddresses
-export let chains: Array<Chain>
-export let chainId: string
-export let symbol: boolean
+  interface Props {
+    userAddr: UserAddresses;
+    chains: Array<Chain>;
+    chainId: string;
+    symbol: boolean;
+  }
+
+  let {
+    userAddr,
+    chains,
+    chainId,
+    symbol
+  }: Props = $props();
 
 let cosmosBalances = userBalancesQuery({
   chains: chains.filter(c => c.chain_id === chainId),

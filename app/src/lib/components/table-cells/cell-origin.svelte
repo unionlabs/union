@@ -1,15 +1,20 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 
-export let value: {
+  interface Props {
+    value: {
   name: string
   chain: unknown
   connection: unknown
   channel: unknown
-}
+};
+    [key: string]: any
+  }
+
+  let { value, ...rest }: Props = $props();
 </script>
 
-<div  class={cn("flex flex-col ")} {...$$restProps}>
+<div  class={cn("flex flex-col ")} {...rest}>
   <div class="font-bold">{value.name}</div>
   <div>{value.chain}</div>
   <div>{value.connection}</div>

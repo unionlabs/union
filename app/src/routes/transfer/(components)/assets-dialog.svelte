@@ -11,7 +11,11 @@ import { showUnsupported } from "$lib/stores/user.ts"
 import { ScrollArea } from "$lib/components/ui/scroll-area"
 import { type Address, parseUnits, toHex } from "viem"
 
-/**
+
+
+
+  interface Props {
+    /**
  * TODO: format the balance to a readable format - in order to do that properly, need:
  *  - the balance,
  *  - the decimals,
@@ -19,17 +23,23 @@ import { type Address, parseUnits, toHex } from "viem"
  *    - if evm then `Number(formatUnits(balance, decimals)).toFixed(2)`, - the 2 can be a 4 if you want more precision
  *    - if cosmos then: TBD
  */
-
-export let dialogOpen = false
-export let chain: Chain
-export let assets: Array<{
+    dialogOpen?: boolean;
+    chain: Chain;
+    assets: Array<{
   address: string
   balance: bigint
   decimals?: number
   symbol: string
-}>
+}>;
+    onAssetSelect: (data: { address: string; symbol: string }) => void;
+  }
 
-export let onAssetSelect: (data: { address: string; symbol: string }) => void
+  let {
+    dialogOpen = $bindable(false),
+    chain,
+    assets,
+    onAssetSelect
+  }: Props = $props();
 </script>
 
 <Dialog.Root
