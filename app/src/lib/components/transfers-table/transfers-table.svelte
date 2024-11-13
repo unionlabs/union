@@ -1,5 +1,19 @@
 <script lang="ts">
-import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
+// import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
+	import {
+		type ColumnDef,
+		type ColumnFiltersState,
+		type PaginationState,
+		type RowSelectionState,
+		type SortingState,
+		type VisibilityState,
+		getCoreRowModel,
+		getFacetedRowModel,
+		getFacetedUniqueValues,
+		getFilteredRowModel,
+		getPaginationRowModel,
+		getSortedRowModel,
+	} from "@tanstack/table-core";
 import type { Chain } from "$lib/types.ts"
 import type { Transfer } from "./transfers-types.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
@@ -11,6 +25,7 @@ import { transfersQuery } from "$lib/queries/transfers.ts"
 import { timestamp } from "$lib/stores/page.ts"
 
 import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
+    import { renderComponent } from '$lib/components/table/render-helpers.ts'
 
 interface Props {
   chains: Array<Chain>
@@ -22,6 +37,7 @@ let { chains, normalizedAddresses = null, pageSize }: Props = $props()
 
 const transfers = transfersQuery(normalizedAddresses, timestamp, pageSize)
 
+// @ts-expect-error
 const transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
   return $transfers?.data?.map(d => ({ url: `/explorer/transfers/${d.hash}`, ...d })) ?? []
 })
@@ -30,20 +46,25 @@ type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
-    cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
+    // cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
+    cell: info => renderComponent(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
     accessorKey: "destination",
-    cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
+    // cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
+    cell: info => renderComponent(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
     accessorKey: "tokens",
-    cell: info => flexRender(CellAssets, { value: info.getValue() })
+    // cell: info => flexRender(CellAssets, { value: info.getValue() })
+    // cell: info => renderComponent(CellAssets, { value: info.getValue() })
+    cell: info => renderComponent(CellAssets, { value: info.getValue() })
   },
   {
     header: () => "Time",
     accessorKey: "timestamp",
-    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
+    // cell: info => flexRender(CellTimestamp, { value: info.getValue() })
+    cell: info => renderComponent(CellTimestamp, { value: info.getValue() })
   }
 ]
 </script>

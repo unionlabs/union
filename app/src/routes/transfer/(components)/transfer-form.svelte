@@ -1,5 +1,11 @@
 <!-- @migration-task Error while migrating Svelte code: can't migrate `$: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })` to `$derived` because there's a variable named derived.
      Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
 import {
   http,

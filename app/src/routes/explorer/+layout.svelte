@@ -54,15 +54,15 @@ console.info("explorer layout")
       explorerRoute === null ? 'hidden sm:block' : '',
     )}
   >
-    <!-- {#if $page.route.id?.split('/').length === 3}
-      <StatsBar />
+    {#if $page.route.id?.split('/').length === 3}
+      <!-- <StatsBar /> -->
     {/if}
 
     {#if ($page?.route?.id?.split('/')?.length ?? 0) > 3}
       <ExplorerBreadcrumbs />
-    {/if} -->
+    {/if}
 
-    <!-- <div class="flex flex-col flex-1 size-full">
+    <div class="flex flex-col flex-1 size-full">
       <div class="p-2 sm:p-4 md:p-6" data-explorer-layout>
         <div class={cn($page.route.id?.split('/').length === 3 ? '' : 'hidden')}>
           <h2
@@ -77,6 +77,6 @@ console.info("explorer layout")
         </div>
         {@render children?.()}
       </div>
-    </div> -->
+    </div>
   </main>
 </div>

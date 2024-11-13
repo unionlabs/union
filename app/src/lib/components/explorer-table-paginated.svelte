@@ -20,7 +20,7 @@ let { queryResult, columns, dataStore }: Props = $props()
 
 {#if $queryResult.data}
   <Table {dataStore} {columns} />
-  <ExplorerPagination explorerItems={dataStore} />
+  <!-- <ExplorerPagination explorerItems={dataStore} /> -->
 {:else if $queryResult.status  === "pending"}
   <LoadingLogo class="size-16" />
 {/if}

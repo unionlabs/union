@@ -1,3 +1,6 @@
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
+<!-- @migration-task Error while migrating Svelte code: Attribute values containing `{...}` must be enclosed in quote marks, unless the value only contains the expression -->
 <script lang="ts"> 
   import Square from './spinning-logo/square.svelte';
 	let cubeWidth = 64;

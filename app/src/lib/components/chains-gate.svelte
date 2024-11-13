@@ -11,6 +11,7 @@ interface Props {
 
 let { children }: Props = $props()
 
+
 let chains = chainsQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []

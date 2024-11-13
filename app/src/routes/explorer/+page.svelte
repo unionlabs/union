@@ -17,7 +17,11 @@ onMount(() => {
   })
 })
 
-let text = shouldRedirect ? "" : "Welcome to the Union Explorer"
+let text = $derived(shouldRedirect ? "" : "Welcome to the Union Explorer")
+onMount(() => {
+console.info(text)
+  
+})
 </script>
 
 <svelte:window bind:innerWidth />
