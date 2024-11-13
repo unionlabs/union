@@ -8,7 +8,7 @@ use alloy::{
 };
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::PresetBaseKind;
-use ethereum_light_client_types::{AccountProof, ClientState, ConsensusState};
+use ethereum_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -21,13 +21,13 @@ use unionlabs::{hash::H160, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
-    run_consensus_module_server, ConsensusModule,
+    ConsensusModule,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_consensus_module_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -54,35 +54,6 @@ pub struct Config {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
-}
-
-impl Module {
-    pub async fn fetch_account_update(&self, slot: u64) -> AccountProof {
-        let execution_height = self
-            .beacon_api_client
-            .execution_height(beacon_api::client::BlockId::Slot(slot))
-            .await
-            .unwrap();
-
-        let account_update = self
-            .provider
-            .get_proof(self.ibc_handler_address.into(), vec![])
-            .block_id(
-                // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                execution_height.into(),
-            )
-            .await
-            .unwrap();
-
-        AccountProof {
-            storage_root: account_update.storage_hash.into(),
-            proof: account_update
-                .account_proof
-                .into_iter()
-                .map(|x| x.to_vec())
-                .collect(),
-        }
-    }
 }
 
 impl ConsensusModule for Module {
