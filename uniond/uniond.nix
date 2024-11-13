@@ -76,7 +76,7 @@
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-YRRY6CCgzgNl3Q8PtXtQx01VaIxNZGejdUX0MyTqQ7I=";
+                vendorHash = "sha256-06cNrrFUNr9RqRDPjYTEN4+xL5xoTGvZCztCGsho+8Y=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
@@ -88,7 +88,6 @@
                     # Statically link if we're on linux
                     nativeBuildInputs = [ pkgs.musl ];
                     ldflags = [
-                      "-checklinkname=0"
                       "-linkmode external"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
