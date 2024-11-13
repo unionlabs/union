@@ -1,4 +1,4 @@
-use ics008_wasm_client::IbcClientError;
+use cosmwasm_std::StdError;
 use movement_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     aptos::storage_proof::TryFromStorageProofError,
@@ -7,9 +7,7 @@ use unionlabs::{
     TryFromProtoBytesError,
 };
 
-use crate::client::MovementLightClient;
-
-#[derive(thiserror::Error, Debug, Clone, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
     #[error("unable to decode client state")]
     ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
@@ -37,22 +35,12 @@ pub enum Error {
     StorageProofDecode(#[from] TryFromProtoBytesError<TryFromStorageProofError>),
     #[error("invalid ibc path {0}")]
     InvalidIbcPath(String),
-    // #[error("unable to decode counterparty's stored cometbls client state")]
-    // CometblsClientStateDecode(
-    //     #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
-    // ),
-    // #[error("unable to decode counterparty's stored cometbls consensus state")]
-    // CometblsConsensusStateDecode(
-    //     #[source]
-    //     DecodeErrorOf<
-    //         Proto,
-    //         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
-    //     >,
-    // ),
+    #[error(transparent)]
+    StdError(#[from] StdError),
 }
 
-impl From<Error> for IbcClientError<MovementLightClient> {
+impl From<Error> for StdError {
     fn from(value: Error) -> Self {
-        Self::ClientSpecific(value)
+        StdError::generic_err(value.to_string())
     }
 }

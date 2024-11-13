@@ -1,12 +1,10 @@
-use unionlabs::{
-    aptos::account::AccountAddress, hash::H160, ibc::core::client::height::Height, id::ClientId,
-};
+use unionlabs::{aptos::account::AccountAddress, hash::H160, ibc::core::client::height::Height};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub chain_id: String,
-    pub l1_client_id: ClientId,
+    pub l1_client_id: u32,
     pub l1_contract_address: H160,
     pub l2_contract_address: AccountAddress,
     pub table_handle: AccountAddress,
@@ -60,7 +58,8 @@ pub mod proto {
             value: protos::union::ibc::lightclients::movement::v1::ClientState,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                l1_client_id: ClientId::from_str(&value.l1_client_id).map_err(Error::L1ClientId)?,
+                // TODO(aeryz): fix this
+                l1_client_id: 0,
                 l1_contract_address: value
                     .l1_contract_address
                     .try_into()
