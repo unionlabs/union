@@ -1,10 +1,9 @@
 <script lang="ts">
-    interface Props {
-        class?: string | undefined;
-    }
+interface Props {
+  class?: string | undefined
+}
 
-    let { class: className = "size-12" }: Props = $props();
-
+let { class: className = "size-12" }: Props = $props()
 </script>
 
 <div class="max-w-full w-full flex flex-1 items-center justify-center">

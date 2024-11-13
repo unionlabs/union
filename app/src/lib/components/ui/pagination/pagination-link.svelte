@@ -3,36 +3,27 @@ import { Pagination as PaginationPrimitive } from "bits-ui"
 import { cn } from "$lib/utilities/shadcn.js"
 import { type Props, buttonVariants } from "$lib/components/ui/button/index.js"
 
-type $$Props = PaginationPrimitive.PageProps &
+let {
+  ref = $bindable(null),
+  class: className,
+  size = "icon",
+  isActive = false,
+  page,
+  children,
+  ...restProps
+}: PaginationPrimitive.PageProps &
   Props & {
     isActive: boolean
-  }
-
-type $$Events = PaginationPrimitive.PageEvents
-
-	interface Props_1 {
-		class?: $$Props["class"];
-		page: $$Props["page"];
-		size?: $$Props["size"];
-		isActive?: $$Props["isActive"];
-		children?: import('svelte').Snippet;
-		[key: string]: any
-	}
-
-	let {
-		class: className = undefined,
-		page = $bindable(),
-		size = "icon",
-		isActive = false,
-		children,
-		...rest
-	}: Props_1 = $props();
-
-
+  } = $props()
 </script>
 
+{#snippet Fallback()}
+	{page.value}
+{/snippet}
+
 <PaginationPrimitive.Page
-	bind:page
+	bind:ref
+	{page}
 	class={cn(
 		buttonVariants({
 			variant: isActive ? "outline" : "ghost",
@@ -40,8 +31,6 @@ type $$Events = PaginationPrimitive.PageEvents
 		}),
 		className
 	)}
-	{...rest}
-	on:click
->
-	{#if children}{@render children()}{:else}{page.value}{/if}
-</PaginationPrimitive.Page>
+	children={children || Fallback}
+	{...restProps}
+/>

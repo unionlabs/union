@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
+import { run } from "svelte/legacy"
 
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Connect } from "$lib/components/connect"
@@ -10,7 +10,7 @@ let title: string = $state()
 let text: string = $state()
 
 run(() => {
-    if (
+  if (
     $sepoliaStore.connectionStatus !== "connected" &&
     $cosmosStore.connectionStatus !== "connected"
   ) {
@@ -20,7 +20,7 @@ run(() => {
     title = ""
     text = ""
   }
-  });
+})
 </script>
 
 <section class="max-w-lg">

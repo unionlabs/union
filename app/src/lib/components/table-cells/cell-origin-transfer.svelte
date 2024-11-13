@@ -4,16 +4,16 @@ import { truncate } from "$lib/utilities/format"
 import * as Tooltip from "$lib/components/ui/tooltip"
 import type { Chain } from "$lib/types"
 
-  interface Props {
-    chains: Array<Chain>;
-    value: {
-  chainId: string
-  address: string
-};
-    [key: string]: any
+interface Props {
+  chains: Array<Chain>
+  value: {
+    chainId: string
+    address: string
   }
+  [key: string]: any
+}
 
-  let { chains, value, ...rest }: Props = $props();
+let { chains, value, ...rest }: Props = $props()
 
 const chainDisplayName =
   chains.find(chain => chain.chain_id === value.chainId)?.display_name ??

@@ -7,13 +7,14 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import PacketPath from "./packet-path.svelte"
 import DetailsHeading from "./details-heading.svelte"
 
-const packet = readFragment(packetDetailsFragment, packetDetails)
-  interface Props {
-    packetDetails: FragmentOf<typeof packetDetailsFragment>;
-    chains: Array<Chain>;
-  }
+interface Props {
+  packetDetails: FragmentOf<typeof packetDetailsFragment>
+  chains: Array<Chain>
+}
 
-  let { packetDetails, chains }: Props = $props();
+let { packetDetails, chains }: Props = $props()
+
+const packet = readFragment(packetDetailsFragment, packetDetails)
 
 const packetSourceDestination = {
   source_chain_id: packet.source_chain_id,

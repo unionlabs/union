@@ -16,38 +16,39 @@ type T = $$Generic<typeof chain>
 
 type $$Props = Props<T>
 
-  interface Props_1 {
-    chain: "cosmos" | "evm" | "aptos";
-    address: $$Props["address"];
-    hoverState: $$Props["hoverState"];
-    connectStatus: $$Props["connectStatus"];
-    onConnectClick: $$Props["onConnectClick"];
-    onDisconnectClick: $$Props["onDisconnectClick"];
-    connectedWalletId: $$Props["connectedWalletId"];
-    chainWalletsInformation: $$Props["chainWalletsInformation"];
-    [key: string]: any
-  }
+interface Props_1 {
+  chain: "cosmos" | "evm" | "aptos"
+  address: $$Props["address"]
+  hoverState: $$Props["hoverState"]
+  connectStatus: $$Props["connectStatus"]
+  onConnectClick: $$Props["onConnectClick"]
+  onDisconnectClick: $$Props["onDisconnectClick"]
+  connectedWalletId: $$Props["connectedWalletId"]
+  chainWalletsInformation: $$Props["chainWalletsInformation"]
+  [key: string]: any
+}
 
-  let {
-    chain,
-    address,
-    hoverState = $bindable(),
-    connectStatus,
-    onConnectClick,
-    onDisconnectClick,
-    connectedWalletId,
-    chainWalletsInformation,
-    ...rest
-  }: Props_1 = $props();
+let {
+  chain,
+  address,
+  hoverState = $bindable(),
+  connectStatus,
+  onConnectClick,
+  onDisconnectClick,
+  connectedWalletId,
+  chainWalletsInformation,
+  ...rest
+}: Props_1 = $props()
 
-let connectText =
-  $derived(connectStatus === "connected" && address && address?.length > 0
+let connectText = $derived(
+  connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
       : chain === "aptos"
         ? address
         : truncateUnionAddress(address, -1)
-    : "")
+    : ""
+)
 
 let copyClicked = $state(false)
 const toggleCopy = () => (copyClicked = !copyClicked)
@@ -60,8 +61,9 @@ let sanitizeWalletInformation =
       array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
   ) ?? chainWalletsInformation
 
-let walletListToRender =
-  $derived(connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation)
+let walletListToRender = $derived(
+  connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
+)
 
 let metamaskAlertDialogOpen = $state(false)
 </script>

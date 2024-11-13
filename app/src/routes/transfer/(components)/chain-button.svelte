@@ -2,13 +2,13 @@
 import Chevron from "./chevron.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 
-  interface Props {
-    dialogOpen: boolean;
-    children?: import('svelte').Snippet;
-    [key: string]: any
-  }
+interface Props {
+  dialogOpen: boolean
+  children?: import("svelte").Snippet
+  [key: string]: any
+}
 
-  let { dialogOpen = $bindable(), children, ...rest }: Props = $props();
+let { dialogOpen = $bindable(), children, ...rest }: Props = $props()
 </script>
 
 <Button

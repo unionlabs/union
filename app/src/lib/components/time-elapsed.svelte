@@ -2,13 +2,12 @@
 import { readable } from "svelte/store"
 import { relativeTime } from "$lib/utilities/format.ts"
 
-  interface Props {
-    timestamp: Date;
-    class: string;
-  }
+interface Props {
+  timestamp: Date
+  class: string
+}
 
-  let { timestamp, class: _class }: Props = $props();
-
+let { timestamp, class: _class }: Props = $props()
 
 const time = readable(timestamp, set => {
   const interval = setInterval(() => set(timestamp), 1_000)

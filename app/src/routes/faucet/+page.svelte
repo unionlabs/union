@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { preventDefault, once } from 'svelte/legacy';
+import { preventDefault, once } from "svelte/legacy"
 
 import request from "graphql-request"
 import { onDestroy, onMount } from "svelte"

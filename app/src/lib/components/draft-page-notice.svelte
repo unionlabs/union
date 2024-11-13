@@ -2,11 +2,11 @@
 import { cn } from "$/lib/utilities/shadcn.ts"
 import { Badge } from "$lib/components/ui/badge"
 
-  interface Props {
-    className?: string;
-  }
+interface Props {
+  className?: string
+}
 
-  let { className = "" }: Props = $props();
+let { className = "" }: Props = $props()
 </script>
 
 <Badge

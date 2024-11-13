@@ -2,11 +2,11 @@
 import * as AlertDialog from "$lib/components/ui/alert-dialog/index.ts"
 import SquareArrowOutUpRightIcon from "virtual:icons/lucide/square-arrow-out-up-right"
 
-  interface Props {
-    metamaskAlertDialogOpen: boolean;
-  }
+interface Props {
+  metamaskAlertDialogOpen: boolean
+}
 
-  let { metamaskAlertDialogOpen = $bindable() }: Props = $props();
+let { metamaskAlertDialogOpen = $bindable() }: Props = $props()
 </script>
 
 <AlertDialog.Root bind:open={metamaskAlertDialogOpen} closeOnOutsideClick={true}>

@@ -2,23 +2,15 @@
 import { Drawer as DrawerPrimitive } from "vaul-svelte"
 import { cn } from "$lib/utilities/shadcn.js"
 
-type $$Props = DrawerPrimitive.DescriptionProps
-
-  interface Props {
-    el?: $$Props["el"];
-    class?: $$Props["class"];
-    children?: import('svelte').Snippet;
-    [key: string]: any
-  }
-
-  let { el = $bindable(undefined), class: className = undefined, children, ...rest }: Props = $props();
-
+let {
+  ref = $bindable(null),
+  class: className,
+  ...restProps
+}: DrawerPrimitive.DescriptionProps = $props()
 </script>
 
 <DrawerPrimitive.Description
-  bind:el
-  class={cn('text-sm text-muted-foreground', className)}
-  {...rest}
->
-  {@render children?.()}
-</DrawerPrimitive.Description>
+	bind:ref
+	class={cn("text-muted-foreground text-sm", className)}
+	{...restProps}
+/>

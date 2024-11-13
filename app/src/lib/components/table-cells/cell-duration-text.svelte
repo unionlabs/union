@@ -3,11 +3,11 @@ import { toIsoString } from "$lib/utilities/date"
 import { Duration } from "svelte-ux"
 import { DurationUnits } from "svelte-ux"
 
-	interface Props {
-		value: Date | undefined;
-	}
+interface Props {
+  value: Date | undefined
+}
 
-	let { value }: Props = $props();
+let { value }: Props = $props()
 </script>
 
 

@@ -3,12 +3,12 @@ import type { Chain } from "$lib/types"
 import { hexAddressToBech32 } from "@unionlabs/client"
 import { Badge } from "$lib/components/ui/badge/index.ts"
 
-  interface Props {
-    address: { address: string; normalizedAddress: string };
-    chains: Array<Chain>;
-  }
+interface Props {
+  address: { address: string; normalizedAddress: string }
+  chains: Array<Chain>
+}
 
-  let { address, chains }: Props = $props();
+let { address, chains }: Props = $props()
 
 const addressChain = chains.find(c => address.address.startsWith(c.addr_prefix)) as Chain
 

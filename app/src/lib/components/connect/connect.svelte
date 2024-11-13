@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
+import { run } from "svelte/legacy"
 
 import { setMode } from "mode-watcher"
 import { derived } from "svelte/store"
@@ -40,17 +40,17 @@ onMount(() => {
 })
 
 run(() => {
-    if ($connectedWallets >= 1) {
+  if ($connectedWallets >= 1) {
     buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
   } else {
     buttonText = "Connect Wallet"
   }
-  });
+})
 
 let sheetOpen = $state(false)
 run(() => {
-    if ($navigating) sheetOpen = false
-  });
+  if ($navigating) sheetOpen = false
+})
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>

@@ -1,21 +1,21 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 
-  interface Props {
-    width?: string;
-    height?: string;
-    animationSpeed?: number;
-    textSize?: string;
-    children?: import('svelte').Snippet;
-  }
+interface Props {
+  width?: string
+  height?: string
+  animationSpeed?: number
+  textSize?: string
+  children?: import("svelte").Snippet
+}
 
-  let {
-    width = "w-48",
-    height = "h-48",
-    animationSpeed = 6,
-    textSize = "text-sm",
-    children
-  }: Props = $props();
+let {
+  width = "w-48",
+  height = "h-48",
+  animationSpeed = 6,
+  textSize = "text-sm",
+  children
+}: Props = $props()
 </script>
 
 <div

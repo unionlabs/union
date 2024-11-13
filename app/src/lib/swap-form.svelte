@@ -10,11 +10,11 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { Button } from "$lib/components/ui/button"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 
-  interface Props {
-    chains: Array<Chain>;
-  }
+interface Props {
+  chains: Array<Chain>
+}
 
-  let { chains }: Props = $props();
+let { chains }: Props = $props()
 
 let fromChainId = writable("")
 let toChainId = writable("")

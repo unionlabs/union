@@ -1,39 +1,26 @@
 <script lang="ts">
-import { ScrollArea as ScrollAreaPrimitive } from "bits-ui"
+import { ScrollArea as ScrollAreaPrimitive, type WithoutChild } from "bits-ui"
 import { Scrollbar } from "./index.js"
 import { cn } from "$lib/utilities/shadcn.js"
 
-type $$Props = ScrollAreaPrimitive.Props & {
-  orientation?: "vertical" | "horizontal" | "both"
-  scrollbarXClasses?: string
-  scrollbarYClasses?: string
-}
-
-
-	interface Props {
-		class?: $$Props["class"];
-		orientation?: string;
-		scrollbarXClasses?: string;
-		scrollbarYClasses?: string;
-		children?: import('svelte').Snippet;
-		[key: string]: any
-	}
-
-	let {
-		class: className = undefined,
-		orientation = "vertical",
-		scrollbarXClasses = "",
-		scrollbarYClasses = "",
-		children,
-		...rest
-	}: Props = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  orientation = "vertical",
+  scrollbarXClasses = "",
+  scrollbarYClasses = "",
+  children,
+  ...restProps
+}: WithoutChild<ScrollAreaPrimitive.RootProps> & {
+  orientation?: "vertical" | "horizontal" | "both" | undefined
+  scrollbarXClasses?: string | undefined
+  scrollbarYClasses?: string | undefined
+} = $props()
 </script>
 
-<ScrollAreaPrimitive.Root {...rest} class={cn("relative overflow-hidden", className)}>
+<ScrollAreaPrimitive.Root bind:ref {...restProps} class={cn("relative overflow-hidden", className)}>
 	<ScrollAreaPrimitive.Viewport class="h-full w-full rounded-[inherit]">
-		<ScrollAreaPrimitive.Content>
-			{@render children?.()}
-		</ScrollAreaPrimitive.Content>
+		{@render children?.()}
 	</ScrollAreaPrimitive.Viewport>
 	{#if orientation === "vertical" || orientation === "both"}
 		<Scrollbar orientation="vertical" class={scrollbarYClasses} />

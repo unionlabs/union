@@ -6,18 +6,20 @@ import ScrollArea from "./ui/scroll-area/scroll-area.svelte"
 import LoadingLogo from "./loading-logo.svelte"
 import { userAddrOnChain } from "$lib/utilities/address"
 
-  interface Props {
-    userAddr: UserAddresses;
-    chains: Array<Chain>;
-  }
+interface Props {
+  userAddr: UserAddresses
+  chains: Array<Chain>
+}
 
-  let { userAddr, chains }: Props = $props();
+let { userAddr, chains }: Props = $props()
 
-let userBalances = $derived(userBalancesQuery({
-  chains,
-  userAddr,
-  connected: true
-}))
+let userBalances = $derived(
+  userBalancesQuery({
+    chains,
+    userAddr,
+    connected: true
+  })
+)
 </script>
 
 {#each $userBalances as balance, index}

@@ -5,11 +5,11 @@ import type { LayoutData } from "../$types.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { derived } from "svelte/store"
 
-  interface Props {
-    tableRoutes: LayoutData["tables"];
-  }
+interface Props {
+  tableRoutes: LayoutData["tables"]
+}
 
-  let { tableRoutes }: Props = $props();
+let { tableRoutes }: Props = $props()
 
 const selectedTable = derived(page, $page => $page.route.id?.split("/").at(2))
 

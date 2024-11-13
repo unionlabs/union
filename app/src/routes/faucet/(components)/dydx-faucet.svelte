@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { preventDefault, once } from 'svelte/legacy';
+import { preventDefault, once } from "svelte/legacy"
 
 import { URLS } from "$lib/constants"
 import request from "graphql-request"

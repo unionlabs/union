@@ -1,19 +1,14 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
 
-  interface Props {
-    amount: number;
-    decimals: number;
-    displayDecimals?: number;
-    showToolTip?: boolean;
-  }
+interface Props {
+  amount: number
+  decimals: number
+  displayDecimals?: number
+  showToolTip?: boolean
+}
 
-  let {
-    amount,
-    decimals,
-    displayDecimals = 2,
-    showToolTip = false
-  }: Props = $props();
+let { amount, decimals, displayDecimals = 2, showToolTip = false }: Props = $props()
 
 const formatBalance = (
   balance: bigint | string | number,

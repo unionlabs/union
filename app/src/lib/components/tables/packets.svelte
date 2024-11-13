@@ -17,15 +17,14 @@ import {
 } from "$lib/queries/packets"
 import { timestamp } from "$lib/stores/page.ts"
 
+interface Props {
+  // export let chains: Array<Chain>
+  chain_id?: string | undefined
+  connection_id?: string | undefined
+  channel_id?: string | undefined
+}
 
-  interface Props {
-    // export let chains: Array<Chain>
-    chain_id?: string | undefined;
-    connection_id?: string | undefined;
-    channel_id?: string | undefined;
-  }
-
-  let { chain_id = undefined, connection_id = undefined, channel_id = undefined }: Props = $props();
+let { chain_id = undefined, connection_id = undefined, channel_id = undefined }: Props = $props()
 // export let pageSize: number // must be even
 
 let packets = chain_id

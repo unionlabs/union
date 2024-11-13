@@ -3,11 +3,11 @@ import { toast } from "svelte-sonner"
 import { toggleMode } from "mode-watcher"
 import { shortcut } from "@svelte-put/shortcut"
 import { useQueryClient } from "@tanstack/svelte-query"
-  interface Props {
-    children?: import('svelte').Snippet;
-  }
+interface Props {
+  children?: import("svelte").Snippet
+}
 
-  let { children }: Props = $props();
+let { children }: Props = $props()
 
 const queryClient = useQueryClient()
 </script>

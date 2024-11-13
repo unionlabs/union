@@ -1,12 +1,12 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 
-	interface Props {
-		value: string;
-		[key: string]: any
-	}
+interface Props {
+  value: string
+  [key: string]: any
+}
 
-	let { value, ...rest }: Props = $props();
+let { value, ...rest }: Props = $props()
 
 const goodValue = (v: string) => v === "HEALTHY" || v === "CONFIRM"
 </script>

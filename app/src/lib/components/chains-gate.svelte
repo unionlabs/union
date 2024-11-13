@@ -3,11 +3,11 @@ import type { Chain } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
-  interface Props {
-    children?: import('svelte').Snippet<[any]>;
-  }
+interface Props {
+  children?: import("svelte").Snippet<[any]>
+}
 
-  let { children }: Props = $props();
+let { children }: Props = $props()
 
 let chains = chainsQuery()
 

@@ -1,17 +1,12 @@
 <script lang="ts">
-	interface Props {
-		size: number;
-		x: number;
-		y: number;
-		strokeWidth: number;
-	}
+interface Props {
+  size: number
+  x: number
+  y: number
+  strokeWidth: number
+}
 
-	let {
-		size,
-		x,
-		y,
-		strokeWidth
-	}: Props = $props();
+let { size, x, y, strokeWidth }: Props = $props()
 </script>
 
 

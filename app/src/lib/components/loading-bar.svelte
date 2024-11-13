@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
+import { run } from "svelte/legacy"
 
 import { tweened } from "svelte/motion"
 import { cubicOut } from "svelte/easing"
@@ -27,8 +27,8 @@ navigationState.subscribe(state => {
 })
 
 run(() => {
-    $navigationState = $navigating ? "loading" : "loaded"
-  });
+  $navigationState = $navigating ? "loading" : "loaded"
+})
 </script>
 
 <div class="absolute top-0 z-[999] h-[2px] w-full">

@@ -3,21 +3,21 @@ import { cn } from "$lib/utilities/shadcn"
 import type { Chain } from "$lib/types"
 import { toDisplayName } from "$lib/utilities/chains"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
-  interface Props {
-    chains: Array<Chain>;
-    packet: {
-  source_chain_id: string
-  source_connection_id: string
-  source_channel_id: string
-  source_sequence: string
-  destination_chain_id: string
-  destination_connection_id: string
-  destination_channel_id: string
-  destination_sequence: string
-};
+interface Props {
+  chains: Array<Chain>
+  packet: {
+    source_chain_id: string
+    source_connection_id: string
+    source_channel_id: string
+    source_sequence: string
+    destination_chain_id: string
+    destination_connection_id: string
+    destination_channel_id: string
+    destination_sequence: string
   }
+}
 
-  let { chains, packet }: Props = $props();
+let { chains, packet }: Props = $props()
 </script>
 
 <section class="flex flex-col sm:flex-row">

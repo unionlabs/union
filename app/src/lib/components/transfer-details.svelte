@@ -25,11 +25,11 @@ import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
 
 const source = $page.params.source
-  interface Props {
-    chains: Array<Chain>;
-  }
+interface Props {
+  chains: Array<Chain>
+}
 
-  let { chains }: Props = $props();
+let { chains }: Props = $props()
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],

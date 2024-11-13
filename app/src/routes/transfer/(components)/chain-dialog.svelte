@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
+import { run } from "svelte/legacy"
 
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -8,27 +8,27 @@ import * as Dialog from "$lib/components/ui/dialog"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Button } from "$lib/components/ui/button/index.js"
 
-  interface Props {
-    kind: "from" | "to";
-    dialogOpen?: boolean;
-    onChainSelect: (newSelectedChain: string) => void;
-    chains: Array<Chain>;
-    selectedChain: string;
-    userAddress: UserAddresses | null;
-  }
+interface Props {
+  kind: "from" | "to"
+  dialogOpen?: boolean
+  onChainSelect: (newSelectedChain: string) => void
+  chains: Array<Chain>
+  selectedChain: string
+  userAddress: UserAddresses | null
+}
 
-  let {
-    kind,
-    dialogOpen = $bindable(false),
-    onChainSelect,
-    chains,
-    selectedChain,
-    userAddress
-  }: Props = $props();
+let {
+  kind,
+  dialogOpen = $bindable(false),
+  onChainSelect,
+  chains,
+  selectedChain,
+  userAddress
+}: Props = $props()
 
 run(() => {
-    document.body.style.overflow = dialogOpen ? "hidden" : "auto"
-  });
+  document.body.style.overflow = dialogOpen ? "hidden" : "auto"
+})
 
 function selectChain(chain: Chain) {
   if (chain.rpc_type === "aptos" && !userAddress?.aptos) return toast.info(`Connect Aptos wallet`)

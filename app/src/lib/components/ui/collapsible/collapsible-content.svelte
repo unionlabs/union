@@ -4,16 +4,21 @@ import { slide } from "svelte/transition"
 
 type $$Props = CollapsiblePrimitive.ContentProps
 
-	interface Props {
-		transition?: $$Props["transition"];
-		transitionConfig?: $$Props["transitionConfig"];
-		children?: import('svelte').Snippet;
-		[key: string]: any
-	}
+interface Props {
+  transition?: $$Props["transition"]
+  transitionConfig?: $$Props["transitionConfig"]
+  children?: import("svelte").Snippet
+  [key: string]: any
+}
 
-	let { transition = slide, transitionConfig = {
-  duration: 150
-}, children, ...rest }: Props = $props();
+let {
+  transition = slide,
+  transitionConfig = {
+    duration: 150
+  },
+  children,
+  ...rest
+}: Props = $props()
 </script>
 
 <CollapsiblePrimitive.Content {transition} {transitionConfig} {...rest}>

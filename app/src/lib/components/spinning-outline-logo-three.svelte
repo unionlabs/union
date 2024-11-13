@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
+import { run } from "svelte/legacy"
 
 import * as THREE from "three"
 import Square from "./spinning-logo/square.svelte"
@@ -123,8 +123,8 @@ const render = (mode: string | undefined) => {
 
 onMount(() => render($mode))
 run(() => {
-    render($mode)
-  });
+  render($mode)
+})
 </script>
 
 <div class="relative flex-1">

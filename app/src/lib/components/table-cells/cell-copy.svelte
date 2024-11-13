@@ -6,19 +6,17 @@ import CheckIcon from "virtual:icons/lucide/check"
 import { truncate } from "$lib/utilities/format.ts"
 import { copyTextAction } from "$lib/actions/copy.ts"
 
-
 let copyClicked = $state(false)
 const toggleCopy = () => (copyClicked = !copyClicked)
 const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
-  interface Props {
-    value: string;
-    trunc?: number;
-    class?: string;
-  }
+interface Props {
+  value: string
+  trunc?: number
+  class?: string
+}
 
-  let { value, trunc = 0, class: buttonClass = "" }: Props = $props();
-
+let { value, trunc = 0, class: buttonClass = "" }: Props = $props()
 </script>
 
 <div class="text-start flex items-center gap-2 group cursor-default">

@@ -8,13 +8,13 @@ import Table from "../../routes/explorer/(components)/table.svelte"
 
 type DataRow = $$Generic
 
-  interface Props {
-    queryResult: CreateQueryResult;
-    columns: Array<ColumnDef<DataRow & { timestamp: string }>>;
-    dataStore: Readable<Array<DataRow & { timestamp: string }>>;
-  }
+interface Props {
+  queryResult: CreateQueryResult
+  columns: Array<ColumnDef<DataRow & { timestamp: string }>>
+  dataStore: Readable<Array<DataRow & { timestamp: string }>>
+}
 
-  let { queryResult, columns, dataStore }: Props = $props();
+let { queryResult, columns, dataStore }: Props = $props()
 </script>
 
 

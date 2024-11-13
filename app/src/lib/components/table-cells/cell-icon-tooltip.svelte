@@ -8,16 +8,16 @@ import { truncate } from "$lib/utilities/format.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import * as Tooltip from "$lib/components/ui/tooltip/index.ts"
 
-  interface Props {
-    records: Array<{
-  index: number
-  hash: string
-  label: string
-  truncateSize: number
-}>;
-  }
+interface Props {
+  records: Array<{
+    index: number
+    hash: string
+    label: string
+    truncateSize: number
+  }>
+}
 
-  let { records }: Props = $props();
+let { records }: Props = $props()
 
 let copyClicked = $state(false)
 const toggleCopy = () => (copyClicked = !copyClicked)

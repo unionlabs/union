@@ -4,19 +4,19 @@ import SearchIcon from "virtual:icons/lucide/search"
 import { Input } from "$lib/components/ui/input/index.ts"
 import { Button } from "$lib/components/ui/button"
 
-    interface Props {
-        searchInput?: string;
-        onInputClick?: ((event: MouseEvent) => void) | undefined;
-        onInputChange?: ((event: InputEvent) => void) | undefined;
-        windowWidth?: any;
-    }
+interface Props {
+  searchInput?: string
+  onInputClick?: ((event: MouseEvent) => void) | undefined
+  onInputChange?: ((event: InputEvent) => void) | undefined
+  windowWidth?: any
+}
 
-    let {
-        searchInput = $bindable(""),
-        onInputClick = undefined,
-        onInputChange = undefined,
-        windowWidth = window.innerWidth
-    }: Props = $props();
+let {
+  searchInput = $bindable(""),
+  onInputClick = undefined,
+  onInputChange = undefined,
+  windowWidth = window.innerWidth
+}: Props = $props()
 </script>
 
 <div class="flex justify-end">

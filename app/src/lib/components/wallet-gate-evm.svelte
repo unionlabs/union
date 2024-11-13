@@ -3,12 +3,12 @@ import { derived, type Readable } from "svelte/store"
 import type { UserAddressEvm } from "$lib/types"
 import type { Address } from "viem"
 import { userAddrEvm } from "$lib/wallet/evm"
-  interface Props {
-    connected?: import('svelte').Snippet<[any]>;
-    disconnected?: import('svelte').Snippet;
-  }
+interface Props {
+  connected?: import("svelte").Snippet<[any]>
+  disconnected?: import("svelte").Snippet
+}
 
-  let { connected, disconnected }: Props = $props();
+let { connected, disconnected }: Props = $props()
 
 let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddrEvm, $userAddr => {
   return (
