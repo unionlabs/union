@@ -60,7 +60,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
                     .map_err(|_| Error::InvalidCommitmentValueLength(path.to_vec()))?,
             )?;
 
-            to_json_binary(&Binary::from(vec![]))
+            to_json_binary(&())
         }
         QueryMsg::VerifyNonMembership {
             client_id,
@@ -83,7 +83,7 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
                 storage_proof,
             )?;
 
-            to_json_binary(&Binary::from(vec![]))
+            to_json_binary(&())
         }
         QueryMsg::VerifyClientMessage { client_id, message } => {
             let header = Header::decode_as::<Proto>(&message).unwrap();

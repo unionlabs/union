@@ -13325,6 +13325,7 @@ name = "union-ibc-light-client"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
  "frame-support-procedural",
  "macros",
  "serde-utils",
