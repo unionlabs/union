@@ -12,6 +12,9 @@ require (
 	cosmossdk.io/store v1.1.1-0.20240909133312-50288938d1b6
 	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/x/accounts v0.1.1
+	cosmossdk.io/x/accounts/defaults/base v0.1.0
+	cosmossdk.io/x/accounts/defaults/lockup v0.1.0
+	cosmossdk.io/x/accounts/defaults/multisig v0.1.0
 	cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000
 	cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91
 	cosmossdk.io/x/consensus v0.0.0-00010101000000-000000000000
@@ -41,7 +44,6 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
 	github.com/prysmaticlabs/prysm/v4 v4.2.1
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
@@ -114,7 +116,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getsentry/sentry-go v0.29.0 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-kit/kit v0.13.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
@@ -123,7 +124,6 @@ require (
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
@@ -263,6 +263,7 @@ replace (
 	cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
 	cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk/tools/confix v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk/x/accounts v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/accounts/defaults/base => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/base v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk/x/authz v0.0.0-20241018173625-c2982236c557

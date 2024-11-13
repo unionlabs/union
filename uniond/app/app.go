@@ -14,6 +14,10 @@ import (
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/accounts"
+	"cosmossdk.io/x/accounts/accountstd"
+	baseaccount "cosmossdk.io/x/accounts/defaults/base"
+	lockup "cosmossdk.io/x/accounts/defaults/lockup"
+	multisig "cosmossdk.io/x/accounts/defaults/multisig"
 	"cosmossdk.io/x/authz"
 	authzkeeper "cosmossdk.io/x/authz/keeper"
 	authzmodule "cosmossdk.io/x/authz/module"
@@ -371,6 +375,15 @@ func NewUnionApp(
 		runtime.NewEnvironment(runtime.NewKVStoreService(keys[accounts.StoreKey]), logger.With(log.ModuleKey, "x/accounts"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())),
 		signingCtx.AddressCodec(),
 		appCodec.InterfaceRegistry(),
+		// lockup
+		accountstd.AddAccount(lockup.CONTINUOUS_LOCKING_ACCOUNT, lockup.NewContinuousLockingAccount),
+		accountstd.AddAccount(lockup.PERIODIC_LOCKING_ACCOUNT, lockup.NewPeriodicLockingAccount),
+		accountstd.AddAccount(lockup.DELAYED_LOCKING_ACCOUNT, lockup.NewDelayedLockingAccount),
+		accountstd.AddAccount(lockup.PERMANENT_LOCKING_ACCOUNT, lockup.NewPermanentLockingAccount),
+		// multisig
+		accountstd.AddAccount("multisig", multisig.NewAccount),
+		// base account
+		baseaccount.NewAccount("base", txConfig.SignModeHandler(), baseaccount.WithSecp256K1PubKey()),
 	)
 	if err != nil {
 		panic(err)
@@ -899,6 +912,16 @@ func NewUnionApp(
 	return app
 }
 
+// Close closes all necessary application resources.
+// It implements servertypes.Application.
+func (app *UnionApp) Close() error {
+	if err := app.BaseApp.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Name returns the name of the App
 func (app *UnionApp) Name() string { return app.BaseApp.Name() }
 
@@ -921,10 +944,10 @@ func (app *UnionApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 func (app *UnionApp) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap()); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return app.ModuleManager.InitGenesis(ctx, genesisState)
 }
@@ -1019,7 +1042,7 @@ func (app *UnionApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 
 // GetSubspace returns a param subspace for a given module name.
 //
-// NOTE: This is solely to be used for testing purposes.
+// NOTE: Still used by ibc-go until it's fully upgraded to v0.52
 func (app *UnionApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
@@ -1064,7 +1087,6 @@ func (app *UnionApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 }
 
 // ValidatorKeyProvider returns a function that generates a validator key
-// Supported key types are those supported by Comet: ed25519, secp256k1, bls12-381
 func (app *UnionApp) ValidatorKeyProvider() runtime.KeyGenF {
 	return func() (cmtcrypto.PrivKey, error) {
 		return bn254.GenPrivKey(), nil
