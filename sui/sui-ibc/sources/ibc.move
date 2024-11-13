@@ -1005,12 +1005,11 @@ module ibc::ibc {
     /// Function to send a packet through an open channel
     public fun send_packet(
         ibc_store: &mut IBCStore,
-        source_port: address,
         source_channel: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>
-    ) {
+    ): u64 {
         // Check if the channel exists in the store
         let channel = *ibc_store.channels.borrow(source_channel);
         assert!(channel::state(&channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
@@ -1062,13 +1061,13 @@ module ibc::ibc {
                 timeout_timestamp,
             },
         );
+        sequence
     }
 
         /// Function to send a packet through an open channel
     public fun recv_packet(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
-        port_id: address,
         packets: vector<Packet>,
         proof: vector<u8>,
         proof_height: u64,
@@ -1260,7 +1259,6 @@ module ibc::ibc {
 
     public fun timeout_packet(
         ibc_store: &mut IBCStore,
-        port_id: address,
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
@@ -1343,7 +1341,6 @@ module ibc::ibc {
 
     public fun acknowledge_packet(
         ibc_store: &mut IBCStore,
-        port_id: address,
         packets: vector<packet::Packet>,
         acknowledgements: vector<vector<u8>>,
         proof: vector<u8>,
@@ -1930,7 +1927,7 @@ module ibc::ibc {
         // Call send_packet
         send_packet(
             &mut ibc_store,
-            @0x0, // assuming @0x0 as source port
+            // @0x0, // assuming @0x0 as source port
             channel_id,
             timeout_height,
             timeout_timestamp,
