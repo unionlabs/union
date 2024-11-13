@@ -15,8 +15,8 @@ use ucs01_relay_api::{
     middleware::InFlightPfmPacket,
     protocol::{TransferProtocol, IBC_SEND_ID},
 };
-use union_ibc::{
-    module::msg::UnionIbcMsg,
+use union_ibc_msg::{
+    module::UnionIbcMsg,
     msg::{ExecuteMsg as UnionIbcHostMsg, MsgWriteAcknowledgement},
     query::QueryMsg as UnionIbcQuery,
 };
@@ -89,7 +89,7 @@ pub fn reply(
                 None =>
                 {
                     #[allow(deprecated)]
-                    if let Err(_) = from_json::<Packet>(value.data.unwrap_or_default()) {
+                    if from_json::<Packet>(value.data.unwrap_or_default()).is_err() {
                         return Err(ContractError::InvalidReply);
                     }
                 }

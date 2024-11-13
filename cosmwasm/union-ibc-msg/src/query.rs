@@ -1,5 +1,3 @@
-use cosmwasm_std::Addr;
-
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum QueryMsg {
     GetTimestampAtHeight { client_id: u32, height: u64 },
@@ -9,5 +7,5 @@ pub enum QueryMsg {
     GetStatus { client_id: u32 },
     GetClientType { client_id: u32 },
     GetChannel { channel_id: u32 },
-    GetChannels { contract: Addr },
+    GetChannels { contract: String },
 }

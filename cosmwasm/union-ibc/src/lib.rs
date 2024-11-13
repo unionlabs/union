@@ -1,8 +1,4 @@
 pub mod contract;
-pub mod lightclient;
-pub mod module;
-pub mod msg;
-pub mod query;
 pub mod state;
 
 use cosmwasm_std::StdError;

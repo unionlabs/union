@@ -13208,7 +13208,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "ucs01-relay-api",
- "union-ibc",
+ "union-ibc-msg",
  "unionlabs",
 ]
 
@@ -13352,6 +13352,16 @@ dependencies = [
  "sha2 0.10.8",
  "sha3 0.10.8",
  "thiserror",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
+name = "union-ibc-msg"
+version = "1.0.0"
+dependencies = [
+ "ibc-solidity",
+ "serde",
  "unionlabs",
 ]
 

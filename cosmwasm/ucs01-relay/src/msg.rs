@@ -1,8 +1,8 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, ListChannelsResponse, Uint512};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::types::Fees;
-use union_ibc::module::msg::UnionIbcMsg;
+use union_ibc_msg::module::UnionIbcMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -55,23 +55,18 @@ pub struct TransferMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Return the port ID bound by this contract.
-    #[returns(PortResponse)]
     Port {},
     /// Show all channels we have connected to.
-    #[returns(ListChannelsResponse)]
     ListChannels {},
     /// Returns the details of the name channel, error if not created.
-    #[returns(ChannelBalances)]
-    Channel { id: String },
+    Channel {
+        id: String,
+    },
     /// Show the Config.
-    #[returns(ConfigResponse)]
     Config {},
-    #[returns(cw_controllers::AdminResponse)]
     Admin {},
-    #[returns(String)]
     ForeignDenomToLocal {
         source_channel: String,
         denom: String,

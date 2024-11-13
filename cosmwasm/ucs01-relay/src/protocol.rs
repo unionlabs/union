@@ -20,7 +20,7 @@ use ucs01_relay_api::{
         Ucs01TransferPacket,
     },
 };
-use union_ibc::{
+use union_ibc_msg::{
     msg::{ExecuteMsg as UnionIbcHostMsg, MsgSendPacket, MsgWriteAcknowledgement},
     query::QueryMsg as UnionIbcQuery,
 };
