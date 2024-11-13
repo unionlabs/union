@@ -867,6 +867,12 @@ github.com/unionlabs/cosmos-sdk/tools/confix v0.0.0-20241018173625-c2982236c557 
 github.com/unionlabs/cosmos-sdk/tools/confix v0.0.0-20241018173625-c2982236c557/go.mod h1:saMaeXoGGQTiutC1zeunYGbTrZQhjBS1fiIDBdCQtL4=
 github.com/unionlabs/cosmos-sdk/x/accounts v0.0.0-20241018173625-c2982236c557 h1:z3hDMs65S+TU/4p8IQP1IJPyKyZ2PGMztCh+cU+ryU8=
 github.com/unionlabs/cosmos-sdk/x/accounts v0.0.0-20241018173625-c2982236c557/go.mod h1:BTLUEfRTuTNdK9j3bI7/MKffrrdr4M2DxvPJxxc+DtU=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/base v0.0.0-20241018173625-c2982236c557 h1:cSq5KM9B5HfhquL81N7yZGrDpzSoWkn3rJRGyuD5Z9A=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/base v0.0.0-20241018173625-c2982236c557/go.mod h1:4sA5waWbYcfkuXeJcNjtR0revYBMXTxMzJfg6aHkVWg=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557 h1:yavai8SEmdAEiSeJBDaKR4z5H8T5KGjnqhVmR3yJev0=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557/go.mod h1:Lr4spBzRzC2bp63exBQCWvwOBQV0VnR9LvCGv5oPzuI=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557 h1:MqaL8Fa0GIisGSEB9FYnHq1BXviLW86/BEaXvZsMvhg=
+github.com/unionlabs/cosmos-sdk/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557/go.mod h1:pOo/Q3tmrwBD7wMtAdX/qjFVjBVjvH+MFFYcwP4EHEI=
 github.com/unionlabs/cosmos-sdk/x/authz v0.0.0-20241018173625-c2982236c557 h1:P3fMSWCd7kGZiLhB7siFfx1E8AXmacx6Nnt998RGa24=
 github.com/unionlabs/cosmos-sdk/x/authz v0.0.0-20241018173625-c2982236c557/go.mod h1:2woQCyI+GXNW7fyItnz4cnsnslobRZzFVap90cKrJB0=
 github.com/unionlabs/cosmos-sdk/x/bank v0.0.0-20241018173625-c2982236c557 h1:pbeFK9VQQxuaSmszBluiWCmA8DkpkMpeueS0FZ8yHVY=

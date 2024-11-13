@@ -12,6 +12,9 @@ require (
 	cosmossdk.io/store v1.1.1-0.20240909133312-50288938d1b6
 	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/x/accounts v0.1.1
+	cosmossdk.io/x/accounts/defaults/base v0.1.0
+	cosmossdk.io/x/accounts/defaults/lockup v0.1.0
+	cosmossdk.io/x/accounts/defaults/multisig v0.1.0
 	cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000
 	cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91
 	cosmossdk.io/x/consensus v0.0.0-00010101000000-000000000000
@@ -260,6 +263,7 @@ replace (
 	cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
 	cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk/tools/confix v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk/x/accounts v0.0.0-20241018173625-c2982236c557
+	cosmossdk.io/x/accounts/defaults/base => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/base v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/lockup v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk/x/accounts/defaults/multisig v0.0.0-20241018173625-c2982236c557
 	cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk/x/authz v0.0.0-20241018173625-c2982236c557
