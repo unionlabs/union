@@ -3,19 +3,18 @@ use cosmwasm_std::{Deps, Env};
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
 };
-use ethereum_verifier::{
+use ethereum_sync_protocol::{
     utils::{
         compute_slot_at_timestamp, compute_timestamp_at_slot, validate_signature_supermajority,
     },
-    validate_light_client_update, verify_account_storage_root, verify_storage_absence,
-    verify_storage_proof,
+    validate_light_client_update,
+};
+use evm_storage_verifier::{
+    verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    ensure,
-    ethereum::ibc_commitment_key,
-    hash::{hash_v2::HexUnprefixed, H256},
-    uint::U256,
+    cosmwasm::wasm::union::custom_query::UnionCustomQuery, ensure, ethereum::ibc_commitment_key,
+    hash::H256, uint::U256,
 };
 
 use crate::{
@@ -24,31 +23,19 @@ use crate::{
 };
 
 pub fn verify_membership(
-    key: Vec<u8>,
+    key: H256,
     storage_root: H256,
     storage_proof: StorageProof,
-    raw_value: Vec<u8>,
+    value: H256,
 ) -> Result<(), Error> {
-    // check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
-
-    let raw_value = H256::try_from(raw_value).unwrap();
+    check_commitment_key(key, storage_proof.key)?;
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
-    if raw_value != proof_value {
+    if value != proof_value {
         return Err(StoredValueMismatch {
-            expected: raw_value,
+            expected: value,
             stored: proof_value,
-        }
-        .into());
-    }
-
-    let key = U256::from_be_bytes(*H256::<HexUnprefixed>::try_from(key).unwrap().get());
-
-    if key != storage_proof.key {
-        return Err(InvalidCommitmentKey {
-            expected: key,
-            found: storage_proof.key,
         }
         .into());
     }
@@ -64,20 +51,11 @@ pub fn verify_membership(
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 pub fn verify_non_membership(
-    key: Vec<u8>,
+    key: H256,
     storage_root: H256,
     storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    // check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
-    let key = U256::from_be_bytes(*H256::<HexUnprefixed>::try_from(key).unwrap().get());
-
-    if key != storage_proof.key {
-        return Err(InvalidCommitmentKey {
-            expected: key,
-            found: storage_proof.key,
-        }
-        .into());
-    }
+    check_commitment_key(key, storage_proof.key)?;
 
     if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
         .map_err(Error::VerifyStorageAbsence)?
@@ -88,20 +66,16 @@ pub fn verify_non_membership(
     }
 }
 
-pub fn check_commitment_key(
-    _path: &str,
-    _ibc_commitment_slot: U256,
-    key: U256,
-) -> Result<(), InvalidCommitmentKey> {
-    // TODO: Fix this @aeryz
-    let expected_commitment_key = ibc_commitment_key(H256::default());
+pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
+    let expected_commitment_key = ibc_commitment_key(path);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
         Err(InvalidCommitmentKey {
             expected: expected_commitment_key,
             found: key,
-        })
+        }
+        .into())
     } else {
         Ok(())
     }

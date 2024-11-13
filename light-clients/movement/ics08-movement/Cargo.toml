@@ -9,7 +9,7 @@ version      = "0.1.0"
 aptos-verifier              = { workspace = true }
 bcs                         = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
-ethereum-verifier           = { workspace = true }
+evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true, features = ["alloc"] }
 hex-literal                 = { workspace = true }
 ics008-wasm-client          = { workspace = true }

@@ -1367,8 +1367,8 @@ version = "0.1.0"
 dependencies = [
  "arbitrum-light-client-types",
  "error_reporter",
- "ethereum-verifier",
  "ethers-core",
+ "evm-storage-verifier",
  "hex",
  "hex-literal",
  "rlp",
@@ -4824,9 +4824,10 @@ dependencies = [
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "ethereum-light-client-types",
- "ethereum-verifier",
+ "ethereum-sync-protocol",
  "ethers-contract-derive",
  "ethers-core",
+ "evm-storage-verifier",
  "hex",
  "hex-literal",
  "ibc-solidity",
@@ -4861,6 +4862,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-sync-protocol"
+version = "0.1.0"
+dependencies = [
+ "beacon-api-types",
+ "bytes",
+ "ethereum-light-client-types",
+ "hex",
+ "hex-literal",
+ "lazy_static",
+ "milagro_bls",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "ssz",
+ "thiserror",
+ "typenum",
+ "unionlabs",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4874,34 +4896,6 @@ dependencies = [
  "primitive-types 0.12.2",
  "scale-info",
  "uint",
-]
-
-[[package]]
-name = "ethereum-verifier"
-version = "0.1.0"
-dependencies = [
- "beacon-api-types",
- "bytes",
- "ethereum-light-client-types",
- "hash-db",
- "hash256-std-hasher",
- "hex",
- "hex-literal",
- "lazy_static",
- "memory-db",
- "milagro_bls",
- "primitive-types 0.12.2",
- "rlp",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "ssz",
- "thiserror",
- "trie-db",
- "typenum",
- "unionlabs",
 ]
 
 [[package]]
@@ -5184,6 +5178,23 @@ checksum = "958e4d70b6d5e81971bebec42271ec641e7ff4e170a6fa605f2b8a8b65cb97d3"
 dependencies = [
  "event-listener 4.0.3",
  "pin-project-lite",
+]
+
+[[package]]
+name = "evm-storage-verifier"
+version = "0.1.0"
+dependencies = [
+ "hash-db",
+ "hash256-std-hasher",
+ "memory-db",
+ "primitive-types 0.12.2",
+ "rlp",
+ "serde-utils",
+ "sha3 0.10.8",
+ "ssz",
+ "thiserror",
+ "trie-db",
+ "unionlabs",
 ]
 
 [[package]]
@@ -7391,8 +7402,8 @@ dependencies = [
 name = "linea-verifier"
 version = "0.1.0"
 dependencies = [
- "ethereum-verifier",
  "ethers-core",
+ "evm-storage-verifier",
  "gnark-mimc",
  "hex",
  "hex-literal",
@@ -10900,8 +10911,8 @@ dependencies = [
 name = "scroll-verifier"
 version = "0.1.0"
 dependencies = [
- "ethereum-verifier",
  "ethers-core",
+ "evm-storage-verifier",
  "hex",
  "hex-literal",
  "rlp",

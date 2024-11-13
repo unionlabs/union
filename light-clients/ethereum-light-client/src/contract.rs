@@ -12,6 +12,7 @@ use union_ibc::{
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, Proto},
+    hash::H256,
 };
 
 use crate::{
@@ -21,10 +22,7 @@ use crate::{
     state::IBC_HOST,
 };
 
-// NOTE(aeryz): the fact that the host module forces the light clients to store and use the wasm wrapping
-// in the client state makes this code kinda messy. But this is going to be resolved in the future versions
-// of IBC (probably v9). When that feature is implemented, we can move this to the ics008 macro.
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut<UnionCustomQuery>,
     _env: Env,
@@ -53,7 +51,14 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            verify_membership(path.to_vec(), storage_root, storage_proof, value.to_vec())?;
+            verify_membership(
+                H256::try_from(&path.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentKeyLength(path.to_vec()))?,
+                storage_root,
+                storage_proof,
+                H256::try_from(&value.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentValueLength(path.to_vec()))?,
+            )?;
 
             to_json_binary(&Binary::from(vec![]))
         }
@@ -71,7 +76,12 @@ pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult
             let storage_proof =
                 StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-            verify_non_membership(path.to_vec(), storage_root, storage_proof)?;
+            verify_non_membership(
+                H256::try_from(&path.to_vec())
+                    .map_err(|_| Error::InvalidCommitmentKeyLength(path.to_vec()))?,
+                storage_root,
+                storage_proof,
+            )?;
 
             to_json_binary(&Binary::from(vec![]))
         }

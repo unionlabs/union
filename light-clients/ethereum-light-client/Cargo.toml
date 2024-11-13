@@ -23,9 +23,10 @@ cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
 cw-storage-plus             = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
-ethereum-verifier           = { workspace = true }
+ethereum-sync-protocol      = { workspace = true }
 ethers-contract-derive      = { workspace = true }
 ethers-core                 = { workspace = true }
+evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true }
 ibc-solidity                = { workspace = true, default-features = false, features = ["serde"] }
 ics008-wasm-client          = { workspace = true }

@@ -9,7 +9,7 @@ use unionlabs::hash::H256;
 
 use crate::{
     error::{Error, InvalidMerkleBranch},
-    primitives::GENESIS_SLOT,
+    GENESIS_SLOT,
 };
 
 /// Returns the fork version based on the `epoch` and `fork_parameters`.

@@ -51,22 +51,28 @@ pub enum Error {
     ConsensusStateNotFound(Height),
 
     #[error("validate light client error")]
-    ValidateLightClient(#[source] ethereum_verifier::error::Error),
+    ValidateLightClient(#[source] ethereum_sync_protocol::error::Error),
 
     #[error("verify account storage root error")]
-    VerifyAccountStorageRoot(#[source] ethereum_verifier::error::Error),
+    VerifyAccountStorageRoot(#[source] evm_storage_verifier::error::Error),
 
     #[error("verify storage absence error")]
-    VerifyStorageAbsence(#[source] ethereum_verifier::error::Error),
+    VerifyStorageAbsence(#[source] evm_storage_verifier::error::Error),
 
     #[error("verify storage proof error")]
-    VerifyStorageProof(#[source] ethereum_verifier::error::Error),
+    VerifyStorageProof(#[source] evm_storage_verifier::error::Error),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
     #[error(transparent)]
     InvalidCommitmentKey(#[from] InvalidCommitmentKey),
+
+    #[error("commitment key must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentKeyLength(Vec<u8>),
+
+    #[error("commitment value must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentValueLength(Vec<u8>),
 
     #[error("client's store period must be equal to update's finalized period")]
     StorePeriodMustBeEqualToFinalizedPeriod,

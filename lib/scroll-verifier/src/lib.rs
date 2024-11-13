@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use ethereum_verifier::{verify_account_storage_root, verify_storage_proof};
+use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use scroll_codec::{hash_batch, HashBatchError};
 use scroll_light_client_types::{ClientState, Header};
 use unionlabs::{
@@ -14,13 +14,13 @@ use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, Tri
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    InvalidL1AccountProof(ethereum_verifier::error::Error),
+    InvalidL1AccountProof(evm_storage_verifier::error::Error),
     #[error(transparent)]
-    InvalidLastBatchIndexProof(ethereum_verifier::error::Error),
+    InvalidLastBatchIndexProof(evm_storage_verifier::error::Error),
     #[error(transparent)]
-    InvalidL2FinalizedStateRootProof(ethereum_verifier::error::Error),
+    InvalidL2FinalizedStateRootProof(evm_storage_verifier::error::Error),
     #[error(transparent)]
-    InvalidBatchHashProof(ethereum_verifier::error::Error),
+    InvalidBatchHashProof(evm_storage_verifier::error::Error),
     #[error(transparent)]
     ZkTrie(#[from] zktrie::Error),
     #[error("node value mismatch")]
