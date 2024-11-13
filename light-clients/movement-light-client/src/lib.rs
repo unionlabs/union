@@ -1,6 +1,8 @@
-mod client;
+pub mod client;
 mod contract;
-mod errors;
+pub mod error;
+pub mod msg;
+pub mod state;
 
 // use aptos_types::{proof::TransactionInfoWithProof, state_proof::StateProof};
 // use aptos_crypto::{hash::CryptoHash, HashValue};

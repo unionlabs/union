@@ -7,7 +7,7 @@ use unionlabs::{
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
-    pub l1_height: Height,
+    pub l1_height: u64,
     pub trusted_height: Height,
     pub state_proof: StateProof,
     pub tx_index: u64,
@@ -38,7 +38,8 @@ pub mod proto {
     impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
         fn from(value: Header) -> Self {
             Self {
-                l1_height: Some(value.l1_height.into()),
+                // TODO(aeryz): fix this or remove proto
+                l1_height: None,
                 trusted_height: Some(value.trusted_height.into()),
                 state_proof: Some(value.state_proof.into()),
                 tx_index: value.tx_index,
@@ -71,7 +72,7 @@ pub mod proto {
             value: protos::union::ibc::lightclients::movement::v1::Header,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                l1_height: required!(value.l1_height)?.into(),
+                l1_height: required!(value.l1_height)?.revision_height,
                 trusted_height: required!(value.trusted_height)?.into(),
                 state_proof: required!(value.state_proof)?.try_into()?,
                 tx_index: value.tx_index,

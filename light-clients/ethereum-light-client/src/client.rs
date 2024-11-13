@@ -120,7 +120,7 @@ pub fn verify_header<C: ChainSpec>(
     let proof_data = &header.ibc_account_proof;
 
     verify_account_storage_root(
-        update_data.attested_header.execution.state_root,
+        update_data.finalized_header.execution.state_root,
         &client_state.ibc_contract_address,
         &proof_data.proof,
         &proof_data.storage_root,
@@ -149,23 +149,23 @@ fn update_state<C: ChainSpec>(
     // smaller. We don't want to save a new state if this is the case.
     let updated_height = core::cmp::max(
         trusted_height.height(),
-        consensus_update.attested_header.beacon.slot,
+        consensus_update.finalized_header.beacon.slot,
     );
 
-    if consensus_update.attested_header.beacon.slot > consensus_state.slot {
-        consensus_state.slot = consensus_update.attested_header.beacon.slot;
+    if consensus_update.finalized_header.beacon.slot > consensus_state.slot {
+        consensus_state.slot = consensus_update.finalized_header.beacon.slot;
 
-        consensus_state.state_root = consensus_update.attested_header.execution.state_root;
+        consensus_state.state_root = consensus_update.finalized_header.execution.state_root;
         consensus_state.storage_root = header.ibc_account_proof.storage_root;
 
         // Normalize to nanoseconds to be ibc-go compliant
         consensus_state.timestamp = compute_timestamp_at_slot::<C>(
             client_state.genesis_time,
-            consensus_update.attested_header.beacon.slot,
+            consensus_update.finalized_header.beacon.slot,
         ) * 1_000_000_000;
 
-        if client_state.latest_slot < consensus_update.attested_header.beacon.slot {
-            client_state.latest_slot = consensus_update.attested_header.beacon.slot;
+        if client_state.latest_slot < consensus_update.finalized_header.beacon.slot {
+            client_state.latest_slot = consensus_update.finalized_header.beacon.slot;
         }
     }
 
@@ -185,13 +185,13 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         misbehaviour
             .update_1
             .update_data()
-            .attested_header
+            .finalized_header
             .beacon
             .slot,
         misbehaviour
             .update_2
             .update_data()
-            .attested_header
+            .finalized_header
             .beacon
             .slot,
     );
