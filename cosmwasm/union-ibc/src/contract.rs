@@ -348,7 +348,7 @@ pub fn execute(
             info.sender,
             channel_id,
             packet,
-            acknowledgement,
+            acknowledgement.0,
         ),
         ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel,
@@ -361,7 +361,7 @@ pub fn execute(
             source_channel,
             timeout_height,
             timeout_timestamp,
-            data,
+            data.0,
         ),
         ExecuteMsg::BatchSend(MsgBatchSend {
             sourceChannel,

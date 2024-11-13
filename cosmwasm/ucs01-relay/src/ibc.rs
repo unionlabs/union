@@ -1,10 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    DepsMut, Env, Ibc3ChannelOpenResponse, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
-    IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacketAckMsg, IbcPacketReceiveMsg,
-    IbcPacketTimeoutMsg, IbcReceiveResponse, MessageInfo, Reply, Response, SubMsgResult,
+    from_json, wasm_execute, Addr, DepsMut, Env, Ibc3ChannelOpenResponse, IbcAcknowledgement,
+    IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
+    IbcEndpoint, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg,
+    IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, Reply, Response, SubMsgResult,
+    Timestamp,
 };
+use ibc_solidity::cosmwasm::types::ibc::{Channel, Packet};
 use prost::{Message, Name};
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
@@ -12,17 +15,20 @@ use ucs01_relay_api::{
     middleware::InFlightPfmPacket,
     protocol::{TransferProtocol, IBC_SEND_ID},
 };
+use union_ibc::{
+    module::msg::UnionIbcMsg,
+    msg::{ExecuteMsg as UnionIbcHostMsg, MsgWriteAcknowledgement},
+    query::QueryMsg as UnionIbcQuery,
+};
 
 pub type IbcResponse = IbcBasicResponse<TokenFactoryMsg>;
 
 use crate::{
+    contract::query_ibc_channel,
     error::ContractError,
-    protocol::{protocol_ordering, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{ChannelInfo, PfmRefundPacketKey, CHANNEL_INFO, IN_FLIGHT_PFM_PACKETS},
+    protocol::{packet_key, protocol_ordering, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
+    state::{CONFIG, IN_FLIGHT_PFM_PACKETS},
 };
-
-#[cfg(test)]
-mod tests;
 
 fn to_response<T>(
     IbcReceiveResponse {
@@ -66,33 +72,36 @@ pub fn reply(
                 return Ok(Response::new());
             }
 
-            let msg_response = value
-                .msg_responses
-                .iter()
-                .find(|msg_response| msg_response.type_url == MsgIbcSendResponse::type_url())
-                .expect("type url is correct and exists");
-
-            let send_response =
-                MsgIbcSendResponse::decode(msg_response.value.as_slice()).expect("is type url");
-
-            let in_flight_packet =
+            let mut in_flight_packet =
                 serde_json_wasm::from_slice::<InFlightPfmPacket>(reply.payload.as_slice())
                     .expect("binary is type");
 
-            let refund_packet_key = PfmRefundPacketKey {
-                channel_id: in_flight_packet.forward_src_channel_id.clone(),
-                port_id: in_flight_packet.forward_src_port_id.clone(),
-                sequence: send_response.sequence,
+            match value
+                .msg_responses
+                .iter()
+                .find(|msg_response| msg_response.type_url == MsgIbcSendResponse::type_url())
+            {
+                Some(msg_response) => {
+                    let send_response = MsgIbcSendResponse::decode(msg_response.value.as_slice())
+                        .expect("is type url");
+                    in_flight_packet.forward_packet.sequence = send_response.sequence;
+                }
+                None =>
+                {
+                    #[allow(deprecated)]
+                    if let Err(_) = from_json::<Packet>(value.data.unwrap_or_default()) {
+                        return Err(ContractError::InvalidReply);
+                    }
+                }
             };
 
+            let refund_packet_key = packet_key(&in_flight_packet.forward_packet);
+
             IN_FLIGHT_PFM_PACKETS
-                .save(deps.storage, refund_packet_key.clone(), &in_flight_packet)
+                .save(deps.storage, refund_packet_key, &in_flight_packet)
                 .expect("infallible update");
 
-            Ok(
-                Response::new()
-                    .add_event(in_flight_packet.create_hop_event(send_response.sequence)),
-            )
+            Ok(Response::new().add_event(in_flight_packet.create_hop_event()?))
         }
         (IBC_SEND_ID, SubMsgResult::Err(err)) => {
             // this means this is not pfm
@@ -131,22 +140,12 @@ pub fn ibc_channel_open(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-/// record the channel in CHANNEL_INFO
 pub fn ibc_channel_connect(
-    deps: DepsMut,
+    _deps: DepsMut,
     _env: Env,
     msg: IbcChannelConnectMsg,
 ) -> Result<IbcResponse, ContractError> {
     enforce_order_and_version(msg.channel(), msg.counterparty_version())?;
-    let channel: IbcChannel = msg.into();
-    let info = ChannelInfo {
-        endpoint: channel.endpoint,
-        counterparty_endpoint: channel.counterparty_endpoint,
-        connection_id: channel.connection_id,
-        protocol_version: channel.version,
-    };
-    CHANNEL_INFO.save(deps.storage, &info.endpoint.channel_id, &info)?;
-
     Ok(IbcResponse::default())
 }
 
@@ -200,20 +199,20 @@ pub fn ibc_packet_receive(
     env: Env,
     msg: IbcPacketReceiveMsg,
 ) -> Result<IbcReceiveResponse<TokenFactoryMsg>, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.packet.dest.channel_id)?;
+    let channel = query_ibc_channel(deps.as_ref(), msg.packet.dest.channel_id.clone())?;
 
     let info = MessageInfo {
         sender: msg.relayer,
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version.as_str() {
+    match channel.version.as_ref() {
         Ics20Protocol::VERSION => Ok((Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .receive(msg.packet)),
@@ -222,7 +221,7 @@ pub fn ibc_packet_receive(
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .receive(msg.packet)),
@@ -240,20 +239,20 @@ pub fn ibc_packet_ack(
     env: Env,
     msg: IbcPacketAckMsg,
 ) -> Result<IbcResponse, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.src.channel_id)?;
+    let channel = query_ibc_channel(deps.as_ref(), msg.original_packet.src.channel_id.clone())?;
 
     let info = MessageInfo {
         sender: msg.relayer.clone(),
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version.as_str() {
+    match channel.version.as_str() {
         Ics20Protocol::VERSION => (Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .send_ack(msg),
@@ -262,7 +261,7 @@ pub fn ibc_packet_ack(
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .send_ack(msg),
@@ -280,20 +279,20 @@ pub fn ibc_packet_timeout(
     env: Env,
     msg: IbcPacketTimeoutMsg,
 ) -> Result<IbcResponse, ContractError> {
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.packet.src.channel_id)?;
+    let channel = query_ibc_channel(deps.as_ref(), msg.packet.src.channel_id.clone())?;
 
     let info = MessageInfo {
         sender: msg.relayer,
         funds: Default::default(),
     };
 
-    match channel_info.protocol_version.as_str() {
+    match channel.version.as_str() {
         Ics20Protocol::VERSION => (Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .send_timeout(msg.packet),
@@ -302,7 +301,7 @@ pub fn ibc_packet_timeout(
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         })
         .send_timeout(msg.packet),
@@ -310,5 +309,312 @@ pub fn ibc_packet_timeout(
             channel_id: msg.packet.dest.channel_id,
             protocol_version: v.into(),
         }),
+    }
+}
+
+pub(crate) fn execute_union_ibc(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: UnionIbcMsg,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
+    if info.sender != ibc_host {
+        return Err(ContractError::OnlyIBCHost);
+    }
+    match msg {
+        UnionIbcMsg::OnChannelOpenInit {
+            channel_id,
+            version,
+            ..
+        } => {
+            if version != Ucs01Protocol::VERSION {
+                return Err(ContractError::UnknownProtocol {
+                    channel_id: channel_id.to_string(),
+                    protocol_version: version.to_string(),
+                });
+            }
+            Ok(Response::new())
+        }
+        UnionIbcMsg::OnChannelOpenTry {
+            channel_id,
+            version,
+            counterparty_version,
+            ..
+        } => {
+            if version != Ucs01Protocol::VERSION {
+                return Err(ContractError::UnknownProtocol {
+                    channel_id: channel_id.to_string(),
+                    protocol_version: version.to_string(),
+                });
+            }
+            if counterparty_version != Ucs01Protocol::VERSION {
+                return Err(ContractError::UnknownProtocol {
+                    channel_id: channel_id.to_string(),
+                    protocol_version: counterparty_version.to_string(),
+                });
+            }
+            Ok(Response::new())
+        }
+        UnionIbcMsg::OnChannelOpenAck { .. } => Ok(Response::new()),
+        UnionIbcMsg::OnChannelOpenConfirm { .. } => Ok(Response::new()),
+        UnionIbcMsg::OnChannelCloseInit { .. } => Err(ContractError::Unauthorized),
+        UnionIbcMsg::OnChannelCloseConfirm { .. } => Err(ContractError::Unauthorized),
+        UnionIbcMsg::OnIntentRecvPacket { .. } => Err(ContractError::Unsupported),
+        UnionIbcMsg::OnRecvPacket {
+            packet, relayer, ..
+        } => {
+            let channel = deps.querier.query_wasm_smart::<Channel>(
+                &ibc_host,
+                &UnionIbcQuery::GetChannel {
+                    channel_id: packet.destinationChannel,
+                },
+            )?;
+
+            let info = MessageInfo {
+                sender: Addr::unchecked(relayer),
+                funds: Default::default(),
+            };
+
+            let ibc_endpoint_src = IbcEndpoint {
+                port_id: hex::encode(channel.counterpartyPortId),
+                channel_id: packet.sourceChannel.to_string(),
+            };
+
+            let ibc_endpoint_dst = IbcEndpoint {
+                port_id: format!("wasm.{}", env.contract.address),
+                channel_id: packet.destinationChannel.to_string(),
+            };
+
+            let ibc_channel = IbcChannel::new(
+                ibc_endpoint_dst.clone(),
+                ibc_endpoint_src.clone(),
+                cosmwasm_std::IbcOrder::Ordered,
+                channel.version.clone(),
+                channel.connectionId.to_string(),
+            );
+
+            let ibc_packet = IbcPacket::new(
+                packet.data.to_vec(),
+                ibc_endpoint_src,
+                ibc_endpoint_dst,
+                0,
+                IbcTimeout::with_both(
+                    IbcTimeoutBlock {
+                        revision: 0,
+                        height: packet.timeoutHeight,
+                    },
+                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                ),
+            );
+
+            let msg = match channel.version.as_ref() {
+                Ics20Protocol::VERSION => Ok((Ics20Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .receive(ibc_packet)),
+                Ucs01Protocol::VERSION => Ok((Ucs01Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .receive(ibc_packet)),
+                v => Err(ContractError::UnknownProtocol {
+                    channel_id: packet.destinationChannel.to_string(),
+                    protocol_version: v.into(),
+                }),
+            }?;
+
+            // Marshal back the message to a base Response
+            let mut response = Response::new()
+                .add_submessages(msg.messages)
+                .add_events(msg.events)
+                .add_attributes(msg.attributes);
+
+            // Instantly dispatches the acknowledgement back to the host if not async.
+            if let Some(ack) = msg.acknowledgement {
+                response = response.add_message(wasm_execute(
+                    &ibc_host,
+                    &UnionIbcHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                        channel_id: packet.destinationChannel,
+                        packet,
+                        acknowledgement: Vec::from(ack).into(),
+                    }),
+                    vec![],
+                )?);
+            }
+
+            Ok(response)
+        }
+        UnionIbcMsg::OnAcknowledgementPacket {
+            packet,
+            relayer,
+            acknowledgement,
+        } => {
+            let relayer = Addr::unchecked(relayer);
+
+            let channel = deps.querier.query_wasm_smart::<Channel>(
+                &ibc_host,
+                &UnionIbcQuery::GetChannel {
+                    channel_id: packet.destinationChannel,
+                },
+            )?;
+
+            let info = MessageInfo {
+                sender: relayer.clone(),
+                funds: Default::default(),
+            };
+
+            let ibc_endpoint_src = IbcEndpoint {
+                port_id: hex::encode(channel.counterpartyPortId),
+                channel_id: packet.sourceChannel.to_string(),
+            };
+
+            let ibc_endpoint_dst = IbcEndpoint {
+                port_id: format!("wasm.{}", env.contract.address),
+                channel_id: packet.destinationChannel.to_string(),
+            };
+
+            let ibc_channel = IbcChannel::new(
+                ibc_endpoint_src.clone(),
+                ibc_endpoint_dst.clone(),
+                cosmwasm_std::IbcOrder::Ordered,
+                channel.version.clone(),
+                channel.connectionId.to_string(),
+            );
+
+            let ibc_packet = IbcPacket::new(
+                packet.data.to_vec(),
+                ibc_endpoint_src,
+                ibc_endpoint_dst,
+                0,
+                IbcTimeout::with_both(
+                    IbcTimeoutBlock {
+                        revision: 0,
+                        height: packet.timeoutHeight,
+                    },
+                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                ),
+            );
+
+            let msg = IbcPacketAckMsg::new(
+                IbcAcknowledgement::new(acknowledgement.to_vec()),
+                ibc_packet,
+                relayer,
+            );
+
+            let response = match channel.version.as_ref() {
+                Ics20Protocol::VERSION => Ok((Ics20Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .send_ack(msg)),
+                Ucs01Protocol::VERSION => Ok((Ucs01Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .send_ack(msg)),
+                v => Err(ContractError::UnknownProtocol {
+                    channel_id: packet.destinationChannel.to_string(),
+                    protocol_version: v.into(),
+                }),
+            }??;
+
+            Ok(Response::new()
+                .add_submessages(response.messages)
+                .add_events(response.events)
+                .add_attributes(response.attributes))
+        }
+        UnionIbcMsg::OnTimeoutPacket { packet, relayer } => {
+            let channel = deps.querier.query_wasm_smart::<Channel>(
+                &ibc_host,
+                &UnionIbcQuery::GetChannel {
+                    channel_id: packet.destinationChannel,
+                },
+            )?;
+
+            let info = MessageInfo {
+                sender: Addr::unchecked(relayer),
+                funds: Default::default(),
+            };
+
+            let ibc_endpoint_src = IbcEndpoint {
+                port_id: hex::encode(channel.counterpartyPortId),
+                channel_id: packet.sourceChannel.to_string(),
+            };
+
+            let ibc_endpoint_dst = IbcEndpoint {
+                port_id: format!("wasm.{}", env.contract.address),
+                channel_id: packet.destinationChannel.to_string(),
+            };
+
+            let ibc_channel = IbcChannel::new(
+                ibc_endpoint_src.clone(),
+                ibc_endpoint_dst.clone(),
+                cosmwasm_std::IbcOrder::Ordered,
+                channel.version.clone(),
+                channel.connectionId.to_string(),
+            );
+
+            let ibc_packet = IbcPacket::new(
+                packet.data.to_vec(),
+                ibc_endpoint_src,
+                ibc_endpoint_dst,
+                0,
+                IbcTimeout::with_both(
+                    IbcTimeoutBlock {
+                        revision: 0,
+                        height: packet.timeoutHeight,
+                    },
+                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                ),
+            );
+
+            let response = match channel.version.as_ref() {
+                Ics20Protocol::VERSION => Ok((Ics20Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .send_timeout(ibc_packet)),
+                Ucs01Protocol::VERSION => Ok((Ucs01Protocol {
+                    common: ProtocolCommon {
+                        deps,
+                        env,
+                        info,
+                        channel: ibc_channel,
+                    },
+                })
+                .send_timeout(ibc_packet)),
+                v => Err(ContractError::UnknownProtocol {
+                    channel_id: packet.destinationChannel.to_string(),
+                    protocol_version: v.into(),
+                }),
+            }??;
+
+            Ok(Response::new()
+                .add_submessages(response.messages)
+                .add_events(response.events)
+                .add_attributes(response.attributes))
+        }
     }
 }

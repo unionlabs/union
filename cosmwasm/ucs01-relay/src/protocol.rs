@@ -1,9 +1,11 @@
 use base58::{FromBase58, ToBase58};
 use cosmwasm_std::{
-    wasm_execute, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, HexBinary,
-    IbcAcknowledgement, IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo,
-    Uint128, Uint512,
+    from_json, wasm_execute, Addr, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env,
+    HexBinary, IbcAcknowledgement, IbcChannel, IbcEndpoint, IbcMsg, IbcOrder, IbcPacket,
+    IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, StdError, Timestamp, Uint128,
+    Uint512, WasmMsg,
 };
+use ibc_solidity::cosmwasm::types::ibc::{Channel, Packet};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
@@ -18,34 +20,59 @@ use ucs01_relay_api::{
         Ucs01TransferPacket,
     },
 };
-use unionlabs::encoding;
+use union_ibc::{
+    msg::{ExecuteMsg as UnionIbcHostMsg, MsgSendPacket, MsgWriteAcknowledgement},
+    query::QueryMsg as UnionIbcQuery,
+};
+use unionlabs::{encoding, ethereum::keccak256};
 
 use crate::{
-    contract::execute_transfer,
+    contract::{execute_transfer, query_ibc_channel},
     error::ContractError,
     msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, DenomHash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE,
-        FOREIGN_DENOM_TO_HASH, HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS, MAX_SUBDENOM_LENGTH,
+        DenomHash, PfmRefundPacketKey, CHANNEL_STATE, CONFIG, FOREIGN_DENOM_TO_HASH,
+        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS, MAX_SUBDENOM_LENGTH,
     },
 };
 
+pub fn packet_key(packet: &IbcPacket) -> PfmRefundPacketKey {
+    let timeout_block = packet.timeout.block().unwrap_or(IbcTimeoutBlock {
+        revision: 0,
+        height: 0,
+    });
+    keccak256(
+        [
+            &packet.data,
+            packet.src.channel_id.as_bytes(),
+            packet.src.port_id.as_bytes(),
+            packet.dest.channel_id.as_bytes(),
+            packet.dest.port_id.as_bytes(),
+            &packet.sequence.to_be_bytes(),
+            &timeout_block.revision.to_be_bytes(),
+            &timeout_block.height.to_be_bytes(),
+            &packet
+                .timeout
+                .timestamp()
+                .unwrap_or(Timestamp::from_nanos(0))
+                .nanos()
+                .to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into()
+}
+
 pub trait TransferProtocolExt<'a>:
-    TransferProtocol<Error: From<ContractError>, CustomMsg = TokenFactoryMsg>
+    TransferProtocol<Error: From<ContractError> + From<StdError>, CustomMsg = TokenFactoryMsg>
 {
     fn common(&self) -> &ProtocolCommon<'a>;
 
     fn common_mut(&mut self) -> &mut ProtocolCommon<'a>;
 
     fn do_get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
-        let refund_key = PfmRefundPacketKey {
-            channel_id: forward_packet.src.channel_id,
-            port_id: forward_packet.src.port_id,
-            sequence: forward_packet.sequence,
-        };
-
         IN_FLIGHT_PFM_PACKETS
-            .load(self.common().deps.storage, refund_key.clone())
+            .load(self.common().deps.storage, packet_key(&forward_packet))
             .ok()
     }
 
@@ -83,21 +110,11 @@ pub trait TransferProtocolExt<'a>:
             ),
         };
 
-        ack_msgs.push(CosmosMsg::Ibc(IbcMsg::WriteAcknowledgement {
-            channel_id: refund_info.origin_packet.dest.channel_id.clone(),
-            packet_sequence: refund_info.origin_packet.sequence,
-            ack: IbcAcknowledgement::new(ack_bytes),
-        }));
+        ack_msgs.push(self.write_acknowledgement(&refund_info.origin_packet, ack_bytes.into())?);
+
         ack_attrs.push(Attribute::new(ATTR_PFM, ATTR_VALUE_PFM_ACK.to_string()));
 
-        IN_FLIGHT_PFM_PACKETS.remove(
-            self.common_mut().deps.storage,
-            PfmRefundPacketKey {
-                channel_id: ibc_packet.src.channel_id,
-                port_id: ibc_packet.src.port_id,
-                sequence: ibc_packet.sequence,
-            },
-        );
+        IN_FLIGHT_PFM_PACKETS.remove(self.common_mut().deps.storage, packet_key(&ibc_packet));
 
         Ok((ack_msgs, ack_attrs))
     }
@@ -125,7 +142,7 @@ pub trait TransferProtocolExt<'a>:
         };
 
         let transfer_msg = TransferMsg {
-            channel: forward.channel.clone().to_string_prefixed(),
+            channel: forward.channel.clone().to_string(),
             receiver: forward.receiver.value(),
             timeout: Some(timeout),
             memo,
@@ -141,20 +158,93 @@ pub trait TransferProtocolExt<'a>:
             transfer_msg,
         )?;
 
-        let in_flight_packet = InFlightPfmPacket {
-            origin_sender_addr: self.common().info.sender.clone(),
-            origin_packet: original_packet,
-            forward_timeout: timeout,
-            forward_src_channel_id: forward.channel.to_string_prefixed(),
-            forward_src_port_id: forward.port.to_string(),
-            origin_protocol_version: Self::VERSION.to_string(),
-        };
-
         if let Some(reply_sub) = transfer
             .messages
             .iter_mut()
             .find(|sub| sub.id == IBC_SEND_ID)
         {
+            let forward_packet = match &reply_sub.msg {
+                CosmosMsg::Ibc(IbcMsg::SendPacket {
+                    channel_id,
+                    data,
+                    timeout,
+                }) => {
+                    let ibc_channel =
+                        query_ibc_channel(self.common().deps.as_ref(), channel_id.clone())?;
+                    Ok::<_, Self::Error>(IbcPacket::new(
+                        data.to_vec(),
+                        ibc_channel.endpoint,
+                        ibc_channel.counterparty_endpoint,
+                        0,
+                        timeout.clone(),
+                    ))
+                }
+                CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
+                    match from_json::<UnionIbcHostMsg>(msg) {
+                        Ok(UnionIbcHostMsg::PacketSend(MsgSendPacket {
+                            source_channel,
+                            timeout_height,
+                            timeout_timestamp,
+                            data,
+                        })) => {
+                            let ibc_host =
+                                CONFIG.load(self.common().deps.as_ref().storage)?.ibc_host;
+                            let channel = self.common().deps.querier.query_wasm_smart::<Channel>(
+                                &ibc_host,
+                                &UnionIbcQuery::GetChannel {
+                                    channel_id: source_channel,
+                                },
+                            )?;
+                            let ibc_endpoint_src = IbcEndpoint {
+                                port_id: hex::encode(channel.counterpartyPortId),
+                                channel_id: source_channel.to_string(),
+                            };
+                            let ibc_endpoint_dst = IbcEndpoint {
+                                port_id: format!("wasm.{}", self.common().env.contract.address),
+                                channel_id: channel.counterpartyChannelId.to_string(),
+                            };
+                            let ibc_packet = IbcPacket::new(
+                                data.to_vec(),
+                                ibc_endpoint_src,
+                                ibc_endpoint_dst,
+                                0,
+                                IbcTimeout::with_both(
+                                    IbcTimeoutBlock {
+                                        revision: 0,
+                                        height: timeout_height,
+                                    },
+                                    Timestamp::from_nanos(timeout_timestamp),
+                                ),
+                            );
+                            Ok(ibc_packet)
+                        }
+                        _ => {
+                            return Err(ContractError::MiddlewareError(
+                                MiddlewareError::PacketForward(
+                                    PacketForwardError::NoReplyMessageInStack,
+                                ),
+                            )
+                            .into())
+                        }
+                    }
+                }
+                _ => {
+                    return Err(
+                        ContractError::MiddlewareError(MiddlewareError::PacketForward(
+                            PacketForwardError::NoReplyMessageInStack,
+                        ))
+                        .into(),
+                    )
+                }
+            }?;
+
+            let in_flight_packet = InFlightPfmPacket {
+                origin_sender_addr: self.common().info.sender.clone(),
+                origin_packet: original_packet,
+                origin_protocol_version: Self::VERSION.to_string(),
+                forward_packet,
+            };
+
             *reply_sub = reply_sub
                 .clone()
                 .with_payload(serde_json_wasm::to_vec(&in_flight_packet).expect("can serialize"));
@@ -659,7 +749,7 @@ pub struct ProtocolCommon<'a> {
     pub deps: DepsMut<'a>,
     pub env: Env,
     pub info: MessageInfo,
-    pub channel: ChannelInfo,
+    pub channel: IbcChannel,
 }
 
 pub struct Ics20Protocol<'a> {
@@ -677,8 +767,30 @@ impl TransferProtocol for Ics20Protocol<'_> {
     type Error = ContractError;
     type Encoding = JsonWasm;
 
-    fn channel_endpoint(&self) -> &cosmwasm_std::IbcEndpoint {
-        &self.common.channel.endpoint
+    fn send_packet(
+        &self,
+        data: Binary,
+        timeout: IbcTimeout,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
+        Ok(IbcMsg::SendPacket {
+            channel_id: self.common.channel.endpoint.channel_id.clone(),
+            data,
+            timeout,
+        }
+        .into())
+    }
+
+    fn write_acknowledgement(
+        &self,
+        packet: &IbcPacket,
+        ack: Binary,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
+        Ok(IbcMsg::WriteAcknowledgement {
+            channel_id: packet.dest.channel_id.clone(),
+            packet_sequence: packet.sequence,
+            ack: IbcAcknowledgement::new(ack),
+        }
+        .into())
     }
 
     fn caller(&self) -> &cosmwasm_std::Addr {
@@ -843,9 +955,7 @@ impl TransferProtocol for Ics20Protocol<'_> {
     }
 
     fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error> {
-        Ok(CHANNEL_INFO
-            .load(self.common.deps.storage, channel_id)?
-            .protocol_version)
+        Ok(query_ibc_channel(self.common.deps.as_ref(), channel_id.to_string())?.version)
     }
 
     fn protocol_switch_result(
@@ -875,8 +985,79 @@ impl TransferProtocol for Ucs01Protocol<'_> {
     type Error = ContractError;
     type Encoding = encoding::EthAbi;
 
-    fn channel_endpoint(&self) -> &cosmwasm_std::IbcEndpoint {
-        &self.common.channel.endpoint
+    fn send_packet(
+        &self,
+        data: Binary,
+        timeout: IbcTimeout,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
+        let ibc_host = CONFIG.load(self.common.deps.storage)?.ibc_host;
+        Ok(wasm_execute(
+            ibc_host,
+            &UnionIbcHostMsg::PacketSend(MsgSendPacket {
+                source_channel: self
+                    .common
+                    .channel
+                    .endpoint
+                    .channel_id
+                    .parse()
+                    .expect("impossible"),
+                timeout_height: timeout
+                    .block()
+                    .unwrap_or(IbcTimeoutBlock {
+                        revision: 0,
+                        height: 0,
+                    })
+                    .height,
+                timeout_timestamp: timeout
+                    .timestamp()
+                    .unwrap_or(Timestamp::from_nanos(0))
+                    .nanos(),
+                data: data.to_vec().into(),
+            }),
+            vec![],
+        )?
+        .into())
+    }
+
+    fn write_acknowledgement(
+        &self,
+        packet: &IbcPacket,
+        ack: Binary,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error> {
+        let ibc_host = CONFIG.load(self.common.deps.storage)?.ibc_host;
+        Ok(wasm_execute(
+            ibc_host,
+            &UnionIbcHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                channel_id: self
+                    .common
+                    .channel
+                    .endpoint
+                    .channel_id
+                    .parse()
+                    .expect("impossible"),
+                packet: Packet {
+                    sourceChannel: packet.src.channel_id.parse().expect("impossible"),
+                    destinationChannel: packet.dest.channel_id.parse().expect("impossible"),
+                    data: packet.data.to_vec().into(),
+                    timeoutHeight: packet
+                        .timeout
+                        .block()
+                        .unwrap_or(IbcTimeoutBlock {
+                            revision: 0,
+                            height: 0,
+                        })
+                        .height,
+                    timeoutTimestamp: packet
+                        .timeout
+                        .timestamp()
+                        .unwrap_or(Timestamp::from_nanos(0))
+                        .nanos(),
+                },
+                acknowledgement: ack.to_vec().into(),
+            }),
+            vec![],
+        )?
+        .into())
     }
 
     fn caller(&self) -> &cosmwasm_std::Addr {
@@ -1073,9 +1254,7 @@ impl TransferProtocol for Ucs01Protocol<'_> {
     }
 
     fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error> {
-        Ok(CHANNEL_INFO
-            .load(self.common.deps.storage, channel_id)?
-            .protocol_version)
+        Ok(query_ibc_channel(self.common.deps.as_ref(), channel_id.to_string())?.version)
     }
 
     fn protocol_switch_result(
@@ -1094,7 +1273,7 @@ impl TransferProtocol for Ucs01Protocol<'_> {
 mod tests {
     use cosmwasm_std::{
         testing::{message_info, mock_dependencies, mock_env},
-        wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint, Uint128,
+        wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcChannel, IbcEndpoint, Uint128,
     };
     use token_factory_api::TokenFactoryMsg;
     use ucs01_relay_api::{
@@ -1107,7 +1286,7 @@ mod tests {
         error::ContractError,
         msg::ExecuteMsg,
         protocol::{encode_denom_hash, normalize_for_ibc_transfer, Ics20Protocol},
-        state::{ChannelInfo, DenomHash},
+        state::DenomHash,
     };
 
     #[test]
@@ -1120,18 +1299,19 @@ mod tests {
                     deps: deps.as_mut(),
                     env: mock_env(),
                     info: message_info(&Addr::unchecked(""), &[]),
-                    channel: ChannelInfo {
-                        endpoint: IbcEndpoint {
+                    channel: IbcChannel::new(
+                        IbcEndpoint {
                             port_id: "".to_string(),
-                            channel_id: String::new(),
+                            channel_id: String::new()
                         },
-                        counterparty_endpoint: IbcEndpoint {
+                        IbcEndpoint {
                             port_id: "".to_string(),
-                            channel_id: String::new(),
+                            channel_id: String::new()
                         },
-                        connection_id: "".into(),
-                        protocol_version: "".into(),
-                    },
+                        cosmwasm_std::IbcOrder::Ordered,
+                        "",
+                        ""
+                    ),
                 },
             }
             .convert_ack_to_foreign_protocol("ucs01-relay-1", Ok(vec![1]))

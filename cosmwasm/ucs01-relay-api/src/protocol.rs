@@ -2,8 +2,8 @@ use std::{collections::btree_map::Entry, fmt::Debug};
 
 use cosmwasm_std::{
     Addr, Attribute, Binary, CheckedMultiplyRatioError, Coin, CosmosMsg, Event, IbcBasicResponse,
-    IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response,
-    SubMsg, Timestamp,
+    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, IbcTimeout, Response, SubMsg,
+    Timestamp,
 };
 use thiserror::Error;
 use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
@@ -138,13 +138,23 @@ pub trait TransferProtocol {
 
     fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error>;
 
-    fn channel_endpoint(&self) -> &IbcEndpoint;
-
     fn caller(&self) -> &Addr;
 
     fn self_addr(&self) -> &Addr;
 
     fn self_addr_canonical(&self) -> Result<AddrOf<Self::Packet>, Self::Error>;
+
+    fn send_packet(
+        &self,
+        data: Binary,
+        timeout: IbcTimeout,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error>;
+
+    fn write_acknowledgement(
+        &self,
+        packet: &IbcPacket,
+        ack: Binary,
+    ) -> Result<CosmosMsg<Self::CustomMsg>, Self::Error>;
 
     // TODO: Remove use of Encoding Error
     fn common_to_protocol_packet(
@@ -210,14 +220,12 @@ pub trait TransferProtocol {
         };
 
         let tokens = packet.tokens();
-        let sub = SubMsg::reply_always(
-            IbcMsg::SendPacket {
-                channel_id: self.channel_endpoint().channel_id.clone(),
-                data: packet.encode().into(),
-                timeout: input.current_time.plus_seconds(input.timeout_delta).into(),
-            },
-            IBC_SEND_ID,
-        );
+        let send_packet_msg = self.send_packet(
+            packet.encode().into(),
+            input.current_time.plus_seconds(input.timeout_delta).into(),
+        )?;
+        let sub = SubMsg::reply_always(send_packet_msg, IBC_SEND_ID);
+
         Ok(Response::new()
             .add_messages(send_msgs)
             .add_submessage(sub)

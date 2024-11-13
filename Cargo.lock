@@ -13194,6 +13194,7 @@ dependencies = [
  "ethabi",
  "go-parse-duration",
  "hex",
+ "ibc-solidity",
  "prost 0.12.6",
  "protos",
  "schemars",
@@ -13207,6 +13208,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "ucs01-relay-api",
+ "union-ibc",
  "unionlabs",
 ]
 

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcEndpoint, IbcQuery, MessageInfo,
-    Order, PortIdResponse, Response, StdError, StdResult,
+    to_json_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcChannel, IbcEndpoint, IbcQuery,
+    ListChannelsResponse, MessageInfo, Order, PortIdResponse, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 use token_factory_api::TokenFactoryMsg;
@@ -14,16 +14,13 @@ use unionlabs::hash::H256;
 
 use crate::{
     error::ContractError,
-    ibc::enforce_order_and_version,
+    ibc::{enforce_order_and_version, execute_union_ibc},
     msg::{
-        ChannelResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, ListChannelsResponse,
-        MigrateMsg, PortResponse, QueryMsg, TransferMsg,
+        ChannelBalances, ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, PortResponse,
+        QueryMsg, TransferMsg,
     },
     protocol::{encode_denom_hash, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
-    state::{
-        ChannelInfo, Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG, FOREIGN_DENOM_TO_HASH,
-        HASH_TO_FOREIGN_DENOM,
-    },
+    state::{Config, ADMIN, CHANNEL_STATE, CONFIG, FOREIGN_DENOM_TO_HASH, HASH_TO_FOREIGN_DENOM},
 };
 
 // REVIEW: This isn't on crates.io, what else should we use?
@@ -38,10 +35,12 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    let ibc_host = deps.api.addr_validate(&msg.ibc_host)?;
     CONFIG.save(
         deps.storage,
         &Config {
             default_timeout: msg.default_timeout,
+            ibc_host,
         },
     )?;
 
@@ -53,13 +52,6 @@ pub fn instantiate(
         // would depend on the contract's address before it's initialization.
         channel.endpoint.port_id = format!("wasm.{}", env.contract.address);
         enforce_order_and_version(&channel, None)?;
-        let info = ChannelInfo {
-            endpoint: channel.endpoint,
-            counterparty_endpoint: channel.counterparty_endpoint,
-            connection_id: channel.connection_id,
-            protocol_version: channel.version,
-        };
-        CHANNEL_INFO.save(deps.storage, &info.endpoint.channel_id, &info)?;
     }
 
     Ok(Response::default())
@@ -73,6 +65,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match msg {
+        ExecuteMsg::UnionIbcMsg(msg) => execute_union_ibc(deps, env, info, msg),
         ExecuteMsg::Transfer(msg) => execute_transfer(deps, env, info, msg),
         ExecuteMsg::UpdateAdmin { admin } => {
             let admin = deps.api.addr_validate(&admin)?;
@@ -132,8 +125,6 @@ pub fn execute_transfer(
         return Err(ContractError::NoFunds {});
     }
 
-    let channel_info = CHANNEL_INFO.load(deps.storage, &msg.channel)?;
-
     let config = CONFIG.load(deps.storage)?;
 
     let input = TransferInput {
@@ -144,13 +135,15 @@ pub fn execute_transfer(
         tokens,
     };
 
-    match channel_info.protocol_version.as_str() {
+    let channel = query_ibc_channel(deps.as_ref(), msg.channel.clone())?;
+
+    match channel.version.as_ref() {
         Ics20Protocol::VERSION => Ics20Protocol {
             common: ProtocolCommon {
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         }
         .send(input, msg.memo),
@@ -159,7 +152,7 @@ pub fn execute_transfer(
                 deps,
                 env,
                 info,
-                channel: channel_info,
+                channel,
             },
         }
         .send(input, msg.memo),
@@ -176,13 +169,13 @@ pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Port {} => to_json_binary(&query_port(deps)?),
-        QueryMsg::ListChannels {} => to_json_binary(&query_list(deps)?),
-        QueryMsg::Channel { id } => to_json_binary(&query_channel(deps, id)?),
-        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::Admin {} => to_json_binary(&ADMIN.query_admin(deps)?),
+        QueryMsg::Port {} => Ok(to_json_binary(&query_port(deps)?)?),
+        QueryMsg::ListChannels {} => Ok(to_json_binary(&query_list(deps)?)?),
+        QueryMsg::Channel { id } => Ok(to_json_binary(&query_channel(deps, id)?)?),
+        QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
+        QueryMsg::Admin {} => Ok(to_json_binary(&ADMIN.query_admin(deps)?)?),
         QueryMsg::ForeignDenomToLocal {
             source_channel,
             denom,
@@ -204,37 +197,51 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 &env.contract.address,
                 &encode_denom_hash(foreign_denom_hash),
             );
-            to_json_binary(&factory_denom)
+            Ok(to_json_binary(&factory_denom)?)
         }
     }
 }
 
-fn query_port(deps: Deps) -> StdResult<PortResponse> {
+fn query_port(deps: Deps) -> Result<PortResponse, ContractError> {
     let query = IbcQuery::PortId {}.into();
     let PortIdResponse { port_id, .. } = deps.querier.query(&query)?;
     Ok(PortResponse { port_id })
 }
 
-fn query_list(deps: Deps) -> StdResult<ListChannelsResponse> {
-    let channels = CHANNEL_INFO
-        .range_raw(deps.storage, None, None, Order::Ascending)
-        .map(|r| r.map(|(_, v)| v))
-        .collect::<StdResult<_>>()?;
-    Ok(ListChannelsResponse { channels })
+fn query_list(deps: Deps) -> Result<ListChannelsResponse, ContractError> {
+    Ok(deps
+        .querier
+        .query(&cosmwasm_std::QueryRequest::Ibc(IbcQuery::ListChannels {
+            port_id: None,
+        }))?)
+}
+
+pub fn query_ibc_channel(deps: Deps, id: String) -> Result<IbcChannel, ContractError> {
+    let channel = deps
+        .querier
+        .query::<cosmwasm_std::ChannelResponse>(&cosmwasm_std::QueryRequest::Ibc(
+            IbcQuery::Channel {
+                channel_id: id.clone(),
+                port_id: None,
+            },
+        ))?
+        .channel
+        .ok_or(ContractError::NoSuchChannel { id })?;
+    Ok(channel)
 }
 
 // make public for ibc tests
-pub fn query_channel(deps: Deps, id: String) -> StdResult<ChannelResponse> {
-    let info = CHANNEL_INFO.load(deps.storage, &id)?;
+pub fn query_channel(deps: Deps, id: String) -> Result<ChannelBalances, ContractError> {
+    let channel = query_ibc_channel(deps, id.clone())?;
     let balances = CHANNEL_STATE
         .prefix(&id)
         .range(deps.storage, None, None, Order::Ascending)
         .map(|r| r.map(|(denom, v)| (denom.clone(), v.outstanding)))
         .collect::<StdResult<Vec<_>>>()?;
-    Ok(ChannelResponse { info, balances })
+    Ok(ChannelBalances { channel, balances })
 }
 
-fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
+fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
     let admin = ADMIN.get(deps)?.unwrap_or_else(|| Addr::unchecked(""));
     let res = ConfigResponse {

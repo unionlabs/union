@@ -66,14 +66,23 @@ pub enum ContractError {
     #[error("Only myself is able to trigger this message")]
     Unauthorized,
 
+    #[error("The operation is not supported")]
+    Unsupported,
+
     #[error(transparent)]
     MiddlewareError(#[from] MiddlewareError),
 
-    #[error("unable to decode json value")]
+    #[error("Unable to decode json value")]
     SerdeJson(#[from] serde_json_wasm::de::Error),
 
     #[error(transparent)]
     Arithmetic(#[from] CheckedMultiplyRatioError),
+
+    #[error("Only the IBC host is able to perform this operation")]
+    OnlyIBCHost,
+
+    #[error("The reply was invalid")]
+    InvalidReply,
 }
 
 impl From<FromUtf8Error> for ContractError {

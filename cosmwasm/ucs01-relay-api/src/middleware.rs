@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr, Event, IbcPacket};
+use cosmwasm_std::{to_json_string, Addr, Event, IbcPacket, StdError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use unionlabs::{
-    id::{ChannelId, PortId},
+    id::PortId,
     validated::{Validate, Validated},
 };
 
@@ -16,12 +16,8 @@ pub const PFM_MODULE_NAME: &str = "packetforwardmiddleware";
 pub const PFM_ERROR_EVENT: &str = "packet_forward_error";
 pub const PFM_HOP_EVENT: &str = "packet_forward_hop";
 
-pub const RECV_SEQUENCE_ATTR: &str = "recv_sequence";
-pub const SENT_SEQUENCE_ATTR: &str = "sent_sequence";
-pub const DEST_CHANNEL_ATTR: &str = "dest_channel";
-pub const DEST_PORT_ATTR: &str = "dest_port";
-pub const SRC_CHANNEL_ATTR: &str = "src_channel";
-pub const SRC_PORT_ATTR: &str = "src_port";
+pub const SRC_PACKET: &str = "src_packet";
+pub const DEST_PACKET: &str = "dst_packet";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum MiddlewareError {
@@ -71,21 +67,14 @@ pub struct InFlightPfmPacket {
     /// This is the protocol of the channel between A -> B, such that if there is a failure between B -> C then we know how to write the acknowledgement for the origin channel.
     pub origin_protocol_version: String,
     pub origin_packet: IbcPacket,
-    pub forward_src_channel_id: String,
-    pub forward_src_port_id: String,
-
-    pub forward_timeout: u64,
+    pub forward_packet: IbcPacket,
 }
 
 impl InFlightPfmPacket {
-    pub fn create_hop_event(&self, sent_sequence: u64) -> Event {
-        Event::new(PFM_HOP_EVENT)
-            .add_attribute(RECV_SEQUENCE_ATTR, self.origin_packet.sequence.to_string())
-            .add_attribute(DEST_CHANNEL_ATTR, self.forward_src_channel_id.clone())
-            .add_attribute(DEST_PORT_ATTR, self.forward_src_port_id.clone())
-            .add_attribute(SENT_SEQUENCE_ATTR, sent_sequence.to_string())
-            .add_attribute(SRC_CHANNEL_ATTR, self.origin_packet.src.channel_id.clone())
-            .add_attribute(SRC_PORT_ATTR, self.origin_packet.src.port_id.clone())
+    pub fn create_hop_event(&self) -> Result<Event, StdError> {
+        Ok(Event::new(PFM_HOP_EVENT)
+            .add_attribute(SRC_PACKET, to_json_string(&self.origin_packet)?)
+            .add_attribute(DEST_PACKET, to_json_string(&self.forward_packet)?))
     }
 }
 
@@ -100,7 +89,7 @@ pub enum Memo {
 pub struct PacketForward {
     pub receiver: PfmReceiver,
     pub port: PortId,
-    pub channel: ChannelId,
+    pub channel: String,
     #[serde(default = "default_pfm_timeout")]
     pub timeout: String,
     #[serde(default = "default_pfm_retries")]

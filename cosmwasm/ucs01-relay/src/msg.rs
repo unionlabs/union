@@ -1,9 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
+use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, ListChannelsResponse, Uint512};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::types::Fees;
-
-use crate::state::ChannelInfo;
+use union_ibc::module::msg::UnionIbcMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -13,12 +12,14 @@ pub struct InstantiateMsg {
     pub gov_contract: String,
     /// If set, contract will setup the channel
     pub channel: Option<IbcChannel>,
+    // the union ibc stack host
+    pub ibc_host: String,
 }
 
 #[cw_serde]
 pub struct MigrateMsg {}
 
-#[cw_serde]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ExecuteMsg {
     /// This allows us to transfer native tokens
     Transfer(TransferMsg),
@@ -29,10 +30,13 @@ pub enum ExecuteMsg {
         hash: Binary,
     },
     /// Change the admin (must be called by current admin)
-    UpdateAdmin { admin: String },
+    UpdateAdmin {
+        admin: String,
+    },
     BatchExecute {
         msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
     },
+    UnionIbcMsg(UnionIbcMsg),
 }
 
 /// This is the message we accept via Receive
@@ -60,7 +64,7 @@ pub enum QueryMsg {
     #[returns(ListChannelsResponse)]
     ListChannels {},
     /// Returns the details of the name channel, error if not created.
-    #[returns(ChannelResponse)]
+    #[returns(ChannelBalances)]
     Channel { id: String },
     /// Show the Config.
     #[returns(ConfigResponse)]
@@ -75,14 +79,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub struct ListChannelsResponse {
-    pub channels: Vec<ChannelInfo>,
-}
-
-#[cw_serde]
-pub struct ChannelResponse {
+pub struct ChannelBalances {
     /// Information on the channel's connection
-    pub info: ChannelInfo,
+    pub channel: IbcChannel,
     /// How many tokens we currently have pending over this channel
     pub balances: Vec<(String, Uint512)>,
 }
