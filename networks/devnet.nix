@@ -174,6 +174,8 @@
         denom = "stake";
         keyType = "ed25519";
         validatorCount = 4;
+        sdkVersion = 50;
+        sdkPatchVersion = 8;
         lightClients = [
           # self'.packages.cometbls-light-client
         ];
