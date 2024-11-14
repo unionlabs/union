@@ -6,6 +6,7 @@ module ucs01::relay_app {
     use sui::table::{Self, Table};
     use sui::bcs;
     use sui::clock;
+    use sui::address::{to_string};
     use sui::event;
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
@@ -64,7 +65,8 @@ module ucs01::relay_app {
         denom_to_address: Table<DenomToAddressPair, address>,
         address_to_denom: Table<AddressToDenomPair, String>,
         outstanding: Table<OutstandingPair, u64>,
-        address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>
+        address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>,
+        address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
     }
 
     // Events
@@ -117,7 +119,8 @@ module ucs01::relay_app {
             denom_to_address: table::new(ctx),
             address_to_denom: table::new(ctx),
             outstanding: table::new(ctx),
-            address_to_treasurycap: table::new(ctx)
+            address_to_treasurycap: table::new(ctx),
+            address_to_coin: table::new(ctx)
         });
     }
 
@@ -137,9 +140,19 @@ module ucs01::relay_app {
         relay_store.address_to_treasurycap.borrow_mut(denom_address)
     }
 
+    fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
+        relay_store.address_to_coin.borrow_mut(denom_address)
+    }
 
-    public entry fun insert_pair(relay_store: &mut RelayStore, denom_address: address, treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>) {
+
+    public entry fun insert_pair(
+        relay_store: &mut RelayStore,
+        denom_address: address,
+        treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
+        coin: Coin<FUNGIBLE_TOKEN>
+    ) {
         relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
+        relay_store.address_to_coin.add(denom_address, coin);
     }
 
 
@@ -223,7 +236,6 @@ module ucs01::relay_app {
         *val = *val - amount;
         // Abort if pair does not exist
     }
-
 
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
@@ -580,7 +592,7 @@ module ucs01::relay_app {
                     token_denom = string::sub_string(&token_denom, 1, 65);
                 };
                 denom_address = bcs::new(hex_to_bytes(token_denom)).peel_address();
-                let treasury_cap = get_treasury_cap_mut(relay_store, denom_address);
+                let coin = get_coin_mut(relay_store, denom_address);
 
                 decrease_outstanding(relay_store, channel_id, denom_address, token_from_vec.amount);
                 // TODO: implement here, need to transfer
@@ -666,7 +678,8 @@ module ucs01::relay_app {
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         proof: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        ctx: &mut TxContext
     ) {
         let mut packets: vector<Packet> = vector::empty();
         let mut i = 0;
@@ -695,7 +708,7 @@ module ucs01::relay_app {
         );
         while (i < vector::length(&packets)) {
             let packet = *vector::borrow(&packets, i);
-            on_recv_packet_processing(ibc_store, relay_store, packet);
+            on_recv_packet_processing(ibc_store, relay_store, packet, ctx);
         }
     }
 
@@ -703,7 +716,8 @@ module ucs01::relay_app {
     public fun on_recv_packet_processing(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        ibc_packet: Packet // representing the IBC Packet
+        ibc_packet: Packet, // representing the IBC Packet,
+        ctx: &mut TxContext
     ) {
         // Decode the RelayPacket from the IBC packet data
         let packet = decode_packet(*packet::data(&ibc_packet));
@@ -746,15 +760,8 @@ module ucs01::relay_app {
                 // Decrease the outstanding amount of the token
                 decrease_outstanding(relay_store, source_channel, denom_address, token.amount);
 
-
-                // TODO: Fix here, transfer
-                // // Transfer the unescrowed tokens to the receiver
-                // primary_fungible_store::transfer(
-                //     &get_signer(),
-                //     get_metadata(denom_address),
-                //     receiver,
-                //     token.amount
-                // );
+                let coin = get_coin_mut(relay_store, denom_address);
+                ucs01::fungible_token::transfer_with_split(coin, receiver, token.amount, ctx);
 
             } else {
 
@@ -816,10 +823,9 @@ module ucs01::relay_app {
                 };
 
                 // Mint tokens to the receiver's account
-                // TODO: Mint token here
-                // ucs01::fa_coin::mint_with_metadata(
-                //     &get_signer(), receiver, token.amount, asset
-                // );
+                let treasury_cap = get_treasury_cap_mut(relay_store, denom_address);
+                ucs01::fungible_token::mint(treasury_cap, token.amount, receiver, ctx)
+
             };
 
             // Emit the Received event
@@ -911,6 +917,7 @@ module ucs01::relay_app {
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         source_channel: u32,
+        mut coins: vector<Coin<FUNGIBLE_TOKEN>>,
         receiver: vector<u8>,
         denom_list: vector<address>,
         amount_list: vector<u64>,
@@ -928,18 +935,20 @@ module ucs01::relay_app {
 
         let mut normalized_tokens: vector<Token> = vector::empty<Token>();
 
-        let mut i = 0;
-        while (i < num_tokens) {
+        let mut i = num_tokens-1;
+        while (i >= 0) {
             let local_token_denom = *vector::borrow(&denom_list, i);
             let local_token_amount = *vector::borrow(&amount_list, i);
-
+            // let coin = *vector::borrow(&coins, i);
+            let coin = coins.pop_back();
             let token_address =
                 send_token(
                     relay_store,
-                    &sender,
                     source_channel,
                     local_token_denom,
-                    local_token_amount
+                    coin,
+                    local_token_amount,
+                    ctx
                 );
 
             // Create a normalized Token struct and push to the vector
@@ -948,8 +957,11 @@ module ucs01::relay_app {
                 amount: local_token_amount
             };
             vector::push_back(&mut normalized_tokens, normalized_token);
-            i = i + 1;
+            i = i - 1;
         };
+
+        vector::destroy_empty(coins);
+
         let packet: RelayPacket = RelayPacket {
             sender: bcs::to_bytes(&sender),
             receiver,
@@ -989,46 +1001,30 @@ module ucs01::relay_app {
 
     public fun send_token(
         relay_store: &mut RelayStore,
-        sender: &address, // TODO: Make sure about it
         source_channel: u32,
         denom: address,
-        amount: u64
+        coin: Coin<FUNGIBLE_TOKEN>,
+        amount: u64,
     ): String {
-        if (amount == 0) {
-            abort E_INVALID_AMOUNT
-        };
-
         let pair = AddressToDenomPair { source_channel, denom };
-        
-        let token_address = if (relay_store.address_to_denom.contains(pair)) {
+
+        let mut token_address = if (relay_store.address_to_denom.contains(pair)) {
             relay_store.address_to_denom.borrow(pair)
         } else {
             &string::utf8(b"")
         };
 
+        let treasury_cap = relay_store.address_to_treasurycap.borrow_mut(denom);
 
-        // TODO: Fix here
+        if (!string::is_empty(token_address)) {
+            ucs01::fungible_token::burn(treasury_cap, coin);
+        } else {
+            let self_coin = get_coin_mut(relay_store, denom);
+            ucs01::fungible_token::join(self_coin, coin);
 
-        // let token = get_metadata(denom);
-        // if (!string::is_empty(&token_address)) {
-        //     ucs01::fa_coin::burn_with_metadata(
-        //         &get_signer(),
-        //         signer::address_of(sender),
-        //         amount,
-        //         token
-        //     );
-        // } else {
-        //     primary_fungible_store::transfer(
-        //         sender,
-        //         token,
-        //         signer::address_of(&get_signer()),
-        //         amount
-        //     );
-        //     increase_outstanding(source_channel, denom, amount);
-        //     token_address = string_utils::to_string_with_canonical_addresses(&denom);
-        // };
+            increase_outstanding(relay_store, source_channel, denom, amount);
+            token_address = &to_string(denom);
+        };
         *token_address
     }
-
-
 }

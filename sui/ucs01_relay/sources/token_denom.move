@@ -49,25 +49,20 @@ module ucs01::fungible_token{
     }
 
     // Transfer a specific amount of FUNGIBLE_TOKEN from one account to another
-    public entry fun transfer_from(
+    public entry fun transfer_with_split(
         from: &mut Coin<FUNGIBLE_TOKEN>,
         to: address,
         amount: u64,
         ctx: &mut TxContext,
     ) {
-        // Split the specified amount from the 'from' coin
         let transferred_coin = coin::split(from, amount, ctx);
-
-        // Transfer the newly created coin to the 'to' address
         transfer::public_transfer(transferred_coin, to);
+    }    // Transfer a specific amount of FUNGIBLE_TOKEN from one account to another
+
+    //join two coin object to one.
+    public entry fun join(self: &mut Coin<FUNGIBLE_TOKEN>, coin: Coin<FUNGIBLE_TOKEN>){
+        coin::join(self, coin);
     }
-
-
-
-    // //join two coin object to one.
-    // public entry fun join(self: &mut Coin<FUNGIBLE_TOKEN>, coin: Coin<FUNGIBLE_TOKEN>){
-    //     coin::join(self, coin);
-    // }
     // // split one coin object to two 
     // public entry fun split (self: &mut Coin<FUNGIBLE_TOKEN>, amount: u64, recipient: address, ctx: &mut TxContext){
     //     let new_coin_object = coin::split(self, amount, ctx);
@@ -97,4 +92,15 @@ module ucs01::fungible_token{
             coin::update_icon_url(treasury_cap, metadata, option::extract(&mut icon_uri));
         };
     }
+
+    // Transfer the entire balance of FUNGIBLE_TOKEN from one account to another
+    public entry fun transfer(
+        from: Coin<FUNGIBLE_TOKEN>,
+        to: address,
+        ctx: &mut TxContext,
+    ) {
+        // Transfer the 'from' coin to the 'to' address
+        transfer::public_transfer(from, to);
+    }
+
 }
