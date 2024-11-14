@@ -5,10 +5,8 @@ use cosmwasm_std::{
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, Misbehaviour, StorageProof,
 };
-use union_ibc::{
-    lightclient::query::{Status, VerifyClientMessageUpdate},
-    state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES},
-};
+use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
+use union_ibc_msg::lightclient::{Status, VerifyClientMessageUpdate};
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, EncodeAs, Proto},
