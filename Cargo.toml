@@ -133,7 +133,7 @@ members = [
 
   "drip",
 
-  "light-clients/movement-light-client",
+  # "light-clients/movement-light-client",
   "light-clients/movement-light-client/types",
 
   "lib/aptos-verifier",
