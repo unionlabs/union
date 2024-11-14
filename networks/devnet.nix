@@ -76,7 +76,7 @@
           };
         };
         lightClients = [
-          self'.packages.ethereum-light-client
+          # self'.packages.ethereum-light-client
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
