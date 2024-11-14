@@ -9,8 +9,8 @@
 					"ibc_version_id": "1.0.0"
 				},
 				"config": {
-					"ws_url": "http://localhost:26657",
-					"grpc_url": "http://localhost:9090"
+					"ws_url": "http://192.168.1.123:26657",
+					"grpc_url": "http://192.168.1.123:9090"
 				}
 			},
 			{
@@ -36,8 +36,8 @@
 					"consensus_type": "cometbls"
 				},
 				"config": {
-					"ws_url": "http://localhost:26657",
-					"grpc_url": "http://localhost:9090"
+					"ws_url": "http://192.168.1.123:26657",
+					"grpc_url": "http://192.168.1.123:9090"
 				}
 			},
 			{
@@ -103,8 +103,8 @@
 			"path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
 			"config": {
 				"chain_id": "union-devnet-1",
-				"ws_url": "http://localhost:26657",
-				"grpc_url": "http://localhost:9090"
+				"ws_url": "http://192.168.1.123:26657",
+				"grpc_url": "http://192.168.1.123:9090"
 			}
 		},
 		{
@@ -139,8 +139,8 @@
 					"gas_multiplier": "1.1",
 					"max_gas": 10000000
 				},
-				"ws_url": "http://localhost:26657",
-				"grpc_url": "http://localhost:9090"
+				"ws_url": "http://192.168.1.123:26657",
+				"grpc_url": "http://192.168.1.123:9090"
 			}
 		},
 		{
