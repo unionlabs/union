@@ -525,7 +525,6 @@ dismissable
 displaydoc
 distrkeeper
 distrtypes
-dlmalloc
 docgen
 dockerhub
 doctest

@@ -164,6 +164,7 @@ opt-level = 3
 
 [workspace.dependencies]
 aptos-move-ibc   = { path = "generated/rust/aptos-move-ibc", default-features = false }
+aptos-verifier   = { path = "lib/aptos-verifier", default-features = false }
 beacon-api       = { path = "lib/beacon-api", default-features = false }
 beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
 chain-utils      = { path = "lib/chain-utils", default-features = false }
@@ -258,12 +259,11 @@ chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "1.5", default-features = false }
-cosmwasm-std             = { version = "1.5", default-features = false }
+cosmwasm-std             = { version = "1.5.4", default-features = false }
 crossbeam-queue          = { version = "0.3.8", default-features = false }
 cw-storage-plus          = { version = "1.2", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }
 derive_more              = { version = "0.99.17", default-features = false }
-dlmalloc                 = { version = "=0.2.4", default-features = false }
 either                   = { version = "1.9.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }
