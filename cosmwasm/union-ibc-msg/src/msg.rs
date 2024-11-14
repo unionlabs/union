@@ -5,6 +5,7 @@ use ibc_solidity::cosmwasm::types::ibc::{
     MsgIntentPacketRecv, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
     MsgUpdateClient, Packet,
 };
+use unionlabs::bytes::Bytes;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct InitMsg {}
@@ -44,7 +45,7 @@ pub enum ExecuteMsg {
 pub struct MsgWriteAcknowledgement {
     pub channel_id: u32,
     pub packet: Packet,
-    pub acknowledgement: Vec<u8>,
+    pub acknowledgement: Bytes,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -52,5 +53,5 @@ pub struct MsgSendPacket {
     pub source_channel: u32,
     pub timeout_height: u64,
     pub timeout_timestamp: u64,
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }

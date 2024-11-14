@@ -8,6 +8,7 @@ members = [
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
   "cosmwasm/union-ibc",
+  "cosmwasm/union-ibc-msg",
 
   "devnet-compose",
 
@@ -75,7 +76,7 @@ members = [
   "light-clients/cometbls-light-client",
   "light-clients/cometbls-light-client/types",
 
-  "light-clients/ethereum-light-client",
+  # "light-clients/ethereum-light-client",
   "light-clients/ethereum-light-client/types",
 
   # "light-clients/evm-in-cosmos-light-client",
@@ -132,7 +133,7 @@ members = [
 
   "drip",
 
-  "light-clients/movement-light-client",
+  # "light-clients/movement-light-client",
   "light-clients/movement-light-client/types",
 
   "lib/aptos-verifier",
@@ -181,7 +182,7 @@ scroll-light-client-types = { path = "light-clients/scroll-light-client/types", 
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
-ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
+# ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
@@ -201,8 +202,9 @@ linea-light-client-types = { path = "light-clients/linea-light-client/types", de
 linea-verifier           = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
-ibc-solidity = { path = "lib/ibc-solidity", default-features = false }
-union-ibc    = { path = "cosmwasm/union-ibc", default-features = false }
+ibc-solidity  = { path = "lib/ibc-solidity", default-features = false }
+union-ibc     = { path = "cosmwasm/union-ibc", default-features = false }
+union-ibc-msg = { path = "cosmwasm/union-ibc-msg", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }

@@ -27,6 +27,7 @@ dlmalloc           = { workspace = true, features = ["global"] }
 ethabi             = { workspace = true }
 go-parse-duration  = { workspace = true }
 hex                = { workspace = true }
+ibc-solidity       = { workspace = true, features = ["serde"] }
 prost              = { workspace = true }
 protos             = { workspace = true }
 schemars           = { workspace = true }
@@ -40,6 +41,7 @@ token-factory-api  = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 ucs01-relay-api    = { workspace = true }
+union-ibc-msg      = { workspace = true }
 unionlabs          = { workspace = true }
 
 [dev-dependencies]

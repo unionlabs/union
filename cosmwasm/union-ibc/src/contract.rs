@@ -14,6 +14,12 @@ use ibc_solidity::cosmwasm::types::ibc::{
     MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv,
     MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient, Packet,
 };
+use union_ibc_msg::{
+    lightclient::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
+    module::{ExecuteMsg as ModuleMsg, UnionIbcMsg},
+    msg::{ExecuteMsg, InitMsg, MsgRegisterClient, MsgSendPacket, MsgWriteAcknowledgement},
+    query::QueryMsg,
+};
 use unionlabs::{
     ethereum::keccak256,
     hash::{hash_v2::HexPrefixed, H256},
@@ -21,10 +27,6 @@ use unionlabs::{
 };
 
 use crate::{
-    lightclient::query::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
-    module::msg::{ExecuteMsg as ModuleMsg, UnionIbcMsg},
-    msg::{ExecuteMsg, InitMsg, MsgRegisterClient, MsgSendPacket, MsgWriteAcknowledgement},
-    query::QueryMsg,
     state::{
         CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
         CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, CONTRACT_CHANNELS, NEXT_CHANNEL_ID,
@@ -348,7 +350,7 @@ pub fn execute(
             info.sender,
             channel_id,
             packet,
-            acknowledgement,
+            acknowledgement.into_vec(),
         ),
         ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel,
@@ -361,7 +363,7 @@ pub fn execute(
             source_channel,
             timeout_height,
             timeout_timestamp,
-            data,
+            data.into_vec(),
         ),
         ExecuteMsg::BatchSend(MsgBatchSend {
             sourceChannel,
@@ -506,7 +508,10 @@ fn timeout_packet(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket { packet, relayer }),
+            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket {
+                packet,
+                relayer: relayer.into(),
+            }),
             vec![],
         )?))
 }
@@ -565,7 +570,7 @@ fn acknowledge_packet(
             &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnAcknowledgementPacket {
                 packet,
                 acknowledgement: ack.to_vec().into(),
-                relayer: relayer.clone(),
+                relayer: relayer.clone().into(),
             }),
             vec![],
         )?);
@@ -919,7 +924,7 @@ fn channel_open_init(
                 connection_id,
                 channel_id,
                 version,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -993,7 +998,7 @@ fn channel_open_try(
                 channel_id,
                 version: channel.version,
                 counterparty_version,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -1061,7 +1066,7 @@ fn channel_open_ack(
                 channel_id,
                 counterparty_channel_id,
                 counterparty_version,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -1123,7 +1128,7 @@ fn channel_open_confirm(
             port_id,
             &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
                 channel_id,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -1158,7 +1163,7 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
             port_id,
             &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelCloseInit {
                 channel_id,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -1224,7 +1229,7 @@ fn channel_close_confirm(
             port_id,
             &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
                 channel_id,
-                relayer,
+                relayer: relayer.into(),
             }),
             vec![],
         )?))
@@ -1309,7 +1314,7 @@ fn process_receive(
                     port_id.clone(),
                     &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnIntentRecvPacket {
                         packet,
-                        market_maker: deps.api.addr_validate(&relayer)?,
+                        market_maker: deps.api.addr_validate(&relayer)?.into(),
                         market_maker_msg: relayer_msg.to_vec().into(),
                     }),
                     vec![],
@@ -1328,7 +1333,7 @@ fn process_receive(
                     port_id.clone(),
                     &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnRecvPacket {
                         packet,
-                        relayer: deps.api.addr_validate(&relayer)?,
+                        relayer: deps.api.addr_validate(&relayer)?.into(),
                         relayer_msg: relayer_msg.to_vec().into(),
                     }),
                     vec![],
@@ -1607,6 +1612,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             Ok(to_json_binary(&status)?)
         }
         QueryMsg::GetChannels { contract } => {
+            let contract = deps.api.addr_validate(&contract)?;
             let channels = CONTRACT_CHANNELS.load(deps.storage, contract)?;
             Ok(to_json_binary(&channels)?)
         }

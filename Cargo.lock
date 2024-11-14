@@ -4813,42 +4813,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum-light-client"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "base64 0.21.7",
- "beacon-api-types",
- "bytes",
- "cosmwasm-schema 1.5.3",
- "cosmwasm-std 1.5.2",
- "cw-storage-plus 1.2.0",
- "ethereum-light-client-types",
- "ethereum-sync-protocol",
- "ethers-contract-derive",
- "ethers-core",
- "evm-storage-verifier",
- "hex",
- "hex-literal",
- "ibc-solidity",
- "ics008-wasm-client",
- "lazy_static",
- "prost 0.12.6",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "union-ibc",
- "unionlabs",
-]
-
-[[package]]
 name = "ethereum-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -13194,6 +13158,7 @@ dependencies = [
  "ethabi",
  "go-parse-duration",
  "hex",
+ "ibc-solidity",
  "prost 0.12.6",
  "protos",
  "schemars",
@@ -13207,6 +13172,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "ucs01-relay-api",
+ "union-ibc-msg",
  "unionlabs",
 ]
 
@@ -13350,6 +13316,7 @@ dependencies = [
  "sha2 0.10.8",
  "sha3 0.10.8",
  "thiserror",
+ "union-ibc-msg",
  "unionlabs",
 ]
 
@@ -13378,6 +13345,15 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror",
  "union-ibc",
+ "unionlabs",
+]
+
+[[package]]
+name = "union-ibc-msg"
+version = "1.0.0"
+dependencies = [
+ "ibc-solidity",
+ "serde",
  "unionlabs",
 ]
 
