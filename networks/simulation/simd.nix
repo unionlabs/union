@@ -15,38 +15,33 @@ _: {
         simd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "simd";
-            # src = builtins.fetchGit {
-            #   url = "git@github.com:unionlabs/wasmd.git";
-            #   rev = "a2e7048bbdd43206c69fb9353c6aff219aecefda";
-            # };
             src = pkgs.fetchFromGitHub {
               owner = "cosmwasm";
               repo = "wasmd";
-              rev = "4806a6e0607dabfef4f6e967919d50f313260496";
-              sha256 = "sha256-WakFPkqpsTvA0Pr0Fuumxr2ZfSpaH9Q9xlCF9Q8hx14=";
+              rev = "de7db0dc672e7beb201e06e7eb12b2de356ac7c9";
+              sha256 = "sha256-X8Q93gqk+gBJwn4EIxFVeWqRpHcIxNAplfARejHwfbk=";
             };
-            vendorHash = "sha256-yPsi96gHG/ik7fssACHInjWNn52Ttda6cjvhE4aQbwM=";
+            vendorHash = "sha256-rhuYWhaTtrHCeO9l4uiP7L2OmWkCPtMHXBqS7TRzM4s=";
             subPackages = [ "./cmd/wasmd" ];
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "wasmd";
-            # CGO_ENABLED = 0;
           }
           // (
             let
-              # libwasmvm = self'.packages.libwasmvm-2_2_0;
-              libwasmvm = pkgs.stdenv.mkDerivation {
-                name = "libwasmvm";
-                src = pkgs.fetchurl {
-                  url = "https://github.com/CosmWasm/wasmvm/releases/download/v2.2.0-rc.2/libwasmvm_muslc.aarch64.a";
-                  hash = "sha256-evgOt+edgnieyg1VEqh9wg6WGCWQ/oiuX9AVPjHAl8k=";
-                };
-                dontUnpack = true;
-                buildPhase = ''
-                  mkdir -p $out/lib/
-                  cp $src $out/lib/libwasmvm.aarch64.a
-                '';
-              };
+              libwasmvm = self'.packages.libwasmvm-2_1_2;
+              # libwasmvm = pkgs.stdenv.mkDerivation {
+              #   name = "libwasmvm";
+              #   src = pkgs.fetchurl {
+              #     url = "https://github.com/CosmWasm/wasmvm/releases/download/v2.2.0-rc.2/libwasmvm_muslc.x86_64.a";
+              #     hash = "sha256-LEl7UkbHIXpwxEfFARfH+wmQnsI+bkFRpN4+XynbgTQ=";
+              #   };
+              #   dontUnpack = true;
+              #   buildPhase = ''
+              #     mkdir -p $out/lib/
+              #     cp $src $out/lib/libwasmvm.x86_64.a
+              #   '';
+              # };
             in
             if pkgs.stdenv.isLinux then
               {
@@ -57,7 +52,7 @@ _: {
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -L${dbg libwasmvm}/lib'"
+                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

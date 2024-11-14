@@ -418,17 +418,17 @@
     },
     "nixpkgs-go": {
       "locked": {
-        "lastModified": 1725592700,
-        "narHash": "sha256-XeAAZbtAQAL4WLI8v5+AWRY8Yp1fBp+CO8Yu6sA1xf0=",
+        "lastModified": 1731386116,
+        "narHash": "sha256-lKA770aUmjPHdTaJWnP3yQ9OI1TigenUqVC3wweqZuI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "0e0665d1e0a05ade073ff23e54b6e389c928af20",
+        "rev": "689fed12a013f56d4c4d3f612489634267d86529",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
+        "ref": "nixos-24.05",
         "repo": "nixpkgs",
-        "rev": "0e0665d1e0a05ade073ff23e54b6e389c928af20",
         "type": "github"
       }
     },
@@ -622,6 +622,7 @@
         "wasmvm": "wasmvm",
         "wasmvm-1_5_0": "wasmvm-1_5_0",
         "wasmvm-2_0_0": "wasmvm-2_0_0",
+        "wasmvm-2_1_2": "wasmvm-2_1_2",
         "wasmvm-2_1_3": "wasmvm-2_1_3",
         "wasmvm-2_2_0": "wasmvm-2_2_0"
       }
@@ -864,6 +865,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.0.0",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm-2_1_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723135029,
+        "narHash": "sha256-Y3BVRR2T5MLOtXdPK38W8MX8etIuqGcTjvxkaEOyvVM=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "d8f06b73e4d49f8246e1569f032962122427882b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.2",
         "repo": "wasmvm",
         "type": "github"
       }

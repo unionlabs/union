@@ -8,7 +8,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-go.url = "github:NixOS/nixpkgs/0e0665d1e0a05ade073ff23e54b6e389c928af20";
+    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-24.05";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Track a separate nixpkgs for JS/TS toolchains
@@ -89,6 +89,10 @@
     };
     wasmvm-2_0_0 = {
       url = "github:CosmWasm/wasmvm/v2.0.0";
+      flake = false;
+    };
+    wasmvm-2_1_2 = {
+      url = "github:CosmWasm/wasmvm/v2.1.2";
       flake = false;
     };
     wasmvm-2_1_3 = {
