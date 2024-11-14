@@ -1,7 +1,5 @@
 <script lang="ts">
 import { toIsoString } from "$lib/utilities/date"
-import { Duration } from "svelte-ux"
-import { DurationUnits } from "svelte-ux"
 
 export let value: Date | undefined
 </script>

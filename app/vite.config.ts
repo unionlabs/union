@@ -1,17 +1,14 @@
 import Icons from "unplugin-icons/vite"
 import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
-import { visualizer } from "rollup-plugin-visualizer"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
-import { partytownVite } from "@builder.io/partytown/utils"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
 
 export default defineConfig(config => {
   const {
     INSPECT,
     NODE_ENV,
-    VISUALIZE,
     ENVIRONMENT,
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
@@ -23,15 +20,10 @@ export default defineConfig(config => {
       globals: { process: true, Buffer: true, global: true }
     }),
     sveltekit(),
-    partytownVite({
-      debug: NODE_ENV === "development",
-      dest: `${import.meta.dirname}/static/~partytown`
-    }),
     Icons({ compiler: "svelte", autoInstall: true })
   ] satisfies Array<PluginOption>
 
   if (INSPECT === "true") plugins.push(Inspect())
-  if (VISUALIZE === "true") plugins.push(visualizer({ filename: `stats/${Date.now()}_stats.html` }))
 
   // we want logs to show up in preview deployments for debugging
   const dropLogStatements = config.mode === "build" && ENVIRONMENT === "production"
