@@ -53,16 +53,16 @@ pub async fn insert_batch_blocks(
         Vec<i32>,
         Vec<String>,
         Vec<_>,
-        Vec<i32>,
+        Vec<i64>,
         Vec<OffsetDateTime>,
     ) = blocks
         .into_iter()
-        .map(|b| (b.chain_id.db, b.hash, b.data, b.height as i32, b.time))
+        .map(|b| (b.chain_id.db, b.hash, b.data, b.height as i64, b.time))
         .multiunzip();
 
     sqlx::query!("
         INSERT INTO v1_cosmos.blocks (chain_id, hash, data, height, time)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
         ", &chain_ids, &hashes, &data, &height, &time)
     .execute(tx.as_mut()).await?;
 
@@ -77,7 +77,7 @@ pub async fn insert_batch_transactions(
     let (chain_ids, block_hashes, heights, hashes, data, indexes): (
         Vec<i32>,
         Vec<String>,
-        Vec<i32>,
+        Vec<i64>,
         Vec<String>,
         Vec<_>,
         Vec<i32>,
@@ -87,7 +87,7 @@ pub async fn insert_batch_transactions(
             (
                 t.chain_id.db,
                 t.block_hash,
-                t.block_height as i32,
+                t.block_height as i64,
                 t.hash,
                 t.data,
                 t.index,
@@ -97,7 +97,7 @@ pub async fn insert_batch_transactions(
 
     sqlx::query!("
         INSERT INTO v1_cosmos.transactions (chain_id, block_hash, height, hash, data, index) 
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
+        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
         ", 
         &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
     .execute(tx.as_mut()).await?;
@@ -122,7 +122,7 @@ pub async fn insert_batch_events(
     ): (
         Vec<i32>,
         Vec<String>,
-        Vec<i32>,
+        Vec<i64>,
         Vec<Option<String>>,
         Vec<i32>,
         Vec<Option<i32>>,
@@ -134,7 +134,7 @@ pub async fn insert_batch_events(
             (
                 e.chain_id.db,
                 e.block_hash,
-                e.block_height as i32,
+                e.block_height as i64,
                 e.transaction_hash.map(Into::into),
                 e.block_index,
                 e.transaction_index,
@@ -146,7 +146,7 @@ pub async fn insert_batch_events(
 
     sqlx::query!("
         INSERT INTO v1_cosmos.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
+        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
         ", 
         &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
     .execute(tx.as_mut()).await?;

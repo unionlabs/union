@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)\n                SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4Array",
+        "TextArray",
+        "JsonbArray",
+        "Int8Array",
+        "TimestamptzArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "18d963c5bc85d2aa9aa8287c4c201d6a3bc1e677dfc1ee8ec4192092d2d8cdcd"
+}

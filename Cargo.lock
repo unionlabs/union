@@ -13321,34 +13321,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "union-ibc-movement-lc"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-types",
- "aptos-verifier",
- "bcs 0.1.6",
- "cosmwasm-schema 1.5.3",
- "cosmwasm-std 1.5.2",
- "cw-storage-plus 1.2.0",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "hex",
- "hex-literal",
- "movement-light-client-types",
- "protos",
- "rlp",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "union-ibc",
- "unionlabs",
-]
-
-[[package]]
 name = "union-ibc-msg"
 version = "1.0.0"
 dependencies = [
