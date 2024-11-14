@@ -1,4 +1,4 @@
-use beacon_api_types::ChainSpec;
+use beacon_api_types::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
 use cosmwasm_std::{Deps, Env};
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
@@ -12,15 +12,165 @@ use ethereum_sync_protocol::{
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
+use union_ibc_light_client::{read_client_state, read_consensus_state};
+use union_ibc_msg::lightclient::Status;
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery, ensure, ethereum::ibc_commitment_key,
-    hash::H256, uint::U256,
+    cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, ensure,
+    ethereum::ibc_commitment_key, hash::H256, uint::U256,
 };
 
-use crate::{
-    custom_query::VerificationContext,
-    errors::{Error, InvalidCommitmentKey, StoredValueMismatch},
-};
+use crate::{custom_query::VerificationContext, errors::Error};
+
+pub struct EthereumLightClient;
+
+impl union_ibc_light_client::IbcClient for EthereumLightClient {
+    type Error = Error;
+
+    type CustomQuery = UnionCustomQuery;
+
+    type Header = Header;
+
+    type Misbehaviour = Misbehaviour;
+
+    type ClientState = ClientState;
+
+    type ConsensusState = ConsensusState;
+
+    type StorageProof = StorageProof;
+
+    type Encoding = Proto;
+
+    fn verify_membership(
+        _client_id: u32,
+        consensus_state: Self::ConsensusState,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        check_commitment_key(
+            H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+            storage_proof.key,
+        )?;
+
+        let value =
+            H256::try_from(&value).map_err(|_| Error::InvalidCommitmentValueLength(value))?;
+
+        let proof_value = H256::from(storage_proof.value.to_be_bytes());
+
+        if value != proof_value {
+            return Err(Error::StoredValueMismatch {
+                expected: value,
+                stored: proof_value,
+            }
+            .into());
+        }
+
+        verify_storage_proof(
+            consensus_state.storage_root,
+            storage_proof.key,
+            &rlp::encode(&storage_proof.value),
+            &storage_proof.proof,
+        )
+        .map_err(|e| Error::VerifyStorageProof(e).into())
+    }
+
+    fn verify_non_membership(
+        _client_id: u32,
+        consensus_state: Self::ConsensusState,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        check_commitment_key(
+            H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+            storage_proof.key,
+        )?;
+
+        if verify_storage_absence(
+            consensus_state.storage_root,
+            storage_proof.key,
+            &storage_proof.proof,
+        )
+        .map_err(Error::VerifyStorageAbsence)?
+        {
+            Ok(())
+        } else {
+            Err(Error::CounterpartyStorageNotNil.into())
+        }
+    }
+
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+        consensus_state.timestamp
+    }
+
+    fn get_latest_height(client_state: &Self::ClientState) -> u64 {
+        client_state.latest_slot
+    }
+
+    fn status(client_state: &Self::ClientState) -> Status {
+        if client_state.frozen_height.height() != 0 {
+            Status::Frozen
+        } else {
+            Status::Active
+        }
+    }
+
+    fn verify_creation(
+        client_state: &Self::ClientState,
+        consensus_state: &Self::ConsensusState,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        if client_state.latest_slot != consensus_state.slot {
+            return Err(Error::InvalidInitialState {
+                client_state_latest_slot: client_state.latest_slot,
+                consensus_state_slot: consensus_state.slot,
+            }
+            .into());
+        }
+        Ok(())
+    }
+
+    fn verify_header(
+        deps: Deps<Self::CustomQuery>,
+        env: Env,
+        _client_id: u32,
+        client_state: Self::ClientState,
+        consensus_state: Self::ConsensusState,
+        header: Self::Header,
+    ) -> Result<
+        (u64, Self::ClientState, Self::ConsensusState),
+        union_ibc_light_client::IbcClientError<Self>,
+    > {
+        if client_state.chain_spec == PresetBaseKind::Minimal {
+            verify_header::<Minimal>(client_state, consensus_state, deps, env, header)
+        } else {
+            verify_header::<Mainnet>(client_state, consensus_state, deps, env, header)
+        }
+        .map_err(Into::into)
+    }
+
+    fn misbehaviour(
+        deps: Deps<Self::CustomQuery>,
+        env: Env,
+        client_id: u32,
+        ibc_host: cosmwasm_std::Addr,
+        misbehaviour: Self::Misbehaviour,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        let consensus_state = read_consensus_state(
+            deps,
+            &ibc_host,
+            client_id,
+            misbehaviour.trusted_height.height(),
+        )?;
+
+        let client_state = read_client_state(deps, &ibc_host, client_id)?;
+
+        if client_state.chain_spec == PresetBaseKind::Minimal {
+            verify_misbehaviour::<Minimal>(client_state, consensus_state, deps, env, misbehaviour)
+        } else {
+            verify_misbehaviour::<Mainnet>(client_state, consensus_state, deps, env, misbehaviour)
+        }
+        .map_err(Into::into)
+    }
+}
 
 pub fn verify_membership(
     key: H256,
@@ -33,7 +183,7 @@ pub fn verify_membership(
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
     if value != proof_value {
-        return Err(StoredValueMismatch {
+        return Err(Error::StoredValueMismatch {
             expected: value,
             stored: proof_value,
         }
@@ -71,7 +221,7 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
-        Err(InvalidCommitmentKey {
+        Err(Error::InvalidCommitmentKey {
             expected: expected_commitment_key,
             found: key,
         }

@@ -3,10 +3,8 @@ use core::fmt::Debug;
 use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Env, StdError};
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use state::IBC_HOST;
-use union_ibc::{
-    lightclient::query::{QueryMsg, Status, VerifyClientMessageUpdate},
-    state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES},
-};
+use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
+use union_ibc_msg::lightclient::{QueryMsg, Status, VerifyClientMessageUpdate};
 use unionlabs::encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding};
 
 pub mod state;
@@ -44,8 +42,14 @@ pub enum IbcClientError<T: IbcClient> {
     InvalidClientMessage(Vec<u8>),
 }
 
+impl<T: IbcClient> From<IbcClientError<T>> for StdError {
+    fn from(value: IbcClientError<T>) -> Self {
+        Self::generic_err(value.to_string())
+    }
+}
+
 pub trait IbcClient: Sized {
-    type Error: core::error::Error + PartialEq + Clone + Into<IbcClientError<Self>>;
+    type Error: core::error::Error + PartialEq + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
     type Header: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
     type Misbehaviour: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
@@ -63,7 +67,7 @@ pub trait IbcClient: Sized {
     fn verify_membership(
         client_id: u32,
         consensus_state: Self::ConsensusState,
-        path: Vec<u8>,
+        key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>>;
@@ -71,7 +75,7 @@ pub trait IbcClient: Sized {
     fn verify_non_membership(
         client_id: u32,
         consensus_state: Self::ConsensusState,
-        path: Vec<u8>,
+        key: Vec<u8>,
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>>;
 

@@ -1,17 +1,15 @@
 use cosmwasm_std::StdError;
 use ethereum_light_client_types::{client_state, consensus_state, StorageProof};
+use union_ibc_light_client::IbcClientError;
 use unionlabs::{
     bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
-    ibc::core::{
-        channel::{self, channel::Channel},
-        client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
-    id::ConnectionId,
+    ibc::core::client::height::Height,
     uint::U256,
 };
+
+use crate::client::EthereumLightClient;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
@@ -28,9 +26,6 @@ pub enum Error {
     ClientStateDecode(#[source] DecodeErrorOf<Proto, client_state::ClientState>),
     #[error("unable to decode consensus state")]
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, consensus_state::ConsensusState>),
-
-    #[error(transparent)]
-    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
 
     #[error("custom query error")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
@@ -65,9 +60,6 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error(transparent)]
-    InvalidCommitmentKey(#[from] InvalidCommitmentKey),
-
     #[error("commitment key must be 32 bytes but we got: {0:?}")]
     InvalidCommitmentKeyLength(Vec<u8>),
 
@@ -82,10 +74,6 @@ pub enum Error {
 
     #[error("counterparty storage not nil")]
     CounterpartyStorageNotNil,
-
-    #[error(transparent)]
-    // TODO: use in other eth l2s
-    StoredValueMismatch(#[from] StoredValueMismatch),
 
     #[error("not enough signatures")]
     NotEnoughSignatures,
@@ -104,38 +92,31 @@ pub enum Error {
 
     #[error(transparent)]
     StdError(#[from] StdError),
-}
 
-#[derive(thiserror::Error, Debug, Clone, PartialEq)]
-pub enum CanonicalizeStoredValueError {
-    #[error("the proof path {0} is unknown")]
-    UnknownIbcPath(String),
-    #[error("connection end")]
-    ConnectionEnd(#[source] DecodeErrorOf<Proto, ConnectionEnd>),
-    #[error("channel")]
-    Channel(#[source] DecodeErrorOf<Proto, Channel>),
-    #[error("unsupported channel state `{0}`")]
-    UnsupportedChannelState(channel::state::State),
-    #[error("invalid connection hops, expected one but found {0:?}")]
-    InvalidConnectionHops(Vec<ConnectionId>),
-}
+    #[error("expected value ({expected}) and stored value ({stored}) don't match")]
+    StoredValueMismatch { expected: H256, stored: H256 },
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-#[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
-pub struct InvalidCommitmentKey {
-    pub expected: U256,
-    pub found: U256,
-}
+    #[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
+    InvalidCommitmentKey { expected: U256, found: U256 },
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("expected value ({expected}) and stored value ({stored}) don't match")]
-pub struct StoredValueMismatch {
-    pub expected: H256,
-    pub stored: H256,
+    #[error(
+        "client state's latest slot ({client_state_latest_slot}) \
+        expected to be equal to consensus state's slot ({consensus_state_slot})"
+    )]
+    InvalidInitialState {
+        client_state_latest_slot: u64,
+        consensus_state_slot: u64,
+    },
 }
 
 impl From<Error> for StdError {
     fn from(value: Error) -> Self {
         StdError::generic_err(value.to_string())
+    }
+}
+
+impl From<Error> for IbcClientError<EthereumLightClient> {
+    fn from(value: Error) -> Self {
+        Self::ClientSpecific(value)
     }
 }

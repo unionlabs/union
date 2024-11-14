@@ -4845,6 +4845,7 @@ dependencies = [
  "thiserror",
  "tiny-keccak",
  "union-ibc",
+ "union-ibc-light-client",
  "union-ibc-msg",
  "unionlabs",
 ]
@@ -13368,6 +13369,7 @@ dependencies = [
  "serde-utils",
  "thiserror",
  "union-ibc",
+ "union-ibc-msg",
  "unionlabs",
 ]
 

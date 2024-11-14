@@ -203,9 +203,10 @@ linea-light-client-types = { path = "light-clients/linea-light-client/types", de
 linea-verifier           = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
-ibc-solidity  = { path = "lib/ibc-solidity", default-features = false }
-union-ibc     = { path = "cosmwasm/union-ibc", default-features = false }
-union-ibc-msg = { path = "cosmwasm/union-ibc-msg", default-features = false }
+ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
+union-ibc              = { path = "cosmwasm/union-ibc", default-features = false }
+union-ibc-light-client = { path = "cosmwasm/union-ibc-light-client", default-features = false }
+union-ibc-msg          = { path = "cosmwasm/union-ibc-msg", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
