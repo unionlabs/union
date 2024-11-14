@@ -88,11 +88,15 @@ pub mod events {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     _msg: InitMsg,
 ) -> Result<Response, ContractError> {
+    NEXT_CHANNEL_ID.save(deps.storage, &0)?;
+    NEXT_CONNECTION_ID.save(deps.storage, &0)?;
+    NEXT_CLIENT_ID.save(deps.storage, &0)?;
+
     Ok(Response::default())
 }
 
