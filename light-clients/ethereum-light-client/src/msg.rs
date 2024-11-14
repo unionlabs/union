@@ -6,4 +6,4 @@ pub struct InstantiateMsg {
     pub ibc_host: Addr,
 }
 
-pub type QueryMsg = union_ibc::lightclient::query::QueryMsg;
+pub type QueryMsg = union_ibc_msg::lightclient::QueryMsg;

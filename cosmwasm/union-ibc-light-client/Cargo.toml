@@ -1,0 +1,20 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "union-ibc-light-client"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+cosmwasm-std.workspace             = true
+cw-storage-plus.workspace          = true
+frame-support-procedural.workspace = true
+macros.workspace                   = true
+serde-utils.workspace              = true
+thiserror.workspace                = true
+union-ibc                          = { workspace = true, features = ["library"] }
+union-ibc-msg                      = { workspace = true }
+unionlabs.workspace                = true
+
+[lints]
+workspace = true

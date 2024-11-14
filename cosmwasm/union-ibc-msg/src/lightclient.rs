@@ -15,6 +15,11 @@ pub struct VerifyClientMessageUpdate {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+pub struct MisbehaviourResponse {
+    pub client_state: Bytes,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum QueryMsg {
     GetTimestamp {
         client_id: u32,
