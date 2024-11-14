@@ -4,7 +4,9 @@ use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Env, StdError};
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use state::IBC_HOST;
 use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
-use union_ibc_msg::lightclient::{QueryMsg, Status, VerifyClientMessageUpdate};
+use union_ibc_msg::lightclient::{
+    MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate,
+};
 use unionlabs::encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding};
 
 pub mod state;
@@ -111,7 +113,7 @@ pub trait IbcClient: Sized {
         client_id: u32,
         ibc_host: Addr,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), IbcClientError<Self>>;
+    ) -> Result<Self::ClientState, IbcClientError<Self>>;
 }
 
 pub fn query<T: IbcClient>(
@@ -144,7 +146,6 @@ pub fn query<T: IbcClient>(
             consensus_state,
         } => {
             let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state).unwrap();
-            // if we are able to parse it then it's fine
             let consensus_state =
                 T::ConsensusState::decode_as::<T::Encoding>(&consensus_state).unwrap();
             T::verify_creation(&client_state, &consensus_state)?;
@@ -215,9 +216,12 @@ pub fn query<T: IbcClient>(
                 .map_err(DecodeError::Misbehaviour)?;
 
             let ibc_host = IBC_HOST.load(deps.storage)?;
-            T::misbehaviour(deps, env, client_id, ibc_host, misbehaviour)?;
+            let client_state = T::misbehaviour(deps, env, client_id, ibc_host, misbehaviour)?;
 
-            to_json_binary(&()).map_err(Into::into)
+            to_json_binary(&MisbehaviourResponse {
+                client_state: client_state.encode_as::<T::Encoding>().into(),
+            })
+            .map_err(Into::into)
         }
     }
 }

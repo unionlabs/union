@@ -16,7 +16,7 @@ use union_ibc_light_client::{read_client_state, read_consensus_state};
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, ensure,
-    ethereum::ibc_commitment_key, hash::H256, uint::U256,
+    ethereum::ibc_commitment_key, hash::H256, ibc::core::client::height::Height, uint::U256,
 };
 
 use crate::{custom_query::VerificationContext, errors::Error};
@@ -153,7 +153,7 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         client_id: u32,
         ibc_host: cosmwasm_std::Addr,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
         let consensus_state = read_consensus_state(
             deps,
             &ibc_host,
@@ -161,14 +161,17 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
             misbehaviour.trusted_height.height(),
         )?;
 
-        let client_state = read_client_state(deps, &ibc_host, client_id)?;
+        let mut client_state = read_client_state(deps, &ibc_host, client_id)?;
 
         if client_state.chain_spec == PresetBaseKind::Minimal {
-            verify_misbehaviour::<Minimal>(client_state, consensus_state, deps, env, misbehaviour)
+            verify_misbehaviour::<Minimal>(&client_state, consensus_state, deps, env, misbehaviour)?
         } else {
-            verify_misbehaviour::<Mainnet>(client_state, consensus_state, deps, env, misbehaviour)
-        }
-        .map_err(Into::into)
+            verify_misbehaviour::<Mainnet>(&client_state, consensus_state, deps, env, misbehaviour)?
+        };
+
+        client_state.frozen_height = Height::new(1);
+
+        Ok(client_state)
     }
 }
 
@@ -323,7 +326,7 @@ fn update_state<C: ChainSpec>(
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
-    client_state: ClientState,
+    client_state: &ClientState,
     consensus_state: ConsensusState,
     deps: Deps<UnionCustomQuery>,
     env: Env,
