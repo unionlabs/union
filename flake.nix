@@ -8,7 +8,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs-go.url = "github:NixOS/nixpkgs/0e0665d1e0a05ade073ff23e54b6e389c928af20";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Track a separate nixpkgs for JS/TS toolchains
@@ -80,19 +80,23 @@
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
     get-flake.url = "github:ursi/get-flake";
     wasmvm = {
-      url = "github:CosmWasm/wasmvm/v1.5.2";
+      url = "github:CosmWasm/wasmvm/v1.5.4";
       flake = false;
     };
     wasmvm-1_5_0 = {
       url = "github:CosmWasm/wasmvm/v1.5.0";
       flake = false;
     };
-    wasmvm-2_0_1 = {
-      url = "github:CosmWasm/wasmvm/v2.0.1";
+    wasmvm-2_0_0 = {
+      url = "github:CosmWasm/wasmvm/v2.0.0";
       flake = false;
     };
     wasmvm-2_1_3 = {
       url = "github:CosmWasm/wasmvm/v2.1.3";
+      flake = false;
+    };
+    wasmvm-2_2_0 = {
+      url = "github:CosmWasm/wasmvm/v2.2.0-rc.2";
       flake = false;
     };
     stargaze = {
