@@ -12,14 +12,14 @@ _: {
     }:
     {
       packages = {
-        simd = goPkgs.pkgsStatic.buildGo123Module (
+        simd = goPkgs.pkgsStatic.buildGo121Module (
           {
             name = "simd";
             src = pkgs.fetchFromGitHub {
-              owner = "cosmwasm";
+              owner = "unionlabs";
               repo = "wasmd";
-              rev = "de7db0dc672e7beb201e06e7eb12b2de356ac7c9";
-              sha256 = "sha256-X8Q93gqk+gBJwn4EIxFVeWqRpHcIxNAplfARejHwfbk=";
+              rev = "5d478efa64b8f7557fd9e634ca25ad61708fc2b9";
+              sha256 = "sha256-R5HPy2obHrLV0g8/1aAGAmLbWq6l5bgra6yX7l0ac4A=";
             };
             vendorHash = "sha256-rhuYWhaTtrHCeO9l4uiP7L2OmWkCPtMHXBqS7TRzM4s=";
             subPackages = [ "./cmd/wasmd" ];
@@ -50,9 +50,18 @@ _: {
                   goPkgs.musl
                   libwasmvm
                 ];
+                tags = [
+                  "muslc"
+                  "netgo"
+                ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
+                  "-X github.com/cosmos/cosmos-sdk/version.Name=wasmd"
+                  "-X github.com/cosmos/cosmos-sdk/version.AppName=wasmd"
+            		  "-X github.com/CosmWasm/wasmd/app.Bech32Prefix=wasm"
+            		  "-X github.com/cosmos/cosmos-sdk/version.Version=v0.53.0"
+            		  "-X github.com/cosmos/cosmos-sdk/version.BuildTags=muslc,netgo"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

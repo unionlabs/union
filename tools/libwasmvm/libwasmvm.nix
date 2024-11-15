@@ -31,6 +31,10 @@
         channel = "nightly-2024-01-27";
         targets = [ CARGO_BUILD_TARGET ];
       };
+      rustToolchain-1-77 = rust.mkNightly {
+        channel = "1.77.0";
+        targets = [ CARGO_BUILD_TARGET ];
+      };
       rustToolchain-1-82 = rust.mkNightly {
         channel = "1.82.0";
         targets = [ CARGO_BUILD_TARGET ];
@@ -118,12 +122,53 @@
             cargoArtifacts = craneLib.buildDepsOnly attrs;
           }
         );
+      mkLibwasmvm =
+        wasmvm: rusttoolchain:
+        let
+          attrs =
+            {
+              inherit CARGO_BUILD_TARGET;
+              pname = "libwasmvm";
+              version = wasmvm.rev;
+              buildInputs = [ rusttoolchain ];
+              src = "${wasmvm}/libwasmvm";
+              installCargoArtifactsMode = "use-zstd";
+            }
+            // (
+              if pkgs.stdenv.isLinux then
+                {
+                  cargoExtraArgs = "--locked --offline --example=wasmvmstatic";
+                  installPhaseCommand = ''
+                    mkdir -p $out/lib
+                    mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm_muslc.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
+                  '';
+                }
+              else if pkgs.stdenv.isDarwin then
+                {
+                  # non-static dylib build on macOS
+                  cargoExtraArgs = "--locked --offline";
+                  installPhaseCommand = ''
+                    mkdir -p $out/lib
+                    mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
+                  '';
+                }
+              else
+                throwBadSystem
+            );
+          craneLib = crane.lib.overrideToolchain rusttoolchain;
+        in
+        craneLib.buildPackage (
+          attrs
+          // {
+            cargoArtifacts = craneLib.buildDepsOnly attrs;
+          }
+        );
     in
     {
       packages.libwasmvm = mkLibwasmvm_v1 inputs.wasmvm;
       packages.libwasmvm-1_5_0 = mkLibwasmvm_v1 inputs.wasmvm-1_5_0;
       packages.libwasmvm-2_0_0 = mkLibwasmvm_v1 inputs.wasmvm-2_0_0;
-      packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 inputs.wasmvm-2_1_2;
+      packages.libwasmvm-2_1_2 = mkLibwasmvm inputs.wasmvm-2_1_2 rustToolchain-1-77;
       packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 inputs.wasmvm-2_1_3;
       packages.libwasmvm-2_2_0 = mkLibwasmvm_v2 inputs.wasmvm-2_2_0;
     };
