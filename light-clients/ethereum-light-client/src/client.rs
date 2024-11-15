@@ -1,5 +1,4 @@
 use beacon_api_types::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
-use cosmwasm_std::{Deps, Env};
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
 };
@@ -12,7 +11,7 @@ use ethereum_sync_protocol::{
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
-use union_ibc_light_client::{read_client_state, read_consensus_state};
+use union_ibc_light_client::IbcClientCtx;
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, ensure,
@@ -41,12 +40,13 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     type Encoding = Proto;
 
     fn verify_membership(
-        _client_id: u32,
-        consensus_state: Self::ConsensusState,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
         check_commitment_key(
             H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
             storage_proof.key,
@@ -75,11 +75,12 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     }
 
     fn verify_non_membership(
-        _client_id: u32,
-        consensus_state: Self::ConsensusState,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
         check_commitment_key(
             H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
             storage_proof.key,
@@ -129,44 +130,35 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     }
 
     fn verify_header(
-        deps: Deps<Self::CustomQuery>,
-        env: Env,
-        _client_id: u32,
-        client_state: Self::ClientState,
-        consensus_state: Self::ConsensusState,
-        header: Self::Header,
+        ctx: IbcClientCtx<Self>,
+        header: Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
         union_ibc_light_client::IbcClientError<Self>,
     > {
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
         if client_state.chain_spec == PresetBaseKind::Minimal {
-            verify_header::<Minimal>(client_state, consensus_state, deps, env, header)
+            verify_header::<Minimal>(&ctx, client_state, consensus_state, header)
         } else {
-            verify_header::<Mainnet>(client_state, consensus_state, deps, env, header)
+            verify_header::<Mainnet>(&ctx, client_state, consensus_state, header)
         }
         .map_err(Into::into)
     }
 
     fn misbehaviour(
-        deps: Deps<Self::CustomQuery>,
-        env: Env,
-        client_id: u32,
-        ibc_host: cosmwasm_std::Addr,
+        ctx: IbcClientCtx<Self>,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
-        let consensus_state = read_consensus_state(
-            deps,
-            &ibc_host,
-            client_id,
-            misbehaviour.trusted_height.height(),
-        )?;
+        let consensus_state =
+            ctx.read_self_consensus_state(misbehaviour.trusted_height.height())?;
 
-        let mut client_state = read_client_state(deps, &ibc_host, client_id)?;
+        let mut client_state = ctx.read_self_client_state()?;
 
         if client_state.chain_spec == PresetBaseKind::Minimal {
-            verify_misbehaviour::<Minimal>(&client_state, consensus_state, deps, env, misbehaviour)?
+            verify_misbehaviour::<Minimal>(&ctx, &client_state, consensus_state, misbehaviour)?
         } else {
-            verify_misbehaviour::<Mainnet>(&client_state, consensus_state, deps, env, misbehaviour)?
+            verify_misbehaviour::<Mainnet>(&ctx, &client_state, consensus_state, misbehaviour)?
         };
 
         client_state.frozen_height = Height::new(1);
@@ -235,16 +227,15 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
 }
 
 pub fn verify_header<C: ChainSpec>(
+    ctx: &IbcClientCtx<EthereumLightClient>,
     client_state: ClientState,
     consensus_state: ConsensusState,
-    deps: Deps<UnionCustomQuery>,
-    env: Env,
     header: Header,
 ) -> Result<(u64, ClientState, ConsensusState), Error> {
     // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
     // at the current timestamp.
     let current_slot =
-        compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
+        compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
     let (current_sync_committee, next_sync_committee) =
@@ -258,7 +249,7 @@ pub fn verify_header<C: ChainSpec>(
         consensus_state.slot,
         client_state.genesis_validators_root,
         &client_state.fork_parameters,
-        VerificationContext { deps },
+        VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
 
@@ -326,10 +317,9 @@ fn update_state<C: ChainSpec>(
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
+    ctx: &IbcClientCtx<EthereumLightClient>,
     client_state: &ClientState,
     consensus_state: ConsensusState,
-    deps: Deps<UnionCustomQuery>,
-    env: Env,
     misbehaviour: Misbehaviour,
 ) -> Result<(), Error> {
     // There is no point to check for misbehaviour when the headers are not for the same height
@@ -354,7 +344,7 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     )?;
 
     let current_slot =
-        compute_slot_at_timestamp::<C>(client_state.genesis_time, env.block.time.seconds())
+        compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
     let (current_sync_committee, next_sync_committee) =
@@ -369,7 +359,7 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         consensus_state.slot,
         client_state.genesis_validators_root,
         &client_state.fork_parameters,
-        VerificationContext { deps },
+        VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
 
@@ -384,7 +374,7 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         consensus_state.slot,
         client_state.genesis_validators_root,
         &client_state.fork_parameters,
-        VerificationContext { deps },
+        VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
 

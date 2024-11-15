@@ -1,35 +1,3 @@
-// use cosmwasm_std::{Deps, DepsMut, Env};
-// use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
-// use ics008_wasm_client::{
-//     storage_utils::{
-//         read_client_state, read_consensus_state, read_subject_client_state,
-//         read_substitute_client_state, read_substitute_consensus_state, save_client_state,
-//         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
-//         update_client_state,
-//     },
-//     IbcClient, IbcClientError, Status, StorageState,
-// };
-// use scroll_codec::batch_header::BatchHeaderV3;
-// use scroll_light_client_types::{ClientState, ConsensusState, Header};
-// use unionlabs::{
-//     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-//     encoding::{DecodeAs, Proto},
-//     ensure,
-//     ethereum::keccak256,
-//     hash::H256,
-//     ibc::{
-//         core::{
-//             client::{genesis_metadata::GenesisMetadata, height::Height},
-//             commitment::merkle_path::MerklePath,
-//         },
-//         lightclients::{
-//             ethereum::{self, storage_proof::StorageProof},
-//             wasm,
-//         },
-//     },
-//     uint::U256,
-// };
-
 use cosmwasm_std::Deps;
 use ethereum_light_client::client::{check_commitment_key, EthereumLightClient};
 use ethereum_light_client_types::StorageProof;
