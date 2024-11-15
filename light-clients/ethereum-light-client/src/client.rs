@@ -47,31 +47,12 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        check_commitment_key(
-            H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
-            storage_proof.key,
-        )?;
-
-        let value =
-            H256::try_from(&value).map_err(|_| Error::InvalidCommitmentValueLength(value))?;
-
-        let proof_value = H256::from(storage_proof.value.to_be_bytes());
-
-        if value != proof_value {
-            return Err(Error::StoredValueMismatch {
-                expected: value,
-                stored: proof_value,
-            }
-            .into());
-        }
-
-        verify_storage_proof(
+        Ok(verify_membership(
+            key,
             consensus_state.storage_root,
-            storage_proof.key,
-            &rlp::encode(&storage_proof.value),
-            &storage_proof.proof,
-        )
-        .map_err(|e| Error::VerifyStorageProof(e).into())
+            storage_proof,
+            value,
+        )?)
     }
 
     fn verify_non_membership(
@@ -81,22 +62,11 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        check_commitment_key(
-            H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
-            storage_proof.key,
-        )?;
-
-        if verify_storage_absence(
+        Ok(verify_non_membership(
+            key,
             consensus_state.storage_root,
-            storage_proof.key,
-            &storage_proof.proof,
-        )
-        .map_err(Error::VerifyStorageAbsence)?
-        {
-            Ok(())
-        } else {
-            Err(Error::CounterpartyStorageNotNil.into())
-        }
+            storage_proof,
+        )?)
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
@@ -168,12 +138,17 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
 }
 
 pub fn verify_membership(
-    key: H256,
+    key: Vec<u8>,
     storage_root: H256,
     storage_proof: StorageProof,
-    value: H256,
+    value: Vec<u8>,
 ) -> Result<(), Error> {
-    check_commitment_key(key, storage_proof.key)?;
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
+
+    let value = H256::try_from(&value).map_err(|_| Error::InvalidCommitmentValueLength(value))?;
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
@@ -191,16 +166,19 @@ pub fn verify_membership(
         &rlp::encode(&storage_proof.value),
         &storage_proof.proof,
     )
-    .map_err(Error::VerifyStorageProof)
+    .map_err(|e| Error::VerifyStorageProof(e).into())
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 pub fn verify_non_membership(
-    key: H256,
+    key: Vec<u8>,
     storage_root: H256,
     storage_proof: StorageProof,
 ) -> Result<(), Error> {
-    check_commitment_key(key, storage_proof.key)?;
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
 
     if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)
         .map_err(Error::VerifyStorageAbsence)?

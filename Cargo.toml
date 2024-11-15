@@ -68,7 +68,7 @@ members = [
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
-  # "light-clients/arbitrum-light-client",
+  "light-clients/arbitrum-light-client",
   "light-clients/arbitrum-light-client/types",
 
   # "light-clients/berachain-light-client",

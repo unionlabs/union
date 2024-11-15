@@ -22,8 +22,8 @@ pub enum Error {
 }
 
 pub fn verify_header(
-    client_state: ClientState,
-    header: Header,
+    client_state: &ClientState,
+    header: &Header,
     l1_state_root: H256,
 ) -> Result<(), Error> {
     // Verify that the L1 account root is part of the L1 root
