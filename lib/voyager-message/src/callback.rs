@@ -97,6 +97,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                                         meta,
                                         ClientUpdate {
                                             client_id: counterparty_client_id.clone(),
+                                            ibc_version_id: ibc_version_id.clone(),
                                             client_message: encoded_header,
                                         },
                                     )

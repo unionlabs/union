@@ -131,7 +131,7 @@ members = [
   "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
-  "voyager/plugins/transaction-batch",
+  "voyager/plugins/transaction-batch-v1",
 
   "drip",
 

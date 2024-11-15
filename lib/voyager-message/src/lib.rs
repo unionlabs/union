@@ -139,6 +139,10 @@ impl RawClientId {
     pub fn new(t: impl Serialize) -> Self {
         Self(serde_json::to_value(t).unwrap())
     }
+
+    pub fn decode_spec<V: IbcSpec>(self) -> Result<V::ClientId, serde_json::Error> {
+        serde_json::from_value(self.0)
+    }
 }
 
 #[macro_export]

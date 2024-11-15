@@ -17,13 +17,26 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::id::ClientId;
+use unionlabs::{
+    bytes::Bytes,
+    ibc::core::{
+        client::height::Height,
+        commitment::merkle_prefix::MerklePrefix,
+        connection::{
+            self, connection_end::ConnectionEnd, msg_connection_open_try::MsgConnectionOpenTry,
+        },
+    },
+    ics24::{ConnectionPath, Path},
+    id::{ClientId, ConnectionId},
+    DELAY_PERIOD,
+};
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::{ChainId, QueryHeight},
-    data::{ChainEvent, Data},
-    ibc_v1::{FullIbcEvent, IbcV1},
+    data::{ChainEvent, Data, IbcDatagram},
+    ibc_v1::{FullIbcEvent, IbcMessage, IbcV1},
+    into_value,
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient,
@@ -32,7 +45,7 @@ use voyager_message::{
 use voyager_vm::{call, data, now, pass::PassResult, promise, seq, BoxDynError, Op};
 
 use crate::{
-    call::{MakeTransactionBatchesWithUpdate, ModuleCall},
+    call::{MakeMsgConnectionOpenTry, MakeTransactionBatchesWithUpdate, ModuleCall},
     callback::{make_msgs, MakeIbcMessagesFromUpdate, ModuleCallback},
     data::{BatchableEvent, EventBatch, ModuleData},
 };
@@ -131,7 +144,7 @@ if ."@type" == "data" then
 
     # pull all ibc events that cause an action on this chain (i.e. where we are the destination)
     # the counterparty of the event origin is the destination
-    if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" then
+    if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_version_id == "{ibc_version_id}" then
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event_data |
 
@@ -171,7 +184,8 @@ end
 "#,
                 chain_id = module.chain_id,
                 plugin_name = module.plugin_name(),
-                clients_filter = module.client_configs.jaq_filter()
+                clients_filter = module.client_configs.jaq_filter(),
+                ibc_version_id = IbcV1::ID,
             ),
         }
     }
@@ -212,13 +226,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all)]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+        let voyager_client = e.try_get::<VoyagerClient>()?;
+
         match msg {
             ModuleCall::MakeTransactionBatchesWithUpdate(MakeTransactionBatchesWithUpdate {
                 client_id,
                 batches,
             }) => {
-                let client_meta = e
-                    .try_get::<VoyagerClient>()?
+                let client_meta = voyager_client
                     .client_meta(
                         self.chain_id.clone(),
                         IbcV1::ID,
@@ -234,8 +249,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 //     .await
                 //     .map_err(json_rpc_error_to_error_object)?;
 
-                let latest_height = e
-                    .try_get::<VoyagerClient>()?
+                let latest_height = voyager_client
                     .query_latest_height(client_meta.chain_id.clone(), false)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -311,6 +325,292 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     ))
                 }
             }
+
+            ModuleCall::MakeMsgConnectionOpenTry(MakeMsgConnectionOpenTry {
+                origin_chain_id,
+                origin_chain_proof_height,
+                target_chain_id,
+                connection_open_init_event,
+            }) => {
+                let ConnectionHandshakeStateAndProof {
+                    connection_state,
+                    encoded_connection_state_proof,
+                } = mk_connection_handshake_state_and_proofs(
+                    voyager_client,
+                    origin_chain_id,
+                    target_chain_id,
+                    connection_open_init_event.client_id.clone(),
+                    connection_open_init_event.counterparty_client_id.clone(),
+                    connection_open_init_event.connection_id.clone(),
+                    origin_chain_proof_height,
+                )
+                .await?;
+
+                Ok(data(IbcDatagram::new::<IbcV1>(IbcMessage::from(
+                    MsgConnectionOpenTry {
+                        client_id: connection_open_init_event.counterparty_client_id,
+                        counterparty: connection::counterparty::Counterparty {
+                            client_id: connection_open_init_event.client_id,
+                            connection_id: Some(connection_open_init_event.connection_id),
+                            prefix: MerklePrefix {
+                                // TODO: Make configurable
+                                key_prefix: b"ibc".to_vec(),
+                            },
+                        },
+                        // TODO: Make configurable
+                        delay_period: DELAY_PERIOD,
+                        counterparty_versions: connection_state.versions,
+                        proof_height: origin_chain_proof_height,
+                        proof_init: encoded_connection_state_proof,
+                    },
+                ))))
+            }
+
+            // ModuleCall::MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck {
+            //     origin_chain_id,
+            //     origin_chain_proof_height,
+            //     target_chain_id,
+            //     connection_open_try_event,
+            // }) => {
+            //     let ConnectionHandshakeStateAndProofs {
+            //         connection_state,
+            //         encoded_connection_state_proof,
+            //         consensus_height,
+            //     } = mk_connection_handshake_state_and_proofs(
+            //         &voyager_client,
+            //         origin_chain_id,
+            //         target_chain_id,
+            //         connection_open_try_event.client_id,
+            //         connection_open_try_event.counterparty_client_id,
+            //         connection_open_try_event.connection_id.clone(),
+            //         origin_chain_proof_height,
+            //     )
+            //     .await?;
+
+            //     Ok(voyager_vm::data(IbcMessage::from(MsgConnectionOpenAck {
+            //         connection_id: connection_open_try_event.counterparty_connection_id,
+            //         counterparty_connection_id: connection_open_try_event.connection_id,
+            //         client_state: encoded_client_state,
+            //         version: connection_state.versions[0].clone(),
+            //         proof_height: origin_chain_proof_height,
+            //         proof_try: encoded_connection_state_proof,
+            //         proof_client: encoded_client_state_proof,
+            //         proof_consensus: encoded_consensus_state_proof,
+            //         consensus_height,
+            //     })))
+            // }
+
+            // ModuleCall::MakeMsgConnectionOpenConfirm(MakeMsgConnectionOpenConfirm {
+            //     origin_chain_id,
+            //     origin_chain_proof_height,
+            //     target_chain_id,
+            //     connection_open_ack_event,
+            // }) => {
+            //     // info of the client on the target chain that will verify the storage
+            //     // proofs
+            //     let target_client_info = &voyager_client
+            //         .rpc_server
+            //         // counterparty_client_id from open_try is the client on the target chain
+            //         .client_info(
+            //             &target_chain_id,
+            //             connection_open_ack_event.counterparty_client_id.clone(),
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     // proof of connection_state, encoded for the client on the target chain
+            //     // this is encoded via the client module for the client on the origin chain
+            //     // (the chain the event was emitted on)
+            //     let connection_proof = &voyager_client
+            //         .rpc_server
+            //         .encode_proof(
+            //             &target_client_info.client_type,
+            //             &target_client_info.ibc_interface,
+            //             &voyager_client
+            //                 .rpc_server
+            //                 .query_ibc_proof(
+            //                     &origin_chain_id,
+            //                     origin_chain_proof_height,
+            //                     ConnectionPath {
+            //                         connection_id: connection_open_ack_event.connection_id.clone(),
+            //                     }
+            //                     .into(),
+            //                 )
+            //                 .await
+            //                 .map_err(error_object_to_queue_error)?
+            //                 .proof,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     Ok(voyager_vm::data(IbcMessage::from(
+            //         MsgConnectionOpenConfirm {
+            //             connection_id: connection_open_ack_event.counterparty_connection_id,
+            //             proof_height: origin_chain_proof_height,
+            //             proof_ack: connection_proof,
+            //         },
+            //     )))
+            // }
+
+            // ModuleCall::MakeMsgChannelOpenTry(MakeMsgChannelOpenTry {
+            //     origin_chain_id,
+            //     origin_chain_proof_height,
+            //     target_chain_id,
+            //     channel_open_init_event: event,
+            // }) => {
+            //     let origin_channel = voyager_client
+            //         .query_channel(
+            //             origin_chain_id.clone(),
+            //             QueryHeight::Specific(origin_chain_proof_height),
+            //             event.port_id.clone(),
+            //             event.channel_id.clone(),
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let proof_init = voyager_client
+            //         .query_ibc_proof(
+            //             &origin_chain_id,
+            //             origin_chain_proof_height,
+            //             ChannelEndPath {
+            //                 port_id: event.port_id.clone(),
+            //                 channel_id: event.channel_id.clone(),
+            //             }
+            //             .into(),
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let client_info = voyager_client
+            //         .client_info(&target_chain_id, event.connection.counterparty.client_id)
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let encoded_proof_init = voyager_client
+            //         .encode_proof(
+            //             &client_info.client_type,
+            //             &client_info.ibc_interface,
+            //             proof_init.proof,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     Ok(data(IbcMessage::from(MsgChannelOpenTry {
+            //         port_id: event.counterparty_port_id,
+            //         channel: Channel {
+            //             state: channel::state::State::Tryopen,
+            //             ordering: origin_channel
+            //                 .state
+            //                 .ok_or(QueueError::Fatal("channel must exist".into()))?
+            //                 .ordering,
+            //             counterparty: channel::counterparty::Counterparty {
+            //                 port_id: event.port_id,
+            //                 channel_id: Some(event.channel_id),
+            //             },
+            //             connection_hops: vec![event.connection.counterparty.connection_id.unwrap()],
+            //             version: event.version.clone(),
+            //             upgrade_sequence: 0,
+            //         },
+            //         counterparty_version: event.version,
+            //         proof_init: encoded_proof_init,
+            //         proof_height: origin_chain_proof_height,
+            //     })))
+            // }
+
+            // ModuleCall::MakeMsgChannelOpenAck(MakeMsgChannelOpenAck {
+            //     origin_chain_id,
+            //     origin_chain_proof_height,
+            //     target_chain_id,
+            //     channel_open_try_event,
+            // }) => {
+            //     let origin_channel_path = ChannelEndPath {
+            //         port_id: channel_open_try_event.port_id.clone(),
+            //         channel_id: channel_open_try_event.channel_id.clone(),
+            //     };
+
+            //     let proof_try = voyager_client
+            //         .query_ibc_proof(
+            //             &origin_chain_id,
+            //             origin_chain_proof_height,
+            //             origin_channel_path.into(),
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let client_info = voyager_client
+            //         .client_info(
+            //             &target_chain_id,
+            //             channel_open_try_event.connection.counterparty.client_id,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let encoded_proof_try = voyager_client
+            //         .encode_proof(
+            //             &client_info.client_type,
+            //             &client_info.ibc_interface,
+            //             proof_try.proof,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     Ok(data(IbcMessage::from(MsgChannelOpenAck {
+            //         port_id: channel_open_try_event.counterparty_port_id,
+            //         channel_id: channel_open_try_event.counterparty_channel_id,
+            //         counterparty_channel_id: channel_open_try_event.channel_id,
+            //         counterparty_version: channel_open_try_event.version,
+            //         proof_try: encoded_proof_try,
+            //         proof_height: origin_chain_proof_height,
+            //     })))
+            // }
+
+            // ModuleCall::MakeMsgChannelOpenConfirm(MakeMsgChannelOpenConfirm {
+            //     origin_chain_id,
+            //     origin_chain_proof_height,
+            //     target_chain_id,
+            //     channel_open_ack_event,
+            // }) => {
+            //     let origin_channel_path = ChannelEndPath {
+            //         port_id: channel_open_ack_event.port_id.clone(),
+            //         channel_id: channel_open_ack_event.channel_id.clone(),
+            //     };
+
+            //     let proof_ack = voyager_client
+            //         .query_ibc_proof(
+            //             &origin_chain_id,
+            //             origin_chain_proof_height,
+            //             origin_channel_path.into(),
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let client_info = voyager_client
+            //         .client_info(
+            //             &target_chain_id,
+            //             channel_open_ack_event.connection.counterparty.client_id,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     let encoded_proof_ack = voyager_client
+            //         .encode_proof(
+            //             &client_info.client_type,
+            //             &client_info.ibc_interface,
+            //             proof_ack.proof,
+            //         )
+            //         .await
+            //         .map_err(error_object_to_queue_error)?;
+
+            //     Ok(voyager_vm::data(IbcMessage::from(MsgChannelOpenConfirm {
+            //         port_id: channel_open_ack_event.counterparty_port_id,
+            //         channel_id: channel_open_ack_event.counterparty_channel_id,
+            //         proof_ack: encoded_proof_ack,
+            //         proof_height: origin_chain_proof_height,
+            //     })))
+            // }
+
+            // ModuleCall::MakeMsgRecvPacket(msg) => make_msg_recv_packet(ctx, msg).await,
+            _ => todo!(),
         }
     }
 
@@ -576,4 +876,120 @@ impl Module {
             })
         })
     }
+}
+
+/// Used to fetch and construct the state and proofs for
+/// MsgConnectionOpenTry/Ack.
+#[instrument(
+    skip_all,
+    fields(
+        %origin_chain_id,
+        %target_chain_id,
+        %client_id,
+        %counterparty_client_id,
+        %connection_id,
+        %origin_chain_proof_height,
+    )
+)]
+async fn mk_connection_handshake_state_and_proofs(
+    voyager_client: &VoyagerClient,
+    origin_chain_id: ChainId,
+    target_chain_id: ChainId,
+    client_id: ClientId,
+    counterparty_client_id: ClientId,
+    connection_id: ConnectionId,
+    origin_chain_proof_height: Height,
+) -> RpcResult<ConnectionHandshakeStateAndProof> {
+    // info of the client on the target chain that will verify the storage
+    // proofs
+    let target_client_info = voyager_client
+        // counterparty_client_id from open_init/try is the client on the target chain
+        .client_info(
+            target_chain_id.clone(),
+            IbcV1::ID,
+            RawClientId::new(counterparty_client_id.clone()),
+        )
+        .await
+        .map_err(json_rpc_error_to_error_object)?;
+
+    debug!(
+        %counterparty_client_id,
+        %target_client_info.client_type,
+        %target_client_info.ibc_interface,
+        %target_client_info.metadata,
+    );
+
+    // info of the client on the origin chain, this is used to decode the stored
+    // client state
+    let origin_client_info = voyager_client
+        // client_id from open_init/try is the client on the origin chain
+        .client_info(
+            origin_chain_id.clone(),
+            IbcV1::ID,
+            RawClientId::new(client_id.clone()),
+        )
+        .await
+        .map_err(json_rpc_error_to_error_object)?;
+
+    debug!(
+        %client_id,
+        %origin_client_info.client_type,
+        %origin_client_info.ibc_interface,
+        %origin_client_info.metadata,
+    );
+
+    // the connection end as stored by the origin chain after open_init/try
+    let connection_state = voyager_client
+        .query_spec_ibc_state(
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
+            ConnectionPath {
+                connection_id: connection_id.clone(),
+            },
+        )
+        .await?
+        .state
+        .ok_or(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "connection must exist",
+            None::<()>,
+        ))?;
+    debug!(
+        connection_state = %serde_json::to_string(&connection_state).unwrap(),
+    );
+
+    // proof of connection_state, encoded for the client on the target chain
+    let connection_proof = voyager_client
+        .query_ibc_proof(
+            origin_chain_id.clone(),
+            IbcV1::ID,
+            QueryHeight::Specific(origin_chain_proof_height),
+            into_value(Path::from(ConnectionPath {
+                connection_id: connection_id.clone(),
+            })),
+        )
+        .await
+        .map_err(json_rpc_error_to_error_object)?
+        .proof;
+    debug!(%connection_proof);
+
+    let encoded_connection_state_proof = voyager_client
+        .encode_proof(
+            target_client_info.client_type.clone(),
+            target_client_info.ibc_interface.clone(),
+            connection_proof,
+        )
+        .await
+        .map_err(json_rpc_error_to_error_object)?;
+    debug!(%encoded_connection_state_proof);
+
+    Ok(ConnectionHandshakeStateAndProof {
+        connection_state,
+        encoded_connection_state_proof,
+    })
+}
+
+struct ConnectionHandshakeStateAndProof {
+    connection_state: ConnectionEnd,
+    encoded_connection_state_proof: Bytes,
 }

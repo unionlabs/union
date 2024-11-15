@@ -731,14 +731,9 @@ fn process_msgs(
                             delay_period: message.delay_period,
                         })
                     }
-                    #[allow(deprecated)]
                     ibc_v1::IbcMessage::ConnectionOpenTry(message) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: message.client_id.to_string(),
-                            client_state: Some(
-                                protos::google::protobuf::Any::decode(&*message.client_state)
-                                    .expect("value should be encoded as an `Any`"),
-                            ),
                             counterparty: Some(message.counterparty.into()),
                             delay_period: message.delay_period,
                             counterparty_versions: message
@@ -748,11 +743,7 @@ fn process_msgs(
                                 .collect(),
                             proof_height: Some(message.proof_height.into()),
                             proof_init: message.proof_init.into(),
-                            proof_client: message.proof_client.into(),
-                            proof_consensus: message.proof_consensus.into(),
-                            consensus_height: Some(message.consensus_height.into()),
                             signer: signer.to_string(),
-                            host_consensus_state_proof: vec![],
                             ..Default::default()
                         })
                     }

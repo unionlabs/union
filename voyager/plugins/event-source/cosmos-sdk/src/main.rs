@@ -1139,7 +1139,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
+                            ibc_version_id: IbcUnion::ID,
                             event: into_value::<ibc_union::FullIbcEvent>(
                                 ibc_union::ConnectionOpenInit {
                                     client_id: connection_open_init.client_id,

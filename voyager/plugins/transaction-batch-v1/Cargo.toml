@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-plugin-transaction-batch"
+name    = "voyager-plugin-transaction-batch-v1"
 version = "0.1.0"
 
 [dependencies]

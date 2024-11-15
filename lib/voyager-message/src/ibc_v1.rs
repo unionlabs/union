@@ -416,14 +416,7 @@ pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
                 ?message.counterparty.connection_id,
                 message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
                 %message.delay_period,
-                // TODO: This needs `valuable`
-                // message.counterparty_versions = %message
-                //     .counterparty_versions
-                //     .into_iter()
-                //     .map(Into::into)
-                //     .collect(),
                 %message.proof_height,
-                %message.consensus_height,
             )
         }
         IbcMessage::ConnectionOpenAck(message) => {
