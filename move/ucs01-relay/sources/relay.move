@@ -17,7 +17,7 @@ module ibc::relay_app {
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    use ibc::ethabi;
+    use ucs01::ethabi;
 
     // Constants
     const ORDER_UNORDERED: u8 = 1;
@@ -388,8 +388,6 @@ module ibc::relay_app {
 
             ethabi::encode_string(&mut tokens_buf, &token.denom);
 
-            i = i + 1;
-
             let cursor = 32 + ((num_tokens - 1) * 32);
             ethabi::encode_uint<u64>(&mut buf, cursor + prev_len);
             prev_len = prev_len + vector::length(&tokens_buf);
@@ -489,6 +487,16 @@ module ibc::relay_app {
         // Get the bytes of the string and create a new trimmed vector
         let s_bytes = string::bytes(&s);
         let trimmed_bytes = vector::slice(s_bytes, prefix_len, s_len);
+        /*
+        let mut trimmed_bytes = vector::empty<u8>();
+
+        // Manually copy elements starting from prefix_len to s_len
+        let mut i = prefix_len;
+        while (i < s_len) {
+            vector::push_back(&mut trimmed_bytes, s_bytes[i]);
+            i = i + 1;
+        };
+        */
 
         // Convert the trimmed vector back to a string
         string::utf8(trimmed_bytes)
@@ -1346,41 +1354,41 @@ module ibc::relay_app {
     //     send_token(admin, source_channel, asset_addr, 0);
     // }
 
-    // #[test]
-    // public fun test_encode() {
-    //     let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
-    //     let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
-    //     let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
-    //     let tokens = vector::empty<Token>();
-    //     vector::push_back(&mut tokens, token);
-    //     vector::push_back(&mut tokens, token2);
-    //     vector::push_back(&mut tokens, token3);
+    #[test]
+    public fun test_encode() {
+        let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
+        let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
+        let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+        vector::push_back(&mut tokens, token2);
+        vector::push_back(&mut tokens, token3);
 
-    //     let sender = bcs::to_bytes(&@0x111111111111111111111);
-    //     let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
-    //     let extension = string::utf8(b"extension");
-    //     let packet = RelayPacket {
-    //         sender: sender,
-    //         receiver: receiver,
-    //         tokens: tokens,
-    //         extension: extension
-    //     };
-    //     let encoded = encode_packet(&packet);
-    //     let decoded = decode_packet(encoded);
+        let sender = bcs::to_bytes(&@0x111111111111111111111);
+        let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
+        let extension = string::utf8(b"extension");
+        let packet = RelayPacket {
+            sender: sender,
+            receiver: receiver,
+            tokens: tokens,
+            extension: extension
+        };
+        let encoded = encode_packet(&packet);
+        let decoded = decode_packet(encoded);
 
-    //     assert!(decoded.sender == sender, 100);
-    //     assert!(decoded.receiver == receiver, 101);
-    //     assert!(decoded.extension == extension, 102);
-    //     let token = vector::borrow(&decoded.tokens, 0);
-    //     assert!(token.denom == string::utf8(b"denom"), 103);
-    //     assert!(token.amount == 1000, 104);
-    //     let token2 = vector::borrow(&decoded.tokens, 1);
-    //     assert!(token2.denom == string::utf8(b"this is amazing"), 105);
-    //     assert!(token2.amount == 3000, 106);
-    //     let token3 = vector::borrow(&decoded.tokens, 2);
-    //     assert!(token3.denom == string::utf8(b"insane cool"), 107);
-    //     assert!(token3.amount == 3, 108);
-    // }
+        assert!(decoded.sender == sender, 100);
+        assert!(decoded.receiver == receiver, 101);
+        assert!(decoded.extension == extension, 102);
+        let token = vector::borrow(&decoded.tokens, 0);
+        assert!(token.denom == string::utf8(b"denom"), 103);
+        assert!(token.amount == 1000, 104);
+        let token2 = vector::borrow(&decoded.tokens, 1);
+        assert!(token2.denom == string::utf8(b"this is amazing"), 105);
+        assert!(token2.amount == 3000, 106);
+        let token3 = vector::borrow(&decoded.tokens, 2);
+        assert!(token3.denom == string::utf8(b"insane cool"), 107);
+        assert!(token3.amount == 3, 108);
+    }
 
     // #[test(admin = @ucs01, alice = @0x1234)]
     // public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
