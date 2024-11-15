@@ -124,11 +124,11 @@ members = [
 
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
-  "voyager/plugins/event-source/movement",
+  # "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",
-  "voyager/plugins/transaction/aptos",
+  # "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch-v1",

@@ -11,14 +11,15 @@ use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
     data::Data,
+    ibc_v1::IbcV1,
     module::{PluginInfo, PluginServer},
-    run_plugin_server, DefaultCmd, Plugin, VoyagerMessage,
+    DefaultCmd, IbcSpec, Plugin, VoyagerMessage,
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -247,7 +248,7 @@ impl Module {
 if ."@type" == "data" then
     ."@value" as $data |
 
-    if $data."@type" == "ibc_event" then
+    if $data."@type" == "ibc_event" and $data."@value".ibc_version_id == {ibc_version_id} then
         $data."@value".chain_id as $chain_id |
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event |
@@ -288,7 +289,8 @@ else
     # don't filter out non-data messages
     false
 end
-    "#
+    "#,
+            ibc_version_id = IbcV1::ID
         )
     }
 }

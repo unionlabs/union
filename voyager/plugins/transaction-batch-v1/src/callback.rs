@@ -267,7 +267,7 @@ impl MakeBatchTransaction {
                         })
                     })
                     .chain(msgs)
-                    .map(|msg| IbcDatagram::new::<IbcV1>(msg))
+                    .map(IbcDatagram::new::<IbcV1>)
                     .collect::<Vec<_>>(),
             }),
             None => {
