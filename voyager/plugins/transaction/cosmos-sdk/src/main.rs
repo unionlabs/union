@@ -33,6 +33,7 @@ use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::any::{mk_any, Any},
     hash::H256,
+    ibc::core::client::msg_update_client,
     signer::CosmosSigner,
     ErrorReporter,
 };
@@ -894,7 +895,24 @@ fn process_msgs(
                         })
                     }
                     ibc_union::IbcMsg::UpdateClient(msg_update_client) => todo!(),
-                    ibc_union::IbcMsg::ConnectionOpenInit(msg_connection_open_init) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenInit(msg_connection_open_init) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.clone(),
+                            msg: serde_json::to_vec(
+                                &union_ibc::msg::ExecuteMsg::ConnectionOpenInit(
+                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenInit {
+                                        clientId: msg_connection_open_init.client_id,
+                                        counterpartyClientId: msg_connection_open_init
+                                            .counterparty_client_id,
+                                        relayer: signer.to_string(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
                     ibc_union::IbcMsg::ConnectionOpenTry(msg_connection_open_try) => todo!(),
                     ibc_union::IbcMsg::ConnectionOpenAck(msg_connection_open_ack) => todo!(),
                     ibc_union::IbcMsg::ConnectionOpenConfirm(msg_connection_open_confirm) => {

@@ -36,16 +36,17 @@ use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, QueryHeight},
     data::{ChainEvent, Data},
-    ibc_v1::{ChannelMetadata, ConnectionMetadata, FullIbcEvent, IbcV1, PacketMetadata},
+    ibc_union::{self, IbcUnion},
+    ibc_v1::{self, IbcV1},
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlocks, FetchTransactions, MakeChainEvent, ModuleCall},
+    call::{FetchBlocks, FetchTransactions, MakeChainEvent, ModuleCall, RawEvent},
     callback::ModuleCallback,
 };
 
@@ -343,8 +344,8 @@ impl Module {
     ) -> RpcResult<(
         ChainId,
         ClientInfo,
-        ChannelMetadata,
-        ChannelMetadata,
+        ibc_v1::ChannelMetadata,
+        ibc_v1::ChannelMetadata,
         channel::order::Order,
     )> {
         let self_connection = voyager_rpc_client
@@ -363,7 +364,7 @@ impl Module {
             .client_info(
                 self.chain_id.clone(),
                 IbcV1::ID,
-                self_connection.client_id.to_string().into(),
+                RawClientId::new(self_connection.client_id.clone()),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?;
@@ -373,7 +374,7 @@ impl Module {
                 self.chain_id.clone(),
                 IbcV1::ID,
                 event_height.into(),
-                self_connection.client_id.to_string().into(),
+                RawClientId::new(self_connection.client_id.clone()),
             )
             .await
             .map_err(json_rpc_error_to_error_object)?;
@@ -404,20 +405,20 @@ impl Module {
             .state
             .ok_or_else(missing_state("channel must exist", None))?;
 
-        let source_channel = ChannelMetadata {
+        let source_channel = ibc_v1::ChannelMetadata {
             port_id: self_port_id.clone(),
             channel_id: self_channel_id.clone(),
             version: this_channel.version,
-            connection: ConnectionMetadata {
+            connection: ibc_v1::ConnectionMetadata {
                 client_id: self_connection.client_id,
                 connection_id: self_connection_id.clone(),
             },
         };
-        let destination_channel = ChannelMetadata {
+        let destination_channel = ibc_v1::ChannelMetadata {
             port_id: other_port_id.clone(),
             channel_id: other_channel_id.clone(),
             version: counterparty_channel.version,
-            connection: ConnectionMetadata {
+            connection: ibc_v1::ConnectionMetadata {
                 client_id: self_connection.counterparty.client_id,
                 connection_id: self_connection
                     .counterparty
@@ -511,7 +512,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .flat_map(|txr| {
                             txr.tx_result.events.into_iter().filter_map(move |event| {
                                 debug!(%event.ty, "observed event");
-                                IbcEvent::try_from_tendermint_event(event)
+                                IbcEvent::try_from_tendermint_event(event.clone())
+                                    .map(|r| r.map(RawEvent::IbcV1))
+                                    .or_else(|| {
+                                        ibc_events::union_ibc::IbcEvent::try_from_tendermint_event(
+                                            event,
+                                        )
+                                        .map(|r| r.map(RawEvent::IbcUnion))
+                                    })
                                     .map(|event| event.map(|event| (event, txr.hash)))
                             })
                         })
@@ -585,25 +593,27 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 match event {
-                    IbcEvent::SubmitEvidence(SubmitEvidence { .. }) => {
+                    RawEvent::IbcV1(IbcEvent::SubmitEvidence(SubmitEvidence { .. })) => {
                         // TODO: Not sure how to handle this one, since it only contains the hash
                         panic!()
                     }
-                    IbcEvent::CreateClient(CreateClient { ref client_id, .. })
-                    | IbcEvent::UpdateClient(UpdateClient { ref client_id, .. })
-                    | IbcEvent::ClientMisbehaviour(ClientMisbehaviour { ref client_id, .. })
-                    | IbcEvent::ConnectionOpenInit(ConnectionOpenInit { ref client_id, .. })
-                    | IbcEvent::ConnectionOpenTry(ConnectionOpenTry { ref client_id, .. })
-                    | IbcEvent::ConnectionOpenAck(ConnectionOpenAck { ref client_id, .. })
-                    | IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
-                        ref client_id,
-                        ..
-                    }) => {
+                    RawEvent::IbcV1(
+                        IbcEvent::CreateClient(CreateClient { ref client_id, .. })
+                        | IbcEvent::UpdateClient(UpdateClient { ref client_id, .. })
+                        | IbcEvent::ClientMisbehaviour(ClientMisbehaviour { ref client_id, .. })
+                        | IbcEvent::ConnectionOpenInit(ConnectionOpenInit { ref client_id, .. })
+                        | IbcEvent::ConnectionOpenTry(ConnectionOpenTry { ref client_id, .. })
+                        | IbcEvent::ConnectionOpenAck(ConnectionOpenAck { ref client_id, .. })
+                        | IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
+                            ref client_id,
+                            ..
+                        }),
+                    ) => {
                         let client_info = voyager_client
                             .client_info(
                                 self.chain_id.clone(),
                                 IbcV1::ID,
-                                client_id.to_string().into(),
+                                RawClientId::new(client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -613,7 +623,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 IbcV1::ID,
                                 height.into(),
-                                client_id.to_string().into(),
+                                RawClientId::new(client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -625,43 +635,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(match event {
-                                IbcEvent::CreateClient(event) => {
-                                    voyager_message::ibc_v1::CreateClient {
+                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
+                                RawEvent::IbcV1(IbcEvent::CreateClient(event)) => {
+                                    ibc_v1::CreateClient {
                                         client_id: event.client_id,
                                         client_type: ClientType::new(event.client_type),
                                         consensus_height: event.consensus_height,
                                     }
                                     .into()
                                 }
-                                IbcEvent::UpdateClient(event) => {
-                                    voyager_message::ibc_v1::UpdateClient {
+                                RawEvent::IbcV1(IbcEvent::UpdateClient(event)) => {
+                                    ibc_v1::UpdateClient {
                                         client_id: event.client_id,
                                         client_type: ClientType::new(event.client_type),
                                         consensus_heights: event.consensus_heights,
                                     }
                                     .into()
                                 }
-                                IbcEvent::ConnectionOpenInit(event) => {
-                                    voyager_message::ibc_v1::ConnectionOpenInit {
+                                RawEvent::IbcV1(IbcEvent::ConnectionOpenInit(event)) => {
+                                    ibc_v1::ConnectionOpenInit {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
                                     }
                                 }
                                 .into(),
-                                IbcEvent::ConnectionOpenTry(event) => {
-                                    voyager_message::ibc_v1::ConnectionOpenTry {
-                                        client_id: event.client_id,
-                                        connection_id: event.connection_id,
-                                        counterparty_client_id: event.counterparty_client_id,
-                                        counterparty_connection_id: event
-                                            .counterparty_connection_id,
-                                    }
-                                }
-                                .into(),
-                                IbcEvent::ConnectionOpenAck(event) => {
-                                    voyager_message::ibc_v1::ConnectionOpenAck {
+                                RawEvent::IbcV1(IbcEvent::ConnectionOpenTry(event)) => {
+                                    ibc_v1::ConnectionOpenTry {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -670,8 +670,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                IbcEvent::ConnectionOpenConfirm(event) => {
-                                    voyager_message::ibc_v1::ConnectionOpenConfirm {
+                                RawEvent::IbcV1(IbcEvent::ConnectionOpenAck(event)) => {
+                                    ibc_v1::ConnectionOpenAck {
+                                        client_id: event.client_id,
+                                        connection_id: event.connection_id,
+                                        counterparty_client_id: event.counterparty_client_id,
+                                        counterparty_connection_id: event
+                                            .counterparty_connection_id,
+                                    }
+                                }
+                                .into(),
+                                RawEvent::IbcV1(IbcEvent::ConnectionOpenConfirm(event)) => {
+                                    ibc_v1::ConnectionOpenConfirm {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -684,12 +694,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             }),
                         }))
                     }
-                    IbcEvent::ChannelOpenInit(ChannelOpenInit {
-                        ref connection_id, ..
-                    })
-                    | IbcEvent::ChannelOpenTry(ChannelOpenTry {
-                        ref connection_id, ..
-                    }) => {
+                    RawEvent::IbcV1(
+                        IbcEvent::ChannelOpenInit(ChannelOpenInit {
+                            ref connection_id, ..
+                        })
+                        | IbcEvent::ChannelOpenTry(ChannelOpenTry {
+                            ref connection_id, ..
+                        }),
+                    ) => {
                         let connection = voyager_client
                             .query_spec_ibc_state(
                                 self.chain_id.clone(),
@@ -706,7 +718,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .client_info(
                                 self.chain_id.clone(),
                                 IbcV1::ID,
-                                connection.client_id.to_string().into(),
+                                RawClientId::new(connection.client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -716,7 +728,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 IbcV1::ID,
                                 height.into(),
-                                connection.client_id.to_string().into(),
+                                RawClientId::new(connection.client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -728,9 +740,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(match event {
-                                IbcEvent::ChannelOpenInit(event) => {
-                                    voyager_message::ibc_v1::ChannelOpenInit {
+                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
+                                RawEvent::IbcV1(IbcEvent::ChannelOpenInit(event)) => {
+                                    ibc_v1::ChannelOpenInit {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -739,8 +751,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                IbcEvent::ChannelOpenTry(event) => {
-                                    voyager_message::ibc_v1::ChannelOpenTry {
+                                RawEvent::IbcV1(IbcEvent::ChannelOpenTry(event)) => {
+                                    ibc_v1::ChannelOpenTry {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -754,18 +766,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             }),
                         }))
                     }
-                    IbcEvent::ChannelOpenAck(ChannelOpenAck {
-                        ref connection_id,
-                        ref port_id,
-                        ref channel_id,
-                        ..
-                    })
-                    | IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-                        ref connection_id,
-                        ref port_id,
-                        ref channel_id,
-                        ..
-                    }) => {
+                    RawEvent::IbcV1(
+                        IbcEvent::ChannelOpenAck(ChannelOpenAck {
+                            ref connection_id,
+                            ref port_id,
+                            ref channel_id,
+                            ..
+                        })
+                        | IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
+                            ref connection_id,
+                            ref port_id,
+                            ref channel_id,
+                            ..
+                        }),
+                    ) => {
                         let connection = voyager_client
                             .query_spec_ibc_state(
                                 self.chain_id.clone(),
@@ -782,7 +796,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .client_info(
                                 self.chain_id.clone(),
                                 IbcV1::ID,
-                                connection.client_id.to_string().into(),
+                                RawClientId::new(connection.client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -792,7 +806,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 IbcV1::ID,
                                 height.into(),
-                                connection.client_id.to_string().into(),
+                                RawClientId::new(connection.client_id.clone()),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -817,9 +831,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(match event {
-                                IbcEvent::ChannelOpenAck(event) => {
-                                    voyager_message::ibc_v1::ChannelOpenAck {
+                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
+                                RawEvent::IbcV1(IbcEvent::ChannelOpenAck(event)) => {
+                                    ibc_v1::ChannelOpenAck {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -829,8 +843,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                IbcEvent::ChannelOpenConfirm(event) => {
-                                    voyager_message::ibc_v1::ChannelOpenConfirm {
+                                RawEvent::IbcV1(IbcEvent::ChannelOpenConfirm(event)) => {
+                                    ibc_v1::ChannelOpenConfirm {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -845,7 +859,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is this chain
-                    IbcEvent::SendPacket(event) => {
+                    RawEvent::IbcV1(IbcEvent::SendPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -871,10 +885,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(
-                                voyager_message::ibc_v1::SendPacket {
+                            event: into_value::<ibc_v1::FullIbcEvent>(
+                                ibc_v1::SendPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: PacketMetadata {
+                                    packet: ibc_v1::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -887,7 +901,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvent::TimeoutPacket(event) => {
+                    RawEvent::IbcV1(IbcEvent::TimeoutPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -913,9 +927,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(
-                                voyager_message::ibc_v1::TimeoutPacket {
-                                    packet: PacketMetadata {
+                            event: into_value::<ibc_v1::FullIbcEvent>(
+                                ibc_v1::TimeoutPacket {
+                                    packet: ibc_v1::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -928,7 +942,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvent::AcknowledgePacket(event) => {
+                    RawEvent::IbcV1(IbcEvent::AcknowledgePacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -954,9 +968,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(
-                                voyager_message::ibc_v1::AcknowledgePacket {
-                                    packet: PacketMetadata {
+                            event: into_value::<ibc_v1::FullIbcEvent>(
+                                ibc_v1::AcknowledgePacket {
+                                    packet: ibc_v1::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -970,7 +984,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
-                    IbcEvent::WriteAcknowledgement(event) => {
+                    RawEvent::IbcV1(IbcEvent::WriteAcknowledgement(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -996,11 +1010,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(
-                                voyager_message::ibc_v1::WriteAcknowledgement {
+                            event: into_value::<ibc_v1::FullIbcEvent>(
+                                ibc_v1::WriteAcknowledgement {
                                     packet_data: event.packet_data_hex,
                                     packet_ack: event.packet_ack_hex,
-                                    packet: PacketMetadata {
+                                    packet: ibc_v1::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -1013,7 +1027,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvent::RecvPacket(event) => {
+                    RawEvent::IbcV1(IbcEvent::RecvPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -1039,10 +1053,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_version_id: IbcV1::ID,
-                            event: into_value::<FullIbcEvent>(
-                                voyager_message::ibc_v1::RecvPacket {
+                            event: into_value::<ibc_v1::FullIbcEvent>(
+                                ibc_v1::RecvPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: PacketMetadata {
+                                    packet: ibc_v1::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -1050,6 +1064,88 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         timeout_height: event.packet_timeout_height,
                                         timeout_timestamp: event.packet_timeout_timestamp,
                                     },
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::CreateClient(
+                        create_client,
+                    )) => {
+                        dbg!(&create_client);
+
+                        let client_info = voyager_client
+                            .client_info(
+                                self.chain_id.clone(),
+                                IbcUnion::ID,
+                                RawClientId::new(create_client.client_id),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                IbcUnion::ID,
+                                height.into(),
+                                RawClientId::new(create_client.client_id),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcV1::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ClientCreated {
+                                    client_id: create_client.client_id,
+                                    client_type: ClientType::new(create_client.client_type),
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ConnectionOpenInit(
+                        connection_open_init,
+                    )) => {
+                        dbg!(&connection_open_init);
+
+                        let client_info = voyager_client
+                            .client_info(
+                                self.chain_id.clone(),
+                                IbcUnion::ID,
+                                RawClientId::new(connection_open_init.client_id),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                IbcUnion::ID,
+                                height.into(),
+                                RawClientId::new(connection_open_init.client_id),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcV1::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ConnectionOpenInit {
+                                    client_id: connection_open_init.client_id,
+                                    connection_id: connection_open_init.connection_id,
+                                    counterparty_client_id: connection_open_init
+                                        .counterparty_client_id,
                                 }
                                 .into(),
                             ),

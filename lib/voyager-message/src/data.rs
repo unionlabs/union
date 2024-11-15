@@ -80,6 +80,16 @@ pub struct ChainEvent {
     pub event: Value,
 }
 
+impl ChainEvent {
+    pub fn decode_event<V: IbcSpec>(&self) -> Option<Result<V::Event, serde_json::Error>> {
+        if self.ibc_version_id == V::ID {
+            Some(serde_json::from_value(self.event.clone()))
+        } else {
+            None
+        }
+    }
+}
+
 #[model]
 pub struct IbcDatagram {
     pub ibc_version_id: IbcVersionId,

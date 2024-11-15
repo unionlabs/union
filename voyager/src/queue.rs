@@ -222,7 +222,7 @@ impl Voyager {
             info!("spawning {} workers", self.num_workers);
 
             for id in 0..self.num_workers {
-                info!("spawning worker {id}");
+                debug!("spawning worker {id}");
 
                 tasks.push(Box::pin(
                     AssertUnwindSafe(
@@ -298,25 +298,30 @@ impl Voyager {
                 ));
             }
 
-            while let Some(res) = tasks.next().await {
-                match res {
-                    Ok(Ok(())) => {
-                        info!("task exited gracefully");
+            self.context
+                .cancellation_token
+                .run_until_cancelled(async {
+                    while let Some(res) = tasks.next().await {
+                        match res {
+                            Ok(Ok(())) => {
+                                info!("task exited gracefully");
+                            }
+                            Ok(Err(error)) => {
+                                error!(
+                                    error = %ErrorReporter(&*error),
+                                    "task returned with an error"
+                                );
+                                break;
+                            }
+                            Err(_err) => {
+                                // can't do anything with dyn Any
+                                error!("task panicked");
+                                break;
+                            }
+                        }
                     }
-                    Ok(Err(error)) => {
-                        error!(
-                            error = %ErrorReporter(&*error),
-                            "task returned with an error"
-                        );
-                        break;
-                    }
-                    Err(_err) => {
-                        // can't do anything with dyn Any
-                        error!("task panicked");
-                        break;
-                    }
-                }
-            }
+                })
+                .await;
         }
 
         self.context.shutdown().await;

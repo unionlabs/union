@@ -22,10 +22,11 @@ use voyager_message::{
     call::{FetchUpdateHeaders, WaitForHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::{ChainId, QueryHeight},
-    data::{ChainEvent, Data, FullIbcEvent},
+    data::{ChainEvent, Data},
+    ibc_v1::{FullIbcEvent, IbcV1},
     module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
+    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient,
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, data, now, pass::PassResult, promise, seq, BoxDynError, Op};
@@ -42,7 +43,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -220,8 +221,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .try_get::<VoyagerClient>()?
                     .client_meta(
                         self.chain_id.clone(),
+                        IbcV1::ID,
                         QueryHeight::Latest,
-                        client_id.clone(),
+                        RawClientId::new(client_id.clone()),
                     )
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -294,7 +296,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             [],
                             AggregateMsgUpdateClientsFromOrderedHeaders {
                                 chain_id: self.chain_id.clone(),
-                                counterparty_client_id: client_id.clone(),
+                                ibc_version_id: IbcV1::ID,
+                                counterparty_client_id: RawClientId::new(client_id.clone()),
                             },
                         )],
                         [],
@@ -348,7 +351,9 @@ impl Module {
                     Ok(chain_event) => {
                         // the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
                         // this is the client that will need to be updated before this ibc message can be sent
-                        let client_id = chain_event
+                        let full_ibc_event = chain_event.decode_event::<IbcV1>().unwrap().unwrap();
+
+                        let client_id = full_ibc_event
                             .counterparty_client_id()
                             .expect("all batchable messages have a counterparty");
 
@@ -363,7 +368,7 @@ impl Module {
 
                         batchers.entry(client_id.clone()).or_default().push((
                             idx,
-                            match chain_event.event {
+                            match full_ibc_event {
                                 FullIbcEvent::ConnectionOpenInit(event) => BatchableEvent {
                                     first_seen_at,
                                     provable_height: chain_event.provable_height,
@@ -529,8 +534,9 @@ impl Module {
                     client
                         .client_meta(
                             self.chain_id.clone(),
+                            IbcV1::ID,
                             QueryHeight::Latest,
-                            client_id.clone(),
+                            RawClientId::new(client_id.clone()),
                         )
                         .map_ok({
                             let client_id = client_id.clone();

@@ -1,9 +1,7 @@
 use std::{ffi::OsString, str::FromStr};
 
 use clap::{self, Parser, Subcommand};
-use unionlabs::{
-    self, bounded::BoundedI64, ibc::core::client::height::Height, id::ClientId, result_unwrap,
-};
+use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
     core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
     module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
@@ -185,6 +183,7 @@ pub enum RpcCmd {
     ClientState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
+        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
         client_id: RawClientId,
         #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
         ibc_version_id: IbcVersionId,
@@ -196,6 +195,7 @@ pub enum RpcCmd {
     ConsensusState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
+        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
         client_id: RawClientId,
         #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
         ibc_version_id: IbcVersionId,

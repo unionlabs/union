@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId};
-use voyager_message::data::{
+use voyager_message::ibc_v1::{
     ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
     ConnectionOpenTry, SendPacket, WriteAcknowledgement,
 };

@@ -29,7 +29,7 @@ pub struct StateModuleInfo {
 
 impl StateModuleInfo {
     pub fn id(&self) -> String {
-        format!("chain/{}", self.chain_id)
+        format!("state/{}/{}", self.ibc_version_id, self.chain_id)
     }
 
     // TODO: Add this for ibc_version_id
@@ -56,7 +56,7 @@ pub struct ProofModuleInfo {
 
 impl ProofModuleInfo {
     pub fn id(&self) -> String {
-        format!("chain/{}", self.chain_id)
+        format!("proof/{}/{}", self.ibc_version_id, self.chain_id)
     }
 
     // TODO: Add this for ibc_version_id

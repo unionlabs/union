@@ -137,7 +137,10 @@ pub struct MsgCreateClient {
 pub struct MsgUpdateClient {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgConnectionOpenInit {}
+pub struct MsgConnectionOpenInit {
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenTry {}
@@ -385,4 +388,30 @@ pub struct ChannelMetadata {
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
+}
+
+#[cfg(test)]
+mod tests {
+    use voyager_core::ChainId;
+
+    use super::*;
+    use crate::{
+        data::{IbcDatagram, WithChainId},
+        into_value, VoyagerMessage,
+    };
+
+    #[test]
+    fn print() {
+        let op = voyager_vm::data::<VoyagerMessage>(WithChainId {
+            chain_id: ChainId::new("union-devnet-1"),
+            message: IbcDatagram::new::<IbcUnion>(IbcMsg::ConnectionOpenInit(
+                MsgConnectionOpenInit {
+                    client_id: 0,
+                    counterparty_client_id: 0,
+                },
+            )),
+        });
+
+        println!("{}", into_value(op));
+    }
 }

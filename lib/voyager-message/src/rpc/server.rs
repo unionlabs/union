@@ -232,6 +232,8 @@ impl Server {
             .await
             .map_err(fatal_error)?;
 
+        debug!(%client_state);
+
         let meta = modules
             .client_module(&client_info.client_type, &client_info.ibc_interface)
             .map_err(fatal_error)?
@@ -501,9 +503,9 @@ impl VoyagerRpcServer for Server {
         self.query_latest_timestamp(&chain_id, finalized).await
     }
 
-    // =========
-    // CONSENSUS
-    // =========
+    // =====
+    // STATE
+    // =====
 
     async fn client_info(
         &self,

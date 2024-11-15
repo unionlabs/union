@@ -1,13 +1,9 @@
 #![feature(trait_alias)]
 
-use std::{
-    env::VarError,
-    fmt::Debug,
-    future::Future,
-    time::Duration,
-};
+use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 
 use chain_utils::BoxDynError;
+use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use jsonrpsee::{
     core::{
         async_trait, client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams,
@@ -110,21 +106,38 @@ pub trait IbcStorePathKey:
 #[serde(transparent)]
 pub struct RawClientId(Value);
 
+#[derive(Clone)]
+pub struct RawClientIdValueParser;
+
+impl TypedValueParser for RawClientIdValueParser {
+    type Value = RawClientId;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let s = StringValueParser::new().parse_ref(cmd, arg, value)?;
+
+        Ok(RawClientId::new(
+            s.parse::<Value>()
+                .unwrap_or_else(|_| Value::String(s.to_owned())),
+        ))
+    }
+}
+
+impl ValueParserFactory for RawClientId {
+    type Parser = RawClientIdValueParser;
+
+    fn value_parser() -> Self::Parser {
+        RawClientIdValueParser
+    }
+}
+
 impl RawClientId {
     pub fn new(t: impl Serialize) -> Self {
         Self(serde_json::to_value(t).unwrap())
-    }
-}
-
-impl From<String> for RawClientId {
-    fn from(value: String) -> Self {
-        Self(Value::String(value))
-    }
-}
-
-impl From<u32> for RawClientId {
-    fn from(value: u32) -> Self {
-        Self(Value::Number(value.into()))
     }
 }
 
@@ -329,7 +342,7 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
 
                 let info = must_parse::<StateModuleInfo>(&info);
 
-                let name = format!("state/{}/{}", info.chain_id, info.ibc_version_id);
+                let name = info.id();
 
                 run_server(
                     name.clone(),
@@ -366,7 +379,7 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
 
                 let info = must_parse::<ProofModuleInfo>(&info);
 
-                let name = format!("proof/{}/{}", info.chain_id, info.ibc_version_id);
+                let name = info.id();
 
                 run_server(
                     name.clone(),
@@ -403,7 +416,7 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
 
                 let info = must_parse::<ConsensusModuleInfo>(&info);
 
-                let name = format!("consensus/{}", info.chain_id);
+                let name = info.id();
 
                 run_server(
                     name.clone(),
@@ -440,7 +453,7 @@ pub trait ClientModule: ClientModuleServer + Sized {
 
                 let info = must_parse::<ClientModuleInfo>(&info);
 
-                let name = format!("client/{}", info.id());
+                let name = info.id();
 
                 run_server(
                     name.clone(),

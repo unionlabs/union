@@ -48,7 +48,7 @@ pub struct Context {
 
     interest_filters: HashMap<String, String>,
 
-    cancellation_token: CancellationToken,
+    pub cancellation_token: CancellationToken,
     // module_servers: Vec<ModuleRpcServer>,
 }
 
@@ -160,7 +160,7 @@ async fn module_rpc_server(
     let socket = make_module_rpc_server_socket_path(name);
     let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
 
-    info!(%socket, "starting rpc server");
+    debug!(%socket, "starting rpc server");
 
     let server = rpc_server.start(server.into_rpc()).await?;
 
@@ -277,7 +277,7 @@ impl Context {
                 } else {
                     let plugin_info = get_plugin_info(&plugin_config)?;
 
-                    info!("starting rpc server for plugin {}", plugin_info.name);
+                    debug!("starting rpc server for plugin {}", plugin_info.name);
                     tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
 
                     Ok::<_, BoxDynError>(Some((plugin_config, plugin_info)))
@@ -510,7 +510,13 @@ impl Context {
                 })
                 .collect::<FuturesUnordered<_>>();
 
-            while let Some(()) = futures.next().await {}
+            match cancellation_token
+                .run_until_cancelled(async { while let Some(()) = futures.next().await {} })
+                .await
+            {
+                Some(()) => {}
+                None => return Err("startup error".into()),
+            }
         }
 
         Ok(Self {
@@ -783,7 +789,7 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
                 Ok(child) => {
                     let id = child.id().unwrap();
 
-                    info!(%id, "spawned plugin");
+                    debug!(%id, "spawned plugin");
 
                     break child;
                 }
@@ -831,7 +837,7 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
                             .code()
                             .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
                         {
-                            error!(%id, %exit_status, "invalid config for plugin");
+                            error!(%id, "invalid config for plugin");
                             cancellation_token.cancel();
                         }
                     }
@@ -922,7 +928,7 @@ module_error!(PluginNotFound);
 
 pub fn get_plugin_info(module_config: &PluginConfig) -> Result<PluginInfo, String> {
     debug!(
-        "querying module info from module at {}",
+        "querying module info from plugin at {}",
         &module_config.path.to_string_lossy(),
     );
 
@@ -991,7 +997,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
                 );
                 Ok(None)
             } else {
-                info!(
+                debug!(
                     "starting rpc server for module {}",
                     id_f(&module_config.info)
                 );
