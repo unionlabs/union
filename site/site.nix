@@ -19,7 +19,7 @@ _: {
       packages = {
         site = mkCi false (
           jsPkgs.buildNpmPackage {
-            npmDepsHash = "sha256-Q9HbeXkrLI3aomqLxcpIAk+f72KWHOusQdQjRoz/tj4=";
+            npmDepsHash = "sha256-7d6a0+QgKn2xUvVU2jtWX2nGYynAb0nIrgnO/mOCAVs=";
             src = ./.;
             sourceRoot = "site";
             pname = packageJSON.name;

@@ -41,6 +41,7 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
   // so we manually remove the ViewTransition API from the document
   // such that astro will use the fallback ClientRouter
   // https://github.com/withastro/astro/blob/74ef2feb3a6a68e45a0cbfe60a61e90af6b4e923/packages/astro/src/transitions/router.ts#L37
+  // @ts-expect-error
   document.startViewTransition = false;
 </script>
 <html lang="en">

@@ -1,49 +1,51 @@
 ---
 import { Icon } from "astro-icon/components"
 import ExternalLinkIcon from "./ExternalLinkIcon.astro"
+import DropdownMenu from "#/components/DropdownMenu.astro"
+
 const menuItems = [
   {
     url: "/learn",
     name: "learn",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/ecosystem",
     name: "ecosystem",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/blog",
     name: "blog",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/team",
     name: "team",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "https://ceremony.union.build/",
     name: "ceremony",
     highlight: false,
-    external: true
+    external: true,
   },
   {
     url: "https://docs.union.build/",
     name: "docs",
     highlight: false,
-    external: true
+    external: true,
   },
   {
     url: "https://research.union.build/",
     name: "research",
     highlight: false,
-    external: true
-  }
+    external: true,
+  },
   // {
   //   url: "https://app.union.build",
   //   name: "testnet",
@@ -53,147 +55,18 @@ const menuItems = [
 ]
 ---
 
-<script>
-  let cleanupListeners: (() => void)[] = [];
-  let menuOpen = false;
-  let overlay: HTMLElement | null = null;
-  let menuItemsList: HTMLElement | null = null;
-
-  function initMenu() {
-    cleanupListeners.forEach((cleanup) => cleanup());
-    cleanupListeners = [];
-
-    overlay = document.getElementById("overlay");
-    const menuButton = document.getElementById("menu-button");
-    menuItemsList = document.getElementById("menu-items-list");
-    const menuLinks = document.querySelectorAll("a"); // Changed to catch all links
-
-    if (!overlay || !menuButton || !menuItemsList) {
-      console.error("Required elements not found");
-      return;
-    }
-
-    const toggleMenu = (open: boolean, instant = false) => {
-      menuOpen = open;
-
-      if (instant) {
-        // Instant close - no animations
-        menuItemsList!.style.transition = "none";
-        overlay!.style.transition = "none";
-      } else {
-        // Normal open/close with animations
-        menuItemsList!.style.transition = "max-height 0.2s ease-out";
-        overlay!.style.transition = "opacity 0.3s ease";
-      }
-
-      menuItemsList!.style.display = menuOpen ? "flex" : "none";
-      menuItemsList!.style.maxHeight = menuOpen
-        ? `${menuItemsList!.scrollHeight}px`
-        : "0";
-
-      if (menuOpen) {
-        overlay!.classList.add("show");
-        overlay!.style.visibility = "visible";
-      } else {
-        overlay!.classList.remove("show");
-        overlay!.style.visibility = "hidden";
-      }
-
-      // Reset transitions after instant close
-      if (instant) {
-        setTimeout(() => {
-          menuItemsList!.style.transition = "max-height 0.2s ease-out";
-          overlay!.style.transition = "opacity 0.3s ease";
-        }, 0);
-      }
-    };
-
-    const handleMenuClick = () => {
-      toggleMenu(!menuOpen);
-    };
-
-    const handleOverlayClick = () => {
-      toggleMenu(false);
-    };
-
-    const handleLinkClick = (e: Event) => {
-      toggleMenu(false, true); // true for instant close
-    };
-
-    const handleResize = () => {
-      if (window.innerWidth >= 1024 && menuOpen) {
-        toggleMenu(false);
-      }
-    };
-
-    menuButton.addEventListener("click", handleMenuClick);
-    overlay.addEventListener("click", handleOverlayClick);
-    window.addEventListener("resize", handleResize);
-
-    menuLinks.forEach((link) => {
-      link.addEventListener("click", handleLinkClick);
-    });
-
-    cleanupListeners.push(() => {
-      menuButton.removeEventListener("click", handleMenuClick);
-      overlay.removeEventListener("click", handleOverlayClick);
-      window.removeEventListener("resize", handleResize);
-      menuLinks.forEach((link) => {
-        link.removeEventListener("click", handleLinkClick);
-      });
-    });
-  }
-
-  function closeMenu() {
-    if (menuOpen && overlay && menuItemsList) {
-      menuItemsList.style.transition = "none";
-      overlay.style.transition = "none";
-
-      menuItemsList.style.display = "none";
-      menuItemsList.style.maxHeight = "0";
-      overlay.classList.remove("show");
-      overlay.style.visibility = "hidden";
-      menuOpen = false;
-
-      setTimeout(() => {
-        menuItemsList.style.transition = "max-height 0.2s ease-out";
-        overlay.style.transition = "opacity 0.3s ease";
-      }, 0);
-    }
-  }
-
-  document.addEventListener("astro:page-load", () => {
-    initMenu();
-  });
-
-  document.addEventListener("astro:before-swap", () => {
-    closeMenu();
-    cleanupListeners.forEach((cleanup) => cleanup());
-    cleanupListeners = [];
-  });
-</script>
-
 <header class="z-[100] w-full flex justify-around">
-  <div
-    class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl"
-  >
+  <div class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
     <a href="/" id="union-logo" class="flex items-center">
       <img class="h-12 w-auto py-1" src="/logo-full.svg" />
     </a>
-
-    <div
-      id="overlay"
-      class="overlay sm:hidden"
-      data-description="Overlay to blur the background when the menu is open"
-    >
-    </div>
 
     <nav class="hidden lg:block flex-1 justify-end">
       <ul
         class="flex flex-row gap-8 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
       >
         {
-          menuItems.map((menuItem) => (
+          menuItems.map(menuItem => (
             <li>
               <a
                 href={menuItem.url}
@@ -219,31 +92,19 @@ const menuItems = [
           ))
         }
         <li>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://discord.union.build"
-          >
+          <a target="_blank" rel="noopener noreferrer" href="https://discord.union.build">
             <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
             <span class="sr-only">Discord</span>
           </a>
         </li>
         <li>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://github.com/unionlabs/union"
-          >
+          <a target="_blank" rel="noopener noreferrer" href="https://github.com/unionlabs/union">
             <Icon name="fa6-brands:github" color="#fff" size="20px" />
             <span class="sr-only">GitHub</span>
           </a>
         </li>
         <li>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://x.com/union_build"
-          >
+          <a target="_blank" rel="noopener noreferrer" href="https://x.com/union_build">
             <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
             <span class="sr-only">X</span>
           </a>
@@ -251,78 +112,7 @@ const menuItems = [
       </ul>
     </nav>
 
-    <nav class="lg:hidden flex flex-1 justify-end">
-      <button
-        id="menu-button"
-        name="menu-button"
-        aria-label="Menu"
-        title="Menu"
-        class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
-      >
-        <Icon name="tabler:menu-2" color="#000000" size="20px" />
-      </button>
-
-      <ul
-        id="menu-items-list"
-        class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
-      >
-        {
-          menuItems.map((menuItem) => (
-            <li class="py-2 px-4">
-              <a
-                href={menuItem.url}
-                class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono"
-                {...(menuItem.external
-                  ? {
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                    }
-                  : {})}
-              >
-                {menuItem.name}
-                {menuItem.external ? (
-                  <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" />
-                ) : (
-                  ""
-                )}
-              </a>
-            </li>
-          ))
-        }
-        <li>
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://discord.union.build"
-            class="flex gap-2 text-lg px-4 py-2 uppercase"
-          >
-            <label>Discord</label>
-            <Icon
-              name="tabler:brand-discord-filled"
-              color="#fff"
-              size="16px"
-              class="my-auto"
-            />
-          </a>
-        </li>
-        <li class="">
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://x.com/union_build"
-            class="flex gap-2 text-lg px-4 py-2 uppercase"
-          >
-            <label>X.com</label>
-            <Icon
-              name="fa6-brands:x-twitter"
-              color="#fff"
-              size="18px"
-              class="my-auto"
-            />
-          </a>
-        </li>
-      </ul>
-    </nav>
+    <DropdownMenu />
   </div>
 </header>
 
@@ -333,37 +123,7 @@ const menuItems = [
     min-height: var(--header-height) !important;
   }
 
-  #menu-items-list {
-    display: none;
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.2s ease-out;
-  }
-
-  #union-logo,
-  #menu-button,
-  #menu-items-list {
+  #union-logo {
     z-index: 1000;
-  }
-
-  .overlay {
-    z-index: 999;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 150vh;
-    background: rgba(0, 0, 0, 9); /* Adjust color and opacity as needed */
-    visibility: hidden;
-    opacity: 0;
-    transition:
-      opacity 0.3s ease,
-      visibility 0s 0.3s; /* Add transition for visibility */
-  }
-
-  .overlay.show {
-    visibility: visible;
-    opacity: 0.75;
-    transition: opacity 0.3s ease; /* No delay needed when showing */
   }
 </style>
