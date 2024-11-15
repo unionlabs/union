@@ -1,4 +1,5 @@
 use cosmwasm_std::StdError;
+use ethereum_light_client::client::EthereumLightClient;
 use scroll_codec::batch_header::BatchHeaderV3DecodeError;
 use scroll_light_client_types::{ClientState, ConsensusState};
 use union_ibc_light_client::IbcClientError;
@@ -49,6 +50,18 @@ pub enum Error {
 
     #[error(transparent)]
     StdError(#[from] StdError),
+
+    #[error("commitment key must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentKeyLength(Vec<u8>),
+
+    #[error("commitment value must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentValueLength(Vec<u8>),
+
+    #[error(transparent)]
+    Evm(#[from] ethereum_light_client::errors::Error),
+
+    #[error(transparent)]
+    EvmIbcClient(#[from] IbcClientError<EthereumLightClient>),
 }
 
 impl From<Error> for IbcClientError<ScrollLightClient> {

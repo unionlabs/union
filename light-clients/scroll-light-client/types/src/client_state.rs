@@ -7,7 +7,7 @@ pub struct ClientState {
     pub frozen_height: Height,
     pub ibc_contract_address: H160,
     // TODO: This should be ClientId
-    pub l1_client_id: String,
+    pub l1_client_id: u32,
     pub l2_committed_batches_slot: U256,
     pub l2_contract_address: H160,
     pub l2_finalized_state_roots_slot: U256,
@@ -32,7 +32,7 @@ pub mod proto {
     impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientState {
         fn from(value: ClientState) -> Self {
             Self {
-                l1_client_id: value.l1_client_id,
+                l1_client_id: value.l1_client_id.to_string(),
                 chain_id: value.chain_id.to_string(),
                 latest_slot: value.latest_slot,
                 latest_batch_index_slot: value.latest_batch_index_slot.to_be_bytes().to_vec(),
@@ -71,7 +71,8 @@ pub mod proto {
             value: protos::union::ibc::lightclients::scroll::v1::ClientState,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                l1_client_id: value.l1_client_id,
+                // TODO(aeryz): plain wrong, we will remove all these anyways
+                l1_client_id: 0,
                 chain_id: U256::from_str(&value.chain_id)
                     .map_err(|err| Error::ChainId(Arc::new(err)))?,
                 latest_slot: value.latest_slot,

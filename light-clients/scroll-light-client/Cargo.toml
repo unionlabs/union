@@ -13,28 +13,28 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std              = { workspace = true, features = ["abort"] }
-ethereum-light-client     = { workspace = true, features = ["library"] }
-ethers-core               = { workspace = true }
-evm-storage-verifier      = { workspace = true }
-hex                       = { workspace = true }
-rlp                       = { workspace = true }
-schemars                  = { workspace = true }
-scroll-codec              = { workspace = true }
-scroll-light-client-types = { workspace = true, features = ["proto"] }
-scroll-verifier           = { workspace = true }
-serde                     = { workspace = true, features = ["derive"] }
-serde-json-wasm           = { workspace = true }
-sha3                      = { workspace = true }
-thiserror                 = { workspace = true }
-tiny-keccak               = { workspace = true, features = ["keccak"] }
-unionlabs                 = { workspace = true, features = ["ethabi", "stargate"] }
+cosmwasm-schema             = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+cw-storage-plus             = { workspace = true }
+ethereum-light-client       = { workspace = true, features = ["library"] }
+ethereum-light-client-types = { workspace = true }
+ethers-core                 = { workspace = true }
+evm-storage-verifier        = { workspace = true }
+hex                         = { workspace = true }
+rlp                         = { workspace = true }
+schemars                    = { workspace = true }
+scroll-codec                = { workspace = true }
+scroll-light-client-types   = { workspace = true, features = ["proto"] }
+scroll-verifier             = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+serde-json-wasm             = { workspace = true }
+sha3                        = { workspace = true }
+thiserror                   = { workspace = true }
+tiny-keccak                 = { workspace = true, features = ["keccak"] }
 union-ibc                   = { workspace = true, features = ["library"] }
 union-ibc-light-client      = { workspace = true }
 union-ibc-msg               = { workspace = true }
-ethereum-light-client-types = { workspace = true }
-cw-storage-plus = { workspace = true }
-cosmwasm-schema = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi", "stargate"] }
 
 [dev-dependencies]
 base64     = { workspace = true }

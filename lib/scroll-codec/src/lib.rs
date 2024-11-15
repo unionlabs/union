@@ -65,7 +65,7 @@ pub enum HashBatchError {
 /// # Errors
 ///
 /// Fails if the batch header can't be decoded.
-pub fn hash_batch(batch_header: Vec<u8>) -> Result<H256, HashBatchError> {
+pub fn hash_batch(batch_header: &[u8]) -> Result<H256, HashBatchError> {
     let batch_header = BatchHeaderV3::decode(batch_header)?;
     Ok(batch_header.compute_batch_hash())
 }
@@ -102,10 +102,7 @@ mod tests {
             )
         ];
         for (header, expected_hash) in headers {
-            assert_eq!(
-                hash_batch(header.to_vec()).unwrap(),
-                <H256>::new(expected_hash)
-            );
+            assert_eq!(hash_batch(&header).unwrap(), <H256>::new(expected_hash));
         }
     }
 }
