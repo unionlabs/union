@@ -13,7 +13,6 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
 cw-storage-plus             = { workspace = true }
 ethereum-light-client       = { workspace = true, features = ["library"] }

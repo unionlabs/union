@@ -1,12 +1,11 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use union_ibc_light_client::state::IBC_HOST;
+use union_ibc_light_client::{
+    msg::{InstantiateMsg, QueryMsg},
+    IbcClientError,
+};
 use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
 
-use crate::{
-    client::EthereumLightClient,
-    errors::Error,
-    msg::{InstantiateMsg, QueryMsg},
-};
+use crate::client::EthereumLightClient;
 
 #[entry_point]
 pub fn instantiate(
@@ -14,7 +13,7 @@ pub fn instantiate(
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, Error> {
+) -> Result<Response, IbcClientError<EthereumLightClient>> {
     union_ibc_light_client::instantiate(deps, env, info, msg)
 }
 

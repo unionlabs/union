@@ -345,6 +345,7 @@ bigdecimal
 bigtestnet
 bimap
 binaryen
+bincode
 bindgen
 bindingstypes
 bindir

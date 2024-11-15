@@ -4820,7 +4820,6 @@ dependencies = [
  "base64 0.21.7",
  "beacon-api-types",
  "bytes",
- "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "ethereum-light-client-types",
@@ -4830,8 +4829,6 @@ dependencies = [
  "evm-storage-verifier",
  "hex",
  "hex-literal",
- "ibc-solidity",
- "ics008-wasm-client",
  "lazy_static",
  "prost 0.12.6",
  "protos",
@@ -10885,7 +10882,6 @@ name = "scroll-light-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "ethereum-light-client",
@@ -13392,6 +13388,7 @@ dependencies = [
 name = "union-ibc-light-client"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "frame-support-procedural",
