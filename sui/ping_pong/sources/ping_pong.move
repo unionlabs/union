@@ -102,7 +102,6 @@ module ping_pong::ibc {
     
         ibc::send_packet(
             ibc_store,
-            @ping_pong, // TODO: Do we need this port_id?
             pp_store.channel_id,
             0, // no height timeout
             (clock::timestamp_ms(clock) + pp_store.seconds_before_timeout) * 1_000_000,
@@ -151,7 +150,6 @@ module ping_pong::ibc {
         ibc::recv_packet(
             ibc_store,
             clock,
-            @ping_pong, // TODO: Do we need this port_id?
             vector[packet],
             proof,
             proof_height,
@@ -189,7 +187,6 @@ module ping_pong::ibc {
         };
         ibc::acknowledge_packet(
             ibc_store,
-            @ping_pong, // TODO: Do we need this port_id?
             packets,
             acknowledgements,
             proof,

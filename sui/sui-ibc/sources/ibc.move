@@ -411,7 +411,6 @@ module ibc::ibc {
         let latest_height = client.latest_height();
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::consensus_state_commitment_key(client_id, latest_height), consensus_state);
-        // TODO: Verify this, what's the purpose of this?
         ibc_store.clients.add(client_id, client);
 
         event::emit(
@@ -1022,7 +1021,7 @@ module ibc::ibc {
 
         // Fetch the next sequence number for sending packets
         let next_sequence_key = commitment::next_sequence_send_commitment_key(source_channel);
-        let mut next_sequence_bytes = ibc_store.commitments.borrow_mut(next_sequence_key);
+        let mut next_sequence_bytes = ibc_store.commitments.borrow(next_sequence_key);
         let sequence = bcs::new(*next_sequence_bytes).peel_u64();
         add_or_update_table<vector<u8>, vector<u8>>(
             &mut ibc_store.commitments,
@@ -1046,8 +1045,7 @@ module ibc::ibc {
             commitment::batch_packets_commitment_key(
                 source_channel, commitment::commit_packet(&packet)
             );
-            
-            
+
         add_or_update_table(&mut ibc_store.commitments, commitment_key, COMMITMENT_MAGIC);
 
         // Emit a SendPacket event
@@ -1916,7 +1914,7 @@ module ibc::ibc {
         add_or_update_table<vector<u8>, vector<u8>>(
             &mut ibc_store.commitments,
             next_sequence_key,
-            bcs::to_bytes(&2u64)
+            bcs::to_bytes(&1u64)
         );
 
         // Define packet data
@@ -1939,17 +1937,23 @@ module ibc::ibc {
         let sequence_bytes = ibc_store.commitments.borrow(next_sequence_key);
         let sequence = bcs::new(*sequence_bytes).peel_u64();
         
-        assert!(sequence == 3, 0); // Expect the sequence to be incremented to 2
+        assert!(sequence == 2, 0); // Expect the sequence to be incremented to 2
 
         // Verify packet commitment
-        let commitment_key = commitment::batch_packets_commitment_key(channel_id, commitment::commit_packet(&packet::new(
-            1,
+        let commitment_key = commitment::batch_packets_commitment_key(
             channel_id,
-            1, // counterparty channel ID
-            data,
-            timeout_height,
-            timeout_timestamp,
-        )));
+            commitment::commit_packet(
+                &packet::new(
+                    1,
+                    channel_id,
+                    1, // counterparty channel ID
+                    data,
+                    timeout_height,
+                    timeout_timestamp,
+                )
+            )
+        );
+
         let commitment = ibc_store.commitments.borrow(commitment_key);
         assert!(commitment == COMMITMENT_MAGIC, 1);
 

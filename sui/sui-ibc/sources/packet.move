@@ -1,8 +1,7 @@
 module ibc::packet {
     use std::vector;
     use sui::object::{Self, UID};
-
-    // use ibc::ethabi;
+    use ibc::ethabi;
 
     public struct Packet has copy, store, drop {
         sequence: u64,
@@ -60,17 +59,16 @@ module ibc::packet {
     }
 
     public fun encode(packet: &Packet): vector<u8> {
-        // TODO: fix here
-        let buf = vector::empty();
+        let mut buf = vector::empty();
 
-        // ethabi::encode_uint(&mut buf, packet.sequence);
-        // ethabi::encode_uint(&mut buf, packet.source_channel);
-        // ethabi::encode_uint(&mut buf, packet.destination_channel);
-        // // offset of `data`
-        // ethabi::encode_uint(&mut buf, 6 * 32);
-        // ethabi::encode_uint(&mut buf, packet.timeout_height);
-        // ethabi::encode_uint(&mut buf, packet.timeout_timestamp);
-        // ethabi::encode_bytes(&mut buf, &packet.data);
+        ethabi::encode_uint(&mut buf, packet.sequence);
+        ethabi::encode_uint(&mut buf, packet.source_channel);
+        ethabi::encode_uint(&mut buf, packet.destination_channel);
+        // offset of `data`
+        ethabi::encode_uint(&mut buf, 6 * 32);
+        ethabi::encode_uint(&mut buf, packet.timeout_height);
+        ethabi::encode_uint(&mut buf, packet.timeout_timestamp);
+        ethabi::encode_bytes(&mut buf, &packet.data);
 
         buf
     }
@@ -107,11 +105,11 @@ module ibc::packet {
 
     #[test]
     fun test_encode_packet() {
-        // let buf =
-        //     x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000000030102030000000000000000000000000000000000000000000000000000000000";
+        let buf =
+            x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000000030102030000000000000000000000000000000000000000000000000000000000";
 
-        // let packet = new(1, 2, 3, x"010203", 100, 200);
+        let packet = new(1, 2, 3, x"010203", 100, 200);
 
-        // assert!(encode(&packet) == buf, 1);
+        assert!(encode(&packet) == buf, 1);
     }
 }
