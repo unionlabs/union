@@ -82,7 +82,7 @@ members = [
 
   # "light-clients/evm-in-cosmos-light-client",
 
-  # "light-clients/scroll-light-client",
+  "light-clients/scroll-light-client",
   "light-clients/scroll-light-client/types",
 
   "light-clients/tendermint-light-client",
@@ -183,7 +183,7 @@ scroll-light-client-types = { path = "light-clients/scroll-light-client/types", 
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
-# ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
+ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }

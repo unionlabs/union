@@ -10881,6 +10881,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "scroll-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "cosmwasm-schema 1.5.3",
+ "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "ethers-core",
+ "evm-storage-verifier",
+ "hex",
+ "rlp",
+ "schemars",
+ "scroll-codec",
+ "scroll-light-client-types",
+ "scroll-verifier",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "tiny-keccak",
+ "union-ibc",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
