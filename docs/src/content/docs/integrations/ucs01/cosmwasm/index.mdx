@@ -70,16 +70,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 . "$HOME/.cargo/env"
 ```
 
-Install CLI packages: `ripgrep` and `jaq` 
-
-```sh frame="none"
-cargo install ripgrep jaq
-```
-
 Install development tools
 ```sh frame="none"
 sudo apt update
-sudo apt install jq tree git build-essential
+sudo apt install jq tree git ripgrep build-essential
 ```
 
 Install wasm packages: `wasm-pack` and `wasm-opt`
@@ -308,7 +302,7 @@ WALLET_ADDRESS=union1...
 To fund the wallet, we will use the faucet. You can find the faucet [here](https://app.union.build/faucet).
 
 ```sh title="Ensure the wallet is funded"
-curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jaq '.balances'[0]
+curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jq '.balances'[0]
 ```
 
 ```sh title="Deploy the contract"
@@ -394,7 +388,7 @@ Execute the contract:
 
 ```sh frame="none"
 $HOME/uniond \
-    tx wasm execute $CONTRACT_ADDRESS "$(jaq -c '.' payload.json)" \
+    tx wasm execute $CONTRACT_ADDRESS "$(jq -c '.' payload.json)" \
         --from $WALLET_NAME \
         --gas auto \
         --gas-adjustment 1.4 \
