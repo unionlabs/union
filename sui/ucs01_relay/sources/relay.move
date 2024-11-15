@@ -2,6 +2,7 @@ module ucs01::relay_app {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
     use ucs01::fungible_token::{Self, FUNGIBLE_TOKEN};
+    use ucs01::ethabi::{Self};
     use std::string::{Self, String, utf8};
     use sui::table::{Self, Table};
     use sui::bcs;
@@ -371,154 +372,147 @@ module ucs01::relay_app {
 
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         // TODO: Fix here
-        let buf = vector::empty<u8>();
+        let mut buf = vector::empty<u8>();
+
+        // TODO(aeryz): document
+        // Offset of `packet.sender`
+        ethabi::encode_uint<u64>(&mut buf, 32 * 4);
+        // Offset of `packet.receiver`
+        ethabi::encode_uint<u64>(&mut buf, 32 * 6);
+        // Offset of `packet.tokens`
+        ethabi::encode_uint<u64>(&mut buf, 32 * 8);
+        // Offset of `packet.extension`. We temporarily write `0` here because
+        // `packet.tokens` contain arbitrary-length fields. Hence we can't calculate
+        // the offset at this point without recursing on the tokens.
+        ethabi::encode_uint<u64>(&mut buf, 0);
+
+        // bytes encoded `packet.sender`
+        ethabi::encode_vector!<u8>(
+            &mut buf,
+            &packet.sender,
+            |some_variable, data| {
+                ethabi::encode_u8(some_variable, *data);
+            }
+        );
+
+        // bytes encoded `packet.receiver`
+        ethabi::encode_vector!<u8>(
+            &mut buf,
+            &packet.receiver,
+            |some_variable, data| {
+                ethabi::encode_u8(some_variable, *data);
+            }
+        );
+
+        // length prefix of the tokens array
+        let num_tokens = vector::length(&packet.tokens);
+        ethabi::encode_uint<u64>(&mut buf, num_tokens);
+
+        let mut tokens_buf = vector::empty();
+        let mut i = 0;
+        let mut prev_len = 0;
+        while (i < num_tokens) {
+            let token = vector::borrow(&packet.tokens, i);
+
+            // TODO(aeryz): this should be 96 when fee is enabled
+            // TODO(aeryz): handle fee
+            /*
+            ethabi::encode_uint<u64>(&mut tokens_buf, 96);
+            ethabi::encode_uint<u64>(&mut tokens_buf, 0);
+            */
+
+            ethabi::encode_uint<u64>(&mut tokens_buf, 64);
+            ethabi::encode_uint<u64>(&mut tokens_buf, token.amount);
+
+            ethabi::encode_string(&mut tokens_buf, &token.denom);
+
+            i = i + 1;
+
+            let cursor = 32 + ((num_tokens - 1) * 32);
+            ethabi::encode_uint<u64>(&mut buf, cursor + prev_len);
+            prev_len = prev_len + vector::length(&tokens_buf);
+            i = i + 1;
+        };
+
+        vector::append(&mut buf, tokens_buf);
+
+        let mut offset_buf = vector::empty();
+        ethabi::encode_uint<u64>(&mut offset_buf, vector::length(&buf));
+
+        let mut i = 96;
+        while (i < 128) {
+            let b = vector::borrow_mut(&mut buf, i);
+            *b = *vector::borrow(&offset_buf, i - 96);
+            i = i + 1;
+        };
+        ethabi::encode_string(&mut buf, &packet.extension);
+
         buf
-
-        // // TODO(aeryz): document
-        // // Offset of `packet.sender`
-        // ethabi::encode_uint<u64>(&mut buf, 32 * 4);
-        // // Offset of `packet.receiver`
-        // ethabi::encode_uint<u64>(&mut buf, 32 * 6);
-        // // Offset of `packet.tokens`
-        // ethabi::encode_uint<u64>(&mut buf, 32 * 8);
-        // // Offset of `packet.extension`. We temporarily write `0` here because
-        // // `packet.tokens` contain arbitrary-length fields. Hence we can't calculate
-        // // the offset at this point without recursing on the tokens.
-        // ethabi::encode_uint<u64>(&mut buf, 0);
-
-        // // bytes encoded `packet.sender`
-        // ethabi::encode_vector<u8>(
-        //     &mut buf,
-        //     packet.sender,
-        //     |some_variable, data| {
-        //         ethabi::encode_u8(some_variable, data);
-        //     }
-        // );
-
-        // // bytes encoded `packet.receiver`
-        // ethabi::encode_vector<u8>(
-        //     &mut buf,
-        //     packet.receiver,
-        //     |some_variable, data| {
-        //         ethabi::encode_u8(some_variable, data);
-        //     }
-        // );
-
-        // // length prefix of the tokens array
-        // let num_tokens = vector::length(&packet.tokens);
-        // ethabi::encode_uint<u64>(&mut buf, num_tokens);
-
-        // let tokens_buf = vector::empty();
-        // let i = 0;
-        // let prev_len = 0;
-        // while (i < num_tokens) {
-        //     let token = vector::borrow(&packet.tokens, i);
-
-        //     // TODO(aeryz): this should be 96 when fee is enabled
-        //     // TODO(aeryz): handle fee
-        //     /*
-        //     ethabi::encode_uint<u64>(&mut tokens_buf, 96);
-        //     ethabi::encode_uint<u64>(&mut tokens_buf, 0);
-        //     */
-
-        //     ethabi::encode_uint<u64>(&mut tokens_buf, 64);
-        //     ethabi::encode_uint<u64>(&mut tokens_buf, token.amount);
-
-        //     ethabi::encode_string(&mut tokens_buf, token.denom);
-
-        //     i = i + 1;
-
-        //     let cursor = 32 + ((num_tokens - 1) * 32);
-        //     ethabi::encode_uint<u64>(&mut buf, cursor + prev_len);
-        //     prev_len = prev_len + vector::length(&tokens_buf);
-        //     i = i + 1;
-        // };
-
-        // vector::append(&mut buf, tokens_buf);
-
-        // let offset_buf = vector::empty();
-        // ethabi::encode_uint<u64>(&mut offset_buf, vector::length(&buf));
-
-        // let i = 96;
-        // while (i < 128) {
-        //     let b = vector::borrow_mut(&mut buf, i);
-        //     *b = *vector::borrow(&offset_buf, i - 96);
-        //     i = i + 1;
-        // };
-        // ethabi::encode_string(&mut buf, packet.extension);
-
-        // buf
     }
 
 
-    public fun decode_packet(buf: vector<u8>): RelayPacket {
+    public fun decode_packet(buf: &vector<u8>): RelayPacket {
         // TODO: Fix here
+        let mut index = 128;
+
+        // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
+
+        // Decoding sender address
+        let sender =
+            ethabi::decode_vector!<u8>(
+                buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_u8(buf, index) as u8)
+                }
+            );
+
+        let receiver =
+            ethabi::decode_vector!<u8>(
+                buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_u8(buf, index) as u8)
+                }
+            );
+
+        // let receiver = from_bcs::to_address(receiver_vec);
+
+        // Decoding the number of tokens
+        let num_tokens = (ethabi::decode_uint(buf, &mut index) as u64);
+
+        index = index + num_tokens * 32;
+
+        let mut tokens = vector::empty<Token>();
+        // Decoding the token starting point and sequence
+        let mut i = 0;
+        while (i < num_tokens) {
+            // dynamic data prefix
+            index = index + 32;
+
+            let amount = ethabi::decode_uint(buf, &mut index);
+            // let _fee = ethabi::decode_uint(buf, &mut index);
+            let denom = ethabi::decode_string(buf, &mut index);
+
+            let token = Token { amount: (amount as u64), denom: denom };
+            vector::push_back(&mut tokens, token);
+
+            i = i + 1;
+        };
+
+        // Decoding the extension string
+        let extension = ethabi::decode_string(buf, &mut index);
+
+        // Returning the decoded RelayPacket
         RelayPacket {
-            sender: b"",
-            receiver: b"", 
-            tokens: vector::empty(),
-            extension: utf8(b"")
+            sender: sender,
+            receiver: receiver,
+            tokens: tokens,
+            extension: extension
         }
-        // let index = 128;
-
-        // // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
-        // // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
-        // // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
-        // // let _unknown_data_32 = ethabi::decode_uint(buf, &mut index);
-
-        // // Decoding sender address
-        // let sender =
-        //     ethabi::decode_vector<u8>(
-        //         buf,
-        //         &mut index,
-        //         |buf, index| {
-        //             (ethabi::decode_u8(buf, index) as u8)
-        //         }
-        //     );
-
-        // let receiver =
-        //     ethabi::decode_vector<u8>(
-        //         buf,
-        //         &mut index,
-        //         |buf, index| {
-        //             (ethabi::decode_u8(buf, index) as u8)
-        //         }
-        //     );
-
-        // // let receiver = from_bcs::to_address(receiver_vec);
-
-        // // Decoding the number of tokens
-        // let num_tokens = (ethabi::decode_uint(buf, &mut index) as u64);
-
-        // index = index + num_tokens * 32;
-
-        // let tokens = vector::empty<Token>();
-        // // Decoding the token starting point and sequence
-        // let i = 0;
-        // while (i < num_tokens) {
-        //     // dynamic data prefix
-        //     index = index + 32;
-
-        //     let amount = ethabi::decode_uint(buf, &mut index);
-        //     // let _fee = ethabi::decode_uint(buf, &mut index);
-        //     let denom = ethabi::decode_string(buf, &mut index);
-
-        //     let token = Token { amount: (amount as u64), denom: denom };
-        //     vector::push_back(&mut tokens, token);
-
-        //     i = i + 1;
-        // };
-
-        // // Decoding the extension string
-        // let extension = ethabi::decode_string(buf, &mut index);
-
-        // // Returning the decoded RelayPacket
-        // RelayPacket {
-        //     sender: sender,
-        //     receiver: receiver,
-        //     tokens: tokens,
-        //     extension: extension
-        // }
     }
 
     public fun hex_to_bytes(hex_str: String): vector<u8> {
@@ -636,7 +630,7 @@ module ucs01::relay_app {
         ctx: &mut TxContext
     ) {
         // Decode the packet data
-        let relay_packet = decode_packet(packet_data);
+        let relay_packet = decode_packet(&packet_data);
 
         // Call the refund_tokens function to refund the sender
         refund_tokens(
@@ -720,7 +714,7 @@ module ucs01::relay_app {
         ctx: &mut TxContext
     ) {
         // Decode the RelayPacket from the IBC packet data
-        let packet = decode_packet(*packet::data(&ibc_packet));
+        let packet = decode_packet(packet::data(&ibc_packet));
         let source_channel = packet::source_channel(&ibc_packet);
         let destination_channel = packet::destination_channel(&ibc_packet);
 
@@ -898,7 +892,7 @@ module ucs01::relay_app {
             };
 
             if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
-                let relay_packet = decode_packet(*packet::data(&packet));
+                let relay_packet = decode_packet(packet::data(&packet));
                 refund_tokens(
                     ibc_store,
                     relay_store,
@@ -947,8 +941,7 @@ module ucs01::relay_app {
                     source_channel,
                     local_token_denom,
                     coin,
-                    local_token_amount,
-                    ctx
+                    local_token_amount
                 );
 
             // Create a normalized Token struct and push to the vector
@@ -1027,4 +1020,41 @@ module ucs01::relay_app {
         };
         *token_address
     }
+
+    //TODO: Its not working, why?
+    // #[test]
+    // public fun test_encode() {
+    //     let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
+    //     let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
+    //     let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
+    //     let mut tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+    //     vector::push_back(&mut tokens, token2);
+    //     vector::push_back(&mut tokens, token3);
+
+    //     let sender = bcs::to_bytes(&@0x111111111111111111111);
+    //     let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
+    //     let extension = string::utf8(b"extension");
+    //     let packet = RelayPacket {
+    //         sender: sender,
+    //         receiver: receiver,
+    //         tokens: tokens,
+    //         extension: extension
+    //     };
+    //     let encoded = encode_packet(&packet);
+    //     let decoded = decode_packet(&encoded);
+
+    //     assert!(decoded.sender == sender, 100);
+    //     assert!(decoded.receiver == receiver, 101);
+    //     assert!(decoded.extension == extension, 102);
+    //     let token = vector::borrow(&decoded.tokens, 0);
+    //     assert!(token.denom == string::utf8(b"denom"), 103);
+    //     assert!(token.amount == 1000, 104);
+    //     let token2 = vector::borrow(&decoded.tokens, 1);
+    //     assert!(token2.denom == string::utf8(b"this is amazing"), 105);
+    //     assert!(token2.amount == 3000, 106);
+    //     let token3 = vector::borrow(&decoded.tokens, 2);
+    //     assert!(token3.denom == string::utf8(b"insane cool"), 107);
+    //     assert!(token3.amount == 3, 108);
+    // }
 }
