@@ -1,0 +1,230 @@
+---
+import { Icon } from "astro-icon/components"
+import ExternalLinkIcon from "./ExternalLinkIcon.astro"
+
+const menuItems = [
+  {
+    url: "/learn",
+    name: "learn",
+    highlight: false,
+    external: false
+  },
+  {
+    url: "/ecosystem",
+    name: "ecosystem",
+    highlight: false,
+    external: false
+  },
+  {
+    url: "/blog",
+    name: "blog",
+    highlight: false,
+    external: false
+  },
+  {
+    url: "/team",
+    name: "team",
+    highlight: false,
+    external: false
+  },
+  {
+    url: "https://ceremony.union.build/",
+    name: "ceremony",
+    highlight: false,
+    external: true
+  },
+  {
+    url: "https://docs.union.build/",
+    name: "docs",
+    highlight: false,
+    external: true
+  },
+  {
+    url: "https://research.union.build/",
+    name: "research",
+    highlight: false,
+    external: true
+  },
+  {
+    url: "https://app.union.build",
+    name: "testnet",
+    highlight: false,
+    external: true,
+    disabled: true
+  }
+]
+---
+
+<dropdown-menu status="closed" class="lg:hidden flex flex-1 justify-end">
+  <div
+    id="overlay"
+    class="overlay sm:hidden"
+    data-description="Overlay to blur the background when the menu is open"
+  >
+  </div>
+  <button
+    title="Menu"
+    id="menu-button"
+    aria-label="Menu"
+    name="menu-button"
+    class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
+  >
+    <Icon name="tabler:menu-2" color="#000000" size="20px" />
+  </button>
+
+  <ul
+    id="menu-items-list"
+    class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
+  >
+    {
+      menuItems.map(menuItem => (
+        <li class="py-2 px-4" hidden={menuItem.disabled}>
+          <a
+            href={menuItem.url}
+            target={menuItem.external ? "_blank" : ""}
+            rel={menuItem.external ? "noopener noreferrer" : ""}
+            class="text-white text-shadow !text-lg text-normal flex gap-1.5 items-center flex-1 uppercase font-mono"
+          >
+            {menuItem.name}
+            {menuItem.external ? <ExternalLinkIcon class="-mt-0.5 size-4 text-neutral-500" /> : ""}
+          </a>
+        </li>
+      ))
+    }
+    <li>
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href="https://discord.union.build"
+        class="flex gap-2 text-lg px-4 py-2 uppercase"
+      >
+        <label>Discord</label>
+        <Icon name="tabler:brand-discord-filled" color="#fff" size="16px" class="my-auto" />
+      </a>
+    </li>
+    <li class="">
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href="https://x.com/union_build"
+        class="flex gap-2 text-lg px-4 py-2 uppercase"
+      >
+        <label>X.com</label>
+        <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" class="my-auto" />
+      </a>
+    </li>
+  </ul>
+</dropdown-menu>
+
+<script>
+  class DropdownMenu extends HTMLElement {
+    resizeObserver: ResizeObserver | undefined
+
+    constructor() {
+      super()
+      this.resizeObserver = undefined
+    }
+
+    static get observedAttributes() {
+      return ["status"]
+    }
+
+    get status() {
+      return this.getAttribute("status")
+    }
+
+    set status(value) {
+      if (value) this.setAttribute("status", value)
+      else this.removeAttribute("status")
+    }
+
+    connectedCallback() {
+      const overlayElement = this.querySelector("div#overlay")
+      const menuListElement = this.querySelector("ul#menu-items-list")
+      const menuButtonElement = this.querySelector("button#menu-button")
+
+      if (!menuButtonElement || !menuListElement || !overlayElement) return
+
+      menuButtonElement?.addEventListener("click", _event => {
+        if (!menuListElement || !overlayElement) return
+
+        if (this.status === "closed") {
+          menuListElement.style.display = "flex"
+          menuListElement.style.maxHeight = `${menuListElement.scrollHeight}px`
+          overlayElement.classList.add("show")
+          this.status = "open"
+        } else {
+          menuListElement.style.display = "none"
+          menuListElement.style.maxHeight = "0"
+          overlayElement.classList.remove("show")
+          this.status = "closed"
+        }
+      })
+
+      /**
+       * this is for when we resize to wider and the menu closes
+       * we don"t want it to re-open when we resize back to smaller
+       */
+      this.resizeObserver = new ResizeObserver(([element]) => {
+        requestAnimationFrame(() => {
+          const menuOpen = element.contentRect.width != 0
+
+          if (menuOpen && this.status === "closed") {
+            menuListElement.style.display = "flex"
+            menuListElement.style.maxHeight = `${menuListElement.scrollHeight}px`
+            overlayElement.classList.add("show")
+            this.status = "open"
+          } else if (!menuOpen && this.status === "open") {
+            menuListElement.style.display = "none"
+            menuListElement.style.maxHeight = "0"
+            overlayElement.classList.remove("show")
+            this.status = "closed"
+          }
+        })
+      })
+
+      this.resizeObserver.observe(menuListElement)
+    }
+
+    disconnectedCallback() {
+      this.resizeObserver?.disconnect()
+    }
+  }
+
+  customElements.define("dropdown-menu", DropdownMenu)
+</script>
+
+<style is:inline>
+  #menu-items-list {
+    display: none;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.2s ease-out;
+  }
+
+  #menu-button,
+  #menu-items-list {
+    z-index: 1000;
+  }
+
+  .overlay {
+    z-index: 999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 150vh;
+    background: rgba(0, 0, 0, 9); /* Adjust color and opacity as needed */
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s 0.3s; /* Add transition for visibility */
+  }
+
+  .overlay.show {
+    visibility: visible;
+    opacity: 0.75;
+    transition: opacity 0.3s ease; /* No delay needed when showing */
+  }
+</style>
