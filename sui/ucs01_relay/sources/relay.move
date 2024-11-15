@@ -410,6 +410,7 @@ module ucs01::relay_app {
         let mut tokens_buf = vector::empty();
         let mut i = 0;
         let mut prev_len = 0;
+
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
 
@@ -424,8 +425,6 @@ module ucs01::relay_app {
             ethabi::encode_uint<u64>(&mut tokens_buf, token.amount);
 
             ethabi::encode_string(&mut tokens_buf, &token.denom);
-
-            i = i + 1;
 
             let cursor = 32 + ((num_tokens - 1) * 32);
             ethabi::encode_uint<u64>(&mut buf, cursor + prev_len);
@@ -477,7 +476,6 @@ module ucs01::relay_app {
                     (ethabi::decode_u8(buf, index) as u8)
                 }
             );
-
         // let receiver = from_bcs::to_address(receiver_vec);
 
         // Decoding the number of tokens
@@ -498,7 +496,6 @@ module ucs01::relay_app {
 
             let token = Token { amount: (amount as u64), denom: denom };
             vector::push_back(&mut tokens, token);
-
             i = i + 1;
         };
 

@@ -67,7 +67,7 @@ module ibc::channel {
         channel.version = new_version;
     }
 
-    // Encode and decode functions (empty for now)
+    // Encode and decode functions
     public fun encode(channel: &Channel): vector<u8> {
         let mut buf = vector::empty<u8>();
 
