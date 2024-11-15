@@ -1,7 +1,11 @@
 use core::fmt::Debug;
 
-use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Env, QuerierWrapper, StdError};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
+    StdError,
+};
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
+use msg::InstantiateMsg;
 use state::IBC_HOST;
 use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
 use union_ibc_msg::lightclient::{
@@ -9,6 +13,7 @@ use union_ibc_msg::lightclient::{
 };
 use unionlabs::encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding};
 
+pub mod msg;
 pub mod state;
 
 // TODO: Add #[source] to all variants
@@ -165,6 +170,16 @@ pub trait IbcClient: Sized {
         ctx: IbcClientCtx<Self>,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<Self::ClientState, IbcClientError<Self>>;
+}
+
+pub fn instantiate<T: IbcClient>(
+    deps: DepsMut<T::CustomQuery>,
+    _env: Env,
+    _info: MessageInfo,
+    msg: InstantiateMsg,
+) -> Result<Response, IbcClientError<T>> {
+    IBC_HOST.save(deps.storage, &msg.ibc_host)?;
+    Ok(Response::default())
 }
 
 pub fn query<T: IbcClient>(

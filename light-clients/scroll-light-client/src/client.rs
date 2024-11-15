@@ -1,12 +1,11 @@
+use cosmwasm_std::Empty;
 use ethereum_light_client::client::{check_commitment_key, EthereumLightClient};
 use ethereum_light_client_types::StorageProof;
 use scroll_codec::batch_header::BatchHeaderV3;
 use scroll_light_client_types::{ClientState, ConsensusState, Header};
 use union_ibc_light_client::{IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
-use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, hash::H256,
-};
+use unionlabs::{encoding::Proto, hash::H256};
 
 use crate::errors::Error;
 
@@ -15,7 +14,7 @@ pub enum ScrollLightClient {}
 impl union_ibc_light_client::IbcClient for ScrollLightClient {
     type Error = Error;
 
-    type CustomQuery = UnionCustomQuery;
+    type CustomQuery = Empty;
 
     type Header = Header;
 

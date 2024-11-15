@@ -1,16 +1,15 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
+use union_ibc_light_client::state::IBC_HOST;
 
 use crate::{
     client::ScrollLightClient,
     errors::Error,
     msg::{InstantiateMsg, QueryMsg},
-    state::IBC_HOST,
 };
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[entry_point]
 pub fn instantiate(
-    deps: DepsMut<UnionCustomQuery>,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -19,7 +18,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+#[entry_point]
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     union_ibc_light_client::query::<ScrollLightClient>(deps, env, msg).map_err(Into::into)
 }
