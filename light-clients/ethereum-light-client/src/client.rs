@@ -20,7 +20,7 @@ use unionlabs::{
 
 use crate::{custom_query::VerificationContext, errors::Error};
 
-pub struct EthereumLightClient;
+pub enum EthereumLightClient {}
 
 impl union_ibc_light_client::IbcClient for EthereumLightClient {
     type Error = Error;

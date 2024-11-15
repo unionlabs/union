@@ -40,3 +40,6 @@ unionlabs                   = { workspace = true, features = ["ethabi", "stargat
 base64     = { workspace = true }
 hex        = { workspace = true }
 serde_json = { workspace = true }
+
+[features]
+library = []

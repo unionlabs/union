@@ -1,17 +1,16 @@
-use cosmwasm_std::Deps;
 use ethereum_light_client::client::{check_commitment_key, EthereumLightClient};
 use ethereum_light_client_types::StorageProof;
 use scroll_codec::batch_header::BatchHeaderV3;
 use scroll_light_client_types::{ClientState, ConsensusState, Header};
-use union_ibc_light_client::read_consensus_state;
+use union_ibc_light_client::{IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, hash::H256,
 };
 
-use crate::{errors::Error, state::IBC_HOST};
+use crate::errors::Error;
 
-pub struct ScrollLightClient;
+pub enum ScrollLightClient {}
 
 impl union_ibc_light_client::IbcClient for ScrollLightClient {
     type Error = Error;
@@ -31,12 +30,14 @@ impl union_ibc_light_client::IbcClient for ScrollLightClient {
     type Encoding = Proto;
 
     fn verify_membership(
-        _client_id: u32,
-        consensus_state: Self::ConsensusState,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+
         check_commitment_key(
             H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
             storage_proof.key,
@@ -68,11 +69,12 @@ impl union_ibc_light_client::IbcClient for ScrollLightClient {
     }
 
     fn verify_non_membership(
-        _client_id: u32,
-        consensus_state: Self::ConsensusState,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
         check_commitment_key(
             H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
             storage_proof.key,
@@ -108,22 +110,16 @@ impl union_ibc_light_client::IbcClient for ScrollLightClient {
     fn verify_creation(
         _client_state: &ClientState,
         _consensus_state: &ConsensusState,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         Ok(())
     }
 
     fn verify_header(
-        deps: Deps<Self::CustomQuery>,
-        _env: cosmwasm_std::Env,
-        _client_id: u32,
-        mut client_state: Self::ClientState,
-        _consensus_state: Self::ConsensusState,
+        ctx: IbcClientCtx<Self>,
         header: Header,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
-    > {
-        verify_header(deps, &client_state, &header)?;
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+        let mut client_state = ctx.read_self_client_state()?;
+        verify_header(&ctx, &client_state, &header)?;
 
         let batch_header =
             BatchHeaderV3::decode(&header.batch_header).map_err(Error::BatchHeaderDecode)?;
@@ -147,25 +143,19 @@ impl union_ibc_light_client::IbcClient for ScrollLightClient {
     }
 
     fn misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _env: cosmwasm_std::Env,
-        _client_id: u32,
-        _ibc_host: cosmwasm_std::Addr,
+        _ctx: IbcClientCtx<Self>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
-        unimplemented!()
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
+        todo!()
     }
 }
 
 pub fn verify_header(
-    deps: Deps<UnionCustomQuery>,
+    ctx: &IbcClientCtx<ScrollLightClient>,
     client_state: &ClientState,
     header: &Header,
 ) -> Result<(), Error> {
-    let ibc_host = IBC_HOST.load(deps.storage)?;
-    let l1_consensus_state = read_consensus_state::<EthereumLightClient>(
-        deps,
-        &ibc_host,
+    let l1_consensus_state = ctx.read_consensus_state::<EthereumLightClient>(
         client_state.l1_client_id.clone(),
         header.l1_height.height(),
     )?;

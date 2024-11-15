@@ -1,14 +1,8 @@
 use cosmwasm_std::StdError;
 use ethereum_light_client::client::EthereumLightClient;
 use scroll_codec::batch_header::BatchHeaderV3DecodeError;
-use scroll_light_client_types::{ClientState, ConsensusState};
 use union_ibc_light_client::IbcClientError;
-use unionlabs::{
-    encoding::{DecodeErrorOf, Proto},
-    hash::H256,
-    ibc::core::client::height::Height,
-    ics24::PathParseError,
-};
+use unionlabs::{hash::H256, ibc::core::client::height::Height, ics24::PathParseError};
 
 use crate::client::ScrollLightClient;
 
