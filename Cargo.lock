@@ -13419,6 +13419,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
+ "bincode",
  "bip32",
  "bitvec 1.0.1",
  "borsh",

@@ -11,6 +11,9 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
+pub enum Bincode {}
+impl Encoding for Bincode {}
+
 impl<T> Encode<Ssz> for T
 where
     T: ssz::Ssz,
@@ -64,6 +67,26 @@ where
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
         serde_json::from_slice(bytes)
+    }
+}
+
+impl<T> Encode<Bincode> for T
+where
+    T: serde::Serialize,
+{
+    fn encode(self) -> Vec<u8> {
+        bincode::serialize(&self).expect("bincode serialization should be infallible")
+    }
+}
+
+impl<T> Decode<Bincode> for T
+where
+    T: serde::de::DeserializeOwned,
+{
+    type Error = bincode::Error;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        bincode::deserialize(bytes)
     }
 }
 
