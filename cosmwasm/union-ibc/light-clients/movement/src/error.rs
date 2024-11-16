@@ -1,11 +1,14 @@
 use cosmwasm_std::StdError;
 use movement_light_client_types::{ClientState, ConsensusState};
+use union_ibc_light_client::IbcClientError;
 use unionlabs::{
     aptos::storage_proof::TryFromStorageProofError,
     encoding::{DecodeErrorOf, Proto},
     ibc::core::client::height::Height,
     TryFromProtoBytesError,
 };
+
+use crate::client::MovementLightClient;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
@@ -42,5 +45,11 @@ pub enum Error {
 impl From<Error> for StdError {
     fn from(value: Error) -> Self {
         StdError::generic_err(value.to_string())
+    }
+}
+
+impl From<Error> for IbcClientError<MovementLightClient> {
+    fn from(value: Error) -> Self {
+        IbcClientError::ClientSpecific(value)
     }
 }

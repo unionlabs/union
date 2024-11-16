@@ -1,20 +1,20 @@
-use cosmwasm_std::{Addr, Deps};
-use ethereum_light_client_types::consensus_state::ConsensusState as EthereumConsensusState;
+use cosmwasm_std::Empty;
 use movement_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
-use union_ibc::state::CLIENT_CONSENSUS_STATES;
+use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     aptos::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, Proto},
+    encoding::Proto,
     hash::H256,
     uint::U256,
 };
 
-use crate::{error::Error, state::IBC_HOST};
+use crate::error::Error;
+
+pub enum MovementLightClient {}
 
 #[derive(rlp::RlpEncodable)]
 struct BlockCommitment {
@@ -23,78 +23,150 @@ struct BlockCommitment {
     pub block_id: U256,
 }
 
-pub fn verify_header(
-    client_state: ClientState,
-    // TODO(aeryz): why are we not using this?
-    _consensus_state: ConsensusState,
-    deps: Deps<UnionCustomQuery>,
-    _env: cosmwasm_std::Env,
-    header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
-    // NOTE(aeryz): FOR AUDITORS and NERDS:
-    // Movement's current REST API's don't provide state and transaction proofs. We added those to our custom
-    // Movement node which we also work on getting them to be upstreamed. Hence, we use the following feature-flag with
-    // a custom setup.
-    // Also see the related PR: https://github.com/movementlabsxyz/movement/pull/645
+impl union_ibc_light_client::IbcClient for MovementLightClient {
+    type Error = Error;
 
-    // #[cfg(feature = "union-movement")]
-    // {
-    aptos_verifier::verify_tx_state(
-        &header.tx_proof,
-        *header
-            .state_proof
-            .latest_ledger_info()
-            .commit_info
-            .executed_state_id
-            .get(),
-        header.tx_index,
-    )
-    .map_err(Into::<Error>::into)?;
+    type CustomQuery = Empty;
 
-    // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
+    type Header = Header;
 
-    let l1_consensus_state = read_l1_consensus_state(
-        deps,
-        &IBC_HOST.load(deps.storage)?,
-        client_state.l1_client_id,
-        header.l1_height,
-    )?;
+    type Misbehaviour = Header;
 
-    let expected_commitment = BlockCommitment {
-        height: header.new_height.into(),
-        commitment: U256::from_be_bytes(header.state_proof.hash()),
-        // TODO(aeryz): check if hash here is big endian
-        block_id: U256::from_be_bytes(
-            header
+    type ClientState = ClientState;
+
+    type ConsensusState = ConsensusState;
+
+    type StorageProof = StorageProof;
+
+    type Encoding = Proto;
+
+    fn verify_membership(
+        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        verify_membership(
+            &key,
+            consensus_state.state_root,
+            client_state.table_handle,
+            storage_proof,
+            &value,
+        )
+        .map_err(Into::into)
+    }
+
+    fn verify_non_membership(
+        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        unimplemented!()
+    }
+
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+        consensus_state.timestamp
+    }
+
+    fn get_latest_height(client_state: &Self::ClientState) -> u64 {
+        client_state.latest_block_num
+    }
+
+    fn status(client_state: &Self::ClientState) -> Status {
+        if client_state.frozen_height.height() != 0 {
+            Status::Frozen
+        } else {
+            Status::Active
+        }
+    }
+
+    fn verify_creation(
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+        Ok(())
+    }
+
+    fn verify_header(
+        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        header: Self::Header,
+    ) -> Result<
+        (u64, Self::ClientState, Self::ConsensusState),
+        union_ibc_light_client::IbcClientError<Self>,
+    > {
+        let client_state = ctx.read_self_client_state()?;
+        // NOTE(aeryz): FOR AUDITORS and NERDS:
+        // Movement's current REST API's don't provide state and transaction proofs. We added those to our custom
+        // Movement node which we also work on getting them to be upstreamed. Hence, we use the following feature-flag with
+        // a custom setup.
+        // Also see the related PR: https://github.com/movementlabsxyz/movement/pull/645
+
+        // #[cfg(feature = "union-movement")]
+        // {
+        aptos_verifier::verify_tx_state(
+            &header.tx_proof,
+            *header
                 .state_proof
                 .latest_ledger_info()
                 .commit_info
-                .id
-                .into(),
-        ),
-    };
+                .executed_state_id
+                .get(),
+            header.tx_index,
+        )
+        .map_err(Into::<Error>::into)?;
 
-    evm_storage_verifier::verify_account_storage_root(
-        l1_consensus_state.state_root,
-        &client_state.l1_contract_address,
-        &header.settlement_contract_proof.proof,
-        &header.settlement_contract_proof.storage_root,
-    )
-    .unwrap();
+        // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
 
-    evm_storage_verifier::verify_storage_proof(
-        header.settlement_contract_proof.storage_root,
-        header.state_proof_hash_proof.key,
-        &rlp::encode(&expected_commitment),
-        &header.state_proof_hash_proof.proof,
-    )
-    .unwrap();
-    // }
-    // #[cfg(not(feature = "union-movement"))]
-    // {
-    //     let _ = (deps, env, header);
-    // }
-    update_state(client_state, header)
+        let l1_consensus_state =
+            ctx.read_consensus_state(client_state.l1_client_id, header.l1_height)?;
+
+        let expected_commitment = BlockCommitment {
+            height: header.new_height.into(),
+            commitment: U256::from_be_bytes(header.state_proof.hash()),
+            // TODO(aeryz): check if hash here is big endian
+            block_id: U256::from_be_bytes(
+                header
+                    .state_proof
+                    .latest_ledger_info()
+                    .commit_info
+                    .id
+                    .into(),
+            ),
+        };
+
+        evm_storage_verifier::verify_account_storage_root(
+            l1_consensus_state.state_root,
+            &client_state.l1_contract_address,
+            &header.settlement_contract_proof.proof,
+            &header.settlement_contract_proof.storage_root,
+        )
+        .unwrap();
+
+        evm_storage_verifier::verify_storage_proof(
+            header.settlement_contract_proof.storage_root,
+            header.state_proof_hash_proof.key,
+            &rlp::encode(&expected_commitment),
+            &header.state_proof_hash_proof.proof,
+        )
+        .unwrap();
+        // }
+        // #[cfg(not(feature = "union-movement"))]
+        // {
+        //     let _ = (deps, env, header);
+        // }
+        update_state(client_state, header).map_err(Into::into)
+    }
+
+    fn misbehaviour(
+        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _misbehaviour: Self::Misbehaviour,
+    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
+        unimplemented!()
+    }
 }
 
 fn update_state(
@@ -181,22 +253,6 @@ pub enum PersistedStateValueMetadata {
         bytes_deposit: u64,
         creation_time_usecs: u64,
     },
-}
-
-fn read_l1_consensus_state(
-    deps: Deps<UnionCustomQuery>,
-    ibc_host: &Addr,
-    client_id: u32,
-    height: u64,
-) -> Result<EthereumConsensusState, Error> {
-    let consensus_state = deps
-        .querier
-        .query_wasm_raw(
-            ibc_host.to_string(),
-            CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec(),
-        )?
-        .unwrap();
-    Ok(EthereumConsensusState::decode_as::<Proto>(&consensus_state).unwrap())
 }
 
 #[cfg(test)]

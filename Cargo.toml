@@ -135,7 +135,6 @@ members = [
 
   "drip",
 
-  # "light-clients/movement-light-client",
   "cosmwasm/union-ibc/light-clients/movement",
   "cosmwasm/union-ibc/light-clients/movement/types",
 

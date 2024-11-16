@@ -1,8 +1,7 @@
 pub mod client;
-mod contract;
+#[cfg(any(test, not(feature = "library")))]
+pub mod contract;
 pub mod error;
-pub mod msg;
-pub mod state;
 
 // use aptos_types::{proof::TransactionInfoWithProof, state_proof::StateProof};
 // use aptos_crypto::{hash::CryptoHash, HashValue};
