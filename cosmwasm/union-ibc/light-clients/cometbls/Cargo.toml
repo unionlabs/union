@@ -1,0 +1,46 @@
+[package]
+authors = ["Union Labs"]
+edition = "2021"
+license = "BSL-1.1"
+name    = "cometbls-light-client"
+publish = false
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = ["light-clients/cometbls-light-client/src/test"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytes                     = { workspace = true }
+cometbls-groth16-verifier = { workspace = true }
+cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
+dlmalloc                  = { workspace = true, features = ["global"] }
+hex                       = { workspace = true }
+prost                     = { workspace = true }
+protos                    = { workspace = true, features = ["proto_full", "std"] }
+ripemd                    = { workspace = true }
+schemars                  = { workspace = true }
+serde                     = { workspace = true, features = ["derive"] }
+serde-json-wasm           = { workspace = true }
+serde-utils               = { workspace = true }
+sha2                      = { workspace = true }
+sha3                      = { workspace = true }
+thiserror                 = { workspace = true }
+
+cometbls-light-client-types = { workspace = true, features = ["proto"] }
+ics008-wasm-client          = { workspace = true }
+ics23                       = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+base64      = { workspace = true }
+lazy_static = "1.4.0"
+serde_json  = { workspace = true }
+
+
+[features]
