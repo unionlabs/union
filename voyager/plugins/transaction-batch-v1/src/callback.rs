@@ -70,7 +70,7 @@ where
             })?;
 
         let client_meta = voyager_client
-            .spec_client_meta::<V>(
+            .client_meta::<V>(
                 module_server.chain_id.clone(),
                 QueryHeight::Latest,
                 self.client_id.clone(),

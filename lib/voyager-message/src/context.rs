@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::anyhow;
 use futures::{
     future,
     stream::{self, FuturesUnordered},
@@ -21,7 +22,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
 use voyager_core::{ConsensusType, IbcVersionId};
-use voyager_vm::{BoxDynError, QueueError};
+use voyager_vm::QueueError;
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
@@ -74,8 +75,8 @@ pub struct Modules {
 
 /// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
 pub struct IbcSpecHandler {
-    pub client_state_path: fn(RawClientId) -> Result<Value, BoxDynError>,
-    pub consensus_state_path: fn(RawClientId, String) -> Result<Value, BoxDynError>,
+    pub client_state_path: fn(RawClientId) -> anyhow::Result<Value>,
+    pub consensus_state_path: fn(RawClientId, String) -> anyhow::Result<Value>,
 }
 
 impl IbcSpecHandler {
@@ -153,10 +154,7 @@ impl ModuleRpcClient {
     }
 }
 
-async fn module_rpc_server(
-    name: &str,
-    server: Server,
-) -> Result<impl Future<Output = ()>, BoxDynError> {
+async fn module_rpc_server(name: &str, server: Server) -> anyhow::Result<impl Future<Output = ()>> {
     let socket = make_module_rpc_server_socket_path(name);
     let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
 
@@ -227,7 +225,7 @@ impl Context {
     pub async fn new(
         plugin_configs: Vec<PluginConfig>,
         module_configs: ModulesConfig,
-    ) -> Result<Self, BoxDynError> {
+    ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
 
         let mut modules = Modules {
@@ -280,7 +278,7 @@ impl Context {
                     debug!("starting rpc server for plugin {}", plugin_info.name);
                     tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
 
-                    Ok::<_, BoxDynError>(Some((plugin_config, plugin_info)))
+                    Ok(Some((plugin_config, plugin_info)))
                 }
             })
             .try_for_each_concurrent(
@@ -305,17 +303,16 @@ impl Context {
                     let prev = plugins.insert(name.clone(), rpc_client.clone());
 
                     if prev.is_some() {
-                        return future::ready(Err(format!(
+                        return future::ready(Err(anyhow!(
                             "multiple plugins configured with name `{name}`"
-                        )
-                        .into()));
+                        )));
                     }
 
                     info!("registered plugin {name}");
 
                     interest_filters.insert(name, interest_filter);
 
-                    future::ready(Ok::<_, BoxDynError>(()))
+                    future::ready(Ok(()))
                 },
             )
             .await?;
@@ -335,11 +332,10 @@ impl Context {
                     .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
 
                 if prev.is_some() {
-                    return Err(format!(
+                    return Err(anyhow!(
                         "multiple state modules configured for chain id \
                         `{chain_id}` and IBC version `{ibc_version_id}`",
-                    )
-                    .into());
+                    ));
                 }
 
                 Ok(())
@@ -362,11 +358,10 @@ impl Context {
                     .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
 
                 if prev.is_some() {
-                    return Err(format!(
+                    return Err(anyhow!(
                         "multiple proof modules configured for chain id \
                         `{chain_id}` and IBC version `{ibc_version_id}`",
-                    )
-                    .into());
+                    ));
                 }
 
                 Ok(())
@@ -389,11 +384,10 @@ impl Context {
                     .insert(chain_id.clone(), rpc_client);
 
                 if prev.is_some() {
-                    return Err(format!(
+                    return Err(anyhow!(
                         "multiple consensus modules configured for consensus id `{}`",
                         chain_id
-                    )
-                    .into());
+                    ));
                 }
 
                 let None = modules
@@ -426,12 +420,11 @@ impl Context {
                     .insert(ibc_interface.clone(), rpc_client.clone());
 
                 if prev.is_some() {
-                    return Err(format!(
+                    return Err(anyhow!(
                         "multiple client modules configured for \
                         client type `{client_type}` and IBC \
                         interface `{ibc_interface}`",
-                    )
-                    .into());
+                    ));
                 }
 
                 if let Some(previous_consensus_type) = modules
@@ -439,13 +432,12 @@ impl Context {
                     .insert(client_type.clone(), consensus_type.clone())
                 {
                     if previous_consensus_type != consensus_type {
-                        return Err(format!(
+                        return Err(anyhow!(
                             "inconsistency in client consensus types: \
                             client type `{client_type}` is registered \
                             as tracking both `{previous_consensus_type}` \
                             and `{consensus_type}`"
-                        )
-                        .into());
+                        ));
                     }
                 }
 
@@ -515,7 +507,7 @@ impl Context {
                 .await
             {
                 Some(()) => {}
-                None => return Err("startup error".into()),
+                None => return Err(anyhow!("startup error")),
             }
         }
 
@@ -926,7 +918,7 @@ pub struct PluginNotFound {
 
 module_error!(PluginNotFound);
 
-pub fn get_plugin_info(module_config: &PluginConfig) -> Result<PluginInfo, String> {
+pub fn get_plugin_info(module_config: &PluginConfig) -> anyhow::Result<PluginInfo> {
     debug!(
         "querying module info from plugin at {}",
         &module_config.path.to_string_lossy(),
@@ -947,14 +939,14 @@ pub fn get_plugin_info(module_config: &PluginConfig) -> Result<PluginInfo, Strin
     if !output.status.success() {
         match output.status.code() {
             Some(code) if code == INVALID_CONFIG_EXIT_CODE as i32 => {
-                return Err(format!(
+                return Err(anyhow!(
                     "invalid config for module at path {}:\n{}",
                     &module_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
                 ));
             }
             Some(_) | None => {
-                return Err(format!(
+                return Err(anyhow!(
                     "unable to query info for module at path {}:\n{}",
                     &module_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
@@ -973,8 +965,8 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
     cancellation_token: CancellationToken,
     main_rpc_server: Server,
     id_f: fn(&Info) -> String,
-    mut push_f: impl FnMut(&Info, ModuleRpcClient) -> Result<(), BoxDynError>,
-) -> Result<(), BoxDynError> {
+    mut push_f: impl FnMut(&Info, ModuleRpcClient) -> anyhow::Result<()>,
+) -> anyhow::Result<()> {
     stream::iter(configs)
         .filter(|module_config| {
             future::ready(if !module_config.enabled {
@@ -988,14 +980,14 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
             })
         })
         .zip(stream::repeat(main_rpc_server.clone()))
-        .map(Ok)
+        .map::<anyhow::Result<_>, _>(anyhow::Result::Ok)
         .try_filter_map(|(module_config, server)| async move {
             if !module_config.enabled {
                 info!(
                     module_path = %module_config.path.to_string_lossy(),
                     "module is not enabled, skipping"
                 );
-                Ok(None)
+                anyhow::Result::Ok(None)
             } else {
                 debug!(
                     "starting rpc server for module {}",
@@ -1003,7 +995,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
                 );
                 tokio::spawn(module_rpc_server(&id_f(&module_config.info), server).await?);
 
-                Ok::<_, BoxDynError>(Some(module_config))
+                anyhow::Result::Ok(Some(module_config))
             }
         })
         .try_collect::<FuturesUnordered<_>>()
@@ -1026,6 +1018,6 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
 
             info!("registered module {id}");
 
-            Ok::<_, BoxDynError>(())
+            Ok(())
         })
 }

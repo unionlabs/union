@@ -40,8 +40,8 @@ use voyager_message::{
     ibc_v1::{self, IbcV1},
     into_value,
     module::{PluginInfo, PluginServer},
-    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    rpc::missing_state,
+    ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
@@ -349,7 +349,7 @@ impl Module {
         channel::order::Order,
     )> {
         let self_connection = voyager_rpc_client
-            .query_spec_ibc_state(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
                 ConnectionPath {
@@ -361,26 +361,19 @@ impl Module {
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info(
-                self.chain_id.clone(),
-                IbcV1::ID,
-                RawClientId::new(self_connection.client_id.clone()),
-            )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .client_info::<IbcV1>(self.chain_id.clone(), self_connection.client_id.clone())
+            .await?;
 
         let client_meta = voyager_rpc_client
-            .client_meta(
+            .client_meta::<IbcV1>(
                 self.chain_id.clone(),
-                IbcV1::ID,
                 event_height.into(),
-                RawClientId::new(self_connection.client_id.clone()),
+                self_connection.client_id.clone(),
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let this_channel = voyager_rpc_client
-            .query_spec_ibc_state(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
                 ChannelEndPath {
@@ -393,7 +386,7 @@ impl Module {
             .ok_or_else(missing_state("channel must exist", None))?;
 
         let counterparty_channel = voyager_rpc_client
-            .query_spec_ibc_state(
+            .query_ibc_state(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
                 ChannelEndPath {
@@ -610,23 +603,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }),
                     ) => {
                         let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                IbcV1::ID,
-                                RawClientId::new(client_id.clone()),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcV1>(self.chain_id.clone(), client_id.clone())
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcV1>(
                                 self.chain_id.clone(),
-                                IbcV1::ID,
                                 height.into(),
-                                RawClientId::new(client_id.clone()),
+                                client_id.clone(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -703,7 +689,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }),
                     ) => {
                         let connection = voyager_client
-                            .query_spec_ibc_state(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
                                 ConnectionPath {
@@ -715,23 +701,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(
+                            .client_info::<IbcV1>(
                                 self.chain_id.clone(),
-                                IbcV1::ID,
-                                RawClientId::new(connection.client_id.clone()),
+                                connection.client_id.clone(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcV1>(
                                 self.chain_id.clone(),
-                                IbcV1::ID,
                                 height.into(),
-                                RawClientId::new(connection.client_id.clone()),
+                                connection.client_id.clone(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -781,7 +763,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }),
                     ) => {
                         let connection = voyager_client
-                            .query_spec_ibc_state(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
                                 ConnectionPath {
@@ -793,26 +775,22 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(
+                            .client_info::<IbcV1>(
                                 self.chain_id.clone(),
-                                IbcV1::ID,
-                                RawClientId::new(connection.client_id.clone()),
+                                connection.client_id.clone(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcV1>(
                                 self.chain_id.clone(),
-                                IbcV1::ID,
                                 height.into(),
-                                RawClientId::new(connection.client_id.clone()),
+                                connection.client_id.clone(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         let channel = voyager_client
-                            .query_spec_ibc_state(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
                                 ChannelEndPath {
@@ -1075,23 +1053,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         dbg!(&create_client);
 
                         let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                IbcUnion::ID,
-                                RawClientId::new(create_client.client_id),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), create_client.client_id)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
-                                IbcUnion::ID,
                                 height.into(),
-                                RawClientId::new(create_client.client_id),
+                                create_client.client_id,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -1115,23 +1086,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         dbg!(&connection_open_init);
 
                         let client_info = voyager_client
-                            .client_info(
+                            .client_info::<IbcUnion>(
                                 self.chain_id.clone(),
-                                IbcUnion::ID,
-                                RawClientId::new(connection_open_init.client_id),
+                                connection_open_init.client_id,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
-                                IbcUnion::ID,
                                 height.into(),
-                                RawClientId::new(connection_open_init.client_id),
+                                connection_open_init.client_id,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),

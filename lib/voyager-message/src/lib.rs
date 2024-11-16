@@ -10,10 +10,7 @@ use std::{
 use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use jsonrpsee::{
-    core::{
-        async_trait, client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams,
-        RpcResult,
-    },
+    core::RpcResult,
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
@@ -26,8 +23,10 @@ use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, debug_span, error, info, trace, Instrument};
-use unionlabs::{ibc::core::client::height::Height, traits::Member, ErrorReporter};
-use voyager_core::{ChainId, ClientInfo, ClientStateMeta, IbcVersionId, QueryHeight};
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
+use voyager_core::{
+    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcVersionId, QueryHeight,
+};
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -41,7 +40,7 @@ use crate::{
         PluginInfo, PluginServer, ProofModuleInfo, ProofModuleServer, StateModuleInfo,
         StateModuleServer,
     },
-    rpc::{json_rpc_error_to_error_object, IbcState, VoyagerRpcClient},
+    rpc::{json_rpc_error_to_error_object, IbcProof, IbcState, VoyagerRpcClient},
 };
 
 pub mod call;
@@ -502,13 +501,43 @@ impl VoyagerClient {
         Self(client)
     }
 
-    pub async fn query_spec_ibc_state<P: IbcStorePathKey>(
+    pub async fn query_latest_height(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Height> {
+        let latest_height = self
+            .0
+            .query_latest_height(chain_id, finalized)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(latest_height)
+    }
+
+    pub async fn encode_proof(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        proof: Value,
+    ) -> RpcResult<Bytes> {
+        let proof = self
+            .0
+            .encode_proof(client_type, ibc_interface, proof)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(proof)
+    }
+
+    pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
         height: QueryHeight,
         path: P,
     ) -> RpcResult<IbcState<P::Value>> {
         let ibc_state = self
+            .0
             .query_ibc_state(
                 chain_id,
                 P::Spec::ID,
@@ -532,7 +561,27 @@ impl VoyagerClient {
         })
     }
 
-    pub async fn spec_client_info<V: IbcSpec>(
+    pub async fn query_ibc_proof<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
+        height: QueryHeight,
+        path: P,
+    ) -> RpcResult<IbcProof> {
+        let ibc_proof = self
+            .0
+            .query_ibc_proof(
+                chain_id,
+                P::Spec::ID,
+                height,
+                into_value(<P::Spec as IbcSpec>::StorePath::from(path.into())),
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(ibc_proof)
+    }
+
+    pub async fn client_info<V: IbcSpec>(
         &self,
         chain_id: ChainId,
         client_id: V::ClientId,
@@ -543,7 +592,7 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub async fn spec_client_meta<V: IbcSpec>(
+    pub async fn client_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
         at: QueryHeight,
@@ -575,42 +624,6 @@ impl ExtensionsExt for Extensions {
                 None::<()>,
             )),
         }
-    }
-}
-
-#[async_trait]
-impl jsonrpsee::core::client::ClientT for VoyagerClient {
-    async fn notification<Params>(
-        &self,
-        method: &str,
-        params: Params,
-    ) -> Result<(), jsonrpsee::core::client::Error>
-    where
-        Params: ToRpcParams + Send,
-    {
-        self.0.notification(method, params).await
-    }
-
-    async fn request<R, Params>(
-        &self,
-        method: &str,
-        params: Params,
-    ) -> Result<R, jsonrpsee::core::client::Error>
-    where
-        R: DeserializeOwned,
-        Params: ToRpcParams + Send,
-    {
-        self.0.request(method, params).await
-    }
-
-    async fn batch_request<'a, R>(
-        &self,
-        batch: BatchRequestBuilder<'a>,
-    ) -> Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>
-    where
-        R: DeserializeOwned + Debug + 'a,
-    {
-        self.0.batch_request(batch).await
     }
 }
 

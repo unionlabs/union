@@ -10,15 +10,10 @@
 )]
 
 use std::{
-    collections::HashMap,
-    ffi::OsString,
-    fmt::{Debug, Write},
-    fs::read_to_string,
-    iter,
-    net::SocketAddr,
-    process::ExitCode,
+    collections::HashMap, fmt::Write, fs::read_to_string, iter, net::SocketAddr, process::ExitCode,
 };
 
+use anyhow::{anyhow, Context as _};
 use clap::Parser;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
@@ -35,7 +30,7 @@ use voyager_message::{
     rpc::{IbcState, VoyagerRpcClient},
     IbcSpec, VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, BoxDynError, Op, Queue};
+use voyager_vm::{call, filter::FilterResult, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -43,7 +38,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
-    queue::{QueueConfig, Voyager, VoyagerInitError},
+    queue::{QueueConfig, Voyager},
     utils::make_msg_create_client,
 };
 
@@ -101,45 +96,26 @@ fn main() -> ExitCode {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum VoyagerError {
-    #[error("unable to read the config file at `{}`", path.to_string_lossy())]
-    ConfigFileNotFound {
-        path: OsString,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("unable to parse the config file at `{}`", path.to_string_lossy())]
-    ConfigFileParse {
-        path: OsString,
-        #[source]
-        source: serde_json::Error,
-    },
-    #[error("error initializing voyager")]
-    Init(#[from] VoyagerInitError),
-    #[error("fatal error encountered")]
-    Run(#[from] BoxDynError),
-    #[error("unable to run command")]
-    Command(#[source] BoxDynError),
-}
-
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
-async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
+async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
     let get_voyager_config = || match &args.config_file_path {
         Some(config_file_path) => read_to_string(config_file_path)
-            .map_err(|err| VoyagerError::ConfigFileNotFound {
-                path: config_file_path.clone(),
-                source: err,
+            .with_context(|| {
+                format!(
+                    "unable to read the config file at `{}`",
+                    config_file_path.to_string_lossy()
+                )
             })
             .and_then(|s| {
-                serde_json::from_str::<Config>(&s).map_err(|err| VoyagerError::ConfigFileParse {
-                    path: config_file_path.clone(),
-                    source: err,
+                serde_json::from_str::<Config>(&s).with_context(|| {
+                    format!(
+                        "unable to parse the config file at `{}`",
+                        config_file_path.to_string_lossy()
+                    )
                 })
-            })
-            .map_err(Into::into),
-        None => Err::<_, BoxDynError>("config file must be specified".to_owned().into()),
+            }),
+        None => Err(anyhow!("config file must be specified")),
     };
 
     match args.command {
@@ -194,9 +170,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     .plugins
                     .into_iter()
                     .try_find(|plugin_config| {
-                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
                     })?
-                    .ok_or("plugin not found".to_owned())?;
+                    .ok_or(anyhow!("plugin not found"))?;
 
                 let (filter, plugin_name) = make_filter(get_plugin_info(&plugin_config)?)?;
 
@@ -217,9 +193,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     .plugins
                     .into_iter()
                     .try_find(|plugin_config| {
-                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
                     })?
-                    .ok_or("plugin not found".to_owned())?;
+                    .ok_or(anyhow!("plugin not found"))?;
 
                 print_json(&get_plugin_info(&plugin_config)?);
             }
@@ -229,11 +205,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                         .plugins
                         .into_iter()
                         .try_find(|plugin_config| {
-                            Ok::<_, BoxDynError>(
+                            <anyhow::Result<_>>::Ok(
                                 module_name == get_plugin_info(plugin_config)?.name,
                             )
                         })?
-                        .ok_or("plugin not found".to_owned())?;
+                        .ok_or(anyhow!("plugin not found"))?;
 
                     tokio::process::Command::new(&plugin_config.path)
                         .arg("cmd")
@@ -320,12 +296,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 Ok(match get_voyager_config()?.voyager.queue {
                     QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg),
                     QueueConfig::InMemory => {
-                        return Err::<_, BoxDynError>(
+                        return Err(anyhow!(
                             "no database set in config, queue commands \
-                        require the `pg-queue` database backend"
-                                .to_string()
-                                .into(),
-                        )
+                            require the `pg-queue` database backend"
+                        ))
                     }
                 })
             };
@@ -552,12 +526,13 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     }
                 }
                 RpcCmd::ConsensusState {
-                    on,
-                    client_id,
-                    ibc_version_id,
-                    trusted_height,
-                    height,
-                    decode,
+                    // on,
+                    // client_id,
+                    // ibc_version_id,
+                    // trusted_height,
+                    // height,
+                    // decode,
+                    ..
                 } => {
                     // let ibc_state = voyager_client
                     //     .query_client_consensus_state(
@@ -645,7 +620,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 async fn send_enqueue(
     rest_laddr: &SocketAddr,
     op: Op<VoyagerMessage>,
-) -> Result<reqwest::Response, BoxDynError> {
+) -> anyhow::Result<reqwest::Response> {
     Ok(reqwest::Client::new()
         .post(format!("http://{rest_laddr}/enqueue"))
         .json(&op)
@@ -686,7 +661,7 @@ pub mod utils {
     ) -> anyhow::Result<Op<VoyagerMessage>> {
         let height = ctx
             .rpc_server
-            .query_latest_height(&counterparty_chain_id, true)
+            .query_height(&counterparty_chain_id, height)
             .await?;
 
         let counterparty_consensus_module = ctx

@@ -2,6 +2,7 @@
 
 use std::{fmt::Debug, net::SocketAddr, panic::AssertUnwindSafe};
 
+use anyhow::{bail, Context as _};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{future::BoxFuture, stream::FuturesUnordered, Future, FutureExt, StreamExt};
 use pg_queue::{PgQueue, PgQueueConfig};
@@ -139,24 +140,16 @@ impl Queue<VoyagerMessage> for QueueImpl {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum VoyagerInitError {
-    #[error("error initializing queue")]
-    QueueInit(#[source] AnyQueueError),
-    #[error("error initializing plugins")]
-    Plugin(#[source] BoxDynError),
-}
-
 impl Voyager {
-    pub async fn new(config: Config) -> Result<Self, VoyagerInitError> {
+    pub async fn new(config: Config) -> anyhow::Result<Self> {
         let queue = QueueImpl::new(config.voyager.queue.clone())
             .await
-            .map_err(VoyagerInitError::QueueInit)?;
+            .context("error initializing queue")?;
 
         Ok(Self {
             context: Context::new(config.plugins, config.modules)
                 .await
-                .map_err(VoyagerInitError::Plugin)?,
+                .context("error initializing plugins")?,
             num_workers: config.voyager.num_workers,
             rest_laddr: config.voyager.rest_laddr,
             rpc_laddr: config.voyager.rpc_laddr,
@@ -166,7 +159,7 @@ impl Voyager {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self) -> Result<(), BoxDynError> {
+    pub async fn run(self) -> anyhow::Result<()> {
         let interest_filter = JaqInterestFilter::new(
             self.context
                 .interest_filters()
@@ -326,7 +319,7 @@ impl Voyager {
 
         self.context.shutdown().await;
 
-        Err("runtime error, exiting".to_owned().into())
+        bail!("runtime error, exiting")
     }
 
     pub async fn shutdown(self) {

@@ -10,7 +10,6 @@ use voyager_message::{
     core::{ChainId, QueryHeight},
     ibc_union::IbcUnion,
     ibc_v1::IbcV1,
-    rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{now, promise, Op};
@@ -50,7 +49,7 @@ where
         voyager_client: &VoyagerClient,
     ) -> RpcResult<Op<VoyagerMessage>> {
         let client_meta = voyager_client
-            .spec_client_meta::<V>(
+            .client_meta::<V>(
                 module.chain_id.clone(),
                 QueryHeight::Latest,
                 self.client_id.clone(),
@@ -65,8 +64,7 @@ where
 
         let latest_height = voyager_client
             .query_latest_height(client_meta.chain_id.clone(), false)
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let target_height = self
             .batches
