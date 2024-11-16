@@ -8,7 +8,7 @@ _: {
     }:
     let
       workspace = crane.buildWasmContract {
-        crateDirFromRoot = "light-clients/tendermint-light-client";
+        crateDirFromRoot = "cosmwasm/union-ibc/light-clients/tendermint";
         checks = [
           (file_path: ''
             ${ensure-wasm-client-type {

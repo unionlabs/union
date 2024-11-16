@@ -11,7 +11,7 @@ _: {
     }:
     let
       lc = crane.buildWasmContract {
-        crateDirFromRoot = "light-clients/ethereum-light-client";
+        crateDirFromRoot = "cosmwasm/union-ibc/light-clients/ethereum";
       };
     in
     {
