@@ -673,6 +673,7 @@ pub mod utils {
     };
     use voyager_vm::{data, Op};
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) async fn make_msg_create_client(
         ctx: &Context,
         counterparty_chain_id: ChainId,

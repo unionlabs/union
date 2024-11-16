@@ -13,6 +13,7 @@ use voyager_core::{ClientType, IbcVersionId};
 
 use crate::{IbcSpec, IbcStorePathKey};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum IbcUnion {}
 
 impl IbcSpec for IbcUnion {
@@ -143,7 +144,13 @@ pub struct MsgConnectionOpenInit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgConnectionOpenTry {}
+pub struct MsgConnectionOpenTry {
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+    pub counterparty_connection_id: u32,
+    pub proof_init: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {}
@@ -209,6 +216,38 @@ pub enum FullIbcEvent {
     WriteAcknowledgement(WriteAcknowledgement),
     AcknowledgePacket(AcknowledgePacket),
     TimeoutPacket(TimeoutPacket),
+}
+
+impl FullIbcEvent {
+    pub fn counterparty_client_id(&self) -> Option<ClientId> {
+        match self {
+            FullIbcEvent::ClientRegistered(_) => None,
+            FullIbcEvent::ClientCreated(_) => None,
+            FullIbcEvent::ClientUpdated(_) => None,
+            FullIbcEvent::ConnectionOpenInit(event) => Some(event.counterparty_client_id),
+            FullIbcEvent::ConnectionOpenTry(event) => Some(event.counterparty_client_id),
+            FullIbcEvent::ConnectionOpenAck(event) => Some(event.counterparty_client_id),
+            FullIbcEvent::ConnectionOpenConfirm(event) => Some(event.counterparty_client_id),
+            FullIbcEvent::ChannelOpenInit(event) => Some(event.connection.counterpartyClientId),
+            FullIbcEvent::ChannelOpenTry(event) => Some(event.connection.counterpartyClientId),
+            FullIbcEvent::ChannelOpenAck(event) => Some(event.connection.counterpartyClientId),
+            FullIbcEvent::ChannelOpenConfirm(event) => Some(event.connection.counterpartyClientId),
+            FullIbcEvent::ChannelCloseInit(_) => todo!(),
+            FullIbcEvent::ChannelCloseConfirm(_) => todo!(),
+            Self::SendPacket(event) => Some(event.packet.destination_channel.connection.client_id),
+            Self::RecvPacket(event) => Some(event.packet.source_channel.connection.client_id),
+            Self::RecvIntentPacket(event) => Some(event.packet.source_channel.connection.client_id),
+            Self::WriteAcknowledgement(event) => {
+                Some(event.packet.source_channel.connection.client_id)
+            }
+            Self::AcknowledgePacket(event) => {
+                Some(event.packet.destination_channel.connection.client_id)
+            }
+            Self::TimeoutPacket(event) => {
+                Some(event.packet.destination_channel.connection.client_id)
+            }
+        }
+    }
 }
 
 type ClientId = u32;

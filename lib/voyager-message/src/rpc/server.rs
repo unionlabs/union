@@ -170,7 +170,7 @@ impl Server {
         Ok(latest_timestamp)
     }
 
-    #[instrument(skip_all, fields(%chain_id, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_version_id, client_id = %client_id.0))]
     pub async fn client_info(
         &self,
         chain_id: &ChainId,
@@ -197,7 +197,7 @@ impl Server {
         Ok(client_info)
     }
 
-    #[instrument(skip_all, fields(%chain_id, height = %at, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_version_id, height = %at, client_id = %client_id.0))]
     pub async fn client_meta(
         &self,
         chain_id: &ChainId,

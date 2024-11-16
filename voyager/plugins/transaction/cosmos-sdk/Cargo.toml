@@ -11,7 +11,7 @@ dashmap            = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
 hex                = { workspace = true }
-ibc-solidity.workspace = true
+ibc-solidity       = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 prost              = { workspace = true }
@@ -25,7 +25,7 @@ tokio              = { workspace = true }
 tonic              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
-union-ibc = { workspace = true, features = ["library"] }
+union-ibc-msg      = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
 voyager-vm         = { workspace = true }

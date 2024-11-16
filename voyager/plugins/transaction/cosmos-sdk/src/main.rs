@@ -29,11 +29,9 @@ use unionlabs::{
             signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
         },
     },
-    cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::{EncodeAs, Proto},
     google::protobuf::any::{mk_any, Any},
     hash::H256,
-    ibc::core::client::msg_update_client,
     signer::CosmosSigner,
     ErrorReporter,
 };
@@ -871,7 +869,7 @@ fn process_msgs(
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_union_contract_address.clone(),
-                            msg: serde_json::to_vec(&union_ibc::msg::ExecuteMsg::CreateClient(
+                            msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
                                 ibc_solidity::cosmwasm::types::ibc::MsgCreateClient {
                                     clientType: msg_create_client.client_type.to_string(),
                                     clientStateBytes: msg_create_client.client_state_bytes.into(),
@@ -885,13 +883,13 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union::IbcMsg::UpdateClient(msg_update_client) => todo!(),
+                    ibc_union::IbcMsg::UpdateClient(_msg_update_client) => todo!(),
                     ibc_union::IbcMsg::ConnectionOpenInit(msg_connection_open_init) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_union_contract_address.clone(),
                             msg: serde_json::to_vec(
-                                &union_ibc::msg::ExecuteMsg::ConnectionOpenInit(
+                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
                                     ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenInit {
                                         clientId: msg_connection_open_init.client_id,
                                         counterpartyClientId: msg_connection_open_init
@@ -904,23 +902,25 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union::IbcMsg::ConnectionOpenTry(msg_connection_open_try) => todo!(),
-                    ibc_union::IbcMsg::ConnectionOpenAck(msg_connection_open_ack) => todo!(),
-                    ibc_union::IbcMsg::ConnectionOpenConfirm(msg_connection_open_confirm) => {
+                    ibc_union::IbcMsg::ConnectionOpenTry(_msg_connection_open_try) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenAck(_msg_connection_open_ack) => todo!(),
+                    ibc_union::IbcMsg::ConnectionOpenConfirm(_msg_connection_open_confirm) => {
                         todo!()
                     }
-                    ibc_union::IbcMsg::ChannelOpenInit(msg_channel_open_init) => todo!(),
-                    ibc_union::IbcMsg::ChannelOpenTry(msg_channel_open_try) => todo!(),
-                    ibc_union::IbcMsg::ChannelOpenAck(msg_channel_open_ack) => todo!(),
-                    ibc_union::IbcMsg::ChannelOpenConfirm(msg_channel_open_confirm) => todo!(),
-                    ibc_union::IbcMsg::ChannelCloseInit(msg_channel_close_init) => todo!(),
-                    ibc_union::IbcMsg::ChannelCloseConfirm(msg_channel_close_confirm) => todo!(),
-                    ibc_union::IbcMsg::PacketRecv(msg_packet_recv) => todo!(),
-                    ibc_union::IbcMsg::PacketAcknowledgement(msg_packet_acknowledgement) => todo!(),
-                    ibc_union::IbcMsg::PacketTimeout(msg_packet_timeout) => todo!(),
-                    ibc_union::IbcMsg::IntentPacketRecv(msg_intent_packet_recv) => todo!(),
-                    ibc_union::IbcMsg::BatchSend(msg_batch_send) => todo!(),
-                    ibc_union::IbcMsg::BatchAcks(msg_batch_acks) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenInit(_msg_channel_open_init) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenTry(_msg_channel_open_try) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenAck(_msg_channel_open_ack) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenConfirm(_msg_channel_open_confirm) => todo!(),
+                    ibc_union::IbcMsg::ChannelCloseInit(_msg_channel_close_init) => todo!(),
+                    ibc_union::IbcMsg::ChannelCloseConfirm(_msg_channel_close_confirm) => todo!(),
+                    ibc_union::IbcMsg::PacketRecv(_msg_packet_recv) => todo!(),
+                    ibc_union::IbcMsg::PacketAcknowledgement(_msg_packet_acknowledgement) => {
+                        todo!()
+                    }
+                    ibc_union::IbcMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
+                    ibc_union::IbcMsg::IntentPacketRecv(_msg_intent_packet_recv) => todo!(),
+                    ibc_union::IbcMsg::BatchSend(_msg_batch_send) => todo!(),
+                    ibc_union::IbcMsg::BatchAcks(_msg_batch_acks) => todo!(),
                 },
             };
 

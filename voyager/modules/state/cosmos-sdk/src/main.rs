@@ -601,11 +601,11 @@ impl StateModuleServer<IbcV1> for Module {
                 .query_next_sequence_ack(at, path.port_id, path.channel_id)
                 .await
                 .map(into_value),
-            Path::NextConnectionSequence(path) => self
+            Path::NextConnectionSequence(_path) => self
                 .query_next_connection_sequence(at)
                 .await
                 .map(into_value),
-            Path::NextClientSequence(path) => {
+            Path::NextClientSequence(_path) => {
                 self.query_next_client_sequence(at).await.map(into_value)
             }
         }

@@ -5,45 +5,44 @@ use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use tracing::warn;
-use unionlabs::{
-    ibc::core::client::{height::Height, msg_update_client::MsgUpdateClient},
-    id::ClientId,
-};
+use unionlabs::ibc::core::client::{height::Height, msg_update_client::MsgUpdateClient};
 use voyager_message::{
     call::WaitForTrustedHeight,
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates, WithChainId},
+    ibc_union::IbcUnion,
     ibc_v1::{IbcMessage, IbcV1},
-    rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     IbcSpec, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, promise, seq, Op};
 
 use crate::{
-    call::{
-        MakeMsgAcknowledgement, MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm,
-        MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
-        MakeMsgConnectionOpenTry, MakeMsgRecvPacket, ModuleCall,
-    },
-    data::{BatchableEvent, Event},
-    Module,
+    call::{MakeMsg, ModuleCall},
+    data::BatchableEvent,
+    IbcSpecExt, Module,
 };
 
 #[model]
 #[derive(Enumorph)]
 pub enum ModuleCallback {
-    MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate),
-    MakeBatchTransaction(MakeBatchTransaction),
+    MakeIbcMessagesFromUpdateV1(MakeIbcMessagesFromUpdate<IbcV1>),
+    MakeIbcMessagesFromUpdateUnion(MakeIbcMessagesFromUpdate<IbcUnion>),
+    MakeBatchTransactionV1(MakeBatchTransaction<IbcV1>),
+    MakeBatchTransactionUnion(MakeBatchTransaction<IbcUnion>),
 }
 
 /// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
 #[model]
-pub struct MakeIbcMessagesFromUpdate {
-    pub client_id: ClientId,
-    pub batches: Vec<Vec<BatchableEvent>>,
+pub struct MakeIbcMessagesFromUpdate<V: IbcSpecExt> {
+    pub client_id: V::ClientId,
+    pub batches: Vec<Vec<BatchableEvent<V>>>,
 }
 
-impl MakeIbcMessagesFromUpdate {
+impl<V: IbcSpecExt> MakeIbcMessagesFromUpdate<V>
+where
+    ModuleCall: From<MakeMsg<V>>,
+    ModuleCallback: From<MakeBatchTransaction<V>>,
+{
     pub async fn call(
         self,
         voyager_client: &VoyagerClient,
@@ -71,14 +70,12 @@ impl MakeIbcMessagesFromUpdate {
             })?;
 
         let client_meta = voyager_client
-            .client_meta(
+            .spec_client_meta::<V>(
                 module_server.chain_id.clone(),
-                IbcV1::ID,
                 QueryHeight::Latest,
-                RawClientId::new(self.client_id.clone()),
+                self.client_id.clone(),
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let new_trusted_height = updates
             .updates
@@ -98,17 +95,21 @@ impl MakeIbcMessagesFromUpdate {
     }
 }
 
-pub fn make_msgs(
+pub fn make_msgs<V: IbcSpecExt>(
     module_server: &Module,
 
-    client_id: ClientId,
-    batches: Vec<Vec<BatchableEvent>>,
+    client_id: V::ClientId,
+    batches: Vec<Vec<BatchableEvent<V>>>,
 
     updates: Option<OrderedClientUpdates>,
 
     client_meta: ClientStateMeta,
     new_trusted_height: Height,
-) -> RpcResult<Op<VoyagerMessage>> {
+) -> RpcResult<Op<VoyagerMessage>>
+where
+    ModuleCall: From<MakeMsg<V>>,
+    ModuleCallback: From<MakeBatchTransaction<V>>,
+{
     Ok(conc(batches.into_iter().enumerate().map(|(i, batch)| {
         promise(
             batch.into_iter().map(|batchable_event| {
@@ -117,89 +118,15 @@ pub fn make_msgs(
                 let origin_chain_id = client_meta.chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
 
-                // in this context, we are the destination - the counterparty of the source is the destination
-                match batchable_event.event {
-                    Event::ConnectionOpenInit(connection_open_init_event) => {
-                        call(PluginMessage::new(
-                            module_server.plugin_name(),
-                            ModuleCall::from(MakeMsgConnectionOpenTry {
-                                origin_chain_id,
-                                origin_chain_proof_height: new_trusted_height,
-                                target_chain_id,
-                                connection_open_init_event,
-                            }),
-                        ))
-                    }
-                    Event::ConnectionOpenTry(connection_open_try_event) => {
-                        call(PluginMessage::new(
-                            module_server.plugin_name(),
-                            ModuleCall::from(MakeMsgConnectionOpenAck {
-                                origin_chain_id,
-                                origin_chain_proof_height: new_trusted_height,
-                                target_chain_id,
-                                connection_open_try_event,
-                            }),
-                        ))
-                    }
-                    Event::ConnectionOpenAck(connection_open_ack_event) => {
-                        call(PluginMessage::new(
-                            module_server.plugin_name(),
-                            ModuleCall::from(MakeMsgConnectionOpenConfirm {
-                                origin_chain_id,
-                                origin_chain_proof_height: new_trusted_height,
-                                target_chain_id,
-                                connection_open_ack_event,
-                            }),
-                        ))
-                    }
-                    Event::ChannelOpenInit(channel_open_init_event) => call(PluginMessage::new(
-                        module_server.plugin_name(),
-                        ModuleCall::from(MakeMsgChannelOpenTry {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            channel_open_init_event,
-                        }),
-                    )),
-                    Event::ChannelOpenTry(channel_open_try_event) => call(PluginMessage::new(
-                        module_server.plugin_name(),
-                        ModuleCall::from(MakeMsgChannelOpenAck {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            channel_open_try_event,
-                        }),
-                    )),
-                    Event::ChannelOpenAck(channel_open_ack_event) => call(PluginMessage::new(
-                        module_server.plugin_name(),
-                        ModuleCall::from(MakeMsgChannelOpenConfirm {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            channel_open_ack_event,
-                        }),
-                    )),
-                    Event::SendPacket(send_packet_event) => call(PluginMessage::new(
-                        module_server.plugin_name(),
-                        ModuleCall::from(MakeMsgRecvPacket {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            send_packet_event,
-                        }),
-                    )),
-                    Event::WriteAcknowledgement(write_acknowledgement_event) => {
-                        call(PluginMessage::new(
-                            module_server.plugin_name(),
-                            ModuleCall::from(MakeMsgAcknowledgement {
-                                origin_chain_id,
-                                origin_chain_proof_height: new_trusted_height,
-                                target_chain_id,
-                                write_acknowledgement_event,
-                            }),
-                        ))
-                    }
-                }
+                call(PluginMessage::new(
+                    module_server.plugin_name(),
+                    ModuleCall::from(MakeMsg::<V> {
+                        origin_chain_id,
+                        origin_chain_proof_height: new_trusted_height,
+                        target_chain_id,
+                        event: batchable_event.event,
+                    }),
+                ))
             }),
             [],
             PluginMessage::new(
@@ -215,14 +142,14 @@ pub fn make_msgs(
 }
 
 #[model]
-pub struct MakeBatchTransaction {
+pub struct MakeBatchTransaction<V: IbcSpecExt> {
     // NOTE: We could technically fetch this from the information in the callback data messages, but this is just so much easier
-    pub client_id: ClientId,
+    pub client_id: V::ClientId,
     /// Updates to send before the messages in this message's callback data. If this is `None`, then that means the updates have been included in a previous batch, and this will instead be enqueued with a WaitForTrustedHeight in front of it.
     pub updates: Option<OrderedClientUpdates>,
 }
 
-impl MakeBatchTransaction {
+impl<V: IbcSpecExt> MakeBatchTransaction<V> {
     pub fn call(self, chain_id: ChainId, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");

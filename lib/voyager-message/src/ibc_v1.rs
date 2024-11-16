@@ -2,6 +2,7 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::model;
+use serde::{Deserialize, Serialize};
 use subset_of::SubsetOf;
 use tracing::info;
 use unionlabs::{
@@ -34,6 +35,7 @@ use voyager_core::{ClientType, IbcVersionId};
 
 use crate::{IbcSpec, IbcStorePathKey};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum IbcV1 {}
 
 impl IbcSpec for IbcV1 {

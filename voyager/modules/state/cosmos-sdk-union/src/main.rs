@@ -168,7 +168,7 @@ impl Module {
     async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Bytes> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
-                &union_ibc::query::QueryMsg::GetClientState { client_id },
+                &union_ibc_msg::query::QueryMsg::GetClientState { client_id },
                 Some(height),
             )
             .await?;
@@ -339,7 +339,7 @@ impl StateModuleServer<IbcUnion> for Module {
     async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
         let client_type = self
             .query_smart::<_, String>(
-                &union_ibc::query::QueryMsg::GetClientType { client_id },
+                &union_ibc_msg::query::QueryMsg::GetClientType { client_id },
                 None,
             )
             .await?

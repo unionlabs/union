@@ -189,8 +189,7 @@ pub fn verify_membership(
         return Err(Error::StoredValueMismatch {
             expected: value,
             stored: proof_value,
-        }
-        .into());
+        });
     }
 
     verify_storage_proof(
@@ -227,8 +226,7 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
         Err(Error::InvalidCommitmentKey {
             expected: expected_commitment_key,
             found: key,
-        }
-        .into())
+        })
     } else {
         Ok(())
     }

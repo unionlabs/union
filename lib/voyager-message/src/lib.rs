@@ -1,6 +1,11 @@
 #![feature(trait_alias)]
 
-use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
+use std::{
+    env::VarError,
+    fmt::{Debug, Display},
+    future::Future,
+    time::Duration,
+};
 
 use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
@@ -22,7 +27,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member, ErrorReporter};
-use voyager_core::{ChainId, IbcVersionId, QueryHeight};
+use voyager_core::{ChainId, ClientInfo, ClientStateMeta, IbcVersionId, QueryHeight};
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -74,7 +79,7 @@ impl QueueMessage for VoyagerMessage {
 pub trait IbcSpec {
     const ID: IbcVersionId;
 
-    type ClientId: Member;
+    type ClientId: Display + Member;
 
     // type Height: FromStr<Err: Error + Send + Sync + 'static> + Display + Member;
 
@@ -102,7 +107,7 @@ pub trait IbcStorePathKey:
 }
 
 /// Simple wrapper around a [`Value`] for raw client ids.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct RawClientId(Value);
 
@@ -142,6 +147,10 @@ impl RawClientId {
 
     pub fn decode_spec<V: IbcSpec>(self) -> Result<V::ClientId, serde_json::Error> {
         serde_json::from_value(self.0)
+    }
+
+    pub fn as_raw(&self) -> &Value {
+        &self.0
     }
 }
 
@@ -521,6 +530,29 @@ impl VoyagerClient {
                 )
             })?,
         })
+    }
+
+    pub async fn spec_client_info<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        client_id: V::ClientId,
+    ) -> RpcResult<ClientInfo> {
+        self.0
+            .client_info(chain_id, V::ID, RawClientId::new(client_id))
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub async fn spec_client_meta<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        at: QueryHeight,
+        client_id: V::ClientId,
+    ) -> RpcResult<ClientStateMeta> {
+        self.0
+            .client_meta(chain_id, V::ID, at, RawClientId::new(client_id))
+            .await
+            .map_err(json_rpc_error_to_error_object)
     }
 }
 
