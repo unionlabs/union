@@ -80,8 +80,6 @@ pub trait IbcSpec {
 
     type ClientId: Display + Member;
 
-    // type Height: FromStr<Err: Error + Send + Sync + 'static> + Display + Member;
-
     /// The type used to index into the IBC store.
     type StorePath: Member;
 
@@ -124,7 +122,8 @@ impl TypedValueParser for RawClientIdValueParser {
     ) -> Result<Self::Value, clap::Error> {
         let s = StringValueParser::new().parse_ref(cmd, arg, value)?;
 
-        Ok(RawClientId::new(
+        // attempt to parse the string as json, if that fails just treat the whole string as a json string value
+        Ok(RawClientId(
             s.parse::<Value>()
                 .unwrap_or_else(|_| Value::String(s.to_owned())),
         ))
