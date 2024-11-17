@@ -30,19 +30,19 @@ _: {
           // (
             let
               libwasmvm = self'.packages.libwasmvm-2_1_2;
-              # libwasmvm = pkgs.stdenv.mkDerivation {
-              #   name = "libwasmvm";
-              #   src = pkgs.fetchurl {
-              #     url = "https://github.com/CosmWasm/wasmvm/releases/download/v2.2.0-rc.2/libwasmvm_muslc.x86_64.a";
-              #     hash = "sha256-LEl7UkbHIXpwxEfFARfH+wmQnsI+bkFRpN4+XynbgTQ=";
-              #   };
-              #   dontUnpack = true;
-              #   buildPhase = ''
-              #     mkdir -p $out/lib/
-              #     cp $src $out/lib/libwasmvm.x86_64.a
-              #   '';
-              # };
             in
+            # libwasmvm = pkgs.stdenv.mkDerivation {
+            #   name = "libwasmvm";
+            #   src = pkgs.fetchurl {
+            #     url = "https://github.com/CosmWasm/wasmvm/releases/download/v2.2.0-rc.2/libwasmvm_muslc.x86_64.a";
+            #     hash = "sha256-LEl7UkbHIXpwxEfFARfH+wmQnsI+bkFRpN4+XynbgTQ=";
+            #   };
+            #   dontUnpack = true;
+            #   buildPhase = ''
+            #     mkdir -p $out/lib/
+            #     cp $src $out/lib/libwasmvm.x86_64.a
+            #   '';
+            # };
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux

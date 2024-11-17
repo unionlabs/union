@@ -10,7 +10,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-anyhow = "1.0.93"
+anyhow                         = "1.0.93"
 chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 contracts                      = { workspace = true, features = ["providers"] }

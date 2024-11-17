@@ -66,25 +66,13 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub chain_id: ChainId,
-    pub client_configs: Vec<RawClientConfig>,
+    pub client_configs: ClientConfigsSerde,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RawClientConfig {
-    pub client_id: RawClientId,
-    pub min_batch_size: usize,
-    pub max_batch_size: usize,
-    pub max_wait_time: Duration,
-}
-
-impl RawClientConfig {
-    fn into_config(self) -> ClientConfig {
-        ClientConfig {
-            min_batch_size: self.min_batch_size,
-            max_batch_size: self.max_batch_size,
-            max_wait_time: self.max_wait_time,
-        }
-    }
+#[derive(Debug, Clone)]
+pub enum ClientConfigs {
+    Any(ClientConfig),
+    Many(HashMap<RawClientId, ClientConfig>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,10 +82,32 @@ pub struct ClientConfig {
     pub max_wait_time: Duration,
 }
 
-#[derive(Debug, Clone)]
-pub enum ClientConfigs {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ClientConfigsSerde {
     Any(ClientConfig),
-    Many(HashMap<RawClientId, ClientConfig>),
+    Many(Vec<SpecificClientConfig>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpecificClientConfig {
+    pub client_id: RawClientId,
+    pub min_batch_size: usize,
+    pub max_batch_size: usize,
+    pub max_wait_time: Duration,
+}
+
+impl SpecificClientConfig {
+    fn into_config(self) -> (RawClientId, ClientConfig) {
+        (
+            self.client_id,
+            ClientConfig {
+                min_batch_size: self.min_batch_size,
+                max_batch_size: self.max_batch_size,
+                max_wait_time: self.max_wait_time,
+            },
+        )
+    }
 }
 
 pub trait IbcSpecExt: IbcSpec {
@@ -113,17 +123,12 @@ impl IbcSpecExt for IbcUnion {
 }
 
 impl ClientConfigs {
-    fn new(mut configs: Vec<RawClientConfig>) -> Self {
-        // if-let chains one day
-        if configs.len() == 1 && configs.first().unwrap().client_id.as_raw() == "*" {
-            Self::Any(configs.pop().unwrap().into_config())
-        } else {
-            Self::Many(
-                configs
-                    .into_iter()
-                    .map(|config| (config.client_id.clone(), config.into_config()))
-                    .collect(),
-            )
+    fn new(configs: ClientConfigsSerde) -> Self {
+        match configs {
+            ClientConfigsSerde::Any(client_config) => ClientConfigs::Any(client_config),
+            ClientConfigsSerde::Many(vec) => {
+                ClientConfigs::Many(vec.into_iter().map(|s| s.into_config()).collect())
+            }
         }
     }
 

@@ -113,7 +113,9 @@ let
 
         # gentx was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          ${if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""} gentx \
+          ${
+            if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+          } gentx \
           valoper-${toString idx} \
           1000000000000000000000${denom} \
           --chain-id ${chainId} \
@@ -171,7 +173,9 @@ let
 
         # add-genesis-account was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          ${if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""} add-genesis-account \
+          ${
+            if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+          } add-genesis-account \
           ${name} \
           10000000000000000000000000${denom} \
           --keyring-backend test \
@@ -195,7 +199,9 @@ let
 
       # add-genesis-account was moved to a subcommand of genesis in sdk v50
       ${nodeBin} \
-        ${if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""} add-genesis-account \
+        ${
+          if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+        } add-genesis-account \
         valoper-${toString idx} \
         10000000000000000000000000${denom} \
         --keyring-backend test \
@@ -772,7 +778,9 @@ let
 
     echo "collecting"
     # collect-gentxs was moved to a subcommand of genesis in sdk v50
-    ${nodeBin} ${if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""} collect-gentxs --home . 2> /dev/null
+    ${nodeBin} ${
+      if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+    } collect-gentxs --home . 2> /dev/null
 
     echo "validating"
     ${
