@@ -9,13 +9,13 @@ For example, given the config:
   "chain_id": "32382",
   "client_configs": [
     {
-     "client_id": 1,
-     "min_batch_size": 1,
-     "max_batch_size": 3,
-     "max_wait_time": {
-      "secs": 10,
-      "nanos": 0
-     }
+      "client_id": 1,
+      "min_batch_size": 1,
+      "max_batch_size": 3,
+      "max_wait_time": {
+			  "secs": 10,
+			  "nanos": 0
+      }
     }
   ]
 }
