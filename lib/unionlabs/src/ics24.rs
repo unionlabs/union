@@ -48,6 +48,20 @@ pub mod ethabi {
         BatchPackets(BatchPacketsPath),
     }
 
+    impl Path {
+        #[must_use]
+        pub fn key(&self) -> H256 {
+            match self {
+                Path::ClientState(path) => path.key(),
+                Path::ConsensusState(path) => path.key(),
+                Path::Connection(path) => path.key(),
+                Path::Channel(path) => path.key(),
+                Path::BatchReceipts(path) => path.key(),
+                Path::BatchPackets(path) => path.key(),
+            }
+        }
+    }
+
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct ClientStatePath {
         pub client_id: u32,

@@ -5,14 +5,14 @@ use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use tracing::warn;
-use unionlabs::ibc::core::client::{height::Height, msg_update_client::MsgUpdateClient};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::WaitForTrustedHeight,
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates, WithChainId},
     ibc_union::IbcUnion,
-    ibc_v1::{IbcMessage, IbcV1},
-    IbcSpec, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    ibc_v1::IbcV1,
+    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, promise, seq, Op};
 
@@ -113,7 +113,12 @@ where
     Ok(conc(batches.into_iter().enumerate().map(|(i, batch)| {
         promise(
             batch.into_iter().map(|batchable_event| {
-                assert!(batchable_event.provable_height <= new_trusted_height);
+                assert!(
+                    batchable_event.provable_height <= new_trusted_height,
+                    "{} <= {}",
+                    batchable_event.provable_height,
+                    new_trusted_height
+                );
 
                 let origin_chain_id = client_meta.chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
@@ -160,7 +165,7 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
             .map(|d| {
                 IbcDatagram::try_from(d)
                     .unwrap()
-                    .decode_datagram::<IbcV1>()
+                    .decode_datagram::<V>()
                     .unwrap()
                     .unwrap()
             })
@@ -186,15 +191,15 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                     .updates
                     .into_iter()
                     .map(|(_, msg)| {
-                        assert_eq!(msg.ibc_version_id, IbcV1::ID);
+                        assert_eq!(msg.ibc_version_id, V::ID);
 
-                        IbcMessage::from(MsgUpdateClient {
-                            client_id: msg.client_id.decode_spec::<IbcV1>().unwrap(),
-                            client_message: msg.client_message,
-                        })
+                        V::update_client_datagram(
+                            msg.client_id.decode_spec::<V>().unwrap(),
+                            msg.client_message,
+                        )
                     })
                     .chain(msgs)
-                    .map(IbcDatagram::new::<IbcV1>)
+                    .map(|e| IbcDatagram::new::<V>(e))
                     .collect::<Vec<_>>(),
             }),
             None => {
@@ -203,22 +208,19 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                 } else {
                     // TODO: We can probably relax this in the future if we want to reuse this module to work with all IBC messages
                     // NOTE: We assume that all of the IBC messages were generated against the same consensus height
-                    let required_consensus_height = msgs
-                        .peek()
-                        .expect("msgs is non-empty; qed;")
-                        .proof_height()
-                        .expect("all batchable messages have a proof height");
+                    let required_consensus_height =
+                        V::proof_height(msgs.peek().expect("msgs is non-empty; qed;"));
 
                     seq([
                         call(WaitForTrustedHeight {
                             chain_id: chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
-                            ibc_version_id: IbcV1::ID,
+                            ibc_version_id: V::ID,
                             height: required_consensus_height,
                         }),
                         data(WithChainId {
                             chain_id,
-                            message: msgs.map(IbcDatagram::new::<IbcV1>).collect::<Vec<_>>(),
+                            message: msgs.map(IbcDatagram::new::<V>).collect::<Vec<_>>(),
                         }),
                     ])
                 }

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bytes::Bytes,
     hash::{H160, H256},
+    ibc::core::client::height::Height,
     ics24::ethabi::{
         BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
         ConsensusStatePath, Path,
@@ -26,6 +27,13 @@ impl IbcSpec for IbcUnion {
     type Datagram = IbcMsg;
 
     type Event = FullIbcEvent;
+
+    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram {
+        IbcMsg::UpdateClient(MsgUpdateClient {
+            client_id,
+            client_message,
+        })
+    }
 
     fn client_state_path(client_id: Self::ClientId) -> Self::StorePath {
         unionlabs::ics24::ethabi::ClientStatePath { client_id }.into()
@@ -103,26 +111,51 @@ pub enum IbcMsg {
 }
 
 impl IbcMsg {
+    /// Returns the proof height of the IBC message, if it has one.
+    /// (ConnectionOpenInit does not contain a proof, for example)
+    pub fn proof_height(&self) -> Option<Height> {
+        match self {
+            Self::CreateClient(_msg) => None,
+            Self::UpdateClient(_msg) => None,
+            Self::ConnectionOpenInit(_msg) => None,
+            Self::ConnectionOpenTry(msg) => Some(Height::new(msg.proof_height)),
+            Self::ConnectionOpenAck(_msg) => todo!(),
+            Self::ConnectionOpenConfirm(_msg) => todo!(),
+            Self::ChannelOpenInit(_msg) => todo!(),
+            Self::ChannelOpenTry(_msg) => todo!(),
+            Self::ChannelOpenAck(_msg) => todo!(),
+            Self::ChannelOpenConfirm(_msg) => todo!(),
+            Self::ChannelCloseInit(_msg) => todo!(),
+            Self::ChannelCloseConfirm(_msg) => todo!(),
+            Self::PacketRecv(_msg) => todo!(),
+            Self::PacketAcknowledgement(_msg) => todo!(),
+            Self::PacketTimeout(_msg) => todo!(),
+            Self::IntentPacketRecv(_msg) => todo!(),
+            Self::BatchSend(_msg) => todo!(),
+            Self::BatchAcks(_msg) => todo!(),
+        }
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
-            IbcMsg::CreateClient(_) => "create_client",
-            IbcMsg::UpdateClient(_) => "update_client",
-            IbcMsg::ConnectionOpenInit(_) => "connection_open_init",
-            IbcMsg::ConnectionOpenTry(_) => "connection_open_try",
-            IbcMsg::ConnectionOpenAck(_) => "connection_open_ack",
-            IbcMsg::ConnectionOpenConfirm(_) => "connection_open_confirm",
-            IbcMsg::ChannelOpenInit(_) => "channel_open_init",
-            IbcMsg::ChannelOpenTry(_) => "channel_open_try",
-            IbcMsg::ChannelOpenAck(_) => "channel_open_ack",
-            IbcMsg::ChannelOpenConfirm(_) => "channel_open_confirm",
-            IbcMsg::ChannelCloseInit(_) => "channel_close_init",
-            IbcMsg::ChannelCloseConfirm(_) => "channel_close_confirm",
-            IbcMsg::PacketRecv(_) => "packet_recv",
-            IbcMsg::PacketAcknowledgement(_) => "packet_acknowledgement",
-            IbcMsg::PacketTimeout(_) => "packet_timeout",
-            IbcMsg::IntentPacketRecv(_) => "intent_packet_recv",
-            IbcMsg::BatchSend(_) => "batch_send",
-            IbcMsg::BatchAcks(_) => "batch_acks",
+            Self::CreateClient(_) => "create_client",
+            Self::UpdateClient(_) => "update_client",
+            Self::ConnectionOpenInit(_) => "connection_open_init",
+            Self::ConnectionOpenTry(_) => "connection_open_try",
+            Self::ConnectionOpenAck(_) => "connection_open_ack",
+            Self::ConnectionOpenConfirm(_) => "connection_open_confirm",
+            Self::ChannelOpenInit(_) => "channel_open_init",
+            Self::ChannelOpenTry(_) => "channel_open_try",
+            Self::ChannelOpenAck(_) => "channel_open_ack",
+            Self::ChannelOpenConfirm(_) => "channel_open_confirm",
+            Self::ChannelCloseInit(_) => "channel_close_init",
+            Self::ChannelCloseConfirm(_) => "channel_close_confirm",
+            Self::PacketRecv(_) => "packet_recv",
+            Self::PacketAcknowledgement(_) => "packet_acknowledgement",
+            Self::PacketTimeout(_) => "packet_timeout",
+            Self::IntentPacketRecv(_) => "intent_packet_recv",
+            Self::BatchSend(_) => "batch_send",
+            Self::BatchAcks(_) => "batch_acks",
         }
     }
 }
@@ -135,7 +168,10 @@ pub struct MsgCreateClient {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgUpdateClient {}
+pub struct MsgUpdateClient {
+    pub client_id: u32,
+    pub client_message: Bytes,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenInit {

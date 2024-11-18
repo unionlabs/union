@@ -94,7 +94,7 @@ impl InterestFilter<VoyagerMessage> for JaqInterestFilter {
 
 #[instrument(
     name = "checking interest",
-    level = "trace",
+    level = "info",
     skip_all,
     fields(%plugin_name)
 )]
@@ -104,10 +104,12 @@ pub fn run_filter<'a>(
     msg_json: Val,
 ) -> Result<FilterResult<'a>, ()> {
     let inputs = RcIter::new(core::iter::empty());
-    let mut out = filter.run((
-        Ctx::new([Val::Str(Rc::new(plugin_name.to_owned()))], &inputs),
-        msg_json.clone(),
-    ));
+    let mut out = filter
+        .run((
+            Ctx::new([Val::Str(Rc::new(plugin_name.to_owned()))], &inputs),
+            msg_json.clone(),
+        ))
+        .peekable();
 
     let Some(result) = out.next() else {
         error!("filter didn't return any values");
@@ -124,8 +126,19 @@ pub fn run_filter<'a>(
         }
     };
 
-    if out.next().is_some() {
-        error!("filter returned multiple values, only a single boolean value is valid");
+    if out.peek().is_some() {
+        let tail = out
+            .map(|r| match r {
+                Ok(ok) => ok.to_string(),
+                Err(err) => err.to_string(),
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        error!(
+            additional_items = %tail,
+            "filter returned multiple values, only a single boolean value is valid"
+        );
         Err(())
     } else {
         match result {

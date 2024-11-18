@@ -13992,7 +13992,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-plugin-transaction-batch-v1"
+name = "voyager-plugin-transaction-batch"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
@@ -14009,6 +14009,86 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-proof-module-cosmos-sdk"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-proof-module-cosmos-sdk-union"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "ibc-solidity",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "subtle-encoding",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "union-ibc",
+ "union-ibc-msg",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-proof-module-ethereum"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-solidity",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "thiserror",
  "tokio",
  "tracing",
@@ -14053,6 +14133,7 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "ibc-solidity",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -14065,6 +14146,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "union-ibc",
  "union-ibc-msg",
  "unionlabs",
  "voyager-message",

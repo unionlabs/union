@@ -9,6 +9,7 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
+use ibc_solidity::cosmwasm::types::ibc::{Channel, Connection};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -22,10 +23,7 @@ use tracing::{error, instrument};
 use unionlabs::{
     bytes::Bytes,
     hash::{hash_v2::Base64, H256},
-    ibc::core::{
-        channel::channel::Channel, client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
+    ibc::core::client::height::Height,
     ics24::ethabi::Path,
     ErrorReporter, WasmClientType,
 };
@@ -165,7 +163,7 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
-    async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Bytes> {
+    async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
                 &union_ibc_msg::query::QueryMsg::GetClientState { client_id },
@@ -173,7 +171,7 @@ impl Module {
             )
             .await?;
 
-        Ok(client_state.unwrap().into_encoding())
+        Ok(client_state.map(Bytes::into_encoding))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
@@ -203,20 +201,15 @@ impl Module {
         &self,
         height: Height,
         connection_id: u32,
-    ) -> RpcResult<Option<ConnectionEnd>> {
-        // let path_string = ConnectionPath { connection_id }.to_string();
+    ) -> RpcResult<Option<Connection>> {
+        let client_state = self
+            .query_smart::<_, Connection>(
+                &union_ibc_msg::query::QueryMsg::GetConnection { connection_id },
+                Some(height),
+            )
+            .await?;
 
-        // let query_result = self.abci_query(&path_string, height).await?;
-
-        // Ok(match query_result.value {
-        //     Some(value) => Some(
-        //         ConnectionEnd::decode_as::<Proto>(&value)
-        //             .map_err(fatal_rpc_error("error decoding connection end", None))?,
-        //     ),
-        //     None => None,
-        // })
-
-        todo!()
+        Ok(client_state)
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]

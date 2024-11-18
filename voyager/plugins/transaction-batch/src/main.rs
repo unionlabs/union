@@ -63,16 +63,16 @@ pub struct Module {
     pub client_configs: ClientConfigs,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub chain_id: ChainId,
-    pub client_configs: ClientConfigsSerde,
-}
-
 #[derive(Debug, Clone)]
 pub enum ClientConfigs {
     Any(ClientConfig),
     Many(HashMap<RawClientId, ClientConfig>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    pub chain_id: ChainId,
+    pub client_configs: ClientConfigsSerde,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,14 +112,26 @@ impl SpecificClientConfig {
 
 pub trait IbcSpecExt: IbcSpec {
     type BatchableEvent: TryFrom<Self::Event, Error = ()> + Eq + Member;
+
+    fn proof_height(msg: &Self::Datagram) -> Height;
 }
 
 impl IbcSpecExt for IbcV1 {
     type BatchableEvent = crate::data::EventV1;
+
+    fn proof_height(msg: &Self::Datagram) -> Height {
+        msg.proof_height()
+            .expect("all batchable messages have a proof")
+    }
 }
 
 impl IbcSpecExt for IbcUnion {
     type BatchableEvent = crate::data::EventUnion;
+
+    fn proof_height(msg: &Self::Datagram) -> Height {
+        msg.proof_height()
+            .expect("all batchable messages have a proof")
+    }
 }
 
 impl ClientConfigs {
@@ -329,6 +341,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
+#[instrument(
+    skip_all,
+    fields(
+        %origin_chain_id,
+        %origin_chain_proof_height,
+        %target_chain_id
+    )
+)]
 async fn do_make_msg_union(
     voyager_client: &VoyagerClient,
     MakeMsg {
@@ -339,7 +359,7 @@ async fn do_make_msg_union(
     }: MakeMsg<IbcUnion>,
 ) -> RpcResult<Op<VoyagerMessage>> {
     match event {
-        EventUnion::ConnectionOpenTry(connection_open_init_event) => {
+        EventUnion::ConnectionOpenInit(connection_open_init_event) => {
             let client_id = connection_open_init_event.client_id;
             let counterparty_client_id = connection_open_init_event.counterparty_client_id;
             let connection_id = connection_open_init_event.connection_id;
@@ -1341,4 +1361,28 @@ where
             }
         })
         .await
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn config_serde() {
+        let config_json = json!({
+          "chain_id": "union-devnet-1",
+          "client_configs": {
+            "min_batch_size": 1,
+            "max_batch_size": 3,
+            "max_wait_time": {
+              "secs": 10,
+              "nanos": 0
+            }
+          }
+        });
+
+        let _config = serde_json::from_value::<Config>(config_json).unwrap();
+    }
 }

@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-state-module-cosmos-sdk-union"
+name    = "voyager-proof-module-cosmos-sdk-union"
 version = "0.1.0"
 
 [dependencies]
@@ -18,11 +18,12 @@ protos             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
+subtle-encoding = { workspace = true, features = ["bech32-preview"] }
 thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
-union-ibc = { workspace = true, features = ["library"] }
+union-ibc          = { workspace = true, features = ["library"] }
 union-ibc-msg      = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }

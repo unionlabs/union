@@ -148,9 +148,12 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_datagram_batch" or $data."@type" == "identified_ibc_datagram")
+    ($data."@type" == "identified_ibc_datagram"
         and $data."@value".chain_id == "{chain_id}"
-        and $data."@value".message.ibc_version_id == "{ibc_version_id}"
+        and $data."@value".message.ibc_version_id == "{ibc_version_id}")
+    or ($data."@type" == "identified_ibc_datagram_batch"
+        and $data."@value".chain_id == "{chain_id}"
+        and all($data."@value".message[] | select(.ibc_version_id == "{ibc_version_id}")))
 else
     false
 end
@@ -515,49 +518,45 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // IbcMsg::UpdateClient(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .updateClient(MsgUpdateClient {
-                //             clientId: data.client_id.id(),
-                //             clientMessage: data.client_message.into(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                IbcMsg::UpdateClient(data) => (
+                    msg,
+                    ibc_handler
+                        .updateClient(ibc::MsgUpdateClient {
+                            clientId: data.client_id,
+                            clientMessage: data.client_message.into(),
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 // IbcMsg::ConnectionOpenInit(data) => (
                 //     msg,
                 //     ibc_handler
                 //         .connectionOpenInit(MsgConnectionOpenInit {
-                //             clientId: data.client_id.id(),
-                //             counterpartyClientId: data.counterparty.client_id.id(),
+                //             clientId: data.client_id,
+                //             counterpartyClientId: data.counterparty.client_id,
                 //             relayer: relayer.into(),
                 //         })
                 //         .clear_decoder(),
                 // ),
-                // IbcMsg::ConnectionOpenTry(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .connectionOpenTry(MsgConnectionOpenTry {
-                //             counterpartyClientId: data.counterparty.client_id.id(),
-                //             counterpartyConnectionId: data
-                //                 .counterparty
-                //                 .connection_id
-                //                 .map(|c| c.id())
-                //                 .unwrap_or_default(),
-                //             clientId: data.client_id.id(),
-                //             proofInit: data.proof_init.into(),
-                //             proofHeight: data.proof_height.height(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                IbcMsg::ConnectionOpenTry(data) => (
+                    msg,
+                    ibc_handler
+                        .connectionOpenTry(ibc::MsgConnectionOpenTry {
+                            counterpartyClientId: data.counterparty_client_id,
+                            counterpartyConnectionId: data.counterparty_connection_id,
+                            clientId: data.client_id,
+                            proofInit: data.proof_init.into(),
+                            proofHeight: data.proof_height,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 // IbcMsg::ConnectionOpenAck(data) => (
                 //     msg,
                 //     ibc_handler
                 //         .connectionOpenAck(MsgConnectionOpenAck {
-                //             connectionId: data.connection_id.id(),
-                //             counterpartyConnectionId: data.counterparty_connection_id.id(),
+                //             connectionId: data.connection_id,
+                //             counterpartyConnectionId: data.counterparty_connection_id,
                 //             proofHeight: data.proof_height.height(),
                 //             proofTry: data.proof_try.into(),
                 //             relayer: relayer.into(),
@@ -568,7 +567,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                 //     msg,
                 //     ibc_handler
                 //         .connectionOpenConfirm(MsgConnectionOpenConfirm {
-                //             connectionId: data.connection_id.id(),
+                //             connectionId: data.connection_id,
                 //             proofAck: data.proof_ack.into(),
                 //             proofHeight: data.proof_height.height(),
                 //             relayer: relayer.into(),
@@ -588,7 +587,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                 //                 .to_string()
                 //                 .into_bytes()
                 //                 .into(),
-                //             connectionId: data.channel.connection_hops[0].id(),
+                //             connectionId: data.channel.connection_hops[0],
                 //             // ordering: match data.channel.ordering {
                 //             //     Order::NoneUnspecified => ChannelOrder::Unspecified,
                 //             //     Order::Unordered => ChannelOrder::Unordered,
@@ -614,9 +613,9 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                 //     msg,
                 //     ibc_handler
                 //         .channelOpenAck(MsgChannelOpenAck {
-                //             channelId: data.channel_id.id(),
+                //             channelId: data.channel_id,
                 //             counterpartyVersion: data.counterparty_version,
-                //             counterpartyChannelId: data.counterparty_channel_id.id(),
+                //             counterpartyChannelId: data.counterparty_channel_id,
                 //             proofTry: data.proof_try.into(),
                 //             proofHeight: data.proof_height.height(),
                 //             relayer: relayer.into(),
@@ -627,7 +626,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                 //     msg,
                 //     ibc_handler
                 //         .channelOpenConfirm(MsgChannelOpenConfirm {
-                //             channelId: data.channel_id.id(),
+                //             channelId: data.channel_id,
                 //             proofAck: data.proof_ack.into(),
                 //             proofHeight: data.proof_height.height(),
                 //             relayer: relayer.into(),

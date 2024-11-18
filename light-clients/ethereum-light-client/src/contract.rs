@@ -1,4 +1,5 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use serde::{Deserialize, Serialize};
 use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
 
 use crate::{
@@ -22,4 +23,12 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     union_ibc_light_client::query::<EthereumLightClient>(deps, env, msg).map_err(Into::into)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MigrateMsg {}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, Error> {
+    Ok(Response::new())
 }

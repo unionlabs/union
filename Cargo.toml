@@ -107,6 +107,11 @@ members = [
   "voyager/modules/state/ethereum",
   # "voyager/modules/state/movement",
 
+  "voyager/modules/proof/cosmos-sdk",
+  "voyager/modules/proof/cosmos-sdk-union",
+  "voyager/modules/proof/ethereum",
+  # "voyager/modules/proof/movement",
+
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
   # "voyager/modules/client/movement",
@@ -167,7 +172,6 @@ opt-level = 3
 
 [workspace.dependencies]
 aptos-move-ibc   = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier   = { path = "lib/aptos-verifier", default-features = false }
 beacon-api       = { path = "lib/beacon-api", default-features = false }
 beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
 chain-utils      = { path = "lib/chain-utils", default-features = false }

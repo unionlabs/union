@@ -583,6 +583,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                 let ctx = Context::new(voyager_config.plugins, voyager_config.modules).await?;
 
+                // weird race condition in Context::new that i don't feel like debugging right now
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let msg = make_msg_create_client(
                     &ctx,
                     tracking,

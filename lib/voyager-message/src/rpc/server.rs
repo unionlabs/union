@@ -252,7 +252,7 @@ impl Server {
         Ok(meta)
     }
 
-    // #[instrument(skip_all, fields(%chain_id, %path, %height))]
+    #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: &ChainId,
@@ -266,8 +266,6 @@ impl Server {
             .modules()?
             .state_module(chain_id, &P::Spec::ID)
             .map_err(fatal_error)?;
-
-        // let height = self.inner.query_height(&chain_id, height).await?;
 
         let state = state_module
             .query_ibc_state_raw(height, into_value(path.clone()))
@@ -283,7 +281,7 @@ impl Server {
         })
     }
 
-    // #[instrument(skip_all, fields(%chain_id, %path, %height))]
+    #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn query_ibc_proof<P: IbcStorePathKey>(
         &self,
         chain_id: &ChainId,
@@ -297,8 +295,6 @@ impl Server {
             .modules()?
             .proof_module(chain_id, &P::Spec::ID)
             .map_err(fatal_error)?;
-
-        // let height = self.inner.query_height(&chain_id, height).await?;
 
         let proof = proof_module
             .query_ibc_proof_raw(height, into_value(path.clone()))
@@ -569,6 +565,7 @@ impl VoyagerRpcServer for Server {
     //         .map_err(json_rpc_error_to_error_object)
     // }
 
+    #[instrument(skip_all, fields(%chain_id, %height))]
     async fn query_ibc_state(
         &self,
         chain_id: ChainId,
@@ -597,6 +594,7 @@ impl VoyagerRpcServer for Server {
         Ok(IbcState { height, state })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %height))]
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,
@@ -605,6 +603,8 @@ impl VoyagerRpcServer for Server {
         path: Value,
     ) -> RpcResult<IbcProof> {
         let height = self.query_height(&chain_id, height).await?;
+
+        debug!("fetching ibc proof");
 
         let proof_module = self
             .inner
@@ -618,7 +618,7 @@ impl VoyagerRpcServer for Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
-        debug!(%proof, "fetched ibc state");
+        debug!(%proof, "fetched ibc proof");
 
         Ok(IbcProof { height, proof })
     }

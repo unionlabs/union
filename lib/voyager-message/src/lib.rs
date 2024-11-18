@@ -22,7 +22,7 @@ use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, debug_span, error, info, trace, Instrument};
+use tracing::{debug, debug_span, error, info, instrument, trace, Instrument};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcVersionId, QueryHeight,
@@ -88,6 +88,8 @@ pub trait IbcSpec {
 
     /// Events emitted on chain.
     type Event: Member;
+
+    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
 
     fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
     fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
@@ -654,6 +656,7 @@ enum ModuleApp {
     },
 }
 
+#[instrument(level = "debug", fields(%config_str))]
 fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
     match serde_json::from_str::<T>(config_str) {
         Ok(ok) => ok,

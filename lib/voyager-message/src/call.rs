@@ -186,7 +186,7 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if chain_height.revision() != height.revision() {
+                if !chain_height.revision_matches(&height) {
                     return Err(QueueError::Fatal(
                         format!(
                             "revision number mismatch, \

@@ -50,6 +50,13 @@ impl IbcSpec for IbcV1 {
 
     type Event = FullIbcEvent;
 
+    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram {
+        IbcMessage::UpdateClient(MsgUpdateClient {
+            client_id,
+            client_message,
+        })
+    }
+
     fn client_state_path(client_id: Self::ClientId) -> Self::StorePath {
         unionlabs::ics24::ClientStatePath { client_id }.into()
     }

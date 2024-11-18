@@ -14,6 +14,7 @@ use ibc_solidity::cosmwasm::types::ibc::{
     MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv,
     MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient, Packet,
 };
+use serde::{Deserialize, Serialize};
 use union_ibc_msg::{
     lightclient::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
     module::{ExecuteMsg as ModuleMsg, UnionIbcMsg},
@@ -379,6 +380,14 @@ pub fn execute(
             acks,
         }) => batch_acks(deps, sourceChannel, packets, acks),
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MigrateMsg {}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::new())
 }
 
 fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {
@@ -1623,6 +1632,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::GetChannel { channel_id } => {
             let channel = CHANNELS.load(deps.storage, channel_id)?;
             Ok(to_json_binary(&channel)?)
+        }
+        QueryMsg::GetConnection { connection_id } => {
+            let connection = CONNECTIONS.load(deps.storage, connection_id)?;
+            Ok(to_json_binary(&connection)?)
         }
     }
 }
