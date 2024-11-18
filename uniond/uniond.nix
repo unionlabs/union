@@ -88,7 +88,6 @@
                     # Statically link if we're on linux
                     nativeBuildInputs = [ goPkgs.musl ];
                     ldflags = [
-                      "-linkmode external"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
                     ];
