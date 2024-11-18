@@ -13,7 +13,7 @@ pub struct ClientState {
     pub genesis_validators_root: H256,
     pub genesis_time: u64,
     pub fork_parameters: ForkParameters,
-    pub latest_slot: u64,
+    pub latest_height: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
@@ -43,7 +43,7 @@ pub mod proto {
                 genesis_validators_root: value.genesis_validators_root.into(),
                 genesis_time: value.genesis_time,
                 fork_parameters: Some(fork_parameters_proto::into_proto(value.fork_parameters)),
-                latest_slot: value.latest_slot,
+                latest_slot: value.latest_height,
                 frozen_height: Some(value.frozen_height.into()),
                 ibc_contract_address: value.ibc_contract_address.into(),
             }
@@ -84,7 +84,7 @@ pub mod proto {
                 genesis_time: value.genesis_time,
                 fork_parameters: required!(value.fork_parameters)
                     .map(fork_parameters_proto::try_from_proto)??,
-                latest_slot: value.latest_slot,
+                latest_height: value.latest_slot,
                 frozen_height: value.frozen_height.unwrap_or_default().into(),
                 ibc_contract_address: value
                     .ibc_contract_address

@@ -96,7 +96,7 @@ impl ClientModuleServer for Module {
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.0.data.chain_id.to_string()),
-            height: Module::make_height(cs.0.data.latest_slot),
+            height: Module::make_height(cs.0.data.latest_height),
         })
     }
 
@@ -153,7 +153,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| {
                 Any(wasm::client_state::ClientState {
-                    latest_height: Module::make_height(cs.latest_slot),
+                    latest_height: Module::make_height(cs.latest_height),
                     data: cs,
                     checksum,
                 })

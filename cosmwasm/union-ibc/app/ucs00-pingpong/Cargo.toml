@@ -1,0 +1,29 @@
+[package]
+authors      = ["Union.fi Labs"]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "union-ibc-ucs00-pingpong"
+repository   = "https://github.com/unionlabs/union"
+version      = "1.0.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["stargate"] }
+cw-storage-plus = { workspace = true }
+ethabi          = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+thiserror       = { workspace = true }
+union-ibc-msg   = { workspace = true }
+
+[dev-dependencies]
+hex        = { workspace = true }
+serde_json = { workspace = true }
