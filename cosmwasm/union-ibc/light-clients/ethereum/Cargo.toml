@@ -1,0 +1,59 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "ethereum-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = ["cosmwasm/union-ibc/light-clients/ethereum/src/test"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+alloy                       = { workspace = true, features = ["sol-types"] }
+beacon-api-types            = { workspace = true }
+bytes                       = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+cw-storage-plus             = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["proto"] }
+ethereum-sync-protocol      = { workspace = true }
+ethers-contract-derive      = { workspace = true }
+ethers-core                 = { workspace = true }
+evm-storage-verifier        = { workspace = true }
+hex                         = { workspace = true }
+prost                       = { workspace = true }
+protos                      = { workspace = true }
+rlp                         = { workspace = true }
+schemars                    = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+serde-json-wasm             = { workspace = true }
+serde_json                  = { workspace = true, optional = true }
+sha3                        = { workspace = true }
+thiserror                   = { workspace = true }
+tiny-keccak                 = { workspace = true, features = ["keccak"] }
+union-ibc                   = { workspace = true, features = ["library"] }
+union-ibc-light-client      = { workspace = true }
+union-ibc-msg               = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+base64      = { workspace = true }
+hex-literal = { workspace = true }
+lazy_static = "1.4.0"
+protos      = { workspace = true, features = ["proto_full", "std"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true }
+unionlabs   = { workspace = true, features = ["std"] }
+
+[features]
+# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
+library = []
+
+# exposes some useful testing utilities
+test-utils = ["dep:serde_json"]

@@ -55,6 +55,7 @@ wasmparser               = { version = "0.113" }
 alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
 base64               = { workspace = true }
 bcs                  = { workspace = true }
+bincode              = "1.3.3"
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
 near-primitives-core = { version = "0.21", optional = true }

@@ -1348,6 +1348,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrum-light-client"
+version = "0.1.0"
+dependencies = [
+ "arbitrum-light-client-types",
+ "arbitrum-verifier",
+ "base64 0.21.7",
+ "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "ethers-core",
+ "evm-storage-verifier",
+ "hex",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "tiny-keccak",
+ "union-ibc",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -4820,7 +4848,6 @@ dependencies = [
  "base64 0.21.7",
  "beacon-api-types",
  "bytes",
- "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "ethereum-light-client-types",
@@ -4830,8 +4857,6 @@ dependencies = [
  "evm-storage-verifier",
  "hex",
  "hex-literal",
- "ibc-solidity",
- "ics008-wasm-client",
  "lazy_static",
  "prost 0.12.6",
  "protos",
@@ -10881,6 +10906,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "scroll-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "ethers-core",
+ "evm-storage-verifier",
+ "hex",
+ "rlp",
+ "schemars",
+ "scroll-codec",
+ "scroll-light-client-types",
+ "scroll-verifier",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "tiny-keccak",
+ "union-ibc",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -13362,6 +13416,7 @@ dependencies = [
 name = "union-ibc-light-client"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema 1.5.3",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
  "frame-support-procedural",
@@ -13369,6 +13424,36 @@ dependencies = [
  "serde-utils",
  "thiserror",
  "union-ibc",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
+name = "union-ibc-movement-lc"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-types",
+ "aptos-verifier",
+ "bcs 0.1.6",
+ "cosmwasm-schema 1.5.3",
+ "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "hex",
+ "hex-literal",
+ "movement-light-client-types",
+ "protos",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "thiserror",
+ "union-ibc",
+ "union-ibc-light-client",
  "union-ibc-msg",
  "unionlabs",
 ]
@@ -13389,6 +13474,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
+ "bincode",
  "bip32",
  "bitvec 1.0.1",
  "borsh",

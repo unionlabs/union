@@ -35,8 +35,8 @@ pub enum Error {
 // 4. batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
 // 5. ibcContractOnL2 ∈ L2StateRoot
 pub fn verify_header(
-    client_state: ClientState,
-    header: Header,
+    client_state: &ClientState,
+    header: &Header,
     l1_state_root: H256,
 ) -> Result<(), Error> {
     // Verify that the rollup account root is part of the L1 root
@@ -69,7 +69,7 @@ pub fn verify_header(
     )
     .map_err(Error::InvalidL2FinalizedStateRootProof)?;
 
-    let batch_hash = hash_batch(header.batch_header)?;
+    let batch_hash = hash_batch(&header.batch_header)?;
 
     // Verify that the batch hash is part of the rollup account root
     verify_storage_proof(
