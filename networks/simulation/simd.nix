@@ -51,7 +51,6 @@ _: {
                   libwasmvm
                 ];
                 ldflags = [
-                  "-linkmode external"
                   "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
                 ];
               }
