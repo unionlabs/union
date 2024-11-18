@@ -856,6 +856,7 @@ let
 
                 ${nodeBin} \
                   start \
+                  --cpu-profile CPU_PROFILE \
                   --home home \
                   $$params \
                   --rpc.laddr              tcp://0.0.0.0:26657 \
