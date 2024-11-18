@@ -17,7 +17,7 @@
     let
       libwasmvm = self'.packages.libwasmvm-2_1_3;
       CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
-      CGO_LDFLAGS = "-z noexecstack -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib";
+      CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
 
       mkUniondImage =
         uniond:
@@ -64,7 +64,7 @@
 
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
-          goPkgs.buildGo123Module
+          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
             (
               {
                 name = "uniond";
@@ -85,7 +85,9 @@
                   {
                     inherit CGO_CFLAGS;
                     inherit CGO_LDFLAGS;
+                    nativeBuildInputs = [ goPkgs.musl ];
                     ldflags = [
+                      "-linkmode external"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
                     ];
