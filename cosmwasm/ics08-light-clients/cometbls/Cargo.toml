@@ -10,7 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-test-include = ["light-clients/cometbls-light-client/src/test"]
+test-include = ["cosmwasm/ics08-light-clients/cometbls/src/test"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
