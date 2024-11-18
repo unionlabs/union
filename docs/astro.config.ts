@@ -287,7 +287,9 @@ export default defineConfig({
       applyBaseStyles: false,
       configFile: "tailwind.config.ts"
     }),
-    svelte(),
+    svelte({
+      include: ["**/svelte/**"]
+    }),
     react({
       include: ["**/react/**"],
       experimentalReactChildren: true

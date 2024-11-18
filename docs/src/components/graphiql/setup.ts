@@ -53,7 +53,7 @@ const graphiqlProps = {
     localStorage.setItem("graphiql:variables", variables)
   },
   isHeadersEditorEnabled: true,
-  defaultEditorToolsVisibility: stringIsJSON(localStorage.getItem("graphiql:variables") ?? ""), 
+  defaultEditorToolsVisibility: stringIsJSON(localStorage.getItem("graphiql:variables") ?? ""),
   toolbar: {
     additionalContent: [
       React.createElement(
