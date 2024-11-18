@@ -62,6 +62,8 @@
             doCheck = true;
           };
 
+        uniond-bundle = (import inputs.nix-bundle { nixpkgs = pkgs; }).nix-bootstrap { target = self'.packages.uniond; run = "/bin/uniond"; };
+
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
           goPkgs.buildGo123Module
