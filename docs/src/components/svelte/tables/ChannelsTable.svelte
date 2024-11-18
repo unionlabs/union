@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Table from '#/components/svelte/Table.svelte'
+
   let promise = $state(fetchChannels())
 
   async function fetchChannels() {
@@ -44,50 +46,13 @@
   }
 </script>
 
-<div class="px-4 sm:px-6 lg:px-8 flex justify-center w-full">
-  <div class="mt-8 flow-root">
-    <div class="overflow-x-auto">
-      <div class="inline-block min-w-full align-middle border rounded-sm border-neutral-400">
-        {#await promise}
-          <p>Loading...</p>
-        {:then data}
-          {@const { headers, rows } = data.data}
-          <table class="divide-y divide-gray-300 tabular-nums">
-            <thead class="w-full min-w-full">
-              <tr class="divide-x divide-gray-200 w-full">
-                {#each headers as header, index}
-                  <th
-                    scope="col"
-                    class:list={[
-                      `py-3.5 text-left text-md font-semibold`,
-                      index === 0
-                        ? 'pl-4'
-                        : index === headers.length - 1
-                          ? 'pl-4 text-center'
-                          : 'px-4',
-                    ]}
-                  >
-                    {header}
-                  </th>
-                {/each}
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 w-full min-w-full">
-              {#each rows as row, index}
-                <tr class="w-full">
-                  {#each row as cell, index}
-                    <td class="whitespace nowrap p-4 text-sm font-medium">{cell}</td>
-                  {/each}
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {:catch error}
-          <p>{error.message}</p>
-        {/await}
-      </div>
-    </div>
-  </div>
-</div>
+{#await promise}
+  <div>Loading...</div>
+{:then data}
+  {@const { headers, rows } = data.data}
+  <Table {rows} {headers} />
+{:catch error}
+  <div>Error: {error.message}</div>
+{/await}
 
 <style lang="postcss"></style>
