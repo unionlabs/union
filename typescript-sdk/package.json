@@ -29,17 +29,17 @@
     "check-package": "deno run --allow-all npm:publint --strict && deno run --allow-all npm:@arethetypeswrong/cli@latest --pack --ignore-rules 'cjs-resolves-to-esm'"
   },
   "dependencies": {
-    "@scure/base": "^1.1.9",
-    "neverthrow": "^8.1.1",
-    "ofetch": "^1.4.1",
-    "patch-package": "^8.0.0",
     "@aptos-labs/ts-sdk": "^1.33.0",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
-    "viem": "^2.21.45"
+    "@scure/base": "^1.1.9",
+    "neverthrow": "^8.1.1",
+    "ofetch": "^1.4.1",
+    "patch-package": "^8.0.0",
+    "viem": "^2.21.47"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
@@ -48,7 +48,7 @@
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "knip": "^5.37.0",
+    "knip": "^5.37.1",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
