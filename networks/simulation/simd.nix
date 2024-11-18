@@ -12,11 +12,11 @@ _: {
     }:
     {
       packages = {
-        simd = goPkgs.pkgsStatic.buildGo121Module (
+        simd = goPkgs.pkgsStatic.buildGoModule (
           {
             name = "simd";
             src = pkgs.fetchFromGitHub {
-              owner = "cosmwasm";
+              owner = "unionlabs";
               repo = "wasmd";
               rev = "37aedfdc5fe917b91347d0cc49c8ba0067f0d514";
               sha256 = "sha256-7Mzt5QcCoEs4qEF20/8YuZy538vdqywc2rL1ifdmgtU=";
