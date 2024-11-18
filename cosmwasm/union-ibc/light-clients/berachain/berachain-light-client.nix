@@ -3,23 +3,14 @@ _: {
     {
       crane,
       lib,
-      ensure-wasm-client-type,
       ...
     }:
     let
-      workspace = crane.buildWasmContract {
-        crateDirFromRoot = "light-clients/berachain-light-client";
-        checks = [
-          (file_path: ''
-            ${ensure-wasm-client-type {
-              inherit file_path;
-              type = "Berachain";
-            }}
-          '')
-        ];
+      lc = crane.buildWasmContract {
+        crateDirFromRoot = "cosmwasm/union-ibc/light-clients/berachain";
       };
     in
     {
-      inherit (workspace) packages checks;
+      inherit (lc) packages checks;
     };
 }
