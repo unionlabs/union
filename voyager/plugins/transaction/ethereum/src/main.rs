@@ -14,10 +14,8 @@ use chain_utils::{
     BoxDynError,
 };
 use ibc_solidity::ibc::{
+    self,
     Ibc::{self, IbcErrors},
-    MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
-    MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
-    MsgCreateClient, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgUpdateClient,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -28,15 +26,14 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
     hash::{H160, H256},
-    ibc::core::channel::{channel::Channel, packet::Packet},
-    id::PortId,
     ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
-    data::{Data, IbcMessage, MsgCreateClientData, WithChainId},
+    data::{Data, WithChainId},
+    ibc_union::{IbcMsg, IbcUnion, MsgCreateClient},
     module::{PluginInfo, PluginServer},
-    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, IbcSpec, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, Op};
 
@@ -52,7 +49,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -151,13 +148,18 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
+    ($data."@type" == "identified_ibc_datagram"
         and $data."@value".chain_id == "{chain_id}"
+        and $data."@value".message.ibc_version_id == "{ibc_version_id}")
+    or ($data."@type" == "identified_ibc_datagram_batch"
+        and $data."@value".chain_id == "{chain_id}"
+        and all($data."@value".message[] | select(.ibc_version_id == "{ibc_version_id}")))
 else
     false
 end
 "#,
                 chain_id = config.chain_id,
+                ibc_version_id = IbcUnion::ID,
             ),
         }
     }
@@ -188,10 +190,10 @@ pub enum TxSubmitError {
     #[error("out of gas")]
     OutOfGas,
     #[error("0x revert")]
-    EmptyRevert(Vec<IbcMessage>),
+    EmptyRevert(Vec<IbcMsg>),
     #[error("gas price is too high: max {max}, price {price}")]
     GasPriceTooHigh { max: u128, price: u128 },
-    #[error("rpc error (this is just the IbcMessage conversion functions but i need to make those errors better)")]
+    #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
     RpcError(#[from] ErrorObjectOwned),
 }
 
@@ -208,10 +210,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .into_iter()
                 .enumerate()
                 .map(|(idx, msg)| {
-                    (
+                    Ok((
                         vec![idx],
                         match msg {
-                            Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagram(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -219,10 +221,22 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitMulticall(vec![message]),
+                                    ModuleCall::SubmitMulticall(vec![message
+                                        .decode_datagram::<IbcUnion>()
+                                        .unwrap()
+                                        .map_err(|e| {
+                                            ErrorObject::owned(
+                                                FATAL_JSONRPC_ERROR_CODE,
+                                                format!(
+                                                    "unable to deserialize datagram: {}",
+                                                    ErrorReporter(e)
+                                                ),
+                                                None::<()>,
+                                            )
+                                        })?]),
                                 ))
                             }
-                            Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagramBatch(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -230,14 +244,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitMulticall(message),
+                                    ModuleCall::SubmitMulticall(
+                                        message
+                                            .into_iter()
+                                            .map(|message| {
+                                                message
+                                                    .decode_datagram::<IbcUnion>()
+                                                    .unwrap()
+                                                    .map_err(|e| {
+                                                        ErrorObject::owned(
+                                                            FATAL_JSONRPC_ERROR_CODE,
+                                                            format!(
+                                                            "unable to deserialize datagram: {}",
+                                                            ErrorReporter(e)
+                                                        ),
+                                                            None::<()>,
+                                                        )
+                                                    })
+                                            })
+                                            .collect::<Result<_, _>>()?,
+                                    ),
                                 ))
                             }
                             _ => panic!("unexpected message: {msg:?}"),
                         },
-                    )
+                    ))
                 })
-                .collect(),
+                .collect::<RpcResult<_>>()?,
         })
     }
 
@@ -300,7 +333,7 @@ impl Module {
     async fn submit_transaction(
         &self,
         wallet: &LocalSigner<SigningKey>,
-        ibc_messages: Vec<IbcMessage>,
+        ibc_messages: Vec<IbcMsg>,
     ) -> Result<(), TxSubmitError> {
         let signer = ProviderBuilder::new()
             .with_recommended_fillers()
@@ -463,257 +496,182 @@ impl Module {
 #[allow(clippy::type_complexity)]
 fn process_msgs<T: Transport + Clone, P: Provider<T>>(
     ibc_handler: &ibc_solidity::ibc::Ibc::IbcInstance<T, P>,
-    msgs: Vec<IbcMessage>,
+    msgs: Vec<IbcMsg>,
     relayer: H160,
-) -> RpcResult<Vec<(IbcMessage, RawCallBuilder<T, &P>)>> {
+) -> RpcResult<Vec<(IbcMsg, RawCallBuilder<T, &P>)>> {
     msgs.clone()
         .into_iter()
         .map(|msg| {
             Ok(match msg.clone() {
-                IbcMessage::ConnectionOpenInit(data) => (
-                    msg,
-                    ibc_handler
-                        .connectionOpenInit(MsgConnectionOpenInit {
-                            clientId: data.client_id.id(),
-                            counterpartyClientId: data.counterparty.client_id.id(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ConnectionOpenTry(data) => (
-                    msg,
-                    ibc_handler
-                        .connectionOpenTry(MsgConnectionOpenTry {
-                            counterpartyClientId: data.counterparty.client_id.id(),
-                            counterpartyConnectionId: data
-                                .counterparty
-                                .connection_id
-                                .map(|c| c.id())
-                                .unwrap_or_default(),
-                            clientId: data.client_id.id(),
-                            proofInit: data.proof_init.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ConnectionOpenAck(data) => (
-                    msg,
-                    ibc_handler
-                        .connectionOpenAck(MsgConnectionOpenAck {
-                            connectionId: data.connection_id.id(),
-                            counterpartyConnectionId: data.counterparty_connection_id.id(),
-                            proofHeight: data.proof_height.height(),
-                            proofTry: data.proof_try.into(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ConnectionOpenConfirm(data) => (
-                    msg,
-                    ibc_handler
-                        .connectionOpenConfirm(MsgConnectionOpenConfirm {
-                            connectionId: data.connection_id.id(),
-                            proofAck: data.proof_ack.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ChannelOpenInit(data) => (
-                    msg,
-                    ibc_handler
-                        .channelOpenInit(MsgChannelOpenInit {
-                            portId: parse_port_id(data.port_id)?,
-                            relayer: relayer.into(),
-                            counterpartyPortId: data
-                                .channel
-                                .counterparty
-                                .port_id
-                                .to_string()
-                                .into_bytes()
-                                .into(),
-                            connectionId: data.channel.connection_hops[0].id(),
-                            // ordering: match data.channel.ordering {
-                            //     Order::NoneUnspecified => ChannelOrder::Unspecified,
-                            //     Order::Unordered => ChannelOrder::Unordered,
-                            //     Order::Ordered => ChannelOrder::Ordered,
-                            // },
-                            version: data.channel.version,
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ChannelOpenTry(data) => (
-                    msg,
-                    ibc_handler
-                        .channelOpenTry(MsgChannelOpenTry {
-                            channel: convert_channel(data.channel)?,
-                            counterpartyVersion: data.counterparty_version,
-                            proofInit: data.proof_init.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ChannelOpenAck(data) => (
-                    msg,
-                    ibc_handler
-                        .channelOpenAck(MsgChannelOpenAck {
-                            channelId: data.channel_id.id(),
-                            counterpartyVersion: data.counterparty_version,
-                            counterpartyChannelId: data.counterparty_channel_id.id(),
-                            proofTry: data.proof_try.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::ChannelOpenConfirm(data) => (
-                    msg,
-                    ibc_handler
-                        .channelOpenConfirm(MsgChannelOpenConfirm {
-                            channelId: data.channel_id.id(),
-                            proofAck: data.proof_ack.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::RecvPacket(data) => (
-                    msg,
-                    ibc_handler
-                        .recvPacket(MsgPacketRecv {
-                            packets: vec![convert_packet(data.packet)?],
-                            proof: data.proof_commitment.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                            relayerMsgs: vec![],
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::AcknowledgePacket(data) => (
-                    msg,
-                    ibc_handler
-                        .acknowledgePacket(MsgPacketAcknowledgement {
-                            packets: vec![convert_packet(data.packet)?],
-                            acknowledgements: vec![data.acknowledgement.into()],
-                            proof: data.proof_acked.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::TimeoutPacket(data) => (
-                    msg,
-                    ibc_handler
-                        .timeoutPacket(MsgPacketTimeout {
-                            packet: convert_packet(data.packet)?,
-                            proof: data.proof_unreceived.into(),
-                            proofHeight: data.proof_height.height(),
-                            relayer: relayer.into(),
-                        })
-                        .clear_decoder(),
-                ),
-                IbcMessage::CreateClient(MsgCreateClientData {
-                    msg: data,
+                IbcMsg::CreateClient(MsgCreateClient {
                     client_type,
+                    client_state_bytes,
+                    consensus_state_bytes,
                 }) => (
                     msg,
                     ibc_handler
-                        .createClient(MsgCreateClient {
+                        .createClient(ibc::MsgCreateClient {
                             clientType: client_type.to_string(),
-                            clientStateBytes: data.client_state.into(),
-                            consensusStateBytes: data.consensus_state.into(),
+                            clientStateBytes: client_state_bytes.into(),
+                            consensusStateBytes: consensus_state_bytes.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
-                IbcMessage::UpdateClient(data) => (
+                IbcMsg::UpdateClient(data) => (
                     msg,
                     ibc_handler
-                        .updateClient(MsgUpdateClient {
-                            clientId: data.client_id.id(),
+                        .updateClient(ibc::MsgUpdateClient {
+                            clientId: data.client_id,
                             clientMessage: data.client_message.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
+                // IbcMsg::ConnectionOpenInit(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .connectionOpenInit(MsgConnectionOpenInit {
+                //             clientId: data.client_id,
+                //             counterpartyClientId: data.counterparty.client_id,
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                IbcMsg::ConnectionOpenTry(data) => (
+                    msg,
+                    ibc_handler
+                        .connectionOpenTry(ibc::MsgConnectionOpenTry {
+                            counterpartyClientId: data.counterparty_client_id,
+                            counterpartyConnectionId: data.counterparty_connection_id,
+                            clientId: data.client_id,
+                            proofInit: data.proof_init.into(),
+                            proofHeight: data.proof_height,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
+                // IbcMsg::ConnectionOpenAck(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .connectionOpenAck(MsgConnectionOpenAck {
+                //             connectionId: data.connection_id,
+                //             counterpartyConnectionId: data.counterparty_connection_id,
+                //             proofHeight: data.proof_height.height(),
+                //             proofTry: data.proof_try.into(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::ConnectionOpenConfirm(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .connectionOpenConfirm(MsgConnectionOpenConfirm {
+                //             connectionId: data.connection_id,
+                //             proofAck: data.proof_ack.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::ChannelOpenInit(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .channelOpenInit(MsgChannelOpenInit {
+                //             portId: parse_port_id(data.port_id)?,
+                //             relayer: relayer.into(),
+                //             counterpartyPortId: data
+                //                 .channel
+                //                 .counterparty
+                //                 .port_id
+                //                 .to_string()
+                //                 .into_bytes()
+                //                 .into(),
+                //             connectionId: data.channel.connection_hops[0],
+                //             // ordering: match data.channel.ordering {
+                //             //     Order::NoneUnspecified => ChannelOrder::Unspecified,
+                //             //     Order::Unordered => ChannelOrder::Unordered,
+                //             //     Order::Ordered => ChannelOrder::Ordered,
+                //             // },
+                //             version: data.channel.version,
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::ChannelOpenTry(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .channelOpenTry(MsgChannelOpenTry {
+                //             channel: convert_channel(data.channel)?,
+                //             counterpartyVersion: data.counterparty_version,
+                //             proofInit: data.proof_init.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::ChannelOpenAck(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .channelOpenAck(MsgChannelOpenAck {
+                //             channelId: data.channel_id,
+                //             counterpartyVersion: data.counterparty_version,
+                //             counterpartyChannelId: data.counterparty_channel_id,
+                //             proofTry: data.proof_try.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::ChannelOpenConfirm(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .channelOpenConfirm(MsgChannelOpenConfirm {
+                //             channelId: data.channel_id,
+                //             proofAck: data.proof_ack.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::RecvPacket(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .recvPacket(MsgPacketRecv {
+                //             packets: vec![convert_packet(data.packet)?],
+                //             proof: data.proof_commitment.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //             relayerMsgs: vec![],
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::AcknowledgePacket(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .acknowledgePacket(MsgPacketAcknowledgement {
+                //             packets: vec![convert_packet(data.packet)?],
+                //             acknowledgements: vec![data.acknowledgement.into()],
+                //             proof: data.proof_acked.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                // IbcMsg::TimeoutPacket(data) => (
+                //     msg,
+                //     ibc_handler
+                //         .timeoutPacket(MsgPacketTimeout {
+                //             packet: convert_packet(data.packet)?,
+                //             proof: data.proof_unreceived.into(),
+                //             proofHeight: data.proof_height.height(),
+                //             relayer: relayer.into(),
+                //         })
+                //         .clear_decoder(),
+                // ),
+                _ => todo!(),
             })
         })
         .collect()
-}
-
-fn parse_port_id(s: PortId) -> RpcResult<alloy::primitives::Address> {
-    s.as_str().parse().map_err(|e| {
-        ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            format!(
-                "port id is not an address (found `{s}`): {}",
-                ErrorReporter(e)
-            ),
-            None::<()>,
-        )
-    })
-}
-
-fn convert_packet(_packet: Packet) -> RpcResult<ibc_solidity::ibc::Packet> {
-    // Ok(ibc_solidity::ibc::Packet {
-    //     sequence: packet.sequence.get(),
-    //     sourceChannel: packet.source_channel.id(),
-    //     destinationChannel: packet.destination_channel.id(),
-    //     data: packet.data.into(),
-    //     timeoutHeight: packet.timeout_height.height(),
-    //     timeoutTimestamp: packet.timeout_timestamp,
-    // })
-
-    todo!()
-}
-
-fn convert_channel(_channel: Channel) -> RpcResult<ibc_solidity::ibc::Channel> {
-    // Ok(ibc_solidity::ibc::Channel {
-    //     state: match channel.state {
-    //         State::UninitializedUnspecified => {
-    //             return Err(ErrorObject::owned(
-    //                 FATAL_JSONRPC_ERROR_CODE,
-    //                 "channel is in an invalid state",
-    //                 None::<()>,
-    //             ))
-    //         }
-    //         State::Init => ChannelState::Init,
-    //         State::Tryopen => ChannelState::TryOpen,
-    //         State::Open => ChannelState::Open,
-    //         State::Closed => ChannelState::Closed,
-    //         _ => panic!(),
-    //     },
-    //     ordering: match channel.ordering {
-    //         Order::NoneUnspecified => {
-    //             return Err(ErrorObject::owned(
-    //                 FATAL_JSONRPC_ERROR_CODE,
-    //                 "channel order is invalid",
-    //                 None::<()>,
-    //             ))
-    //         }
-    //         Order::Unordered => ChannelOrder::Unordered,
-    //         Order::Ordered => ChannelOrder::Ordered,
-    //     },
-    //     connectionId: channel
-    //         .connection_hops
-    //         .into_iter()
-    //         .exactly_one()
-    //         .map_err(|e| {
-    //             ErrorObject::owned(
-    //                 FATAL_JSONRPC_ERROR_CODE,
-    //                 format!("channel connection hops are invalid: {}", ErrorReporter(e)),
-    //                 None::<()>,
-    //             )
-    //         })
-    //         .map(|c| c.id())?,
-    //     counterpartyChannelId: channel.counterparty.channel_id.unwrap().id(),
-    //     counterpartyPortId: channel.counterparty.port_id.to_string().into_bytes().into(),
-    //     version: channel.version,
-    // })
-
-    todo!()
 }
 
 pub mod multicall {

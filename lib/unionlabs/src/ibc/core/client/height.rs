@@ -67,6 +67,14 @@ impl Height {
     }
 
     #[must_use]
+    pub const fn revision_matches(&self, other: &Self) -> bool {
+        match (self.revision, other.revision) {
+            (Some(lhs), Some(rhs)) => lhs.get() == rhs.get(),
+            _ => true,
+        }
+    }
+
+    #[must_use]
     pub const fn increment(self) -> Self {
         Self {
             revision: self.revision,
@@ -115,10 +123,14 @@ impl PartialOrd for Height {
 
 impl Ord for Height {
     fn cmp(&self, other: &Self) -> Ordering {
-        match self.revision.cmp(&other.revision) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Equal => self.height.cmp(&other.height),
-            Ordering::Greater => Ordering::Greater,
+        match (self.revision, other.revision) {
+            (Some(this_revision), Some(other_revision)) => match this_revision.cmp(&other_revision)
+            {
+                Ordering::Less => Ordering::Less,
+                Ordering::Equal => self.height.cmp(&other.height),
+                Ordering::Greater => Ordering::Greater,
+            },
+            _ => self.height.cmp(&other.height),
         }
     }
 }
@@ -376,5 +388,47 @@ mod tests {
             Height::from_str("gibberish"),
             Err(HeightFromStrError::ParseIntError(_))
         ));
+    }
+
+    #[test]
+    fn cmp() {
+        let h1 = Height::new(1);
+        let h2 = Height::new(2);
+
+        let h1_1 = Height::new_with_revision(1, 1);
+        let h1_2 = Height::new_with_revision(1, 2);
+
+        let h2_1 = Height::new_with_revision(2, 1);
+        let h2_2 = Height::new_with_revision(2, 2);
+
+        // no revision
+        assert_eq!(h1.cmp(&h1), Ordering::Equal);
+        assert_eq!(h2.cmp(&h1), Ordering::Greater);
+        assert_eq!(h1.cmp(&h2), Ordering::Less);
+
+        // both same revision
+        assert_eq!(h1_1.cmp(&h1_1), Ordering::Equal);
+        assert_eq!(h1_2.cmp(&h1_1), Ordering::Greater);
+        assert_eq!(h1_1.cmp(&h1_2), Ordering::Less);
+
+        // rhs revision (will be ignored)
+        assert_eq!(h1.cmp(&h1_1), Ordering::Equal);
+        assert_eq!(h2.cmp(&h1_1), Ordering::Greater);
+        assert_eq!(h1.cmp(&h1_2), Ordering::Less);
+
+        // lhs revision (will be ignored)
+        assert_eq!(h1_1.cmp(&h1), Ordering::Equal);
+        assert_eq!(h1_1.cmp(&h2), Ordering::Less);
+        assert_eq!(h1_2.cmp(&h1), Ordering::Greater);
+
+        // both with revision, but different
+        assert_eq!(h1_1.cmp(&h2_1), Ordering::Less);
+        assert_eq!(h2_1.cmp(&h1_1), Ordering::Greater);
+
+        assert_eq!(h1_2.cmp(&h2_1), Ordering::Less);
+        assert_eq!(h2_1.cmp(&h1_2), Ordering::Greater);
+
+        assert_eq!(h1_2.cmp(&h2_2), Ordering::Less);
+        assert_eq!(h2_1.cmp(&h1_1), Ordering::Greater);
     }
 }

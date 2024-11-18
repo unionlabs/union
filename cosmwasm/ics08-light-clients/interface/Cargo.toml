@@ -11,7 +11,6 @@ workspace = true
 
 [dependencies]
 cosmwasm-std             = { workspace = true }
-dlmalloc                 = { workspace = true, features = ["global"] }
 frame-support-procedural = { workspace = true }
 macros                   = { workspace = true }
 prost                    = { workspace = true }

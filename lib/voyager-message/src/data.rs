@@ -1,39 +1,20 @@
-use std::num::NonZeroU64;
-
 use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
-use tracing::info;
 use unionlabs::{
     bytes::Bytes,
     hash::H256,
-    ibc::core::{
-        channel::{
-            msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
-            msg_channel_open_confirm::MsgChannelOpenConfirm,
-            msg_channel_open_init::MsgChannelOpenInit, msg_channel_open_try::MsgChannelOpenTry,
-            msg_recv_packet::MsgRecvPacket, msg_timeout::MsgTimeout, order::Order,
-        },
-        client::{
-            height::Height, msg_create_client::MsgCreateClient, msg_update_client::MsgUpdateClient,
-        },
-        connection::{
-            connection_end::ConnectionEnd, msg_connection_open_ack::MsgConnectionOpenAck,
-            msg_connection_open_confirm::MsgConnectionOpenConfirm,
-            msg_connection_open_init::MsgConnectionOpenInit,
-            msg_connection_open_try::MsgConnectionOpenTry,
-        },
-    },
-    ics24::{ClientConsensusStatePath, ClientStatePath, IbcPath, Path},
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    ibc::core::client::height::Height,
+    ics24::{IbcPath, Path},
     traits::Member,
 };
+use voyager_core::IbcVersionId;
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta},
-    PluginMessage,
+    core::{ChainId, ClientInfo, ClientStateMeta},
+    into_value, IbcSpec, PluginMessage, RawClientId,
 };
 
 #[model]
@@ -41,13 +22,13 @@ use crate::{
 #[allow(clippy::large_enum_variant)]
 pub enum Data {
     IbcEvent(ChainEvent),
-    IbcMessage(IbcMessage),
+    IbcDatagram(IbcDatagram),
+
+    IdentifiedIbcDatagram(WithChainId<IbcDatagram>),
+    IdentifiedIbcDatagramBatch(WithChainId<Vec<IbcDatagram>>),
 
     OrderedHeaders(OrderedHeaders),
-    OrderedMsgUpdateClients(OrderedMsgUpdateClients),
-
-    IdentifiedIbcMessage(WithChainId<IbcMessage>),
-    IdentifiedIbcMessageBatch(WithChainId<Vec<IbcMessage>>),
+    OrderedMsgUpdateClients(OrderedClientUpdates),
 
     Plugin(PluginMessage),
 }
@@ -64,6 +45,21 @@ impl Data {
     }
 }
 
+// #[model]
+// pub struct VersionMessage {
+//     pub ibc_version_id: IbcVersionId,
+//     pub data: Value,
+// }
+
+// impl VersionMessage {
+//     pub fn new<V: IbcSpec>(data: Value) -> Self {
+//         Self {
+//             ibc_version_id: V::ID,
+//             data,
+//         }
+//     }
+// }
+
 #[model]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
@@ -77,322 +73,46 @@ pub struct ChainEvent {
     /// the effect of the IBC action that caused this event is provable in
     /// the state root of the chain identified by [`Self::chain_id`].
     pub provable_height: Height,
-    pub event: FullIbcEvent,
+
+    pub ibc_version_id: IbcVersionId,
+    /// The full IBC event, encoded as JSON value. This is really [`IbcSpec::Event`],
+    /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
+    pub event: Value,
 }
 
 impl ChainEvent {
-    pub fn client_id(&self) -> &ClientId {
-        match self.event {
-            FullIbcEvent::CreateClient(ref event) => &event.client_id,
-            FullIbcEvent::UpdateClient(ref event) => &event.client_id,
-            FullIbcEvent::ConnectionOpenInit(ref event) => &event.client_id,
-            FullIbcEvent::ConnectionOpenTry(ref event) => &event.client_id,
-            FullIbcEvent::ConnectionOpenAck(ref event) => &event.client_id,
-            FullIbcEvent::ConnectionOpenConfirm(ref event) => &event.client_id,
-            FullIbcEvent::ChannelOpenInit(ref event) => &event.connection.client_id,
-            FullIbcEvent::ChannelOpenTry(ref event) => &event.connection.client_id,
-            FullIbcEvent::ChannelOpenAck(ref event) => &event.connection.client_id,
-            FullIbcEvent::ChannelOpenConfirm(ref event) => &event.connection.client_id,
-            FullIbcEvent::SendPacket(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-            FullIbcEvent::RecvPacket(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-            FullIbcEvent::WriteAcknowledgement(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-            FullIbcEvent::AcknowledgePacket(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-            FullIbcEvent::TimeoutPacket(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-        }
-    }
-
-    /// Returns the counterparty client id of this ibc event, if there is a
-    /// counterparty. This will return `None` for `UpdateClient` and
-    /// `CreateClient`.
-    pub fn counterparty_client_id(&self) -> Option<&ClientId> {
-        match self.event {
-            FullIbcEvent::ConnectionOpenInit(ref event) => Some(&event.counterparty_client_id),
-            FullIbcEvent::ConnectionOpenTry(ref event) => Some(&event.counterparty_client_id),
-            FullIbcEvent::ConnectionOpenAck(ref event) => Some(&event.counterparty_client_id),
-            FullIbcEvent::ConnectionOpenConfirm(ref event) => Some(&event.counterparty_client_id),
-            FullIbcEvent::ChannelOpenInit(ref event) => {
-                Some(&event.connection.counterparty.client_id)
-            }
-            FullIbcEvent::ChannelOpenTry(ref event) => {
-                Some(&event.connection.counterparty.client_id)
-            }
-            FullIbcEvent::ChannelOpenAck(ref event) => {
-                Some(&event.connection.counterparty.client_id)
-            }
-            FullIbcEvent::ChannelOpenConfirm(ref event) => {
-                Some(&event.connection.counterparty.client_id)
-            }
-            FullIbcEvent::SendPacket(ref event) => {
-                Some(&event.packet.destination_channel.connection.client_id)
-            }
-            FullIbcEvent::RecvPacket(ref event) => {
-                Some(&event.packet.source_channel.connection.client_id)
-            }
-            FullIbcEvent::WriteAcknowledgement(ref event) => {
-                Some(&event.packet.source_channel.connection.client_id)
-            }
-            FullIbcEvent::AcknowledgePacket(ref event) => {
-                Some(&event.packet.destination_channel.connection.client_id)
-            }
-            FullIbcEvent::TimeoutPacket(ref event) => {
-                Some(&event.packet.destination_channel.connection.client_id)
-            }
-            _ => None,
+    pub fn decode_event<V: IbcSpec>(&self) -> Option<Result<V::Event, serde_json::Error>> {
+        if self.ibc_version_id == V::ID {
+            Some(serde_json::from_value(self.event.clone()))
+        } else {
+            None
         }
     }
 }
 
 #[model]
-#[derive(Enumorph)]
-pub enum IbcMessage {
-    CreateClient(MsgCreateClientData),
-    UpdateClient(MsgUpdateClient),
-
-    ConnectionOpenInit(MsgConnectionOpenInit),
-    ConnectionOpenTry(MsgConnectionOpenTry),
-    ConnectionOpenAck(MsgConnectionOpenAck),
-    ConnectionOpenConfirm(MsgConnectionOpenConfirm),
-
-    ChannelOpenInit(MsgChannelOpenInit),
-    ChannelOpenTry(MsgChannelOpenTry),
-    ChannelOpenAck(MsgChannelOpenAck),
-    ChannelOpenConfirm(MsgChannelOpenConfirm),
-
-    RecvPacket(MsgRecvPacket),
-    AcknowledgePacket(MsgAcknowledgement),
-    TimeoutPacket(MsgTimeout),
+pub struct IbcDatagram {
+    pub ibc_version_id: IbcVersionId,
+    /// The IBC datagram, encoded as JSON value. This is really [`IbcSpec::Datagram`],
+    /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
+    pub datagram: Value,
 }
 
-impl IbcMessage {
-    /// Returns the proof height of the IBC message, if it has one.
-    /// (ConnectionOpenInit does not contain a proof, for example)
-    pub fn proof_height(&self) -> Option<Height> {
-        match self {
-            IbcMessage::CreateClient(_) => None,
-            IbcMessage::UpdateClient(_) => None,
-            IbcMessage::ConnectionOpenInit(_) => None,
-            IbcMessage::ConnectionOpenTry(msg) => Some(msg.proof_height),
-            IbcMessage::ConnectionOpenAck(msg) => Some(msg.proof_height),
-            IbcMessage::ConnectionOpenConfirm(msg) => Some(msg.proof_height),
-            IbcMessage::ChannelOpenInit(_) => None,
-            IbcMessage::ChannelOpenTry(msg) => Some(msg.proof_height),
-            IbcMessage::ChannelOpenAck(msg) => Some(msg.proof_height),
-            IbcMessage::ChannelOpenConfirm(msg) => Some(msg.proof_height),
-            IbcMessage::RecvPacket(msg) => Some(msg.proof_height),
-            IbcMessage::AcknowledgePacket(msg) => Some(msg.proof_height),
-            IbcMessage::TimeoutPacket(msg) => Some(msg.proof_height),
+impl IbcDatagram {
+    pub fn decode_datagram<V: IbcSpec>(&self) -> Option<Result<V::Datagram, serde_json::Error>> {
+        if self.ibc_version_id == V::ID {
+            Some(serde_json::from_value(self.datagram.clone()))
+        } else {
+            None
         }
     }
 
-    pub fn name(&self) -> &'static str {
-        match self {
-            IbcMessage::CreateClient(_) => "create_client",
-            IbcMessage::UpdateClient(_) => "update_client",
-            IbcMessage::ConnectionOpenInit(_) => "connection_open_init",
-            IbcMessage::ConnectionOpenTry(_) => "connection_open_try",
-            IbcMessage::ConnectionOpenAck(_) => "connection_open_ack",
-            IbcMessage::ConnectionOpenConfirm(_) => "connection_open_confirm",
-            IbcMessage::ChannelOpenInit(_) => "channel_open_init",
-            IbcMessage::ChannelOpenTry(_) => "channel_open_try",
-            IbcMessage::ChannelOpenAck(_) => "channel_open_ack",
-            IbcMessage::ChannelOpenConfirm(_) => "channel_open_confirm",
-            IbcMessage::RecvPacket(_) => "recv_packet",
-            IbcMessage::AcknowledgePacket(_) => "acknowledgement",
-            IbcMessage::TimeoutPacket(_) => "timeout",
+    pub fn new<V: IbcSpec>(datagram: V::Datagram) -> Self {
+        Self {
+            ibc_version_id: V::ID,
+            datagram: into_value(datagram),
         }
     }
-}
-
-#[model]
-pub struct CreateClient {
-    pub client_id: ClientId,
-    pub client_type: ClientType,
-    pub consensus_height: Height,
-}
-
-#[model]
-pub struct UpdateClient {
-    pub client_id: ClientId,
-    pub client_type: ClientType,
-    pub consensus_heights: Vec<Height>,
-}
-
-#[model]
-pub struct ConnectionOpenInit {
-    pub connection_id: ConnectionId,
-    pub client_id: ClientId,
-    pub counterparty_client_id: ClientId,
-}
-
-#[model]
-pub struct ConnectionOpenTry {
-    pub connection_id: ConnectionId,
-    pub client_id: ClientId,
-    pub counterparty_client_id: ClientId,
-    pub counterparty_connection_id: ConnectionId,
-}
-
-#[model]
-pub struct ConnectionOpenAck {
-    pub connection_id: ConnectionId,
-    pub client_id: ClientId,
-    pub counterparty_client_id: ClientId,
-    pub counterparty_connection_id: ConnectionId,
-}
-
-#[model]
-pub struct ConnectionOpenConfirm {
-    pub connection_id: ConnectionId,
-    pub client_id: ClientId,
-    pub counterparty_client_id: ClientId,
-    pub counterparty_connection_id: ConnectionId,
-}
-
-#[model]
-pub struct ChannelOpenInit {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-
-    pub counterparty_port_id: PortId,
-
-    pub connection: ConnectionEnd,
-
-    pub version: String,
-}
-
-#[model]
-pub struct ChannelOpenTry {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
-
-    pub connection: ConnectionEnd,
-
-    pub version: String,
-}
-
-#[model]
-pub struct ChannelOpenAck {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
-
-    pub connection: ConnectionEnd,
-
-    pub version: String,
-}
-
-#[model]
-pub struct ChannelOpenConfirm {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
-
-    pub connection: ConnectionEnd,
-
-    pub version: String,
-}
-
-#[model]
-pub struct WriteAcknowledgement {
-    pub packet_data: Bytes,
-    pub packet_ack: Bytes,
-    pub packet: PacketMetadata,
-}
-
-#[model]
-pub struct RecvPacket {
-    pub packet_data: Bytes,
-    pub packet: PacketMetadata,
-}
-
-#[model]
-pub struct SendPacket {
-    pub packet_data: Bytes,
-
-    pub packet: PacketMetadata,
-}
-
-#[model]
-pub struct AcknowledgePacket {
-    pub packet: PacketMetadata,
-}
-
-#[model]
-pub struct TimeoutPacket {
-    pub packet: PacketMetadata,
-}
-
-#[model]
-pub struct PacketMetadata {
-    pub sequence: NonZeroU64,
-
-    pub source_channel: ChannelMetadata,
-    pub destination_channel: ChannelMetadata,
-
-    pub channel_ordering: Order,
-
-    pub timeout_height: Height,
-    pub timeout_timestamp: u64,
-}
-
-#[model]
-pub struct ChannelMetadata {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    // REVIEW: Can this be different on either end of a channel?
-    pub version: String,
-    pub connection: ConnectionMetadata,
-}
-
-#[model]
-pub struct ConnectionMetadata {
-    pub client_id: ClientId,
-    // this is really `Either<ConnectionId, EmptyString>`
-    // REVIEW: Is it?
-    pub connection_id: ConnectionId,
-}
-
-/// Similar to `IbcEvent`, but contains more information (counterparty
-/// clients, channel version, etc)
-#[model]
-#[derive(Enumorph, SubsetOf)]
-pub enum FullIbcEvent {
-    CreateClient(CreateClient),
-
-    UpdateClient(UpdateClient),
-
-    ConnectionOpenInit(ConnectionOpenInit),
-    ConnectionOpenTry(ConnectionOpenTry),
-    ConnectionOpenAck(ConnectionOpenAck),
-    ConnectionOpenConfirm(ConnectionOpenConfirm),
-
-    ChannelOpenInit(ChannelOpenInit),
-    ChannelOpenTry(ChannelOpenTry),
-    ChannelOpenAck(ChannelOpenAck),
-    ChannelOpenConfirm(ChannelOpenConfirm),
-
-    SendPacket(SendPacket),
-    RecvPacket(RecvPacket),
-    WriteAcknowledgement(WriteAcknowledgement),
-    AcknowledgePacket(AcknowledgePacket),
-    TimeoutPacket(TimeoutPacket),
 }
 
 #[model]
@@ -429,245 +149,31 @@ pub struct RawIbcProof {
 }
 
 #[model]
-pub struct DecodedClientStateMeta {
-    pub path: ClientStatePath,
-    /// The height that the state was read at. Same as [`IbcState::height`].
-    pub height: Height,
-    pub state: ClientStateMeta,
-}
-
-#[model]
-pub struct DecodedConsensusStateMeta {
-    pub path: ClientConsensusStatePath,
-    pub height: Height,
-    pub state: ConsensusStateMeta,
-}
-
-#[model]
 pub struct DecodedHeaderMeta {
     /// The new trusted height that the header provides a consensus update to.
     pub height: Height,
 }
 
+// client update plugins produce this data which is then used when constructing the OrderedClientUpdates
 #[model]
 pub struct OrderedHeaders {
     pub headers: Vec<(DecodedHeaderMeta, Value)>,
 }
 
 #[model]
-pub struct OrderedMsgUpdateClients {
-    pub updates: Vec<(DecodedHeaderMeta, MsgUpdateClient)>,
+pub struct OrderedClientUpdates {
+    pub updates: Vec<(DecodedHeaderMeta, ClientUpdate)>,
 }
 
 #[model]
-pub struct EncodedClientState {
-    pub encoded_client_state: Bytes,
-}
-
-#[model]
-pub struct EncodedConsensusState {
-    pub encoded_consensus_state: Bytes,
-}
-
-#[model]
-pub struct EncodedHeader {
-    pub encoded_header: Bytes,
+pub struct ClientUpdate {
+    pub client_id: RawClientId,
+    pub ibc_version_id: IbcVersionId,
+    pub client_message: Bytes,
 }
 
 #[model]
 pub struct WithChainId<T> {
     pub chain_id: ChainId,
     pub message: T,
-}
-
-#[model]
-pub struct MsgCreateClientData {
-    pub msg: MsgCreateClient,
-    pub client_type: ClientType,
-}
-
-pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
-    match effect.clone() {
-        IbcMessage::ConnectionOpenInit(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-                %message.counterparty.client_id,
-                // TODO: Use Valuable here
-                ?message.counterparty.connection_id,
-                message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
-                %message.version.identifier,
-                message.version.features = %message
-                    .version
-                    .features
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.delay_period,
-            )
-        }
-        IbcMessage::ConnectionOpenTry(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-                %message.counterparty.client_id,
-                // TODO: Use Valuable here
-                ?message.counterparty.connection_id,
-                message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
-                %message.delay_period,
-                // TODO: This needs `valuable`
-                // message.counterparty_versions = %message
-                //     .counterparty_versions
-                //     .into_iter()
-                //     .map(Into::into)
-                //     .collect(),
-                %message.proof_height,
-                %message.consensus_height,
-            )
-        }
-        IbcMessage::ConnectionOpenAck(message) => {
-            info!(
-                %chain_id,
-                // client_state.height = message.%data.message.client_state.height(),
-                %message.proof_height,
-                %message.consensus_height,
-                %message.connection_id,
-                %message.counterparty_connection_id,
-                %message.version.identifier,
-                message.version.features = %message
-                    .version
-                    .features
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-            )
-        }
-        IbcMessage::ConnectionOpenConfirm(message) => {
-            info!(
-                %chain_id,
-                %message.connection_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenInit(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel.state,
-                %message.channel.ordering,
-                %message.channel.counterparty.port_id,
-                // TODO: Use Valuable here
-                ?message.channel.counterparty.channel_id,
-                message.channel.connection_hops = %message
-                    .channel
-                    .connection_hops
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.channel.version,
-            )
-        }
-        IbcMessage::ChannelOpenTry(message) => {
-            info!(
-                %chain_id,
-
-                %message.port_id,
-                %message.channel.state,
-                %message.channel.ordering,
-                %message.channel.counterparty.port_id,
-                // TODO: Use Valuable here
-                ?message.channel.counterparty.channel_id,
-                message.channel.connection_hops = %message
-                    .channel
-                    .connection_hops
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.channel.version,
-                %message.counterparty_version,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenAck(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel_id,
-                %message.counterparty_version,
-                %message.counterparty_channel_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenConfirm(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::RecvPacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                %message.proof_height,
-            )
-        }
-        IbcMessage::AcknowledgePacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                message.data = %::serde_utils::to_hex(message.acknowledgement),
-                %message.proof_height,
-            )
-        }
-        IbcMessage::TimeoutPacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                %message.proof_height,
-                %message.next_sequence_recv,
-            )
-        }
-        IbcMessage::CreateClient(message) => {
-            info!(
-                %chain_id,
-                %message.client_type,
-            )
-        }
-        IbcMessage::UpdateClient(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-            )
-        }
-    }
 }

@@ -18,13 +18,13 @@ use unionlabs::{
 use voyager_message::{
     core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface},
     module::{ClientModuleInfo, ClientModuleServer},
-    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_client_module_server::<Module>().await
+    Module::run().await
 }
 
 #[model(no_serde)]

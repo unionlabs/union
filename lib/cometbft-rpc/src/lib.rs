@@ -183,6 +183,7 @@ impl Client {
             value = ?&res.response.value,
             height = %res.response.height,
             codespace = %res.response.codespace,
+            proof_ops = ?res.response.proof_ops,
             "fetched abci query"
         );
 

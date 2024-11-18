@@ -7,44 +7,52 @@ _: {
       crane,
       system,
       ensureAtRepositoryRoot,
+      dbg,
       ...
     }:
     {
       packages = {
-        simd = goPkgs.pkgsStatic.buildGoModule (
+        simd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "simd";
-            # src = builtins.fetchGit {
-            #   url = "git@github.com:unionlabs/wasmd.git";
-            #   rev = "a2e7048bbdd43206c69fb9353c6aff219aecefda";
-            # };
             src = pkgs.fetchFromGitHub {
-              owner = "unionlabs";
+              owner = "cosmwasm";
               repo = "wasmd";
-              # rev = "wasm-clients-v0.50.0";
-              rev = "a2e7048bbdd43206c69fb9353c6aff219aecefda";
-              sha256 = "sha256-b0JPYyk7VhuaEAeQmrbAU6i1UO242oV1DzW8QjOFIak=";
+              rev = "de7db0dc672e7beb201e06e7eb12b2de356ac7c9";
+              sha256 = "sha256-X8Q93gqk+gBJwn4EIxFVeWqRpHcIxNAplfARejHwfbk=";
             };
-            vendorHash = null;
+            vendorHash = "sha256-rhuYWhaTtrHCeO9l4uiP7L2OmWkCPtMHXBqS7TRzM4s=";
+            subPackages = [ "./cmd/wasmd" ];
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "wasmd";
-            # CGO_ENABLED = 0;
           }
           // (
             let
-              libwasmvm = self'.packages.libwasmvm-1_5_0;
+              libwasmvm = self'.packages.libwasmvm-2_1_2;
             in
+            # libwasmvm = pkgs.stdenv.mkDerivation {
+            #   name = "libwasmvm";
+            #   src = pkgs.fetchurl {
+            #     url = "https://github.com/CosmWasm/wasmvm/releases/download/v2.2.0-rc.2/libwasmvm_muslc.x86_64.a";
+            #     hash = "sha256-LEl7UkbHIXpwxEfFARfH+wmQnsI+bkFRpN4+XynbgTQ=";
+            #   };
+            #   dontUnpack = true;
+            #   buildPhase = ''
+            #     mkdir -p $out/lib/
+            #     cp $src $out/lib/libwasmvm.x86_64.a
+            #   '';
+            # };
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
-                  pkgs.musl
+                  goPkgs.musl
                   libwasmvm
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib'"
+                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

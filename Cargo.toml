@@ -104,9 +104,15 @@ members = [
 
   "voyager",
 
-  "voyager/modules/chain/cosmos-sdk",
-  "voyager/modules/chain/ethereum",
-  # "voyager/modules/chain/movement",
+  "voyager/modules/state/cosmos-sdk",
+  "voyager/modules/state/cosmos-sdk-union",
+  "voyager/modules/state/ethereum",
+  # "voyager/modules/state/movement",
+
+  "voyager/modules/proof/cosmos-sdk",
+  "voyager/modules/proof/cosmos-sdk-union",
+  "voyager/modules/proof/ethereum",
+  # "voyager/modules/proof/movement",
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
@@ -125,11 +131,11 @@ members = [
 
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
-  "voyager/plugins/event-source/movement",
+  # "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",
-  "voyager/plugins/transaction/aptos",
+  # "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
@@ -182,6 +188,7 @@ cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-
 cometbls-light-client-types = { path = "cosmwasm/union-ibc/light-clients/cometbls/types", default-features = false }
 
 scroll-light-client-types = { path = "cosmwasm/union-ibc/light-clients/scroll/types", default-features = false }
+scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
@@ -190,10 +197,9 @@ ethereum-light-client-types = { path = "cosmwasm/union-ibc/light-clients/ethereu
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
-scroll-api      = { path = "lib/scroll-api", default-features = false }
-scroll-codec    = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc      = { path = "lib/scroll-rpc", default-features = false }
-scroll-verifier = { path = "lib/scroll-verifier", default-features = false }
+scroll-api   = { path = "lib/scroll-api", default-features = false }
+scroll-codec = { path = "lib/scroll-codec", default-features = false }
+scroll-rpc   = { path = "lib/scroll-rpc", default-features = false }
 
 berachain-light-client-types = { path = "cosmwasm/union-ibc/light-clients/berachain/types", default-features = false }
 
@@ -247,9 +253,8 @@ voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 # external dependencies
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 
-tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
-tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
-tendermint-rpc   = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
+tendermint     = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
+tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 ethers                 = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
@@ -273,12 +278,11 @@ chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "1.5", default-features = false }
-cosmwasm-std             = { version = "1.5", default-features = false }
+cosmwasm-std             = { version = "1.5.4", default-features = false }
 crossbeam-queue          = { version = "0.3.8", default-features = false }
 cw-storage-plus          = { version = "1.2", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }
 derive_more              = { version = "0.99.17", default-features = false }
-dlmalloc                 = { version = "=0.2.4", default-features = false }
 either                   = { version = "1.9.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }

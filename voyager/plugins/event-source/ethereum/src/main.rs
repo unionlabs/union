@@ -1,6 +1,6 @@
 // #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
 
-use std::{collections::VecDeque, num::NonZeroU64};
+use std::collections::VecDeque;
 
 use alloy::{
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -9,10 +9,7 @@ use alloy::{
     transports::BoxTransport,
 };
 use beacon_api::client::BeaconApiClient;
-use ibc_solidity::ibc::{
-    self,
-    Ibc::{self, IbcInstance},
-};
+use ibc_solidity::ibc::{self, Ibc};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -22,22 +19,25 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace, warn};
 use unionlabs::{
     hash::H160,
-    ibc::core::{channel, client::height::Height},
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    ibc::core::client::height::Height,
+    ics24::ethabi::{ChannelPath, ConnectionPath},
     ErrorReporter,
 };
 use voyager_message::{
     call::Call,
     core::{ChainId, ClientInfo, QueryHeight},
-    data::{
-        ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-        ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
-        ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data, PacketMetadata, UpdateClient,
+    data::{ChainEvent, Data},
+    ibc_union::{
+        AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+        ChannelOpenTry, ClientCreated, ClientUpdated, ConnectionMetadata, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, FullIbcEvent, IbcUnion,
+        PacketMetadata, RecvPacket, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
+    into_value,
     module::{PluginInfo, PluginServer},
-    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    rpc::missing_state,
+    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, defer, noop, now, pass::PassResult, seq, BoxDynError, Op};
 
@@ -52,7 +52,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -117,15 +117,12 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
-    fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
-        Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
-    }
-
     pub async fn new(config: Config) -> Result<Self, BoxDynError> {
         let provider = ProviderBuilder::new()
             .on_builtin(&config.eth_rpc_api)
             .await?;
 
+        // TODO: Assert chain id is correct
         let chain_id = provider.get_chain_id().await?;
 
         Ok(Self {
@@ -139,92 +136,78 @@ impl Module {
     async fn make_packet_metadata(
         &self,
         event_height: Height,
-        self_port_id: PortId,
-        self_channel_id: ChannelId,
+        self_channel_id: u32,
         voyager_rpc_client: &VoyagerClient,
-    ) -> RpcResult<(
-        ChainId,
-        ClientInfo,
-        ChannelMetadata,
-        ChannelMetadata,
-        channel::order::Order,
-    )> {
+    ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
         let self_channel = voyager_rpc_client
-            .query_channel(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_port_id.clone(),
-                self_channel_id.clone(),
+                ChannelPath {
+                    channel_id: self_channel_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?
+            .await?
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
-        let self_connection_id = self_channel.connection_hops[0].clone();
+        let self_connection_id = self_channel.connectionId;
         let self_connection = voyager_rpc_client
-            .query_connection(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_id.clone(),
+                ConnectionPath {
+                    connection_id: self_connection_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let self_connection_state = self_connection
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info(
-                self.chain_id.clone(),
-                self_connection_state.client_id.clone(),
-            )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.clientId)
+            .await?;
 
         let client_meta = voyager_rpc_client
-            .client_meta(
+            .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_state.client_id.clone(),
+                self_connection_state.clientId,
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
-        let other_port_id = self_channel.counterparty.port_id.clone();
-        let other_channel_id = self_channel.counterparty.channel_id.unwrap();
+        let other_channel_id = self_channel.counterpartyChannelId;
 
         let other_channel = voyager_rpc_client
-            .query_channel(
+            .query_ibc_state(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
-                other_port_id.clone(),
-                other_channel_id.clone(),
+                ChannelPath {
+                    channel_id: other_channel_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let other_channel_state = other_channel
             .state
             .ok_or_else(missing_state("channel must exist", None))?;
 
         let source_channel = ChannelMetadata {
-            port_id: self_port_id.clone(),
-            channel_id: self_channel_id.clone(),
+            channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.client_id,
+                client_id: self_connection_state.clientId,
                 connection_id: self_connection_id,
             },
         };
         let destination_channel = ChannelMetadata {
-            port_id: other_port_id.clone(),
-            channel_id: other_channel_id.clone(),
+            channel_id: other_channel_id,
             version: other_channel_state.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.counterparty.client_id,
-                connection_id: self_connection_state.counterparty.connection_id.unwrap(),
+                client_id: self_connection_state.counterpartyClientId,
+                connection_id: self_connection_state.counterpartyConnectionId,
             },
         };
 
@@ -233,7 +216,6 @@ impl Module {
             client_info,
             source_channel,
             destination_channel,
-            self_channel.ordering,
         ))
     }
 }
@@ -291,21 +273,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 match event {
                     IbcEvents::ClientCreated(raw_event) => {
-                        let client_id = ClientId::new(raw_event.clientType, raw_event.clientId);
-
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -313,12 +291,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: CreateClient {
-                                client_id,
-                                client_type: client_info.client_type,
-                                consensus_height: client_meta.height,
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ClientCreated {
+                                    client_id: raw_event.clientId,
+                                    client_type: client_info.client_type,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ClientRegistered(raw_event) => {
@@ -327,29 +307,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(noop())
                     }
                     IbcEvents::ClientUpdated(raw_event) => {
-                        let client_type = self
-                            .ibc_handler()
-                            .clientTypes(raw_event.clientId)
-                            .call()
-                            .await
-                            .unwrap()
-                            ._0;
-
-                        let client_id = ClientId::new(client_type, raw_event.clientId);
-
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -357,100 +325,60 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: UpdateClient {
-                                client_id,
-                                client_type: client_info.client_type,
-                                consensus_heights: vec![Height::new(raw_event.height)],
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ClientUpdated {
+                                    client_type: client_info.client_type,
+                                    client_id: raw_event.clientId,
+                                    height: raw_event.height,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
 
                     IbcEvents::ConnectionOpenInit(raw_event) => {
-                        let ibc_handler = self.ibc_handler();
-
-                        let client_type = ibc_handler
-                            .clientTypes(raw_event.clientId)
-                            .call()
-                            .await
-                            .unwrap()
-                            ._0;
-
-                        let client_id = ClientId::new(client_type, raw_event.clientId);
-
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let counterparty_client_prefix = e
-                            .try_get::<VoyagerClient>()?
-                            .query_client_prefix(
-                                client_meta.chain_id.clone(),
-                                raw_event.counterpartyClientId,
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
+                            ibc_version_id: IbcUnion::ID,
                             provable_height,
-                            event: ConnectionOpenInit {
-                                client_id,
-                                connection_id: ConnectionId::new(raw_event.connectionId),
-                                counterparty_client_id: ClientId::new(
-                                    counterparty_client_prefix,
-                                    raw_event.counterpartyClientId,
-                                ),
-                            }
-                            .into(),
+                            event: into_value::<FullIbcEvent>(
+                                ConnectionOpenInit {
+                                    client_id: raw_event.clientId,
+                                    connection_id: raw_event.connectionId,
+                                    counterparty_client_id: raw_event.counterpartyClientId,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ConnectionOpenTry(raw_event) => {
-                        let client_type = self
-                            .ibc_handler()
-                            .clientTypes(raw_event.clientId)
-                            .call()
-                            .await
-                            .unwrap()
-                            ._0;
-
-                        let client_id = ClientId::new(client_type, raw_event.clientId);
-
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let counterparty_client_prefix = e
-                            .try_get::<VoyagerClient>()?
-                            .query_client_prefix(
-                                client_meta.chain_id.clone(),
-                                raw_event.counterpartyClientId,
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -458,53 +386,30 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ConnectionOpenTry {
-                                client_id,
-                                connection_id: ConnectionId::new(raw_event.connectionId),
-                                counterparty_client_id: ClientId::new(
-                                    counterparty_client_prefix,
-                                    raw_event.counterpartyClientId,
-                                ),
-                                counterparty_connection_id: ConnectionId::new(
-                                    raw_event.counterpartyConnectionId,
-                                ),
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ConnectionOpenTry {
+                                    client_id: raw_event.clientId,
+                                    connection_id: raw_event.connectionId,
+                                    counterparty_client_id: raw_event.counterpartyClientId,
+                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ConnectionOpenAck(raw_event) => {
-                        let client_type = self
-                            .ibc_handler()
-                            .clientTypes(raw_event.clientId)
-                            .call()
-                            .await
-                            .unwrap()
-                            ._0;
-
-                        let client_id = ClientId::new(client_type, raw_event.clientId);
-
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let counterparty_client_prefix = e
-                            .try_get::<VoyagerClient>()?
-                            .query_client_prefix(
-                                client_meta.chain_id.clone(),
-                                raw_event.counterpartyClientId,
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -512,52 +417,30 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ConnectionOpenAck {
-                                client_id,
-                                connection_id: ConnectionId::new(raw_event.connectionId),
-                                counterparty_client_id: ClientId::new(
-                                    counterparty_client_prefix,
-                                    raw_event.counterpartyClientId,
-                                ),
-                                counterparty_connection_id: ConnectionId::new(
-                                    raw_event.counterpartyConnectionId,
-                                ),
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ConnectionOpenAck {
+                                    client_id: raw_event.clientId,
+                                    connection_id: raw_event.connectionId,
+                                    counterparty_client_id: raw_event.counterpartyClientId,
+                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ConnectionOpenConfirm(raw_event) => {
-                        let client_type = self
-                            .ibc_handler()
-                            .clientTypes(raw_event.clientId)
-                            .call()
-                            .await
-                            .unwrap()
-                            ._0;
-
-                        let client_id = ClientId::new(client_type, raw_event.clientId);
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                client_id.clone(),
+                                raw_event.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let counterparty_client_prefix = e
-                            .try_get::<VoyagerClient>()?
-                            .query_client_prefix(
-                                client_meta.chain_id.clone(),
-                                raw_event.counterpartyClientId,
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -565,58 +448,52 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ConnectionOpenConfirm {
-                                client_id,
-                                connection_id: ConnectionId::new(raw_event.connectionId),
-                                counterparty_client_id: ClientId::new(
-                                    counterparty_client_prefix,
-                                    raw_event.counterpartyClientId,
-                                ),
-                                counterparty_connection_id: ConnectionId::new(
-                                    raw_event.counterpartyConnectionId,
-                                ),
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ConnectionOpenConfirm {
+                                    client_id: raw_event.clientId,
+                                    connection_id: raw_event.connectionId,
+                                    counterparty_client_id: raw_event.counterpartyClientId,
+                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ChannelOpenInit(raw_event) => {
                         let connection = voyager_client
-                            .query_connection(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                ConnectionId::new(raw_event.connectionId),
+                                ConnectionPath {
+                                    connection_id: raw_event.connectionId,
+                                },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.client_id.clone(),
+                                connection.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
-                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
-                        let channel_id = ChannelId::new(raw_event.channelId);
+                        let channel_id = raw_event.channelId;
 
                         let channel = voyager_client
-                            .query_channel(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                port_id.clone(),
-                                channel_id.clone(),
+                                ChannelPath { channel_id },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
@@ -626,57 +503,53 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ChannelOpenInit {
-                                port_id,
-                                channel_id,
-                                counterparty_port_id: PortId::new(
-                                    raw_event.counterpartyPortId.to_string(),
-                                )
-                                .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ChannelOpenInit {
+                                    port_id: raw_event.portId.into(),
+                                    channel_id,
+                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
+                                    connection,
+                                    version: channel.version,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ChannelOpenTry(raw_event) => {
                         let connection = voyager_client
-                            .query_connection(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                ConnectionId::new(raw_event.connectionId),
+                                ConnectionPath {
+                                    connection_id: raw_event.connectionId,
+                                },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.client_id.clone(),
+                                connection.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
-                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
-                        let channel_id = ChannelId::new(raw_event.channelId);
+                        let channel_id = raw_event.channelId;
 
                         let channel = voyager_client
-                            .query_channel(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                port_id.clone(),
-                                channel_id.clone(),
+                                ChannelPath { channel_id },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
@@ -686,60 +559,54 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ChannelOpenTry {
-                                port_id,
-                                channel_id,
-                                counterparty_port_id: PortId::new(
-                                    raw_event.counterpartyPortId.to_string(),
-                                )
-                                .unwrap(),
-                                counterparty_channel_id: ChannelId::new(
-                                    raw_event.counterpartyChannelId,
-                                ),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ChannelOpenTry {
+                                    port_id: raw_event.portId.into(),
+                                    channel_id,
+                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
+                                    counterparty_channel_id: raw_event.counterpartyChannelId,
+                                    connection,
+                                    version: channel.version,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ChannelOpenAck(raw_event) => {
                         let connection = voyager_client
-                            .query_connection(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                ConnectionId::new(raw_event.connectionId),
+                                ConnectionPath {
+                                    connection_id: raw_event.connectionId,
+                                },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.client_id.clone(),
+                                connection.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
-                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
-                        let channel_id = ChannelId::new(raw_event.channelId);
+                        let channel_id = raw_event.channelId;
 
                         let channel = voyager_client
-                            .query_channel(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                port_id.clone(),
-                                channel_id.clone(),
+                                ChannelPath { channel_id },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
@@ -749,60 +616,54 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ChannelOpenAck {
-                                port_id,
-                                channel_id,
-                                counterparty_port_id: PortId::new(
-                                    raw_event.counterpartyPortId.to_string(),
-                                )
-                                .unwrap(),
-                                counterparty_channel_id: ChannelId::new(
-                                    raw_event.counterpartyChannelId,
-                                ),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ChannelOpenAck {
+                                    port_id: raw_event.portId.into(),
+                                    channel_id,
+                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
+                                    counterparty_channel_id: raw_event.counterpartyChannelId,
+                                    connection,
+                                    version: channel.version,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::ChannelOpenConfirm(raw_event) => {
                         let connection = voyager_client
-                            .query_connection(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                ConnectionId::new(raw_event.connectionId),
+                                ConnectionPath {
+                                    connection_id: raw_event.connectionId,
+                                },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .await?;
 
                         let client_meta = voyager_client
-                            .client_meta(
+                            .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.client_id.clone(),
+                                connection.clientId,
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
-                        let port_id = PortId::new(raw_event.portId.to_string()).unwrap();
-                        let channel_id = ChannelId::new(raw_event.channelId);
+                        let channel_id = raw_event.channelId;
 
                         let channel = voyager_client
-                            .query_channel(
+                            .query_ibc_state(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                port_id.clone(),
-                                channel_id.clone(),
+                                ChannelPath { channel_id },
                             )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
+                            .await?
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
@@ -812,15 +673,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            event: ChannelOpenConfirm {
-                                port_id,
-                                channel_id,
-                                counterparty_port_id: channel.counterparty.port_id,
-                                counterparty_channel_id: channel.counterparty.channel_id.unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                ChannelOpenConfirm {
+                                    port_id: raw_event.portId.into(),
+                                    channel_id,
+                                    counterparty_port_id: channel.counterpartyPortId.into(),
+                                    counterparty_channel_id: channel.counterpartyChannelId,
+                                    connection,
+                                    version: channel.version,
+                                }
+                                .into(),
+                            ),
                         }))
                     }
 
@@ -832,28 +696,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                     // packet origin is this chain
                     IbcEvents::SendPacket(event) => {
-                        let self_port_id = PortId::new(
-                            self.ibc_handler()
-                                .channelOwner(event.packet.sourceChannel)
-                                .call()
-                                .await
-                                .unwrap()
-                                ._0
-                                .to_string(),
-                        )
-                        .unwrap();
-
                         let (
                             counterparty_chain_id,
                             client_info,
                             source_channel,
                             destination_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                self_port_id,
-                                ChannelId::new(event.packet.sourceChannel),
+                                event.packet.sourceChannel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -864,43 +715,31 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: voyager_message::data::SendPacket {
-                                packet_data: event.packet.data.to_vec().into(),
-                                packet: PacketMetadata {
-                                    sequence: NonZeroU64::new(1).unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: Height::new(event.packet.timeoutHeight),
-                                    timeout_timestamp: event.packet.timeoutTimestamp,
-                                },
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                SendPacket {
+                                    packet_data: event.packet.data.to_vec().into(),
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: event.packet.timeoutHeight,
+                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                    },
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::TimeoutPacket(event) => {
-                        let self_port_id = PortId::new(
-                            self.ibc_handler()
-                                .channelOwner(event.packet.sourceChannel)
-                                .call()
-                                .await
-                                .unwrap()
-                                ._0
-                                .to_string(),
-                        )
-                        .unwrap();
-
                         let (
                             counterparty_chain_id,
                             client_info,
                             source_channel,
                             destination_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                self_port_id,
-                                ChannelId::new(event.packet.sourceChannel),
+                                event.packet.sourceChannel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -911,42 +750,32 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: voyager_message::data::TimeoutPacket {
-                                packet: PacketMetadata {
-                                    sequence: NonZeroU64::new(1).unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: Height::new(event.packet.timeoutHeight),
-                                    timeout_timestamp: event.packet.timeoutTimestamp,
-                                },
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                TimeoutPacket {
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: event.packet.timeoutHeight,
+                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                    },
+                                    relayer: event.relayer.into(),
+                                    packet_data: event.packet.data.into(),
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::AcknowledgePacket(event) => {
-                        let self_port_id = PortId::new(
-                            self.ibc_handler()
-                                .channelOwner(event.packet.sourceChannel)
-                                .call()
-                                .await
-                                .unwrap()
-                                ._0
-                                .to_string(),
-                        )
-                        .unwrap();
-
                         let (
                             counterparty_chain_id,
                             client_info,
                             source_channel,
                             destination_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                self_port_id,
-                                ChannelId::new(event.packet.sourceChannel),
+                                event.packet.sourceChannel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -957,43 +786,34 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: voyager_message::data::AcknowledgePacket {
-                                packet: PacketMetadata {
-                                    sequence: NonZeroU64::new(1).unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: Height::new(event.packet.timeoutHeight),
-                                    timeout_timestamp: event.packet.timeoutTimestamp,
-                                },
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                AcknowledgePacket {
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: event.packet.timeoutHeight,
+                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                    },
+                                    packet_data: event.packet.data.into(),
+                                    relayer: event.relayer.into(),
+                                    acknowledgement: event.acknowledgement.into(),
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     // packet origin is the counterparty chain
                     IbcEvents::WriteAcknowledgement(event) => {
-                        let self_port_id = PortId::new(
-                            self.ibc_handler()
-                                .channelOwner(event.packet.destinationChannel)
-                                .call()
-                                .await
-                                .unwrap()
-                                ._0
-                                .to_string(),
-                        )
-                        .unwrap();
-
                         let (
                             counterparty_chain_id,
                             client_info,
                             destination_channel,
                             source_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                self_port_id,
-                                ChannelId::new(event.packet.destinationChannel),
+                                event.packet.destinationChannel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -1004,44 +824,32 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: voyager_message::data::WriteAcknowledgement {
-                                packet_data: event.packet.data.to_vec().into(),
-                                packet_ack: event.acknowledgement.to_vec().into(),
-                                packet: PacketMetadata {
-                                    sequence: NonZeroU64::new(1).unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: Height::new(event.packet.timeoutHeight),
-                                    timeout_timestamp: event.packet.timeoutTimestamp,
-                                },
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                WriteAcknowledgement {
+                                    packet_data: event.packet.data.to_vec().into(),
+                                    acknowledgement: event.acknowledgement.to_vec().into(),
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: event.packet.timeoutHeight,
+                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                    },
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::RecvPacket(event) => {
-                        let self_port_id = PortId::new(
-                            self.ibc_handler()
-                                .channelOwner(event.packet.destinationChannel)
-                                .call()
-                                .await
-                                .unwrap()
-                                ._0
-                                .to_string(),
-                        )
-                        .unwrap();
-
                         let (
                             counterparty_chain_id,
                             client_info,
                             destination_channel,
                             source_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                self_port_id,
-                                ChannelId::new(event.packet.destinationChannel),
+                                event.packet.destinationChannel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -1052,18 +860,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: voyager_message::data::RecvPacket {
-                                packet_data: event.packet.data.to_vec().into(),
-                                packet: PacketMetadata {
-                                    sequence: NonZeroU64::new(1).unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: Height::new(event.packet.timeoutHeight),
-                                    timeout_timestamp: event.packet.timeoutTimestamp,
-                                },
-                            }
-                            .into(),
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<FullIbcEvent>(
+                                RecvPacket {
+                                    packet_data: event.packet.data.to_vec().into(),
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: event.packet.timeoutHeight,
+                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                    },
+                                    relayer: event.relayer.into(),
+                                    relayer_msg: event.relayerMsg.into(),
+                                }
+                                .into(),
+                            ),
                         }))
                     }
                     IbcEvents::RecvIntentPacket(_event) => {
@@ -1086,8 +897,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let latest_height = e
                     .try_get::<VoyagerClient>()?
                     .query_latest_height(self.chain_id.clone(), true)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 if latest_height.height() < block_number {
                     debug!(block_number, "block is not yet finalized");

@@ -98,7 +98,7 @@
                     # such that the DYLD_LIBRARY_PATH includes libwasmvm
                     buildInputs = [ pkgs.makeWrapper ];
                     postFixup = ''
-                      wrapProgram $out/bin/uniond \
+                      wrapProgram $out/ bin/uniond \
                       --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
                     '';
                     ldflags = [

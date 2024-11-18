@@ -10,14 +10,10 @@
 )]
 
 use std::{
-    ffi::OsString,
-    fmt::{Debug, Write},
-    fs::read_to_string,
-    iter,
-    net::SocketAddr,
-    process::ExitCode,
+    collections::HashMap, fmt::Write, fs::read_to_string, iter, net::SocketAddr, process::ExitCode,
 };
 
+use anyhow::{anyhow, Context as _};
 use clap::Parser;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
@@ -26,14 +22,15 @@ use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use voyager_message::{
-    call::{FetchBlocks, MakeMsgCreateClient},
-    context::{get_plugin_info, Context, ModulesConfig},
+    call::FetchBlocks,
+    context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
     core::QueryHeight,
     filter::{make_filter, run_filter},
+    ibc_v1::IbcV1,
     rpc::{IbcState, VoyagerRpcClient},
-    VoyagerMessage,
+    IbcSpec, VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, BoxDynError, Op, Queue};
+use voyager_vm::{call, filter::FilterResult, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -41,7 +38,8 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
-    queue::{QueueConfig, Voyager, VoyagerInitError},
+    queue::{QueueConfig, Voyager},
+    utils::make_msg_create_client,
 };
 
 #[cfg(not(target_os = "linux"))]
@@ -98,45 +96,26 @@ fn main() -> ExitCode {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum VoyagerError {
-    #[error("unable to read the config file at `{}`", path.to_string_lossy())]
-    ConfigFileNotFound {
-        path: OsString,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("unable to parse the config file at `{}`", path.to_string_lossy())]
-    ConfigFileParse {
-        path: OsString,
-        #[source]
-        source: serde_json::Error,
-    },
-    #[error("error initializing voyager")]
-    Init(#[from] VoyagerInitError),
-    #[error("fatal error encountered")]
-    Run(#[from] BoxDynError),
-    #[error("unable to run command")]
-    Command(#[source] BoxDynError),
-}
-
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
-async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
+async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
     let get_voyager_config = || match &args.config_file_path {
         Some(config_file_path) => read_to_string(config_file_path)
-            .map_err(|err| VoyagerError::ConfigFileNotFound {
-                path: config_file_path.clone(),
-                source: err,
+            .with_context(|| {
+                format!(
+                    "unable to read the config file at `{}`",
+                    config_file_path.to_string_lossy()
+                )
             })
             .and_then(|s| {
-                serde_json::from_str::<Config>(&s).map_err(|err| VoyagerError::ConfigFileParse {
-                    path: config_file_path.clone(),
-                    source: err,
+                serde_json::from_str::<Config>(&s).with_context(|| {
+                    format!(
+                        "unable to parse the config file at `{}`",
+                        config_file_path.to_string_lossy()
+                    )
                 })
-            })
-            .map_err(Into::into),
-        None => Err::<_, BoxDynError>("config file must be specified".to_owned().into()),
+            }),
+        None => Err(anyhow!("config file must be specified")),
     };
 
     match args.command {
@@ -148,7 +127,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 schema: None,
                 plugins: vec![],
                 modules: ModulesConfig {
-                    chain: vec![],
+                    state: vec![],
+                    proof: vec![],
                     consensus: vec![],
                     client: vec![],
                 },
@@ -190,9 +170,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     .plugins
                     .into_iter()
                     .try_find(|plugin_config| {
-                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
                     })?
-                    .ok_or("plugin not found".to_owned())?;
+                    .ok_or(anyhow!("plugin not found"))?;
 
                 let (filter, plugin_name) = make_filter(get_plugin_info(&plugin_config)?)?;
 
@@ -213,9 +193,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     .plugins
                     .into_iter()
                     .try_find(|plugin_config| {
-                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
                     })?
-                    .ok_or("plugin not found".to_owned())?;
+                    .ok_or(anyhow!("plugin not found"))?;
 
                 print_json(&get_plugin_info(&plugin_config)?);
             }
@@ -225,11 +205,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                         .plugins
                         .into_iter()
                         .try_find(|plugin_config| {
-                            Ok::<_, BoxDynError>(
+                            <anyhow::Result<_>>::Ok(
                                 module_name == get_plugin_info(plugin_config)?.name,
                             )
                         })?
-                        .ok_or("plugin not found".to_owned())?;
+                        .ok_or(anyhow!("plugin not found"))?;
 
                     tokio::process::Command::new(&plugin_config.path)
                         .arg("cmd")
@@ -249,7 +229,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             },
         },
         Command::Module(cmd) => match cmd {
-            ModuleCmd::Chain(_) => todo!(),
+            ModuleCmd::State(_) => todo!(),
+            ModuleCmd::Proof(_) => todo!(),
             ModuleCmd::Consensus(_) => todo!(),
             ModuleCmd::Client(_) => todo!(),
         },
@@ -311,14 +292,16 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         //     }));
         // }
         Command::Queue(cli_msg) => {
-            let db = match get_voyager_config()?.voyager.queue {
-                QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?,
-                QueueConfig::InMemory => {
-                    return Err("no database set in config, queue commands \
-                        require the `pg-queue` database backend"
-                        .to_string()
-                        .into())
-                }
+            let db = || {
+                Ok(match get_voyager_config()?.voyager.queue {
+                    QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg),
+                    QueueConfig::InMemory => {
+                        return Err(anyhow!(
+                            "no database set in config, queue commands \
+                            require the `pg-queue` database backend"
+                        ))
+                    }
+                })
             };
 
             match cli_msg {
@@ -347,14 +330,15 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     item_filters,
                     message_filters,
                 } => {
-                    let record = db
+                    let record = db()?
+                        .await?
                         .query_failed(page.into(), per_page.into(), item_filters, message_filters)
                         .await?;
 
                     print_json(&record);
                 }
                 QueueCmd::QueryFailedById { id } => {
-                    let record = db.query_failed_by_id(id.inner()).await?;
+                    let record = db()?.await?.query_failed_by_id(id.inner()).await?;
 
                     print_json(&record);
                 }
@@ -490,12 +474,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 print_json(&op);
             }
         }
-        Command::Util(util) => match util {
-            // UtilCmd::IbcCommitmentKey {
-            //     path,
-            //     commitment_slot,
-            // } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
-        },
         Command::Rpc(rpc) => {
             let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(format!(
                 "http://{}",
@@ -507,26 +485,39 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 RpcCmd::ClientState {
                     on,
                     client_id,
+                    ibc_version_id,
                     height,
                     decode,
                 } => {
+                    let ibc_handlers = [(IbcV1::ID, IbcSpecHandler::new::<IbcV1>())]
+                        .into_iter()
+                        .collect::<HashMap<_, _>>();
+
                     let ibc_state = voyager_client
-                        .query_client_state(on.clone(), height, client_id.clone())
+                        .query_ibc_state(
+                            on.clone(),
+                            ibc_version_id.clone(),
+                            height,
+                            (ibc_handlers.get(&ibc_version_id).unwrap().client_state_path)(
+                                client_id.clone(),
+                            )?,
+                        )
                         .await?;
 
                     if decode {
-                        let client_info = voyager_client.client_info(on, client_id).await?;
+                        let client_info = voyager_client
+                            .client_info(on, ibc_version_id, client_id)
+                            .await?;
 
                         let decoded = voyager_client
                             .decode_client_state(
                                 client_info.client_type,
                                 client_info.ibc_interface,
-                                ibc_state.state,
+                                serde_json::from_value(ibc_state.state).unwrap(),
                             )
                             .await?;
 
                         print_json(&IbcState {
-                            chain_id: ibc_state.chain_id,
                             height: ibc_state.height,
                             state: decoded,
                         });
@@ -535,40 +526,45 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     }
                 }
                 RpcCmd::ConsensusState {
-                    on,
-                    client_id,
-                    trusted_height,
-                    height,
-                    decode,
+                    // on,
+                    // client_id,
+                    // ibc_version_id,
+                    // trusted_height,
+                    // height,
+                    // decode,
+                    ..
                 } => {
-                    let ibc_state = voyager_client
-                        .query_client_consensus_state(
-                            on.clone(),
-                            height,
-                            client_id.clone(),
-                            trusted_height,
-                        )
-                        .await?;
+                    // let ibc_state = voyager_client
+                    //     .query_client_consensus_state(
+                    //         on.clone(),
+                    //         height,
+                    //         client_id.clone(),
+                    //         trusted_height,
+                    //     )
+                    //     .await?;
 
-                    if decode {
-                        let client_info = voyager_client.client_info(on, client_id).await?;
+                    // if decode {
+                    //     let client_info = voyager_client
+                    //         .client_info(on, ibc_version_id, client_id)
+                    //         .await?;
 
-                        let decoded = voyager_client
-                            .decode_consensus_state(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                ibc_state.state,
-                            )
-                            .await?;
+                    //     let decoded = voyager_client
+                    //         .decode_consensus_state(
+                    //             client_info.client_type,
+                    //             client_info.ibc_interface,
+                    //             ibc_state.state,
+                    //         )
+                    //         .await?;
 
-                        print_json(&IbcState {
-                            chain_id: ibc_state.chain_id,
-                            height: ibc_state.height,
-                            state: decoded,
-                        });
-                    } else {
-                        print_json(&ibc_state);
-                    }
+                    //     print_json(&IbcState {
+                    //         height: ibc_state.height,
+                    //         state: decoded,
+                    //     });
+                    // } else {
+                    //     print_json(&ibc_state);
+                    // }
+
+                    todo!()
                 }
             }
         }
@@ -577,19 +573,39 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 on,
                 tracking,
                 ibc_interface,
+                ibc_version_id,
                 client_type,
                 height,
                 metadata,
                 enqueue,
             } => {
-                let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
-                    chain_id: on,
+                let voyager_config = get_voyager_config()?;
+
+                let ctx = Context::new(voyager_config.plugins, voyager_config.modules).await?;
+
+                // weird race condition in Context::new that i don't feel like debugging right now
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+                let msg = make_msg_create_client(
+                    &ctx,
+                    tracking,
                     height,
-                    metadata,
-                    counterparty_chain_id: tracking,
-                    ibc_interface,
+                    on,
                     client_type,
-                });
+                    ibc_interface,
+                    ibc_version_id,
+                    metadata,
+                )
+                .await?;
+
+                // let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
+                //     chain_id: on,
+                //     height,
+                //     metadata,
+                //     counterparty_chain_id: tracking,
+                //     ibc_interface,
+                //     client_type,
+                // });
 
                 if enqueue {
                     println!("enqueueing msg");
@@ -607,7 +623,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 async fn send_enqueue(
     rest_laddr: &SocketAddr,
     op: Op<VoyagerMessage>,
-) -> Result<reqwest::Response, BoxDynError> {
+) -> anyhow::Result<reqwest::Response> {
     Ok(reqwest::Client::new()
         .post(format!("http://{rest_laddr}/enqueue"))
         .json(&op)
@@ -617,4 +633,113 @@ async fn send_enqueue(
 
 fn print_json<T: Serialize>(t: &T) {
     println!("{}", serde_json::to_string(&t).unwrap());
+}
+
+// TODO: Extract all logic here to a plugin
+pub mod utils {
+    use anyhow::{anyhow, bail};
+    use serde_json::Value;
+    use tracing::trace;
+    use voyager_message::{
+        context::Context,
+        core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
+        data::{IbcDatagram, WithChainId},
+        ibc_union::IbcUnion,
+        ibc_v1::IbcV1,
+        module::{ClientModuleClient, ConsensusModuleClient},
+        VoyagerMessage,
+    };
+    use voyager_vm::{data, Op};
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) async fn make_msg_create_client(
+        ctx: &Context,
+        counterparty_chain_id: ChainId,
+        height: QueryHeight,
+        chain_id: ChainId,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_version_id: IbcVersionId,
+        metadata: Value,
+    ) -> anyhow::Result<Op<VoyagerMessage>> {
+        let height = ctx
+            .rpc_server
+            .query_height(&counterparty_chain_id, height)
+            .await?;
+
+        let counterparty_consensus_module = ctx
+            .rpc_server
+            .modules()?
+            .consensus_module(&counterparty_chain_id)?;
+
+        let self_client_state = counterparty_consensus_module
+            .self_client_state(height)
+            .await?;
+        trace!(%self_client_state);
+
+        let self_consensus_state = counterparty_consensus_module
+            .self_consensus_state(height)
+            .await?;
+        trace!(%self_consensus_state);
+
+        let consensus_type = ctx
+            .rpc_server
+            .modules()?
+            .chain_consensus_type(&counterparty_chain_id)?;
+
+        let client_consensus_type = ctx
+            .rpc_server
+            .modules()?
+            .client_consensus_type(&client_type)?;
+
+        if client_consensus_type != consensus_type {
+            return Err(anyhow!(
+                "attempted to create a {client_type} client on \
+                {chain_id} tracking {counterparty_chain_id}, but \
+                the consensus of that chain ({consensus_type}) is \
+                not verifiable by a client of type {client_type} \
+                (which instead verifies {client_consensus_type})."
+            ));
+        }
+
+        let client_module = ctx
+            .rpc_server
+            .modules()?
+            .client_module(&client_type, &ibc_interface)?;
+
+        Ok(data(WithChainId {
+            chain_id,
+            message: match ibc_version_id.as_str() {
+                IbcVersionId::V1_0_0 => {
+                    IbcDatagram::new::<IbcV1>(voyager_message::ibc_v1::IbcMessage::from(
+                        voyager_message::ibc_v1::MsgCreateClientData {
+                            msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
+                                client_state: client_module
+                                    .encode_client_state(self_client_state, metadata)
+                                    .await?,
+                                consensus_state: client_module
+                                    .encode_consensus_state(self_consensus_state)
+                                    .await?,
+                            },
+                            client_type: client_type.clone(),
+                        },
+                    ))
+                }
+                IbcVersionId::UNION => {
+                    IbcDatagram::new::<IbcUnion>(voyager_message::ibc_union::IbcMsg::from(
+                        voyager_message::ibc_union::MsgCreateClient {
+                            client_type,
+                            client_state_bytes: client_module
+                                .encode_client_state(self_client_state, metadata)
+                                .await?,
+                            consensus_state_bytes: client_module
+                                .encode_consensus_state(self_consensus_state)
+                                .await?,
+                        },
+                    ))
+                }
+                _ => bail!("unknown IBC version id `{ibc_version_id}`"),
+            },
+        }))
+    }
 }

@@ -22,7 +22,7 @@ use unionlabs::{
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
-    run_consensus_module_server, ConsensusModule,
+    ConsensusModule,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -34,7 +34,7 @@ struct StateProofResponse {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_consensus_module_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]

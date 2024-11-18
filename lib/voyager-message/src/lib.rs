@@ -1,13 +1,16 @@
 #![feature(trait_alias)]
 
-use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
+use std::{
+    env::VarError,
+    fmt::{Debug, Display},
+    future::Future,
+    time::Duration,
+};
 
 use chain_utils::BoxDynError;
+use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use jsonrpsee::{
-    core::{
-        async_trait, client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams,
-        RpcResult,
-    },
+    core::RpcResult,
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
@@ -17,10 +20,13 @@ use jsonrpsee::{
 };
 use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
-use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
-use tracing::{debug, debug_span, error, info, trace, Instrument};
-use unionlabs::{traits::Member, ErrorReporter};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::{json, Value};
+use tracing::{debug, debug_span, error, info, instrument, trace, Instrument};
+use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
+use voyager_core::{
+    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcVersionId, QueryHeight,
+};
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -30,9 +36,11 @@ use crate::{
     data::Data,
     filter::JaqInterestFilter,
     module::{
-        ChainModuleInfo, ChainModuleServer, ClientModuleInfo, ClientModuleServer,
-        ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
+        ClientModuleInfo, ClientModuleServer, ConsensusModuleInfo, ConsensusModuleServer,
+        PluginInfo, PluginServer, ProofModuleInfo, ProofModuleServer, StateModuleInfo,
+        StateModuleServer,
     },
+    rpc::{json_rpc_error_to_error_object, IbcProof, IbcState, VoyagerRpcClient},
 };
 
 pub mod call;
@@ -52,6 +60,9 @@ pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
+pub mod ibc_union;
+pub mod ibc_v1;
+
 pub enum VoyagerMessage {}
 
 impl QueueMessage for VoyagerMessage {
@@ -64,8 +75,101 @@ impl QueueMessage for VoyagerMessage {
     type Context = Context;
 }
 
+pub trait IbcSpec {
+    const ID: IbcVersionId;
+
+    type ClientId: Display + Member;
+
+    /// The type used to index into the IBC store.
+    type StorePath: Member;
+
+    /// The messages submitted on chain.
+    type Datagram: Member;
+
+    /// Events emitted on chain.
+    type Event: Member;
+
+    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
+
+    fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
+    fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
+}
+
+pub trait IbcStorePathKey:
+    Member
+    + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
+    + Into<<Self::Spec as IbcSpec>::StorePath>
+{
+    type Spec: IbcSpec;
+
+    type Value: Member;
+}
+
+/// Simple wrapper around a [`Value`] for raw client ids.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct RawClientId(Value);
+
+#[derive(Clone)]
+pub struct RawClientIdValueParser;
+
+impl TypedValueParser for RawClientIdValueParser {
+    type Value = RawClientId;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let s = StringValueParser::new().parse_ref(cmd, arg, value)?;
+
+        // attempt to parse the string as json, if that fails just treat the whole string as a json string value
+        Ok(RawClientId(
+            s.parse::<Value>()
+                .unwrap_or_else(|_| Value::String(s.to_owned())),
+        ))
+    }
+}
+
+impl ValueParserFactory for RawClientId {
+    type Parser = RawClientIdValueParser;
+
+    fn value_parser() -> Self::Parser {
+        RawClientIdValueParser
+    }
+}
+
+impl RawClientId {
+    pub fn new(t: impl Serialize) -> Self {
+        Self(serde_json::to_value(t).unwrap())
+    }
+
+    pub fn decode_spec<V: IbcSpec>(self) -> Result<V::ClientId, serde_json::Error> {
+        serde_json::from_value(self.0)
+    }
+
+    pub fn as_raw(&self) -> &Value {
+        &self.0
+    }
+}
+
+#[macro_export]
+macro_rules! any_ibc_spec {
+    ($ibc_version_id:ident, $V:ident, $expr:expr, $else:expr) => {
+        if $ibc_version_id == $crate::ibc_v1::IbcV1::ID {
+            type $V = $crate::ibc_v1::IbcV1;
+            $expr
+        }
+        // else if $ibc_version_id == IbcV1::ID {}
+        else {
+            $else
+        }
+    };
+}
+
 /// Error code for fatal errors. If a plugin or module responds with this error
-/// code, it will be treated as failed and not retried.
+/// code, it will be treated as fatal and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
 /// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm`
@@ -192,13 +296,117 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     fn info(config: Self::Config) -> PluginInfo;
 
     async fn cmd(config: Self::Config, cmd: Self::Cmd);
+
+    async fn run() {
+        init_log();
+
+        let app = <PluginApp<Self::Cmd> as clap::Parser>::parse();
+
+        match app {
+            PluginApp::Run {
+                socket,
+                voyager_socket,
+                config,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = Self::info(config.clone());
+
+                let name = info.name;
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    config,
+                    socket,
+                    Self::new,
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_plugin_server", %name))
+                .await
+            }
+            PluginApp::Info { config } => {
+                let info = Self::info(must_parse(&config));
+
+                print!("{}", serde_json::to_string(&info).unwrap())
+            }
+            PluginApp::Cmd { cmd, config } => Self::cmd(must_parse(&config), cmd).await,
+        }
+    }
 }
 
 #[allow(async_fn_in_trait)]
-pub trait ChainModule: ChainModuleServer + Sized {
+pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
     type Config: DeserializeOwned + Clone;
 
-    async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError>;
+    async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError>;
+
+    async fn run() {
+        init_log();
+
+        match <ModuleApp as clap::Parser>::parse() {
+            ModuleApp::Run {
+                socket,
+                voyager_socket,
+                config,
+                info,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = must_parse::<StateModuleInfo>(&info);
+
+                let name = info.id();
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    (config, info),
+                    socket,
+                    |(config, info)| Self::new(config, info),
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_state_module_server", %name))
+                .await
+            }
+        }
+    }
+}
+
+#[allow(async_fn_in_trait)]
+pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
+    type Config: DeserializeOwned + Clone;
+
+    async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError>;
+
+    async fn run() {
+        init_log();
+
+        match <ModuleApp as clap::Parser>::parse() {
+            ModuleApp::Run {
+                socket,
+                voyager_socket,
+                config,
+                info,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = must_parse::<ProofModuleInfo>(&info);
+
+                let name = info.id();
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    (config, info),
+                    socket,
+                    |(config, info)| Self::new(config, info),
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_proof_module_server", %name))
+                .await
+            }
+        }
+    }
 }
 
 #[allow(async_fn_in_trait)]
@@ -206,6 +414,36 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError>;
+
+    async fn run() {
+        init_log();
+
+        match <ModuleApp as clap::Parser>::parse() {
+            ModuleApp::Run {
+                socket,
+                voyager_socket,
+                config,
+                info,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = must_parse::<ConsensusModuleInfo>(&info);
+
+                let name = info.id();
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    (config, info),
+                    socket,
+                    |(config, info)| Self::new(config, info),
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_consensus_module_server", %name))
+                .await
+            }
+        }
+    }
 }
 
 #[allow(async_fn_in_trait)]
@@ -213,6 +451,36 @@ pub trait ClientModule: ClientModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError>;
+
+    async fn run() {
+        init_log();
+
+        match <ModuleApp as clap::Parser>::parse() {
+            ModuleApp::Run {
+                socket,
+                voyager_socket,
+                config,
+                info,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = must_parse::<ClientModuleInfo>(&info);
+
+                let name = info.id();
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    (config, info),
+                    socket,
+                    |(config, info)| Self::new(config, info),
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_client_module_server", %name))
+                .await
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -232,6 +500,109 @@ impl VoyagerClient {
             }
         });
         Self(client)
+    }
+
+    pub async fn query_latest_height(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Height> {
+        let latest_height = self
+            .0
+            .query_latest_height(chain_id, finalized)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(latest_height)
+    }
+
+    pub async fn encode_proof(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        proof: Value,
+    ) -> RpcResult<Bytes> {
+        let proof = self
+            .0
+            .encode_proof(client_type, ibc_interface, proof)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(proof)
+    }
+
+    pub async fn query_ibc_state<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
+        height: QueryHeight,
+        path: P,
+    ) -> RpcResult<IbcState<P::Value>> {
+        let ibc_state = self
+            .0
+            .query_ibc_state(
+                chain_id,
+                P::Spec::ID,
+                height,
+                into_value(<P::Spec as IbcSpec>::StorePath::from(path.into())),
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(IbcState {
+            height: ibc_state.height,
+            state: serde_json::from_value(ibc_state.state.clone()).map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("error decoding IBC state: {}", ErrorReporter(e)),
+                    Some(json!({
+                        "raw_state": ibc_state.state
+                    })),
+                )
+            })?,
+        })
+    }
+
+    pub async fn query_ibc_proof<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
+        height: QueryHeight,
+        path: P,
+    ) -> RpcResult<IbcProof> {
+        let ibc_proof = self
+            .0
+            .query_ibc_proof(
+                chain_id,
+                P::Spec::ID,
+                height,
+                into_value(<P::Spec as IbcSpec>::StorePath::from(path.into())),
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(ibc_proof)
+    }
+
+    pub async fn client_info<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        client_id: V::ClientId,
+    ) -> RpcResult<ClientInfo> {
+        self.0
+            .client_info(chain_id, V::ID, RawClientId::new(client_id))
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub async fn client_meta<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        at: QueryHeight,
+        client_id: V::ClientId,
+    ) -> RpcResult<ClientStateMeta> {
+        self.0
+            .client_meta(chain_id, V::ID, at, RawClientId::new(client_id))
+            .await
+            .map_err(json_rpc_error_to_error_object)
     }
 }
 
@@ -254,42 +625,6 @@ impl ExtensionsExt for Extensions {
                 None::<()>,
             )),
         }
-    }
-}
-
-#[async_trait]
-impl jsonrpsee::core::client::ClientT for VoyagerClient {
-    async fn notification<Params>(
-        &self,
-        method: &str,
-        params: Params,
-    ) -> Result<(), jsonrpsee::core::client::Error>
-    where
-        Params: ToRpcParams + Send,
-    {
-        self.0.notification(method, params).await
-    }
-
-    async fn request<R, Params>(
-        &self,
-        method: &str,
-        params: Params,
-    ) -> Result<R, jsonrpsee::core::client::Error>
-    where
-        R: DeserializeOwned,
-        Params: ToRpcParams + Send,
-    {
-        self.0.request(method, params).await
-    }
-
-    async fn batch_request<'a, R>(
-        &self,
-        batch: BatchRequestBuilder<'a>,
-    ) -> Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>
-    where
-        R: DeserializeOwned + Debug + 'a,
-    {
-        self.0.batch_request(batch).await
     }
 }
 
@@ -321,139 +656,13 @@ enum ModuleApp {
     },
 }
 
+#[instrument(level = "debug", fields(%config_str))]
 fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
     match serde_json::from_str::<T>(config_str) {
         Ok(ok) => ok,
         Err(err) => {
             error!("invalid config: {}", ErrorReporter(err));
             std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
-        }
-    }
-}
-
-pub async fn run_plugin_server<T: Plugin>() {
-    init_log();
-
-    let app = <PluginApp<T::Cmd> as clap::Parser>::parse();
-
-    match app {
-        PluginApp::Run {
-            socket,
-            voyager_socket,
-            config,
-        } => {
-            let config = must_parse::<T::Config>(&config);
-
-            let info = T::info(config.clone());
-
-            let name = info.name;
-
-            run_server(
-                name.clone(),
-                voyager_socket,
-                config,
-                socket,
-                T::new,
-                T::into_rpc,
-            )
-            .instrument(debug_span!("run_plugin_server", %name))
-            .await
-        }
-        PluginApp::Info { config } => {
-            let info = T::info(must_parse(&config));
-
-            print!("{}", serde_json::to_string(&info).unwrap())
-        }
-        PluginApp::Cmd { cmd, config } => T::cmd(must_parse(&config), cmd).await,
-    }
-}
-
-pub async fn run_chain_module_server<T: ChainModule>() {
-    init_log();
-
-    match <ModuleApp as clap::Parser>::parse() {
-        ModuleApp::Run {
-            socket,
-            voyager_socket,
-            config,
-            info,
-        } => {
-            let config = must_parse::<T::Config>(&config);
-
-            let info = must_parse::<ChainModuleInfo>(&info);
-
-            let name = format!("chain/{}", info.chain_id);
-
-            run_server(
-                name.clone(),
-                voyager_socket,
-                (config, info),
-                socket,
-                |(config, info)| T::new(config, info),
-                T::into_rpc,
-            )
-            .instrument(debug_span!("run_chain_module_server", %name))
-            .await
-        }
-    }
-}
-
-pub async fn run_consensus_module_server<T: ConsensusModule>() {
-    init_log();
-
-    match <ModuleApp as clap::Parser>::parse() {
-        ModuleApp::Run {
-            socket,
-            voyager_socket,
-            config,
-            info,
-        } => {
-            let config = must_parse::<T::Config>(&config);
-
-            let info = must_parse::<ConsensusModuleInfo>(&info);
-
-            let name = format!("chain/{}", info.chain_id);
-
-            run_server(
-                name.clone(),
-                voyager_socket,
-                (config, info),
-                socket,
-                |(config, info)| T::new(config, info),
-                T::into_rpc,
-            )
-            .instrument(debug_span!("run_consensus_module_server", %name))
-            .await
-        }
-    }
-}
-
-pub async fn run_client_module_server<T: ClientModule>() {
-    init_log();
-
-    match <ModuleApp as clap::Parser>::parse() {
-        ModuleApp::Run {
-            socket,
-            voyager_socket,
-            config,
-            info,
-        } => {
-            let config = must_parse::<T::Config>(&config);
-
-            let info = must_parse::<ClientModuleInfo>(&info);
-
-            let id = info.id();
-
-            run_server(
-                id.clone(),
-                voyager_socket,
-                (config, info),
-                socket,
-                |(config, info)| T::new(config, info),
-                T::into_rpc,
-            )
-            .instrument(debug_span!("run_client_module_server", %id))
-            .await
         }
     }
 }

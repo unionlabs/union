@@ -2,6 +2,19 @@
 
 ![voyager ibc architecture](./doc/ibc-architecture.svg)
 
+## IBC Specification
+
+TODO: Expand on this and clean it up
+
+assumptions about ibc specs:
+
+- light client based
+- some notion of a "client update"
+- has a store specification, where client and consensus states are stored (among any other states required by the ibc spec)
+- this store is required to be provable (i.e. the host environment must have some form of "proof" for it's storage, most likely merkleized)
+
+everything else is an implementation detail of the ibc specification.
+
 ## Chain
 
 A chain is defined by a few basic properties:

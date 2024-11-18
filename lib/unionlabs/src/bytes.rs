@@ -31,6 +31,12 @@ impl<E: Encoding> core::hash::Hash for Bytes<E> {
     }
 }
 
+impl<E: Encoding> FromIterator<u8> for Bytes<E> {
+    fn from_iter<T: IntoIterator<Item = u8>>(iter: T) -> Self {
+        Self::new(iter.into_iter().collect::<Vec<_>>())
+    }
+}
+
 impl<E: Encoding> Bytes<E> {
     #[must_use = "constructing a Bytes has no effect"]
     pub fn new(bytes: impl Into<Cow<'static, [u8]>>) -> Self {

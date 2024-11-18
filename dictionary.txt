@@ -500,6 +500,7 @@ data-lpignore
 dataconnector
 datadir
 datagram
+datagrams
 datas
 datetime
 datypes
@@ -525,7 +526,6 @@ dismissable
 displaydoc
 distrkeeper
 distrtypes
-dlmalloc
 docgen
 dockerhub
 doctest
@@ -849,6 +849,7 @@ mdsvex
 mediump
 merkle
 merkleize
+merkleized
 merklize
 merklizer
 metadatas
@@ -986,6 +987,7 @@ paulhauner
 pbjson
 pbts
 pedersen
+peekable
 permissioned
 permissionless
 permissionlessly
@@ -1440,6 +1442,7 @@ viem
 virtualisation
 vjgsyknnhmr
 vmdebug
+vtable
 vuex
 wagmi
 wakey

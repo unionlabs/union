@@ -17,6 +17,7 @@
   startCommandOverwrite ? null,
   extraPackages ? [ ],
   sdkVersion ? 50,
+  sdkPatchVersion ? 0,
   has08Wasm ? false,
 }:
 assert (builtins.isString chainId);
@@ -112,7 +113,9 @@ let
 
         # gentx was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          ${if sdkVersion >= 50 then "genesis" else ""} gentx \
+          ${
+            if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+          } gentx \
           valoper-${toString idx} \
           1000000000000000000000${denom} \
           --chain-id ${chainId} \
@@ -170,7 +173,9 @@ let
 
         # add-genesis-account was moved to a subcommand of genesis in sdk v50
         ${nodeBin} \
-          ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
+          ${
+            if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+          } add-genesis-account \
           ${name} \
           10000000000000000000000000${denom} \
           --keyring-backend test \
@@ -194,7 +199,9 @@ let
 
       # add-genesis-account was moved to a subcommand of genesis in sdk v50
       ${nodeBin} \
-        ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
+        ${
+          if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+        } add-genesis-account \
         valoper-${toString idx} \
         10000000000000000000000000${denom} \
         --keyring-backend test \
@@ -771,17 +778,23 @@ let
 
     echo "collecting"
     # collect-gentxs was moved to a subcommand of genesis in sdk v50
-    ${nodeBin} ${if sdkVersion >= 50 then "genesis" else ""} collect-gentxs --home . 2> /dev/null
+    ${nodeBin} ${
+      if (sdkVersion >= 50 || (sdkVersion >= 47 && sdkPatchVersion >= 8)) then "genesis" else ""
+    } collect-gentxs --home . 2> /dev/null
 
     echo "validating"
     ${
-      if sdkVersion < 50 then
+      if (sdkVersion >= 50) then
         ''
-          ${nodeBin} validate-genesis --home .
+          ${nodeBin} genesis validate --home .
+        ''
+      else if (sdkVersion >= 47 && sdkPatchVersion >= 8) then
+        ''
+          ${nodeBin} genesis validate-genesis --home .
         ''
       else
         ''
-          ${nodeBin} genesis validate --home .
+          ${nodeBin} validate-genesis --home .
         ''
     }
 
@@ -850,6 +863,8 @@ let
               ''
                 ${nodeBin} comet show-node-id --home home
 
+                # --wasm.skip_wasmvm_version_check \
+
                 ${nodeBin} \
                   start \
                   --home home \
@@ -861,7 +876,8 @@ let
                   --api.address            tcp://0.0.0.0:1317 \
                   --api.rpc-max-body-bytes 100000000 \
                   --grpc.address           0.0.0.0:9090 \
-                  --log_level rpc-server:warn,*:info
+                  --log_level *:debug
+                  # --log_level rpc-server:warn,p2p:info,consensus:info,server:info,*:debug
               ''
             else
               startCommandOverwrite

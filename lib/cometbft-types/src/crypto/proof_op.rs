@@ -1,13 +1,12 @@
 use serde::{Deserialize, Serialize};
+use unionlabs::{bytes::Bytes, hash::hash_v2::Base64};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProofOp {
     #[serde(rename = "type")]
     pub ty: String,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub key: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub data: Vec<u8>,
+    pub key: Bytes<Base64>,
+    pub data: Bytes<Base64>,
 }
 
 #[cfg(feature = "proto")]
@@ -18,8 +17,8 @@ pub mod proto {
         fn from(value: ProofOp) -> Self {
             Self {
                 r#type: value.ty,
-                key: value.key,
-                data: value.data,
+                key: value.key.to_vec(),
+                data: value.data.to_vec(),
             }
         }
     }
@@ -28,8 +27,8 @@ pub mod proto {
         fn from(value: protos::cometbft::crypto::v1::ProofOp) -> Self {
             Self {
                 ty: value.r#type,
-                key: value.key,
-                data: value.data,
+                key: value.key.into(),
+                data: value.data.into(),
             }
         }
     }
