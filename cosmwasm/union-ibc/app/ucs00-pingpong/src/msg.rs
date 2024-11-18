@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{IbcMsg, IbcTimeout, Timestamp};
 use ethabi::{ParamType, Token};
+use union_ibc_msg::msg::MsgSendPacket;
 
 use crate::{state::Config, ContractError};
 
@@ -33,18 +33,22 @@ impl UCS00PingPong {
 }
 
 impl UCS00PingPong {
-    pub fn reverse(&self, config: &Config, current_timestamp: u64, channel_id: String) -> IbcMsg {
+    pub fn reverse(
+        &self,
+        config: &Config,
+        current_timestamp: u64,
+        source_channel: u32,
+    ) -> union_ibc_msg::msg::ExecuteMsg {
         let counterparty_packet = UCS00PingPong {
             ping: !self.ping,
             // counterparty_timeout: config.seconds_before_timeout * 1_000_000_000 + current_timestamp,
         };
-        IbcMsg::SendPacket {
-            channel_id,
+        union_ibc_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
+            source_channel,
+            timeout_height: 0,
+            timeout_timestamp: current_timestamp + config.seconds_before_timeout * 1_000_000_000,
             data: counterparty_packet.encode().into(),
-            timeout: IbcTimeout::with_timestamp(Timestamp::from_nanos(
-                current_timestamp + config.seconds_before_timeout * 1_000_000_000,
-            )),
-        }
+        })
     }
 }
 
@@ -53,10 +57,11 @@ pub struct InitMsg {
     pub config: Config,
 }
 
-#[cw_serde]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ExecuteMsg {
     Initiate {
         channel_id: u32,
         packet: UCS00PingPong,
     },
+    UnionIbc(union_ibc_msg::module::UnionIbcMsg),
 }

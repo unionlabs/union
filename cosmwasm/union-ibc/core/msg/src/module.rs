@@ -1,7 +1,7 @@
 use ibc_solidity::cosmwasm::types::ibc::Packet;
 use unionlabs::bytes::Bytes;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum UnionIbcMsg {
     OnChannelOpenInit {
         connection_id: u32,

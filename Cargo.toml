@@ -4,6 +4,7 @@ resolver = "2"
 members = [
   "cosmwasm/token-factory-api",
   "cosmwasm/ucs00-pingpong",
+  "cosmwasm/union-ibc/app/ucs00-pingpong",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
