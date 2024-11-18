@@ -854,7 +854,7 @@ let
                   --cpu-profile CPU_PROFILE \
                   --home home \
                   $$params \
-                  --rpc.pprof_laddr        http://0.0.0.0:6060 \
+                  --rpc.pprof_laddr        0.0.0.0:6060 \
                   --rpc.laddr              tcp://0.0.0.0:26657 \
                   --rpc.unsafe \
                   --api.enable             true \
