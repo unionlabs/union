@@ -53,7 +53,7 @@ pub async fn insert_batch_logs(
         Vec<i32>,
         Vec<String>,
         Vec<_>,
-        Vec<i32>,
+        Vec<i64>,
         Vec<OffsetDateTime>,
     ) = logs
         .into_iter()
@@ -62,7 +62,7 @@ pub async fn insert_batch_logs(
                 l.chain_id.db,
                 l.block_hash,
                 serde_json::to_value(&l.data).expect("data should be json serializable"),
-                l.height as i32,
+                l.height as i64,
                 l.time,
             )
         })
@@ -72,14 +72,14 @@ pub async fn insert_batch_logs(
         InsertMode::Insert => {
             sqlx::query!("
                 INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
-                SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+                SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
                 ", &chain_ids, &hashes, &data, &height, &time)
             .execute(tx.as_mut()).await?;
         }
         InsertMode::Upsert => {
             sqlx::query!("
                 INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
-                SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
+                SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
                 ON CONFLICT (chain_id, height) DO 
                 UPDATE SET
                     data = excluded.data,
@@ -96,13 +96,8 @@ pub async fn insert_batch_logs(
                 );
                 let min_height = height.iter().min().expect("at least one height");
 
-                schedule_replication_reset(
-                    tx,
-                    *chain_id,
-                    (*min_height).into(),
-                    "block reorg (upsert)",
-                )
-                .await?;
+                schedule_replication_reset(tx, *chain_id, *min_height, "block reorg (upsert)")
+                    .await?;
             }
         }
     };
