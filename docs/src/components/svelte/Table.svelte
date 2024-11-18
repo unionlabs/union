@@ -1,12 +1,12 @@
 <script lang="ts">
-  import clsx from 'clsx'
+import clsx from "clsx"
 
-  interface Props {
-    rows: Array<Array<string>>
-    headers: Array<string>
-  }
+interface Props {
+  rows: Array<Array<string>>
+  headers: Array<string>
+}
 
-  let { rows, headers }: Props = $props()
+let { rows, headers }: Props = $props()
 </script>
 
 <div class="px-4 sm:px-6 lg:px-8 flex justify-center w-full">
