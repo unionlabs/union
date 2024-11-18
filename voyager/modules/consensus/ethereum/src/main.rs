@@ -185,7 +185,7 @@ impl ConsensusModuleServer for Module {
             genesis_validators_root: genesis.genesis_validators_root,
             genesis_time: genesis.genesis_time,
             fork_parameters: spec.to_fork_parameters(),
-            latest_slot: height.height(),
+            latest_height: height.height(),
             frozen_height: Height::new(0),
             ibc_contract_address: self.ibc_handler_address,
         })

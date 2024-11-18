@@ -3,7 +3,6 @@ use unionlabs::{bls::BlsPublicKey, hash::H256};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
-    // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,
     /// The state root for this chain, used for L2s to verify against this contract.
     pub state_root: H256,

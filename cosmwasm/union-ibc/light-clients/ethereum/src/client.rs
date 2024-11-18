@@ -74,7 +74,7 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        client_state.latest_slot
+        client_state.latest_height
     }
 
     fn status(client_state: &Self::ClientState) -> Status {
@@ -89,9 +89,9 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        if client_state.latest_slot != consensus_state.slot {
+        if client_state.latest_height != consensus_state.slot {
             return Err(Error::InvalidInitialState {
-                client_state_latest_slot: client_state.latest_slot,
+                client_state_latest_slot: client_state.latest_height,
                 consensus_state_slot: consensus_state.slot,
             }
             .into());
@@ -286,8 +286,8 @@ fn update_state<C: ChainSpec>(
             consensus_update.finalized_header.beacon.slot,
         ) * 1_000_000_000;
 
-        if client_state.latest_slot < consensus_update.finalized_header.beacon.slot {
-            client_state.latest_slot = consensus_update.finalized_header.beacon.slot;
+        if client_state.latest_height < consensus_update.finalized_header.execution.block_number {
+            client_state.latest_height = consensus_update.finalized_header.execution.block_number;
         }
     }
 

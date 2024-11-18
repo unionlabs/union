@@ -56,7 +56,7 @@ pub struct InitMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Initiate {
-        channel_id: u32,
+        channel_id: String,
         packet: UCS00PingPong,
     },
 }
