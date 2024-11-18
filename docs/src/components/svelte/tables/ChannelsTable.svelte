@@ -32,13 +32,11 @@ async function fetchChannels() {
   const dataArray = json.data.data
   return {
     data: {
-      headers: ["channel", "source label", "source chain", "dest. label", "dest. chain"],
+      headers: ["channel", "source chain", "dest. chain"],
       // @ts-expect-error
       rows: dataArray.map(item => [
         item.channel_id.split("-").at(-1),
-        item.source_chain.display_name,
         `${item.source_chain.rpc_type}/${item.source_chain.chain_id}`,
-        item.destination_chain.display_name,
         `${item.destination_chain.rpc_type}/${item.destination_chain.chain_id}`
       ])
     }
