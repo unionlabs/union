@@ -850,6 +850,7 @@ let
 
           ''
           + (
+            # --cpu-profile CPU_PROFILE \
             if startCommandOverwrite == null then
               ''
                 ${nodeBin} comet show-node-id --home home
@@ -858,7 +859,6 @@ let
 
                 ${nodeBin} \
                   start \
-                  --cpu-profile CPU_PROFILE \
                   --home home \
                   $$params \
                   --rpc.pprof_laddr        0.0.0.0:6060 \
