@@ -833,6 +833,8 @@ let
         "${toString (9090 + portIncrease + idx)}:9090"
         # Cosmos SDK REST 1317
         "${toString (1317 + portIncrease + idx)}:1317"
+        # Cosmos SDK pprof
+        "${toString (6060 + portIncrease + idx)}:6060"
       ];
       command = [
         "sh"
@@ -859,6 +861,7 @@ let
                   --cpu-profile CPU_PROFILE \
                   --home home \
                   $$params \
+                  --rpc.pprof_laddr        http://0.0.0.0:6060 \
                   --rpc.laddr              tcp://0.0.0.0:26657 \
                   --rpc.unsafe \
                   --api.enable             true \
