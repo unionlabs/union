@@ -161,6 +161,10 @@
           attrs
           // {
             cargoArtifacts = craneLib.buildDepsOnly attrs;
+            CC="clang";
+            CXX="clang++";
+            CC_aarch64_unknown_linux_gnu="clang";
+            AR_aarch64_unknown_linux_gnu="llvm-ar";
           }
         );
     in
