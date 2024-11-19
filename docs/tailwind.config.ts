@@ -1,24 +1,27 @@
 import plugin from "tailwindcss/plugin"
 import type { Config } from "tailwindcss"
-import tailwindAnimate from "tailwindcss-animate"
 import defaultTheme from "tailwindcss/defaultTheme"
+import tailwindcssAnimate from "tailwindcss-animate"
 import typographyPlugin from "@tailwindcss/typography"
 import starlightPlugin from "@astrojs/starlight-tailwind"
 import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
-export default {
+export default (<Config>{
+  darkMode: ["class"],
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
-  darkMode: "class",
   important: true,
-  future: { hoverOnlyWhenSupported: true },
+  safelist: ["dark"],
   theme: {
-    transparent: "transparent",
-    current: "currentColor",
-    extend: {
+    container: {
+      center: true,
+      padding: "2rem",
       screens: {
-        xs: "320px"
-      },
+        xs: "320px",
+        "2xl": "1400px"
+      }
+    },
+    extend: {
       fontSize: {
         // this exists as `*-base` but `*-md` is more intuitive
         md: [
@@ -29,8 +32,31 @@ export default {
         ]
       },
       colors: {
+        border: "hsl(var(--border) / <alpha-value>)",
+        input: "hsl(var(--input) / <alpha-value>)",
+        ring: "hsl(var(--ring) / <alpha-value>)",
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)"
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
+          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)"
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)"
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)"
+        },
         accent: {
-          DEFAULT: "#A0ECFD",
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+          // DEFAULT: "#A0ECFD",
           50: "#FAFEFF",
           100: "#F0FCFF",
           200: "#DCF8FE",
@@ -43,8 +69,30 @@ export default {
           900: "#037791",
           950: "#025C70"
         },
-        border: "#1C1E21",
-        bg2: "#030711"
+        popover: {
+          DEFAULT: "hsl(var(--popover) / <alpha-value>)",
+          foreground: "hsl(var(--popover-foreground) / <alpha-value>)"
+        },
+        card: {
+          DEFAULT: "hsl(var(--card) / <alpha-value>)",
+          foreground: "hsl(var(--card-foreground) / <alpha-value>)"
+        },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))"
+        }
+      },
+      borderRadius: {
+        xl: "calc(var(--radius) + 4px)",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)"
       },
       fontFamily: {
         sans: ["Inter var", ...defaultTheme.fontFamily.sans],
@@ -57,12 +105,31 @@ export default {
         ],
         mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
         jetbrains: ["JetBrains Mono", ...defaultTheme.fontFamily.mono]
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--bits-accordion-content-height)" }
+        },
+        "accordion-up": {
+          from: { height: "var(--bits-accordion-content-height)" },
+          to: { height: "0" }
+        },
+        "caret-blink": {
+          "0%,70%,100%": { opacity: "1" },
+          "20%,50%": { opacity: "0" }
+        }
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "caret-blink": "caret-blink 1.25s ease-out infinite"
       }
     }
   },
   plugins: [
     starlightPlugin(),
-    tailwindAnimate,
+    tailwindcssAnimate,
     typographyPlugin,
     aspectRatioPlugin,
     containerQueriesPlugin,
@@ -81,4 +148,4 @@ export default {
       })
     })
   ]
-} satisfies Config
+})
