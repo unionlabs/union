@@ -15,7 +15,7 @@
     "@astrojs/markdown-remark": "^5.3.0",
     "@astrojs/react": "^3.6.2",
     "@astrojs/sitemap": "^3.2.1",
-    "@astrojs/starlight": "^0.29.0",
+    "@astrojs/starlight": "^0.29.2",
     "@astrojs/starlight-tailwind": "^2.0.3",
     "@astrojs/svelte": "^6.0.1",
     "@astrojs/tailwind": "^5.1.2",
@@ -61,8 +61,8 @@
     "smartypants": "^0.2.2",
     "starlight-heading-badges": "^0.3.0",
     "starlight-theme-rapide": "^0.2.1",
-    "svelte": "^5.2.3",
-    "viem": "^2.21.47",
+    "svelte": "^5.2.4",
+    "viem": "^2.21.48",
     "vue": "^3.5.13"
   },
   "devDependencies": {
@@ -78,7 +78,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.13",
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.9.1",
     "@types/postcss-import": "^14.0.3",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
