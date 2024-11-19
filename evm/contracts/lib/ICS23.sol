@@ -30,7 +30,7 @@ library Ics23 {
         UnionIcs23.ExistenceProof calldata existProof,
         bytes32 root,
         bytes memory prefix,
-        bytes calldata key
+        bytes memory key
     ) internal pure returns (VerifyChainedNonMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
             Proof.calculateRoot(nonExistProof);
@@ -128,7 +128,7 @@ library Ics23 {
         UnionIcs23.ExistenceProof[2] calldata proofs,
         bytes32 root,
         bytes memory prefix,
-        bytes calldata key,
+        bytes memory key,
         bytes calldata value
     ) internal pure returns (VerifyChainedMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
@@ -299,7 +299,7 @@ library Ops {
     }
 
     function compare(
-        bytes calldata a,
+        bytes memory a,
         bytes calldata b
     ) internal pure returns (int256) {
         uint256 minLen = Math.min(a.length, b.length);
@@ -479,7 +479,7 @@ library Proof {
         UnionIcs23.NonExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes calldata key
+        bytes memory key
     ) internal pure returns (VerifyNonExistenceError) {
         bytes calldata leftKey = proof.left.key;
         bytes calldata rightKey = proof.right.key;

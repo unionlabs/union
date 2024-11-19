@@ -35,6 +35,7 @@ struct ClientState {
     uint64 maxClockDrift;
     uint64 frozenHeight;
     uint64 latestHeight;
+    bytes32 contractAddress;
 }
 
 struct ConsensusState {
@@ -398,12 +399,15 @@ contract CometblsClient is
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path,
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            ),
             value
         );
     }
@@ -417,12 +421,15 @@ contract CometblsClient is
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyNonMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            )
         );
     }
 
