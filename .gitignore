@@ -83,3 +83,4 @@ dev-dist
 .zed
 rustc-ice*
 .docs
+profiles/
