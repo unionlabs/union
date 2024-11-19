@@ -8,7 +8,7 @@ library ICS23MembershipVerifier {
         bytes32 root,
         bytes calldata proof,
         bytes memory prefix,
-        bytes calldata path,
+        bytes memory path,
         bytes calldata value
     ) internal pure returns (bool) {
         UnionIcs23.ExistenceProof[2] calldata existenceProof;
@@ -29,7 +29,7 @@ library ICS23MembershipVerifier {
         bytes32 root,
         bytes calldata proof,
         bytes memory prefix,
-        bytes calldata path
+        bytes memory path
     ) internal pure returns (bool) {
         NonMembershipProof calldata nonexistenceProof;
         assembly {

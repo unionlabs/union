@@ -5,12 +5,11 @@ import "../05-port/IIBCModule.sol";
 import "../Types.sol";
 
 library IBCStoreLib {
-    bytes32 public constant COMMITMENT_PREFIX = keccak256("ethibc");
+    string public constant COMMITMENT_PREFIX = "wasm";
+    bytes1 public constant COMMITMENT_PREFIX_PATH = 0x03;
 }
 
 abstract contract IBCStore {
-    bytes32 public constant COMMITMENT_PREFIX = IBCStoreLib.COMMITMENT_PREFIX;
-
     // Commitments
     // keccak256(IBC-compatible-store-path) => keccak256(IBC-compatible-commitment)
     mapping(bytes32 => bytes32) public commitments;
