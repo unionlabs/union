@@ -39,12 +39,12 @@
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.47"
+    "viem": "^2.21.48"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.13",
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.9.1",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
