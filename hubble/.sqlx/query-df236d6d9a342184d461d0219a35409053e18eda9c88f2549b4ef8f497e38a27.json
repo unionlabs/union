@@ -6,7 +6,7 @@
     "parameters": {
       "Left": [
         "Int4",
-        "Int4"
+        "Int8"
       ]
     },
     "nullable": []
