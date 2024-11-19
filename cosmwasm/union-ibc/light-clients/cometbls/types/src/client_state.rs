@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::{hash::H256, ibc::core::client::height::Height};
 
 use crate::chain_id::ChainId;
 
@@ -18,12 +18,16 @@ pub struct ClientState {
     /// Note that the above bounds are not enforced at the type level, which also matches the Tendermint specification.
     pub frozen_height: Height,
     pub latest_height: Height,
+    /// For clients that connect to the cosmwasm implementation of union IBC, the contract address of the IBC host is required in order to verify storage proofs. For clients connecting to IBC classic, this field is not required and can be ignored during client creation and migration.
+    #[serde(default, skip_serializing_if = "H256::is_zero")]
+    pub contract_address: H256,
 }
 
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
         errors::{InvalidLength, MissingField},
+        hash::H256,
         impl_proto_via_try_from_into, required,
     };
 
@@ -63,6 +67,7 @@ pub mod proto {
                 max_clock_drift: value.max_clock_drift,
                 frozen_height: required!(value.frozen_height)?.into(),
                 latest_height: required!(value.latest_height)?.into(),
+                contract_address: H256::default(),
             })
         }
     }
@@ -88,6 +93,7 @@ pub mod ethabi {
             uint64 maxClockDrift;
             uint64 frozenHeight;
             uint64 latestHeight;
+            bytes32 contractAddress;
         }
     }
 
@@ -99,6 +105,7 @@ pub mod ethabi {
                 maxClockDrift: self.max_clock_drift,
                 frozenHeight: self.frozen_height.height(),
                 latestHeight: self.latest_height.height(),
+                contractAddress: self.contract_address.into(),
             }
             .abi_encode_params()
         }
@@ -117,6 +124,7 @@ pub mod ethabi {
                 max_clock_drift: client_state.maxClockDrift,
                 frozen_height: Height::new(client_state.frozenHeight),
                 latest_height: Height::new(client_state.latestHeight),
+                contract_address: client_state.contractAddress.into(),
             })
         }
     }

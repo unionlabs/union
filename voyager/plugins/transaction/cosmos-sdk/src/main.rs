@@ -19,6 +19,7 @@ use sha2::Digest;
 use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
     self,
+    bech32::Bech32,
     bounded::BoundedI64,
     cosmos::{
         auth::base_account::BaseAccount,
@@ -61,7 +62,7 @@ async fn main() {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
@@ -72,7 +73,7 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub chain_id: ChainId,
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
     pub ws_url: String,
     pub grpc_url: String,
@@ -714,7 +715,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &CosmosSigner,
-    ibc_union_contract_address: String,
+    ibc_union_contract_address: Bech32<H256>,
 ) -> Vec<(IbcMessage, protos::google::protobuf::Any)> {
     msgs.into_iter()
         .map(|msg| {
@@ -868,7 +869,7 @@ fn process_msgs(
                     ibc_union::IbcMsg::CreateClient(msg_create_client) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.clone(),
+                            contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
                                 ibc_solidity::cosmwasm::types::ibc::MsgCreateClient {
                                     clientType: msg_create_client.client_type.to_string(),
@@ -883,11 +884,25 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union::IbcMsg::UpdateClient(_msg_update_client) => todo!(),
+                    ibc_union::IbcMsg::UpdateClient(msg_update_client) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::UpdateClient(
+                                ibc_solidity::cosmwasm::types::ibc::MsgUpdateClient {
+                                    clientId: msg_update_client.client_id,
+                                    clientMessage: msg_update_client.client_message.into(),
+                                    relayer: signer.to_string(),
+                                },
+                            ))
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
                     ibc_union::IbcMsg::ConnectionOpenInit(msg_connection_open_init) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.clone(),
+                            contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
                                     ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenInit {
@@ -902,10 +917,65 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union::IbcMsg::ConnectionOpenTry(_msg_connection_open_try) => todo!(),
-                    ibc_union::IbcMsg::ConnectionOpenAck(_msg_connection_open_ack) => todo!(),
-                    ibc_union::IbcMsg::ConnectionOpenConfirm(_msg_connection_open_confirm) => {
-                        todo!()
+                    ibc_union::IbcMsg::ConnectionOpenTry(msg_connection_open_try) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(
+                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenTry(
+                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenTry {
+                                        counterpartyClientId: msg_connection_open_try
+                                            .counterparty_client_id,
+                                        counterpartyConnectionId: msg_connection_open_try
+                                            .counterparty_connection_id,
+                                        clientId: msg_connection_open_try.client_id,
+                                        proofInit: msg_connection_open_try.proof_init.into(),
+                                        proofHeight: msg_connection_open_try.proof_height,
+                                        relayer: signer.to_string(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union::IbcMsg::ConnectionOpenAck(msg_connection_open_ack) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(
+                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenAck(
+                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenAck {
+                                        connectionId: msg_connection_open_ack.connection_id,
+                                        counterpartyConnectionId: msg_connection_open_ack
+                                            .counterparty_connection_id,
+                                        proofTry: msg_connection_open_ack.proof_try.into(),
+                                        proofHeight: msg_connection_open_ack.proof_height,
+                                        relayer: signer.to_string(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union::IbcMsg::ConnectionOpenConfirm(msg_connection_open_confirm) => {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(
+                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
+                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenConfirm {
+                                        connectionId: msg_connection_open_confirm.connection_id,
+                                        proofAck: msg_connection_open_confirm.proof_ack.into(),
+                                        proofHeight: msg_connection_open_confirm.proof_height,
+                                        relayer: signer.to_string(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        })
                     }
                     ibc_union::IbcMsg::ChannelOpenInit(_msg_channel_open_init) => todo!(),
                     ibc_union::IbcMsg::ChannelOpenTry(_msg_channel_open_try) => todo!(),

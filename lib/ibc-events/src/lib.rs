@@ -466,14 +466,13 @@ pub mod union_ibc {
                 // height: u64,
             },
 
-            // #[event(tag = "update_client", deprecated("consensus_height", "header"))]
-            // UpdateClient {
-            //     #[parse(u32::from_str)]
-            //     client_id: u32,
-            //     client_type: String,
-            //     #[parse(|s: &str| s.split(',').map(u64::from_str).collect::<Result<_, _>>())]
-            //     consensus_heights: Vec<Height>,
-            // },
+            #[event(tag = "wasm-client_update")]
+            UpdateClient {
+                #[parse(u32::from_str)]
+                client_id: u32,
+                #[parse(u64::from_str)]
+                height: u64,
+            },
 
             // #[event(tag = "client_misbehaviour")]
             // ClientMisbehaviour {
@@ -497,41 +496,41 @@ pub mod union_ibc {
                 counterparty_client_id: u32,
             },
 
-            // #[event(tag = "connection_open_try")]
-            // ConnectionOpenTry {
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     connection_id: ConnectionId,
-            //     #[parse(u32::from_str)]
-            //     client_id: u32,
-            //     #[parse(u32::from_str)]
-            //     counterparty_client_id: u32,
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     counterparty_connection_id: ConnectionId,
-            // },
+            #[event(tag = "wasm-connection_open_try")]
+            ConnectionOpenTry {
+                #[parse(u32::from_str)]
+                connection_id: u32,
+                #[parse(u32::from_str)]
+                client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_connection_id: u32,
+            },
 
-            // #[event(tag = "connection_open_ack")]
-            // ConnectionOpenAck {
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     connection_id: ConnectionId,
-            //     #[parse(u32::from_str)]
-            //     client_id: u32,
-            //     #[parse(ClientId::from_str)]
-            //     counterparty_client_id: ClientId,
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     counterparty_connection_id: ConnectionId,
-            // },
+            #[event(tag = "wasm-connection_open_ack")]
+            ConnectionOpenAck {
+                #[parse(u32::from_str)]
+                connection_id: u32,
+                #[parse(u32::from_str)]
+                client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_connection_id: u32,
+            },
 
-            // #[event(tag = "connection_open_confirm")]
-            // ConnectionOpenConfirm {
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     connection_id: ConnectionId,
-            //     #[parse(u32::from_str)]
-            //     client_id: u32,
-            //     #[parse(ClientId::from_str)]
-            //     counterparty_client_id: ClientId,
-            //     #[parse(ConnectionId::from_str_prefixed)]
-            //     counterparty_connection_id: ConnectionId,
-            // },
+            #[event(tag = "wasm-connection_open_confirm")]
+            ConnectionOpenConfirm {
+                #[parse(u32::from_str)]
+                connection_id: u32,
+                #[parse(u32::from_str)]
+                client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_client_id: u32,
+                #[parse(u32::from_str)]
+                counterparty_connection_id: u32,
+            },
 
             // #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
             // ChannelOpenInit {
@@ -715,13 +714,13 @@ pub mod union_ibc {
         pub fn name(&self) -> &'static str {
             match self {
                 IbcEvent::CreateClient(_) => "create_client",
-                // IbcEvent::UpdateClient(_) => "update_client",
+                IbcEvent::UpdateClient(_) => "update_client",
                 // IbcEvent::ClientMisbehaviour(_) => "client_misbehaviour",
                 // IbcEvent::SubmitEvidence(_) => "submit_evidence",
                 IbcEvent::ConnectionOpenInit(_) => "connection_open_init",
-                // IbcEvent::ConnectionOpenTry(_) => "connection_open_try",
-                // IbcEvent::ConnectionOpenAck(_) => "connection_open_ack",
-                // IbcEvent::ConnectionOpenConfirm(_) => "connection_open_confirm",
+                IbcEvent::ConnectionOpenTry(_) => "connection_open_try",
+                IbcEvent::ConnectionOpenAck(_) => "connection_open_ack",
+                IbcEvent::ConnectionOpenConfirm(_) => "connection_open_confirm",
                 // IbcEvent::ChannelOpenInit(_) => "channel_open_init",
                 // IbcEvent::ChannelOpenTry(_) => "channel_open_try",
                 // IbcEvent::ChannelOpenAck(_) => "channel_open_ack",

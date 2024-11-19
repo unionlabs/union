@@ -461,4 +461,9 @@ mod u256_tests {
         assert_proto_roundtrip(&U256::from_str("123456").unwrap());
         assert_string_roundtrip(&U256::from_str("123456").unwrap());
     }
+
+    #[test]
+    fn from_limbs() {
+        assert_eq!(U256::from_limbs([1, 0, 0, 0]), U256::from(1_u64));
+    }
 }

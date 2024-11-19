@@ -114,6 +114,8 @@ pub trait IbcSpecExt: IbcSpec {
     type BatchableEvent: TryFrom<Self::Event, Error = ()> + Eq + Member;
 
     fn proof_height(msg: &Self::Datagram) -> Height;
+
+    fn event_name(msg: &Self::BatchableEvent) -> &'static str;
 }
 
 impl IbcSpecExt for IbcV1 {
@@ -123,6 +125,19 @@ impl IbcSpecExt for IbcV1 {
         msg.proof_height()
             .expect("all batchable messages have a proof")
     }
+
+    fn event_name(msg: &Self::BatchableEvent) -> &'static str {
+        match msg {
+            EventV1::ConnectionOpenInit(_) => "connection_open_init",
+            EventV1::ConnectionOpenTry(_) => "connection_open_try",
+            EventV1::ConnectionOpenAck(_) => "connection_open_ack",
+            EventV1::ChannelOpenInit(_) => "channel_open_init",
+            EventV1::ChannelOpenTry(_) => "channel_open_try",
+            EventV1::ChannelOpenAck(_) => "channel_open_ack",
+            EventV1::SendPacket(_) => "send_packet",
+            EventV1::WriteAcknowledgement(_) => "write_acknowledgement",
+        }
+    }
 }
 
 impl IbcSpecExt for IbcUnion {
@@ -131,6 +146,19 @@ impl IbcSpecExt for IbcUnion {
     fn proof_height(msg: &Self::Datagram) -> Height {
         msg.proof_height()
             .expect("all batchable messages have a proof")
+    }
+
+    fn event_name(msg: &Self::BatchableEvent) -> &'static str {
+        match msg {
+            EventUnion::ConnectionOpenInit(_) => "connection_open_init",
+            EventUnion::ConnectionOpenTry(_) => "connection_open_try",
+            EventUnion::ConnectionOpenAck(_) => "connection_open_ack",
+            EventUnion::ChannelOpenInit(_) => "channel_open_init",
+            EventUnion::ChannelOpenTry(_) => "channel_open_try",
+            EventUnion::ChannelOpenAck(_) => "channel_open_ack",
+            EventUnion::SendPacket(_) => "send_packet",
+            EventUnion::WriteAcknowledgement(_) => "write_acknowledgement",
+        }
     }
 }
 
@@ -346,7 +374,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     fields(
         %origin_chain_id,
         %origin_chain_proof_height,
-        %target_chain_id
+        %target_chain_id,
+        msg = IbcUnion::event_name(&event)
     )
 )]
 async fn do_make_msg_union(
@@ -437,6 +466,167 @@ async fn do_make_msg_union(
                     counterparty_connection_id: connection_open_init_event.connection_id,
                     proof_height: origin_chain_proof_height.height(),
                     proof_init: encoded_connection_state_proof,
+                },
+            ))))
+        }
+
+        EventUnion::ConnectionOpenTry(connection_open_try_event) => {
+            let client_id = connection_open_try_event.client_id;
+            let counterparty_client_id = connection_open_try_event.counterparty_client_id;
+            let connection_id = connection_open_try_event.connection_id;
+
+            // info of the client on the target chain that will verify the storage
+            // proofs
+            let target_client_info = voyager_client
+                // counterparty_client_id from open_init/try is the client on the target chain
+                .client_info::<IbcUnion>(target_chain_id.clone(), counterparty_client_id)
+                .await?;
+
+            debug!(
+                %counterparty_client_id,
+                %target_client_info.client_type,
+                %target_client_info.ibc_interface,
+                %target_client_info.metadata,
+            );
+
+            // info of the client on the origin chain, this is used to decode the stored
+            // client state
+            let origin_client_info = voyager_client
+                // client_id from open_init/try is the client on the origin chain
+                .client_info::<IbcUnion>(origin_chain_id.clone(), client_id)
+                .await?;
+
+            debug!(
+                %client_id,
+                %origin_client_info.client_type,
+                %origin_client_info.ibc_interface,
+                %origin_client_info.metadata,
+            );
+
+            // the connection end as stored by the origin chain after open_init/try
+            let connection_state = voyager_client
+                .query_ibc_state(
+                    origin_chain_id.clone(),
+                    origin_chain_proof_height.into(),
+                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                )
+                .await?
+                .state
+                .ok_or(ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "connection must exist",
+                    None::<()>,
+                ))?;
+            debug!(
+                connection_state = %serde_json::to_string(&connection_state).unwrap(),
+            );
+
+            // proof of connection_state, encoded for the client on the target chain
+            let connection_proof = voyager_client
+                .query_ibc_proof(
+                    origin_chain_id.clone(),
+                    QueryHeight::Specific(origin_chain_proof_height),
+                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                )
+                .await?
+                .proof;
+            debug!(%connection_proof);
+
+            let encoded_connection_state_proof = voyager_client
+                .encode_proof(
+                    target_client_info.client_type.clone(),
+                    target_client_info.ibc_interface.clone(),
+                    connection_proof,
+                )
+                .await?;
+            debug!(%encoded_connection_state_proof);
+
+            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
+                ibc_union::MsgConnectionOpenAck {
+                    connection_id: connection_open_try_event.counterparty_connection_id,
+                    counterparty_connection_id: connection_open_try_event.connection_id,
+                    proof_height: origin_chain_proof_height.height(),
+                    proof_try: encoded_connection_state_proof,
+                },
+            ))))
+        }
+
+        EventUnion::ConnectionOpenAck(connection_open_ack_event) => {
+            let client_id = connection_open_ack_event.client_id;
+            let counterparty_client_id = connection_open_ack_event.counterparty_client_id;
+            let connection_id = connection_open_ack_event.connection_id;
+
+            // info of the client on the target chain that will verify the storage
+            // proofs
+            let target_client_info = voyager_client
+                // counterparty_client_id from open_init/ack is the client on the target chain
+                .client_info::<IbcUnion>(target_chain_id.clone(), counterparty_client_id)
+                .await?;
+
+            debug!(
+                %counterparty_client_id,
+                %target_client_info.client_type,
+                %target_client_info.ibc_interface,
+                %target_client_info.metadata,
+            );
+
+            // info of the client on the origin chain, this is used to decode the stored
+            // client state
+            let origin_client_info = voyager_client
+                // client_id from open_init/ack is the client on the origin chain
+                .client_info::<IbcUnion>(origin_chain_id.clone(), client_id)
+                .await?;
+
+            debug!(
+                %client_id,
+                %origin_client_info.client_type,
+                %origin_client_info.ibc_interface,
+                %origin_client_info.metadata,
+            );
+
+            // the connection end as stored by the origin chain after open_init/ack
+            let connection_state = voyager_client
+                .query_ibc_state(
+                    origin_chain_id.clone(),
+                    origin_chain_proof_height.into(),
+                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                )
+                .await?
+                .state
+                .ok_or(ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "connection must exist",
+                    None::<()>,
+                ))?;
+            debug!(
+                connection_state = %serde_json::to_string(&connection_state).unwrap(),
+            );
+
+            // proof of connection_state, encoded for the client on the target chain
+            let connection_proof = voyager_client
+                .query_ibc_proof(
+                    origin_chain_id.clone(),
+                    QueryHeight::Specific(origin_chain_proof_height),
+                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                )
+                .await?
+                .proof;
+            debug!(%connection_proof);
+
+            let encoded_connection_state_proof = voyager_client
+                .encode_proof(
+                    target_client_info.client_type.clone(),
+                    target_client_info.ibc_interface.clone(),
+                    connection_proof,
+                )
+                .await?;
+            debug!(%encoded_connection_state_proof);
+
+            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
+                ibc_union::MsgConnectionOpenConfirm {
+                    connection_id: connection_open_ack_event.counterparty_connection_id,
+                    proof_height: origin_chain_proof_height.height(),
+                    proof_ack: encoded_connection_state_proof,
                 },
             ))))
         }

@@ -303,6 +303,7 @@ pub mod hash_v2 {
         }
 
         #[must_use]
+        // TODO: Make this return `Bytes`
         pub fn into_bytes(self) -> Vec<u8> {
             self.get().to_vec()
         }
@@ -325,6 +326,11 @@ pub mod hash_v2 {
         #[inline(always)]
         pub fn as_encoding<E2: Encoding>(&self) -> &Hash<BYTES, E2> {
             Hash::new_ref(self.get())
+        }
+
+        #[must_use]
+        pub fn is_zero(&self) -> bool {
+            self == &Self::default()
         }
     }
 

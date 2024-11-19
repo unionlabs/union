@@ -1080,6 +1080,40 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::UpdateClient(
+                        update_client,
+                    )) => {
+                        dbg!(&update_client);
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(self.chain_id.clone(), update_client.client_id)
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                update_client.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info: client_info.clone(),
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcV1::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ClientUpdated {
+                                    client_id: update_client.client_id,
+                                    client_type: client_info.client_type,
+                                    height: update_client.height,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
                     RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ConnectionOpenInit(
                         connection_open_init,
                     )) => {
@@ -1112,6 +1146,126 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     client_id: connection_open_init.client_id,
                                     connection_id: connection_open_init.connection_id,
                                     counterparty_client_id: connection_open_init
+                                        .counterparty_client_id,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ConnectionOpenTry(
+                        connection_open_try,
+                    )) => {
+                        dbg!(&connection_open_try);
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                self.chain_id.clone(),
+                                connection_open_try.client_id,
+                            )
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection_open_try.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ConnectionOpenTry {
+                                    connection_id: connection_open_try.connection_id,
+                                    counterparty_connection_id: connection_open_try
+                                        .counterparty_connection_id,
+                                    client_id: connection_open_try.client_id,
+                                    counterparty_client_id: connection_open_try
+                                        .counterparty_client_id,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ConnectionOpenAck(
+                        connection_open_ack,
+                    )) => {
+                        dbg!(&connection_open_ack);
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                self.chain_id.clone(),
+                                connection_open_ack.client_id,
+                            )
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection_open_ack.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ConnectionOpenAck {
+                                    connection_id: connection_open_ack.connection_id,
+                                    counterparty_connection_id: connection_open_ack
+                                        .counterparty_connection_id,
+                                    client_id: connection_open_ack.client_id,
+                                    counterparty_client_id: connection_open_ack
+                                        .counterparty_client_id,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ConnectionOpenConfirm(
+                        connection_open_confirm,
+                    )) => {
+                        dbg!(&connection_open_confirm);
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                self.chain_id.clone(),
+                                connection_open_confirm.client_id,
+                            )
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection_open_confirm.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ConnectionOpenConfirm {
+                                    connection_id: connection_open_confirm.connection_id,
+                                    counterparty_connection_id: connection_open_confirm
+                                        .counterparty_connection_id,
+                                    client_id: connection_open_confirm.client_id,
+                                    counterparty_client_id: connection_open_confirm
                                         .counterparty_client_id,
                                 }
                                 .into(),

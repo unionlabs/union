@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 use std::{
     error::Error,
@@ -12,11 +12,12 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tracing::{error, instrument};
-use union_ibc::state::CONNECTIONS;
 use unionlabs::{
+    bech32::Bech32,
     bounded::BoundedI64,
+    hash::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     ics24::ethabi::Path,
     ErrorReporter,
@@ -26,7 +27,7 @@ use voyager_message::{
     ibc_union::IbcUnion,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
-    ProofModule,
+    ProofModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -49,7 +50,7 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,7 +58,7 @@ pub struct Module {
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -112,30 +113,10 @@ pub struct ChainIdParseError {
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        let key = match path {
-            // Path::ClientState(path) => self
-            //     .query_client_state(at, path.client_id)
-            //     .await
-            //     .map(into_value),
-            // Path::ConsensusState(path) => self
-            //     .query_consensus_state(at, path.client_id, path.height)
-            //     .await
-            //     .map(into_value),
-            Path::Connection(path) => CONNECTIONS.key(path.connection_id),
-            Path::Channel(_path) => todo!(),
-            _ => {
-                todo!()
-            }
-        };
-
         let data = [0x03]
             .into_iter()
-            .chain(
-                subtle_encoding::bech32::decode(&self.ibc_union_contract_address)
-                    .unwrap()
-                    .1,
-            )
-            .chain(key.to_vec())
+            .chain(*self.ibc_union_contract_address.data())
+            .chain(path.key())
             .collect::<Vec<_>>();
 
         let query_result = self
@@ -143,7 +124,19 @@ impl ProofModuleServer<IbcUnion> for Module {
             .abci_query(
                 "store/wasm/key",
                 data,
-                Some(BoundedI64::new(at.height()).unwrap()),
+                // THIS -1 IS VERY IMPORTANT!!!
+                //
+                // a proof at height H is provable at height H + 1
+                // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
+                Some(BoundedI64::new(at.height() - 1).map_err(|e| {
+                    let message = format!("invalid height value: {}", ErrorReporter(e));
+                    error!(%message);
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        message,
+                        Some(json!({ "height": at })),
+                    )
+                })?),
                 true,
             )
             .await
@@ -154,18 +147,36 @@ impl ProofModuleServer<IbcUnion> for Module {
                 proofs: query_result
                     .response
                     .proof_ops
-                    .unwrap()
+                    .ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "proofOps must be present on abci query when called with prove = true",
+                            None::<()>,
+                        )
+                    })?
                     .ops
                     .into_iter()
                     .map(|op| {
                         <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
                             &*op.data,
                         )
-                        .unwrap()
+                        .map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("invalid height value: {}", ErrorReporter(e)),
+                                Some(json!({ "height": at })),
+                            )
+                        })
                     })
-                    .collect::<Vec<_>>(),
+                    .collect::<Result<Vec<_>, _>>()?,
             })
-            .unwrap(),
+            .map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("invalid height value: {}", ErrorReporter(e)),
+                    Some(json!({ "height": at })),
+                )
+            })?,
         ))
     }
 }
@@ -182,10 +193,3 @@ fn rpc_error<E: Error>(
         ErrorObject::owned(-1, message, data)
     }
 }
-
-// #[test]
-// fn commitment_key() {
-//     let key = [0x03].into_iter().chain()
-
-//     println!("{}", serde_utils::Hex(&*CONNECTIONS.key(2)))
-// }

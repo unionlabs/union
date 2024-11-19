@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
+#![warn(clippy::unwrap_used)]
 
 use std::collections::VecDeque;
 
@@ -423,7 +423,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     client_id: raw_event.clientId,
                                     connection_id: raw_event.connectionId,
                                     counterparty_client_id: raw_event.counterpartyClientId,
-                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                    counterparty_connection_id: raw_event.counterpartyConnectionId,
                                 }
                                 .into(),
                             ),

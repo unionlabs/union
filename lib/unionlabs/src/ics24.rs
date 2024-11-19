@@ -32,11 +32,11 @@ pub mod ethabi {
     pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
 
     const CLIENT_STATE: U256 = U256::from_limbs([0, 0, 0, 0]);
-    const CONSENSUS_STATE: U256 = U256::from_limbs([0, 0, 0, 1]);
-    const CONNECTIONS: U256 = U256::from_limbs([0, 0, 0, 2]);
-    const CHANNELS: U256 = U256::from_limbs([0, 0, 0, 3]);
-    const PACKETS: U256 = U256::from_limbs([0, 0, 0, 4]);
-    const PACKET_ACKS: U256 = U256::from_limbs([0, 0, 0, 5]);
+    const CONSENSUS_STATE: U256 = U256::from_limbs([1, 0, 0, 0]);
+    const CONNECTIONS: U256 = U256::from_limbs([2, 0, 0, 0]);
+    const CHANNELS: U256 = U256::from_limbs([3, 0, 0, 0]);
+    const PACKETS: U256 = U256::from_limbs([4, 0, 0, 0]);
+    const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
 
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Enumorph)]
     pub enum Path {

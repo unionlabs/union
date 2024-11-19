@@ -20,6 +20,7 @@ use unionlabs::{
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    rpc::json_rpc_error_to_error_object,
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;
@@ -131,10 +132,11 @@ impl ConsensusModuleServer for Module {
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
-        let mut commit_response =
-            self.tm_client.commit(None).await.map_err(|err| {
-                ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-            })?;
+        let mut commit_response = self
+            .tm_client
+            .commit(None)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
         if finalized && commit_response.canonical {
             debug!(
@@ -150,9 +152,7 @@ impl ConsensusModuleServer for Module {
                     .expect("should be fine"),
                 ))
                 .await
-                .map_err(|err| {
-                    ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-                })?;
+                .map_err(json_rpc_error_to_error_object)?;
 
             if !commit_response.canonical {
                 error!(

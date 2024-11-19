@@ -14368,13 +14368,13 @@ dependencies = [
 name = "voyager-client-update-plugin-ethereum"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "beacon-api",
  "beacon-api-types",
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
- "ethers",
  "futures",
  "jsonrpsee",
  "macros",
@@ -14704,8 +14704,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
- "union-ibc",
- "union-ibc-msg",
  "unionlabs",
  "voyager-message",
  "voyager-vm",

@@ -99,6 +99,8 @@ pub(crate) mod macros;
 
 pub mod errors;
 
+pub mod bech32;
+
 #[cfg(feature = "proto")]
 pub use ::prost;
 
@@ -288,6 +290,12 @@ pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
 }
 
 pub struct ErrorReporter<T: core::error::Error>(pub T);
+
+impl<T: core::error::Error> ErrorReporter<T> {
+    pub fn with_message(&self, message: &str) -> String {
+        format!("{message}: {self}")
+    }
+}
 
 impl<T: core::error::Error> Display for ErrorReporter<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

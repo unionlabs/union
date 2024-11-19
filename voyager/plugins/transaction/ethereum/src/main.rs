@@ -528,16 +528,16 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // IbcMsg::ConnectionOpenInit(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .connectionOpenInit(MsgConnectionOpenInit {
-                //             clientId: data.client_id,
-                //             counterpartyClientId: data.counterparty.client_id,
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                IbcMsg::ConnectionOpenInit(data) => (
+                    msg,
+                    ibc_handler
+                        .connectionOpenInit(ibc::MsgConnectionOpenInit {
+                            clientId: data.client_id,
+                            counterpartyClientId: data.counterparty_client_id,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 IbcMsg::ConnectionOpenTry(data) => (
                     msg,
                     ibc_handler
@@ -551,29 +551,29 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // IbcMsg::ConnectionOpenAck(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .connectionOpenAck(MsgConnectionOpenAck {
-                //             connectionId: data.connection_id,
-                //             counterpartyConnectionId: data.counterparty_connection_id,
-                //             proofHeight: data.proof_height.height(),
-                //             proofTry: data.proof_try.into(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
-                // IbcMsg::ConnectionOpenConfirm(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .connectionOpenConfirm(MsgConnectionOpenConfirm {
-                //             connectionId: data.connection_id,
-                //             proofAck: data.proof_ack.into(),
-                //             proofHeight: data.proof_height.height(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                IbcMsg::ConnectionOpenAck(data) => (
+                    msg,
+                    ibc_handler
+                        .connectionOpenAck(ibc::MsgConnectionOpenAck {
+                            connectionId: data.connection_id,
+                            counterpartyConnectionId: data.counterparty_connection_id,
+                            proofHeight: data.proof_height,
+                            proofTry: data.proof_try.into(),
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
+                IbcMsg::ConnectionOpenConfirm(data) => (
+                    msg,
+                    ibc_handler
+                        .connectionOpenConfirm(ibc::MsgConnectionOpenConfirm {
+                            connectionId: data.connection_id,
+                            proofAck: data.proof_ack.into(),
+                            proofHeight: data.proof_height,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 // IbcMsg::ChannelOpenInit(data) => (
                 //     msg,
                 //     ibc_handler

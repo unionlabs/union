@@ -175,9 +175,14 @@ pub struct SelfConsensusState {
     pub state: Value,
 }
 
-pub fn json_rpc_error_to_error_object(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
-    match value {
-        jsonrpsee::core::client::Error::Call(error) => error,
+pub fn json_rpc_error_to_error_object(e: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
+    match e {
+        jsonrpsee::core::client::Error::Call(e) => e,
+        jsonrpsee::core::client::Error::ParseError(e) => ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            format!("parse error: {}", ErrorReporter(e)),
+            None::<()>,
+        ),
         value => ErrorObject::owned(-1, format!("error: {}", ErrorReporter(value)), None::<()>),
     }
 }
