@@ -8,6 +8,14 @@ pub struct ClientState {
     pub chain_id: ChainId,
     pub trusting_period: u64,
     pub max_clock_drift: u64,
+    /// This field only ever has one of two values:
+    ///
+    /// - 0: client is not frozen
+    /// - 1: client is frozen
+    ///
+    /// Both the field name and type match the ICS07 Tendermint implementation.
+    ///
+    /// Note that the above bounds are not enforced at the type level, which also matches the Tendermint specification.
     pub frozen_height: Height,
     pub latest_height: Height,
 }
