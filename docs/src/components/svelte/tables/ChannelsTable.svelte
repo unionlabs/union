@@ -14,7 +14,10 @@ import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 const graphqlQuery = dedent /* GraphQL */`
     query ChannelsForDocs {
       data: v1_channels {
-        source_chain { display_name chain_id }
+        source_chain {
+          display_name
+          chain_id
+        }
         source_channel_id
         source_connection_id
         source_port_id
@@ -33,24 +36,28 @@ const curlCommand = dedent /* bash */`
       }'
   `
 
-let pageNumber = $state(0)
-let toggleRowIcon = $state(jsonSvg)
-let copyQueryIcon = $state(graphqlSvg)
-const promise = $state(fetchChannels())
-
-let search = $state("")
-const debouncedSearch = new Debounced(() => search, 1_000)
-
-function filterRows(rows: Array<Array<string>>, inputSearch: string) {
-  return rows.filter(row =>
-    row.some(cell => cell?.toLowerCase()?.includes(inputSearch.toLowerCase()))
-  )
-}
-
 /**
  * set this as desired
  */
 const rowsPerPage = 10
+let pageNumber = $state(0)
+let toggleRowIcon = $state(jsonSvg)
+const promise = $state(fetchChannels())
+
+let search = $state("")
+const debouncedSearch = new Debounced(() => search.trim(), 1_000)
+
+function filterRows(rows: Array<Array<string>>, inputSearch: string) {
+  try {
+    return rows.filter(row =>
+      row.some(cell => cell?.toLowerCase()?.includes(inputSearch.toLowerCase()))
+    )
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : error
+    console.error(errorMessage)
+    return rows
+  }
+}
 
 async function fetchChannels() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
@@ -128,11 +135,11 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
 
   <section class="w-full flex h-min mt-4 justify-between align-middle gap-x-3">
     <a
-      class={cn('size-12 my-auto hover:bg-muted/10 rounded-sm p-1')}
       target="_blank"
       rel="noopener noreferrer"
       title="Open in GraphQL playground"
       href={`/reference/graphql?query=${encodeURIComponent(graphqlQuery)}`}
+      class={cn('size-12 my-auto hover:bg-muted/10 rounded-sm p-1 hover:cursor-pointer')}
     >
       {@html graphqlSvg}
     </a>
@@ -147,7 +154,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
           element.innerHTML = curlSvg
         }, 1_000)
       }}
-      class="bg-transparent hover:bg-background/10 hover:cursor-pointer size-16 rounded-sm mr-auto"
+      class="bg-transparent hover:bg-background/10 size-16 rounded-sm mr-auto hover:cursor-pointer"
     >
       {@html curlSvg}
     </button>
