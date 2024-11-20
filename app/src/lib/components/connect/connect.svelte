@@ -19,6 +19,7 @@ import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { onMount } from "svelte"
+import { reownModal } from "$lib/wallet/evm/reown"
 
 let buttonText: string
 
@@ -33,17 +34,18 @@ let connectedWallets = derived(
   }
 )
 
-onMount(() => {
-  console.info($aptosStore)
-})
-
 $: if ($connectedWallets >= 1) {
   buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
 } else {
   buttonText = "Connect Wallet"
 }
 
-let sheetOpen = false
+onMount(() => {
+  console.info(reownModal.getUniversalProvider().then(console.log))
+})
+
+// let sheetOpen = false
+let sheetOpen = true
 $: if ($navigating) sheetOpen = false
 </script>
 
@@ -52,11 +54,11 @@ $: if ($navigating) sheetOpen = false
     <Button
       builders={[builder]}
       class={cn(
-        $connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
-        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
-        "hover:bg-cyan-300/90",
-        $sepoliaStore.connectionStatus === "connected" &&
-          $cosmosStore.connectionStatus === "connected",
+        $connectedWallets === 1 ? 'w-[75px]' : 'w-[50px]',
+        'space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto',
+        'hover:bg-cyan-300/90',
+        $sepoliaStore.connectionStatus === 'connected' &&
+          $cosmosStore.connectionStatus === 'connected',
       )}
       on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
@@ -65,28 +67,28 @@ $: if ($navigating) sheetOpen = false
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
+      <span class={cn($connectedWallets === 1 ? 'font-supermolot font-bold uppercase' : 'hidden')}>
         <!-- {connectedWallets === 1 ? "1/2" : ""} -->
-        {$connectedWallets === 3 ? "" : $connectedWallets > 1 ? `${$connectedWallets}/3` : ""}
+        {$connectedWallets === 3 ? '' : $connectedWallets > 1 ? `${$connectedWallets}/3` : ''}
       </span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
     class={cn(
-      "h-full border-solid border-left flex flex-col justify-start",
-      "min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]",
-      "overflow-y-auto",
+      'h-full border-solid border-left flex flex-col justify-start',
+      'min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]',
+      'overflow-y-auto',
     )}
   >
     <Sheet.Header>
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn("size-10", $sepoliaStore.connectionStatus !== "connected" && "hidden")}
+          class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
         >
           <Avatar.Image
             alt="ethereum avatar"
-            src={`https://effigy.im/a/${$sepoliaStore.address || "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"}.png`}
+            src={`https://effigy.im/a/${$sepoliaStore.address || '0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd'}.png`}
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
@@ -95,17 +97,10 @@ $: if ($navigating) sheetOpen = false
         </h2>
       </Sheet.Title>
     </Sheet.Header>
-    <Connection
-      address={$aptosStore.address}
-      chain="aptos"
-      chainWalletsInformation={aptosWalletsInformation}
-      connectStatus={$aptosStore.connectionStatus}
-      connectedWalletId={$aptosStore.connectedWallet}
-      hoverState={$aptosStore.hoverState}
-      onConnectClick={aptosStore.connect}
-      onDisconnectClick={aptosStore.disconnect}
-    />
-    <Connection
+
+    <appkit-button class="*:text-black"></appkit-button>
+    <!-- <appkit-network-button></appkit-network-button>  -->
+    <!-- <Connection
       address={$sepoliaStore.address}
       chain="evm"
       chainWalletsInformation={evmWalletsInformation}
@@ -114,7 +109,7 @@ $: if ($navigating) sheetOpen = false
       hoverState={$sepoliaStore.hoverState}
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
-    />
+    /> -->
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"
@@ -124,6 +119,16 @@ $: if ($navigating) sheetOpen = false
       hoverState={$cosmosStore.hoverState}
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
+    />
+    <Connection
+      address={$aptosStore.address}
+      chain="aptos"
+      chainWalletsInformation={aptosWalletsInformation}
+      connectStatus={$aptosStore.connectionStatus}
+      connectedWalletId={$aptosStore.connectedWallet}
+      hoverState={$aptosStore.hoverState}
+      onConnectClick={aptosStore.connect}
+      onDisconnectClick={aptosStore.disconnect}
     />
     <div class="flex items-center space-x-2">
       <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
@@ -153,13 +158,13 @@ $: if ($navigating) sheetOpen = false
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
           <DropdownMenu.Group>
-            <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
+            <DropdownMenu.Item on:click={() => setMode('system')} class="cursor-pointer">
               System
             </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
+            <DropdownMenu.Item on:click={() => setMode('dark')} class="cursor-pointer">
               Dark
             </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
+            <DropdownMenu.Item on:click={() => setMode('light')} class="cursor-pointer">
               Light
             </DropdownMenu.Item>
           </DropdownMenu.Group>
