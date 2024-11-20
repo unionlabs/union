@@ -11,6 +11,11 @@ let pageNumber = $state(0)
 let toggleRowIcon = $state(jsonSvg)
 const promise = $state(fetchChannels())
 
+/**
+ * set this as desired
+ */
+const rowsPerPage = 5
+
 async function fetchChannels() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
     method: "POST",
@@ -48,7 +53,7 @@ async function fetchChannels() {
   return {
     data: {
       headers: ["chain", "conn. #", "channel #", "status", "version"],
-      rows: splitArray({ array: rows, n: 6 }),
+      rows: splitArray({ array: rows, n: rowsPerPage }),
       total: rows.length
     }
   }
