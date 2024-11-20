@@ -134,6 +134,10 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
+            // {
+            //   label: "Chains",
+            //   link: "/chains"
+            // },
             {
               label: "Protocol",
               items: [
@@ -269,15 +273,7 @@ export default defineConfig({
       applyBaseStyles: false,
       configFile: "tailwind.config.ts"
     }),
-    svelte(
-      //   {
-      //   include: [
-      //     "**/svelte/**",
-      //     "./node_modules/bits-ui/dist/bits/**/*",
-      //     "./node_modules/lucide-svelte/dist/**/*"
-      //   ]
-      // }
-    ),
+    svelte(),
     react({
       include: ["**/react/**"],
       experimentalReactChildren: true

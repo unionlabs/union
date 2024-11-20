@@ -226,6 +226,7 @@
         "all": true,
         "noSecrets": "off",
         "noProcessEnv": "off",
+        "noImgElement": "off",
         "useStrictMode": "off",
         "useExplicitType": "off",
         "noNestedTernary": "off",

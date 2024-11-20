@@ -2,26 +2,25 @@
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
-import jsonSvg from "#/assets/icons/json.svg?raw"
 import curlSvg from "#/assets/icons/curl.svg?raw"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import { splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
+import { Button } from "#/components/svelte/ui/button/index.ts"
+import externalLinkSvg from "#/assets/icons/externl-link.svg?raw"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
-    query ChannelsQuery {
-      data: v1_channels {
-        source_chain {
-          chain_id
-          display_name
+    query Chains {
+      data: v1_chains {
+        testnet
+        chain_id
+        logo_uri
+        display_name
+        explorers(limit: 1) {
+          home_url
         }
-        status
-        version
-        source_port_id
-        source_channel_id
-        source_connection_id
       }
     }
   `
@@ -38,10 +37,9 @@ const curlCommand = dedent /* bash */`
 /**
  * set this as desired
  */
-const rowsPerPage = 10
+const rowsPerPage = 25
 let pageNumber = $state(0)
-let toggleRowIcon = $state(jsonSvg)
-const promise = $state(fetchChannels())
+const promise = $state(fetchChains())
 
 let search = $state("")
 const debouncedSearch = new Debounced(() => search.trim(), 1_000)
@@ -58,7 +56,7 @@ function filterRows(rows: Array<Array<string>>, inputSearch: string) {
   }
 }
 
-async function fetchChannels() {
+async function fetchChains() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -71,11 +69,11 @@ async function fetchChannels() {
   const dataArray = json.data.data
   // @ts-expect-error
   const rows = dataArray.map(item => [
-    item.source_chain.display_name,
-    item.source_connection_id?.split("-")?.at(-1),
-    item.source_channel_id?.split("-")?.at(-1),
-    item.status,
-    item.version
+    item.testnet,
+    item.chain_id,
+    item.logo_uri,
+    item.display_name,
+    item.explorers?.at(0)?.home_url
   ]) as Array<Array<string>>
 
   return {
@@ -83,40 +81,8 @@ async function fetchChannels() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["chain", "conn. #", "channel #", "status", "version"]
+      headers: ["testnet", "chain id", "logo uri", "display name", "explorer"]
     }
-  }
-}
-
-async function attachContent(event: MouseEvent, rowIndex: number, version: unknown) {
-  let eventTarget = event.target?.closest("button") as HTMLElement
-  if (!eventTarget.innerHTML) return
-
-  const jsonSnippetElement = document.querySelector(`td[data-row-index="${rowIndex}"]`)
-  if (!jsonSnippetElement) return
-  const previousUncleElement = jsonSnippetElement.parentElement
-    ?.previousElementSibling as HTMLTableRowElement
-
-  const jsonSnippet = `\`\`\`json\n${JSON.stringify(version, undefined, 2)}`
-  const highlightedCode = await highlightCode(dedent(jsonSnippet))
-
-  jsonSnippetElement.innerHTML = highlightedCode
-  // jsonSnippetElement.scrollIntoView({ behavior: 'smooth' })
-
-  const state = jsonSnippetElement.dataset?.state || "collapsed"
-  if (state === "collapsed") {
-    previousUncleElement.style.setProperty(
-      "background-color",
-      "hsl(var(--muted) / 0.1)",
-      "important"
-    )
-    eventTarget.innerHTML = "▼"
-    jsonSnippetElement.dataset.state = "expanded"
-  } else {
-    previousUncleElement.style.removeProperty("background-color")
-    eventTarget.innerHTML = jsonSvg
-    jsonSnippetElement.innerHTML = ""
-    jsonSnippetElement.dataset.state = "collapsed"
   }
 }
 </script>
@@ -170,15 +136,17 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     <Table.Header class="w-full">
       <Table.Row class="w-full">
         {#each headers as header, index}
-          <Table.Head
-            class={cn(
-              'text-nowrap uppercase',
-              index === 0 && 'w-[100px]',
-              index === headers.length - 1 && 'text-right',
-            )}
-          >
-            {header}
-          </Table.Head>
+          {#if !header.includes('logo')}
+            <Table.Head
+              class={cn(
+                'text-nowrap uppercase',
+                index === 0 && 'w-[100px]',
+                index === headers.length - 1 && 'text-right',
+              )}
+            >
+              {header}
+            </Table.Head>
+          {/if}
         {/each}
       </Table.Row>
     </Table.Header>
@@ -187,19 +155,22 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
         <Table.Row class={cn('w-full border-neutral-500')}>
           {#each row as cell, cellIndex}
             {@const lastColumn = cellIndex === row.length - 1}
-            {#if lastColumn}
+            {@const logoColumn = cellIndex === 2}
+            {#if logoColumn}
+              <!--  -->
+            {:else if lastColumn}
+              {@const isUrl = URL.canParse(cell)}
               <Table.Cell class={cn('text-right text-nowrap border-neutral-500')}>
-                {@const isJSON = stringIsJSON(cell)}
-                {#if isJSON}
-                  {@const version = JSON.parse(cell)}
-                  <button
-                    onclick={event => attachContent(event, rowIndex, version)}
-                    class="bg-transparent hover:bg-background/30 hover:cursor-pointer size-8"
+                {#if isUrl}
+                  <Button
+                    href={cell}
+                    size="lg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="hover:underline hover:text-accent-500 p-2 size-10 hover:bg-background/30 hover:cursor-pointer bg-transparent"
                   >
-                    {@html toggleRowIcon}
-                  </button>
-                {:else}
-                  {cell}
+                    {@html externalLinkSvg}
+                  </Button>
                 {/if}
               </Table.Cell>
             {:else}
@@ -226,7 +197,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     </Table.Body>
   </Table.Root>
 
-  <Pagination.Root {count} {perPage}>
+  <Pagination.Root {count} {perPage} class={cn(rowsPerPage >= count && 'hidden')}>
     {#snippet children({ pages, currentPage })}
       <Pagination.Content>
         <Pagination.Item>
