@@ -25,7 +25,8 @@ const graphqlQuery = dedent /* GraphQL */`
   `
 
 const curlCommand = dedent /* bash */`
-    curl --url 'https://development.graphql.union.build/v1/graphql' \\
+    curl --request POST \\
+      --url 'https://development.graphql.union.build/v1/graphql' \\
       --header 'Content-Type: application/json' \\
       --data '{ "query": "\\n
             ${graphqlQuery.replace(/"/g, '\\"')}"
@@ -38,7 +39,7 @@ let copyQueryIcon = $state(graphqlSvg)
 const promise = $state(fetchChannels())
 
 let search = $state("")
-const debounedSearch = new Debounced(() => search, 1_000)
+const debouncedSearch = new Debounced(() => search, 1_000)
 
 function filterRows(rows: Array<Array<string>>, inputSearch: string) {
   return rows.filter(row =>
@@ -120,8 +121,8 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
   {@const { headers, rowsChunks, total, allRows } = data.data}
   {@const [perPage, count] = [Number(rowsChunks.at(0)?.length), total]}
   {@const rows = (
-    debounedSearch.current
-      ? filterRows(allRows, debounedSearch.current)
+    debouncedSearch.current
+      ? filterRows(allRows, debouncedSearch.current)
       : rowsChunks.at(pageNumber - 1 < 0 ? 0 : pageNumber - 1)
   ) as Array<Array<string>>}
 
