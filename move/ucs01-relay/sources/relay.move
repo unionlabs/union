@@ -1,5 +1,6 @@
 module ibc::relay_app {
     use ibc::ibc;
+    use ibc::helpers;
     use ibc::packet::{Packet};
     use ibc::ibc_dispatch;
     use ibc::dispatcher;
@@ -868,114 +869,6 @@ module ibc::relay_app {
         token_address
     }
 
-    fun on_recv_packet_deconstruct(
-        recv_param: ibc_dispatch::RecvPacketParams
-    ): Packet {
-        let pack = ibc_dispatch::get_packet_from_recv_param(&recv_param);
-        *pack
-    }
-
-    fun on_recv_intent_packet_deconstruct(
-        recv_intent_param: ibc_dispatch::RecvIntentPacketParams
-    ): Packet {
-        let pack = ibc_dispatch::get_packet_from_recv_intent_param(&recv_intent_param);
-        *pack
-    }
-
-    fun on_acknowledge_packet_deconstruct(
-        ack_param: ibc_dispatch::AcknowledgePacketParams
-    ): (Packet, vector<u8>) {
-        let pack = ibc_dispatch::get_packet_from_ack_param(&ack_param);
-        let acknowledgement =
-            ibc_dispatch::get_acknowledgement_from_ack_param(&ack_param);
-        (*pack, *acknowledgement)
-    }
-
-    fun on_timeout_packet_deconstruct(
-        timeout_param: ibc_dispatch::TimeoutPacketParams
-    ): Packet {
-        let pack = ibc_dispatch::get_packet_from_timeout_param(&timeout_param);
-        *pack
-    }
-
-    fun on_channel_open_init_deconstruct(
-        init_param: ibc_dispatch::ChannelOpenInitParams
-    ): (u8, u32, u32, vector<u8>) {
-        let ordering =
-            ibc_dispatch::get_ordering_from_channel_open_init_param(&init_param);
-        let connection_id =
-            ibc_dispatch::get_connection_id_from_channel_open_init_param(&init_param);
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_open_init_param(&init_param);
-        let version = ibc_dispatch::get_version_from_channel_open_init_param(&init_param);
-        (ordering, connection_id, channel_id, *version)
-    }
-
-    fun on_channel_open_try_deconstruct(
-        try_param: ibc_dispatch::ChannelOpenTryParams
-    ): (u8, u32, u32, u32, vector<u8>, vector<u8>) {
-        let ordering = ibc_dispatch::get_ordering_from_channel_open_try_param(&try_param);
-        let connection_id =
-            ibc_dispatch::get_connection_id_from_channel_open_try_param(&try_param);
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_open_try_param(&try_param);
-        let counterparty_channel_id =
-            ibc_dispatch::get_counterparty_channel_id_from_channel_open_try_param(
-                &try_param
-            );
-        let version = ibc_dispatch::get_version_from_channel_open_try_param(&try_param);
-        let counterparty_version =
-            ibc_dispatch::get_counterparty_version_from_channel_open_try_param(&try_param);
-        (
-            ordering,
-            connection_id,
-            channel_id,
-            counterparty_channel_id,
-            *version,
-            *counterparty_version
-        )
-    }
-
-    fun on_channel_open_ack_deconstruct(
-        ack_param: ibc_dispatch::ChannelOpenAckParams
-    ): (u32, u32, vector<u8>) {
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_open_ack_param(&ack_param);
-        let counterparty_version =
-            ibc_dispatch::get_counterparty_version_from_channel_open_ack_param(&ack_param);
-        let counterparty_channel_id =
-            ibc_dispatch::get_counterparty_channel_id_from_channel_open_ack_param(
-                &ack_param
-            );
-        (channel_id, counterparty_channel_id, *counterparty_version)
-    }
-
-    fun on_channel_open_confirm_deconstruct(
-        confirm_param: ibc_dispatch::ChannelOpenConfirmParams
-    ): u32 {
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_open_confirm_param(&confirm_param);
-        channel_id
-    }
-
-    fun on_channel_close_init_deconstruct(
-        close_init_param: ibc_dispatch::ChannelCloseInitParams
-    ): u32 {
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_close_init_param(&close_init_param);
-        channel_id
-    }
-
-    fun on_channel_close_confirm_deconstruct(
-        close_confirm_param: ibc_dispatch::ChannelCloseConfirmParams
-    ): u32 {
-        let channel_id =
-            ibc_dispatch::get_channel_id_from_channel_close_confirm_param(
-                &close_confirm_param
-            );
-        channel_id
-    }
-
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
         let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
         let type_name_output = *copyable_any::type_name(&value);
@@ -983,35 +876,35 @@ module ibc::relay_app {
         if (type_name_output
             == std::type_info::type_name<ibc_dispatch::RecvPacketParams>()) {
             let (pack) =
-                on_recv_packet_deconstruct(
+                helpers::on_recv_packet_deconstruct(
                     copyable_any::unpack<ibc_dispatch::RecvPacketParams>(value)
                 );
             on_recv_packet(pack);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::RecvIntentPacketParams>()) {
             let (pack) =
-                on_recv_intent_packet_deconstruct(
+                helpers::on_recv_intent_packet_deconstruct(
                     copyable_any::unpack<ibc_dispatch::RecvIntentPacketParams>(value)
                 );
             on_recv_intent_packet(pack);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::AcknowledgePacketParams>()) {
             let (pack, acknowledgement) =
-                on_acknowledge_packet_deconstruct(
+                helpers::on_acknowledge_packet_deconstruct(
                     copyable_any::unpack<ibc_dispatch::AcknowledgePacketParams>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::TimeoutPacketParams>()) {
             let (pack) =
-                on_timeout_packet_deconstruct(
+                helpers::on_timeout_packet_deconstruct(
                     copyable_any::unpack<ibc_dispatch::TimeoutPacketParams>(value)
                 );
             on_timeout_packet(pack);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::ChannelOpenInitParams>()) {
             let (ordering, connection_id, channel_id, version) =
-                on_channel_open_init_deconstruct(
+                helpers::on_channel_open_init_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelOpenInitParams>(value)
                 );
             on_channel_open_init(ordering, connection_id, channel_id, version);
@@ -1025,7 +918,7 @@ module ibc::relay_app {
                 version,
                 counterparty_version
             ) =
-                on_channel_open_try_deconstruct(
+                helpers::on_channel_open_try_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
@@ -1039,7 +932,7 @@ module ibc::relay_app {
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::ChannelOpenAckParams>()) {
             let (channel_id, counterparty_channel_id, counterparty_version) =
-                on_channel_open_ack_deconstruct(
+                helpers::on_channel_open_ack_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelOpenAckParams>(value)
                 );
             on_channel_open_ack(
@@ -1048,21 +941,21 @@ module ibc::relay_app {
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::ChannelOpenConfirmParams>()) {
             let channel_id =
-                on_channel_open_confirm_deconstruct(
+                helpers::on_channel_open_confirm_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelOpenConfirmParams>(value)
                 );
             on_channel_open_confirm(channel_id);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::ChannelCloseInitParams>()) {
             let channel_id =
-                on_channel_close_init_deconstruct(
+                helpers::on_channel_close_init_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelCloseInitParams>(value)
                 );
             on_channel_close_init(channel_id);
         } else if (type_name_output
             == std::type_info::type_name<ibc_dispatch::ChannelCloseConfirmParams>()) {
             let channel_id =
-                on_channel_close_confirm_deconstruct(
+                helpers::on_channel_close_confirm_deconstruct(
                     copyable_any::unpack<ibc_dispatch::ChannelCloseConfirmParams>(value)
                 );
             on_channel_close_confirm(channel_id);

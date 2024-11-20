@@ -1916,8 +1916,8 @@ module ibc::ibc_dispatch {
             *type_name_output == std::type_info::type_name<ChannelOpenConfirmParams>(),
             0
         )
-
     }
+
     // #[test(ibc_signer = @ibc)]
     // fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
     //     init_module(ibc_signer);
