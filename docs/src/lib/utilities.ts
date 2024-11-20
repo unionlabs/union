@@ -1,3 +1,27 @@
+// split array into n parts
+export const splitArray = <T>({ array, n }: { array: Array<T>; n: number }): Array<Array<T>> =>
+  array.reduce(
+    (accumulator, current, index) => {
+      const chunkIndex = Math.floor(index / n)
+      if (!accumulator[chunkIndex]) accumulator[chunkIndex] = []
+      accumulator[chunkIndex].push(current)
+      return accumulator
+    },
+    [] as Array<Array<T>>
+  )
+
+// remove duplicates from an array of objects by a key
+export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T> =>
+  array.reduce(
+    (accumulator, current) => {
+      if (!accumulator.find(item => item[key] === current[key])) {
+        accumulator.push(current)
+      }
+      return accumulator
+    },
+    [] as Array<T>
+  )
+
 export function stringIsJSON(str: string) {
   try {
     let _json = JSON.parse(str)

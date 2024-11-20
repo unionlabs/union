@@ -6,8 +6,11 @@ import jsonSvg from "#/assets/icons/json.svg?raw"
 import { Button } from "#/components/svelte/ui/button"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
+import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 
 const promise = $state(fetchChannels())
+
+let toggleRowIcon = $state(jsonSvg)
 
 async function fetchChannels() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
@@ -52,26 +55,32 @@ async function fetchChannels() {
   }
 }
 
-function highlightJsonSnippet(jsonSnippet: string) {
-  jsonSnippet = typeof jsonSnippet === "string" ? jsonSnippet : JSON.stringify(jsonSnippet, null, 2)
-
-  return dedent(`\`\`\`json\n${jsonSnippet}\`\`\``)
-}
-
-async function attachContent(rowIndex: number, version: unknown) {
+async function attachContent(event: MouseEvent, rowIndex: number, version: unknown) {
+  const eventTarget = event.target as HTMLElement
+  if (!eventTarget.innerHTML) return
   const jsonSnippetElement = document.querySelector(`td[data-row-index="${rowIndex}"]`)
   if (!jsonSnippetElement) return
+  const previousUncleElement = jsonSnippetElement.parentElement
+    ?.previousElementSibling as HTMLTableRowElement
 
   const jsonSnippet = `\`\`\`json\n${JSON.stringify(version, undefined, 2)}`
   const highlightedCode = await highlightCode(dedent(jsonSnippet))
 
   jsonSnippetElement.innerHTML = highlightedCode
-  jsonSnippetElement.scrollIntoView({ behavior: "smooth" })
+  // jsonSnippetElement.scrollIntoView({ behavior: 'smooth' })
 
   const state = jsonSnippetElement.dataset?.state || "collapsed"
   if (state === "collapsed") {
+    previousUncleElement.style.setProperty(
+      "background-color",
+      "hsl(var(--muted) / 0.1)",
+      "important"
+    )
+    eventTarget.innerHTML = "▼"
     jsonSnippetElement.dataset.state = "expanded"
   } else {
+    previousUncleElement.style.removeProperty("background-color")
+    eventTarget.innerHTML = jsonSvg
     jsonSnippetElement.innerHTML = ""
     jsonSnippetElement.dataset.state = "collapsed"
   }
@@ -82,7 +91,32 @@ async function attachContent(rowIndex: number, version: unknown) {
   <div>Loading...</div>
 {:then data}
   {@const { headers, rows } = data.data}
-  <Table.Root class="w-full">
+  <Pagination.Root count={rows.length} perPage={16}>
+    {#snippet children({ pages, currentPage })}
+      <Pagination.Content>
+        <Pagination.Item>
+          <Pagination.PrevButton />
+        </Pagination.Item>
+        {#each pages as page (page.key)}
+          {#if page.type === 'ellipsis'}
+            <Pagination.Item>
+              <Pagination.Ellipsis />
+            </Pagination.Item>
+          {:else}
+            <Pagination.Item isVisible={currentPage === page.value}>
+              <Pagination.Link {page} isActive={currentPage === page.value}>
+                {page.value}
+              </Pagination.Link>
+            </Pagination.Item>
+          {/if}
+        {/each}
+        <Pagination.Item>
+          <Pagination.NextButton />
+        </Pagination.Item>
+      </Pagination.Content>
+    {/snippet}
+  </Pagination.Root>
+  <Table.Root class="w-full border rounded-sm">
     <Table.Header class="w-full">
       <Table.Row class="w-full">
         {#each headers as header, index}
@@ -96,40 +130,42 @@ async function attachContent(rowIndex: number, version: unknown) {
     </Table.Header>
     <Table.Body class="w-full">
       {#each rows as row, rowIndex}
-        <Table.Row class="w-full">
+        <Table.Row class={cn(['w-full'])}>
           {#each row as cell, cellIndex}
             {@const lastColumn = cellIndex === row.length - 1}
             {#if lastColumn}
-              <Table.Cell class={cn('text-right w-min')}>
+              <Table.Cell class={cn('text-right')}>
                 {@const isJSON = stringIsJSON(cell)}
                 {#if isJSON}
                   {@const version = JSON.parse(cell)}
                   <Button
                     size="icon"
                     variant="ghost"
-                    class="size-8 bg-transparent hover:bg-background/30 hover:cursor-pointer"
+                    class="bg-transparent hover:bg-background/30 hover:cursor-pointer"
                     onclick={async event => {
                       event.preventDefault()
-                      await attachContent(rowIndex, version)
+                      await attachContent(event, rowIndex, version)
                     }}
                   >
-                    {@html jsonSvg}
+                    {@html toggleRowIcon}
                   </Button>
                 {:else}
                   {cell}
                 {/if}
               </Table.Cell>
             {:else}
-              <Table.Cell class={cn(cellIndex === 0 && 'font-medium w-[130px]')}>
+              <Table.Cell class={cn(cellIndex === 0 && 'font-medium w-[135px]')}>
                 {cell}
               </Table.Cell>
             {/if}
           {/each}
         </Table.Row>
         <Table.Row>
-          <Table.Cell 
-          
-          colspan={5} class="p-0" data-json-snippet data-row-index={rowIndex}
+          <Table.Cell
+            colspan={5}
+            class="p-0 border-t-transparent"
+            data-json-snippet
+            data-row-index={rowIndex}
           ></Table.Cell>
         </Table.Row>
       {/each}
@@ -140,9 +176,22 @@ async function attachContent(rowIndex: number, version: unknown) {
 {/await}
 
 <style lang="postcss">
+  :global(.sl-markdown-content table:not(:where(.not-content *))) {
+    display: table;
+  }
+
+  :global(li::marker) {
+    color: transparent;
+  }
+
   :global(.rehype-pretty-copy) {
     background-color: transparent;
   }
+
+  :global(pre, figure) {
+    border-top: 0px solid transparent !important;
+  }
+
   :global(table) {
     width: 100%;
     min-width: 100%;

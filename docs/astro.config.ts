@@ -269,9 +269,15 @@ export default defineConfig({
       applyBaseStyles: false,
       configFile: "tailwind.config.ts"
     }),
-    svelte({
-      include: ["**/svelte/**"]
-    }),
+    svelte(
+      //   {
+      //   include: [
+      //     "**/svelte/**",
+      //     "./node_modules/bits-ui/dist/bits/**/*",
+      //     "./node_modules/lucide-svelte/dist/**/*"
+      //   ]
+      // }
+    ),
     react({
       include: ["**/react/**"],
       experimentalReactChildren: true

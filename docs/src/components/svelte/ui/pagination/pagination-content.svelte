@@ -8,9 +8,9 @@ let {
   class: className,
   children,
   ...restProps
-}: WithElementRef<HTMLAttributes<HTMLTableSectionElement>> = $props()
+}: WithElementRef<HTMLAttributes<HTMLUListElement>> = $props()
 </script>
 
-<thead bind:this={ref} class={cn('[&_tr]:border-b', className)} {...restProps}>
-  {@render children?.()}
-</thead>
+<ul bind:this={ref} class={cn("flex flex-row items-center gap-1", className)} {...restProps}>
+	{@render children?.()}
+</ul>
