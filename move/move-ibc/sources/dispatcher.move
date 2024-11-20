@@ -12,11 +12,6 @@ module ibc::dispatcher {
     use aptos_framework::object::{Self, ExtendRef, Object};
     use std::signer;
 
-    // friend ibc::engine;
-    // friend ibc::ping_pong_app;
-    // friend ucs01::relay_app;
-    // friend ibc::ibc_dispatch;
-
     const DISPATCHER_APP_SEED: vector<u8> = b"union-ibc-dispatcher-v1";
 
     struct Dispatcher has key {

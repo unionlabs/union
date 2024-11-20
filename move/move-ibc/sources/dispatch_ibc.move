@@ -277,7 +277,6 @@ module ibc::ibc_dispatch {
         channel_id: u32
     }
 
-
     // Getter for RecvPacketParams
     public fun get_packet_from_recv_param(param: &RecvPacketParams): &Packet {
         &param.packet
