@@ -58,11 +58,6 @@ func ServeCmd() *cobra.Command {
 			zerolog.SetGlobalLevel(zerolog.Level(logLevel))
 			log.Logger = log.With().Caller().Logger().Output(os.Stdout)
 			logger.Set(log.Logger)
-
-			server, err := provergrpc.NewProverServer(uint32(maxConn), r1csPath, pkPath, vkPath)
-			if err != nil {
-				return err
-			}
 			uri := args[0]
 			lis, err := net.Listen("tcp", uri)
 			if err != nil {
@@ -76,6 +71,10 @@ func ServeCmd() *cobra.Command {
 				Time:                  5 * time.Second,
 				Timeout:               20 * time.Second,
 			}))
+			server, err := provergrpc.NewProverServer(uint32(maxConn), r1csPath, pkPath, vkPath)
+			if err != nil {
+				return err
+			}
 			provergrpcapi.RegisterUnionProverAPIServer(grpcServer, server)
 			log.Info().Msg("Serving...")
 			return grpcServer.Serve(limitedLis)
