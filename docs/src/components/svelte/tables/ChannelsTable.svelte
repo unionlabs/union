@@ -3,13 +3,38 @@ import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
 import jsonSvg from "#/assets/icons/json.svg?raw"
+import curlSvg from "#/assets/icons/curl.svg?raw"
+import checkSvg from "#/assets/icons/check.svg?raw"
+import graphqlSvg from "#/assets/icons/graphql.svg?raw"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import { splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 
+const graphqlQuery = dedent /* GraphQL */`
+    query ChannelsForDocs {
+      data: v1_channels {
+        source_chain { display_name chain_id }
+        source_channel_id
+        source_connection_id
+        source_port_id
+        status
+        version
+      }
+    }
+  `
+
+const curlCommand = dedent /* bash */`
+    curl --url 'https://development.graphql.union.build/v1/graphql' \\
+      --header 'Content-Type: application/json' \\
+      --data '{ "query": "\\n
+            ${graphqlQuery.replace(/"/g, '\\"')}"
+      }'
+  `
+
 let pageNumber = $state(0)
 let toggleRowIcon = $state(jsonSvg)
+let copyQueryIcon = $state(graphqlSvg)
 const promise = $state(fetchChannels())
 
 let search = $state("")
@@ -31,21 +56,7 @@ async function fetchChannels() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: /* GraphQL */ `
-          query ChannelsForDocs {
-            data: v1_channels {
-              source_chain {
-                display_name
-                chain_id
-              }
-              source_channel_id
-              source_connection_id
-              source_port_id
-              status
-              version
-            }
-          }
-        `
+      query: graphqlQuery
     })
   })
   const json = await response.json()
@@ -114,20 +125,47 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
       : rowsChunks.at(pageNumber - 1 < 0 ? 0 : pageNumber - 1)
   ) as Array<Array<string>>}
 
-  <div class={cn('mt-4 outline outline-accent-200/50 rounded-sm outline-[0.75px] w-1/2 ml-auto')}>
-    <input
-      type="search"
-      autocorrect="off"
-      spellcheck="false"
-      autocomplete="off"
-      autocapitalize="off"
-      placeholder="Search"
-      bind:value={search}
-      class={cn(
-        'py-1 px-2 border border-neutral-500 rounded-sm focus:outline-none focus-visible:ring-0 w-full',
-      )}
-    />
-  </div>
+  <section class="w-full flex h-min mt-4 justify-between align-middle gap-x-3">
+    <a
+      class={cn('size-12 my-auto hover:bg-muted/10 rounded-sm p-1')}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Open in GraphQL playground"
+      href={`/reference/graphql?query=${encodeURIComponent(graphqlQuery)}`}
+    >
+      {@html graphqlSvg}
+    </a>
+    <button
+      type="button"
+      title="Copy curl command"
+      onclick={event => {
+        navigator.clipboard.writeText(curlCommand)
+        const element = event.currentTarget
+        element.innerHTML = checkSvg
+        setTimeout(() => {
+          element.innerHTML = curlSvg
+        }, 1_000)
+      }}
+      class="bg-transparent hover:bg-background/10 hover:cursor-pointer size-16 rounded-sm mr-auto"
+    >
+      {@html curlSvg}
+    </button>
+
+    <div class={cn('rounded-sm outline-[0.75px] w-1/2 my-auto')}>
+      <input
+        type="search"
+        autocorrect="off"
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        placeholder="Search"
+        bind:value={search}
+        class={cn(
+          'py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-accent-200/50',
+        )}
+      />
+    </div>
+  </section>
 
   <Table.Root class="w-full border border-neutral-500 rounded-sm">
     <Table.Header class="w-full">
