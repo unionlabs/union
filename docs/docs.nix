@@ -19,7 +19,7 @@ _: {
       packages = {
         docs = mkCi false (
           jsPkgs.buildNpmPackage {
-            npmDepsHash = "sha256-Uwfoeykk6aSK+CTJwMNBT5nZJNPScnxLlyy/mQD1q3s=";
+            npmDepsHash = "sha256-tBFR+BGxNEKt3fef5pTXkCY5hGtX0f8Ntaz+hE49Dq0=";
             src = ./.;
             srcs = [
               ./.
