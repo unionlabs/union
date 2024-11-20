@@ -1,13 +1,13 @@
 <script lang="ts">
-import { cn } from "#/lib/shadcn"
 import { dedent } from "ts-dedent"
+import { cn } from "#/lib/shadcn.ts"
 import { stringIsJSON } from "#/lib/utilities.ts"
 import jsonSvg from "#/assets/icons/json.svg?raw"
 import { Button } from "#/components/svelte/ui/button"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 
-let promise = $state(fetchChannels())
+const promise = $state(fetchChannels())
 
 async function fetchChannels() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
@@ -34,13 +34,6 @@ async function fetchChannels() {
   const json = await response.json()
   // @ts-expect-error
   const dataArray = json.data.v1_channels
-
-  let trim = (item: string | null, length: number) => {
-    if (item != null) {
-      return `${item.substring(0, length)}...`
-    }
-    item
-  }
 
   return {
     data: {
