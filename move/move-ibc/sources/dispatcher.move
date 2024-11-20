@@ -76,6 +76,10 @@ module ibc::dispatcher {
         type_info
     }
 
+    public fun delete_storage<P: store>() acquires Dispatcher, Storage {
+        move_from<Storage<P>>(storage_address());
+    }
+
     public fun retrieve<P: drop>(
         _proof: P
     ): (copyable_any::Any, vector<u8>) acquires Dispatcher, Storage {

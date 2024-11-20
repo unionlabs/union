@@ -863,6 +863,8 @@ module ibc::ibc_dispatch {
             );
         engine::dispatch<T>(param);
 
+        dispatcher::delete_storage<T>();
+
         event::emit(
             ChannelOpenInit {
                 port_id: port_id,
@@ -968,6 +970,8 @@ module ibc::ibc_dispatch {
             );
         engine::dispatch<T>(param);
 
+        dispatcher::delete_storage<T>();
+
     }
 
     public entry fun channel_open_ack<T: key + store + drop>(
@@ -1044,6 +1048,8 @@ module ibc::ibc_dispatch {
                 }
             );
         engine::dispatch<T>(param);
+
+        dispatcher::delete_storage<T>();
     }
 
     public entry fun channel_open_confirm<T: key + store + drop>(
@@ -1111,6 +1117,8 @@ module ibc::ibc_dispatch {
                 ChannelOpenConfirmParams { channel_id: channel_id }
             );
         engine::dispatch<T>(param);
+
+        dispatcher::delete_storage<T>();
     }
 
     // Sends a packet
@@ -1258,6 +1266,8 @@ module ibc::ibc_dispatch {
                     engine::dispatch<T>(param);
 
                     acknowledgement = dispatcher::get_return_value<T>();
+
+                    dispatcher::delete_storage<T>();
                     event::emit(RecvIntentPacket { packet: packet });
                 } else {
                     let param =
@@ -1267,6 +1277,8 @@ module ibc::ibc_dispatch {
                     engine::dispatch<T>(param);
 
                     acknowledgement = dispatcher::get_return_value<T>();
+
+                    dispatcher::delete_storage<T>();
                     event::emit(RecvPacket { packet: packet });
                 };
                 if (vector::length(&acknowledgement) > 0) {
@@ -1447,6 +1459,8 @@ module ibc::ibc_dispatch {
                 );
             engine::dispatch<T>(param);
 
+            dispatcher::delete_storage<T>();
+
             event::emit(AcknowledgePacket { packet, acknowledgement });
 
             i = i + 1;
@@ -1545,6 +1559,7 @@ module ibc::ibc_dispatch {
             copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet: packet });
         engine::dispatch<T>(param);
 
+        dispatcher::delete_storage<T>();
         event::emit(TimeoutPacket { packet });
     }
 
