@@ -56,6 +56,7 @@
     "remark-smartypants": "^3.0.2",
     "remark-toc": "^9.0.0",
     "rollup-plugin-node-polyfills": "^0.2.1",
+    "runed": "^0.15.3",
     "sharp": "^0.33.5",
     "shiki": "^1.23.1",
     "slugify": "^1.6.6",

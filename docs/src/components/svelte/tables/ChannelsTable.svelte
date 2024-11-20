@@ -1,4 +1,5 @@
 <script lang="ts">
+import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
 import jsonSvg from "#/assets/icons/json.svg?raw"
@@ -11,10 +12,19 @@ let pageNumber = $state(0)
 let toggleRowIcon = $state(jsonSvg)
 const promise = $state(fetchChannels())
 
+let search = $state("")
+const debounedSearch = new Debounced(() => search, 1_000)
+
+function filterRows(rows: Array<Array<string>>, inputSearch: string) {
+  return rows.filter(row =>
+    row.some(cell => cell?.toLowerCase()?.includes(inputSearch.toLowerCase()))
+  )
+}
+
 /**
  * set this as desired
  */
-const rowsPerPage = 5
+const rowsPerPage = 10
 
 async function fetchChannels() {
   const response = await fetch("https://development.graphql.union.build/v1/graphql", {
@@ -48,13 +58,14 @@ async function fetchChannels() {
     item.source_channel_id?.split("-")?.at(-1),
     item.status,
     item.version
-  ])
+  ]) as Array<Array<string>>
 
   return {
     data: {
-      headers: ["chain", "conn. #", "channel #", "status", "version"],
-      rows: splitArray({ array: rows, n: rowsPerPage }),
-      total: rows.length
+      allRows: rows as Array<Array<string>>,
+      total: rows.length,
+      rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
+      headers: ["chain", "conn. #", "channel #", "status", "version"]
     }
   }
 }
@@ -95,39 +106,29 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
 {#await promise}
   <div>Loading...</div>
 {:then data}
-  {@const { headers, rows: rowsChunks, total } = data.data}
+  {@const { headers, rowsChunks, total, allRows } = data.data}
   {@const [perPage, count] = [Number(rowsChunks.at(0)?.length), total]}
-  {@const rows = rowsChunks.at(pageNumber - 1 < 0 ? 0 : pageNumber - 1) as Array<string>}
+  {@const rows = (
+    debounedSearch.current
+      ? filterRows(allRows, debounedSearch.current)
+      : rowsChunks.at(pageNumber - 1 < 0 ? 0 : pageNumber - 1)
+  ) as Array<Array<string>>}
 
-  <Pagination.Root {count} {perPage}>
-    {#snippet children({ pages, currentPage })}
-      <Pagination.Content>
-        <Pagination.Item>
-          <Pagination.PrevButton onclick={_ => (pageNumber = currentPage)} />
-        </Pagination.Item>
-        {#each pages as page (page.key)}
-          {#if page.type === 'ellipsis'}
-            <Pagination.Item>
-              <Pagination.Ellipsis />
-            </Pagination.Item>
-          {:else}
-            <Pagination.Item isVisible={currentPage === page.value}>
-              <Pagination.Link
-                {page}
-                isActive={currentPage === page.value}
-                onclick={_ => (pageNumber = page.value)}
-              >
-                {page.value}
-              </Pagination.Link>
-            </Pagination.Item>
-          {/if}
-        {/each}
-        <Pagination.Item>
-          <Pagination.NextButton onclick={_ => (pageNumber = currentPage)} />
-        </Pagination.Item>
-      </Pagination.Content>
-    {/snippet}
-  </Pagination.Root>
+  <div class={cn('mt-4 outline outline-accent-200/50 rounded-sm outline-[0.75px] w-1/2 ml-auto')}>
+    <input
+      type="search"
+      autocorrect="off"
+      spellcheck="false"
+      autocomplete="off"
+      autocapitalize="off"
+      placeholder="Search"
+      bind:value={search}
+      class={cn(
+        'py-1 px-2 border border-neutral-500 rounded-sm focus:outline-none focus-visible:ring-0 w-full',
+      )}
+    />
+  </div>
+
   <Table.Root class="w-full border border-neutral-500 rounded-sm">
     <Table.Header class="w-full">
       <Table.Row class="w-full">
@@ -187,6 +188,36 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
       {/each}
     </Table.Body>
   </Table.Root>
+
+  <Pagination.Root {count} {perPage}>
+    {#snippet children({ pages, currentPage })}
+      <Pagination.Content>
+        <Pagination.Item>
+          <Pagination.PrevButton class="mr-2 -mb-1" onclick={_ => (pageNumber = currentPage)} />
+        </Pagination.Item>
+        {#each pages as page (page.key)}
+          {#if page.type === 'ellipsis'}
+            <Pagination.Item>
+              <Pagination.Ellipsis />
+            </Pagination.Item>
+          {:else}
+            <Pagination.Item isVisible={currentPage === page.value}>
+              <Pagination.Link
+                {page}
+                isActive={currentPage === page.value}
+                onclick={_ => (pageNumber = page.value)}
+              >
+                {page.value}
+              </Pagination.Link>
+            </Pagination.Item>
+          {/if}
+        {/each}
+        <Pagination.Item>
+          <Pagination.NextButton class="ml-2" onclick={_ => (pageNumber = currentPage)} />
+        </Pagination.Item>
+      </Pagination.Content>
+    {/snippet}
+  </Pagination.Root>
 {:catch error}
   <div>Error: {error.message}</div>
 {/await}
