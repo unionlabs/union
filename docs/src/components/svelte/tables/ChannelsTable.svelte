@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { dedent } from 'ts-dedent'
-  import { cn } from '#/lib/shadcn.ts'
-  import { stringIsJSON } from '#/lib/utilities.ts'
-  import jsonSvg from '#/assets/icons/json.svg?raw'
-  import { Button } from '#/components/svelte/ui/button'
-  import { highlightCode } from '#/lib/highlight-code.ts'
-  import * as Table from '#/components/svelte/ui/table/index.ts'
+import { dedent } from "ts-dedent"
+import { cn } from "#/lib/shadcn.ts"
+import { stringIsJSON } from "#/lib/utilities.ts"
+import jsonSvg from "#/assets/icons/json.svg?raw"
+import { Button } from "#/components/svelte/ui/button"
+import { highlightCode } from "#/lib/highlight-code.ts"
+import * as Table from "#/components/svelte/ui/table/index.ts"
 
-  const promise = $state(fetchChannels())
+const promise = $state(fetchChannels())
 
-  async function fetchChannels() {
-    const response = await fetch('https://development.graphql.union.build/v1/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: /* GraphQL */ `
+async function fetchChannels() {
+  const response = await fetch("https://development.graphql.union.build/v1/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: /* GraphQL */ `
           query ChannelsForDocs {
             v1_channels {
               source_chain {
@@ -28,55 +28,54 @@
               version
             }
           }
-        `,
-      }),
+        `
     })
-    const json = await response.json()
-    // @ts-expect-error
-    const dataArray = json.data.v1_channels
+  })
+  const json = await response.json()
+  // @ts-expect-error
+  const dataArray = json.data.v1_channels
 
-    return {
-      data: {
-        headers: ['chain', 'connection', 'channel', 'status', 'version'],
-        // @ts-expect-error
-        rows: dataArray.map(item => {
-          return [
-            item.source_chain.display_name,
-            item.source_connection_id,
-            item.source_channel_id,
-            item.status,
-            item.version,
-          ]
-        }),
-      },
+  return {
+    data: {
+      headers: ["chain", "connection", "channel", "status", "version"],
+      // @ts-expect-error
+      rows: dataArray.map(item => {
+        return [
+          item.source_chain.display_name,
+          item.source_connection_id,
+          item.source_channel_id,
+          item.status,
+          item.version
+        ]
+      })
     }
   }
+}
 
-  function highlightJsonSnippet(jsonSnippet: string) {
-    jsonSnippet =
-      typeof jsonSnippet === 'string' ? jsonSnippet : JSON.stringify(jsonSnippet, null, 2)
+function highlightJsonSnippet(jsonSnippet: string) {
+  jsonSnippet = typeof jsonSnippet === "string" ? jsonSnippet : JSON.stringify(jsonSnippet, null, 2)
 
-    return dedent(`\`\`\`json\n${jsonSnippet}\`\`\``)
+  return dedent(`\`\`\`json\n${jsonSnippet}\`\`\``)
+}
+
+async function attachContent(rowIndex: number, version: unknown) {
+  const jsonSnippetElement = document.querySelector(`td[data-row-index="${rowIndex}"]`)
+  if (!jsonSnippetElement) return
+
+  const jsonSnippet = `\`\`\`json\n${JSON.stringify(version, undefined, 2)}`
+  const highlightedCode = await highlightCode(dedent(jsonSnippet))
+
+  jsonSnippetElement.innerHTML = highlightedCode
+  jsonSnippetElement.scrollIntoView({ behavior: "smooth" })
+
+  const state = jsonSnippetElement.dataset?.state || "collapsed"
+  if (state === "collapsed") {
+    jsonSnippetElement.dataset.state = "expanded"
+  } else {
+    jsonSnippetElement.innerHTML = ""
+    jsonSnippetElement.dataset.state = "collapsed"
   }
-
-  async function attachContent(rowIndex: number, version: unknown) {
-    const jsonSnippetElement = document.querySelector(`td[data-row-index="${rowIndex}"]`)
-    if (!jsonSnippetElement) return
-
-    const jsonSnippet = `\`\`\`json\n${JSON.stringify(version, undefined, 2)}`
-    const highlightedCode = await highlightCode(dedent(jsonSnippet))
-
-    jsonSnippetElement.innerHTML = highlightedCode
-    jsonSnippetElement.scrollIntoView({ behavior: 'smooth' })
-
-    const state = jsonSnippetElement.dataset?.state || 'collapsed'
-    if (state === 'collapsed') {
-      jsonSnippetElement.dataset.state = 'expanded'
-    } else {
-      jsonSnippetElement.innerHTML = ''
-      jsonSnippetElement.dataset.state = 'collapsed'
-    }
-  }
+}
 </script>
 
 {#await promise}
