@@ -8,9 +8,10 @@ import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
 export default (<Config>{
-  darkMode: ["class"],
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
+  darkMode: "class",
   important: true,
+  future: { hoverOnlyWhenSupported: true },
   safelist: ["dark"],
   theme: {
     container: {

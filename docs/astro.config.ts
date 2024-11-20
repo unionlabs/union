@@ -10,6 +10,9 @@ import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
+import ecTwoSlash from "expressive-code-twoslash"
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 
 const SITE_URL = "https://docs.union.build"
 const SITE_DESCRIPTION =
@@ -64,24 +67,10 @@ export default defineConfig({
     starlight({
       title: "Union",
       lastUpdated: true,
+      defaultLocale: "root",
       favicon: "/favicon.svg",
       description: SITE_DESCRIPTION,
       tagline: "Connecting blockchains trustlessly",
-      defaultLocale: "root",
-      expressiveCode: {
-        frames: {
-          showCopyToClipboardButton: true,
-          removeCommentsWhenCopyingTerminalFrames: true
-        },
-        defaultProps: {
-          // @ts-expect-error
-          showLineNumbers: false
-        },
-
-        themes: ["min-light", "houston"],
-        useStarlightDarkModeSwitch: true
-        // plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
-      },
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
@@ -147,10 +136,6 @@ export default defineConfig({
             {
               label: "Introduction",
               link: "/"
-            },
-            {
-              label: "Channels",
-              link: "/channels"
             },
             {
               label: "Protocol",
