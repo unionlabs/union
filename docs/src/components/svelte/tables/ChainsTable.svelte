@@ -7,7 +7,7 @@ import { highlightCode } from "#/lib/highlight-code.ts"
 import { splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 import { Button } from "#/components/svelte/ui/button/index.ts"
-import externalLinkSvg from "#/assets/icons/externl-link.svg?raw"
+import externalLinkSvg from "#/assets/icons/external-link.svg?raw"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
