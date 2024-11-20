@@ -734,7 +734,7 @@ module ucs01::ibc {
                 primary_fungible_store::transfer(
                     &get_signer(),
                     token,
-                    @zero_account,
+                    user_to_refund,
                     token_from_vec.amount
                 );
             };
