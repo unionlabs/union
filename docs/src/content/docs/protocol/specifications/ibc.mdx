@@ -1,0 +1,324 @@
+---
+title: "Union IBC"
+sidebar:
+  badge:
+    text: live
+    variant: note
+---
+
+import Mermaid from "#/components/Mermaid.astro";
+
+# Overview
+
+[`IBC`](https://ibcprotocol.org) is a blockchain interoperability protocol for secure general message passing between blockchains. At Union, we use a specialized in-house version (more EVM friendly) that slightly deviates from the _canonical_ [ibc-go](https://github.com/cosmos/ibc-go) and [ibc](https://github.com/cosmos/ibc). This document is an attempt at specifying the implementation.
+
+The semantic of the core protocol can be found in the [ibc](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core) repository. Our implementation is deviating from the semantic in few places that we will describe. Most of the changes are specializations/optimizations targeting the EVM.
+
+The protocol assumes the execution happens within a smart contract engine (contract addresses **MUST** be unique).
+
+# Protocol
+
+## ICS-002 Client
+
+:::note
+
+[Read more on the canonical specification](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-002-client-semantics)
+
+:::
+
+- [`verifyMembership`](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-002-client-semantics#state-verification) no longer takes a `delayPeriodTime` and `delayPeriodBlocks`, the specific light clients SHOULD implement such verification if necessary.
+- [`verifyNonMembership`](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-002-client-semantics#state-verification)
+  - `delayPeriodTime` has been removed.
+  - `delayPeriodBlocks` has been removed.
+- [`clientId`](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-002-client-semantics#identifier-validation) is a unique `uint32`. The client type **MUST** be stored and indexable with the `clientId`.
+
+### Additions
+
+- `registerClient` **MUST** be implemented and called before being able to call `createClient` on a light client. Only one client type **MUST** exist for a given light client:
+```haskell
+registerClient ∷ Implementations → ClientType → Address → Implementations
+registerClient impls clientType lightClient = do
+  assert (getImplementation impls clientType ≡ null)
+  setImplementation impls clientType lightClient
+```
+
+## ICS-003 Connection
+
+:::note
+
+[Read more on the canonical specification](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-003-connection-semantics/README.md).
+
+:::
+
+:::caution
+
+The protocol version is considered hardcoded. We support the `Ordered` and `Unordered` features for channels only.
+
+:::
+
+- [`connectionId`](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-003-connection-semantics#identifier-validation) is no longer a string but a unique `uint32`.
+- [`ConnectionEnd`](https://github.com/cosmos/ibc/tree/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-003-connection-semantics#data-structures)
+  - `counterpartyPrefix` has been removed.
+  - `version` has been removed.
+  - `delayPeriodTime` has been removed.
+  - `delayPeriodBlocks` has been removed.
+```haskell
+type ClientId = Uint32
+type ConnectionId = Uint32
+
+class ConnectionEnd where
+  state ∷ ConnectionState
+  counterpartyConnectionId ∷ ConnectionId
+  clientId ∷ ClientId
+  counterpartyClientId ∷ ClientId
+```
+
+
+## ICS-004 Channel and Packet
+
+:::note
+
+[Read more on the canonical specification](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-004-channel-and-packet-semantics/README.md)
+
+:::
+
+### Channel
+
+:::caution
+
+We do not support the [Channel Upgrade](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-004-channel-and-packet-semantics/UPGRADES.md) feature.
+We only support `Ordered` and `Unordered` channels.
+
+:::
+
+- [`channelId`](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-004-channel-and-packet-semantics/README.md#identifier-validation) is no longer a string but a unique `uint32`.
+- [`ChannelEnd`](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-004-channel-and-packet-semantics/README.md#definitions):
+  - `connectionHops` has been renamed to `connectionId` and it's type changed from `[connectionIdentifer]` to `connectionId`.
+  - `upgradeSequence` has been removed.
+```haskell
+type ChannelId = Uint32
+data ChannelOrder = Ordered | Unordered
+data ChannelState = Init | TryOpen | Open | Closed
+
+
+class ChannelEnd where
+    state ∷ ChannelState
+    ordering ∷ ChannelOrder
+    connectionId ∷ ConnectionId
+    counterpartyChannelId ∷ ChannelId
+    counterpartyPortId ∷ String
+    version ∷ String
+```
+
+### Packet
+
+:::caution
+
+The [ICS-05 port allocation](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-005-port-allocation/README.md) module has been removed, channel identifiers uniquely identify protocols and the implementor **MUST** ensure there is an existing indirection from `channelId -> protocolAddress`.
+
+:::
+
+- [`Packet`](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-004-channel-and-packet-semantics/README.md#definitions)
+  - `sourcePort` has been removed.
+  - `destinationPort` has been removed.
+  - `timeoutHeight` type has been changed from `(uint64, uint64)` to `uint64`.
+```haskell
+class Packet where
+    sequence ∷ Uint64
+    sourceChannel ∷ ChannelId
+    destinationChannel ∷ ChannelId
+    payload ∷ Bytes
+    timeoutHeight ∷ Uint64
+    timeoutTimestamp ∷ Uint64
+```
+
+## ICS-024 Host
+
+:::note
+
+[Read more on the canonical specification](https://github.com/cosmos/ibc/blob/41a8caa54d8691b7fa98795d31f401e1df31e18c/spec/core/ics-024-host-requirements/README.md#synopsis)
+
+:::
+
+### Path-space
+
+Union approach to the path-space is deviating from the canonical implementation. Since we no longer use string for client/connection/channel identifiers, the commitment paths are binary.
+
+```haskell
+type Prefix = Uint256
+
+clientStatePrefix ∷ Prefix
+clientStatePrefix = 0x00
+
+consensusStatePrefix ∷ Prefix
+consensusStatePrefix = 0x01
+
+connectionsPrefix ∷ Prefix
+connectionsPrefix = 0x02
+
+channelsPrefix ∷ Prefix
+channelsPrefix = 0x03
+
+packetsPrefix ∷ Prefix
+packetsPrefix = 0x04
+
+packetAcksPrefix ∷ Prefix
+packetAcksPrefix = 0x05
+
+nextSeqSendPrefix ∷ Prefix
+nextSeqSendPrefix = 0x06
+
+nextSeqRecvPrefix ∷ Prefix
+nextSeqRecvPrefix = 0x07
+
+nextSeqAckPrefix ∷ Prefix
+nextSeqAckPrefix = 0x08
+
+commit ∷ AbiEncode a ⇒ a → Bytes32
+commit x = keccak256 (abiEncode x)
+
+clientStateKey ∷ ClientId → Bytes32
+clientStateKey clientId = commit (clientStatePrefix, clientId)
+
+consensusStateKey ∷ ClientId → Uint64 → Bytes32
+consensusStateKey clientId height = commit (consensusStatePrefix, clientId, height)
+
+connectionKey ∷ ConnectionId → Bytes32
+connectionKey connectionId = commit (connectionsPrefix, connectionId)
+
+channelKey ∷ ChannelId → Bytes32
+channelKey channelId = commit (channelsPrefix, channelId)
+
+packetKey ∷ ChannelId → Bytes32 → Bytes32
+packetKey channelId packetHash = commit (packetsPrefix, channelId, packetHash)
+
+packetReceiptKey ∷ ChannelId → Bytes32 → Bytes32
+packetReceiptKey channelId packetHash = commit (packetAcksPrefix, channelId, packetHash)
+
+nextSequenceSendKey ∷ ChannelId → Bytes32
+nextSequenceSendKey channelId = commit (nextSeqSendPrefix, channelId)
+
+nextSequenceRecvKey ∷ ChannelId → Bytes32
+nextSequenceRecvKey channelId = commit (nextSeqRecvPrefix, channelId)
+
+nextSequenceAckKey ∷ ChannelId → Bytes32
+nextSequenceAckKey channelId = commit (nextSeqAckPrefix, channelId)
+```
+
+### Commitments
+
+After all preconditions are met, the protocol commits a succinct digest of the structures we need to prove on the counterparty. This commitments are encoded differently than in the canonical implementation, instead of protobuf, we use the [solidity contract ABI encoding](https://docs.soliditylang.org/en/develop/abi-spec.html#formal-specification-of-the-encoding) encoding.
+
+Let's define the `setCommitment` and it's associated `commit` functions to update a store.
+
+```haskell
+setCommitment ∷ Store → Bytes32 → Bytes32 → Store
+
+commit ∷ AbiEncode a ⇒ a → Bytes32
+commit x = keccak256 (abiEncode x)
+```
+
+#### Client
+
+```haskell
+commitClientState ∷ Store → ClientId → ClientState → Store
+commitClientState store clientId clientState =
+  setCommitment (clientStateKey clientId) (commit clientState)
+
+commitConsensusState ∷ Store → ClientId → ConsensusState → Store
+commitConsensusState store clientId consensusState =
+  setCommitment (clientConsensusKey clientId) (commit consensusState)
+```
+
+#### Connection
+```haskell
+commitConnection ∷ Store → ConnectionId → ConnectionEnd → Store
+commitConnection store connectionId connection =
+  setCommitment (connectionKey connectionId) (commit connection)
+```
+
+#### Channel
+```haskell
+commitChannel ∷ Store → ChannelId → ChannelEnd → Store
+commitChannel store channelId channel =
+  setCommitment (channelKey channelId) (commit channel)
+```
+
+#### Packet
+:::tip
+
+The `commitmentMagic` value and `mergeAck` functions are present for the receipt and the acknowledgement hash to share the same commitment slot. This drastically lower the gas cost on EVM.
+
+To avoid replay attacks, a receipt (`commitmentMagic` here) is written when a packet is received. Acknowledgements are asynchronous and written when the execution of a received packet completes, possibly in a future transaction.
+
+:::
+
+```haskell
+commitmentMagic ∷ Bytes32
+commitmentMagic = 0x0100000000000000000000000000000000000000000000000000000000000000
+
+commitPacket ∷ Store → ChannelId → Packet → Store
+commitPacket store channelId packet =
+  setCommitment (packetKey channelId (commit packet)) commitmentMagic
+
+mergeAck ∷ Bytes32 → Bytes32
+mergeAck ack =
+  commitmentMagic |
+    (ack & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+
+commitReceipt ∷ Store → ChannelId → Packet → Store
+commitReceipt store channelId packet =
+  setCommitment (packetReceiptKey channelId (commit packet)) commitmentMagic
+
+type Acknowledgement = Bytes
+
+commitAck ∷ Store → ChannelId → Packet → Acknowledgement → Store
+commitAck store channelId packet ack =
+  setCommitment (packetReceiptKey channelId (commit packet)) (mergeAck (keccak256 ack))
+```
+
+## Extensions
+
+### ICS-004 Packet
+
+The `packetKey` and `packetReceiptKey` are special commitments that no longer takes a `sequence` but the whole packet hash. This allows us to extend the protocol with batching for sent packets and written acknowledgements.
+
+```haskell
+commitmentMagic ∷ Bytes32
+commitmentMagic = 0x0100000000000000000000000000000000000000000000000000000000000000
+
+setCommitment ∷ Store → Bytes32 → Bytes32 → Store
+getCommitment ∷ Store → Bytes32 → Bytes32
+
+mergeAck ∷ Bytes32 → Bytes32
+mergeAck ack =
+  commitmentMagic |
+    (ack & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+
+commitmentExist ∷ Store → Bytes32 → Packet → Bool
+commitmentExist store expectedCommitment packet =
+  getCommitment store (commit packet) ≡ exceptedCommitment
+
+batchSend ∷ Store → [Packet] → Store
+batchSend store packets = do
+  assert (all (commitmentExist store commitmentMagic) packets)
+  setCommitment store (packetKey channelId (commit packets)) commitmentMagic
+
+batchAcks ∷ Store → [Packet] → [Acknowledgement] → Store
+batchAcks store packets acks = do
+  assert (
+    all
+      (\(ack, packet) -> commitmentExist store (mergeAck (keccak256 ack)) packet)
+      (zip acks packet)
+  )
+  setCommitment
+    store
+    (packetReceiptKey channelId (commit packets))
+    (mergeAck (commit acks))
+```
+
+`batchSend` is used to commit a batch of previously sent packets. It allows the relayer to provide a single membership proof for the whole batch at destination (recv).
+
+`batchAcks` is used to commit a batch of previously written acknowledgements. It allows the relayer to provide a single membership proof for the whole batch at destination (ack).
+
+This functions can be used to trade execution gas on the source chain for the destination and vice versa. Committing a batch of sent packets will require an extra transaction on the source but will lower the execution gas on destination (single proof). Similarly, the batching of acknowledgements trade execution gas on the destination for the source. This further allow relayers and market makers to efficiently handle asset transfers based on gas price.
