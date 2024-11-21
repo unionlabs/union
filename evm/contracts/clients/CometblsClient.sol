@@ -531,7 +531,7 @@ contract CometblsClient is
         // Drop the most significant byte to fit in F_r
         bytes32 inputsHash = sha256(
             abi.encodePacked(
-                bytes32(chainId),
+                bytes32(uint256(uint248(chainId))),
                 bytes32(uint256(header.height)),
                 bytes32(uint256(header.secs)),
                 bytes32(uint256(header.nanos)),
