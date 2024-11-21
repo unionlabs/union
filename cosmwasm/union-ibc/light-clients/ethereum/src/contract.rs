@@ -4,13 +4,12 @@ use union_ibc_light_client::{
     msg::{InstantiateMsg, QueryMsg},
     IbcClientError,
 };
-use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
 
 use crate::client::EthereumLightClient;
 
 #[entry_point]
 pub fn instantiate(
-    deps: DepsMut<UnionCustomQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
@@ -19,7 +18,7 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn query(deps: Deps<UnionCustomQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     union_ibc_light_client::query::<EthereumLightClient>(deps, env, msg).map_err(Into::into)
 }
 

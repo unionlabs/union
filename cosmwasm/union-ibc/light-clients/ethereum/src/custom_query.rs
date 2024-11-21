@@ -1,13 +1,11 @@
-use cosmwasm_std::{Binary, Deps};
-use ethereum_sync_protocol::{error::InvalidSignature, BlsVerify};
-use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
-    cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
-    ensure,
-};
+use cosmwasm_std::{Binary, Deps, Empty, HashFunction, BLS12_381_G1_GENERATOR};
+use ethereum_sync_protocol::BlsVerify;
+use unionlabs::bls::{BlsPublicKey, BlsSignature};
+
+pub const DST_POP_G2: &[u8] = b"BLS_POP_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 pub struct VerificationContext<'a> {
-    pub deps: Deps<'a, UnionCustomQuery>,
+    pub deps: Deps<'a, Empty>,
 }
 
 impl BlsVerify for VerificationContext<'_> {
@@ -17,27 +15,35 @@ impl BlsVerify for VerificationContext<'_> {
         msg: Vec<u8>,
         signature: BlsSignature,
     ) -> Result<(), ethereum_sync_protocol::error::Error> {
-        let public_keys: Vec<_> = public_keys.into_iter().cloned().collect();
+        let pubkey = self
+            .deps
+            .api
+            .bls12_381_aggregate_g1(
+                public_keys
+                    .into_iter()
+                    .map(|x| x.0)
+                    .flatten()
+                    .collect::<Vec<u8>>()
+                    .as_slice(),
+            )
+            .unwrap();
 
-        let is_valid = query_fast_aggregate_verify(
-            self.deps,
-            public_keys
-                .clone()
-                .into_iter()
-                .map(|x| Binary(x.into()))
-                .collect(),
-            msg.clone().into(),
-            Binary(signature.into()),
-        )
-        .map_err(ethereum_sync_protocol::error::Error::CustomQuery)?;
+        let msg_hashed = self
+            .deps
+            .api
+            .bls12_381_hash_to_g2(HashFunction::Sha256, &msg, DST_POP_G2)
+            .unwrap();
 
-        ensure(
-            is_valid,
-            ethereum_sync_protocol::error::Error::InvalidSignature(Box::new(InvalidSignature {
-                public_keys,
-                msg,
-                signature,
-            })),
-        )
+        let res = self
+            .deps
+            .api
+            .bls12_381_pairing_equality(&BLS12_381_G1_GENERATOR, &signature.0, &pubkey, &msg_hashed)
+            .unwrap();
+
+        if res {
+            Ok(())
+        } else {
+            Err(ethereum_sync_protocol::error::Error::Crypto)
+        }
     }
 }

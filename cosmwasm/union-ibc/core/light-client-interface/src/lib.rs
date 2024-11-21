@@ -1,13 +1,27 @@
 use core::fmt::Debug;
 
+#[cfg(feature = "cosmwasm-1")]
+pub(crate) use cosmwasm_schema_1 as cosmwasm_schema;
+#[cfg(feature = "cosmwasm-2")]
+pub(crate) use cosmwasm_schema_2 as cosmwasm_schema;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
     StdError,
 };
+#[cfg(feature = "cosmwasm-1")]
+pub(crate) use cosmwasm_std_1 as cosmwasm_std;
+#[cfg(feature = "cosmwasm-2")]
+pub(crate) use cosmwasm_std_2 as cosmwasm_std;
+use cw_storage_plus::Map;
+#[cfg(feature = "cosmwasm-1")]
+pub(crate) use cw_storage_plus_1 as cw_storage_plus;
+#[cfg(feature = "cosmwasm-2")]
+pub(crate) use cw_storage_plus_2 as cw_storage_plus;
+#[cfg(all(feature = "cosmwasm-1", feature = "cosmwasm-2"))]
+compile_error!("cosmwasm-1 and cosmwasm-2 cannot be enabled at the same time");
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use msg::InstantiateMsg;
 use state::IBC_HOST;
-use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
 use union_ibc_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate,
 };
@@ -15,6 +29,10 @@ use unionlabs::encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Enc
 
 pub mod msg;
 pub mod state;
+
+// These are only used for `key` calculation. We don't want this crate to depend on `union-ibc`.
+const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
+const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
 
 // TODO: Add #[source] to all variants
 #[derive(macros::Debug, CloneNoBound, PartialEqNoBound, thiserror::Error)]
