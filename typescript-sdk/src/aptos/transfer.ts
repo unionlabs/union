@@ -57,7 +57,7 @@ export const waitForTransactionReceipt: (args: { aptos: Aptos; hash: string }) =
   error => new Error(`Waiting for transaction failed: ${error}`, { cause: error })
 )
 
-const buildSimpleTransaction: (args: {
+export const buildSimpleTransaction: (args: {
   aptos: Aptos
   accountAddress: AccountAddressInput
   data: InputGenerateTransactionPayloadData
