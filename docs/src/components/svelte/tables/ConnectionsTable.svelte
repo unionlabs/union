@@ -32,7 +32,7 @@ const curlCommand = graphqlQueryToCurl({
 /**
  * set this as desired
  */
-const rowsPerPage = 25
+const rowsPerPage = 10
 let pageNumber = $state(0)
 const promise = $state(fetchConnections())
 
@@ -60,6 +60,7 @@ async function fetchConnections() {
     })
   })
   const json = await response.json()
+  console.log(json)
 
   // @ts-expect-error
   const dataArray = json.data.data
@@ -67,8 +68,8 @@ async function fetchConnections() {
   const rows = dataArray.map(item => [
     item.source_chain?.display_name,
     item.destination_chain?.display_name,
+    item.source_connection_id?.split("-")?.at(-1),
     item.status,
-    item.source_connection_id,
     item.source_client_id
   ]) as Array<Array<string>>
 
@@ -77,7 +78,7 @@ async function fetchConnections() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["source", "destination", "status", "connection-id", "client-id"]
+      headers: ["source", "destination", "connection-id", "status", "client-id"]
     }
   }
 }
@@ -137,7 +138,7 @@ async function fetchConnections() {
               class={cn(
                 'text-nowrap uppercase',
                 index === 0 && 'w-[100px]',
-                index === headers.length - 1 && 'text-right',
+                index === headers.length - 1 && 'text-left',
               )}
             >
               {header}

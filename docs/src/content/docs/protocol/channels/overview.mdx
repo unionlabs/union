@@ -9,9 +9,40 @@ head:
 
 import ChannelsTable from '#/components/svelte/tables/ChannelsTable.svelte'
 
-Channels serve different protocol types, indicated by their `version`. These can be fully custom, although most of the 
-time they will be one of the enshrined types (such as [`ucs03-zkgm-1`](/protocol/channels/ucs03-zkgm)). 
+### Identifier
 
-### Channels
+Each channel has a `connection-id` and `channel-id`, uniquely identifying the channel on that specific chain. Note that these identifiers
+are not globally unique, such that two chains can both have channels with IDs `(10, 2)`. This does not mean that, since the IDs
+are the same, these channels are connected to each other.
+
+### Status
+
+A channel goes through different states referred to as status: `INIT`, `TRY`, `ACK`, and `CONFIRM`. Unless you 
+are opening channels yourself, you only need to concern yourself with the `CONFIRM` state, which means the channel 
+can now relay messages and assets.
+
+### version
+
+Channels serve different protocol types, indicated by their `version`. These can be fully custom, although most of the 
+time they will be one of the enshrined types (such as [`ucs03-zkgm-1`](/protocol/channels/ucs03-zkgm)). In other cases,
+they can be fully custom, like
+
+```json
+{
+  "version": "ics27-1",
+  "controller_connection_id": "connection-0",
+  "host_connection_id": "connection-28",
+  "address": "union1k8c7ks99ltx3gu4rejhm9jxj0cu4ukpg3s2dcqfwawr7d5k3xh0qzl9eag",
+  "encoding": "proto3",
+  "tx_type": "sdk_multi_msg"
+}
+```
+
+Which was created by the [ICA](https://github.com/cosmos/ibc/tree/main/spec/app/ics-027-interchain-accounts) module. Custom
+versions should only be used if you created the channel or ihave adeep understanding of the protocol.
+
+### Channels Table
+
+This table provides live information on current channels. 
 
 <ChannelsTable client:only='svelte' />
