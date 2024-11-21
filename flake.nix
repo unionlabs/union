@@ -451,11 +451,11 @@
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
-              buildInputs = [ pkgs.nodePackages.cspell ];
+              buildInputs = [ jsPkgs.typos ];
               doCheck = true;
               checkPhase = ''
                 cd $src/.
-                cspell lint --no-progress "**"
+                typos --config=typos.toml --format=brief
                 touch $out
               '';
             };
@@ -556,7 +556,6 @@
             inherit (self'.packages) movefmt;
             inherit
               pkgs
-              unstablePkgs
               goPkgs
               jsPkgs
               rust
