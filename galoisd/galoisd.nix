@@ -111,8 +111,9 @@
 
         download-circuit =
           let
+            circuit-name = "circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
             files = pkgs.writeText "files.txt" ''
-              /circuit.zip
+              /${circuit-name}
             '';
           in
           mkCi false (
@@ -129,8 +130,8 @@
                 exit 1
                 fi
                 rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
-                unzip "$1"/circuit.zip
-                rm "$1"/circuit.zip
+                unzip "$1"/${circuit-name}
+                rm "$1"/${circuit-name}
               '';
             }
           );
@@ -169,8 +170,8 @@
               '';
             unpacked-circuit = unpackCircuit (
               pkgs.fetchurl {
-                url = "https://circuit.cryptware.io/testnet.zip";
-                hash = "sha256-ImDwglgLdRjd9pxg5B7w2KNSPm1+kTu2k20yw8Rjtzc=";
+                url = "https://circuit.cryptware.io/circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
+                hash = "sha256-4cExiem1lKrQlDIsrArfQPTuTvpABzi/rNra17R/md4=";
               }
             );
           in
