@@ -5,10 +5,10 @@ import { cn } from "#/lib/shadcn.ts"
 import jsonSvg from "#/assets/icons/json.svg?raw"
 import curlSvg from "#/assets/icons/curl.svg?raw"
 import { highlightCode } from "#/lib/highlight-code.ts"
-import { splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 import { Button } from "#/components/svelte/ui/button/index.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
+import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
@@ -27,14 +27,10 @@ const graphqlQuery = dedent /* GraphQL */`
     }
   `
 
-const curlCommand = dedent /* bash */`
-    curl --request POST \\
-      --url 'https://development.graphql.union.build/v1/graphql' \\
-      --header 'Content-Type: application/json' \\
-      --data '{ "query": "\\n
-            ${graphqlQuery.replace(/"/g, '\\"')}"
-      }'
-  `
+const curlCommand = graphqlQueryToCurl({
+  query: graphqlQuery,
+  url: "https://development.graphql.union.build/v1/graphql"
+})
 
 /**
  * set this as desired
@@ -230,7 +226,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
 
   <Pagination.Root {count} {perPage} siblingCount={0}>
     {#snippet children({ pages, currentPage })}
-      <Pagination.Content class='px-0'>
+      <Pagination.Content class="px-0">
         <Pagination.Item>
           <Pagination.PrevButton class="mr-2 mt-1" onclick={_ => (pageNumber = currentPage)} />
         </Pagination.Item>

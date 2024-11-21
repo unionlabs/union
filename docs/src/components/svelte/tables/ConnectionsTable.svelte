@@ -2,11 +2,9 @@
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
-import { splitArray } from "#/lib/utilities.ts"
 import curlSvg from "#/assets/icons/curl.svg?raw"
 import * as Table from "#/components/svelte/ui/table/index.ts"
-import { Button } from "#/components/svelte/ui/button/index.ts"
-import externalLinkSvg from "#/assets/icons/external-link.svg?raw"
+import { graphqlQueryToCurl, splitArray } from "#/lib/utilities.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
@@ -26,14 +24,10 @@ const graphqlQuery = dedent /* GraphQL */`
     }
   `
 
-const curlCommand = dedent /* bash */`
-    curl --request POST \\
-      --url 'https://development.graphql.union.build/v1/graphql' \\
-      --header 'Content-Type: application/json' \\
-      --data '{ "query": "\\n
-            ${graphqlQuery.replace(/"/g, '\\"')}"
-      }'
-  `
+const curlCommand = graphqlQueryToCurl({
+  query: graphqlQuery,
+  url: "https://development.graphql.union.build/v1/graphql"
+})
 
 /**
  * set this as desired
@@ -156,52 +150,23 @@ async function fetchConnections() {
       {#each rows as row, rowIndex}
         <Table.Row class={cn('w-full border-neutral-500')}>
           {#each row as cell, cellIndex}
-            {@const lastColumn = cellIndex === row.length - 1}
-            {@const logoColumn = cellIndex === 2}
-            {#if logoColumn}
-              <!--  -->
-            {:else if lastColumn}
-              {@const isUrl = URL.canParse(cell)}
-              <Table.Cell class={cn('text-right text-nowrap border-neutral-500')}>
-                {#if isUrl}
-                  <Button
-                    href={cell}
-                    size="lg"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="hover:underline hover:text-accent-500 p-2 size-10 hover:bg-background/30 hover:cursor-pointer bg-transparent"
-                  >
-                    {@html externalLinkSvg}
-                  </Button>
-                {/if}
-              </Table.Cell>
-            {:else}
-              <Table.Cell
-                class={cn(
-                  'border-neutral-500',
-                  cellIndex === 0 && 'font-medium w-[135px] text-nowrap',
-                )}
-              >
-                {cell}
-              </Table.Cell>
-            {/if}
+            <Table.Cell
+              class={cn(
+                'border-neutral-500 text-right',
+                cellIndex === 0 && 'text-left font-medium w-[135px] text-nowrap',
+              )}
+            >
+              {cell}
+            </Table.Cell>
           {/each}
-        </Table.Row>
-        <Table.Row class="border-none">
-          <Table.Cell
-            colspan={5}
-            class="p-0 border-transparent"
-            data-json-snippet
-            data-row-index={rowIndex}
-          ></Table.Cell>
         </Table.Row>
       {/each}
     </Table.Body>
   </Table.Root>
 
-  <Pagination.Root {count} {perPage} class={cn(rowsPerPage >= count && 'hidden')}>
+  <Pagination.Root {count} {perPage} siblingCount={0}>
     {#snippet children({ pages, currentPage })}
-      <Pagination.Content>
+      <Pagination.Content class="px-0">
         <Pagination.Item>
           <Pagination.PrevButton class="mr-2 mt-1" onclick={_ => (pageNumber = currentPage)} />
         </Pagination.Item>

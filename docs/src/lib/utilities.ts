@@ -1,3 +1,15 @@
+import { dedent } from "ts-dedent"
+
+export const graphqlQueryToCurl = ({ url, query }: { url: string; query: string }) =>
+  dedent /* bash */`
+    curl --request POST \\
+      --url '${url}' \\
+      --header 'Content-Type: application/json' \\
+      --data '{ "query": "\\n
+            ${query.replace(/"/g, '\\"')}"
+      }'
+  `
+
 // split array into n parts
 export const splitArray = <T>({ array, n }: { array: Array<T>; n: number }): Array<Array<T>> =>
   array.reduce(

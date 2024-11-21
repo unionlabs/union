@@ -2,11 +2,11 @@
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
-import { splitArray } from "#/lib/utilities.ts"
 import curlSvg from "#/assets/icons/curl.svg?raw"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 import { Button } from "#/components/svelte/ui/button/index.ts"
 import externalLinkSvg from "#/assets/icons/external-link.svg?raw"
+import { graphqlQueryToCurl, splitArray } from "#/lib/utilities.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
@@ -24,14 +24,10 @@ const graphqlQuery = dedent /* GraphQL */`
     }
   `
 
-const curlCommand = dedent /* bash */`
-    curl --request POST \\
-      --url 'https://development.graphql.union.build/v1/graphql' \\
-      --header 'Content-Type: application/json' \\
-      --data '{ "query": "\\n
-            ${graphqlQuery.replace(/"/g, '\\"')}"
-      }'
-  `
+const curlCommand = graphqlQueryToCurl({
+  query: graphqlQuery,
+  url: "https://development.graphql.union.build/v1/graphql"
+})
 
 /**
  * set this as desired
@@ -73,7 +69,7 @@ async function fetchChains() {
     item.logo_uri,
     item.display_name,
     item.explorers?.at(0)?.home_url
-  ])
+  ]) as Array<Array<string>>
 
   return {
     data: {
