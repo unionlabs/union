@@ -123,20 +123,6 @@ impl TryFrom<[u8; G2_SIZE]> for G2AffineBE {
     }
 }
 
-/// A verification key in the Groth16 SNARK.
-pub struct VerifyingKey {
-    /// The `alpha * G`, where `G` is the generator of `E::G1`.
-    pub alpha_g1: substrate_bn::AffineG1,
-    /// The `alpha * H`, where `H` is the generator of `E::G2`.
-    pub beta_g2: substrate_bn::AffineG2,
-    /// The `gamma * H`, where `H` is the generator of `E::G2`.
-    pub gamma_g2: substrate_bn::AffineG2,
-    /// The `delta * H`, where `H` is the generator of `E::G2`.
-    pub delta_g2: substrate_bn::AffineG2,
-    /// The `gamma^{-1} * (beta * a_i + alpha * b_i + c_i) * H`, where `H` is the generator of `E::G1`.
-    pub gamma_abc_g1: Vec<substrate_bn::AffineG1>,
-}
-
 pub struct Proof {
     /// The `A` element in `G1`.
     pub a: substrate_bn::AffineG1,
@@ -221,8 +207,8 @@ fn verify_generic_zkp_2(
     chain_id: &ChainId,
     trusted_validators_hash: H256,
     header: &LightHeader,
-    g: substrate_bn::AffineG2,
-    g_root_sigma_neg: substrate_bn::AffineG2,
+    g: substrate_bn::G2,
+    g_root_sigma_neg: substrate_bn::G2,
     zkp: ZKP<BigEndian>,
 ) -> Result<(), Error> {
     // Constant + public inputs
@@ -270,10 +256,10 @@ fn verify_generic_zkp_2(
         decode_scalar(U256::from_be_bytes(inputs_hash))?,
         decode_scalar(commitment_hash)?,
     ];
-    let initial_point = substrate_bn::G1::from(GAMMA_ABC_G1[0]) + zkp.proof_commitment.into();
+    let initial_point = GAMMA_ABC_G1[0] + zkp.proof_commitment.into();
     let public_inputs_msm = public_inputs
         .into_iter()
-        .zip(GAMMA_ABC_G1.into_iter().skip(1).map(substrate_bn::G1::from))
+        .zip(GAMMA_ABC_G1.into_iter().skip(1))
         .fold(initial_point, |s, (w_i, gamma_l_i)| s + gamma_l_i * w_i);
 
     let proof_a: G1 = zkp.proof.a.into();
@@ -281,16 +267,16 @@ fn verify_generic_zkp_2(
     let pc: G1 = zkp.proof_commitment.into();
     let pok: G1 = zkp.proof_commitment_pok.into();
 
-    let pok_result = substrate_bn::pairing_batch(&[(pc, g.into()), (pok, g_root_sigma_neg.into())]);
+    let pok_result = substrate_bn::pairing_batch(&[(pc, g), (pok, g_root_sigma_neg)]);
     if pok_result != substrate_bn::Gt::one() {
         return Err(Error::InvalidPok);
     }
 
     let g16_result = substrate_bn::pairing_batch(&[
         (proof_a, zkp.proof.b.into()),
-        (public_inputs_msm, -substrate_bn::G2::from(GAMMA_G2)),
-        (proof_c, -substrate_bn::G2::from(DELTA_G2)),
-        (G1::from(ALPHA_G1), -substrate_bn::G2::from(BETA_G2)),
+        (public_inputs_msm, GAMMA_NEG_G2),
+        (proof_c, DELTA_NEG_G2),
+        (ALPHA_G1, BETA_NEG_G2),
     ]);
     if g16_result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
