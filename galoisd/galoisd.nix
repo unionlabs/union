@@ -12,11 +12,11 @@
     }:
     {
       packages = {
-        galoisd = goPkgs.pkgsStatic.build123GoModule (
+        galoisd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = "sha256-wZSsLqnNi38rZL2oJ+GpnMWuo/5ydTJ80ebHQ/SXtis=";
+            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
             meta = {
               mainProgram = "galoisd";
             };
@@ -26,9 +26,10 @@
           // (
             if pkgs.stdenv.isLinux then
               {
-                CGO_ENABLED = 0;
+                CGO_ENABLED = 1;
                 ldflags = [
-                  "-extldflags '-static -L${pkgs.musl}/lib -s -w'"
+                  "-linkmode external"
+                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -s -w'"
                 ];
               }
             else
@@ -36,12 +37,13 @@
           )
         );
 
-        galoisd-library = goPkgs.pkgsStatic.build123GoModule (
+        galoisd-library = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "libgalois";
             src = ./.;
-            vendorHash = "sha256-wZSsLqnNi38rZL2oJ+GpnMWuo/5ydTJ80ebHQ/SXtis=";
+            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
             tags = [ "library" ];
+            doCheck = false;
           }
           // (
             if pkgs.stdenv.isLinux then
