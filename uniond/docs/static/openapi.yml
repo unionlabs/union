@@ -1546,37 +1546,6 @@
         }
       }
     },
-    "/cosmos/bank/v2/params": {
-      "get": {
-        "tags": [
-          "Query"
-        ],
-        "description": "Params queries the parameters of x/bank module.",
-        "operationId": "Query_Params",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryParamsResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Default error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/cosmos/base/node/v1beta1/config": {
       "get": {
         "tags": [
