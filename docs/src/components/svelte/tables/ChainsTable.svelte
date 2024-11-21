@@ -73,7 +73,7 @@ async function fetchChains() {
     item.logo_uri,
     item.display_name,
     item.explorers?.at(0)?.home_url
-  ]) as Array<Array<string>>
+  ])
 
   return {
     data: {

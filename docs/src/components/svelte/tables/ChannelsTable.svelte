@@ -7,6 +7,7 @@ import curlSvg from "#/assets/icons/curl.svg?raw"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import { splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
+import { Button } from "#/components/svelte/ui/button/index.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
@@ -192,12 +193,13 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
                 {@const isJSON = stringIsJSON(cell)}
                 {#if isJSON}
                   {@const version = JSON.parse(cell)}
-                  <button
+                  <Button
+                    size="lg"
                     onclick={event => attachContent(event, rowIndex, version)}
-                    class="bg-transparent hover:bg-background/30 hover:cursor-pointer size-8"
+                    class="hover:underline hover:text-accent-500 p-2 size-10 hover:bg-background/30 hover:cursor-pointer bg-transparent"
                   >
                     {@html toggleRowIcon}
-                  </button>
+                  </Button>
                 {:else}
                   {cell}
                 {/if}
@@ -226,9 +228,9 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     </Table.Body>
   </Table.Root>
 
-  <Pagination.Root {count} {perPage}>
+  <Pagination.Root {count} {perPage} siblingCount={0}>
     {#snippet children({ pages, currentPage })}
-      <Pagination.Content>
+      <Pagination.Content class='px-0'>
         <Pagination.Item>
           <Pagination.PrevButton class="mr-2 mt-1" onclick={_ => (pageNumber = currentPage)} />
         </Pagination.Item>

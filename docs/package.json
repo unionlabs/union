@@ -63,7 +63,7 @@
     "smartypants": "^0.2.2",
     "starlight-heading-badges": "^0.3.0",
     "starlight-theme-rapide": "^0.2.1",
-    "svelte": "^5.2.4",
+    "svelte": "^5.2.6",
     "viem": "^2.21.48",
     "vue": "^3.5.13"
   },
