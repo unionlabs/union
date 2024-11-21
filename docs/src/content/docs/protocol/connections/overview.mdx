@@ -26,8 +26,8 @@ can now be used to open channels.
 Each connection is verified by a client, which describes the consensus protocol of the counterparty chain. 
 Client IDs have 2 potential formats:
 
-- `{algorithm}-{instatiation}`: `07-tendermint-4038` or `08-wasm-66`, where `07-tendermint` and `08-wasm` are the algorithms. 
-- `{instatiation}`: `12`, `666`, `420`. This format is found in newer stacks as it is significantly more gas-efficient.
+- `{algorithm}-{instantiation}`: `07-tendermint-4038` or `08-wasm-66`, where `07-tendermint` and `08-wasm` are the algorithms. 
+- `{instantiation}`: `12`, `666`, `420`. This format is found in newer stacks as it is significantly more gas-efficient.
 
 Most consumers of the IBC stack should not care about clients or client ids. They all provide the same (highest possible) security level,
 and are abstracted away by our stack.
