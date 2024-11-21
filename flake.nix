@@ -137,7 +137,7 @@
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      rev = "50288938d1b625a19615db81a062a5259aaaba8c";
+      rev = "c2982236c55751ea227679164594ce572bb857f3";
       flake = false;
     };
 
