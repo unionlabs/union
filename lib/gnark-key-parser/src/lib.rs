@@ -7,22 +7,22 @@ use substrate_bn::{
 mod error;
 
 pub struct PedersenVerifyingKey {
-    pub g: AffineG2,
-    pub g_root_sigma_neg: AffineG2,
+    pub g: G2,
+    pub g_root_sigma_neg: G2,
 }
 
 /// A verification key in the Groth16 SNARK.
 pub struct VerifyingKey {
     /// The `alpha * G`, where `G` is the generator of `E::G1`.
-    pub alpha_g1: AffineG1,
+    pub alpha_g1: G1,
     /// The `alpha * H`, where `H` is the generator of `E::G2`.
-    pub beta_g2: substrate_bn::AffineG2,
+    pub beta_neg_g2: G2,
     /// The `gamma * H`, where `H` is the generator of `E::G2`.
-    pub gamma_g2: substrate_bn::AffineG2,
+    pub gamma_neg_g2: G2,
     /// The `delta * H`, where `H` is the generator of `E::G2`.
-    pub delta_g2: substrate_bn::AffineG2,
+    pub delta_neg_g2: G2,
     /// The `gamma^{-1} * (beta * a_i + alpha * b_i + c_i) * H`, where `H` is the generator of `E::G1`.
-    pub gamma_abc_g1: Vec<AffineG1>,
+    pub gamma_abc_g1: Vec<G1>,
     pub public_and_commitment_committed: Vec<Vec<u64>>,
     pub commitment_key: PedersenVerifyingKey,
 }
@@ -66,15 +66,15 @@ impl VerifyingKey {
         Ok((
             cursor,
             Self {
-                alpha_g1,
-                beta_g2,
-                gamma_g2,
-                delta_g2,
-                gamma_abc_g1,
+                alpha_g1: alpha_g1.into(),
+                beta_neg_g2: -G2::from(beta_g2),
+                gamma_neg_g2: -G2::from(gamma_g2),
+                delta_neg_g2: -G2::from(delta_g2),
+                gamma_abc_g1: gamma_abc_g1.into_iter().map(Into::into).collect(),
                 public_and_commitment_committed,
                 commitment_key: PedersenVerifyingKey {
-                    g,
-                    g_root_sigma_neg,
+                    g: g.into(),
+                    g_root_sigma_neg: g_root_sigma_neg.into(),
                 },
             },
         ))
@@ -274,20 +274,16 @@ mod tests {
 
     use super::*;
 
-    fn make_g1(x: BigInt<4>, y: BigInt<4>) -> substrate_bn::AffineG1 {
+    fn make_g1(x: BigInt<4>, y: BigInt<4>) -> substrate_bn::G1 {
         substrate_bn::AffineG1::new(
             substrate_bn::Fq::from_u256(x.0.into()).unwrap(),
             substrate_bn::Fq::from_u256(y.0.into()).unwrap(),
         )
         .unwrap()
+        .into()
     }
 
-    fn make_g2(
-        x0: BigInt<4>,
-        x1: BigInt<4>,
-        y0: BigInt<4>,
-        y1: BigInt<4>,
-    ) -> substrate_bn::AffineG2 {
+    fn make_g2(x0: BigInt<4>, x1: BigInt<4>, y0: BigInt<4>, y1: BigInt<4>) -> substrate_bn::G2 {
         substrate_bn::AffineG2::new(
             substrate_bn::Fq2::new(
                 substrate_bn::Fq::from_u256(x0.0.into()).unwrap(),
@@ -299,6 +295,7 @@ mod tests {
             ),
         )
         .unwrap()
+        .into()
     }
 
     pub fn universal_vk() -> VerifyingKey {
@@ -336,7 +333,7 @@ mod tests {
                     "3971530409048238023625806606514600982127202826003358538821613170737831313919"
                 ),
             ),
-            beta_g2: make_g2(
+            beta_neg_g2: -make_g2(
                 BigInt!(
                     "9609903744775525881338738176064678545439912439219033822736570321349357348980"
                 ),
@@ -350,7 +347,7 @@ mod tests {
                     "6131692356384648492800758325058748831519318785594820705365176509549681793745"
                 ),
             ),
-            gamma_g2: make_g2(
+            gamma_neg_g2: -make_g2(
                 BigInt!(
                     "15418804173338388766896385877623893969695670309009587476846726795628238714393"
                 ),
@@ -364,7 +361,7 @@ mod tests {
                     "206728492847877950288262169260916452585500374823256459470367014125967964118"
                 ),
             ),
-            delta_g2: make_g2(
+            delta_neg_g2: -make_g2(
                 BigInt!(
                     "2636161939055419322743684458857549714230849256995406138405588958157843793131"
                 ),
@@ -406,8 +403,8 @@ mod tests {
             ],
             public_and_commitment_committed: Vec::new(),
             commitment_key: PedersenVerifyingKey {
-                g: PEDERSEN_G,
-                g_root_sigma_neg: PEDERSEN_G_ROOT_SIGMA_NEG,
+                g: PEDERSEN_G.into(),
+                g_root_sigma_neg: PEDERSEN_G_ROOT_SIGMA_NEG.into(),
             },
         }
     }
@@ -424,12 +421,12 @@ mod tests {
         assert_eq!(n_read, file.len());
 
         assert_eq!(verifying_key.alpha_g1, parsed_key.alpha_g1);
-        assert_eq!(verifying_key.beta_g2.x(), parsed_key.beta_g2.x());
-        assert_eq!(verifying_key.beta_g2.y(), parsed_key.beta_g2.y());
-        assert_eq!(verifying_key.gamma_g2.x(), parsed_key.gamma_g2.x());
-        assert_eq!(verifying_key.gamma_g2.y(), parsed_key.gamma_g2.y());
-        assert_eq!(verifying_key.delta_g2.x(), parsed_key.delta_g2.x());
-        assert_eq!(verifying_key.delta_g2.y(), parsed_key.delta_g2.y());
+        assert_eq!(verifying_key.beta_neg_g2.x(), parsed_key.beta_neg_g2.x());
+        assert_eq!(verifying_key.beta_neg_g2.y(), parsed_key.beta_neg_g2.y());
+        assert_eq!(verifying_key.gamma_neg_g2.x(), parsed_key.gamma_neg_g2.x());
+        assert_eq!(verifying_key.gamma_neg_g2.y(), parsed_key.gamma_neg_g2.y());
+        assert_eq!(verifying_key.delta_neg_g2.x(), parsed_key.delta_neg_g2.x());
+        assert_eq!(verifying_key.delta_neg_g2.y(), parsed_key.delta_neg_g2.y());
         assert_eq!(verifying_key.gamma_abc_g1, parsed_key.gamma_abc_g1);
         assert_eq!(
             verifying_key.commitment_key.g.x(),
