@@ -239,6 +239,6 @@ func ExampleVerifyCmd() *cobra.Command {
 			return nil
 		}),
 	}
-	cmd.Flags().String(flagTLS, "", "Wether the gRPC endpoint expect TLS.")
+	cmd.Flags().String(flagTLS, "", "Whether the gRPC endpoint expect TLS.")
 	return cmd
 }

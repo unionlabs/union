@@ -4,10 +4,11 @@
   rust,
   goPkgs,
   jsPkgs,
-  unstablePkgs,
   movefmt,
 }:
-
+let
+  unstablePkgs = jsPkgs;
+in
 {
   package = unstablePkgs.treefmt;
   projectRootFile = "treefmt.nix";
@@ -23,7 +24,7 @@
     taplo.enable = true;
     biome = {
       enable = true;
-      package = jsPkgs.biome;
+      package = unstablePkgs.biome;
     };
     yamlfmt = {
       enable = true;

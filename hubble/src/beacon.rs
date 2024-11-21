@@ -120,7 +120,7 @@ impl Beacon {
                     // We are asking for a height that is in the past, yet missing. Thus the slot was skipped
                     // and we need to ask for the next one.
                     if slot > height {
-                        debug!("slot is greater than hight, continuing");
+                        debug!("slot is greater than height, continuing");
                         height += 1;
                         continue;
                     };
