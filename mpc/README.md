@@ -2,6 +2,7 @@
 
 This project contains the client and coordinator to conduct Groth16 multi-party computation for the circuit SRS.
 Three components are in play:
+
 - Supabase : host the state machine in postgresql and exposes api and storage services to upload contributions.
 - Coordinator: contact Supabase and verify contribution to step the state machine.
 - Client: pure function that accepts the current contributor id and generate then upload a contribution payload.
@@ -17,6 +18,7 @@ The coordinator is in charge of verifying contributions. When a contribution is 
 ## Client
 
 Exposes an API to contribute at `localhost:4919`:
+
 - `OPTIONS /contribute`
 - `POST /contribute` a `Contribute` object in body. Returns :
   - a `202 Accepted` if the contribution started.
@@ -28,6 +30,7 @@ Exposes an API to contribute at `localhost:4919`:
 ### Structures
 
 #### Contribute
+
 ```json
 {
     "supabase_project": "<supabase_project_url>",
@@ -40,6 +43,7 @@ Exposes an API to contribute at `localhost:4919`:
 ```
 
 #### Status
+
 ```rust
 #[serde(rename_all = "camelCase")]
 pub enum Status {
