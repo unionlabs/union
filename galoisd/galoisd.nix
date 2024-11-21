@@ -16,21 +16,52 @@
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = "sha256-wZSsLqnNi38rZL2oJ+GpnMWuo/5ydTJ80ebHQ/SXtis=";
+            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
             meta = {
               mainProgram = "galoisd";
             };
+            tags = [ "binary" ];
             doCheck = true;
           }
           // (
             if pkgs.stdenv.isLinux then
               {
-                nativeBuildInputs = [ pkgs.musl ];
                 CGO_ENABLED = 1;
                 ldflags = [
-                  "-checklinkname=0"
                   "-linkmode external"
-                  "-extldflags '-static -L${pkgs.musl}/lib -s -w'"
+                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -s -w'"
+                ];
+              }
+            else
+              { }
+          )
+        );
+
+        galoisd-library = goPkgs.pkgsStatic.buildGo123Module (
+          {
+            name = "libgalois";
+            src = ./.;
+            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
+            tags = [ "library" ];
+            doCheck = false;
+          }
+          // (
+            if pkgs.stdenv.isLinux then
+              {
+                nativeBuildInputs = [
+                  goPkgs.musl
+                  goPkgs.pkgsStatic.binutils
+                ];
+                doCheck = false;
+                CGO_ENABLED = 1;
+                GOBIN = "${placeholder "out"}/lib";
+                postInstall = ''
+                  mv $out/lib/galoisd $out/lib/libgalois.a
+                '';
+                ldflags = [
+                  "-s"
+                  "-w"
+                  "-buildmode c-archive"
                 ];
               }
             else
@@ -80,8 +111,9 @@
 
         download-circuit =
           let
+            circuit-name = "circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
             files = pkgs.writeText "files.txt" ''
-              /circuit.zip
+              /${circuit-name}
             '';
           in
           mkCi false (
@@ -98,8 +130,8 @@
                 exit 1
                 fi
                 rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
-                unzip "$1"/circuit.zip
-                rm "$1"/circuit.zip
+                unzip "$1"/${circuit-name}
+                rm "$1"/${circuit-name}
               '';
             }
           );
@@ -138,8 +170,8 @@
               '';
             unpacked-circuit = unpackCircuit (
               pkgs.fetchurl {
-                url = "https://circuit.cryptware.io/testnet.zip";
-                hash = "sha256-ImDwglgLdRjd9pxg5B7w2KNSPm1+kTu2k20yw8Rjtzc=";
+                url = "https://circuit.cryptware.io/circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
+                hash = "sha256-4cExiem1lKrQlDIsrArfQPTuTvpABzi/rNra17R/md4=";
               }
             );
           in

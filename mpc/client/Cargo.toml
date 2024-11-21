@@ -1,0 +1,28 @@
+[package]
+edition = { workspace = true }
+name    = "mpc-client"
+version = "0.1.0"
+
+[dependencies]
+async-sqlite         = "0.2.2"
+base64               = { workspace = true }
+clap                 = { workspace = true, features = ["derive"] }
+crossterm            = "0.27.0"
+futures-util         = "0.3"
+hex                  = { workspace = true }
+http-body-util       = "0.1"
+httpdate             = "1.0"
+hyper                = { version = "1", features = ["full"] }
+hyper-util           = { version = "0.1", features = ["full"] }
+mpc-shared           = { workspace = true }
+pgp                  = "0.13"
+postgrest            = "1.0"
+rand                 = "0.8.5"
+ratatui              = "0.27.0"
+reqwest              = { workspace = true, features = ["json", "stream", "multipart"] }
+serde                = { workspace = true, features = ["derive"] }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
+throbber-widgets-tui = "0.6"
+tokio                = { workspace = true, features = ["full"] }
+tokio-util           = { version = "0.7", features = ["codec"] }

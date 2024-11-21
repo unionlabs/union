@@ -1,0 +1,13 @@
+[package]
+edition = { workspace = true }
+name    = "mpc-shared"
+version = "0.1.0"
+
+[dependencies]
+hex        = { workspace = true, features = ["alloc"] }
+postgrest  = "1.0"
+reqwest    = { workspace = true, features = ["json"] }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tokio      = { workspace = true, features = ["full"] }
