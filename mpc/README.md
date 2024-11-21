@@ -3,7 +3,7 @@
 This project contains the client and coordinator to conduct Groth16 multi-party computation for the circuit SRS.
 Three components are in play:
 
-- Supabase : host the state machine in postgresql and exposes api and storage services to upload contributions.
+- Supabase: host the state machine in postgresql and exposes api and storage services to upload contributions.
 - Coordinator: contact Supabase and verify contribution to step the state machine.
 - Client: pure function that accepts the current contributor id and generate then upload a contribution payload.
 
@@ -20,10 +20,10 @@ The coordinator is in charge of verifying contributions. When a contribution is 
 Exposes an API to contribute at `localhost:4919`:
 
 - `OPTIONS /contribute`
-- `POST /contribute` a `Contribute` object in body. Returns :
+- `POST /contribute` a `Contribute` object in body. Returns:
   - a `202 Accepted` if the contribution started.
   - a `503 Unavailable` if the client is busy (likely already contributing).
-- `GET /contribute` returns :
+- `GET /contribute` returns:
   - a `200 Ok` if everything is ok with the body containing an encoded `Status` representing the client status (idle, contributing etc...).
   - a `500 InternalServerError` if the contribution failed unexpectedly, the body contains the error message.
 

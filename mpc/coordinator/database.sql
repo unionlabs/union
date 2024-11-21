@@ -3,11 +3,11 @@ BEGIN;
 -----------
 -- Erase --
 -----------
-TRUNCATE TABLE public.log;
-TRUNCATE TABLE auth.users CASCADE;
-DELETE FROM storage.objects o
-WHERE o.bucket_id = 'contributions'
-AND o.name <> '00000000-0000-0000-0000-000000000000';
+-- TRUNCATE TABLE public.log;
+-- TRUNCATE TABLE auth.users CASCADE;
+-- DELETE FROM storage.objects o
+-- WHERE o.bucket_id = 'contributions'
+-- AND o.name <> '00000000-0000-0000-0000-000000000000';
 
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);

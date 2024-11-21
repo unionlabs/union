@@ -1141,6 +1141,7 @@ files.extend-exclude = [
 "rabby"                   = "rabby"
 "randao"                  = "randao"
 "rapide"                  = "rapide"
+"ratatui"                 = "ratatui"
 "ratelimit"               = "ratelimit"
 "ratelimited"             = "ratelimited"
 "rawfile"                 = "rawfile"

@@ -1,5 +1,4 @@
-{ self, ... }:
-{
+_: {
   perSystem =
     {
       self',
@@ -46,6 +45,5 @@
             };
           };
         };
-      checks = mpc-coordinator.checks // mpc-client.checks;
     };
 }
