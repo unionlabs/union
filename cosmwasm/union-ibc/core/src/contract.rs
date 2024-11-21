@@ -692,7 +692,7 @@ fn update_client(
         &client_impl,
         &LightClientQuery::VerifyClientMessage {
             client_id,
-            message: client_message.to_vec().into(),
+            message: client_message.into(),
         },
     )?;
     store_commit(
@@ -767,7 +767,7 @@ fn connection_open_try(
         &LightClientQuery::VerifyMembership {
             client_id,
             height: proof_height,
-            proof: proof_init.to_vec().into(),
+            proof: proof_init.into(),
             path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
                 .into_bytes()
                 .into(),
@@ -818,7 +818,7 @@ fn connection_open_ack(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_try.to_vec().into(),
+            proof: proof_try.into(),
             path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
                 .into_bytes()
                 .into(),
@@ -873,7 +873,7 @@ fn connection_open_confirm(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_ack.to_vec().into(),
+            proof: proof_ack.into(),
             path: unionlabs::ics24::ethabi::connection_key(connection.counterpartyConnectionId)
                 .into_bytes()
                 .into(),
@@ -972,7 +972,7 @@ fn channel_open_try(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_init.to_vec().into(),
+            proof: proof_init.into(),
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
@@ -1048,7 +1048,7 @@ fn channel_open_ack(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_try.to_vec().into(),
+            proof: proof_try.into(),
             path: unionlabs::ics24::ethabi::channel_key(counterparty_channel_id)
                 .into_bytes()
                 .into(),
@@ -1114,7 +1114,7 @@ fn channel_open_confirm(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_ack.to_vec().into(),
+            proof: proof_ack.into(),
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
@@ -1211,7 +1211,7 @@ fn channel_close_confirm(
         &LightClientQuery::VerifyMembership {
             client_id: connection.clientId,
             height: proof_height,
-            proof: proof_init.to_vec().into(),
+            proof: proof_init.into(),
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
