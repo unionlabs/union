@@ -64,10 +64,9 @@ async function fetchChains() {
   const dataArray = json.data.data
   // @ts-expect-error
   const rows = dataArray.map(item => [
-    item.testnet,
-    item.chain_id,
-    item.logo_uri,
     item.display_name,
+    item.testnet ? "Testnet" : "Mainnet",
+    item.chain_id,
     item.explorers?.at(0)?.home_url
   ]) as Array<Array<string>>
 
@@ -76,7 +75,7 @@ async function fetchChains() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["testnet", "chain id", "logo uri", "display name", "explorer"]
+      headers: ["chain", "environment", "chain-id", "explorer"]
     }
   }
 }
@@ -150,10 +149,7 @@ async function fetchChains() {
         <Table.Row class={cn('w-full border-neutral-500')}>
           {#each row as cell, cellIndex}
             {@const lastColumn = cellIndex === row.length - 1}
-            {@const logoColumn = cellIndex === 2}
-            {#if logoColumn}
-              <!--  -->
-            {:else if lastColumn}
+            {#if lastColumn}
               {@const isUrl = URL.canParse(cell)}
               <Table.Cell class={cn('text-right text-nowrap border-neutral-500')}>
                 {#if isUrl}
