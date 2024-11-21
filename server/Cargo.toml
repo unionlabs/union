@@ -1,0 +1,14 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "server"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+axum  = { version = "0.7.0" }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true

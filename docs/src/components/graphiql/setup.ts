@@ -1,5 +1,6 @@
 import * as React from "react"
 import { dedent } from "ts-dedent"
+import { stringIsJSON } from "#/lib/utilities.ts"
 import { GraphiQL, type GraphiQLProps } from "graphiql"
 import { createGraphiQLFetcher } from "@graphiql/toolkit"
 import { explorerPlugin } from "@graphiql/plugin-explorer"
@@ -7,28 +8,35 @@ import { explorerPlugin } from "@graphiql/plugin-explorer"
 const GRAPHQL_ENDPOINT =
   import.meta.env.PUBLIC_GRAPHQL_URL ?? "https://graphql.union.build/v1/graphql"
 
+type LocalStorageParsedQuery = {
+  query: string
+  headers: string
+  variables: string
+  operationName: string
+}
+
 const fetcher = createGraphiQLFetcher({
   url: GRAPHQL_ENDPOINT,
   enableIncrementalDelivery: true
 })
 
 let query = dedent(/* GraphQL */ `
-      query UserTransfers {
-        v1_transfers(
-          limit: 3,
-          where: {
-            sender: { 
-              _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md"
-            }
-          }
-        ) {
-          sender
-          receiver
-          source_transaction_hash
-          destination_transaction_hash
+  query UserTransfers {
+    v1_transfers(
+      limit: 3,
+      where: {
+        sender: { 
+          _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md"
         }
       }
-    `)
+    ) {
+      sender
+      receiver
+      source_transaction_hash
+      destination_transaction_hash
+    }
+  }
+`)
 
 const graphiqlProps = {
   fetcher,
@@ -41,11 +49,11 @@ const graphiqlProps = {
     })
   ],
   disableTabs: true,
-  onCopyQuery: query => {
-    console.info(query)
+  onEditVariables: variables => {
+    localStorage.setItem("graphiql:variables", variables)
   },
   isHeadersEditorEnabled: true,
-  defaultEditorToolsVisibility: false,
+  defaultEditorToolsVisibility: stringIsJSON(localStorage.getItem("graphiql:variables") ?? ""),
   toolbar: {
     additionalContent: [
       React.createElement(
@@ -58,11 +66,17 @@ const graphiqlProps = {
           "aria-label": "Copy sharable URL to clipboard",
           onClick: (event: React.SyntheticEvent) => {
             event.preventDefault()
-            if (!localStorage?.getItem("graphiql:query")) return
+
             const query = localStorage.getItem("graphiql:query")
             if (!query) return
+
             const encoded = encodeURIComponent(query)
-            window.history.pushState({}, "", `?query=${encoded}`)
+            let urlPath = `?query=${encoded}`
+
+            const variables = localStorage.getItem("graphiql:variables")
+            if (variables) urlPath += `&variables=${encodeURIComponent(variables)}`
+
+            window.history.pushState({}, "", urlPath)
             // copy url to clipboard
             navigator.clipboard.writeText(window.location.href)
           }

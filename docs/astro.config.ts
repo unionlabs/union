@@ -64,24 +64,10 @@ export default defineConfig({
     starlight({
       title: "Union",
       lastUpdated: true,
+      defaultLocale: "root",
       favicon: "/favicon.svg",
       description: SITE_DESCRIPTION,
       tagline: "Connecting blockchains trustlessly",
-      defaultLocale: "root",
-      expressiveCode: {
-        frames: {
-          showCopyToClipboardButton: true,
-          removeCommentsWhenCopyingTerminalFrames: true
-        },
-        defaultProps: {
-          // @ts-expect-error
-          showLineNumbers: false
-        },
-
-        themes: ["min-light", "houston"],
-        useStarlightDarkModeSwitch: true
-        // plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
-      },
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
@@ -148,12 +134,22 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
+            // {
+            //   label: "Chains",
+            //   link: "/chains"
+            // },
             {
               label: "Protocol",
               items: [
                 {
                   label: "Overview",
                   link: "/protocol/overview"
+                },
+                {
+                  label: "Chains",
+                  autogenerate: {
+                    directory: "/protocol/chains"
+                  }
                 },
                 {
                   label: "Channels",

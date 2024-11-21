@@ -1,0 +1,39 @@
+---
+title: "Overview"
+sidebar:
+  order: 0
+head:
+  - tag: title
+    content: Connections Overview
+---
+
+import ConnectionsTable from '#/components/svelte/tables/ConnectionsTable.svelte'
+
+### Identifier
+
+Each connection has a `connection-id`, uniquely identifying the connection on that specific chain. Note that this identifier
+is not globally unique, such that two chains can both have a connection with ID `10`. This does not mean that, since the IDs
+are the same, the connections are connected to each other.
+
+### Status
+
+A connection goes through different states referred to as `status`: `INIT`, `TRY`, `ACK`, and `CONFIRM`. Unless you 
+are opening connections yourself, you only need to concern yourself with the `CONFIRM` state, which means the connection 
+can now be used to open channels.
+
+### Clients
+
+Each connection is verified by a client, which describes the consensus protocol of the counterparty chain. 
+Client IDs have 2 potential formats:
+
+- `{algorithm}-{instantiation}`: `07-tendermint-4038` or `08-wasm-66`, where `07-tendermint` and `08-wasm` are the algorithms. 
+- `{instantiation}`: `12`, `666`, `420`. This format is found in newer stacks as it is significantly more gas-efficient.
+
+Most consumers of the IBC stack should not care about clients or client ids. They all provide the same (highest possible) security level,
+and are abstracted away by our stack.
+
+### Connections Table
+
+This table provides live information on current connections. 
+
+<ConnectionsTable client:only='svelte' />

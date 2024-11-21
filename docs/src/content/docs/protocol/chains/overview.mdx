@@ -1,0 +1,19 @@
+---
+title: "Overview"
+sidebar:
+  order: 0
+head:
+  - tag: title
+    content: Chains Overview
+---
+
+import ChainsTable from '#/components/svelte/tables/ChainsTable.svelte'
+
+## Supported Chains
+
+Union has live connections on different ecosystems, where we ensure indexing, collaborate with relayers and maintain integrations
+with protocols.
+
+We categorize L2s and L3s as chains as well since we abstract over each.
+
+<ChainsTable client:only='svelte' />

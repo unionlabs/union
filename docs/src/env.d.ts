@@ -6,6 +6,7 @@
 
 interface EventTarget {
   value?: string
+  closest(selector: string): Element | null
 }
 
 interface EnvironmentVariables {

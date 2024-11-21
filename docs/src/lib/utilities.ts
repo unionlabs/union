@@ -1,3 +1,48 @@
+import { dedent } from "ts-dedent"
+
+export const graphqlQueryToCurl = ({ url, query }: { url: string; query: string }) =>
+  dedent /* bash */`
+    curl --request POST \\
+      --url '${url}' \\
+      --header 'Content-Type: application/json' \\
+      --data '{ "query": "\\n
+            ${query.replace(/"/g, '\\"')}"
+      }'
+  `
+
+// split array into n parts
+export const splitArray = <T>({ array, n }: { array: Array<T>; n: number }): Array<Array<T>> =>
+  array.reduce(
+    (accumulator, current, index) => {
+      const chunkIndex = Math.floor(index / n)
+      if (!accumulator[chunkIndex]) accumulator[chunkIndex] = []
+      accumulator[chunkIndex].push(current)
+      return accumulator
+    },
+    [] as Array<Array<T>>
+  )
+
+// remove duplicates from an array of objects by a key
+export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T> =>
+  array.reduce(
+    (accumulator, current) => {
+      if (!accumulator.find(item => item[key] === current[key])) {
+        accumulator.push(current)
+      }
+      return accumulator
+    },
+    [] as Array<T>
+  )
+
+export function stringIsJSON(str: string) {
+  try {
+    let _json = JSON.parse(str)
+    return typeof _json === "object" && _json !== null
+  } catch {
+    return false
+  }
+}
+
 export function fragmentFromString(stringifiedHTML: string) {
   return document.createRange().createContextualFragment(stringifiedHTML.trim())
 }

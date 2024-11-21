@@ -14,8 +14,12 @@ interface Props {}
   const graphqlElement = document.querySelector('article#graphiql')
   if (!graphqlElement) throw new Error('GraphQL element not found')
 
-  const query = new URLSearchParams(window.location.search).get('query')
+  const urlSearchParams = new URLSearchParams(window.location.search)
+  const query = urlSearchParams.get('query')
   if (query) localStorage.setItem('graphiql:query', query)
+
+  const variables = urlSearchParams.get('variables')
+  if (variables) localStorage.setItem('graphiql:variables', variables)
 
   const root = ReactDOM.createRoot(graphqlElement)
   root.render(graphiqlElement)

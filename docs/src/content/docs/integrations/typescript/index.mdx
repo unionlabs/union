@@ -26,12 +26,13 @@ If you need testnet tokens for testing, visit https://app.union.build/faucet and
 
 <Tabs>
   <TabItem label='EVM Based Client'>
-```ts
+```ts twoslash
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
 const client = createUnionClient({
   chainId: "80084",
+  // ^?
   transport: http("https://bartio.rpc.berachain.com"),
   account: privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`),
 })
@@ -39,11 +40,11 @@ const client = createUnionClient({
   </TabItem>
   
   <TabItem label='Cosmos Based Client'>
-```ts
+```ts twoslash
 import {
   http,
+  hexToBytes,
   createUnionClient,
-  hexStringToUint8Array
 } from "@unionlabs/client"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
@@ -51,7 +52,7 @@ const PRIVATE_KEY = process.env["PRIVATE_KEY"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const account = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
   "stride"
 )
 
@@ -63,10 +64,10 @@ const client = createUnionClient({
 ```
   </TabItem>
   <TabItem label='Multi-Chain Client'>
-```ts
+```ts twoslash
 import { 
   http, 
-  hexStringToUint8Array,
+  hexToBytes,
   createMultiUnionClient
 } from "@unionlabs/client"
 import { privateKeyToAccount } from "viem/accounts"
@@ -85,7 +86,7 @@ const clients = createMultiUnionClient([
     chainId: "stride-internal-1",
     transport: http("stride.testnet-1.stridenet.co"),
     account: await DirectSecp256k1Wallet.fromKey(
-      Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+      Uint8Array.from(hexToBytes(PRIVATE_KEY)),
       "stride"
     ),
   }
@@ -136,17 +137,16 @@ console.info(`Transfer hash: ${transfer.value}`)
 ```
   </TabItem>
   <TabItem label='client.ts'>
-```ts
+```ts twoslash
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
 let PRIVATE_KEY = process.env["PRIVATE_KEY"]
 if (!PRIVATE_KEY) throw new Error("PRIVATE_KEY is not set")
-PRIVATE_KEY = PRIVATE_KEY.startsWith("0x") ? PRIVATE_KEY : `0x${PRIVATE_KEY}`
 
 export const unionClient = createUnionClient({
   chainId: "80084",
-  account: privateKeyToAccount(PRIVATE_KEY),
+  account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
   transport: http("https://bartio.rpc.berachain.com")
 })
 ```
