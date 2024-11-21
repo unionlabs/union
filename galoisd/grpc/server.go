@@ -151,7 +151,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 
 	prove := func() (*grpc.ProveResponse, error) {
 
-		log.Debug().Msg("Marshalling trusted validators...")
+		log.Debug().Msg("Marshaling trusted validators...")
 		trustedValidators, trustedValidatorsRoot, err := MarshalValidators(req.TrustedCommit.Validators)
 		if err != nil {
 			return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
@@ -163,7 +163,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
 		}
 
-		log.Debug().Msg("Marshalling untrusted validators...")
+		log.Debug().Msg("Marshaling untrusted validators...")
 		untrustedValidators, _, err := MarshalValidators(req.UntrustedCommit.Validators)
 		if err != nil {
 			return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)

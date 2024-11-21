@@ -43,6 +43,6 @@ func GenContract() *cobra.Command {
 		}),
 	}
 	cmd.Flags().String(flagPath, "", "Path were to write the file. If empty, dump to stdout.")
-	cmd.Flags().String(flagTLS, "", "Wether the gRPC endpoint expect TLS.")
+	cmd.Flags().String(flagTLS, "", "Whether the gRPC endpoint expect TLS.")
 	return cmd
 }
