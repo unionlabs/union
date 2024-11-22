@@ -9,7 +9,6 @@ _: {
       config,
       ensureAtRepositoryRoot,
       mkCi,
-      dbg,
       ...
     }:
     let
@@ -599,7 +598,7 @@ _: {
               name = name + "-protos";
               path = src;
             }
-          ) (dbg all-protos-to-build)
+          ) all-protos-to-build
         );
         buildInputs = [
           pkgs.protobuf
