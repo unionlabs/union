@@ -134,10 +134,6 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
-            // {
-            //   label: "Chains",
-            //   link: "/chains"
-            // },
             {
               label: "Protocol",
               items: [
