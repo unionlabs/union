@@ -10,7 +10,7 @@ import Mermaid from "#/components/Mermaid.astro";
 
 # Overview
 
-`ucs03-zkgm-1` is the most advanced and recommended protocol to use for 
+`ucs03-zkgm-1` is the most advanced and recommended protocol to use for
 
 - message passing
 - transfers (assets and NFTs)
@@ -21,29 +21,29 @@ It's the most gas-efficient version and suitable for almost all use cases.
 
 ## Protocol
 
-There are two main modes for a packet to be transferred using `ucs03-zkgm-1`. The main mode, which always succeeds for any chain, 
+There are two main modes for a packet to be transferred using `ucs03-zkgm-1`. The main mode, which always succeeds for any chain,
 leverages state lenses to create a recursive connection and a communication channel between two chains.
 
 
 <Mermaid
   content={`
 sequenceDiagram
-    critical   
+    critical
         Chain A ->> Union: ClientUpdate
         Union ->> Chain B: ClientUpdate
         Chain A -->> Chain B: Packet
-    end 
+    end
     Chain B ->> Union: ClientUpdate
     Union ->> Chain A: ClientUpdate
     Chain B -->> Chain A: Acknowledgement
 `}/>
 
-The packet submission is not routed through any PFM middleware, which avoids re-execution on Union, unlike `ucs01-relay-1`. The core protocol is 
+The packet submission is not routed through any PFM middleware, which avoids re-execution on Union, unlike `ucs01-relay-1`. The core protocol is
 significantly more gas efficient over multi-hop-based protocols.
 
 ### Open Filling
 
-A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-zkgm-1` allows arbitrary filling of orders by any party. 
+A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-zkgm-1` allows arbitrary filling of orders by any party.
 
 :::tip
 
@@ -62,10 +62,10 @@ sequenceDiagram
     participant Union
     participant Chain B
     critical
-        Chain A -->> Chain B: Packet   
+        Chain A -->> Chain B: Packet
         Chain A ->> Union: ClientUpdate
         Union ->> Chain B: ClientUpdate
-    end 
+    end
     Chain B ->> Union: ClientUpdate
     Union ->> Chain A: ClientUpdate
     Chain B -->> Chain A: Acknowledgement
@@ -73,13 +73,13 @@ sequenceDiagram
 
 Theoretically, a filler can submit the transfer to the destination side before the transaction is included on the source, given that they protect themselves against double-spend attacks.
 
-The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault. 
+The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault.
 
 Open filling is opt-in for any protocol, allowing for the same optimizations that `ucs03-zkgm-1` leverages to increase transfer speeds.
 
 ### Batching
 
-To minimize the cost of packet verification (which is dominated by membership proofs), packets may be batched. This means that at scale, the gas cost of transfers tends to the 
+To minimize the cost of packet verification (which is dominated by membership proofs), packets may be batched. This means that at scale, the gas cost of transfers tends to the
 erc20 gas cost, which is the theoretical optimum.
 
 :::note
@@ -88,3 +88,101 @@ Read more on filling and counterparty risk [here](/concepts/filling).
 
 :::
 
+# V0 Specification
+
+The zkgm protocol abstracts away multiple facets of IBC and Union's assets transfer protocol (uc01).
+We employ versionning in this protocol to ensure backward compatibility with future upgrades (not relying on the IBC channel upgrade feature).
+It's features include:
+- batching
+- forward/callback envelopes
+- channel multiplexing
+- fungible assets transfer
+- non-fungible assets transfer
+
+## Packet
+
+A zkgm packet is encoded as: `[version, salt, [syscall_index, packet]]`
+Where:
+- `version` is a `uint8`, representing the protocol version
+- `salt` is a `bytes32`, is the packet salt for unique and deterministic packet hashing.
+  - The (outermost for recursive variants) packet **MUST** prefix the salt with the sender address to avoid collisions between users.
+  - The subsequent packets (yield from the protocol itself after receiving a first packet, such as in the [forwarding](#0x00-forward) case) **MUST** have the inner salt updated in place with `next_packet.salt = keccak256(previous_packet.salt, next_packet.salt)`. This ensures the uniqueness of subsequents packets and still allow a counterfactual computation.
+- `syscall_index` is a `uint8`, representing the [zkgm system call](#syscalls) to which the `packet` will be sent
+- `packet` is a `bytes`, representing the syscall specific message
+
+:::note
+
+The `version` field is embedded in every zkgm packet. One may think that this value is redundant for recursive packets. The reality is that upgrade propagation may take time (optimistic rollups for instance) and having every packet specifying their version will allow to forward from a higher version to a lower one. This is specifically true for packet forwarding.
+
+:::
+
+## Syscalls
+
+zkgm provides several syscalls that can be used for different purposes,
+
+### 0x00 - Forward
+
+The forward syscall is living at index `0x00`.
+
+It's packet structure is: `[channel_id, zkgm_packet]`
+Where:
+- `channel_id` is the IBC channel the message will be forwarded to
+- `zkgm_packet` is the [packet](#packet) to send
+
+:::tip
+
+The `zkgm_packet` is itself a zkgm packet, meaning this structure is recursive.
+One can easily wrap a packet `P` in multiple envelopes, transferring `P` from chain `A` to `D` via two channels `x` and `y` would result in: `[ZKGM_V0, [FORWARD_SYSCALL, [x, [ZKGM_V0, [FORWARD_SYSCALL, [y, [ZKGM_V0, P]]]]]]]`
+
+:::
+
+### 0x01 - Callback
+
+The callback syscall is living at index `0x01`.
+
+It's packet structure is: `[contract_address, calldata]`
+Where:
+- `contract_address` is the contract to call
+- `calldata` is the message that will be provided to the contract
+
+### 0x02 - Batch
+
+The batch syscall is living at index `0x02`.
+
+It's packet structure is: `[zkgm_packet_0, zkgm_packet_1, ..., zkgm_packet_n]`
+Where the packets are atomically executed in sequence.
+
+:::tip
+
+In combination with forward/callback envelopes, this batching mechanism is very useful to call contract before/after message execution (transfer asset, then transfer nft, then call a contract...).
+
+:::
+
+### 0x03 - Fungible Assets Transfer
+
+The fungible assets transfer syscall is living at index `0x03`.
+
+It's packet structure is: `[sender, receiver, orders@[sent_token_address, sent_amount, ask_token_address, ask_minimum_amount]]`
+Where:
+- `sender` is a `bytes` representing the sender address
+- `receiver` is a `bytes` representing the receiver address, it **MUST** be a valid binary representation of an address on the destination chain
+- `orders` is a list of orders where:
+  - `sent_token_address` is a `bytes` representing the asset that has been sent (escrowed or burnt on the counterparty side)
+  - `sent_amount` is a `uint256` representing the amount that has been sent
+  - `ask_token_address` is a `bytes` representing the asset the user is asking against it's sent asset, it **MUST** be a valid binary representation of an asset on the destination chain. In the receiving side
+    - An intent filling is possible, with a market maker providing the `ask_minimum_amount` and the protocol ensuring that the trade happens correctly (executing the transfer from the market maker to the user for every asset).
+    - In the non-intent variant, if the protocol detects that the address matches the protocol wrapped asset, i.e. `wrapped(sent_token_address)`, it fills the order itself by minting the `ask_minimum_amount` after asserting that `sent_amount >= ask_minimum_amount`.
+  - `ask_minimum_amount` is the minimum amount the user is willing to get for the order to be successfully filled.
+
+:::tip
+
+A user can split a big order over multiple packets to have a partial-filling like behavior.
+For instance, one could split a $100K order over 10 packets to allow different participants (usually market makers) to fill chunks of $10K.
+
+:::
+
+:::warn
+
+If any of the order in the `orders` list is failing on execution, the whole packet is reverted and a failure acknowlegement is yield.
+
+:::
