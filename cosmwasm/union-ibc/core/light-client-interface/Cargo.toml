@@ -6,26 +6,26 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-cosmwasm-std-1                       = { version = "1.5.4", package = "cosmwasm-std", optional = true }
-cosmwasm-std-2                     = { version = "2.1.4", package = "cosmwasm-std", optional = true }
-cosmwasm-schema-1                    = { version = "1.5.4", package = "cosmwasm-schema", optional = true }
+cosmwasm-schema-1                  = { version = "1.5.4", package = "cosmwasm-schema", optional = true }
 cosmwasm-schema-2                  = { version = "2.1.4", package = "cosmwasm-schema", optional = true }
-cw-storage-plus-1                    = { version = "1.2", package = "cw-storage-plus", optional = true }
+cosmwasm-std-1                     = { version = "1.5.4", package = "cosmwasm-std", optional = true }
+cosmwasm-std-2                     = { version = "2.1.4", package = "cosmwasm-std", optional = true }
+cw-storage-plus-1                  = { version = "1.2", package = "cw-storage-plus", optional = true }
 cw-storage-plus-2                  = { version = "2.0.0", package = "cw-storage-plus", optional = true }
 frame-support-procedural.workspace = true
 macros.workspace                   = true
+schemars                           = { workspace = true }
+serde                              = { workspace = true }
 serde-utils.workspace              = true
 thiserror.workspace                = true
 union-ibc                          = { workspace = true, features = ["library"] }
 union-ibc-msg                      = { workspace = true }
 unionlabs.workspace                = true
-serde = { workspace = true }
-schemars = { workspace = true }
 
 [lints]
 workspace = true
 
 [features]
-default    = [ "cosmwasm-1" ]
-cosmwasm-1 = [ "cosmwasm-std-1", "cosmwasm-schema-1", "cw-storage-plus-1" ]
-cosmwasm-2 = [ "cosmwasm-std-2", "cosmwasm-schema-2", "cw-storage-plus-2"  ]
+cosmwasm-1 = ["cosmwasm-std-1", "cosmwasm-schema-1", "cw-storage-plus-1"]
+cosmwasm-2 = ["cosmwasm-std-2", "cosmwasm-schema-2", "cw-storage-plus-2"]
+default    = ["cosmwasm-1"]

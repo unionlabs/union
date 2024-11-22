@@ -19,7 +19,7 @@ use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     ensure,
-    hash::H256,
+    hash::{BytesBitIterator, H256},
 };
 
 use crate::{
@@ -31,6 +31,7 @@ use crate::{
 };
 
 pub const GENESIS_SLOT: u64 = 0;
+pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(
@@ -217,12 +218,9 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
     // public keys of the ones who participated.
-    let participant_pubkeys = update
-        .sync_aggregate
-        .sync_committee_bits
-        .iter()
+    let participant_pubkeys = BytesBitIterator::new(&&*update.sync_aggregate.sync_committee_bits)
         .zip(sync_committee.pubkeys.iter())
-        .filter_map(|(included, pubkey)| if *included == 1 { Some(pubkey) } else { None })
+        .filter_map(|(included, pubkey)| if included { Some(pubkey) } else { None })
         .collect::<Vec<_>>();
 
     let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;

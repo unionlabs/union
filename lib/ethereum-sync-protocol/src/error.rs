@@ -109,6 +109,8 @@ pub enum Error {
     MustBeDeneb,
     #[error("finalized slot cannot be the genesis slot")]
     FinalizedSlotIsGenesis,
+    #[error("client errored during signature verification ({0})")]
+    ClientSignatureVerification(String),
 }
 
 // NOTE: Implemented here instead of via #[from] since AmclError doesn't implement core::error::Error
