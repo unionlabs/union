@@ -479,10 +479,28 @@
             );
           };
 
-          devShells.default = pkgs.mkShell {
+          devShells.default = 
+          let
+            ignite-cli = goPkgs.buildGo123Module {
+              name = "ignite-cli";
+              src = pkgs.fetchFromGitHub {
+                owner = "ignite";
+                repo = "cli";
+                rev = "v28.5.3";
+                sha256 = "sha256-ziuzSV7LjRgR1wNE1QD+OszIeXiip7pPU4/BD8fhV5s=";
+              };
+              vendorHash = "sha256-5Z5AuZtPwfENKp8wMYfRqmnkX4W4fWTjWulT5uNusPo=";
+              doCheck = false;
+              ldflags = [
+                "-X github.com/ignite/cli/ignite/version.Head=v28.5.3"
+                "-X github.com/ignite/cli/ignite/version.Version=v28.5.3"
+              ];
+            };
+          in
+          pkgs.mkShell {
             name = "union-devShell";
             buildInputs =
-              [ rust.toolchains.dev ]
+              [ rust.toolchains.dev ignite-cli ]
               ++ (with pkgs; [
                 clang
                 cargo-llvm-cov

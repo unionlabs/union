@@ -1,0 +1,23 @@
+# This file is auto-generated from Ignite. You can edit
+# the file content but do not change the file name or path.
+#
+# buf.gen.pulsar.yaml
+#
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/unionlabs/union/uniond/api
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/cosmos/gogo-proto
+      - buf.build/cosmos/cosmos-proto
+    override:
+      buf.build/cosmos/cosmos-sdk: cosmossdk.io/api
+plugins:
+  - name: go-pulsar
+    out: ./api
+    opt: paths=source_relative
+  - name: go-grpc
+    out: ./api
+    opt: paths=source_relative
