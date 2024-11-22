@@ -1267,13 +1267,13 @@ fn process_receive(
     let connection = ensure_connection_state(deps.as_ref(), channel.connectionId)?;
 
     if !intent {
-        let proof_commitment_key = match packets.len() {
-            1 => unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packet(first)),
-            _ => unionlabs::ics24::ethabi::batch_receipts_key(
-                source_channel,
-                commit_packets(&packets),
-            ),
-        };
+        let proof_commitment_key = unionlabs::ics24::ethabi::batch_packets_key(
+            source_channel,
+            match packets.len() {
+                1 => commit_packet(first),
+                _ => commit_packets(&packets),
+            },
+        );
 
         let client_impl = client_impl(deps.as_ref(), connection.clientId)?;
         deps.querier.query_wasm_smart::<()>(
