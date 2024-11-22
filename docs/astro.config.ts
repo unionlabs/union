@@ -2,6 +2,7 @@ import { loadEnv } from "vite"
 import react from "@astrojs/react"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import Icons from "unplugin-icons/vite"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
@@ -33,17 +34,29 @@ export default defineConfig({
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
   vite: {
+    resolve: {
+      alias: [
+        { find: "icons:svelte", replacement: "~icons" },
+        { find: "icons:astro", replacement: "~icons" },
+        { find: "path", replacement: "rollup-plugin-node-polyfills/polyfills/path" }
+      ]
+    },
+    plugins: [
+      Icons({
+        compiler: "svelte",
+        autoInstall: true
+      }),
+      Icons({
+        compiler: "astro",
+        autoInstall: true
+      })
+    ],
     ssr: {
       noExternal: ["monaco-editor"]
     },
     optimizeDeps: {
       include: ["@xterm/xterm"],
-      esbuildOptions: { target: "es2022" }
-    },
-    resolve: {
-      alias: {
-        path: "rollup-plugin-node-polyfills/polyfills/path"
-      }
+      esbuildOptions: { target: "es2020" }
     }
   },
   server: _ => ({
@@ -57,9 +70,9 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin"
     }
   }),
+  redirects: { "/logo": "/union-logo.zip" },
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
-  redirects: { "/logo": "/union-logo.zip" },
   integrations: [
     starlight({
       title: "Union",

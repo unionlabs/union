@@ -1,5 +1,5 @@
 <script lang="ts">
-import Ellipsis from "lucide-svelte/icons/ellipsis"
+import EllipsisIcon from "icons:svelte/lucide/ellipsis"
 import type { WithElementRef, WithoutChildren } from "bits-ui"
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "#/lib/shadcn.js"
@@ -17,6 +17,6 @@ let {
 	class={cn("flex size-9 items-center justify-center", className)}
 	{...restProps}
 >
-	<Ellipsis class="size-4" />
+	<EllipsisIcon class="size-4" />
 	<span class="sr-only">More pages</span>
 </span>

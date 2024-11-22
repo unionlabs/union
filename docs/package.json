@@ -71,6 +71,7 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/language-server": "^2.15.4",
     "@astrojs/ts-plugin": "^1.10.4",
+    "@iconify/json": "^2.2.275",
     "@shikijs/monaco": "^1.23.1",
     "@shikijs/rehype": "^1.23.1",
     "@shikijs/transformers": "^1.23.1",
@@ -88,7 +89,6 @@
     "autoprefixer": "^10.4.20",
     "bits-ui": "^1.0.0-next.63",
     "clsx": "^2.1.1",
-    "lucide-svelte": "^0.460.1",
     "patch-package": "^8.0.0",
     "postcss": "^8.4.49",
     "postcss-import": "^16.1.0",
@@ -102,6 +102,7 @@
     "typed-query-selector": "^2.12.0",
     "typescript": "^5.7.2",
     "unist-util-visit": "^5.0.0",
+    "unplugin-icons": "^0.20.1",
     "vite": "^5.4.11"
   },
   "overrides": {

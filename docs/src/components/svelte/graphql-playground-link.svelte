@@ -1,6 +1,6 @@
 <script lang="ts">
 import { cn } from "#/lib/shadcn.ts"
-import graphqlSvg from "#/assets/icons/graphql.svg?raw"
+import GraphqlIcon from "icons:svelte/logos/graphql"
 
 interface Props {
   class: string
@@ -15,9 +15,9 @@ export const { query, class: className }: Props = $props()
   rel="noopener noreferrer"
   title="Open in GraphQL playground"
   href={`/reference/graphql?query=${encodeURIComponent(query)}`}
-  class={cn(className, 'size-12 my-auto hover:bg-muted/10 rounded-sm p-1 hover:cursor-pointer')}
+  class={cn(className, 'size-10 my-auto hover:bg-muted/10 rounded-sm p-1 hover:cursor-pointer')}
 >
-  {@html graphqlSvg}
+  <GraphqlIcon class='m-auto size-full' />
 </a>
 
 <style lang="postcss"></style>

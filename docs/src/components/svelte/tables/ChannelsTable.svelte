@@ -2,11 +2,10 @@
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
-import jsonSvg from "#/assets/icons/json.svg?raw"
 import curlSvg from "#/assets/icons/curl.svg?raw"
+import JsonIcon from "icons:svelte/mdi/code-json"
 import { highlightCode } from "#/lib/highlight-code.ts"
 import * as Table from "#/components/svelte/ui/table/index.ts"
-import { Button } from "#/components/svelte/ui/button/index.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
@@ -37,7 +36,7 @@ const curlCommand = graphqlQueryToCurl({
  */
 const rowsPerPage = 10
 let pageNumber = $state(0)
-let toggleRowIcon = $state(jsonSvg)
+let toggleRowIcon = $state("jsonSvg")
 const promise = $state(fetchChannels())
 
 let search = $state("")
@@ -107,11 +106,9 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
       "hsl(var(--muted) / 0.1)",
       "important"
     )
-    eventTarget.innerHTML = "▼"
     jsonSnippetElement.dataset.state = "expanded"
   } else {
     previousUncleElement.style.removeProperty("background-color")
-    eventTarget.innerHTML = jsonSvg
     jsonSnippetElement.innerHTML = ""
     jsonSnippetElement.dataset.state = "collapsed"
   }
@@ -189,13 +186,12 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
                 {@const isJSON = stringIsJSON(cell)}
                 {#if isJSON}
                   {@const version = JSON.parse(cell)}
-                  <Button
-                    size="lg"
+                  <button
                     onclick={event => attachContent(event, rowIndex, version)}
-                    class="hover:underline hover:text-accent-500 p-2 size-10 hover:bg-background/30 hover:cursor-pointer bg-transparent"
+                    class="bg-transparent hover:underline p-2 size-10 hover:bg-background/30 hover:cursor-pointer"
                   >
-                    {@html toggleRowIcon}
-                  </Button>
+                    <JsonIcon class="m-auto" />
+                  </button>
                 {:else}
                   {cell}
                 {/if}
