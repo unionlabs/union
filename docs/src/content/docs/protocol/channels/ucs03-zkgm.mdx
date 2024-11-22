@@ -106,7 +106,7 @@ Where:
 - `version` is a `uint8`, representing the protocol version
 - `salt` is a `bytes32`, is the packet salt for unique and deterministic packet hashing.
   - The (outermost for recursive variants) packet **MUST** prefix the salt with the sender address to avoid collisions between users.
-  - The subsequent packets (yield from the protocol itself after receiving a first packet, such as in the [forwarding](#0x00-forward) case) **MUST** have the inner salt updated in place with `next_packet.salt = keccak256(previous_packet.salt, next_packet.salt)`. This ensures the uniqueness of subsequents packets and still allow a counterfactual computation.
+  - The subsequent packets (yield from the protocol itself after receiving a first packet, such as in the forwarding case) **MUST** have the inner salt updated in place with `next_packet.salt = keccak256(previous_packet.salt, next_packet.salt)`. This ensures the uniqueness of subsequents packets and still allow a counterfactual computation.
 - `syscall_index` is a `uint8`, representing the [zkgm system call](#syscalls) to which the `packet` will be sent
 - `packet` is a `bytes`, representing the syscall specific message
 
@@ -136,25 +136,28 @@ One can easily wrap a packet `P` in multiple envelopes, transferring `P` from ch
 
 :::
 
-### 0x01 - Callback
+### 0x01 - Multiplex
 
-The callback syscall is living at index `0x01`.
-
-It's packet structure is: `[contract_address, calldata]`
+The multiplex syscall is living at index `0x01`.
+It's packet structure is: `[sender, eureka, contract_address, calldata]`
 Where:
-- `contract_address` is the contract to call
-- `calldata` is the message that will be provided to the contract
+- `sender` is a `bytes` representing the sender address
+- `eureka` is a `bool` indicating whether the call must be a recursive IBC operation (zkgm operates as the stack by multiplexing it's channel):
+  - if `true`, the receiving contract will have an `onRecvPacket` dispatched with the ibc packet being `(sender, calldata)` where the sender is the protocol that initially triggered the packet on the zkgm protocol. The called contract must answer similarly to when called by the IBC stack, it **MUST** return a non asynchronous acknowledgement. The acknowledgement will be forwarded back to the `sender` once the multiplex packet itself is acknowledged.
+  - if `false`, the receiving contract will have a `onZkgm(sender, calldata)` call dispatched. This message will be fired and forgot, no acknowledgement will be returned to the `sender`.
+- `contract_address` is a `bytes` representing the destination contract address, it **MUST** be a valid binary representation of an address on the destination chain
+- `calldata` is a `bytes` representing the message to be sent, it **MUST** be a valid binary representation of a contract call on the destination chain.
 
 ### 0x02 - Batch
 
 The batch syscall is living at index `0x02`.
 
 It's packet structure is: `[zkgm_packet_0, zkgm_packet_1, ..., zkgm_packet_n]`
-Where the packets are atomically executed in sequence.
+Where the packets are atomically executed in sequence and their acknowledgements written in sequence as well.
 
 :::tip
 
-In combination with forward/callback envelopes, this batching mechanism is very useful to call contract before/after message execution (transfer asset, then transfer nft, then call a contract...).
+In combination with forward envelopes or multiplexing, this batching mechanism is very useful to call contract before/after message execution (transfer asset, then transfer nft, then call a contract...).
 
 :::
 
@@ -178,6 +181,8 @@ Where:
 
 A user can split a big order over multiple packets to have a partial-filling like behavior.
 For instance, one could split a $100K order over 10 packets to allow different participants (usually market makers) to fill chunks of $10K.
+
+Read more on filling [here](/concepts/filling).
 
 :::
 
