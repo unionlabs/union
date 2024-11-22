@@ -1354,7 +1354,7 @@ dependencies = [
  "arbitrum-light-client-types",
  "arbitrum-verifier",
  "base64 0.21.7",
- "cosmwasm-std 1.5.8",
+ "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethereum-light-client-types",
  "ethers-core",
@@ -10900,8 +10900,8 @@ name = "scroll-light-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethereum-light-client",
  "ethereum-light-client-types",
  "ethers-core",
