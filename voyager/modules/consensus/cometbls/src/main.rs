@@ -6,20 +6,21 @@ use std::{
 use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, instrument};
 use unionlabs::{
+    bech32::Bech32,
+    hash::H256,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     traits::Member,
-    ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    rpc::json_rpc_error_to_error_object,
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;
@@ -36,12 +37,16 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub chain_revision: u64,
     pub grpc_url: String,
+
+    pub ibc_host_contract_address: H256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 impl ConsensusModule for Module {
@@ -73,6 +78,10 @@ impl ConsensusModule for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
+            ibc_host_contract_address: config
+                .ibc_host_contract_address
+                .map(|a| *a.data())
+                .unwrap_or_default(),
         })
     }
 }
@@ -124,17 +133,18 @@ impl ConsensusModuleServer for Module {
         self.latest_height(finalized)
             .await
             // TODO: Add more context here
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+            .map_err(json_rpc_error_to_error_object)
     }
 
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
-        let mut commit_response =
-            self.tm_client.commit(None).await.map_err(|err| {
-                ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-            })?;
+        let mut commit_response = self
+            .tm_client
+            .commit(None)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
 
         if finalized && commit_response.canonical {
             debug!(
@@ -150,9 +160,7 @@ impl ConsensusModuleServer for Module {
                     .expect("should be fine"),
                 ))
                 .await
-                .map_err(|err| {
-                    ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-                })?;
+                .map_err(json_rpc_error_to_error_object)?;
 
             if !commit_response.canonical {
                 error!(
@@ -214,6 +222,7 @@ impl ConsensusModuleServer for Module {
                     .unwrap(),
                 height.inner().try_into().expect("value is >= 0; qed;"),
             ),
+            contract_address: self.ibc_host_contract_address,
         })
         .unwrap())
     }

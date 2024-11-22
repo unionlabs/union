@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
-use tracing::warn;
+use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::WaitForTrustedHeight,
@@ -95,6 +95,17 @@ where
     }
 }
 
+#[instrument(
+    skip_all,
+    fields(
+        chain_id = %module_server.chain_id,
+        %client_id,
+        has_updates = updates.is_some(),
+        client_meta.height = %client_meta.height,
+        client_meta.chain_id = %client_meta.chain_id,
+        %new_trusted_height
+    )
+)]
 pub fn make_msgs<V: IbcSpecExt>(
     module_server: &Module,
 
@@ -122,6 +133,15 @@ where
 
                 let origin_chain_id = client_meta.chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
+
+                debug!(
+                    %origin_chain_id,
+                    %target_chain_id,
+                    event = V::event_name(&batchable_event.event),
+                    provable_height = %batchable_event.provable_height,
+                    first_seen_at = batchable_event.first_seen_at,
+                    "batching event"
+                );
 
                 call(PluginMessage::new(
                     module_server.plugin_name(),

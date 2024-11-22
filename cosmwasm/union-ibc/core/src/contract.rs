@@ -611,11 +611,11 @@ fn delete_packet_commitment(
 }
 
 fn commit_packet(packet: &Packet) -> H256 {
-    commit(packet.abi_encode())
+    commit(packet.abi_encode_params())
 }
 
 fn commit_packets(packets: &[Packet]) -> H256 {
-    commit(packets.abi_encode())
+    commit(packets.abi_encode_params())
 }
 
 fn register_client(
@@ -695,6 +695,18 @@ fn update_client(
             message: client_message.into(),
         },
     )?;
+
+    CLIENT_STATES.save(
+        deps.storage,
+        client_id,
+        &update.client_state.to_vec().into(),
+    )?;
+    CLIENT_CONSENSUS_STATES.save(
+        deps.storage,
+        (client_id, update.height),
+        &update.consensus_state.to_vec().into(),
+    )?;
+
     store_commit(
         deps.branch(),
         &unionlabs::ics24::ethabi::client_state_key(client_id),
@@ -771,7 +783,9 @@ fn connection_open_try(
             path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_connection.abi_encode()).into_bytes().into(),
+            value: commit(expected_connection.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     save_connection(deps.branch(), connection_id, &connection)?;
@@ -822,7 +836,9 @@ fn connection_open_ack(
             path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_connection.abi_encode()).into_bytes().into(),
+            value: commit(expected_connection.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     connection.state = ConnectionState::Open;
@@ -877,7 +893,9 @@ fn connection_open_confirm(
             path: unionlabs::ics24::ethabi::connection_key(connection.counterpartyConnectionId)
                 .into_bytes()
                 .into(),
-            value: commit(expected_connection.abi_encode()).into_bytes().into(),
+            value: commit(expected_connection.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     connection.state = ConnectionState::Open;
@@ -976,7 +994,9 @@ fn channel_open_try(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            value: commit(expected_channel.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     let port_id = deps.api.addr_validate(&port_id)?;
@@ -1052,7 +1072,9 @@ fn channel_open_ack(
             path: unionlabs::ics24::ethabi::channel_key(counterparty_channel_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            value: commit(expected_channel.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1118,7 +1140,9 @@ fn channel_open_confirm(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            value: commit(expected_channel.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1215,7 +1239,9 @@ fn channel_close_confirm(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterpartyChannelId)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            value: commit(expected_channel.abi_encode_params())
+                .into_bytes()
+                .into(),
         },
     )?;
     channel.state = ChannelState::Closed;
@@ -1223,7 +1249,7 @@ fn channel_close_confirm(
     store_commit(
         deps.branch(),
         &unionlabs::ics24::ethabi::channel_key(channel_id),
-        &commit(channel.abi_encode()),
+        &commit(channel.abi_encode_params()),
     )?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
@@ -1478,7 +1504,7 @@ fn commit_ack(ack: Vec<u8>) -> H256 {
 }
 
 fn commit_acks(acks: &Vec<alloy::primitives::Bytes>) -> H256 {
-    merge_ack(commit(acks.abi_encode()))
+    merge_ack(commit(acks.abi_encode_params()))
 }
 
 fn merge_ack(mut ack: H256) -> H256 {
@@ -1500,7 +1526,7 @@ fn save_connection(
     store_commit(
         deps,
         &unionlabs::ics24::ethabi::connection_key(connection_id),
-        &commit(connection.abi_encode()),
+        &commit(connection.abi_encode_params()),
     )?;
     Ok(())
 }
@@ -1542,7 +1568,7 @@ fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(),
     store_commit(
         deps,
         &unionlabs::ics24::ethabi::channel_key(channel_id),
-        &commit(channel.abi_encode()),
+        &commit(channel.abi_encode_params()),
     )?;
     Ok(())
 }

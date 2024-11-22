@@ -123,7 +123,7 @@ pub mod ethabi {
         type Error = TryFromEthAbiBytesErrorAlloy<Error>;
 
         fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let header = SolHeader::abi_decode(bytes, true)?;
+            let header = SolHeader::abi_decode_params(bytes, true)?;
 
             Ok(Self {
                 signed_header: LightHeader {

@@ -1,5 +1,12 @@
+#![warn(clippy::unwrap_used)]
+
 use std::{collections::VecDeque, ops::Div};
 
+use alloy::{
+    providers::{Provider, ProviderBuilder, RootProvider},
+    rpc::types::BlockTransactionsKind,
+    transports::BoxTransport,
+};
 use beacon_api::{client::BeaconApiClient, types::Spec};
 use beacon_api_types::{
     light_client_update::NextSyncCommitteeBranch, PresetBaseKind, SyncCommittee,
@@ -9,8 +16,7 @@ use ethereum_light_client_types::{
     AccountProof, EpochChangeUpdate, Header, LightClientUpdate, LightClientUpdateData,
     WithinEpochUpdate,
 };
-use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
-use futures::{stream, StreamExt};
+use futures::{stream, StreamExt, TryStreamExt};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -19,7 +25,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    constants::metric::NANOS_PER_SECOND, hash::H160, ibc::core::client::height::Height,
+    constants::metric::NANOS_PER_SECOND,
+    hash::{H160, H256},
+    ibc::core::client::height::Height,
     ErrorReporter,
 };
 use voyager_message::{
@@ -27,6 +35,7 @@ use voyager_message::{
     core::ChainId,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
+    into_value,
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
@@ -55,7 +64,7 @@ pub struct Module {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub provider: Provider<Ws>,
+    pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -85,32 +94,31 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
-    pub async fn fetch_account_update(&self, slot: u64) -> AccountProof {
-        let execution_height = self
-            .beacon_api_client
-            .execution_height(beacon_api::client::BlockId::Slot(slot))
-            .await
-            .unwrap();
-
+    pub async fn fetch_account_update(&self, block_number: u64) -> RpcResult<AccountProof> {
         let account_update = self
             .provider
-            .get_proof(
-                ethers::types::H160::from(self.ibc_handler_address),
-                vec![],
+            .get_proof(self.ibc_handler_address.into(), vec![])
+            .block_id(
                 // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                Some(execution_height.into()),
+                block_number.into(),
             )
             .await
-            .unwrap();
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching account update"),
+                    None::<()>,
+                )
+            })?;
 
-        AccountProof {
+        Ok(AccountProof {
             storage_root: account_update.storage_hash.into(),
             proof: account_update
                 .account_proof
                 .into_iter()
                 .map(|x| x.to_vec())
                 .collect(),
-        }
+        })
     }
 }
 
@@ -122,9 +130,11 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+        let provider = ProviderBuilder::new()
+            .on_builtin(&config.eth_rpc_api)
+            .await?;
 
-        let chain_id = ChainId::new(provider.get_chainid().await?.to_string());
+        let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         if chain_id != config.chain_id {
             return Err(format!(
@@ -136,7 +146,17 @@ impl Plugin for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
 
-        let spec = beacon_api_client.spec().await.unwrap().data;
+        let spec = beacon_api_client
+            .spec()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching beacon spec"),
+                    None::<()>,
+                )
+            })?
+            .data;
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(
@@ -165,16 +185,6 @@ impl Plugin for Module {
     async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
         match cmd {}
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
-    #[error("beacon error")]
-    Beacon(#[from] beacon_api::client::NewError),
 }
 
 #[async_trait]
@@ -242,25 +252,93 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 }
 
 impl Module {
-    /// Fetch a client update from the provided trusted height (`update_from`) to at least the desired new height (`update_to`).
+    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<u64> {
+        let block = self
+            .provider
+            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching block: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .expect("block should exist");
+
+        let beacon_slot = self
+            .beacon_api_client
+            .block(
+                <H256>::from(
+                    block
+                        .header
+                        .parent_beacon_block_root
+                        .expect("parent beacon block root should exist"),
+                )
+                .into(),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching block: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?;
+
+        Ok(beacon_slot.data.message.slot)
+    }
+
+    /// Fetch a client update from the provided trusted height (`update_from`) to at least the
+    /// desired new height (`update_to`).
     ///
-    /// Note that this will generate updates as close to the tip of the chain as possible, as long as that height is > `update_to`. Due to the nature of ethereum finality, it is not possible to update to a *specific* height in the same way as is possible in chains with single slot finality (such as tendermint or cometbls). While it would be possible to update to a height *closer* to `update_to`, the extra complexity brought by that is unlikely to be worth the slightly smaller update generated, especially since in practice the light client will likely always be up to date with the tip of the (finalized) chain.
+    /// Note that this will generate updates as close to the tip of the chain as possible, as long
+    /// as that height is > `update_to`. Due to the nature of ethereum finality, it is not possible
+    /// to update to a *specific* height in the same way as is possible in chains with single slot
+    /// finality (such as tendermint or cometbls). While it would be possible to update to a height
+    /// *closer* to `update_to`, the extra complexity brought by that is unlikely to be worth the
+    /// slightly smaller update generated, especially since in practice the light client will likely
+    /// always be up to date with the tip of the (finalized) chain.
     #[instrument(
         skip_all,
         fields(
             chain_id = %self.chain_id,
             %counterparty_chain_id,
-            %update_from,
-            %update_to
+            %update_from_block_number,
+            %update_to_block_number
         )
     )]
     async fn fetch_update(
         &self,
-        update_from: Height,
-        update_to: Height,
+        update_from_block_number: Height,
+        update_to_block_number: Height,
         counterparty_chain_id: ChainId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
-        let finality_update = self.beacon_api_client.finality_update().await.unwrap().data;
+        let finality_update = self
+            .beacon_api_client
+            .finality_update()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching finality update"),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        let spec = self
+            .beacon_api_client
+            .spec()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching beacon spec"),
+                    None::<()>,
+                )
+            })?
+            .data;
 
         // === FETCH VALID FINALITY UPDATE
 
@@ -268,15 +346,9 @@ impl Module {
             let sync_committee_bits = BitVec::<u8, Msb0>::try_from(
                 finality_update.sync_aggregate.sync_committee_bits.clone(),
             )
-            .unwrap();
+            .expect("sync committee bits should be valid");
 
-            let sync_committee_size = self
-                .beacon_api_client
-                .spec()
-                .await
-                .unwrap()
-                .data
-                .sync_committee_size;
+            let sync_committee_size = spec.sync_committee_size;
 
             assert_eq!(sync_committee_bits.len() as u64, sync_committee_size);
 
@@ -294,20 +366,22 @@ impl Module {
                 call(FetchUpdateHeaders {
                     chain_id: self.chain_id.clone(),
                     counterparty_chain_id,
-                    update_from,
-                    update_to,
+                    update_from: update_from_block_number,
+                    update_to: update_to_block_number,
                 }),
             ]));
         };
 
         // === FETCH LIGHT CLIENT UPDATES
 
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
         let target_period =
-            sync_committee_period(finality_update.attested_header.beacon.slot, spec.period());
+            sync_committee_period(finality_update.finalized_header.beacon.slot, spec.period());
 
-        let trusted_period = sync_committee_period(update_from.height(), spec.period());
+        let update_from_beacon_slot = self
+            .beacon_slot_of_execution_block_number(update_from_block_number.height())
+            .await?;
+
+        let trusted_period = sync_committee_period(update_from_beacon_slot, spec.period());
 
         info!("target period: {target_period}, trusted period: {trusted_period}");
 
@@ -326,7 +400,13 @@ impl Module {
             .beacon_api_client
             .light_client_updates(trusted_period + 1, target_period - trusted_period)
             .await
-            .unwrap()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching light client updates"),
+                    None::<()>,
+                )
+            })?
             .0
             .into_iter()
             .map(|x| x.data)
@@ -338,21 +418,22 @@ impl Module {
         );
 
         let (updates, last_update_block_number) = stream::iter(light_client_updates)
-            .fold((VecDeque::new(), update_from.height()), {
-                |(mut vec, mut trusted_slot), update| {
+            .map(<RpcResult<_>>::Ok)
+            .try_fold((VecDeque::new(), update_from_block_number.height()), {
+                |(mut vec, mut trusted_block_number), update| {
                     let self_ = self.clone();
                     let spec = spec.clone();
 
                     async move {
-                        let old_trusted_slot = trusted_slot;
+                        let old_trusted_block_number = trusted_block_number;
 
                         // REVIEW: Assert that this is greater (i.e. increasing)?
-                        trusted_slot = update.attested_header.beacon.slot;
+                        trusted_block_number = update.finalized_header.execution.block_number;
 
                         vec.push_back(
                             self_
                                 .make_header(
-                                    old_trusted_slot,
+                                    old_trusted_block_number,
                                     LightClientUpdateData {
                                         attested_header: update.attested_header,
                                         finalized_header: update.finalized_header,
@@ -361,19 +442,23 @@ impl Module {
                                         signature_slot: update.signature_slot,
                                     },
                                     Some((
-                                        update.next_sync_committee.unwrap(),
-                                        update.next_sync_committee_branch.unwrap(),
+                                        update
+                                            .next_sync_committee
+                                            .expect("next_sync_committee should exist"),
+                                        update
+                                            .next_sync_committee_branch
+                                            .expect("next_sync_committee_branch should exist"),
                                     )),
                                     &spec,
                                 )
-                                .await,
+                                .await?,
                         );
 
-                        (vec, trusted_slot)
+                        Ok((vec, trusted_block_number))
                     }
                 }
             })
-            .await;
+            .await?;
 
         let lc_updates = if trusted_period < target_period {
             updates
@@ -381,9 +466,10 @@ impl Module {
             [].into()
         };
 
-        let does_not_have_finality_update = last_update_block_number >= update_to.height();
+        let does_not_have_finality_update =
+            last_update_block_number >= update_to_block_number.height();
 
-        debug!(last_update_block_number, %update_to);
+        debug!(last_update_block_number, %update_to_block_number);
 
         let finality_update_msg = if does_not_have_finality_update {
             info!("does not have finality update");
@@ -405,7 +491,7 @@ impl Module {
                     None,
                     &spec,
                 )
-                .await,
+                .await?,
             )
         };
 
@@ -423,7 +509,7 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching beacon genesis: {}", ErrorReporter(e)),
+                    ErrorReporter(e).with_message("error fetching beacon genesis"),
                     None::<()>,
                 )
             })?
@@ -446,7 +532,7 @@ impl Module {
                     (genesis.genesis_time + (last_update_signature_slot * spec.seconds_per_slot))
                         + spec.seconds_per_slot,
                 )
-                .unwrap()
+                .expect("if this fails good luck")
                     * NANOS_PER_SECOND as i64,
                 finalized: false,
             }),
@@ -458,14 +544,14 @@ impl Module {
                             DecodedHeaderMeta {
                                 height: Height::new(match &header.consensus_update {
                                     LightClientUpdate::EpochChange(update) => {
-                                        update.update_data.attested_header.beacon.slot
+                                        update.update_data.finalized_header.beacon.slot
                                     }
                                     LightClientUpdate::WithinEpoch(update) => {
-                                        update.update_data.attested_header.beacon.slot
+                                        update.update_data.finalized_header.beacon.slot
                                     }
                                 }),
                             },
-                            serde_json::to_value(header).unwrap(),
+                            into_value(header),
                         )
                     })
                     .collect(),
@@ -477,48 +563,61 @@ impl Module {
         skip_all,
         fields(
             chain_id = %self.chain_id,
-            %currently_trusted_slot,
+            %currently_trusted_block_number,
             signature_slot = %light_client_update_data.signature_slot,
         )
     )]
     async fn make_header(
         &self,
-        currently_trusted_slot: u64,
+        // the block number that this update is *from*
+        currently_trusted_block_number: u64,
         light_client_update_data: LightClientUpdateData,
         // if this is an epoch change update, provide the next sync committee for the target epoch
         next_sync_committee: Option<(SyncCommittee, NextSyncCommitteeBranch)>,
         spec: &Spec,
-    ) -> Header {
+    ) -> RpcResult<Header> {
         // When we fetch the update at this height, the `next_sync_committee` will
         // be the current sync committee of the period that we want to update to.
         let previous_period = u64::max(
             1,
-            light_client_update_data.attested_header.beacon.slot / spec.period(),
+            light_client_update_data.finalized_header.beacon.slot / spec.period(),
         ) - 1;
 
         let ibc_account_proof = self
-            .fetch_account_update(light_client_update_data.attested_header.beacon.slot)
-            .await;
+            .fetch_account_update(
+                light_client_update_data
+                    .finalized_header
+                    .execution
+                    .block_number,
+            )
+            .await?;
 
         let previous_period_light_client_update = self
             .beacon_api_client
             .light_client_updates(previous_period, 1)
             .await
-            .unwrap()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e)
+                        .with_message("error fetching previous period light client update"),
+                    None::<()>,
+                )
+            })?
             .0
             .into_iter()
             .map(|x| x.data)
             .collect::<Vec<_>>()
             .pop()
-            .unwrap();
+            .expect("one update was requested, if the rpc returns a value it should be valid here");
 
-        Header {
+        Ok(Header {
             consensus_update: match next_sync_committee {
                 Some((next_sync_committee, next_sync_committee_branch)) => {
                     LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
                         sync_committee: previous_period_light_client_update
                             .next_sync_committee
-                            .unwrap(),
+                            .expect("next_sync_committee should exist"),
                         next_sync_committee,
                         next_sync_committee_branch,
                         update_data: light_client_update_data,
@@ -527,17 +626,17 @@ impl Module {
                 None => LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
                     sync_committee: previous_period_light_client_update
                         .next_sync_committee
-                        .unwrap(),
+                        .expect("next_sync_committee should exist"),
                     update_data: light_client_update_data,
                 })),
             },
-            trusted_height: Height::new(currently_trusted_slot),
+            trusted_height: Height::new(currently_trusted_block_number),
             ibc_account_proof,
-        }
+        })
     }
 }
 
 // REVIEW: Does this function exist anywhere else?
-fn sync_committee_period(height: u64, period: u64) -> u64 {
-    height.div(period)
+fn sync_committee_period(slot: u64, period: u64) -> u64 {
+    slot.div(period)
 }

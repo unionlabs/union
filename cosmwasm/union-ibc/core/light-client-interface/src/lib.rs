@@ -1,8 +1,8 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
-    StdError,
+    from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
+    Response, StdError,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use msg::InstantiateMsg;
@@ -11,7 +11,11 @@ use union_ibc::state::{CLIENT_CONSENSUS_STATES, CLIENT_STATES};
 use union_ibc_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate,
 };
-use unionlabs::encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding};
+use unionlabs::{
+    bytes::Bytes,
+    encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding},
+    hash::hash_v2::Base64,
+};
 
 pub mod msg;
 pub mod state;
@@ -298,9 +302,13 @@ pub fn read_client_state<T: IbcClient>(
     ibc_host: &Addr,
     client_id: u32,
 ) -> Result<T::ClientState, IbcClientError<T>> {
-    let client_state = querier
-        .query_wasm_raw(ibc_host.to_string(), CLIENT_STATES.key(client_id).to_vec())?
-        .unwrap();
+    let client_state = from_json::<Bytes<Base64>>(
+        querier
+            .query_wasm_raw(ibc_host.to_string(), CLIENT_STATES.key(client_id).to_vec())?
+            .unwrap(),
+    )
+    .unwrap();
+
     Ok(T::ClientState::decode_as::<T::Encoding>(&client_state).unwrap())
 }
 
@@ -310,11 +318,15 @@ pub fn read_consensus_state<T: IbcClient>(
     client_id: u32,
     height: u64,
 ) -> Result<T::ConsensusState, IbcClientError<T>> {
-    let consensus_state = querier
-        .query_wasm_raw(
-            ibc_host.to_string(),
-            CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec(),
-        )?
-        .unwrap();
+    let consensus_state = from_json::<Bytes<Base64>>(
+        querier
+            .query_wasm_raw(
+                ibc_host.to_string(),
+                CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec(),
+            )?
+            .unwrap(),
+    )
+    .unwrap();
+
     Ok(T::ConsensusState::decode_as::<T::Encoding>(&consensus_state).unwrap())
 }

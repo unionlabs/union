@@ -118,7 +118,7 @@ impl ConsensusModuleServer for Module {
                 .await
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
                 .data
-                .attested_header
+                .finalized_header
                 .execution
                 .timestamp
                 .try_into()

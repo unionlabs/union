@@ -269,7 +269,7 @@ fn update_state<C: ChainSpec>(
     // smaller. We don't want to save a new state if this is the case.
     let updated_height = core::cmp::max(
         trusted_height.height(),
-        consensus_update.finalized_header.beacon.slot,
+        consensus_update.finalized_header.execution.block_number,
     );
 
     if consensus_update.finalized_header.beacon.slot > consensus_state.slot {

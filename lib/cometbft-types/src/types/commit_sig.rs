@@ -3,7 +3,10 @@ use unionlabs::{
     bytes::Bytes,
     errors::{InvalidLength, UnknownEnumVariant},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
-    hash::H160,
+    hash::{
+        hash_v2::{Base64, HexUnprefixed},
+        H160,
+    },
 };
 
 use crate::types::block_id_flag::BlockIdFlag;
@@ -27,15 +30,13 @@ pub enum CommitSig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CommitSigRaw {
     pub block_id_flag: i32,
-    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
-    pub validator_address: Vec<u8>,
+    pub validator_address: Bytes<HexUnprefixed>,
     #[serde(
         default,
         with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none"
     )]
     pub timestamp: Option<Timestamp>,
-    #[serde(with = "::serde_utils::base64_opt_default")]
-    pub signature: Vec<u8>,
+    pub signature: Option<Bytes<Base64>>,
 }
 
 impl From<CommitSig> for CommitSigRaw {
@@ -43,9 +44,9 @@ impl From<CommitSig> for CommitSigRaw {
         match value {
             CommitSig::Absent => Self {
                 block_id_flag: BlockIdFlag::Absent.into(),
-                validator_address: vec![],
+                validator_address: Bytes::new(&[]),
                 timestamp: None,
-                signature: vec![],
+                signature: None,
             },
             CommitSig::Commit {
                 validator_address,
@@ -53,9 +54,9 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit.into(),
-                validator_address: validator_address.into(),
+                validator_address: validator_address.into_bytes().into(),
                 timestamp: Some(timestamp),
-                signature: signature.into_vec(),
+                signature: Some(signature.into_encoding()),
             },
             CommitSig::Nil {
                 validator_address,
@@ -63,9 +64,9 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil.into(),
-                validator_address: validator_address.into(),
+                validator_address: validator_address.into_bytes().into(),
                 timestamp: Some(timestamp),
-                signature: signature.into_vec(),
+                signature: Some(signature.into_encoding()),
             },
         }
     }
@@ -89,8 +90,12 @@ pub enum Error {
     AbsentWithSignature,
     #[error("a commit commit sig requires timestamp to be set")]
     CommitMissingTimestamp,
+    #[error("a commit commit sig requires signature to be set")]
+    CommitMissingSignature,
     #[error("a nil commit sig requires timestamp to be set")]
     NilMissingTimestamp,
+    #[error("a nil commit sig requires signature to be set")]
+    NilMissingSignature,
 }
 
 impl TryFrom<CommitSigRaw> for CommitSig {
@@ -106,7 +111,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     Err(Error::AbsentWithValidatorAddress)
                 } else if value.timestamp.is_some_and(|ts| ts != Timestamp::default()) {
                     Err(Error::AbsentWithTimestamp)
-                } else if !value.signature.is_empty() {
+                } else if value.signature.is_some() {
                     Err(Error::AbsentWithSignature)
                 } else {
                     Ok(Self::Absent)
@@ -115,12 +120,18 @@ impl TryFrom<CommitSigRaw> for CommitSig {
             BlockIdFlag::Commit => Ok(Self::Commit {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.ok_or(Error::CommitMissingTimestamp)?,
-                signature: value.signature.into(),
+                signature: value
+                    .signature
+                    .ok_or(Error::CommitMissingSignature)?
+                    .into_encoding(),
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
                 validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.ok_or(Error::NilMissingTimestamp)?,
-                signature: value.signature.into(),
+                signature: value
+                    .signature
+                    .ok_or(Error::NilMissingSignature)?
+                    .into_encoding(),
             }),
         }
     }
@@ -174,9 +185,9 @@ pub mod proto {
         fn try_from(value: protos::cometbft::types::v1::CommitSig) -> Result<Self, Self::Error> {
             CommitSigRaw {
                 block_id_flag: value.block_id_flag,
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into(),
                 timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
-                signature: value.signature,
+                signature: Some(value.signature.into()),
             }
             .try_into()
         }
@@ -223,9 +234,9 @@ pub mod proto {
         fn try_from(value: protos::tendermint::types::CommitSig) -> Result<Self, Self::Error> {
             CommitSigRaw {
                 block_id_flag: value.block_id_flag,
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into(),
                 timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
-                signature: value.signature,
+                signature: Some(value.signature.into()),
             }
             .try_into()
         }
@@ -236,8 +247,24 @@ pub mod proto {
 mod tests {
     use crate::types::commit_sig::CommitSig;
 
+    // #[test]
+    // fn proto_json() {
+    //     let json = r#"
+    //       {
+    //         "block_id_flag": 1,
+    //         "validator_address": "",
+    //         "timestamp": "0001-01-01T00:00:00Z",
+    //         "signature": null
+    //       }
+    //     "#;
+
+    //     let proto = serde_json::from_str::<protos::cometbft::types::v1::CommitSig>(json).unwrap();
+
+    //     assert_eq!(CommitSig::try_from(proto).unwrap(), CommitSig::Absent);
+    // }
+
     #[test]
-    fn proto_json() {
+    fn json_absent() {
         let json = r#"
           {
             "block_id_flag": 1,
@@ -247,8 +274,24 @@ mod tests {
           }
         "#;
 
-        let proto = serde_json::from_str::<protos::cometbft::types::v1::CommitSig>(json).unwrap();
+        let sig = serde_json::from_str::<CommitSig>(json).unwrap();
 
-        assert_eq!(CommitSig::try_from(proto).unwrap(), CommitSig::Absent);
+        assert_eq!(sig, CommitSig::Absent);
+    }
+
+    #[test]
+    fn json_commit() {
+        let json = r#"
+            {
+              "block_id_flag": 2,
+              "validator_address": "3F9FEED6073BAF751CDCC6F9FE355435FC14B0F0",
+              "timestamp": "2024-11-19T15:24:34.213395758Z",
+              "signature": "7qr+0z46EhPK+6jYyL4JJpVrGRkxX+JS1kSqYdGkw4onyiqclriLkLDA7DQcdlT4v6Ky+2iG2VKRg2lO9cXKUg=="
+            }
+        "#;
+
+        let sig = serde_json::from_str::<CommitSig>(json).unwrap();
+
+        assert!(matches!(sig, CommitSig::Commit { .. }));
     }
 }

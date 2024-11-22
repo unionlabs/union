@@ -115,7 +115,8 @@ library CometblsClientLib {
             clientState.trustingPeriod,
             clientState.maxClockDrift,
             clientState.frozenHeight,
-            clientState.latestHeight
+            clientState.latestHeight,
+            clientState.contractAddress
         );
     }
 
@@ -371,7 +372,7 @@ contract CometblsClient is
             clientState.latestHeight = untrustedHeightNumber;
         }
 
-        consensusState = consensusStates[clientId][header.trustedHeight];
+        consensusState = consensusStates[clientId][untrustedHeightNumber];
         consensusState.timestamp = untrustedTimestamp;
         consensusState.appHash = header.signedHeader.appHash;
         consensusState.nextValidatorsHash =

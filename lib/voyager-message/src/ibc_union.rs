@@ -119,8 +119,8 @@ impl IbcMsg {
             Self::UpdateClient(_msg) => None,
             Self::ConnectionOpenInit(_msg) => None,
             Self::ConnectionOpenTry(msg) => Some(Height::new(msg.proof_height)),
-            Self::ConnectionOpenAck(_msg) => todo!(),
-            Self::ConnectionOpenConfirm(_msg) => todo!(),
+            Self::ConnectionOpenAck(msg) => Some(Height::new(msg.proof_height)),
+            Self::ConnectionOpenConfirm(msg) => Some(Height::new(msg.proof_height)),
             Self::ChannelOpenInit(_msg) => todo!(),
             Self::ChannelOpenTry(_msg) => todo!(),
             Self::ChannelOpenAck(_msg) => todo!(),
@@ -189,10 +189,19 @@ pub struct MsgConnectionOpenTry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgConnectionOpenAck {}
+pub struct MsgConnectionOpenAck {
+    pub connection_id: u32,
+    pub counterparty_connection_id: u32,
+    pub proof_try: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgConnectionOpenConfirm {}
+pub struct MsgConnectionOpenConfirm {
+    pub connection_id: u32,
+    pub proof_ack: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgChannelOpenInit {}

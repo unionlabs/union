@@ -50,8 +50,8 @@
         {
           "block_id_flag": 1,
           "validator_address": "",
-          "timestamp": null,
-          "signature": ""
+          "timestamp": "0001-01-01T00:00:00Z",
+          "signature": null
         },
         {
           "block_id_flag": 2,

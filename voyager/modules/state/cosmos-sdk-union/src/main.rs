@@ -21,6 +21,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
+    bech32::Bech32,
     bytes::Bytes,
     hash::{hash_v2::Base64, H256},
     ibc::core::client::height::Height,
@@ -55,7 +56,7 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 }
@@ -65,7 +66,7 @@ pub struct Module {
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
-    pub ibc_union_contract_address: String,
+    pub ibc_union_contract_address: Bech32<H256>,
 }
 
 impl StateModule<IbcUnion> for Module {
@@ -117,7 +118,7 @@ impl Module {
             .abci_query(
                 "/cosmwasm.wasm.v1.Query/SmartContractState",
                 QuerySmartContractStateRequest {
-                    address: self.ibc_union_contract_address.clone(),
+                    address: self.ibc_union_contract_address.to_string(),
                     query_data: serde_json::to_vec(query).unwrap(),
                 }
                 .encode_to_vec()
@@ -180,20 +181,18 @@ impl Module {
         height: Height,
         client_id: u32,
         trusted_height: u64,
-    ) -> RpcResult<Bytes> {
-        // let client_state = self
-        //     .query_smart::<_, Bytes<Base64>>(&union_ibc::query::QueryMsg::GetConsensusState {
-        //         client_id,
-        //         height: trusted_height,
-        //     })
-        //     .await
-        //     .unwrap();
+    ) -> RpcResult<Option<Bytes>> {
+        let client_state = self
+            .query_smart::<_, Bytes<Base64>>(
+                &union_ibc_msg::query::QueryMsg::GetConsensusState {
+                    client_id,
+                    height: trusted_height,
+                },
+                Some(height),
+            )
+            .await?;
 
-        // self.abci_query([0x03].into_iter().chain(self.ibc_union_contract_address.bytes()).chain(CLIENT_STATES.key(client_id)))
-
-        // Ok(client_state.into_encoding())
-
-        todo!()
+        Ok(client_state.map(Bytes::into_encoding))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]

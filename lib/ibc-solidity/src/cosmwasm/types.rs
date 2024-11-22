@@ -7,6 +7,7 @@ pub mod ibc {
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         enum ConnectionState {
+            Unspecified,
             Init,
             TryOpen,
             Open
@@ -24,6 +25,7 @@ pub mod ibc {
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         enum ChannelState {
+            Unspecified,
             Init,
             TryOpen,
             Open,

@@ -74,7 +74,7 @@ cosmwasm = []
 ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers", "alloy"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
-std      = ["ethers-core/std"]
+std      = ["ethers-core/std", "subtle-encoding/std"]
 
 fuzzing    = []
 test_utils = []
