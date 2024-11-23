@@ -1,12 +1,12 @@
 window.addEventListener("DOMContentLoaded", () => {
-  const themeSwitchElement = document.querySelector("starlight-rapide-theme-select")
-  if (!themeSwitchElement) return
+  try {
+    const themeSwitchElement = document.querySelector("starlight-rapide-theme-select")
+    if (!themeSwitchElement) return
 
-  const switchButtonElement = themeSwitchElement.children.item(0)
-  if (!switchButtonElement) return
+    const switchButtonElement = themeSwitchElement.children.item(0)
+    if (!switchButtonElement) return
 
-  switchButtonElement.addEventListener("click", event => {
-    try {
+    switchButtonElement.addEventListener("click", event => {
       const newTheme = document.documentElement.getAttribute("data-theme")
       const oldTheme = newTheme === "light" ? "dark" : "light"
       if (!newTheme) return
@@ -16,8 +16,8 @@ window.addEventListener("DOMContentLoaded", () => {
       if (document.documentElement.classList.contains(oldTheme)) {
         document.documentElement.classList.replace(oldTheme, newTheme)
       } else document.documentElement.classList.add(newTheme)
-    } catch {
-      /* empty */
-    }
-  })
+    })
+  } catch {
+    /* empty */
+  }
 })
