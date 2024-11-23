@@ -17,7 +17,7 @@ bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
 contracts                = { workspace = true, optional = true }
-cosmwasm-std             = { workspace = true }
+cosmwasm-std             = { workspace = true, optional = true }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 enumorph                 = { workspace = true }
@@ -70,7 +70,7 @@ serde_json = { workspace = true }
 [features]
 default = ["ethabi", "std", "stargate", "proto"]
 
-cosmwasm = []
+cosmwasm = ["dep:cosmwasm-std"]
 ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers", "alloy"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]

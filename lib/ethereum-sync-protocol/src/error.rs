@@ -100,8 +100,6 @@ pub enum Error {
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[error("custom query error: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
     #[error(transparent)]
     InvalidSignature(Box<InvalidSignature>),

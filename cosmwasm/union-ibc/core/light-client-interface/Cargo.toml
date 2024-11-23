@@ -18,7 +18,6 @@ schemars                           = { workspace = true }
 serde                              = { workspace = true }
 serde-utils.workspace              = true
 thiserror.workspace                = true
-union-ibc                          = { workspace = true, features = ["library"] }
 union-ibc-msg                      = { workspace = true }
 unionlabs.workspace                = true
 

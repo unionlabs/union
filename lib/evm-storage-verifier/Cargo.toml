@@ -16,7 +16,7 @@ sha3               = { workspace = true }
 ssz                = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }
-unionlabs          = { workspace = true, features = ["cosmwasm"] }
+unionlabs          = { workspace = true }
 
 [lints]
 workspace = true

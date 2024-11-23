@@ -22,7 +22,7 @@ sha2                        = { workspace = true }
 ssz                         = { workspace = true }
 thiserror                   = { workspace = true }
 typenum                     = { workspace = true, features = ["const-generics", "no_std"] }
-unionlabs                   = { workspace = true, features = ["cosmwasm"] }
+unionlabs                   = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

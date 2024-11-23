@@ -27,9 +27,6 @@ pub enum Error {
     #[error("unable to decode consensus state")]
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, consensus_state::ConsensusState>),
 
-    #[error("custom query error")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
-
     #[error(
         "given trusted sync committee doesn't match the given aggregate public \
         key ({given_aggregate}) or the stored one ({stored_aggregate})"
