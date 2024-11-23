@@ -2,10 +2,10 @@
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
 import { cn } from "#/lib/shadcn.ts"
+import LinkIcon from "icons:svelte/noto/link"
 import curlSvg from "#/assets/icons/curl.svg?raw"
 import * as Table from "#/components/svelte/ui/table/index.ts"
 import { Button } from "#/components/svelte/ui/button/index.ts"
-import externalLinkSvg from "#/assets/icons/external-link.svg?raw"
 import { graphqlQueryToCurl, splitArray } from "#/lib/utilities.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
@@ -160,7 +160,7 @@ async function fetchChains() {
                     rel="noopener noreferrer"
                     class="hover:underline hover:text-accent-500 p-2 size-10 hover:bg-background/30 hover:cursor-pointer bg-transparent"
                   >
-                    {@html externalLinkSvg}
+                    <LinkIcon width={15} />
                   </Button>
                 {/if}
               </Table.Cell>
