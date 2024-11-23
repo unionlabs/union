@@ -13,7 +13,7 @@ pub enum ModuleCall {
     MakeChainEvent(MakeChainEvent),
 }
 
-/// Fetch a block at the specified height, requeueing a seq(wait(H+1), fetch(H+1)).
+/// Fetch a block at the specified height, requeuing a seq(wait(H+1), fetch(H+1)).
 #[model]
 pub struct FetchBlocks {
     pub height: Height,
