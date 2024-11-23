@@ -1,0 +1,45 @@
+{
+  "unwantedRecommendations": [
+    /* we use biome for linting */
+    "dbaeumer.vscode-eslint"
+  ],
+  "recommendations": [
+    /* nix dev shell */
+    "mkhl.direnv",
+    "bbenoist.nix",
+    "jnoortheen.nix-ide",
+    "bmalehorn.vscode-fish",
+    "arrterian.nix-env-selector",
+    /* lint & format */
+    "biomejs.biome",
+    "timonwong.shellcheck",
+    /* solidity */
+    "juanblanco.solidity",
+    /* rust */
+    "fill-labs.dependi",
+    "rust-lang.rust-analyzer",
+    /* js */
+    "svelte.svelte-vscode",
+    "astro-build.astro-vscode",
+    "bradlc.vscode-tailwindcss",
+    "better-ts-errors.better-ts-errors",
+    /* git & github */
+    "mk12.better-git-line-blame",
+    "antfu.open-in-github-button",
+    "github.vscode-github-actions",
+    "christian-kohler.path-intellisense",
+    /* theme */
+    "catppuccin.catppuccin-vsc",
+    "pkief.material-icon-theme",
+    /* syntax */
+    "mikestead.dotenv",
+    "redhat.vscode-yaml",
+    "hashhar.gitattributes",
+    "tamasfe.even-better-toml",
+    "tobermory.es6-string-html",
+    "yzhang.markdown-all-in-one",
+    "orta.vscode-twoslash-queries",
+    "graphql.vscode-graphql-syntax",
+    "jeff-hykin.better-shellscript-syntax"
+  ]
+}

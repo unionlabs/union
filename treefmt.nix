@@ -2,7 +2,6 @@
 {
   pkgs,
   rust,
-  goPkgs,
   jsPkgs,
   movefmt,
 }:
@@ -131,14 +130,38 @@ in
         "_/**"
         "*.ttf"
         "*.png"
+        "*.prv"
+        "*.bin"
+        "*.jpg"
+        "*.svg"
+        "*.jpeg"
         ".git/**"
+        "*.woff2"
+        "*.lockb"
+        ".ignore"
+        "LICENSE"
+        "LICENSE*"
+        "**/*.ico"
+        "**/*.zip"
+        "**/.npmrc"
+        "**/LICENSE"
+        ".gitignore"
+        "CODEOWNERS"
+        "*.template"
+        ".gitignore"
         "**/.sqlx/**"
         "**/vendor/**"
         "*.splinecode"
+        "**/.gitignore"
+        ".gitattributes"
+        "**/testdata/**"
+        "**/testswap/**"
         "**/generated/**"
         ".github/**/*.sh"
         ".github/**/*.md"
+        "**/.gitattributes"
         "uniond/docs/static/**"
+        ".git-blame-ignore-revs"
       ];
     };
   };

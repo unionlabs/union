@@ -35,8 +35,8 @@ vk.bin
 pk.bin
 
 out
-.vscode
-
+!./.vscode
+*/.vscode
 dump
 
 fuzzing-code-coverage

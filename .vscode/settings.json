@@ -1,0 +1,178 @@
+{
+  // https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md#where-to-place-the-configuration
+  "direnv.watchForChanges": true,
+  "direnv.restart.automatic": true,
+  "nix.enableLanguageServer": true,
+  "nix.serverPath": "nixd",
+  "nix.serverSettings": {
+    "nixd": {
+      "formatting": {
+        "command": ["nixfmt", "--width=100"]
+      }
+    }
+  },
+  // https://book.getfoundry.sh/config/vscode?highlight=vscode#3-formatter
+  "editor.formatOnSave": true,
+  "solidity.formatter": "forge",
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
+  // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript
+  "typescript.tsdk": "./docs/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "biome.enabled": true,
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[graphql]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
+  "[astro]": {
+    "editor.defaultFormatter": "astro-build.astro-vscode"
+  },
+  // https://github.com/tailwindlabs/tailwindcss-intellisense#recommended-vs-code-settings
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss",
+    ".envrc": "dotenv"
+  },
+  "evenBetterToml.schema.enabled": true,
+  "files.exclude": {
+    "result": true,
+    ".direnv": true
+  },
+  /* font */
+  "editor.fontSize": 14,
+  "editor.fontLigatures": true,
+  "terminal.integrated.fontSize": 14,
+  "editor.fontFamily": "BlexMono Nerd Font Mono",
+  "terminal.integrated.fontFamily": "BlexMono Nerd Font Mono",
+  /* theme and icon settings */
+  "workbench.colorTheme": "Catppuccin Mocha",
+  "workbench.iconTheme": "material-icon-theme",
+  /* excluding files and directoriwes from global search */
+  "search.exclude": {
+    "._*": true,
+    "*.lock": true,
+    "**/dist": true,
+    "**/_/**": true,
+    "**/*.svg": true,
+    "**/build": true,
+    "**/target": true,
+    "**/.astro": true,
+    "**/result": true,
+    "**/.direnv": true,
+    "**/.vercel": true,
+    "**/.netlify": true,
+    "**/flake.lock": true,
+    "**/.svelte-kit": true,
+    "**/node_modules": true,
+    "**/package-lock.json": true
+  },
+  /**
+   * various opinionated UI and UX settings
+   * feel free to change if you have any strong preferences
+   */
+  "editor.padding.top": 0,
+  "editor.padding.bottom": 0,
+  "editor.glyphMargin": false,
+  "scm.diffDecorations": "none",
+  "scm.showActionButton": false,
+  "window.commandCenter": false,
+  "editor.smoothScrolling": true,
+  "scm.alwaysShowActions": false,
+  "files.autoGuessEncoding": true,
+  "yaml.schemaStore.enable": true,
+  "editor.minimap.enabled": false,
+  "svelte.enable-ts-plugin": true,
+  "editor.suggest.showWords": false,
+  "editor.inlayHints.padding": false,
+  "editor.overviewRulerBorder": false,
+  "editor.suggest.showModules": false,
+  "explorer.openEditors.minVisible": 0,
+  "diffEditor.renderGutterMenu": false,
+  "diffEditor.renderIndicators": false,
+  "workbench.sideBar.location": "right",
+  "editor.scrollbar.vertical": "hidden",
+  "window.title": "${activeEditorShort}",
+  "workbench.editor.tabSizing": "shrink",
+  "editor.scrollbar.horizontal": "hidden",
+  "betterTypeScriptErrors.prettify": true,
+  "extensions.experimental.affinity": {
+    "better-ts-errors.better-ts-errors": 1
+  },
+  "workbench.editor.empty.hint": "hidden",
+  "editor.renderControlCharacters": false,
+  "workbench.editor.enablePreview": false,
+  "editor.minimap.renderCharacters": false,
+  "workbench.layoutControl.enabled": false,
+  "scm.diffDecorationsGutterAction": "none",
+  "workbench.activityBar.location": "default",
+  "workbench.editor.highlightModifiedTabs": true,
+  "scm.diffDecorationsGutterVisibility": "hover",
+  "npm-intellisense.packageSubfoldersIntellisense": true,
+  "github-actions.workflows.pinned.refresh.enabled": true,
+  "workbench.editor.enablePreviewFromCodeNavigation": true,
+  /* theme modifications */
+  "workbench.colorCustomizations": {
+    "focusBorder": "#1E1E2E",
+    "sideBar.border": "#1E1E2E",
+    "menu.background": "#1e1e2e",
+    "scrollbar.shadow": "#1E1E2E",
+    "panel.background": "#1E1E2E",
+    "banner.background": "#1E1E2E",
+    "sideBar.background": "#1E1E2E",
+    "minimap.background": "#1E1E2E",
+    "window.activeBorder": "#1E1E2E",
+    "statusBar.background": "#1E1E2E",
+    "breadcrumb.background": "#1E1E2E",
+    "tab.inactiveBackground": "#191926",
+    "tab.selectedForeground": "#1E1E2E",
+    "tab.selectedBackground": "#1E1E2E",
+    "sideBar.dropBackground": "#1E1E2E",
+    "activityBar.background": "#1E1E2E",
+    "editorGutter.background": "#1E1E2E",
+    "sideBarTitle.background": "#1E1E2E",
+    "menu.separatorBackground": "#1E1E2E",
+    "minimapSlider.background": "#1E1E2E",
+    "toolbar.activeBackground": "#1E1E2E",
+    "titleBar.activeBackground": "#1E1E2E",
+    "scrollbarSlider.background": "#1E1E2E",
+    "editorGroup.dropBackground": "#1E1E2E",
+    "sideBarStickyScroll.border": "#1E1E2E",
+    "sideBarSectionHeader.border": "#1E1E2E",
+    "tree.tableOddRowsBackground": "#1E1E2E",
+    "editorGroupHeader.tabsBorder": "#1E1E2E",
+    "statusBar.noFolderBackground": "#1E1E2E",
+    "statusBar.debuggingBackground": "#1E1E2E",
+    "editorGutter.addedBackground": "#00000000",
+    "sideBarStickyScroll.background": "#1E1E2E",
+    "sideBarSectionHeader.background": "#1E1E2E",
+    "scrollbarSlider.activeBackground": "#1E1E2E",
+    "editorGroupHeader.tabsBackground": "#1E1E2E",
+    "editorGutter.deletedBackground": "#00000000",
+    "editorGutter.modifiedBackground": "#00000000",
+    "diffEditor.removedTextBackground": "#00000000"
+  }
+}

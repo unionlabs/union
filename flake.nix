@@ -503,6 +503,7 @@
               ++ (with jsPkgs; [
                 bun
                 deno
+                nixd
                 emmet-language-server
                 nodePackages_latest.nodejs
                 nodePackages_latest.graphqurl
@@ -557,7 +558,6 @@
             inherit (self'.packages) movefmt;
             inherit
               pkgs
-              goPkgs
               jsPkgs
               rust
               ;
