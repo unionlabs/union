@@ -30,9 +30,6 @@ pub enum Error {
     #[error("the operation has not been implemented yet")]
     Unimplemented,
 
-    #[error("error while calling custom query: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
-
     #[error("error decoding batch header")]
     BatchHeaderDecode(#[from] BatchHeaderV3DecodeError),
 

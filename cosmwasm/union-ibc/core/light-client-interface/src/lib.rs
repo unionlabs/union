@@ -1,24 +1,10 @@
 use core::fmt::Debug;
 
-#[cfg(feature = "cosmwasm-1")]
-pub(crate) use cosmwasm_schema_1 as cosmwasm_schema;
-#[cfg(feature = "cosmwasm-2")]
-pub(crate) use cosmwasm_schema_2 as cosmwasm_schema;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
     StdError,
 };
-#[cfg(feature = "cosmwasm-1")]
-pub(crate) use cosmwasm_std_1 as cosmwasm_std;
-#[cfg(feature = "cosmwasm-2")]
-pub(crate) use cosmwasm_std_2 as cosmwasm_std;
 use cw_storage_plus::Map;
-#[cfg(feature = "cosmwasm-1")]
-pub(crate) use cw_storage_plus_1 as cw_storage_plus;
-#[cfg(feature = "cosmwasm-2")]
-pub(crate) use cw_storage_plus_2 as cw_storage_plus;
-#[cfg(all(feature = "cosmwasm-1", feature = "cosmwasm-2"))]
-compile_error!("cosmwasm-1 and cosmwasm-2 cannot be enabled at the same time");
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use msg::InstantiateMsg;
 use state::IBC_HOST;

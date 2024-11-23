@@ -39,7 +39,7 @@ serde_json                  = { workspace = true, optional = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
-union-ibc-light-client      = { workspace = true, default-features = false, features = ["cosmwasm-2"] }
+union-ibc-light-client      = { workspace = true }
 union-ibc-msg               = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 

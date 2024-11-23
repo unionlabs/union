@@ -1,4 +1,4 @@
-use crate::{cosmwasm_schema, cosmwasm_std::Addr};
+use cosmwasm_std::Addr;
 
 #[derive(
     cosmwasm_schema::serde::Serialize,

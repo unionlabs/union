@@ -13399,11 +13399,8 @@ dependencies = [
 name = "union-ibc-light-client"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
  "cosmwasm-schema 2.1.4",
- "cosmwasm-std 1.5.8",
  "cosmwasm-std 2.1.4",
- "cw-storage-plus 1.2.0",
  "cw-storage-plus 2.0.0",
  "frame-support-procedural",
  "macros",
@@ -13423,9 +13420,9 @@ dependencies = [
  "aptos-types",
  "aptos-verifier",
  "bcs 0.1.6",
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethereum-light-client-types",
  "evm-storage-verifier",
  "hex",

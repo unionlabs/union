@@ -6,12 +6,9 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-cosmwasm-schema-1                  = { version = "1.5.4", package = "cosmwasm-schema", optional = true }
-cosmwasm-schema-2                  = { version = "2.1.4", package = "cosmwasm-schema", optional = true }
-cosmwasm-std-1                     = { version = "1.5.4", package = "cosmwasm-std", optional = true }
-cosmwasm-std-2                     = { version = "2.1.4", package = "cosmwasm-std", optional = true }
-cw-storage-plus-1                  = { version = "1.2", package = "cw-storage-plus", optional = true }
-cw-storage-plus-2                  = { version = "2.0.0", package = "cw-storage-plus", optional = true }
+cosmwasm-schema                    = { version = "2.1.4", package = "cosmwasm-schema" }
+cosmwasm-std                       = { version = "2.1.4", package = "cosmwasm-std" }
+cw-storage-plus                    = { version = "2.0.0", package = "cw-storage-plus" }
 frame-support-procedural.workspace = true
 macros.workspace                   = true
 schemars                           = { workspace = true }
@@ -23,8 +20,3 @@ unionlabs.workspace                = true
 
 [lints]
 workspace = true
-
-[features]
-cosmwasm-1 = ["cosmwasm-std-1", "cosmwasm-schema-1", "cw-storage-plus-1"]
-cosmwasm-2 = ["cosmwasm-std-2", "cosmwasm-schema-2", "cw-storage-plus-2"]
-default    = ["cosmwasm-1"]
