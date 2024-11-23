@@ -6,12 +6,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const switchButtonElement = themeSwitchElement.children.item(0)
     if (!switchButtonElement) return
 
-    switchButtonElement.addEventListener("click", event => {
+    switchButtonElement.addEventListener("click", () => {
       const newTheme = document.documentElement.getAttribute("data-theme")
       const oldTheme = newTheme === "light" ? "dark" : "light"
       if (!newTheme) return
 
-      document.body.classList.replace(`graphiql-${oldTheme}`, `graphiql-${newTheme}`)
+      if (document.body.classList.contains(`graphiql-${oldTheme}`)) {
+        document.body.classList.replace(`graphiql-${oldTheme}`, `graphiql-${newTheme}`)
+      } else document.body.classList.add(`graphiql-${newTheme}`)
 
       if (document.documentElement.classList.contains(oldTheme)) {
         document.documentElement.classList.replace(oldTheme, newTheme)
