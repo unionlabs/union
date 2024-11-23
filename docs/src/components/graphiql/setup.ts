@@ -49,10 +49,8 @@ const graphiqlProps = {
     })
   ],
   disableTabs: true,
-  onEditVariables: variables => {
-    localStorage.setItem("graphiql:variables", variables)
-  },
   isHeadersEditorEnabled: true,
+  onEditVariables: variables => localStorage.setItem("graphiql:variables", variables),
   defaultEditorToolsVisibility: stringIsJSON(localStorage.getItem("graphiql:variables") ?? ""),
   toolbar: {
     additionalContent: [
