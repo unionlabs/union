@@ -23,13 +23,13 @@ aptos-crypto                  = { workspace = true }
 aptos-move-ibc                = { workspace = true }
 aptos-rest-client             = { workspace = true }
 aptos-types                   = { workspace = true }
-arbitrum-light-client-types   = { workspace = true, features = ["proto"] }
+arbitrum-light-client-types   = { workspace = true }
 async-trait                   = "0.1.82"
 axum                          = { workspace = true, features = ["macros", "tokio"] }
 backon                        = "0.4.4"
 base64                        = { workspace = true }
 beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
-berachain-light-client-types  = { workspace = true, features = ["proto"] }
+berachain-light-client-types  = { workspace = true }
 chain-utils                   = { workspace = true }
 chrono                        = { workspace = true, features = ["clock"] }
 clap                          = { workspace = true, features = ["derive", "env", "error-context"] }
