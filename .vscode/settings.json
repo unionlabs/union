@@ -17,6 +17,10 @@
   "[solidity]": {
     "editor.defaultFormatter": "JuanBlanco.solidity"
   },
+
+  // use go tools from devshell
+  "go.toolsGopath": ".",
+
   // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript
   "typescript.tsdk": "./docs/node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
@@ -130,7 +134,7 @@
   "editor.minimap.renderCharacters": false,
   "workbench.layoutControl.enabled": false,
   "scm.diffDecorationsGutterAction": "none",
-  "workbench.activityBar.location": "default",
+  "workbench.activityBar.location": "top",
   "workbench.editor.highlightModifiedTabs": true,
   "scm.diffDecorationsGutterVisibility": "hover",
   "npm-intellisense.packageSubfoldersIntellisense": true,
@@ -176,5 +180,6 @@
     "editorGutter.deletedBackground": "#00000000",
     "editorGutter.modifiedBackground": "#00000000",
     "diffEditor.removedTextBackground": "#00000000"
-  }
+  },
+
 }
