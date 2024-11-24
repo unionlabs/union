@@ -51,6 +51,12 @@
       "label": "npm: dev - app",
       "dependsOn": ["npm: install - site"],
       "detail": "Site - Dev"
+    },
+    {
+      "type": "shell",
+      "command": "nix run .#devnet-union -L",
+      "label": "devnet-union",
+      "problemMatcher": []
     }
   ]
 }
