@@ -1,4 +1,5 @@
 use beacon_api_types::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
+use cosmwasm_std::Empty;
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
 };
@@ -14,18 +15,18 @@ use evm_storage_verifier::{
 use union_ibc_light_client::IbcClientCtx;
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery, encoding::Proto, ensure,
-    ethereum::ibc_commitment_key, hash::H256, ibc::core::client::height::Height, uint::U256,
+    encoding::Proto, ensure, ethereum::ibc_commitment_key, hash::H256,
+    ibc::core::client::height::Height, uint::U256,
 };
 
-use crate::{custom_query::VerificationContext, errors::Error};
+use crate::{errors::Error, verification::VerificationContext};
 
 pub enum EthereumLightClient {}
 
 impl union_ibc_light_client::IbcClient for EthereumLightClient {
     type Error = Error;
 
-    type CustomQuery = UnionCustomQuery;
+    type CustomQuery = Empty;
 
     type Header = Header;
 

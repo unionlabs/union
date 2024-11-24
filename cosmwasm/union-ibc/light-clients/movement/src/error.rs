@@ -16,8 +16,6 @@ pub enum Error {
     ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
     #[error("unable to decode consensus state")]
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
-    #[error("error while calling custom query: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     #[error("header verification failure ({0})")]
     HeaderVerification(#[from] aptos_verifier::Error),
     #[error("invalid state_proof storage proof")]

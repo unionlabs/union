@@ -140,7 +140,6 @@ import (
 
 	"github.com/spf13/cast"
 
-	unioncustomquery "union/app/custom_query"
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 	"union/docs"
 	unionstaking "union/x/staking"
@@ -618,12 +617,6 @@ func NewUnionApp(
 		wasmOpts...,
 	)
 
-	querierOption := ibcwasmkeeper.WithQueryPlugins(&ibcwasmtypes.QueryPlugins{
-		Custom: unioncustomquery.CustomQuerier(),
-		Stargate: ibcwasmtypes.AcceptListStargateQuerier([]string{
-			"/cosmos.base.tendermint.v1beta1.Service/ABCIQuery",
-		}),
-	})
 	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
@@ -631,7 +624,6 @@ func NewUnionApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmer,
 		app.GRPCQueryRouter(),
-		querierOption,
 	)
 
 	govConfig := govkeeper.DefaultConfig()

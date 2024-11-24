@@ -6,14 +6,15 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-cosmwasm-schema                    = { workspace = true }
-cosmwasm-std.workspace             = true
-cw-storage-plus.workspace          = true
+cosmwasm-schema                    = { version = "2.1.4", package = "cosmwasm-schema" }
+cosmwasm-std                       = { version = "2.1.4", package = "cosmwasm-std" }
+cw-storage-plus                    = { version = "2.0.0", package = "cw-storage-plus" }
 frame-support-procedural.workspace = true
 macros.workspace                   = true
+schemars                           = { workspace = true }
+serde                              = { workspace = true }
 serde-utils.workspace              = true
 thiserror.workspace                = true
-union-ibc                          = { workspace = true, features = ["library"] }
 union-ibc-msg                      = { workspace = true }
 unionlabs.workspace                = true
 

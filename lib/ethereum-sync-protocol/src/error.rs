@@ -100,8 +100,6 @@ pub enum Error {
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[error("custom query error: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
     // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
     #[error(transparent)]
     InvalidSignature(Box<InvalidSignature>),
@@ -109,6 +107,8 @@ pub enum Error {
     MustBeDeneb,
     #[error("finalized slot cannot be the genesis slot")]
     FinalizedSlotIsGenesis,
+    #[error("client errored during signature verification ({0})")]
+    ClientSignatureVerification(String),
 }
 
 // NOTE: Implemented here instead of via #[from] since AmclError doesn't implement core::error::Error

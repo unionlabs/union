@@ -1,7 +1,13 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
 
-#[cw_serde]
+#[derive(
+    cosmwasm_schema::serde::Serialize,
+    cosmwasm_schema::serde::Deserialize,
+    std::clone::Clone,
+    std::fmt::Debug,
+    std::cmp::PartialEq,
+    cosmwasm_schema::schemars::JsonSchema,
+)]
 pub struct InstantiateMsg {
     pub ibc_host: Addr,
 }

@@ -13,8 +13,8 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std                = { workspace = true, features = ["abort"] }
-cw-storage-plus             = { workspace = true }
+cosmwasm-std                = { version = "2.1.4", features = ["abort"] }
+cw-storage-plus             = { version = "2.0.0" }
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
 ethers-core                 = { workspace = true }
@@ -30,10 +30,9 @@ serde-json-wasm             = { workspace = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }
-union-ibc                   = { workspace = true, features = ["library"] }
 union-ibc-light-client      = { workspace = true }
 union-ibc-msg               = { workspace = true }
-unionlabs                   = { workspace = true, features = ["ethabi", "stargate"] }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 base64     = { workspace = true }
