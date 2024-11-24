@@ -54,8 +54,10 @@
     "plaintext": "html"
   },
   "files.associations": {
+    ".envrc": "dotenv",
+    "biome.json": "jsonc",
     "*.css": "tailwindcss",
-    ".envrc": "dotenv"
+    ".vscode/*.json": "jsonc"
   },
   "evenBetterToml.schema.enabled": true,
   "files.exclude": {
