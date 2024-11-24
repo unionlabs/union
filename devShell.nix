@@ -1,7 +1,6 @@
 _: {
   perSystem =
     {
-      lib,
       pkgs,
       jsPkgs,
       ensureAtRepositoryRoot,

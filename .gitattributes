@@ -17,3 +17,4 @@ evm/contracts/proto/** linguist-generated
 site/public/union-logo.zip filter=lfs diff=lfs merge=lfs -text
 biome.json linguist-language=JSON-with-Comments
 knip.json linguist-language=JSON-with-Comments
+.vscode/*.json linguist-language=JSON-with-Comments

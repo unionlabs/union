@@ -1,0 +1,110 @@
+{
+  // https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md#where-to-place-the-configuration
+  "direnv.watchForChanges": true,
+  "direnv.restart.automatic": true,
+  "nix.enableLanguageServer": true,
+  "nix.serverPath": "nixd",
+  "nix.serverSettings": {
+    "nixd": {
+      "formatting": {
+        "command": ["nixfmt", "--width=100"]
+      }
+    }
+  },
+
+  // https://book.getfoundry.sh/config/vscode?highlight=vscode#3-formatter
+  "editor.formatOnSave": true,
+  "solidity.formatter": "forge",
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
+
+  // Use go tools from devshell
+  "go.toolsGopath": ".",
+
+  // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript
+  "typescript.tsdk": "./docs/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "biome.enabled": true,
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[graphql]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
+  "[astro]": {
+    "editor.defaultFormatter": "astro-build.astro-vscode"
+  },
+  // https://github.com/tailwindlabs/tailwindcss-intellisense#recommended-vs-code-settings
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  },
+  "files.associations": {
+    ".envrc": "dotenv",
+    "biome.json": "jsonc",
+    "*.css": "tailwindcss",
+    ".vscode/*.json": "jsonc"
+  },
+  "evenBetterToml.schema.enabled": true,
+  "files.exclude": {
+    "result": true,
+    ".direnv": true
+  },
+  /* theme and icon settings */
+  "workbench.iconTheme": "material-icon-theme",
+  /* excluding files and directoriwes from global search */
+  "search.exclude": {
+    "._*": true,
+    "*.lock": true,
+    "**/dist": true,
+    "**/_/**": true,
+    "**/*.svg": true,
+    "**/build": true,
+    "**/target": true,
+    "**/.astro": true,
+    "**/result": true,
+    "**/.direnv": true,
+    "**/.vercel": true,
+    "**/.netlify": true,
+    "**/flake.lock": true,
+    "**/.svelte-kit": true,
+    "**/node_modules": true,
+    "**/package-lock.json": true
+  },
+  /**
+   * various opinionated UI and UX settings
+   * feel free to change if you have any strong preferences
+   */
+  "window.commandCenter": false,
+  "editor.smoothScrolling": true,
+  "files.autoGuessEncoding": true,
+  "yaml.schemaStore.enable": true,
+  "editor.minimap.enabled": false,
+  "svelte.enable-ts-plugin": true,
+  "editor.overviewRulerBorder": false,
+  "workbench.activityBar.location": "top",
+  "window.title": "Join the Union",
+  "extensions.experimental.affinity": {
+    "better-ts-errors.better-ts-errors": 1
+  },
+  "github-actions.workflows.pinned.refresh.enabled": true
+}

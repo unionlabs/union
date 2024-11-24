@@ -26,7 +26,8 @@
       "*.jsonc",
       "*.astro",
       "*.svelte",
-      "*.graphql"
+      "*.graphql",
+      "*.webmanifest"
     ],
     "ignore": [
       "_",
@@ -101,7 +102,8 @@
       "*.jsonc",
       "*.astro",
       "*.svelte",
-      "*.graphql"
+      "*.graphql",
+      "*.webmanifest"
     ],
     "ignoreUnknown": true,
     "ignore": [
@@ -165,7 +167,8 @@
       "*.jsonc",
       "*.astro",
       "*.svelte",
-      "*.graphql"
+      "*.graphql",
+      "*.webmanifest"
     ],
     "ignore": [
       "_",
@@ -293,7 +296,8 @@
       "*.jsonc",
       "*.astro",
       "*.svelte",
-      "*.graphql"
+      "*.graphql",
+      "*.webmanifest"
     ],
     "ignore": [
       "_",
