@@ -13,7 +13,6 @@ workspace = true
 anyhow                         = "1.0.93"
 chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
-contracts                      = { workspace = true, features = ["providers"] }
 enumorph                       = { workspace = true }
 frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }

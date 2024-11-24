@@ -1,7 +1,8 @@
-use ibc_solidity::cosmwasm::types::ibc::Packet;
+use ibc_solidity::ibc::Packet;
 use unionlabs::bytes::Bytes;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum UnionIbcMsg {
     OnChannelOpenInit {
         connection_id: u32,
@@ -56,6 +57,7 @@ pub enum UnionIbcMsg {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UnionIbcMsg(UnionIbcMsg),
 }

@@ -25,58 +25,6 @@ pub enum TryFromNonExistenceProofError {
     Right(TryFromExistenceProofError),
 }
 
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-#[derive(Debug, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub struct NonExistenceProofEthAbi {
-    pub key: ethers::types::Bytes,
-    pub left: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
-    pub right: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
-}
-
-#[cfg(feature = "ethabi")]
-impl From<NonExistenceProof> for NonExistenceProofEthAbi {
-    fn from(value: NonExistenceProof) -> Self {
-        let exist_default = || ExistenceProof {
-            key: vec![].into(),
-            value: vec![].into(),
-            leaf_prefix: vec![].into(),
-            path: vec![],
-        };
-
-        NonExistenceProofEthAbi {
-            key: value.key.into(),
-            left: value.left.unwrap_or_else(exist_default).into(),
-            right: value.right.unwrap_or_else(exist_default).into(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<NonExistenceProofEthAbi> for NonExistenceProof {
-    fn from(value: NonExistenceProofEthAbi) -> Self {
-        let exist_default = super::existence_proof::ExistenceProofEthAbi {
-            key: vec![].into(),
-            value: vec![].into(),
-            leaf_prefix: vec![].into(),
-            path: vec![],
-        };
-
-        NonExistenceProof {
-            key: value.key.to_vec(),
-            left: (value.left != exist_default).then_some(value.left.into()),
-            right: (value.right != exist_default).then_some(value.right.into()),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::encoding::Encode<crate::encoding::EthAbi> for NonExistenceProof {
-    fn encode(self) -> Vec<u8> {
-        ethers::abi::AbiEncode::encode(NonExistenceProofEthAbi::from(self))
-    }
-}
-
 impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof {
     type Error = TryFromNonExistenceProofError;
 

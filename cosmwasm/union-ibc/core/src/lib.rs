@@ -2,7 +2,7 @@ pub mod contract;
 pub mod state;
 
 use cosmwasm_std::StdError;
-use ibc_solidity::cosmwasm::types::ibc::{ChannelState, ConnectionState};
+use ibc_solidity::ibc::{ChannelState, ConnectionState};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]

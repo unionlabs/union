@@ -1,3 +1,4 @@
+use alloy::sol_types::SolValue;
 use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
 use cometbls_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
@@ -365,21 +366,63 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => ics23::merkle_proof::MerkleProof::try_from(
-                    protos::ibc::core::commitment::v1::MerkleProof::from(cs),
-                )
-                .unwrap()
-                .encode_as::<EthAbi>(),
+            .map(|proof| match self.ibc_interface {
+                SupportedIbcInterface::IbcSolidity => encode_merkle_proof_for_evm(proof),
                 SupportedIbcInterface::IbcMoveAptos => encode_merkle_proof_for_move(
                     ics23::merkle_proof::MerkleProof::try_from(
-                        protos::ibc::core::commitment::v1::MerkleProof::from(cs),
+                        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
                     )
                     .unwrap(),
                 ),
-                SupportedIbcInterface::IbcGoV8_08Wasm => cs.encode_as::<Proto>(),
+                SupportedIbcInterface::IbcGoV8_08Wasm => proof.encode_as::<Proto>(),
             })
             .map(Into::into)
+    }
+}
+
+fn encode_merkle_proof_for_evm(
+    proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
+) -> Vec<u8> {
+    let merkle_proof = ics23::merkle_proof::MerkleProof::try_from(
+        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+    )
+    .unwrap();
+
+    let convert_inner_op =
+        |i: unionlabs::union::ics23::inner_op::InnerOp| ibc_solidity::ics23::InnerOp {
+            prefix: i.prefix.into(),
+            suffix: i.suffix.into(),
+        };
+
+    let convert_existence_proof = |e: unionlabs::union::ics23::existence_proof::ExistenceProof| {
+        ibc_solidity::ics23::ExistenceProof {
+            key: e.key.into(),
+            value: e.value.into(),
+            leafPrefix: e.leaf_prefix.into(),
+            path: e.path.into_iter().map(convert_inner_op).collect(),
+        }
+    };
+
+    let exist_default = || ics23::existence_proof::ExistenceProof {
+        key: vec![].into(),
+        value: vec![].into(),
+        leaf_prefix: vec![].into(),
+        path: vec![],
+    };
+
+    match merkle_proof {
+        ics23::merkle_proof::MerkleProof::Membership(a, b) => {
+            (convert_existence_proof(a), convert_existence_proof(b)).abi_encode_params()
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(a, b) => (
+            ibc_solidity::ics23::NonExistenceProof {
+                key: a.key.into(),
+                left: convert_existence_proof(a.left.unwrap_or_else(exist_default)),
+                right: convert_existence_proof(a.right.unwrap_or_else(exist_default)),
+            },
+            convert_existence_proof(b),
+        )
+            .abi_encode_params(),
     }
 }
 

@@ -7,7 +7,7 @@ use cosmwasm_std::{
     IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, Reply, Response, SubMsgResult,
     Timestamp,
 };
-use ibc_solidity::cosmwasm::types::ibc::{Channel, Packet};
+use ibc_solidity::ibc::{Channel, Packet};
 use prost::{Message, Name};
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
@@ -367,7 +367,7 @@ pub(crate) fn execute_union_ibc(
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
                 &UnionIbcQuery::GetChannel {
-                    channel_id: packet.destinationChannel,
+                    channel_id: packet.destination_channel,
                 },
             )?;
 
@@ -377,13 +377,13 @@ pub(crate) fn execute_union_ibc(
             };
 
             let ibc_endpoint_src = IbcEndpoint {
-                port_id: hex::encode(channel.counterpartyPortId),
-                channel_id: packet.sourceChannel.to_string(),
+                port_id: hex::encode(channel.counterparty_port_id),
+                channel_id: packet.source_channel.to_string(),
             };
 
             let ibc_endpoint_dst = IbcEndpoint {
                 port_id: format!("wasm.{}", env.contract.address),
-                channel_id: packet.destinationChannel.to_string(),
+                channel_id: packet.destination_channel.to_string(),
             };
 
             let ibc_channel = IbcChannel::new(
@@ -391,7 +391,7 @@ pub(crate) fn execute_union_ibc(
                 ibc_endpoint_src.clone(),
                 cosmwasm_std::IbcOrder::Ordered,
                 channel.version.clone(),
-                channel.connectionId.to_string(),
+                channel.connection_id.to_string(),
             );
 
             let ibc_packet = IbcPacket::new(
@@ -402,9 +402,9 @@ pub(crate) fn execute_union_ibc(
                 IbcTimeout::with_both(
                     IbcTimeoutBlock {
                         revision: 0,
-                        height: packet.timeoutHeight,
+                        height: packet.timeout_height,
                     },
-                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                    Timestamp::from_nanos(packet.timeout_timestamp),
                 ),
             );
 
@@ -428,7 +428,7 @@ pub(crate) fn execute_union_ibc(
                 })
                 .receive(ibc_packet)),
                 v => Err(ContractError::UnknownProtocol {
-                    channel_id: packet.destinationChannel.to_string(),
+                    channel_id: packet.destination_channel.to_string(),
                     protocol_version: v.into(),
                 }),
             }?;
@@ -444,7 +444,7 @@ pub(crate) fn execute_union_ibc(
                 response = response.add_message(wasm_execute(
                     &ibc_host,
                     &UnionIbcHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
-                        channel_id: packet.destinationChannel,
+                        channel_id: packet.destination_channel,
                         packet,
                         acknowledgement: Vec::from(ack).into(),
                     }),
@@ -464,7 +464,7 @@ pub(crate) fn execute_union_ibc(
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
                 &UnionIbcQuery::GetChannel {
-                    channel_id: packet.destinationChannel,
+                    channel_id: packet.destination_channel,
                 },
             )?;
 
@@ -474,13 +474,13 @@ pub(crate) fn execute_union_ibc(
             };
 
             let ibc_endpoint_src = IbcEndpoint {
-                port_id: hex::encode(channel.counterpartyPortId),
-                channel_id: packet.sourceChannel.to_string(),
+                port_id: hex::encode(channel.counterparty_port_id),
+                channel_id: packet.source_channel.to_string(),
             };
 
             let ibc_endpoint_dst = IbcEndpoint {
                 port_id: format!("wasm.{}", env.contract.address),
-                channel_id: packet.destinationChannel.to_string(),
+                channel_id: packet.destination_channel.to_string(),
             };
 
             let ibc_channel = IbcChannel::new(
@@ -488,7 +488,7 @@ pub(crate) fn execute_union_ibc(
                 ibc_endpoint_dst.clone(),
                 cosmwasm_std::IbcOrder::Ordered,
                 channel.version.clone(),
-                channel.connectionId.to_string(),
+                channel.connection_id.to_string(),
             );
 
             let ibc_packet = IbcPacket::new(
@@ -499,9 +499,9 @@ pub(crate) fn execute_union_ibc(
                 IbcTimeout::with_both(
                     IbcTimeoutBlock {
                         revision: 0,
-                        height: packet.timeoutHeight,
+                        height: packet.timeout_height,
                     },
-                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                    Timestamp::from_nanos(packet.timeout_timestamp),
                 ),
             );
 
@@ -531,7 +531,7 @@ pub(crate) fn execute_union_ibc(
                 })
                 .send_ack(msg)),
                 v => Err(ContractError::UnknownProtocol {
-                    channel_id: packet.destinationChannel.to_string(),
+                    channel_id: packet.destination_channel.to_string(),
                     protocol_version: v.into(),
                 }),
             }??;
@@ -545,7 +545,7 @@ pub(crate) fn execute_union_ibc(
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
                 &UnionIbcQuery::GetChannel {
-                    channel_id: packet.destinationChannel,
+                    channel_id: packet.destination_channel,
                 },
             )?;
 
@@ -555,13 +555,13 @@ pub(crate) fn execute_union_ibc(
             };
 
             let ibc_endpoint_src = IbcEndpoint {
-                port_id: hex::encode(channel.counterpartyPortId),
-                channel_id: packet.sourceChannel.to_string(),
+                port_id: hex::encode(channel.counterparty_port_id),
+                channel_id: packet.source_channel.to_string(),
             };
 
             let ibc_endpoint_dst = IbcEndpoint {
                 port_id: format!("wasm.{}", env.contract.address),
-                channel_id: packet.destinationChannel.to_string(),
+                channel_id: packet.destination_channel.to_string(),
             };
 
             let ibc_channel = IbcChannel::new(
@@ -569,7 +569,7 @@ pub(crate) fn execute_union_ibc(
                 ibc_endpoint_dst.clone(),
                 cosmwasm_std::IbcOrder::Ordered,
                 channel.version.clone(),
-                channel.connectionId.to_string(),
+                channel.connection_id.to_string(),
             );
 
             let ibc_packet = IbcPacket::new(
@@ -580,9 +580,9 @@ pub(crate) fn execute_union_ibc(
                 IbcTimeout::with_both(
                     IbcTimeoutBlock {
                         revision: 0,
-                        height: packet.timeoutHeight,
+                        height: packet.timeout_height,
                     },
-                    Timestamp::from_nanos(packet.timeoutTimestamp),
+                    Timestamp::from_nanos(packet.timeout_timestamp),
                 ),
             );
 
@@ -606,7 +606,7 @@ pub(crate) fn execute_union_ibc(
                 })
                 .send_timeout(ibc_packet)),
                 v => Err(ContractError::UnknownProtocol {
-                    channel_id: packet.destinationChannel.to_string(),
+                    channel_id: packet.destination_channel.to_string(),
                     protocol_version: v.into(),
                 }),
             }??;

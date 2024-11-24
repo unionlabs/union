@@ -54,19 +54,6 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedNonExistenceProof>
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<CompressedNonExistenceProof>
-    for contracts::glue::CosmosIcs23V1CompressedNonExistenceProofData
-{
-    fn from(value: CompressedNonExistenceProof) -> Self {
-        Self {
-            key: value.key.into(),
-            left: value.left.map(Into::into).unwrap_or_default(),
-            right: value.right.map(Into::into).unwrap_or_default(),
-        }
-    }
-}
-
 impl From<CompressedNonExistenceProof> for protos::cosmos::ics23::v1::CompressedNonExistenceProof {
     fn from(value: CompressedNonExistenceProof) -> Self {
         Self {

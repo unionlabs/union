@@ -616,64 +616,6 @@ pub mod hash_v2 {
         }
     }
 
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> TryFrom<::ethers_core::types::Bytes> for Hash<BYTES, E> {
-        type Error = <Self as TryFrom<Vec<u8>>>::Error;
-
-        fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
-            Self::try_from(&value.0[..])
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> TryFrom<&'_ ::ethers_core::types::Bytes> for Hash<BYTES, E> {
-        type Error = <Self as TryFrom<Vec<u8>>>::Error;
-
-        fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
-            Self::try_from(&value.0[..])
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiType for Hash<BYTES, E> {
-        fn param_type() -> ::ethers_core::abi::ParamType {
-            ::ethers_core::abi::ParamType::FixedBytes(BYTES)
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiArrayType for Hash<BYTES, E> {}
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiEncode for Hash<BYTES, E> {
-        fn encode(self) -> Vec<u8> {
-            self.get().encode()
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiDecode for Hash<BYTES, E> {
-        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
-            <[u8; BYTES]>::decode(bytes).map(Self::new)
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::Tokenizable for Hash<BYTES, E> {
-        fn from_token(
-            token: ::ethers_core::abi::Token,
-        ) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
-            <[u8; BYTES]>::from_token(token).map(Self::new)
-        }
-
-        fn into_token(self) -> ::ethers_core::abi::Token {
-            self.get().into_token()
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::TokenizableItem for Hash<BYTES, E> {}
-
     #[cfg(test)]
     mod tests {
         use hex::FromHexError;

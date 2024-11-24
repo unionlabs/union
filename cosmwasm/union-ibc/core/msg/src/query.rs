@@ -1,4 +1,5 @@
 #[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     GetTimestampAtHeight { client_id: u32, height: u64 },
     GetLatestHeight { client_id: u32 },

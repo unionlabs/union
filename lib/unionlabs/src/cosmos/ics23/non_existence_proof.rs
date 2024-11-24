@@ -44,17 +44,6 @@ impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<NonExistenceProof> for contracts::glue::CosmosIcs23V1NonExistenceProofData {
-    fn from(value: NonExistenceProof) -> Self {
-        Self {
-            key: value.key.into(),
-            left: value.left.map(Into::into).unwrap_or_default(),
-            right: value.right.map(Into::into).unwrap_or_default(),
-        }
-    }
-}
-
 impl From<NonExistenceProof> for protos::cosmos::ics23::v1::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {
         Self {

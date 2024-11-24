@@ -16,14 +16,10 @@ bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
-contracts                = { workspace = true, optional = true }
 cosmwasm-std             = { workspace = true, optional = true }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 enumorph                 = { workspace = true }
-ethers                   = { workspace = true, optional = true }
-ethers-contract-derive   = { workspace = true, optional = true }
-ethers-core              = { workspace = true, optional = true }
 frame-support-procedural = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
@@ -71,10 +67,10 @@ serde_json = { workspace = true }
 default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
-ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers", "alloy"]
+ethabi   = ["alloy"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
-std      = ["ethers-core/std", "subtle-encoding/std"]
+std      = ["subtle-encoding/std"]
 
 fuzzing    = []
 test_utils = []

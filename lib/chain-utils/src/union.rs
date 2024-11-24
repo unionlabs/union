@@ -1,7 +1,7 @@
 use std::{fmt::Debug, num::ParseIntError, sync::Arc};
 
+use bip32::secp256k1::ecdsa;
 use dashmap::DashMap;
-use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{

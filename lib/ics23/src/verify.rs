@@ -533,7 +533,7 @@ mod tests {
                     client_id: ClientId::new("cometbls", 0),
                     connection_id: Some(ConnectionId::new(0)),
                     prefix: unionlabs::ibc::core::commitment::merkle_prefix::MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
+                        key_prefix: b"ibc".into(),
                     },
                 },
                 delay_period: 0,

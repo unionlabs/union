@@ -42,24 +42,6 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchProof> for CompressedBatc
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<CompressedBatchProof> for contracts::glue::CosmosIcs23V1CompressedBatchProofData {
-    fn from(value: CompressedBatchProof) -> Self {
-        Self {
-            entries: value
-                .entries
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
-            lookup_inners: value
-                .lookup_inners
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
-        }
-    }
-}
-
 impl From<CompressedBatchProof> for protos::cosmos::ics23::v1::CompressedBatchProof {
     fn from(value: CompressedBatchProof) -> Self {
         Self {

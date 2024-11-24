@@ -21,12 +21,10 @@ beacon-api-types            = { workspace = true }
 bytes                       = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["proto"] }
 cosmwasm-schema             = { version = "2.1.4" }
-cosmwasm-std                = { version = "2.1.4", features = ["abort"] }
+cosmwasm-std                = { version = "2.1.4", features = ["abort", "cosmwasm_2_1"] }
 cw-storage-plus             = { version = "2.0.0" }
 ethereum-light-client-types = { workspace = true, features = ["proto"] }
 ethereum-sync-protocol      = { workspace = true }
-ethers-contract-derive      = { workspace = true }
-ethers-core                 = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true }
 prost                       = { workspace = true }

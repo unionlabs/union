@@ -45,46 +45,6 @@ impl fmt::LowerHex for U256 {
     }
 }
 
-#[cfg(feature = "ethabi")]
-mod ethabi {
-    use ethers::core::abi::{
-        AbiArrayType, AbiDecode, AbiEncode, AbiError, AbiType, InvalidOutputType, ParamType, Token,
-        Tokenizable, TokenizableItem,
-    };
-
-    use crate::uint::U256;
-
-    impl AbiType for U256 {
-        fn param_type() -> ParamType {
-            <primitive_types::U256 as AbiType>::param_type()
-        }
-    }
-
-    impl AbiArrayType for U256 {}
-    impl Tokenizable for U256 {
-        fn from_token(token: Token) -> Result<Self, InvalidOutputType> {
-            <primitive_types::U256 as Tokenizable>::from_token(token).map(Self)
-        }
-        fn into_token(self) -> Token {
-            <primitive_types::U256 as Tokenizable>::into_token(self.0)
-        }
-    }
-
-    impl TokenizableItem for U256 {}
-
-    impl AbiDecode for U256 {
-        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, AbiError> {
-            <primitive_types::U256 as AbiDecode>::decode(bytes).map(Self)
-        }
-    }
-
-    impl AbiEncode for U256 {
-        fn encode(self) -> Vec<u8> {
-            <primitive_types::U256 as AbiEncode>::encode(self.0)
-        }
-    }
-}
-
 impl U256 {
     pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
     pub const ZERO: Self = Self::from_limbs([0; 4]);

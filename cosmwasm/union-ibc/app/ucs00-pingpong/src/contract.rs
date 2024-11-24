@@ -52,14 +52,14 @@ pub fn execute(
             let ping_packet = UCS00PingPong::decode(&packet.data)?;
             let config = CONFIG.load(deps.storage)?;
             let msg =
-                ping_packet.reverse(&config, env.block.time.nanos(), packet.destinationChannel);
+                ping_packet.reverse(&config, env.block.time.nanos(), packet.destination_channel);
 
             Ok(Response::default()
                 .add_message(wasm_execute(
                     &config.ibc_host,
                     &union_ibc_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.sourceChannel,
+                            channel_id: packet.source_channel,
                             packet,
                             acknowledgement: ack_success().into(),
                         },

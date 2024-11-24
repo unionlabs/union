@@ -122,15 +122,6 @@ pub trait TypeUrl {
 
 #[cfg(feature = "ethabi")]
 #[derive(Debug, thiserror::Error)]
-pub enum TryFromEthAbiBytesError<E> {
-    #[error(transparent)]
-    TryFromEthAbi(E),
-    #[error("unable to decode from raw ethabi bytes")]
-    Decode(ethers_core::abi::AbiError),
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, thiserror::Error)]
 // TODO: Rename this once we fully remove ethers
 pub enum TryFromEthAbiBytesErrorAlloy<E> {
     #[error(transparent)]

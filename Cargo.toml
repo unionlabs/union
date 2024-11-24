@@ -17,7 +17,6 @@ members = [
 
   "e2e/ensure-blocks",
 
-  "generated/rust/contracts",
   "generated/rust/protos",
   "generated/rust/aptos-move-ibc",
 
@@ -93,7 +92,6 @@ members = [
   # "cosmwasm/union-ibc/light-clients/linea",
   "cosmwasm/union-ibc/light-clients/linea/types",
 
-  "tools/generate-rust-sol-bindings",
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
   "tools/tidy",
@@ -194,8 +192,6 @@ cometbls-light-client-types = { path = "cosmwasm/union-ibc/light-clients/cometbl
 scroll-light-client-types = { path = "cosmwasm/union-ibc/light-clients/scroll/types", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 
-contracts = { path = "generated/rust/contracts", default-features = false }
-
 ethereum-light-client       = { path = "cosmwasm/union-ibc/light-clients/ethereum", default-features = false }
 ethereum-light-client-types = { path = "cosmwasm/union-ibc/light-clients/ethereum/types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
@@ -260,11 +256,6 @@ milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e
 
 tendermint     = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
-
-ethers                 = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
 alloy = { version = "0.5", default-features = false }
 

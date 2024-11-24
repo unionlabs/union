@@ -18,7 +18,6 @@ arbitrum-verifier           = { workspace = true }
 cosmwasm-std                = { version = "2.1.4", features = ["abort"] }
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
-ethers-core                 = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true }
 protos                      = { workspace = true }
