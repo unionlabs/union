@@ -6,7 +6,7 @@ use unionlabs::{hash::H256, ibc::core::client::height::Height, ics24::PathParseE
 
 use crate::client::ScrollLightClient;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     // REVIEW: Move this variant to IbcClientError?
     #[error("consensus state not found at height {0}")]

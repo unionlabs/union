@@ -15,7 +15,7 @@ use evm_storage_verifier::{
 use union_ibc_light_client::IbcClientCtx;
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
-    encoding::Proto, ensure, ethereum::ibc_commitment_key, hash::H256,
+    encoding::Bincode, ensure, ethereum::ibc_commitment_key, hash::H256,
     ibc::core::client::height::Height, uint::U256,
 };
 
@@ -38,7 +38,7 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
@@ -300,7 +300,6 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     misbehaviour: Misbehaviour,
 ) -> Result<(), Error> {
     // There is no point to check for misbehaviour when the headers are not for the same height
-    // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
     let (slot_1, slot_2) = (
         misbehaviour
             .update_1
@@ -991,53 +990,5 @@ pub fn verify_misbehaviour<C: ChainSpec>(
 //             EthereumLightClient::migrate_client_store(deps.as_mut()),
 //             Err(Error::SubstituteClientFrozen.into())
 //         );
-//     }
-// }
-
-// #[cfg(any(feature = "test-utils", test))]
-// pub mod test_utils {
-//     use cosmwasm_std::{testing::MockQuerierCustomHandlerResult, Binary, SystemResult};
-//     use ethereum_verifier::crypto::{
-//         eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
-//     };
-//     use unionlabs::{bls::BlsPublicKey, cosmwasm::wasm::union::custom_query::UnionCustomQuery};
-
-//     pub fn custom_query_handler(query: &UnionCustomQuery) -> MockQuerierCustomHandlerResult {
-//         match query {
-//             UnionCustomQuery::AggregateVerify {
-//                 public_keys,
-//                 message,
-//                 signature,
-//             } => {
-//                 let pubkeys: Vec<BlsPublicKey> = public_keys
-//                     .iter()
-//                     .map(|pk| pk.0.clone().try_into().unwrap())
-//                     .collect();
-
-//                 let res = fast_aggregate_verify_unchecked(
-//                     pubkeys.iter().collect::<Vec<&BlsPublicKey>>().as_slice(),
-//                     message.as_ref(),
-//                     &signature.0.clone().try_into().unwrap(),
-//                 );
-
-//                 SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
-//                     serde_json::to_vec(&res.is_ok()).unwrap().into(),
-//                 ))
-//             }
-//             UnionCustomQuery::Aggregate { public_keys } => {
-//                 let pubkey = eth_aggregate_public_keys_unchecked(
-//                     public_keys
-//                         .iter()
-//                         .map(|pk| pk.as_ref().try_into().unwrap())
-//                         .collect::<Vec<BlsPublicKey>>()
-//                         .as_slice(),
-//                 )
-//                 .unwrap();
-
-//                 SystemResult::Ok(cosmwasm_std::ContractResult::Ok::<Binary>(
-//                     serde_json::to_vec(&Binary(pubkey.into())).unwrap().into(),
-//                 ))
-//             }
-//         }
 //     }
 // }

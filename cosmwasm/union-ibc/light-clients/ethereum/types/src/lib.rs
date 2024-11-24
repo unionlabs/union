@@ -7,19 +7,6 @@ pub mod light_client_update_data;
 pub mod misbehaviour;
 pub mod storage_proof;
 
-#[cfg(feature = "proto")]
-pub mod beacon_block_header_proto;
-#[cfg(feature = "proto")]
-pub mod execution_payload_header_proto;
-#[cfg(feature = "proto")]
-pub mod fork_parameters_proto;
-#[cfg(feature = "proto")]
-pub mod light_client_header_proto;
-#[cfg(feature = "proto")]
-pub mod sync_aggregate_proto;
-#[cfg(feature = "proto")]
-pub mod sync_committee_proto;
-
 pub use crate::{
     account_proof::AccountProof,
     client_state::ClientState,

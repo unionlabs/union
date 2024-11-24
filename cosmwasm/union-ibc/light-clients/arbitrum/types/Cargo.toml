@@ -14,7 +14,7 @@ unionlabs                   = { workspace = true }
 
 [features]
 default = ["proto", "serde"]
-proto   = ["dep:protos", "unionlabs/proto", "ethereum-light-client-types/proto"]
+proto   = ["dep:protos", "unionlabs/proto"]
 serde   = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]

@@ -9,9 +9,6 @@ version      = "1.0.0"
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 ibc-solidity = { workspace = true, features = ["serde"] }
 serde        = { workspace = true, features = ["derive"] }

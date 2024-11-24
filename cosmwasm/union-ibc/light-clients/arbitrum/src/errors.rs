@@ -4,7 +4,7 @@ use unionlabs::{hash::H256, ibc::core::client::height::Height, ics24::PathParseE
 
 use crate::client::ArbitrumLightClient;
 
-#[derive(Debug, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     Evm(#[from] ethereum_light_client::errors::Error),
