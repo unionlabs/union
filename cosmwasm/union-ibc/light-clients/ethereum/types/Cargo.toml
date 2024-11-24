@@ -4,7 +4,7 @@ name    = "ethereum-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"] }
+alloy            = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types = { workspace = true }
 serde            = { workspace = true, optional = true, features = ["derive"] }
 serde-utils      = { workspace = true, optional = true }
@@ -20,6 +20,7 @@ serde = [
   "dep:serde",
   "dep:serde-utils",
 ]
+ethabi = ["unionlabs/ethabi", "dep:alloy"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }
