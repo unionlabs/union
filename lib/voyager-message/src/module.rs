@@ -130,6 +130,10 @@ pub struct ClientModuleInfo {
     /// The IBC interface that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
     pub ibc_interface: IbcInterface,
+
+    /// The IBC version that this client module provides functionality for.
+    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
+    pub ibc_version_id: IbcVersionId,
 }
 
 impl ClientModuleInfo {
@@ -181,6 +185,20 @@ impl ClientModuleInfo {
             Ok(())
         }
     }
+
+    pub fn ensure_ibc_version_id(
+        &self,
+        ibc_version_id: impl AsRef<str>,
+    ) -> Result<(), UnexpectedIbcVersionIdError> {
+        if ibc_version_id.as_ref() != self.ibc_version_id.as_str() {
+            Err(UnexpectedIbcVersionIdError {
+                expected: self.ibc_version_id.clone(),
+                found: ibc_version_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -208,6 +226,13 @@ pub struct UnexpectedClientTypeError {
 #[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcInterfaceError {
     pub expected: IbcInterface,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedIbcVersionIdError {
+    pub expected: IbcVersionId,
     pub found: String,
 }
 

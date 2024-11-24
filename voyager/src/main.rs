@@ -506,13 +506,14 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     if decode {
                         let client_info = voyager_client
-                            .client_info(on, ibc_version_id, client_id)
+                            .client_info(on, ibc_version_id.clone(), client_id)
                             .await?;
 
                         let decoded = voyager_client
                             .decode_client_state(
                                 client_info.client_type,
                                 client_info.ibc_interface,
+                                ibc_version_id,
                                 serde_json::from_value(ibc_state.state).unwrap(),
                             )
                             .await?;
@@ -702,10 +703,11 @@ pub mod utils {
             ));
         }
 
-        let client_module = ctx
-            .rpc_server
-            .modules()?
-            .client_module(&client_type, &ibc_interface)?;
+        let client_module = ctx.rpc_server.modules()?.client_module(
+            &client_type,
+            &ibc_interface,
+            &ibc_version_id,
+        )?;
 
         Ok(data(WithChainId {
             chain_id,

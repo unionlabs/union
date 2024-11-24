@@ -13,6 +13,7 @@ unionlabs        = { workspace = true }
 
 [features]
 default = ["serde"]
+ethabi = ["unionlabs/ethabi", "dep:alloy"]
 serde = [
   # TODO: Feature gate serde in unionlabs
   # "unionlabs/serde",
@@ -20,7 +21,6 @@ serde = [
   "dep:serde",
   "dep:serde-utils",
 ]
-ethabi = ["unionlabs/ethabi", "dep:alloy"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

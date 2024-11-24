@@ -29,7 +29,7 @@ axum                          = { workspace = true, features = ["macros", "tokio
 backon                        = "0.4.4"
 base64                        = { workspace = true }
 beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
-berachain-light-client-types  = { workspace = true }
+berachain-light-client-types  = { workspace = true, features = ["serde"] }
 chain-utils                   = { workspace = true }
 chrono                        = { workspace = true, features = ["clock"] }
 clap                          = { workspace = true, features = ["derive", "env", "error-context"] }
@@ -42,7 +42,7 @@ futures                       = { workspace = true, features = ["async-await"] }
 hex                           = { workspace = true }
 itertools                     = "0.13.0"
 lazy_static                   = { workspace = true }
-movement-light-client-types   = { workspace = true, features = ["proto"] }
+movement-light-client-types   = { workspace = true, features = ["proto", "serde"] }
 num-traits                    = "0.2.19"
 prometheus                    = { version = "0.13.3", features = ["process"] }
 prost                         = { workspace = true }
@@ -50,7 +50,7 @@ protos                        = { workspace = true, features = ["client"] }
 regex                         = "1.10.5"
 reqwest                       = { workspace = true, features = ["json", "blocking"] }
 scroll-api                    = { workspace = true }
-scroll-light-client-types     = { workspace = true, features = ["proto"] }
+scroll-light-client-types     = { workspace = true, features = ["proto", "serde"] }
 serde                         = { workspace = true, features = ["derive"] }
 serde-aux                     = "4.5.0"
 serde_json                    = { workspace = true }

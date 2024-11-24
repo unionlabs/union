@@ -7,7 +7,7 @@ use protos::ibc::{
 use tokio::{task::JoinSet, time::interval};
 use tracing::{error, info, info_span, warn, Instrument};
 use unionlabs::{
-    encoding::{Bincode, DecodeAs, Proto},
+    encoding::{Bincode, DecodeAs},
     parse_wasm_client_type, WasmClientType,
 };
 

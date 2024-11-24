@@ -14,4 +14,4 @@ unionlabs                     = { workspace = true }
 
 [features]
 default = []
-serde = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]
+serde   = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]

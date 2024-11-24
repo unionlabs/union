@@ -451,7 +451,7 @@ async fn do_make_msg_union(
             debug!(%connection_proof);
 
             let encoded_connection_state_proof = voyager_client
-                .encode_proof(
+                .encode_proof::<IbcUnion>(
                     target_client_info.client_type.clone(),
                     target_client_info.ibc_interface.clone(),
                     connection_proof,
@@ -533,7 +533,7 @@ async fn do_make_msg_union(
             debug!(%connection_proof);
 
             let encoded_connection_state_proof = voyager_client
-                .encode_proof(
+                .encode_proof::<IbcUnion>(
                     target_client_info.client_type.clone(),
                     target_client_info.ibc_interface.clone(),
                     connection_proof,
@@ -614,7 +614,7 @@ async fn do_make_msg_union(
             debug!(%connection_proof);
 
             let encoded_connection_state_proof = voyager_client
-                .encode_proof(
+                .encode_proof::<IbcV1>(
                     target_client_info.client_type.clone(),
                     target_client_info.ibc_interface.clone(),
                     connection_proof,
@@ -1397,7 +1397,7 @@ async fn mk_connection_handshake_state_and_proofs(
     debug!(%connection_proof);
 
     let encoded_connection_state_proof = voyager_client
-        .encode_proof(
+        .encode_proof::<IbcV1>(
             target_client_info.client_type.clone(),
             target_client_info.ibc_interface.clone(),
             connection_proof,
