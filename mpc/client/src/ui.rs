@@ -115,14 +115,14 @@ fn ui(f: &mut Frame, state: &UiState, throbber_state: &mut ThrobberState) {
             let gauge = Gauge::default()
                 .gauge_style(Style::default().fg(Color::Cyan))
                 .ratio(*progress as f64 / 100.0);
-            if gauge_area.top().saturating_add(0 as u16) > area.bottom() {
+            if gauge_area.top().saturating_add(0_u16) > area.bottom() {
                 return;
             }
             f.render_widget(
                 gauge,
                 Rect {
                     x: gauge_area.left(),
-                    y: gauge_area.top().saturating_add(0 as u16),
+                    y: gauge_area.top().saturating_add(0_u16),
                     width: gauge_area.width,
                     height: 1,
                 },

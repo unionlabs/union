@@ -89,7 +89,7 @@ impl SupabaseMPCApi {
         Ok(self
             .client
             .from("contribution_submitted")
-            .eq("id", &contributor_id)
+            .eq("id", contributor_id)
             .select("id")
             .execute()
             .await?
@@ -106,7 +106,7 @@ impl SupabaseMPCApi {
         Ok(self
             .client
             .from("queue")
-            .eq("id", &contributor_id)
+            .eq("id", contributor_id)
             .select("payload_id")
             .execute()
             .await?
@@ -169,7 +169,7 @@ impl SupabaseMPCApi {
         Ok(self
             .client
             .from("contribution_signature")
-            .eq("id", &contributor_id)
+            .eq("id", contributor_id)
             .select("*")
             .execute()
             .await?
@@ -199,7 +199,7 @@ impl SupabaseMPCApi {
             )]))
             .build()?;
         let state_path = payload_output;
-        let action = match get_state_file(&state_path).await {
+        let action = match get_state_file(state_path).await {
             content if content.len() < CONTRIBUTION_SIZE => {
                 StateFileAction::Download(content.len())
             }

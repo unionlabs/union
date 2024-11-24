@@ -48,6 +48,7 @@ enum Command {
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
+#[allow(clippy::enum_variant_names)]
 enum Error {
     #[error("current contributor not found.")]
     ContributorNotFound,
