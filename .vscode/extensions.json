@@ -23,10 +23,13 @@
     "astro-build.astro-vscode",
     "bradlc.vscode-tailwindcss",
     "better-ts-errors.better-ts-errors",
+    /* go */
+    "golang.go",
     /* git & github */
     "mk12.better-git-line-blame",
     "antfu.open-in-github-button",
     "github.vscode-github-actions",
+    "GitHub.vscode-pull-request-github",
     "christian-kohler.path-intellisense",
     /* theme */
     "catppuccin.catppuccin-vsc",
