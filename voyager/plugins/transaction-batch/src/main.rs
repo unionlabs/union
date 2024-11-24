@@ -912,7 +912,7 @@ async fn do_make_msg_v1(
                         connection_id: Some(connection_open_init_event.connection_id),
                         prefix: MerklePrefix {
                             // TODO: Make configurable
-                            key_prefix: b"ibc".to_vec(),
+                            key_prefix: b"ibc".into(),
                         },
                     },
                     // TODO: Make configurable

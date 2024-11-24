@@ -7,51 +7,12 @@ use crate::{
     union::ics23::inner_op::InnerOp,
 };
 
-#[model(
-    proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from),
-    ethabi(raw(ExistenceProofEthAbi), into, from)
-)]
+#[model(proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from))]
 pub struct ExistenceProof {
     pub key: Bytes,
     pub value: Bytes,
     pub leaf_prefix: Bytes,
     pub path: Vec<InnerOp>,
-}
-
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-impl From<ExistenceProof> for ExistenceProofEthAbi {
-    fn from(value: ExistenceProof) -> Self {
-        ExistenceProofEthAbi {
-            key: value.key.into_vec().into(),
-            value: value.value.into_vec().into(),
-            leaf_prefix: value.leaf_prefix.into_vec().into(),
-            path: value.path.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-impl From<ExistenceProofEthAbi> for ExistenceProof {
-    fn from(value: ExistenceProofEthAbi) -> Self {
-        ExistenceProof {
-            key: value.key.to_vec().into(),
-            value: value.value.to_vec().into(),
-            leaf_prefix: value.leaf_prefix.to_vec().into(),
-            path: value.path.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-#[derive(Debug, PartialEq, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub struct ExistenceProofEthAbi {
-    pub key: ethers::types::Bytes,
-    pub value: ethers::types::Bytes,
-    pub leaf_prefix: ethers::types::Bytes,
-    pub path: Vec<crate::union::ics23::inner_op::InnerOpEthAbi>,
 }
 
 const EXPECTED_PREHASH_KEY: HashOp = HashOp::NoHash;

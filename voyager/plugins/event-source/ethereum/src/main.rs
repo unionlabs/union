@@ -151,7 +151,7 @@ impl Module {
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
-        let self_connection_id = self_channel.connectionId;
+        let self_connection_id = self_channel.connection_id;
         let self_connection = voyager_rpc_client
             .query_ibc_state(
                 self.chain_id.clone(),
@@ -167,18 +167,18 @@ impl Module {
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.clientId)
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.client_id)
             .await?;
 
         let client_meta = voyager_rpc_client
             .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_state.clientId,
+                self_connection_state.client_id,
             )
             .await?;
 
-        let other_channel_id = self_channel.counterpartyChannelId;
+        let other_channel_id = self_channel.counterparty_channel_id;
 
         let other_channel = voyager_rpc_client
             .query_ibc_state(
@@ -198,7 +198,7 @@ impl Module {
             channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.clientId,
+                client_id: self_connection_state.client_id,
                 connection_id: self_connection_id,
             },
         };
@@ -206,8 +206,8 @@ impl Module {
             channel_id: other_channel_id,
             version: other_channel_state.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.counterpartyClientId,
-                connection_id: self_connection_state.counterpartyConnectionId,
+                client_id: self_connection_state.counterparty_client_id,
+                connection_id: self_connection_state.counterparty_connection_id,
             },
         };
 
@@ -274,14 +274,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 match event {
                     IbcEvents::ClientCreated(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -294,7 +294,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ClientCreated {
-                                    client_id: raw_event.clientId,
+                                    client_id: raw_event.client_id,
                                     client_type: client_info.client_type,
                                 }
                                 .into(),
@@ -308,14 +308,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                     IbcEvents::ClientUpdated(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -329,7 +329,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<FullIbcEvent>(
                                 ClientUpdated {
                                     client_type: client_info.client_type,
-                                    client_id: raw_event.clientId,
+                                    client_id: raw_event.client_id,
                                     height: raw_event.height,
                                 }
                                 .into(),
@@ -339,14 +339,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                     IbcEvents::ConnectionOpenInit(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -359,9 +359,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             event: into_value::<FullIbcEvent>(
                                 ConnectionOpenInit {
-                                    client_id: raw_event.clientId,
-                                    connection_id: raw_event.connectionId,
-                                    counterparty_client_id: raw_event.counterpartyClientId,
+                                    client_id: raw_event.client_id,
+                                    connection_id: raw_event.connection_id,
+                                    counterparty_client_id: raw_event.counterparty_client_id,
                                 }
                                 .into(),
                             ),
@@ -369,14 +369,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                     IbcEvents::ConnectionOpenTry(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -389,10 +389,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ConnectionOpenTry {
-                                    client_id: raw_event.clientId,
-                                    connection_id: raw_event.connectionId,
-                                    counterparty_client_id: raw_event.counterpartyClientId,
-                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                    client_id: raw_event.client_id,
+                                    connection_id: raw_event.connection_id,
+                                    counterparty_client_id: raw_event.counterparty_client_id,
+                                    counterparty_connection_id: raw_event
+                                        .counterparty_connection_id,
                                 }
                                 .into(),
                             ),
@@ -400,14 +401,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                     IbcEvents::ConnectionOpenAck(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -420,10 +421,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ConnectionOpenAck {
-                                    client_id: raw_event.clientId,
-                                    connection_id: raw_event.connectionId,
-                                    counterparty_client_id: raw_event.counterpartyClientId,
-                                    counterparty_connection_id: raw_event.counterpartyConnectionId,
+                                    client_id: raw_event.client_id,
+                                    connection_id: raw_event.connection_id,
+                                    counterparty_client_id: raw_event.counterparty_client_id,
+                                    counterparty_connection_id: raw_event
+                                        .counterparty_connection_id,
                                 }
                                 .into(),
                             ),
@@ -431,14 +433,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                     IbcEvents::ConnectionOpenConfirm(raw_event) => {
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                raw_event.clientId,
+                                raw_event.client_id,
                             )
                             .await?;
 
@@ -451,10 +453,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ConnectionOpenConfirm {
-                                    client_id: raw_event.clientId,
-                                    connection_id: raw_event.connectionId,
-                                    counterparty_client_id: raw_event.counterpartyClientId,
-                                    counterparty_connection_id: raw_event.counterpartyClientId,
+                                    client_id: raw_event.client_id,
+                                    connection_id: raw_event.connection_id,
+                                    counterparty_client_id: raw_event.counterparty_client_id,
+                                    counterparty_connection_id: raw_event.counterparty_client_id,
                                 }
                                 .into(),
                             ),
@@ -466,7 +468,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 provable_height.into(),
                                 ConnectionPath {
-                                    connection_id: raw_event.connectionId,
+                                    connection_id: raw_event.connection_id,
                                 },
                             )
                             .await?
@@ -474,18 +476,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.clientId,
+                                connection.client_id,
                             )
                             .await?;
 
-                        let channel_id = raw_event.channelId;
+                        let channel_id = raw_event.channel_id;
 
                         let channel = voyager_client
                             .query_ibc_state(
@@ -506,9 +508,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ChannelOpenInit {
-                                    port_id: raw_event.portId.into(),
+                                    port_id: raw_event.port_id.into(),
                                     channel_id,
-                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
+                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
                                     connection,
                                     version: channel.version,
                                 }
@@ -522,7 +524,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 provable_height.into(),
                                 ConnectionPath {
-                                    connection_id: raw_event.connectionId,
+                                    connection_id: raw_event.connection_id,
                                 },
                             )
                             .await?
@@ -530,18 +532,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.clientId,
+                                connection.client_id,
                             )
                             .await?;
 
-                        let channel_id = raw_event.channelId;
+                        let channel_id = raw_event.channel_id;
 
                         let channel = voyager_client
                             .query_ibc_state(
@@ -562,10 +564,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ChannelOpenTry {
-                                    port_id: raw_event.portId.into(),
+                                    port_id: raw_event.port_id.into(),
                                     channel_id,
-                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
-                                    counterparty_channel_id: raw_event.counterpartyChannelId,
+                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
+                                    counterparty_channel_id: raw_event.counterparty_channel_id,
                                     connection,
                                     version: channel.version,
                                 }
@@ -579,7 +581,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 provable_height.into(),
                                 ConnectionPath {
-                                    connection_id: raw_event.connectionId,
+                                    connection_id: raw_event.connection_id,
                                 },
                             )
                             .await?
@@ -587,18 +589,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.clientId,
+                                connection.client_id,
                             )
                             .await?;
 
-                        let channel_id = raw_event.channelId;
+                        let channel_id = raw_event.channel_id;
 
                         let channel = voyager_client
                             .query_ibc_state(
@@ -619,10 +621,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ChannelOpenAck {
-                                    port_id: raw_event.portId.into(),
+                                    port_id: raw_event.port_id.into(),
                                     channel_id,
-                                    counterparty_port_id: raw_event.counterpartyPortId.into(),
-                                    counterparty_channel_id: raw_event.counterpartyChannelId,
+                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
+                                    counterparty_channel_id: raw_event.counterparty_channel_id,
                                     connection,
                                     version: channel.version,
                                 }
@@ -636,7 +638,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 provable_height.into(),
                                 ConnectionPath {
-                                    connection_id: raw_event.connectionId,
+                                    connection_id: raw_event.connection_id,
                                 },
                             )
                             .await?
@@ -644,18 +646,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.clientId)
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                             .await?;
 
                         let client_meta = voyager_client
                             .client_meta::<IbcUnion>(
                                 self.chain_id.clone(),
                                 provable_height.into(),
-                                connection.clientId,
+                                connection.client_id,
                             )
                             .await?;
 
-                        let channel_id = raw_event.channelId;
+                        let channel_id = raw_event.channel_id;
 
                         let channel = voyager_client
                             .query_ibc_state(
@@ -676,10 +678,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_version_id: IbcUnion::ID,
                             event: into_value::<FullIbcEvent>(
                                 ChannelOpenConfirm {
-                                    port_id: raw_event.portId.into(),
+                                    port_id: raw_event.port_id.into(),
                                     channel_id,
-                                    counterparty_port_id: channel.counterpartyPortId.into(),
-                                    counterparty_channel_id: channel.counterpartyChannelId,
+                                    counterparty_port_id: channel.counterparty_port_id.into(),
+                                    counterparty_channel_id: channel.counterparty_channel_id,
                                     connection,
                                     version: channel.version,
                                 }
@@ -704,7 +706,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.sourceChannel,
+                                event.packet.source_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -722,8 +724,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: event.packet.timeoutHeight,
-                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                        timeout_height: event.packet.timeout_height,
+                                        timeout_timestamp: event.packet.timeout_timestamp,
                                     },
                                 }
                                 .into(),
@@ -739,7 +741,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.sourceChannel,
+                                event.packet.source_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -756,8 +758,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: event.packet.timeoutHeight,
-                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                        timeout_height: event.packet.timeout_height,
+                                        timeout_timestamp: event.packet.timeout_timestamp,
                                     },
                                     relayer: event.relayer.into(),
                                     packet_data: event.packet.data.into(),
@@ -775,7 +777,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.sourceChannel,
+                                event.packet.source_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -792,8 +794,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: event.packet.timeoutHeight,
-                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                        timeout_height: event.packet.timeout_height,
+                                        timeout_timestamp: event.packet.timeout_timestamp,
                                     },
                                     packet_data: event.packet.data.into(),
                                     relayer: event.relayer.into(),
@@ -813,7 +815,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.destinationChannel,
+                                event.packet.destination_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -832,8 +834,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: event.packet.timeoutHeight,
-                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                        timeout_height: event.packet.timeout_height,
+                                        timeout_timestamp: event.packet.timeout_timestamp,
                                     },
                                 }
                                 .into(),
@@ -849,7 +851,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.destinationChannel,
+                                event.packet.destination_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -867,8 +869,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: event.packet.timeoutHeight,
-                                        timeout_timestamp: event.packet.timeoutTimestamp,
+                                        timeout_height: event.packet.timeout_height,
+                                        timeout_timestamp: event.packet.timeout_timestamp,
                                     },
                                     relayer: event.relayer.into(),
                                     relayer_msg: event.relayerMsg.into(),

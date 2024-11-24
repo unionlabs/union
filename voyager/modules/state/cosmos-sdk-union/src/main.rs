@@ -9,7 +9,7 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
-use ibc_solidity::cosmwasm::types::ibc::{Channel, Connection};
+use ibc_solidity::ibc::{Channel, Connection};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},

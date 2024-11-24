@@ -15,8 +15,7 @@ impl BlsVerify for VerificationContext<'_> {
     ) -> Result<(), ethereum_sync_protocol::error::Error> {
         let pubkeys = public_keys
             .into_iter()
-            .map(|x| x.0)
-            .flatten()
+            .flat_map(|x| x.0)
             .collect::<Vec<u8>>();
 
         let pubkey = self

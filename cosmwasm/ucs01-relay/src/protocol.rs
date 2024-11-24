@@ -5,7 +5,7 @@ use cosmwasm_std::{
     IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, StdError, Timestamp, Uint128,
     Uint512, WasmMsg,
 };
-use ibc_solidity::cosmwasm::types::ibc::{Channel, Packet};
+use ibc_solidity::ibc::{Channel, Packet};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
@@ -196,12 +196,12 @@ pub trait TransferProtocolExt<'a>:
                                 },
                             )?;
                             let ibc_endpoint_src = IbcEndpoint {
-                                port_id: hex::encode(channel.counterpartyPortId),
+                                port_id: hex::encode(channel.counterparty_port_id),
                                 channel_id: source_channel.to_string(),
                             };
                             let ibc_endpoint_dst = IbcEndpoint {
                                 port_id: format!("wasm.{}", self.common().env.contract.address),
-                                channel_id: channel.counterpartyChannelId.to_string(),
+                                channel_id: channel.counterparty_channel_id.to_string(),
                             };
                             let ibc_packet = IbcPacket::new(
                                 data.to_vec(),
@@ -1036,10 +1036,10 @@ impl TransferProtocol for Ucs01Protocol<'_> {
                     .parse()
                     .expect("impossible"),
                 packet: Packet {
-                    sourceChannel: packet.src.channel_id.parse().expect("impossible"),
-                    destinationChannel: packet.dest.channel_id.parse().expect("impossible"),
+                    source_channel: packet.src.channel_id.parse().expect("impossible"),
+                    destination_channel: packet.dest.channel_id.parse().expect("impossible"),
                     data: packet.data.to_vec().into(),
-                    timeoutHeight: packet
+                    timeout_height: packet
                         .timeout
                         .block()
                         .unwrap_or(IbcTimeoutBlock {
@@ -1047,7 +1047,7 @@ impl TransferProtocol for Ucs01Protocol<'_> {
                             height: 0,
                         })
                         .height,
-                    timeoutTimestamp: packet
+                    timeout_timestamp: packet
                         .timeout
                         .timestamp()
                         .unwrap_or(Timestamp::from_nanos(0))

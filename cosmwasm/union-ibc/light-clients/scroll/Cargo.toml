@@ -17,7 +17,6 @@ cosmwasm-std                = { version = "2.1.4", features = ["abort"] }
 cw-storage-plus             = { version = "2.0.0" }
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
-ethers-core                 = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true }
 rlp                         = { workspace = true }

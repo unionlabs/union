@@ -2,21 +2,10 @@ use macros::model;
 
 use crate::{bytes::Bytes, cosmos::ics23::hash_op::HashOp, ensure};
 
-#[model(
-    proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from),
-    ethabi(raw(InnerOpEthAbi), into, from)
-)]
+#[model(proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from))]
 pub struct InnerOp {
     pub prefix: Bytes,
     pub suffix: Bytes,
-}
-
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-#[derive(Debug, PartialEq, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub struct InnerOpEthAbi {
-    pub prefix: ethers::types::Bytes,
-    pub suffix: ethers::types::Bytes,
 }
 
 const EXPECTED_HASH_OP: HashOp = HashOp::Sha256;
@@ -55,25 +44,5 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
             suffix: value.suffix.into(),
         }
         .into()
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<InnerOpEthAbi> for InnerOp {
-    fn from(value: InnerOpEthAbi) -> Self {
-        Self {
-            prefix: value.prefix.to_vec().into(),
-            suffix: value.suffix.to_vec().into(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<InnerOp> for InnerOpEthAbi {
-    fn from(value: InnerOp) -> Self {
-        Self {
-            prefix: value.prefix.into_vec().into(),
-            suffix: value.suffix.into_vec().into(),
-        }
     }
 }

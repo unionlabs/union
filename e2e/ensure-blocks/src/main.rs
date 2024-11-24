@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 
+use alloy::providers::{Provider, ProviderBuilder};
 use clap::Parser;
-use ethers::providers::{Middleware, Provider, StreamExt, Ws};
+use futures::StreamExt;
 use tendermint_rpc::{query::EventType, SubscriptionClient, WebSocketClient};
 use tokio::join;
 
@@ -24,7 +25,10 @@ async fn main() {
 }
 
 async fn do_main(args: Args) {
-    let provider = Provider::new(Ws::connect(args.sepolia).await.unwrap());
+    let provider = ProviderBuilder::new()
+        .on_builtin(&args.sepolia)
+        .await
+        .unwrap();
 
     let (tm_client, driver) = WebSocketClient::builder(args.union.parse().unwrap())
         .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
@@ -33,7 +37,10 @@ async fn do_main(args: Args) {
         .unwrap();
     tokio::spawn(async move { driver.run().await });
 
-    let sepolia_blocks = fetch_blocks("sepolia", provider.subscribe_blocks().await.unwrap());
+    let sepolia_blocks = fetch_blocks(
+        "sepolia",
+        provider.subscribe_blocks().await.unwrap().into_stream(),
+    );
     let union_blocks = fetch_blocks(
         "union",
         tm_client

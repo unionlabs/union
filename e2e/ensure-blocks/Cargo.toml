@@ -10,8 +10,9 @@ version     = "0.0.0"
 workspace = true
 
 [dependencies]
+alloy              = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 clap               = { workspace = true, features = ["default", "derive"] }
-ethers             = { workspace = true, features = ["ws", "providers"] }
+futures.workspace  = true
 reqwest            = { workspace = true }
 tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }
 tokio              = { workspace = true, features = ["full"] }

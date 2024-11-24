@@ -244,7 +244,6 @@
         ./tools/rust-proto.nix
         ./tools/tools.nix
         ./tools/wasm-light-client.nix
-        ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
         ./tools/tidy/tidy.nix

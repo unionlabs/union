@@ -12,7 +12,6 @@ workspace = true
 test-include = ["lib/scroll-verifier/tests"]
 
 [dependencies]
-ethers-core              = { workspace = true }
 evm-storage-verifier     = { workspace = true }
 gnark-mimc               = { workspace = true }
 hex                      = { workspace = true }

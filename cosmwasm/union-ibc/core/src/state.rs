@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::{Item, Map};
-use ibc_solidity::cosmwasm::types::ibc::{Channel, Connection};
+use ibc_solidity::ibc::{Channel, Connection};
 
 pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
 

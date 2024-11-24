@@ -240,6 +240,12 @@ impl<E: Encoding> From<&[u8]> for Bytes<E> {
     }
 }
 
+impl<E: Encoding, const N: usize> From<&[u8; N]> for Bytes<E> {
+    fn from(value: &[u8; N]) -> Self {
+        Self::new(value.as_slice().to_owned())
+    }
+}
+
 // TODO: Feature gate rlp across the crate
 // #[cfg(feature = "rlp")]
 impl<E: Encoding> rlp::Decodable for Bytes<E> {

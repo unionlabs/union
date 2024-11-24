@@ -15,6 +15,7 @@ use unionlabs::{
     bytes::Bytes,
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding},
     hash::hash_v2::Base64,
+    ErrorReporter,
 };
 
 pub mod msg;
@@ -57,9 +58,9 @@ pub enum IbcClientError<T: IbcClient> {
     InvalidClientMessage(Vec<u8>),
 }
 
-impl<T: IbcClient> From<IbcClientError<T>> for StdError {
+impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {
     fn from(value: IbcClientError<T>) -> Self {
-        Self::generic_err(value.to_string())
+        Self::generic_err(ErrorReporter(value).to_string())
     }
 }
 

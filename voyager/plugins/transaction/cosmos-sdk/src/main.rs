@@ -871,12 +871,10 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
-                                ibc_solidity::cosmwasm::types::ibc::MsgCreateClient {
-                                    clientType: msg_create_client.client_type.to_string(),
-                                    clientStateBytes: msg_create_client.client_state_bytes.into(),
-                                    consensusStateBytes: msg_create_client
-                                        .consensus_state_bytes
-                                        .into(),
+                                union_ibc_msg::msg::MsgCreateClient {
+                                    client_type: msg_create_client.client_type.to_string(),
+                                    client_state_bytes: msg_create_client.client_state_bytes,
+                                    consensus_state_bytes: msg_create_client.consensus_state_bytes,
                                     relayer: signer.to_string(),
                                 },
                             ))
@@ -889,9 +887,9 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::UpdateClient(
-                                ibc_solidity::cosmwasm::types::ibc::MsgUpdateClient {
-                                    clientId: msg_update_client.client_id,
-                                    clientMessage: msg_update_client.client_message.into(),
+                                union_ibc_msg::msg::MsgUpdateClient {
+                                    client_id: msg_update_client.client_id,
+                                    client_message: msg_update_client.client_message,
                                     relayer: signer.to_string(),
                                 },
                             ))
@@ -905,9 +903,9 @@ fn process_msgs(
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
-                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenInit {
-                                        clientId: msg_connection_open_init.client_id,
-                                        counterpartyClientId: msg_connection_open_init
+                                    union_ibc_msg::msg::MsgConnectionOpenInit {
+                                        client_id: msg_connection_open_init.client_id,
+                                        counterparty_client_id: msg_connection_open_init
                                             .counterparty_client_id,
                                         relayer: signer.to_string(),
                                     },
@@ -923,14 +921,14 @@ fn process_msgs(
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenTry(
-                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenTry {
-                                        counterpartyClientId: msg_connection_open_try
+                                    union_ibc_msg::msg::MsgConnectionOpenTry {
+                                        counterparty_client_id: msg_connection_open_try
                                             .counterparty_client_id,
-                                        counterpartyConnectionId: msg_connection_open_try
+                                        counterparty_connection_id: msg_connection_open_try
                                             .counterparty_connection_id,
-                                        clientId: msg_connection_open_try.client_id,
-                                        proofInit: msg_connection_open_try.proof_init.into(),
-                                        proofHeight: msg_connection_open_try.proof_height,
+                                        client_id: msg_connection_open_try.client_id,
+                                        proof_init: msg_connection_open_try.proof_init,
+                                        proof_height: msg_connection_open_try.proof_height,
                                         relayer: signer.to_string(),
                                     },
                                 ),
@@ -945,12 +943,12 @@ fn process_msgs(
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenAck(
-                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenAck {
-                                        connectionId: msg_connection_open_ack.connection_id,
-                                        counterpartyConnectionId: msg_connection_open_ack
+                                    union_ibc_msg::msg::MsgConnectionOpenAck {
+                                        connection_id: msg_connection_open_ack.connection_id,
+                                        counterparty_connection_id: msg_connection_open_ack
                                             .counterparty_connection_id,
-                                        proofTry: msg_connection_open_ack.proof_try.into(),
-                                        proofHeight: msg_connection_open_ack.proof_height,
+                                        proof_try: msg_connection_open_ack.proof_try,
+                                        proof_height: msg_connection_open_ack.proof_height,
                                         relayer: signer.to_string(),
                                     },
                                 ),
@@ -965,10 +963,10 @@ fn process_msgs(
                             contract: ibc_union_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
-                                    ibc_solidity::cosmwasm::types::ibc::MsgConnectionOpenConfirm {
-                                        connectionId: msg_connection_open_confirm.connection_id,
-                                        proofAck: msg_connection_open_confirm.proof_ack.into(),
-                                        proofHeight: msg_connection_open_confirm.proof_height,
+                                    union_ibc_msg::msg::MsgConnectionOpenConfirm {
+                                        connection_id: msg_connection_open_confirm.connection_id,
+                                        proof_ack: msg_connection_open_confirm.proof_ack,
+                                        proof_height: msg_connection_open_confirm.proof_height,
                                         relayer: signer.to_string(),
                                     },
                                 ),

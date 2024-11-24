@@ -21,10 +21,9 @@ clap                     = { workspace = true, features = ["default", "derive", 
 derive_more              = { workspace = true }
 either                   = { workspace = true, features = ["serde"] }
 enumorph                 = { workspace = true }
-ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 futures                  = { workspace = true }
-ibc-solidity.workspace   = true
+ibc-solidity             = { workspace = true }
 itertools                = "0.13.0"
 jsonrpsee                = { workspace = true, features = ["client", "full", "tracing"] }
 pg-queue                 = { workspace = true }

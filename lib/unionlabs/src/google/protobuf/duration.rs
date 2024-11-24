@@ -335,25 +335,6 @@ impl TryFrom<protos::google::protobuf::Duration> for Duration {
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<Duration> for contracts::glue::GoogleProtobufDurationData {
-    fn from(value: Duration) -> Self {
-        Self {
-            seconds: value.seconds().inner(),
-            nanos: value.nanos().inner(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::GoogleProtobufDurationData> for Duration {
-    type Error = DurationError;
-
-    fn try_from(value: contracts::glue::GoogleProtobufDurationData) -> Result<Self, Self::Error> {
-        Self::new(value.seconds, value.nanos)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use core::cmp::Ordering;

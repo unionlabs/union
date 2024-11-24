@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use ibc_solidity::ibc::Connection;
+use ibc_solidity::ibc::{Channel, Connection};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bytes::Bytes,
@@ -204,10 +204,21 @@ pub struct MsgConnectionOpenConfirm {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgChannelOpenInit {}
+pub struct MsgChannelOpenInit {
+    port_id: String,
+    counterparty_port_id: Bytes,
+    connection_id: u32,
+    version: String,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgChannelOpenTry {}
+pub struct MsgChannelOpenTry {
+    port_id: String,
+    channel: Channel,
+    counterparty_version: String,
+    proof_init: Bytes,
+    proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgChannelOpenAck {}
@@ -273,10 +284,12 @@ impl FullIbcEvent {
             FullIbcEvent::ConnectionOpenTry(event) => Some(event.counterparty_client_id),
             FullIbcEvent::ConnectionOpenAck(event) => Some(event.counterparty_client_id),
             FullIbcEvent::ConnectionOpenConfirm(event) => Some(event.counterparty_client_id),
-            FullIbcEvent::ChannelOpenInit(event) => Some(event.connection.counterpartyClientId),
-            FullIbcEvent::ChannelOpenTry(event) => Some(event.connection.counterpartyClientId),
-            FullIbcEvent::ChannelOpenAck(event) => Some(event.connection.counterpartyClientId),
-            FullIbcEvent::ChannelOpenConfirm(event) => Some(event.connection.counterpartyClientId),
+            FullIbcEvent::ChannelOpenInit(event) => Some(event.connection.counterparty_client_id),
+            FullIbcEvent::ChannelOpenTry(event) => Some(event.connection.counterparty_client_id),
+            FullIbcEvent::ChannelOpenAck(event) => Some(event.connection.counterparty_client_id),
+            FullIbcEvent::ChannelOpenConfirm(event) => {
+                Some(event.connection.counterparty_client_id)
+            }
             FullIbcEvent::ChannelCloseInit(_) => todo!(),
             FullIbcEvent::ChannelCloseConfirm(_) => todo!(),
             Self::SendPacket(event) => Some(event.packet.destination_channel.connection.client_id),

@@ -511,9 +511,9 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .createClient(ibc::MsgCreateClient {
-                            clientType: client_type.to_string(),
-                            clientStateBytes: client_state_bytes.into(),
-                            consensusStateBytes: consensus_state_bytes.into(),
+                            client_type: client_type.to_string(),
+                            client_state_bytes: client_state_bytes.into(),
+                            consensus_state_bytes: consensus_state_bytes.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -522,8 +522,8 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .updateClient(ibc::MsgUpdateClient {
-                            clientId: data.client_id,
-                            clientMessage: data.client_message.into(),
+                            client_id: data.client_id,
+                            client_message: data.client_message.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -532,8 +532,8 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .connectionOpenInit(ibc::MsgConnectionOpenInit {
-                            clientId: data.client_id,
-                            counterpartyClientId: data.counterparty_client_id,
+                            client_id: data.client_id,
+                            counterparty_client_id: data.counterparty_client_id,
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -542,11 +542,11 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .connectionOpenTry(ibc::MsgConnectionOpenTry {
-                            counterpartyClientId: data.counterparty_client_id,
-                            counterpartyConnectionId: data.counterparty_connection_id,
-                            clientId: data.client_id,
-                            proofInit: data.proof_init.into(),
-                            proofHeight: data.proof_height,
+                            counterparty_client_id: data.counterparty_client_id,
+                            counterparty_connection_id: data.counterparty_connection_id,
+                            client_id: data.client_id,
+                            proof_init: data.proof_init.into(),
+                            proof_height: data.proof_height,
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -555,10 +555,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .connectionOpenAck(ibc::MsgConnectionOpenAck {
-                            connectionId: data.connection_id,
-                            counterpartyConnectionId: data.counterparty_connection_id,
-                            proofHeight: data.proof_height,
-                            proofTry: data.proof_try.into(),
+                            connection_id: data.connection_id,
+                            counterparty_connection_id: data.counterparty_connection_id,
+                            proof_height: data.proof_height,
+                            proof_try: data.proof_try.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -567,9 +567,9 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .connectionOpenConfirm(ibc::MsgConnectionOpenConfirm {
-                            connectionId: data.connection_id,
-                            proofAck: data.proof_ack.into(),
-                            proofHeight: data.proof_height,
+                            connection_id: data.connection_id,
+                            proof_ack: data.proof_ack.into(),
+                            proof_height: data.proof_height,
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),

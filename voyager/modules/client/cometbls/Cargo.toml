@@ -4,6 +4,7 @@ name    = "voyager-client-module-cometbls"
 version = "0.1.0"
 
 [dependencies]
+alloy                       = { workspace = true, features = ["sol-types"] }
 ark-bn254                   = { version = "0.4", default-features = false, features = ["curve"] }
 ark-serialize               = "0.4.2"
 clap                        = { workspace = true, features = ["default", "derive", "env", "error-context"] }
@@ -12,6 +13,7 @@ cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi"]
 dashmap                     = { workspace = true }
 enumorph                    = { workspace = true }
 futures                     = { workspace = true }
+ibc-solidity.workspace      = true
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
