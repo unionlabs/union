@@ -118,7 +118,7 @@ async fn wait_successful(latest_status: Arc<RwLock<Status>>) {
 }
 
 async fn create_temp_dir(contributor_id: &str) -> Result<(), DynError> {
-    if let Err(_) = tokio::fs::metadata(temp_dir(contributor_id)).await {
+    if tokio::fs::metadata(temp_dir(contributor_id)).await.is_err() {
         tokio::fs::create_dir(temp_dir(contributor_id)).await?;
     }
     Ok(())
@@ -137,15 +137,12 @@ fn generate_pgp_key(email: String) -> SignedSecretKey {
         .can_sign(true)
         .can_encrypt(false)
         .primary_user_id(email)
-        .preferred_symmetric_algorithms(
-            [SymmetricKeyAlgorithm::AES256].to_vec().try_into().unwrap(),
-        )
-        .preferred_hash_algorithms([HashAlgorithm::None].to_vec().try_into().unwrap());
+        .preferred_symmetric_algorithms([SymmetricKeyAlgorithm::AES256].to_vec().into())
+        .preferred_hash_algorithms([HashAlgorithm::None].to_vec().into());
     let secret_key_params = key_params.build().expect("impossible");
     let secret_key = secret_key_params.generate().expect("impossible");
     let passwd_fn = || String::new();
-    let signed_secret_key = secret_key.sign(passwd_fn).expect("impossible");
-    signed_secret_key
+    secret_key.sign(passwd_fn).expect("impossible")
 }
 
 async fn contribute(
@@ -168,7 +165,7 @@ async fn contribute(
         return Ok(());
     }
     let pgp_secret_file = pgp_secret_file(&user_email);
-    let mut secret_key = if let Ok(_) = tokio::fs::metadata(&pgp_secret_file).await {
+    let secret_key = if tokio::fs::metadata(&pgp_secret_file).await.is_ok() {
         SignedSecretKey::from_armor_single::<&[u8]>(
             tokio::fs::read(&pgp_secret_file).await?.as_ref(),
         )
@@ -195,7 +192,10 @@ async fn contribute(
     // If the current payload is not present, wipe all cached contribution
     // files. This is needed because if a user rejoin the queue after having
     // contributed using the previous cursor, it may have changed.
-    if let Err(_) = tokio::fs::metadata(&temp_file(&contributor_id, &current_payload.id)).await {
+    if tokio::fs::metadata(&temp_file(&contributor_id, &current_payload.id))
+        .await
+        .is_err()
+    {
         remove_temp_dir(&contributor_id).await?;
         create_temp_dir(&contributor_id).await?;
     }
@@ -256,13 +256,13 @@ async fn contribute(
             &payload_id,
             &hex::encode(phase2_contribution_hash),
         ),
-        &mut secret_key,
-        || String::new(),
+        &secret_key,
+        String::new,
     )
     .expect("impossible");
     let public_key = secret_key
         .public_key()
-        .sign(&secret_key, || String::new())
+        .sign(&secret_key, String::new)
         .expect("impossible")
         .to_armored_bytes(ArmorOptions::default())
         .expect("impossible");
@@ -290,10 +290,10 @@ async fn contribute(
     pool.conn(|conn| {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS resumable_upload (
-                         location TEXT PRIMARY KEY NOT NULL,
-                         create_at TIMESTAMPTZ NOT NULL DEFAULT(unixepoch()),
-                         expire TIMSTAMPTZ NOT NULL
-                     )",
+                 location TEXT PRIMARY KEY NOT NULL,
+                 create_at TIMESTAMPTZ NOT NULL DEFAULT(unixepoch()),
+                 expire TIMSTAMPTZ NOT NULL
+             )",
             (), // empty list of parameters.
         )?;
         Ok(())
@@ -356,8 +356,7 @@ async fn contribute(
                 .headers()
                 .get("Upload-Expires")
                 .ok_or(Error::HeaderNotFound("Upload-Expires".into()))?
-                .to_str()?
-                .into();
+                .to_str()?;
             let expire = parse_http_date(expire)?;
             let expire_timestamp = expire.duration_since(UNIX_EPOCH)?.as_secs();
             let location_clone = location.clone();
@@ -470,7 +469,7 @@ async fn handle(
             let pgp_secret_file = pgp_secret_file(&email);
             let guard = latest_status.write().await;
             let result = {
-                if let Err(_) = tokio::fs::metadata(&pgp_secret_file).await {
+                if tokio::fs::metadata(&pgp_secret_file).await.is_err() {
                     let secret_key = generate_pgp_key(email);
                     let secret_key_serialized = secret_key
                         .to_armored_bytes(ArmorOptions::default())
@@ -490,7 +489,7 @@ async fn handle(
                 .and_then(|x| x.strip_prefix("/"))
             {
                 let pgp_secret_file = pgp_secret_file(email);
-                if let Err(_) = tokio::fs::metadata(&pgp_secret_file).await {
+                if tokio::fs::metadata(&pgp_secret_file).await.is_err() {
                     response_empty(hyper::StatusCode::NOT_FOUND)
                 } else {
                     let content = tokio::fs::read(&pgp_secret_file).await?;
@@ -507,7 +506,7 @@ async fn handle(
         {
             tx_status.send(Status::Initializing).expect("impossible");
             tokio::spawn(async move {
-                let result = (|| async {
+                let result = async {
                     let whole_body = req.collect().await?.aggregate();
                     contribute(
                         tx_status.clone(),
@@ -515,7 +514,7 @@ async fn handle(
                     )
                     .await?;
                     Ok::<_, DynError>(())
-                })()
+                }
                 .await;
                 match result {
                     Ok(_) => {
@@ -586,7 +585,7 @@ async fn input_and_status_handling(
     tokio::spawn(async move {
         while let Ok(status) = rx_status.recv().await {
             *latest_status.write().await = status.clone();
-            if let Err(_) = tx_ui_clone.send(ui::Event::NewStatus(status)) {
+            if tx_ui_clone.send(ui::Event::NewStatus(status)).is_err() {
                 break;
             }
         }
@@ -605,7 +604,7 @@ async fn input_and_status_handling(
                 };
             }
             if last_tick.elapsed() >= tick_rate {
-                if let Err(_) = tx_ui.send(ui::Event::Tick) {
+                if tx_ui.send(ui::Event::Tick).is_err() {
                     break;
                 }
                 last_tick = Instant::now();
