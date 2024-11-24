@@ -518,6 +518,15 @@ impl VoyagerClient {
         Ok(latest_height)
     }
 
+    #[instrument(
+        skip_all,
+        name = "voyager_client_encode_proof",
+        fields(
+            %client_type,
+            %ibc_interface,
+            %proof
+        )
+    )]
     pub async fn encode_proof<V: IbcSpec>(
         &self,
         client_type: ClientType,

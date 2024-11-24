@@ -5,14 +5,14 @@ use unionlabs::bytes::Bytes;
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {}
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgRegisterClient {
     pub client_type: String,
     pub client_address: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     RegisterClient(MsgRegisterClient),
@@ -203,7 +203,7 @@ pub struct MsgBatchAcks {
     pub acks: Vec<Bytes>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgWriteAcknowledgement {
     pub channel_id: u32,
@@ -211,7 +211,7 @@ pub struct MsgWriteAcknowledgement {
     pub acknowledgement: Bytes,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgSendPacket {
     pub source_channel: u32,

@@ -175,6 +175,7 @@ pub struct MakeBatchTransaction<V: IbcSpecExt> {
 }
 
 impl<V: IbcSpecExt> MakeBatchTransaction<V> {
+    #[instrument(skip_all, fields(ibc_version_id = %V::ID, %chain_id, datas_len = datas.len()))]
     pub fn call(self, chain_id: ChainId, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");

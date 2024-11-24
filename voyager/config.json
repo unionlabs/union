@@ -102,7 +102,8 @@
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
-          "ibc_interface": "ibc-solidity"
+          "ibc_interface": "ibc-solidity",
+          "ibc_version_id": "union"
         }
       },
       {
@@ -111,7 +112,8 @@
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
-          "ibc_interface": "ibc-move/aptos"
+          "ibc_interface": "ibc-move/aptos",
+          "ibc_version_id": "union"
         }
       },
       {
@@ -120,7 +122,8 @@
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
-          "ibc_interface": "ibc-go-v8/08-wasm"
+          "ibc_interface": "ibc-go-v8/08-wasm",
+          "ibc_version_id": "union"
         }
       },
       {
@@ -129,7 +132,8 @@
         "info": {
           "client_type": "ethereum",
           "consensus_type": "ethereum",
-          "ibc_interface": "ibc-cosmwasm"
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_version_id": "union"
         },
         "config": {
           "chain_spec": "minimal"

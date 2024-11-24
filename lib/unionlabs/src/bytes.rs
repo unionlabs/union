@@ -5,7 +5,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     errors::InvalidLength,
-    hash::hash_v2::{Encoding, HexPrefixed},
+    hash::{
+        hash_v2::{Encoding, HexPrefixed},
+        H160,
+    },
 };
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
@@ -58,7 +61,7 @@ impl<E: Encoding> Bytes<E> {
         <&Self as IntoIterator>::into_iter(self)
     }
 
-    #[must_use = "converting a hash to a hash with a different encoding has no effect"]
+    #[must_use = "converting bytes to bytes with a different encoding has no effect"]
     #[inline]
     pub fn into_encoding<E2: Encoding>(self) -> Bytes<E2> {
         Bytes::new(self.bytes)
@@ -204,6 +207,22 @@ impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes
     }
 }
 
+#[cfg(feature = "ethabi")]
+impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy::core::primitives::Address {
+    type Error = InvalidLength;
+
+    fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
+        <H160>::try_from(value).map(Self::from)
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<EBytes: Encoding> From<alloy::core::primitives::Address> for Bytes<EBytes> {
+    fn from(value: alloy::core::primitives::Address) -> Self {
+        value.0 .0.into()
+    }
+}
+
 impl<E: Encoding> From<Vec<u8>> for Bytes<E> {
     fn from(value: Vec<u8>) -> Self {
         Self::new(value)
@@ -242,6 +261,12 @@ impl<E: Encoding> From<&[u8]> for Bytes<E> {
 
 impl<E: Encoding, const N: usize> From<&[u8; N]> for Bytes<E> {
     fn from(value: &[u8; N]) -> Self {
+        Self::new(value.as_slice().to_owned())
+    }
+}
+
+impl<E: Encoding, const N: usize> From<[u8; N]> for Bytes<E> {
+    fn from(value: [u8; N]) -> Self {
         Self::new(value.as_slice().to_owned())
     }
 }

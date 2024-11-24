@@ -698,7 +698,7 @@ impl Modules {
             ibc_version_id.clone(),
         )) {
             Some(client_module) => Ok(client_module.client()),
-            None => Err(ClientModuleNotFound::IbcInterfaceNotFound {
+            None => Err(ClientModuleNotFound::NotFound {
                 client_type: client_type.clone(),
                 ibc_interface: ibc_interface.clone(),
                 ibc_version_id: ibc_version_id.clone(),
@@ -901,11 +901,9 @@ pub enum ClientModuleNotFound {
     #[error("no client module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType },
     #[error(
-        "no client module loaded supporting client type `{}`, IBC interface `{}`, and IBC version `{ibc_version_id}`",
-        ibc_interface,
-        client_type
+        "no client module loaded supporting client type `{client_type}`, IBC interface `{ibc_interface}`, and IBC version `{ibc_version_id}`",
     )]
-    IbcInterfaceNotFound {
+    NotFound {
         client_type: ClientType,
         ibc_interface: IbcInterface,
         ibc_version_id: IbcVersionId,

@@ -1,6 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use alloy::{primitives::FixedBytes, sol};
+use alloy::{consensus::Transaction, primitives::FixedBytes, sol};
 use tokio::{task::JoinSet, time::interval};
 use tracing::{debug, info, info_span, warn, Instrument};
 use unionlabs::encoding::{DecodeAs, EthAbi};
@@ -55,7 +55,7 @@ pub fn schedule_create_client_checker(
                     .expect("transaction")
                     .response;
 
-                let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {
+                let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(tx.inner.input(),true) {
                     Ok(msg) => msg,
                     Err(err) => {
                         warn!("{}-{}: cannot decode, most likely due to ABI change: {} => skipping", height, transaction_hash, err);

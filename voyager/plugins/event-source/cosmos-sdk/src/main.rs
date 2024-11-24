@@ -1070,7 +1070,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
+                            ibc_version_id: IbcUnion::ID,
                             event: into_value::<ibc_union::FullIbcEvent>(
                                 ibc_union::ClientCreated {
                                     client_id: create_client.client_id,
@@ -1103,7 +1103,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
+                            ibc_version_id: IbcUnion::ID,
                             event: into_value::<ibc_union::FullIbcEvent>(
                                 ibc_union::ClientUpdated {
                                     client_id: update_client.client_id,
@@ -1267,6 +1267,122 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     client_id: connection_open_confirm.client_id,
                                     counterparty_client_id: connection_open_confirm
                                         .counterparty_client_id,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ChannelOpenTry(
+                        channel_open_try,
+                    )) => {
+                        dbg!(&channel_open_try);
+
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                unionlabs::ics24::ethabi::ConnectionPath {
+                                    connection_id: channel_open_try.connection_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ChannelOpenTry {
+                                    port_id: channel_open_try.port_id.into_bytes().into(),
+                                    channel_id: channel_open_try.channel_id,
+                                    counterparty_port_id: channel_open_try
+                                        .counterparty_port_id
+                                        .into_encoding(),
+                                    counterparty_channel_id: channel_open_try
+                                        .counterparty_channel_id,
+                                    connection,
+                                    version: channel_open_try.counterparty_version,
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::ChannelOpenConfirm(
+                        channel_open_confirm,
+                    )) => {
+                        dbg!(&channel_open_confirm);
+
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                unionlabs::ics24::ethabi::ChannelPath {
+                                    channel_id: channel_open_confirm.channel_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                unionlabs::ics24::ethabi::ConnectionPath {
+                                    connection_id: channel_open_confirm.connection_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::ChannelOpenConfirm {
+                                    port_id: channel_open_confirm.port_id.into_bytes().into(),
+                                    channel_id: channel_open_confirm.channel_id,
+                                    counterparty_port_id: channel_open_confirm
+                                        .counterparty_port_id
+                                        .into_encoding(),
+                                    counterparty_channel_id: channel_open_confirm
+                                        .counterparty_channel_id,
+                                    connection,
+                                    version: channel.version,
                                 }
                                 .into(),
                             ),
