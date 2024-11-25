@@ -83,7 +83,7 @@ members = [
 
   # "cosmwasm/union-ibc/light-clients/evm-in-cosmos",
 
-  # "cosmwasm/union-ibc/light-clients/scroll",
+  "cosmwasm/union-ibc/light-clients/scroll",
   "cosmwasm/union-ibc/light-clients/scroll/types",
 
   # "cosmwasm/union-ibc/light-clients/tendermint",
@@ -311,7 +311,6 @@ static_assertions        = { git = "https://github.com/nvzqz/static-assertions" 
 subtle-encoding          = { version = "0.5.1", default-features = false }
 thiserror                = { version = "1.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
-tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = { version = "1.33.0", default-features = false }
 tokio-stream             = { version = "0.1.14", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }

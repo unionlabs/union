@@ -5,7 +5,7 @@ use scroll_codec::batch_header::BatchHeaderV3;
 use scroll_light_client_types::{ClientState, ConsensusState, Header};
 use union_ibc_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
-use unionlabs::{encoding::Proto, hash::H256};
+use unionlabs::{encoding::Bincode, hash::H256};
 
 use crate::errors::Error;
 
@@ -18,7 +18,7 @@ impl IbcClient for ScrollLightClient {
 
     type Header = Header;
 
-    type Misbehaviour = Header;
+    type Misbehaviour = Empty;
 
     type ClientState = ClientState;
 
@@ -26,7 +26,7 @@ impl IbcClient for ScrollLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,

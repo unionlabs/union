@@ -5637,7 +5637,6 @@ dependencies = [
  "serde_json",
  "sha3 0.10.8",
  "thiserror",
- "tiny-keccak",
  "unionlabs",
 ]
 
@@ -10632,6 +10631,28 @@ dependencies = [
  "serde_json",
  "sha3 0.10.8",
  "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "scroll-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "hex",
+ "scroll-codec",
+ "scroll-light-client-types",
+ "scroll-verifier",
+ "serde",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "union-ibc-light-client",
+ "union-ibc-msg",
  "unionlabs",
 ]
 
