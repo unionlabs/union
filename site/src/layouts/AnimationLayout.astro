@@ -211,7 +211,7 @@ const currentPath = pathname.slice(1) // remove the first "/"
 
     const fromConfig = pathConfigMap[fromBasePath] ?? pathConfigMap["/"];
     const toConfig = pathConfigMap[toBasePath] ?? pathConfigMap["/"];
-    
+
     if (
       toConfig.index &&
       toConfig.index !== fromConfig.index &&
