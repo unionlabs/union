@@ -558,16 +558,23 @@
         },
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "union16hhuwfnvfh4ekfy2m8pdjrg0fxv85xkxux97dv",
+          "address": "union1pn8hdzv8sc8fe6jgngn8l4qc9p8msd79wpyzq5",
           "pub_key": null,
           "account_number": 76,
           "sequence": 0
         },
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "union1qcc5vpj9w4a9sqwq0wyjl5w8n6u6x2v4k6xyjp",
+          "address": "union148c5ghcfvnj2w7prav5t7ngp9h7u8w9yc4qgve",
           "pub_key": null,
           "account_number": 77,
+          "sequence": 0
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "union1sjkcewjpwvc5ltake8yh05zllyeuzyq5dvf4vn",
+          "pub_key": null,
+          "account_number": 78,
           "sequence": 0
         }
       ]
@@ -1252,7 +1259,7 @@
           "coins": [
             {
               "denom": "muno",
-              "amount": "999999999999999000000"
+              "amount": "999999999999999999000000"
             }
           ]
         },
@@ -1266,7 +1273,7 @@
           ]
         },
         {
-          "address": "union16hhuwfnvfh4ekfy2m8pdjrg0fxv85xkxux97dv",
+          "address": "union1pn8hdzv8sc8fe6jgngn8l4qc9p8msd79wpyzq5",
           "coins": [
             {
               "denom": "muno",
@@ -1275,7 +1282,16 @@
           ]
         },
         {
-          "address": "union1qcc5vpj9w4a9sqwq0wyjl5w8n6u6x2v4k6xyjp",
+          "address": "union148c5ghcfvnj2w7prav5t7ngp9h7u8w9yc4qgve",
+          "coins": [
+            {
+              "denom": "muno",
+              "amount": "256000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "union1sjkcewjpwvc5ltake8yh05zllyeuzyq5dvf4vn",
           "coins": [
             {
               "denom": "muno",
@@ -1287,7 +1303,7 @@
       "supply": [
         {
           "denom": "muno",
-          "amount": "999256000000000000000"
+          "amount": "1001024000002000218000000"
         }
       ],
       "denom_metadata": [],
@@ -1349,7 +1365,7 @@
         "min_initial_deposit_ratio": "0.000000000000000000",
         "proposal_cancel_ratio": "0.500000000000000000",
         "proposal_cancel_dest": "",
-        "expedited_voting_period": "86400s",
+        "expedited_voting_period": "600s",
         "expedited_threshold": "0.667000000000000000",
         "expedited_min_deposit": [
           {
