@@ -805,11 +805,11 @@
     "v0_25_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1732545773,
-        "narHash": "sha256-n7Q/BASSA35P7kzdzzmXVyXqemfxN3b5V0R6fqJu41Y=",
+        "lastModified": 1732569992,
+        "narHash": "sha256-w9HQ1Sqx0BGrei6JFs8p5o74csmqNSymR8vigjkyU5c=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "37c7494811cf442bff96021c12db1d5132fcffeb",
+        "rev": "edb1b05df8a633592c7e5485adcce39468574ee5",
         "type": "github"
       },
       "original": {
