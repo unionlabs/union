@@ -1319,7 +1319,7 @@
       "supply": [
         {
           "denom": "muno",
-          "amount": "1001024000002000218000000"
+          "amount": "1001280000002000218000000muno"
         }
       ],
       "denom_metadata": [],
