@@ -146,23 +146,17 @@ impl Querier for Beacon {
 mod block {
     use serde::{Deserialize, Serialize};
     use serde_aux::prelude::*;
-    use serde_json::Value;
 
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Block {
         pub data: Data,
-        pub version: String,
-        #[serde(rename = "execution_optimistic")]
-        pub execution_optimistic: bool,
-        pub finalized: bool,
     }
 
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Data {
         pub message: Message,
-        pub signature: String,
     }
 
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -170,141 +164,23 @@ mod block {
     pub struct Message {
         #[serde(deserialize_with = "deserialize_number_from_string")]
         pub slot: i64,
-        #[serde(rename = "proposer_index")]
-        pub proposer_index: String,
-        #[serde(rename = "parent_root")]
-        pub parent_root: String,
-        #[serde(rename = "state_root")]
-        pub state_root: String,
         pub body: Body,
     }
 
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Body {
-        #[serde(rename = "randao_reveal")]
-        pub randao_reveal: String,
-        #[serde(rename = "eth1_data")]
-        pub eth1_data: Eth1Data,
-        pub graffiti: String,
-        #[serde(rename = "proposer_slashings")]
-        pub proposer_slashings: Vec<Value>,
-        #[serde(rename = "attester_slashings")]
-        pub attester_slashings: Vec<Value>,
-        pub attestations: Vec<Attestation>,
-        pub deposits: Vec<Value>,
-        #[serde(rename = "voluntary_exits")]
-        pub voluntary_exits: Vec<Value>,
-        #[serde(rename = "sync_aggregate")]
-        pub sync_aggregate: Option<SyncAggregate>,
         #[serde(rename = "execution_payload")]
         pub execution_payload: ExecutionPayload,
-        #[serde(rename = "bls_to_execution_changes")]
-        pub bls_to_execution_changes: Vec<Value>,
-        #[serde(rename = "blob_kzg_commitments")]
-        pub blob_kzg_commitments: Vec<String>,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Eth1Data {
-        #[serde(rename = "deposit_root")]
-        pub deposit_root: String,
-        #[serde(rename = "deposit_count")]
-        pub deposit_count: String,
-        #[serde(rename = "block_hash")]
-        pub block_hash: String,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Attestation {
-        #[serde(rename = "aggregation_bits")]
-        pub aggregation_bits: String,
-        pub data: Data2,
-        pub signature: String,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Data2 {
-        pub slot: String,
-        pub index: String,
-        #[serde(rename = "beacon_block_root")]
-        pub beacon_block_root: String,
-        pub source: Source,
-        pub target: Target,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Source {
-        pub epoch: String,
-        pub root: String,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Target {
-        pub epoch: String,
-        pub root: String,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct SyncAggregate {
-        #[serde(rename = "sync_committee_bits")]
-        pub sync_committee_bits: String,
-        #[serde(rename = "sync_committee_signature")]
-        pub sync_committee_signature: String,
     }
 
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct ExecutionPayload {
-        #[serde(rename = "parent_hash")]
-        pub parent_hash: String,
-        #[serde(rename = "fee_recipient")]
-        pub fee_recipient: String,
-        #[serde(rename = "state_root")]
-        pub state_root: String,
-        #[serde(rename = "receipts_root")]
-        pub receipts_root: String,
-        #[serde(rename = "logs_bloom")]
-        pub logs_bloom: String,
-        #[serde(rename = "prev_randao")]
-        pub prev_randao: String,
         #[serde(
             deserialize_with = "deserialize_number_from_string",
             rename = "block_number"
         )]
         pub block_number: i64,
-        #[serde(rename = "gas_limit")]
-        pub gas_limit: String,
-        #[serde(rename = "gas_used")]
-        pub gas_used: String,
-        pub timestamp: String,
-        #[serde(rename = "extra_data")]
-        pub extra_data: String,
-        #[serde(rename = "base_fee_per_gas")]
-        pub base_fee_per_gas: String,
-        #[serde(rename = "block_hash")]
-        pub block_hash: String,
-        pub transactions: Vec<String>,
-        pub withdrawals: Vec<Withdrawal>,
-        #[serde(rename = "blob_gas_used")]
-        pub blob_gas_used: String,
-        #[serde(rename = "excess_blob_gas")]
-        pub excess_blob_gas: String,
-    }
-
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Withdrawal {
-        pub index: String,
-        #[serde(rename = "validator_index")]
-        pub validator_index: String,
-        pub address: String,
-        pub amount: String,
     }
 }
