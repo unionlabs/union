@@ -106,7 +106,7 @@ _: {
           proto-deps = [
             src
             google.src
-            cosmos-sdk.src
+            "${proto.cosmossdk}/proto"
             ics23.src
             "${proto.cosmosproto}/proto"
             "${proto.googleapis}"
@@ -177,7 +177,7 @@ _: {
           proto-deps = [
             src
             google.src
-            cosmos-sdk.src
+            "${proto.cosmossdk}/proto"
             ics23.src
             "${proto.cosmosproto}/proto"
             "${proto.googleapis}"
@@ -190,7 +190,7 @@ _: {
           ];
         };
         cosmos-sdk = {
-          src = "${proto.cosmossdk}/proto/cosmos";
+          src = "${proto.cosmossdk}/proto";
           proto-deps = [
             "${proto.cosmossdk}/proto"
             google.src

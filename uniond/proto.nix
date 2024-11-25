@@ -18,26 +18,13 @@ _: {
     {
       packages =
         let
-          grpc-gateway = pkgs.buildGoModule {
-            pname = "grpc-gateway";
-            version = "1.16.0";
-            src = pkgs.fetchFromGitHub {
-              owner = "grpc-ecosystem";
-              repo = "grpc-gateway";
-              rev = "v1.16.0";
-              sha256 = "sha256-jJWqkMEBAJq50KaXccVpmgx/hwTdKgTtNkz8/xYO+Dc=";
-            };
-
-            vendorHash = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
-          };
-
           cosmos-proto = pkgs.buildGoModule {
             pname = "cosmos-proto";
             version = "1.0.0";
             src = pkgs.fetchFromGitHub {
               owner = "cosmos";
               repo = "cosmos-proto";
-              rev = "v1.0.0-beta.3";
+              rev = "v1.0.0-beta.5";
               sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
             };
             doCheck = false;
@@ -51,7 +38,7 @@ _: {
             src = pkgs.fetchFromGitHub {
               owner = "cosmos";
               repo = "gogoproto";
-              rev = "v1.4.7";
+              rev = "34f37065b54523d08d7b637c78333d444f350e21";
               sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
             };
             nativeBuildInputs = with pkgs; [ protobuf ];
@@ -73,12 +60,15 @@ _: {
               pkgs.tree
               cosmos-proto
               gogoproto
-              grpc-gateway
             ];
 
             buildPhase = ''
               mkdir $out
               mkdir $out/openapi
+
+              mkdir -p cosmos-sdk/proto/cosmos
+              cp --no-preserve=mode -RL ${proto.cosmossdk}/proto/* ./cosmos-sdk/proto
+              cp --no-preserve=mode -RL ${proto.cosmossdk}/x/*/proto/cosmos/* ./cosmos-sdk/proto/cosmos/
 
               find ${proto.uniond} -type f -regex ".*proto" | \
               while read -r file; do
@@ -89,20 +79,17 @@ _: {
                   -I"${proto.uniond}" \
                   -I"${proto.gogoproto}" \
                   -I"${proto.googleapis}" \
-                  -I"${proto.cosmossdk}/proto" \
+                  -I"$(pwd)/cosmos-sdk/proto" \
                   -I"${proto.cosmosproto}/proto" \
                   -I"${proto.ibc-go}/proto" \
                   -I"${proto.ics23}/proto" \
-                  --grpc-gateway_out $out \
-                  --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \
+                  -I"${proto.cometbls}/proto" \
                   --gocosmos_out $out \
                   --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
                   --openapi_out=$out/openapi$relpath \
                   "$file"
+                  echo "Done generating for $file"
               done
-
-              mkdir -p cosmos-sdk/proto
-              cp --no-preserve=mode -RL ${proto.cosmossdk}/proto/* cosmos-sdk/proto
 
               echo "Generating Cosmos SDK OpenAPI"
               echo "$LINENO"
@@ -149,6 +136,7 @@ _: {
                   -I"${proto.googleapis}" \
                   -I"$(pwd)/cosmos-sdk/proto" \
                   -I"${proto.cosmosproto}/proto" \
+                  -I"${proto.cometbls}/proto" \
                   --openapi_out=$out/openapi$query_file \
                   "$query_file"
                 fi
@@ -177,7 +165,6 @@ _: {
                   gnused
                 ])
                 ++ [
-                  grpc-gateway
                   cosmos-proto
                   gogoproto
                 ];

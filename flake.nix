@@ -54,7 +54,7 @@
     };
 
     ibc-go = {
-      url = "github:unionlabs/ibc-go-union?rev=4fbe0649cdf00d58090909bc4dfe5a7be32b013e";
+      url = "github:unionlabs/ibc-go-union?rev=bfabb646cf7384bd33ee672f51a0e1325f545c10";
       flake = false;
     };
     ics23 = {
@@ -62,15 +62,15 @@
       flake = false;
     };
     cosmosproto = {
-      url = "github:cosmos/cosmos-proto?rev=0748a2ad4a5c78b1db6c8090db01e255bcc91365";
+      url = "github:cosmos/cosmos-proto?ref=refs/tags/v1.0.0-beta.5";
       flake = false;
     };
     gogoproto = {
-      url = "github:cosmos/gogoproto?rev=b12c8cae0624d2518ab995c775410694dfa5d50e";
+      url = "github:cosmos/gogoproto?rev=34f37065b54523d08d7b637c78333d444f350e21";
       flake = false;
     };
     googleapis = {
-      url = "github:googleapis/googleapis?rev=6774ccbbc3f182f6ae3a32dca29e1da489ad8a8f";
+      url = "github:googleapis/googleapis?rev=8984ddb508dea0e673b724c58338e810b1d8aee3";
       flake = false;
     };
     wasmd = {
@@ -136,7 +136,7 @@
     cosmossdk = {
       type = "github";
       owner = "unionlabs";
-      repo = "cosmos-sdk-union";
+      repo = "cosmos-sdk";
       rev = "c2982236c55751ea227679164594ce572bb857f3";
       flake = false;
     };

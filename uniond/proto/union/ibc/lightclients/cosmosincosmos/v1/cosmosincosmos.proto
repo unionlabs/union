@@ -30,8 +30,8 @@ message Header {
   .ibc.core.client.v1.Height l1_height = 1 [(gogoproto.nullable) = false];
   .ibc.core.client.v1.Height l2_height = 2 [(gogoproto.nullable) = false];
   // Eth abi encoded ICS23 MerkleProof
-  bytes l2_inclusion_proof = 3 [(gogoproto.nullable) = false];
+  bytes l2_inclusion_proof = 3;
   // Proto encoded tendermint ConsensusState
   // Optimize: technically extractable from the merkleproof as it must be an inclusion proof.
-  bytes l2_consensus_state = 4 [(gogoproto.nullable) = false];
+  bytes l2_consensus_state = 4;
 }
