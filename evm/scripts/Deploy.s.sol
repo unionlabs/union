@@ -15,6 +15,7 @@ import {CosmosInCosmosClient} from
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
+import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../contracts/lib/Hex.sol";
 
 import "solady/utils/CREATE3.sol";
