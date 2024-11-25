@@ -10639,6 +10639,7 @@ dependencies = [
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "ethereum-light-client-types",
  "hex-literal",
  "protos",
