@@ -134,6 +134,24 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployUCS00(
+        IBCHandler handler,
+        address owner,
+        uint64 timeout
+    ) internal returns (PingPong) {
+        return PingPong(
+            deploy(
+                Protocols.make(Protocols.UCS00),
+                abi.encode(
+                    address(new PingPong()),
+                    abi.encodeCall(
+                        PingPong.initialize, (handler, owner, timeout)
+                    )
+                )
+            )
+        );
+    }
+
     function deployUCS01(
         IBCHandler handler,
         address owner
@@ -168,14 +186,22 @@ abstract contract UnionScript is UnionBase {
         address owner
     )
         internal
-        returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT, Multicall)
+        returns (
+            IBCHandler,
+            CometblsClient,
+            PingPong,
+            UCS01Relay,
+            UCS02NFT,
+            Multicall
+        )
     {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient client = deployCometbls(handler, owner);
+        PingPong pingpong = deployUCS00(handler, owner, 100000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
         Multicall multicall = deployMulticall();
-        return (handler, client, relay, nft, multicall);
+        return (handler, client, pingpong, relay, nft, multicall);
     }
 }
 
@@ -229,6 +255,7 @@ contract DeployIBC is UnionScript {
         (
             IBCHandler handler,
             CometblsClient client,
+            PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
             Multicall multicall
@@ -241,6 +268,7 @@ contract DeployIBC is UnionScript {
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(client));
+        console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
         console.log("Multicall: ", address(multicall));
@@ -264,6 +292,7 @@ contract DeployDeployerAndIBC is UnionScript {
         (
             IBCHandler handler,
             CometblsClient client,
+            PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
             Multicall multicall
@@ -276,6 +305,7 @@ contract DeployDeployerAndIBC is UnionScript {
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(client));
+        console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
         console.log("Multicall: ", address(multicall));

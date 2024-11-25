@@ -1,5 +1,10 @@
 pragma solidity ^0.8.27;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
 
@@ -39,14 +44,29 @@ library PingPongLib {
     }
 }
 
-contract PingPong is IBCAppBase {
+contract PingPong is
+    IBCAppBase,
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable
+{
     using PingPongLib for *;
 
-    IBCHandler private ibcHandler;
+    IIBCPacket private ibcHandler;
     uint32 private srcChannelId;
     uint64 private timeout;
 
-    constructor(IBCHandler _ibcHandler, uint64 _timeout) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        IIBCPacket _ibcHandler,
+        address admin,
+        uint64 _timeout
+    ) public initializer {
+        __Ownable_init(admin);
         ibcHandler = _ibcHandler;
         timeout = _timeout;
     }
@@ -189,4 +209,8 @@ contract PingPong is IBCAppBase {
         // Symmetric to onChanCloseInit
         revert PingPongLib.ErrInfiniteGame();
     }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 }

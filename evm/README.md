@@ -41,11 +41,12 @@ The combination `(deployer_source, deployer_source_nonce, deployer, sender, salt
 
 This links are working if you run a local devnet on a x86 machine only (Blockscout is currently unsupported on arm64).
 
-- IBCHandler: [0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5](http://localhost/address/0x524D4d28fc90dc5A257162abE37081f52681C7D6)
-- CometblsClient: [0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49](http://localhost/address/0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49)
-- UCS01: [0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46](http://localhost/address/0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46)
-- UCS02: [0x524d4d28fc90dc5a257162abe37081f52681c7d6](http://localhost/address/0x524d4d28fc90dc5a257162abe37081f52681c7d6)
-- Multicall: [0x9fd9D9528c8373D990a1380B9414bDE179007A35](http://localhost/address/0x9fd9D9528c8373D990a1380B9414bDE179007A35?tab=contract)
+- IBCHandler: [0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5](http://localhost/address/0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5)
+- CometblsClient: [0xc4f27a952faBa4174ce0Ee6D9d0c6F4c41524d49](http://localhost/address/0xc4f27a952faBa4174ce0Ee6D9d0c6F4c41524d49)
+- UCS00: [0x21bd17aec8CEb789D3145a606968Dcc428c1e4F4](http://localhost/address/0x21bd17aec8CEb789D3145a606968Dcc428c1e4F4)
+- UCS01: [0xa9d03ba6E27B43c69a64C87F845485b73A8e5d46](http://localhost/address/0xa9d03ba6E27B43c69a64C87F845485b73A8e5d46)
+- UCS02: [0x524D4d28fc90dc5A257162abE37081f52681C7D6](http://localhost/address/0x524D4d28fc90dc5A257162abE37081f52681C7D6)
+- Multicall: [0x9fd9D9528c8373D990a1380B9414bDE179007A35](http://localhost/address/0x9fd9D9528c8373D990a1380B9414bDE179007A35)
 
 ## Testnet 8
 
