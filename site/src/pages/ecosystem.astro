@@ -140,8 +140,10 @@ try {
                 <div class="flex flex-col gap-2 items-start justify-start">
                   {item.category.map((cat) => (
                     <div
-                      class="text-xs bg-white whitespace-nowrap text-black uppercase font-mono font-bold px-1.5"
+
+                      class="text-xs whitespace-nowrap uppercase font-mono font-bold px-1.5"
                       id="card-cat"
+                      style=`background-color: ${cat.fields.bgColor}; color: ${cat.fields.textColor}`
                     >
                       {cat.fields.category}
                     </div>

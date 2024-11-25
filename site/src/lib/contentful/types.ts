@@ -53,6 +53,8 @@ export interface EcosystemFields {
 export interface CategoryFields {
   fields: {
     category: EntryFields.Text
+    bgColor: EntryFields.Text
+    textColor: EntryFields.Text
   }
 }
 
