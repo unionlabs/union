@@ -11,7 +11,7 @@ use tracing::instrument;
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{DecodeAs, EncodeAs, Proto},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     ErrorReporter,
 };
@@ -56,7 +56,7 @@ type SelfClientState = ClientState;
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<Proto>(consensus_state).map_err(|err| {
+        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -66,7 +66,7 @@ impl Module {
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<Proto>(client_state).map_err(|err| {
+        <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),
@@ -149,7 +149,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<Proto>())
+            .map(|cs| cs.encode_as::<Bincode>())
             .map(Into::into)
     }
 
@@ -170,7 +170,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<Proto>())
+            .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
     }
 
@@ -242,7 +242,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|header| header.encode_as::<Proto>())
+            .map(|header| header.encode_as::<Bincode>())
             .map(Into::into)
     }
 
@@ -256,7 +256,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|storage_proof| storage_proof.encode_as::<Proto>())
+            .map(|storage_proof| storage_proof.encode_as::<Bincode>())
             .map(Into::into)
     }
 }

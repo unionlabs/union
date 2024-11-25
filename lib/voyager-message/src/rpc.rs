@@ -107,6 +107,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
+        ibc_version_id: IbcVersionId,
         proof: Value,
     ) -> RpcResult<Bytes>;
 
@@ -115,6 +116,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
+        ibc_version_id: IbcVersionId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta>;
 
@@ -123,6 +125,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
+        ibc_version_id: IbcVersionId,
         client_state: Bytes,
     ) -> RpcResult<Value>;
 
@@ -131,6 +134,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
+        ibc_version_id: IbcVersionId,
         consensus_state: Bytes,
     ) -> RpcResult<Value>;
 }

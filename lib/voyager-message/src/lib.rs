@@ -518,7 +518,7 @@ impl VoyagerClient {
         Ok(latest_height)
     }
 
-    pub async fn encode_proof(
+    pub async fn encode_proof<V: IbcSpec>(
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
@@ -526,7 +526,7 @@ impl VoyagerClient {
     ) -> RpcResult<Bytes> {
         let proof = self
             .0
-            .encode_proof(client_type, ibc_interface, proof)
+            .encode_proof(client_type, ibc_interface, V::ID, proof)
             .await
             .map_err(json_rpc_error_to_error_object)?;
 

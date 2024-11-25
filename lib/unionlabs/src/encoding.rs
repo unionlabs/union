@@ -90,6 +90,31 @@ where
     }
 }
 
+#[cfg(feature = "ethabi")]
+#[macro_export]
+macro_rules! impl_ethabi_via_try_from_into {
+    ($T:ty => $EthAbi:ty) => {
+        impl $crate::encoding::Decode<$crate::encoding::EthAbi> for $T {
+            type Error = $crate::TryFromEthAbiBytesErrorAlloy<<$T as TryFrom<$EthAbi>>::Error>;
+
+            fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+                <$EthAbi>::abi_decode_params(bytes, false)
+                    .map_err($crate::TryFromEthAbiBytesErrorAlloy::Decode)
+                    .and_then(|abi| {
+                        abi.try_into()
+                            .map_err($crate::TryFromEthAbiBytesErrorAlloy::Convert)
+                    })
+            }
+        }
+
+        impl $crate::encoding::Encode<$crate::encoding::EthAbi> for $T {
+            fn encode(self) -> Vec<u8> {
+                Into::<$EthAbi>::into(self).abi_encode_params()
+            }
+        }
+    };
+}
+
 #[cfg(feature = "proto")]
 #[macro_export]
 macro_rules! impl_proto_via_try_from_into {

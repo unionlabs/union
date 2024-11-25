@@ -228,10 +228,10 @@
         ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/union-ibc/light-clients/ethereum/ethereum-light-client.nix
-        ./cosmwasm/union-ibc/light-clients/cometbls/cometbls-light-client.nix
-        ./cosmwasm/union-ibc/light-clients/tendermint/tendermint-light-client.nix
-        ./cosmwasm/union-ibc/light-clients/scroll/scroll-light-client.nix
-        ./cosmwasm/union-ibc/light-clients/arbitrum/arbitrum-light-client.nix
+        # ./cosmwasm/union-ibc/light-clients/cometbls/cometbls-light-client.nix
+        # ./cosmwasm/union-ibc/light-clients/tendermint/tendermint-light-client.nix
+        # ./cosmwasm/union-ibc/light-clients/scroll/scroll-light-client.nix
+        # ./cosmwasm/union-ibc/light-clients/arbitrum/arbitrum-light-client.nix
         # ./light-clients/linea-light-client/linea-light-client.nix
         # ./light-clients/berachain-light-client/berachain-light-client.nix
         # ./light-clients/evm-in-cosmos-light-client/evm-in-cosmos-light-client.nix

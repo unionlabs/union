@@ -84,7 +84,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .rpc_server
                     .modules()
                     .map_err(error_object_to_queue_error)?
-                    .client_module(&client_type, &ibc_interface)?;
+                    .client_module(&client_type, &ibc_interface, &ibc_version_id)?;
 
                 Ok(voyager_vm::data(OrderedClientUpdates {
                     // REVIEW: Use FuturesOrdered here?

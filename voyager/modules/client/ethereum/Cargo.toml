@@ -7,7 +7,7 @@ version = "0.1.0"
 beacon-api-types            = { workspace = true, features = ["serde"] }
 chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["proto", "serde"] }
+ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 futures                     = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }

@@ -1348,32 +1348,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arbitrum-light-client"
-version = "0.1.0"
-dependencies = [
- "arbitrum-light-client-types",
- "arbitrum-verifier",
- "base64 0.21.7",
- "cosmwasm-std 2.1.4",
- "ethereum-light-client",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "hex",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "union-ibc-light-client",
- "union-ibc-msg",
- "unionlabs",
-]
-
-[[package]]
 name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -3161,33 +3135,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cometbls-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "bytes",
- "cometbls-groth16-verifier",
- "cometbls-light-client-types",
- "cosmwasm-std 1.5.8",
- "hex",
- "ics008-wasm-client",
- "ics23",
- "lazy_static",
- "prost 0.12.6",
- "protos",
- "ripemd",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "cometbls-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -4880,28 +4827,20 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "beacon-api-types",
- "bytes",
- "cometbls-light-client-types",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
  "ethereum-light-client-types",
  "ethereum-sync-protocol",
  "evm-storage-verifier",
- "hex",
  "hex-literal",
  "lazy_static",
- "prost 0.12.6",
  "protos",
  "rlp",
  "schemars",
  "serde",
- "serde-json-wasm 1.0.1",
  "serde-utils",
  "serde_json",
- "sha3 0.10.8",
  "thiserror",
- "tiny-keccak",
  "union-ibc-light-client",
  "union-ibc-msg",
  "unionlabs",
@@ -4911,9 +4850,9 @@ dependencies = [
 name = "ethereum-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "beacon-api-types",
  "hex-literal",
- "protos",
  "serde",
  "serde-utils",
  "thiserror",
@@ -10697,33 +10636,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scroll-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "ethereum-light-client",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "hex",
- "rlp",
- "schemars",
- "scroll-codec",
- "scroll-light-client-types",
- "scroll-verifier",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "union-ibc-light-client",
- "union-ibc-msg",
- "unionlabs",
-]
-
-[[package]]
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -12028,33 +11940,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tendermint-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "bytes",
- "cometbft-types",
- "cosmwasm-std 1.5.8",
- "hex",
- "ics008-wasm-client",
- "ics23",
- "lazy_static",
- "prost 0.12.6",
- "protos",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "tendermint-light-client-types",
- "tendermint-verifier",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "tendermint-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -13175,35 +13060,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "thiserror",
- "union-ibc-msg",
- "unionlabs",
-]
-
-[[package]]
-name = "union-ibc-movement-lc"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-types",
- "aptos-verifier",
- "bcs 0.1.6",
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "hex",
- "hex-literal",
- "movement-light-client-types",
- "protos",
- "rlp",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "union-ibc-light-client",
  "union-ibc-msg",
  "unionlabs",
 ]

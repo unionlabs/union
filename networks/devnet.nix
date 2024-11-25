@@ -134,7 +134,7 @@
         keyType = "ed25519";
         validatorCount = 4;
         lightClients = [
-          self'.packages.cometbls-light-client
+          # self'.packages.cometbls-light-client
         ];
         inherit cosmwasmContracts;
         portIncrease = 100;
@@ -148,7 +148,7 @@
         keyType = "ed25519";
         validatorCount = 4;
         lightClients = [
-          self'.packages.cometbls-light-client
+          # self'.packages.cometbls-light-client
         ];
         inherit cosmwasmContracts;
         portIncrease = 200;

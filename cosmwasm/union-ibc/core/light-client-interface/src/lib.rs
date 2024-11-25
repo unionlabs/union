@@ -5,7 +5,6 @@ use cosmwasm_std::{
     Response, StdError,
 };
 use cw_storage_plus::Map;
-use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use msg::InstantiateMsg;
 use state::IBC_HOST;
 use union_ibc_msg::lightclient::{
@@ -13,7 +12,7 @@ use union_ibc_msg::lightclient::{
 };
 use unionlabs::{
     bytes::Bytes,
-    encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding},
+    encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     hash::hash_v2::Base64,
     ErrorReporter,
 };
@@ -26,7 +25,7 @@ const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
 const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
 
 // TODO: Add #[source] to all variants
-#[derive(macros::Debug, CloneNoBound, PartialEqNoBound, thiserror::Error)]
+#[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
 pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode header")]
@@ -36,12 +35,12 @@ pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode client state")]
     ClientState(DecodeErrorOf<T::Encoding, T::ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusState(DecodeErrorOf<T::Encoding, T::ConsensusState>),
+    ConsensusState(DecodeErrorOf<EthAbi, T::ConsensusState>),
     #[error("unable to decode storage proof")]
     StorageProof(DecodeErrorOf<T::Encoding, T::StorageProof>),
 }
 
-#[derive(macros::Debug, PartialEqNoBound, thiserror::Error)]
+#[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
 pub enum IbcClientError<T: IbcClient> {
     #[error("decode error ({0:?})")]
@@ -123,19 +122,19 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 }
 
 pub trait IbcClient: Sized {
-    type Error: core::error::Error + PartialEq + Into<IbcClientError<Self>>;
+    type Error: core::error::Error + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
-    type Header: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
-    type Misbehaviour: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
-    type ClientState: Decode<Self::Encoding, Error: PartialEq + Clone>
+    type Header: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
+    type Misbehaviour: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
+    type ClientState: Decode<Self::Encoding, Error: Debug>
         + Encode<Self::Encoding>
         + Debug
         + 'static;
-    type ConsensusState: Decode<Self::Encoding, Error: PartialEq + Clone>
-        + Encode<Self::Encoding>
-        + Debug
-        + 'static;
-    type StorageProof: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
+    /// Note that this type only requires `Encode/Decode<Ethabi>`, cause `ConsensusState` must have
+    /// a common encoding scheme for state lenses. When doing state lenses, client X will read the
+    /// consensus state of client Y by assuming it's state is ethabi-encoded.
+    type ConsensusState: Decode<EthAbi, Error: Debug> + Encode<EthAbi> + Debug + 'static;
+    type StorageProof: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
     type Encoding: Encoding;
 
     fn verify_membership(
@@ -224,8 +223,7 @@ pub fn query<T: IbcClient>(
             consensus_state,
         } => {
             let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state).unwrap();
-            let consensus_state =
-                T::ConsensusState::decode_as::<T::Encoding>(&consensus_state).unwrap();
+            let consensus_state = T::ConsensusState::decode(&consensus_state).unwrap();
             T::verify_creation(&client_state, &consensus_state)?;
             to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
         }
@@ -279,7 +277,7 @@ pub fn query<T: IbcClient>(
 
             to_json_binary(&VerifyClientMessageUpdate {
                 height,
-                consensus_state: consensus_state.encode_as::<T::Encoding>().into(),
+                consensus_state: consensus_state.encode().into(),
                 client_state: client_state.encode_as::<T::Encoding>().into(),
             })
             .map_err(Into::into)
@@ -333,5 +331,5 @@ pub fn read_consensus_state<T: IbcClient>(
     )
     .unwrap();
 
-    Ok(T::ConsensusState::decode_as::<T::Encoding>(&consensus_state).unwrap())
+    Ok(T::ConsensusState::decode(&consensus_state).unwrap())
 }

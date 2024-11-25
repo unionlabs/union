@@ -15,58 +15,72 @@ pub struct ConsensusState {
     pub next_sync_committee: BlsPublicKey,
 }
 
-#[cfg(feature = "proto")]
-pub mod proto {
-    use unionlabs::{errors::InvalidLength, impl_proto_via_try_from_into};
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use core::array::TryFromSliceError;
 
-    use crate::ConsensusState;
+    use alloy::sol_types::SolValue;
+    use unionlabs::impl_ethabi_via_try_from_into;
 
-    impl_proto_via_try_from_into!(ConsensusState => protos::union::ibc::lightclients::ethereum::v1::ConsensusState);
+    use super::*;
 
-    impl From<ConsensusState> for protos::union::ibc::lightclients::ethereum::v1::ConsensusState {
+    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
+
+    alloy::sol! {
+        struct SolConsensusState {
+            uint64 slot;
+            bytes32 state_root;
+            bytes32 storage_root;
+            uint64 timestamp;
+            bytes current_sync_committee;
+            bytes next_sync_committee;
+        }
+    }
+
+    impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
                 slot: value.slot,
-                state_root: value.state_root.into(),
-                storage_root: value.storage_root.into(),
+                state_root: value.state_root.get().into(),
+                storage_root: value.storage_root.get().into(),
                 timestamp: value.timestamp,
-                current_sync_committee: value.current_sync_committee.into(),
-                next_sync_committee: value.next_sync_committee.into(),
+                current_sync_committee: value.current_sync_committee.0.into(),
+                next_sync_committee: value.next_sync_committee.0.into(),
             }
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
+    #[derive(Debug, thiserror::Error)]
+    pub enum TryFromEthAbiError {
         #[error("invalid current sync committee")]
-        CurrentSyncCommittee(#[source] InvalidLength),
+        CurrentSyncCommittee(#[source] TryFromSliceError),
         #[error("invalid next sync committee")]
-        NextSyncCommittee(#[source] InvalidLength),
-        #[error("invalid storage root")]
-        StorageRoot(#[source] InvalidLength),
-        #[error("invalid state root")]
-        StateRoot(#[source] InvalidLength),
+        NextSyncCommittee(#[source] TryFromSliceError),
     }
 
-    impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ConsensusState> for ConsensusState {
-        type Error = Error;
+    impl TryFrom<SolConsensusState> for ConsensusState {
+        type Error = TryFromEthAbiError;
 
-        fn try_from(
-            value: protos::union::ibc::lightclients::ethereum::v1::ConsensusState,
-        ) -> Result<Self, Self::Error> {
+        fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
             Ok(Self {
                 slot: value.slot,
-                state_root: value.state_root.try_into().map_err(Error::StorageRoot)?,
-                storage_root: value.storage_root.try_into().map_err(Error::StorageRoot)?,
+                state_root: H256::new(value.state_root.0),
+                storage_root: H256::new(value.storage_root.0),
                 timestamp: value.timestamp,
-                current_sync_committee: value
-                    .current_sync_committee
-                    .try_into()
-                    .map_err(Error::CurrentSyncCommittee)?,
-                next_sync_committee: value
-                    .next_sync_committee
-                    .try_into()
-                    .map_err(Error::NextSyncCommittee)?,
+                current_sync_committee: BlsPublicKey(
+                    value
+                        .current_sync_committee
+                        .as_ref()
+                        .try_into()
+                        .map_err(TryFromEthAbiError::CurrentSyncCommittee)?,
+                ),
+                next_sync_committee: BlsPublicKey(
+                    value
+                        .next_sync_committee
+                        .as_ref()
+                        .try_into()
+                        .map_err(TryFromEthAbiError::NextSyncCommittee)?,
+                ),
             })
         }
     }
