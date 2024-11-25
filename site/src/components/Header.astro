@@ -56,7 +56,9 @@ const menuItems = [
 ---
 
 <header class="z-[100] w-full flex justify-around">
-  <div class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
+  <div
+    class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl"
+  >
     <a href="/" id="union-logo" class="flex items-center">
       <img class="h-12 w-auto py-1" src="/logo-full.svg" />
     </a>
@@ -66,7 +68,7 @@ const menuItems = [
         class="flex flex-row gap-8 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
       >
         {
-          menuItems.map(menuItem => (
+          menuItems.map((menuItem) => (
             <li>
               <a
                 href={menuItem.url}
@@ -92,19 +94,31 @@ const menuItems = [
           ))
         }
         <li>
-          <a target="_blank" rel="noopener noreferrer" href="https://discord.union.build">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://discord.union.build"
+          >
             <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
             <span class="sr-only">Discord</span>
           </a>
         </li>
         <li>
-          <a target="_blank" rel="noopener noreferrer" href="https://github.com/unionlabs/union">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://github.com/unionlabs/union"
+          >
             <Icon name="fa6-brands:github" color="#fff" size="20px" />
             <span class="sr-only">GitHub</span>
           </a>
         </li>
         <li>
-          <a target="_blank" rel="noopener noreferrer" href="https://x.com/union_build">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://x.com/union_build"
+          >
             <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
             <span class="sr-only">X</span>
           </a>
