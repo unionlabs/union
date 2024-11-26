@@ -30,6 +30,7 @@ files.extend-exclude = [
   "networks/genesis/union-testnet-6/**",
   "networks/genesis/union-testnet-7/**",
   "networks/genesis/union-testnet-8/**",
+  "networks/genesis/union-testnet-9/**",
   "site/public/genesis.json",
   "docs/public/genesis.json",
   "hubble/hasura/**",
