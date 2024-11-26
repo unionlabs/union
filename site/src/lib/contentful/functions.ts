@@ -91,7 +91,7 @@ export function setupLivePreview({
             [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
             [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
             [BLOCKS["PARAGRAPH"]]: (node, next) =>
-              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`,
+              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">iiii${next(node.content)}</p>`,
             [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
             [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
             [BLOCKS["EMBEDDED_ASSET"]]: asset => {
@@ -202,7 +202,9 @@ export function displayFieldData<T extends Entry>({
       },
       [BLOCKS["HEADING_5"]]: (node, next) => `<h5>${next(node.content)}</h5>`,
       [BLOCKS["HEADING_6"]]: (node, next) => `<h6>${next(node.content)}</h6>`,
-      [BLOCKS["LIST_ITEM"]]: (node, next) => `<li>${next(node.content)}</li>`,
+      [BLOCKS["UL_LIST"]]: (node, next) => `<ul data-blog-list>${next(node.content)}</ul>`,
+      [BLOCKS["OL_LIST"]]: (node, next) => `<ol data-blog-list>${next(node.content)}</ol>`,
+      [BLOCKS["LIST_ITEM"]]: (node, next) => `<li data-blog-list-item>${next(node.content)}</li>`,
       [BLOCKS["TABLE"]]: (node, next) => `<table>${next(node.content)}</table>`,
       [BLOCKS["TABLE_ROW"]]: (node, next) => `<tr>${next(node.content)}</tr>`,
       [BLOCKS["TABLE_CELL"]]: (node, next) => `<td>${next(node.content)}</td>`,
@@ -210,8 +212,6 @@ export function displayFieldData<T extends Entry>({
       [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
       [BLOCKS["PARAGRAPH"]]: (node, next) =>
         `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`,
-      [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
-      [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
       [BLOCKS["EMBEDDED_ASSET"]]: asset => {
         const dataFields = asset.data.target.fields
         const imageUrl = imageWithProtocol(dataFields.file.url)
