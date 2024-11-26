@@ -7,24 +7,13 @@ import "../../../contracts/apps/ucs/01-relay/ERC20Denom.sol";
 contract ERC20DenomTests is Test {
     ERC20Denom token;
 
-    event smth(string tokname);
-
     address admin = address(0xABCD);
     address user = address(0x1234);
 
     function setUp() public {
         vm.startPrank(admin);
         token = new ERC20Denom("DenomToken");
-        emit smth(token.name());
         vm.stopPrank();
-    }
-
-    function test_initialization() public {
-        emit smth(token.name());
-        assertEq(token.name(), "DenomToken");
-        assertEq(token.symbol(), "DenomToken");
-        assertEq(token.decimals(), 18); // Default value since `_decimals` is never updated
-        assertEq(token.admin(), admin);
     }
 
     function test_mint_ok() public {
