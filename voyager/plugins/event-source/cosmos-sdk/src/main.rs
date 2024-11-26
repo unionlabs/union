@@ -1388,6 +1388,88 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
+                    RawEvent::IbcUnion(ibc_events::union_ibc::IbcEvent::SendPacket(
+                        send_packet,
+                    )) => {
+                        dbg!(&send_packet);
+
+                        let packet = send_packet.packet;
+
+                        let source_channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                unionlabs::ics24::ethabi::ChannelPath {
+                                    channel_id: packet.source_channel,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let source_connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                unionlabs::ics24::ethabi::ConnectionPath {
+                                    connection_id: source_channel.connection_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                self.chain_id.clone(),
+                                source_connection.client_id,
+                            )
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                source_connection.client_id,
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_version_id: IbcUnion::ID,
+                            event: into_value::<ibc_union::FullIbcEvent>(
+                                ibc_union::SendPacket {
+                                    packet_data: packet.data.into(),
+                                    packet: ibc_union::PacketMetadata {
+                                        source_channel: ibc_union::ChannelMetadata {
+                                            channel_id: packet.source_channel,
+                                            version: source_channel.version.clone(),
+                                            connection: ibc_union::ConnectionMetadata {
+                                                client_id: source_connection.client_id,
+                                                connection_id: source_channel.connection_id,
+                                            },
+                                        },
+                                        destination_channel: ibc_union::ChannelMetadata {
+                                            channel_id: packet.destination_channel,
+                                            version: source_channel.version,
+                                            connection: ibc_union::ConnectionMetadata {
+                                                client_id: source_connection.counterparty_client_id,
+                                                connection_id: source_connection
+                                                    .counterparty_connection_id,
+                                            },
+                                        },
+                                        timeout_height: packet.timeout_height,
+                                        timeout_timestamp: packet.timeout_timestamp,
+                                    },
+                                }
+                                .into(),
+                            ),
+                        }))
+                    }
                 }
             }
         }

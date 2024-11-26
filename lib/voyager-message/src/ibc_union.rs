@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use ibc_solidity::ibc::{Channel, Connection};
+use ibc_solidity::ibc::{Channel, Connection, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bytes::Bytes,
@@ -243,10 +243,20 @@ pub struct MsgChannelCloseInit {}
 pub struct MsgChannelCloseConfirm {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgPacketRecv {}
+pub struct MsgPacketRecv {
+    pub packets: Vec<Packet>,
+    pub relayer_msgs: Vec<Bytes>,
+    pub proof: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgPacketAcknowledgement {}
+pub struct MsgPacketAcknowledgement {
+    pub packets: Vec<Packet>,
+    pub acknowledgements: Vec<Bytes>,
+    pub proof: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgPacketTimeout {}
@@ -321,6 +331,10 @@ impl FullIbcEvent {
 type ClientId = u32;
 type ConnectionId = u32;
 type ChannelId = u32;
+
+// type ClientId = NonZeroU32;
+// type ConnectionId = NonZeroU32;
+// type ChannelId = NonZeroU32;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientRegistered {

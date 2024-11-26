@@ -149,7 +149,11 @@ pub enum QueueCmd {
         message_filters: Vec<String>,
     },
     /// Query a failed message by it's ID.
-    QueryFailedById { id: Pg64 },
+    QueryFailedById {
+        id: Pg64,
+        #[arg(long, short = 'e')]
+        requeue: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

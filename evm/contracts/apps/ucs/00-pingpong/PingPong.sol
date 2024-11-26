@@ -91,6 +91,8 @@ contract PingPong is
         );
     }
 
+    error ERROR();
+
     function onRecvPacket(
         IBCPacket calldata packet,
         address,
@@ -113,6 +115,8 @@ contract PingPong is
 
         // Send back the packet after having reversed the bool and set the counterparty timeout
         initiate(pp, localTimeout);
+
+        // revert ERROR();
 
         // Return protocol specific successful acknowledgement
         return abi.encodePacked(PingPongLib.ACK_SUCCESS);

@@ -164,42 +164,27 @@ pub mod ethabi {
         }
     }
 
-    #[must_use]
-    pub fn client_state_key(client_id: u32) -> H256 {
-        ClientStatePath { client_id }.key()
-    }
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::ethereum::ibc_commitment_key;
 
-    #[must_use]
-    pub fn consensus_state_key(client_id: u32, height: u64) -> H256 {
-        ConsensusStatePath { client_id, height }.key()
-    }
+        #[test]
+        fn batch_packets() {
+            let key = BatchReceiptsPath {
+                channel_id: 1,
+                batch_hash: H256::new(hex_literal::hex!(
+                    "fd483deb78ea0db5fa33e2fbd1e5029e7aa656c81421a792652c8c85f88d6143"
+                )),
+            }
+            .key();
 
-    #[must_use]
-    pub fn connection_key(connection_id: u32) -> H256 {
-        ConnectionPath { connection_id }.key()
-    }
+            dbg!(key);
 
-    #[must_use]
-    pub fn channel_key(channel_id: u32) -> H256 {
-        ChannelPath { channel_id }.key()
-    }
+            let slot = ibc_commitment_key(key);
 
-    #[must_use]
-    pub fn batch_receipts_key(channel_id: u32, batch_hash: H256) -> H256 {
-        BatchReceiptsPath {
-            channel_id,
-            batch_hash,
+            dbg!(slot);
         }
-        .key()
-    }
-
-    #[must_use]
-    pub fn batch_packets_key(channel_id: u32, batch_hash: H256) -> H256 {
-        BatchPacketsPath {
-            channel_id,
-            batch_hash,
-        }
-        .key()
     }
 }
 
@@ -239,49 +224,6 @@ pub enum Path {
     NextConnectionSequence(NextConnectionSequencePath),
     #[display(fmt = "{_0}")]
     NextClientSequence(NextClientSequencePath),
-}
-
-impl Path {
-    #[cfg(feature = "ethabi")]
-    #[must_use]
-    pub fn into_eth_commitment(self) -> H256 {
-        match self {
-            Path::ClientState(path) => ethabi::ClientStatePath {
-                client_id: path.client_id.id(),
-            }
-            .key(),
-            Path::ClientConsensusState(path) => ethabi::ConsensusStatePath {
-                client_id: path.client_id.id(),
-                height: path.height.height(),
-            }
-            .key(),
-            Path::Connection(path) => ethabi::ConnectionPath {
-                connection_id: path.connection_id.id(),
-            }
-            .key(),
-            Path::ChannelEnd(path) => ethabi::ChannelPath {
-                channel_id: path.channel_id.id(),
-            }
-            .key(),
-            Path::Commitment(_path) => {
-                // ethabi::commitments(path.channel_id.id(), path.sequence.into())
-                todo!()
-            }
-            Path::Acknowledgement(_path) => {
-                // ethabi::acknowledgements(path.channel_id.id(), path.sequence.into())
-                todo!()
-            }
-            Path::Receipt(_path) => {
-                todo!()
-            }
-            Path::NextSequenceSend(_path) => todo!(),
-            Path::NextSequenceRecv(_path) => todo!(),
-            Path::NextSequenceAck(_path) => todo!(),
-            // TODO(aeryz): check these out
-            Path::NextConnectionSequence(_path) => H256::default(),
-            Path::NextClientSequence(_path) => H256::default(),
-        }
-    }
 }
 
 impl FromStr for Path {

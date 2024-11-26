@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+
 use core::fmt::Debug;
 
 use cosmwasm_std::{
@@ -222,8 +224,12 @@ pub fn query<T: IbcClient>(
             client_state,
             consensus_state,
         } => {
-            let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state).unwrap();
-            let consensus_state = T::ConsensusState::decode(&consensus_state).unwrap();
+            let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state)
+                .map_err(|e| IbcClientError::Decode(DecodeError::ClientState(e)))?;
+
+            let consensus_state = T::ConsensusState::decode(&consensus_state)
+                .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
+
             T::verify_creation(&client_state, &consensus_state)?;
             to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
         }
@@ -308,11 +314,15 @@ pub fn read_client_state<T: IbcClient>(
     let client_state = from_json::<Bytes<Base64>>(
         querier
             .query_wasm_raw(ibc_host.to_string(), CLIENT_STATES.key(client_id).to_vec())?
-            .unwrap(),
-    )
-    .unwrap();
+            .ok_or_else(|| {
+                IbcClientError::Std(StdError::generic_err(format!(
+                    "unable to read client state of client {client_id}"
+                )))
+            })?,
+    )?;
 
-    Ok(T::ClientState::decode_as::<T::Encoding>(&client_state).unwrap())
+    T::ClientState::decode_as::<T::Encoding>(&client_state)
+        .map_err(|e| IbcClientError::Decode(DecodeError::ClientState(e)))
 }
 
 pub fn read_consensus_state<T: IbcClient>(
@@ -323,13 +333,14 @@ pub fn read_consensus_state<T: IbcClient>(
 ) -> Result<T::ConsensusState, IbcClientError<T>> {
     let consensus_state = from_json::<Bytes<Base64>>(
         querier
-            .query_wasm_raw(
-                ibc_host.to_string(),
-                CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec(),
-            )?
-            .unwrap(),
-    )
-    .unwrap();
+            .query_wasm_raw(ibc_host.to_string(), CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec())?
+            .ok_or_else(|| {
+                IbcClientError::Std(StdError::generic_err(format!(
+                    "unable to read consensus state of client {client_id} at trusted height {height}"
+                )))
+            })?,
+    )?;
 
-    Ok(T::ConsensusState::decode(&consensus_state).unwrap())
+    T::ConsensusState::decode(&consensus_state)
+        .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))
 }

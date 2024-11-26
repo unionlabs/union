@@ -206,11 +206,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (!intent) {
             bytes32 proofCommitmentKey;
             if (l == 1) {
-                proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                proofCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
                     sourceChannel, IBCPacketLib.commitPacket(packets[0])
                 );
             } else {
-                proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                proofCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
                     sourceChannel, IBCPacketLib.commitPackets(packets)
                 );
             }
@@ -343,14 +343,17 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCChannel storage channel = ensureChannelState(sourceChannel);
         uint32 clientId = ensureConnectionState(channel.connectionId);
         bytes32 commitmentKey;
+        bytes32 commitmentValue;
         if (l == 1) {
             commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
                 destinationChannel, IBCPacketLib.commitPacket(msg_.packets[0])
             );
+            commitmentValue = IBCPacketLib.commitAck(msg_.acknowledgements[0]);
         } else {
             commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
                 destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
             );
+            commitmentValue = IBCPacketLib.commitAcks(msg_.acknowledgements);
         }
         if (
             !verifyCommitment(
@@ -358,7 +361,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 msg_.proofHeight,
                 msg_.proof,
                 commitmentKey,
-                IBCPacketLib.commitAcks(msg_.acknowledgements)
+                commitmentValue
             )
         ) {
             revert IBCErrors.ErrInvalidProof();

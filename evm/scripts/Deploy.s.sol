@@ -197,7 +197,7 @@ abstract contract UnionScript is UnionBase {
     {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient client = deployCometbls(handler, owner);
-        PingPong pingpong = deployUCS00(handler, owner, 100000000000);
+        PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
         Multicall multicall = deployMulticall();
@@ -382,6 +382,40 @@ contract DryUpgradeUCS01 is Script {
         address newImplementation = address(new UCS01Relay());
         vm.prank(owner);
         UCS01Relay(ucs01).upgradeToAndCall(newImplementation, new bytes(0));
+    }
+}
+
+contract UpgradeUCS00 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
+
+        console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new PingPong());
+        PingPong(ucs00).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
     }
 }
 

@@ -25,7 +25,10 @@ use union_ibc_msg::{
 use unionlabs::{
     ethereum::keccak256,
     hash::{hash_v2::HexPrefixed, H256},
-    ics24::ethabi::COMMITMENT_MAGIC,
+    ics24::ethabi::{
+        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
+        ConsensusStatePath, COMMITMENT_MAGIC,
+    },
 };
 
 use crate::{
@@ -60,11 +63,11 @@ pub mod events {
         pub const CLOSE_CONFIRM: &str = "channel_close_confirm";
     }
     pub mod packet {
-        pub const SEND: &str = "packet_send";
-        pub const RECV: &str = "packet_recv";
-        pub const INTENT_RECV: &str = "packet_intent_recv";
-        pub const ACK: &str = "packet_ack";
-        pub const TIMEOUT: &str = "packet_timeout";
+        pub const SEND: &str = "send_packet";
+        pub const RECV: &str = "recv_packet";
+        pub const INTENT_RECV: &str = "intent_recv_packet";
+        pub const ACK: &str = "ack_packet";
+        pub const TIMEOUT: &str = "timeout_packet";
         pub const BATCH_SEND: &str = "batch_send";
         pub const BATCH_ACKS: &str = "batch_acks";
     }
@@ -404,19 +407,26 @@ fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> Contr
         return Err(ContractError::NotEnoughPackets);
     }
     for packet in &packets {
-        let commitment_key =
-            unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(packet));
+        let commitment_key = BatchPacketsPath {
+            channel_id: source_channel,
+            batch_hash: commit_packet(packet),
+        }
+        .key();
         let commitment = deps
             .storage
             .get(commitment_key.as_ref())
-            .unwrap_or(H256::<HexPrefixed>::default().into_bytes());
+            .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into());
         if commitment != COMMITMENT_MAGIC.as_ref() {
             return Err(ContractError::PacketCommitmentNotFound);
         }
     }
     store_commit(
         deps,
-        &unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packets(&packets)),
+        &BatchPacketsPath {
+            channel_id: source_channel,
+            batch_hash: commit_packets(&packets),
+        }
+        .key(),
         &COMMITMENT_MAGIC,
     )?;
     Ok(
@@ -424,7 +434,7 @@ fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> Contr
             (events::attribute::CHANNEL_ID, source_channel.to_string()),
             (
                 events::attribute::PACKETS,
-                serde_json::to_string(&packets).unwrap(),
+                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
             ),
         ])),
     )
@@ -440,15 +450,23 @@ fn batch_acks(
         return Err(ContractError::NotEnoughPackets);
     }
     for (packet, ack) in packets.iter().zip(acks.iter()) {
-        let commitment_key =
-            unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packet(packet));
+        let commitment_key = BatchReceiptsPath {
+            channel_id: source_channel,
+            batch_hash: commit_packet(packet),
+        }
+        .key();
         let commitment = deps.storage.get(commitment_key.as_ref());
         match commitment {
             Some(acknowledgement) => {
+                let expected_ack = commit_ack(ack);
+
                 if acknowledgement == COMMITMENT_MAGIC.as_ref() {
                     return Err(ContractError::AcknowledgementIsEmpty);
-                } else if acknowledgement != commit_ack(ack.to_vec()).as_ref() {
-                    return Err(ContractError::AcknowledgementMismatch);
+                } else if acknowledgement != expected_ack.as_ref() {
+                    return Err(ContractError::AcknowledgementMismatch {
+                        found: acknowledgement.into(),
+                        expected: expected_ack.into(),
+                    });
                 }
             }
             None => return Err(ContractError::PacketCommitmentNotFound),
@@ -456,7 +474,11 @@ fn batch_acks(
     }
     store_commit(
         deps,
-        &unionlabs::ics24::ethabi::batch_receipts_key(source_channel, commit_packets(&packets)),
+        &BatchReceiptsPath {
+            channel_id: source_channel,
+            batch_hash: commit_packets(&packets),
+        }
+        .key(),
         &commit_acks(&acks),
     )?;
     Ok(
@@ -464,11 +486,11 @@ fn batch_acks(
             (events::attribute::CHANNEL_ID, source_channel.to_string()),
             (
                 events::attribute::PACKETS,
-                serde_json::to_string(&packets).unwrap(),
+                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
             ),
             (
                 events::attribute::ACKS,
-                serde_json::to_string(&acks).unwrap(),
+                serde_json::to_string(&acks).expect("bytes serialization is infallible; qed;"),
             ),
         ])),
     )
@@ -492,8 +514,11 @@ fn timeout_packet(
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
-    let commitment_key =
-        unionlabs::ics24::ethabi::batch_receipts_key(destination_channel, commit_packet(&packet));
+    let commitment_key = BatchReceiptsPath {
+        channel_id: destination_channel,
+        batch_hash: commit_packet(&packet),
+    }
+    .key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     deps.querier.query_wasm_smart::<()>(
@@ -502,7 +527,7 @@ fn timeout_packet(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
-            path: commitment_key.into_bytes().into(),
+            path: commitment_key.into_bytes(),
         },
     )?;
     delete_packet_commitment(deps.branch(), source_channel, &packet)?;
@@ -524,7 +549,7 @@ fn timeout_packet(
         .add_event(Event::new(events::packet::TIMEOUT).add_attributes([
             (
                 events::attribute::PACKET,
-                serde_json::to_string(&packet).unwrap(),
+                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
             ),
             (events::attribute::MAKER, relayer.to_string()),
         ]))
@@ -552,13 +577,23 @@ fn acknowledge_packet(
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
-    let commitment_key = match packets.len() {
-        1 => {
-            unionlabs::ics24::ethabi::batch_receipts_key(destination_channel, commit_packet(first))
-        }
-        _ => unionlabs::ics24::ethabi::batch_receipts_key(
-            destination_channel,
-            commit_packets(&packets),
+    // TODO: Do the match only on the batch_hash
+    let (commitment_key, commitment_value) = match packets.len() {
+        1 => (
+            BatchReceiptsPath {
+                channel_id: destination_channel,
+                batch_hash: commit_packet(first),
+            }
+            .key(),
+            commit_ack(&acknowledgements[0]),
+        ),
+        _ => (
+            BatchReceiptsPath {
+                channel_id: destination_channel,
+                batch_hash: commit_packets(&packets),
+            }
+            .key(),
+            commit_acks(&acknowledgements),
         ),
     };
 
@@ -569,8 +604,8 @@ fn acknowledge_packet(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
-            path: commitment_key.into_bytes().into(),
-            value: commit_acks(&acknowledgements).into_bytes().into(),
+            path: commitment_key.into_bytes(),
+            value: commitment_value.into_bytes(),
         },
     )?;
 
@@ -582,7 +617,7 @@ fn acknowledge_packet(
         events.push(Event::new(events::packet::ACK).add_attributes([
             (
                 events::attribute::PACKET,
-                serde_json::to_string(&packet).unwrap(),
+                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
             ),
             (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
             (events::attribute::MAKER, relayer.clone().to_string()),
@@ -606,12 +641,15 @@ fn delete_packet_commitment(
     source_channel: u32,
     packet: &Packet,
 ) -> Result<(), ContractError> {
-    let commitment_key =
-        unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(packet));
+    let commitment_key = BatchPacketsPath {
+        channel_id: source_channel,
+        batch_hash: commit_packet(packet),
+    }
+    .key();
     let commitment = deps
         .storage
         .get(commitment_key.as_ref())
-        .unwrap_or(H256::<HexPrefixed>::default().into_bytes());
+        .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into_vec());
     if commitment != COMMITMENT_MAGIC.as_ref() {
         return Err(ContractError::PacketCommitmentNotFound);
     }
@@ -620,11 +658,11 @@ fn delete_packet_commitment(
 }
 
 fn commit_packet(packet: &Packet) -> H256 {
-    commit(packet.abi_encode_params())
+    commit(packet.abi_encode())
 }
 
 fn commit_packets(packets: &[Packet]) -> H256 {
-    commit(packets.abi_encode_params())
+    commit(packets.abi_encode())
 }
 
 fn register_client(
@@ -674,12 +712,16 @@ fn create_client(
     )?;
     store_commit(
         deps.branch(),
-        &unionlabs::ics24::ethabi::client_state_key(client_id),
+        &ClientStatePath { client_id }.key(),
         &commit(client_state_bytes),
     )?;
     store_commit(
         deps,
-        &unionlabs::ics24::ethabi::consensus_state_key(client_id, latest_height),
+        &ConsensusStatePath {
+            client_id,
+            height: latest_height,
+        }
+        .key(),
         &commit(consensus_state_bytes),
     )?;
     Ok(
@@ -718,12 +760,16 @@ fn update_client(
 
     store_commit(
         deps.branch(),
-        &unionlabs::ics24::ethabi::client_state_key(client_id),
+        &ClientStatePath { client_id }.key(),
         &commit(update.client_state),
     )?;
     store_commit(
         deps.branch(),
-        &unionlabs::ics24::ethabi::consensus_state_key(client_id, update.height),
+        &ConsensusStatePath {
+            client_id,
+            height: update.height,
+        }
+        .key(),
         &commit(update.consensus_state),
     )?;
     Ok(
@@ -789,12 +835,12 @@ fn connection_open_try(
             client_id,
             height: proof_height,
             proof: proof_init.into(),
-            path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_connection.abi_encode_params())
-                .into_bytes()
-                .into(),
+            path: ConnectionPath {
+                connection_id: counterparty_connection_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_connection.abi_encode_params()).into_bytes(),
         },
     )?;
     save_connection(deps.branch(), connection_id, &connection)?;
@@ -842,12 +888,12 @@ fn connection_open_ack(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_try.into(),
-            path: unionlabs::ics24::ethabi::connection_key(counterparty_connection_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_connection.abi_encode_params())
-                .into_bytes()
-                .into(),
+            path: ConnectionPath {
+                connection_id: counterparty_connection_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_connection.abi_encode_params()).into_bytes(),
         },
     )?;
     connection.state = ConnectionState::Open;
@@ -899,12 +945,12 @@ fn connection_open_confirm(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_ack.into(),
-            path: unionlabs::ics24::ethabi::connection_key(connection.counterparty_connection_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_connection.abi_encode_params())
-                .into_bytes()
-                .into(),
+            path: ConnectionPath {
+                connection_id: connection.counterparty_connection_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_connection.abi_encode_params()).into_bytes(),
         },
     )?;
     connection.state = ConnectionState::Open;
@@ -1000,10 +1046,12 @@ fn channel_open_try(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
-            path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            path: ChannelPath {
+                channel_id: channel.counterparty_channel_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_channel.abi_encode()).into_bytes(),
         },
     )?;
     let port_id = deps.api.addr_validate(&port_id)?;
@@ -1076,10 +1124,12 @@ fn channel_open_ack(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_try.into(),
-            path: unionlabs::ics24::ethabi::channel_key(counterparty_channel_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            path: ChannelPath {
+                channel_id: counterparty_channel_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_channel.abi_encode()).into_bytes(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1142,10 +1192,12 @@ fn channel_open_confirm(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_ack.into(),
-            path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            path: ChannelPath {
+                channel_id: channel.counterparty_channel_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_channel.abi_encode()).into_bytes(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1239,17 +1291,19 @@ fn channel_close_confirm(
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
-            path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
-                .into_bytes()
-                .into(),
-            value: commit(expected_channel.abi_encode()).into_bytes().into(),
+            path: ChannelPath {
+                channel_id: channel.counterparty_channel_id,
+            }
+            .key()
+            .into_bytes(),
+            value: commit(expected_channel.abi_encode()).into_bytes(),
         },
     )?;
     channel.state = ChannelState::Closed;
     CHANNELS.save(deps.storage, channel_id, &channel)?;
     store_commit(
         deps.branch(),
-        &unionlabs::ics24::ethabi::channel_key(channel_id),
+        &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
     )?;
     Ok(Response::new()
@@ -1294,13 +1348,14 @@ fn process_receive(
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     if !intent {
-        let proof_commitment_key = unionlabs::ics24::ethabi::batch_packets_key(
-            source_channel,
-            match packets.len() {
+        let proof_commitment_key = BatchPacketsPath {
+            channel_id: source_channel,
+            batch_hash: match packets.len() {
                 1 => commit_packet(first),
                 _ => commit_packets(&packets),
             },
-        );
+        }
+        .key();
 
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
         deps.querier.query_wasm_smart::<()>(
@@ -1309,8 +1364,8 @@ fn process_receive(
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof.to_vec().into(),
-                path: proof_commitment_key.into_bytes().into(),
-                value: COMMITMENT_MAGIC.into_bytes().into(),
+                path: proof_commitment_key.into_bytes(),
+                value: COMMITMENT_MAGIC.into_bytes(),
             },
         )?;
     }
@@ -1334,21 +1389,25 @@ fn process_receive(
             });
         }
 
-        let commitment_key = unionlabs::ics24::ethabi::batch_receipts_key(
-            destination_channel,
-            commit_packet(&packet),
-        );
+        let commitment_key = BatchReceiptsPath {
+            channel_id: destination_channel,
+            batch_hash: commit_packet(&packet),
+        }
+        .key();
 
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
-                events.push(Event::new(events::packet::INTENT_RECV).add_attributes([
-                    (
-                        events::attribute::PACKET,
-                        serde_json::to_string(&packet).unwrap(),
-                    ),
-                    (events::attribute::MAKER, relayer.clone()),
-                    (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                ]));
+                events.push(
+                    Event::new(events::packet::INTENT_RECV).add_attributes([
+                        (
+                            events::attribute::PACKET,
+                            serde_json::to_string(&packet)
+                                .expect("packet serialization is infallible; qed;"),
+                        ),
+                        (events::attribute::MAKER, relayer.clone()),
+                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                    ]),
+                );
 
                 messages.push(wasm_execute(
                     port_id.clone(),
@@ -1360,14 +1419,17 @@ fn process_receive(
                     vec![],
                 )?);
             } else {
-                events.push(Event::new(events::packet::RECV).add_attributes([
-                    (
-                        events::attribute::PACKET,
-                        serde_json::to_string(&packet).unwrap(),
-                    ),
-                    (events::attribute::MAKER, relayer.clone()),
-                    (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                ]));
+                events.push(
+                    Event::new(events::packet::RECV).add_attributes([
+                        (
+                            events::attribute::PACKET,
+                            serde_json::to_string(&packet)
+                                .expect("packet serialization is infallible; qed;"),
+                        ),
+                        (events::attribute::MAKER, relayer.clone()),
+                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                    ]),
+                );
 
                 messages.push(wasm_execute(
                     port_id.clone(),
@@ -1395,16 +1457,23 @@ fn write_acknowledgement(
     // make sure the caller owns the channel
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     if port_id != sender {
-        return Err(ContractError::Unauthorized);
+        return Err(ContractError::Unauthorized {
+            channel_id,
+            owner: port_id,
+            caller: sender,
+        });
     }
 
-    let commitment_key =
-        unionlabs::ics24::ethabi::batch_receipts_key(channel_id, commit_packet(&packet));
+    let commitment_key = BatchReceiptsPath {
+        channel_id,
+        batch_hash: commit_packet(&packet),
+    }
+    .key();
 
     // the receipt must present, but ack shouldn't
     match deps.storage.get(commitment_key.as_ref()) {
         Some(commitment) => {
-            if commitment != COMMITMENT_MAGIC.into_bytes() {
+            if commitment != COMMITMENT_MAGIC.into_bytes().into_vec() {
                 return Err(ContractError::AlreadyAcknowledged);
             }
         }
@@ -1414,14 +1483,14 @@ fn write_acknowledgement(
     store_commit(
         deps.branch(),
         &commitment_key,
-        &commit_ack(acknowledgement.clone()),
+        &commit_ack(&acknowledgement.clone().into()),
     )?;
 
     Ok(
         Response::new().add_event(Event::new("write_acknowledgement").add_attributes([
             (
                 events::attribute::PACKET,
-                serde_json::to_string(&packet).unwrap(),
+                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
             ),
             (
                 events::attribute::ACKNOWLEDGEMENT,
@@ -1445,7 +1514,11 @@ fn send_packet(
 
     let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
     if port_id != sender {
-        return Err(ContractError::Unauthorized);
+        return Err(ContractError::Unauthorized {
+            channel_id: source_channel,
+            owner: port_id,
+            caller: sender,
+        });
     }
 
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
@@ -1457,8 +1530,11 @@ fn send_packet(
         timeout_timestamp,
     };
 
-    let commitment_key =
-        unionlabs::ics24::ethabi::batch_packets_key(source_channel, commit_packet(&packet));
+    let commitment_key = BatchPacketsPath {
+        channel_id: source_channel,
+        batch_hash: commit_packet(&packet),
+    }
+    .key();
 
     if deps.storage.get(commitment_key.as_ref()).is_some() {
         return Err(ContractError::PacketCommitmentAlreadyExist);
@@ -1467,9 +1543,9 @@ fn send_packet(
     store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC)?;
 
     Ok(Response::new()
-        .add_event(Event::new("send_packet").add_attribute(
+        .add_event(Event::new(events::packet::SEND).add_attribute(
             events::attribute::PACKET,
-            serde_json::to_string(&packet).unwrap(),
+            serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
         ))
         .set_data(to_json_binary(&packet)?))
 }
@@ -1500,12 +1576,12 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
     keccak256(bytes)
 }
 
-fn commit_ack(ack: Vec<u8>) -> H256 {
+fn commit_ack(ack: &alloy::primitives::Bytes) -> H256 {
     merge_ack(commit(ack))
 }
 
 fn commit_acks(acks: &Vec<alloy::primitives::Bytes>) -> H256 {
-    merge_ack(commit(acks.abi_encode_params()))
+    merge_ack(commit(acks.abi_encode()))
 }
 
 fn merge_ack(mut ack: H256) -> H256 {
@@ -1518,6 +1594,13 @@ fn store_commit(deps: DepsMut, key: &H256, value: &H256) -> Result<(), ContractE
     Ok(())
 }
 
+fn read_commit(deps: Deps, key: &H256) -> Option<H256> {
+    deps.storage.get(key.as_ref()).map(|bz| {
+        bz.try_into()
+            .expect("H256 is the only value ever written to this storage; qed;")
+    })
+}
+
 fn save_connection(
     deps: DepsMut,
     connection_id: u32,
@@ -1526,7 +1609,7 @@ fn save_connection(
     CONNECTIONS.save(deps.storage, connection_id, connection)?;
     store_commit(
         deps,
-        &unionlabs::ics24::ethabi::connection_key(connection_id),
+        &ConnectionPath { connection_id }.key(),
         &commit(connection.abi_encode_params()),
     )?;
     Ok(())
@@ -1568,7 +1651,7 @@ fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(),
     CHANNELS.save(deps.storage, channel_id, channel)?;
     store_commit(
         deps,
-        &unionlabs::ics24::ethabi::channel_key(channel_id),
+        &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
     )?;
     Ok(())
@@ -1663,6 +1746,34 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::GetConnection { connection_id } => {
             let connection = CONNECTIONS.load(deps.storage, connection_id)?;
             Ok(to_json_binary(&connection)?)
+        }
+        QueryMsg::GetBatchPackets {
+            channel_id,
+            batch_hash,
+        } => {
+            let commit = read_commit(
+                deps,
+                &BatchPacketsPath {
+                    channel_id,
+                    batch_hash,
+                }
+                .key(),
+            );
+            Ok(to_json_binary(&commit)?)
+        }
+        QueryMsg::GetBatchReceipts {
+            channel_id,
+            batch_hash,
+        } => {
+            let commit = read_commit(
+                deps,
+                &BatchReceiptsPath {
+                    channel_id,
+                    batch_hash,
+                }
+                .key(),
+            );
+            Ok(to_json_binary(&commit)?)
         }
     }
 }

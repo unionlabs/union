@@ -31,8 +31,8 @@ pub mod proto {
                 chain_id: value.chain_id,
                 l1_client_id: value.l1_client_id.to_string(),
                 l1_contract_address: value.l1_contract_address.into(),
-                l2_contract_address: value.l2_contract_address.0.into_bytes(),
-                table_handle: value.table_handle.0.into_bytes(),
+                l2_contract_address: value.l2_contract_address.0.into_bytes().to_vec(),
+                table_handle: value.table_handle.0.into_bytes().to_vec(),
                 frozen_height: Some(value.frozen_height.into()),
                 latest_block_num: value.latest_block_num,
             }

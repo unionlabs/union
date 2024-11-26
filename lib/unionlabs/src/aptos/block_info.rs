@@ -54,8 +54,8 @@ impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockIn
         Self {
             epoch: value.epoch,
             round: value.round,
-            id: value.id.into_bytes(),
-            executed_state_id: value.executed_state_id.into_bytes(),
+            id: value.id.into_bytes().into(),
+            executed_state_id: value.executed_state_id.into_bytes().into(),
             version: value.version,
             timestamp_usecs: value.timestamp_usecs,
             next_epoch_state: value.next_epoch_state.map(Into::into),
