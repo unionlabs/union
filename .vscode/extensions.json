@@ -5,11 +5,9 @@
   ],
   "recommendations": [
     /* nix dev shell */
-    "mkhl.direnv",
+    "mkhl.direnv", // do NOT add nix env selector. it will conflict with direnv
     "bbenoist.nix",
     "jnoortheen.nix-ide",
-    "bmalehorn.vscode-fish",
-    "arrterian.nix-env-selector",
     /* lint & format */
     "biomejs.biome",
     "timonwong.shellcheck",
