@@ -29,18 +29,16 @@ library PingPongLib {
     function encode(
         PingPongPacket memory packet
     ) internal pure returns (bytes memory) {
-        return abi.encode(packet.ping)
+        return abi.encode(packet.ping);
         // packet.counterpartyTimeout
-        ;
     }
 
     function decode(
         bytes memory packet
     ) internal pure returns (PingPongPacket memory) {
         bool ping = abi.decode(packet, (bool));
-        return PingPongPacket({ping: ping})
+        return PingPongPacket({ping: ping});
         // counterpartyTimeout: counterpartyTimeout
-        ;
     }
 }
 
