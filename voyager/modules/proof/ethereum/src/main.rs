@@ -108,7 +108,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         };
 
         let proof = StorageProof {
-            key: U256::from_be_bytes(proof.key.0 .0),
+            key: U256::from_be_bytes(proof.key.as_b256().0),
             value: U256::from_be_bytes(proof.value.to_be_bytes()),
             proof: proof
                 .proof

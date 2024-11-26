@@ -36,11 +36,11 @@ pub fn execute(
 
             Ok(Response::default().add_message(wasm_execute(config.ibc_host, &msg, vec![])?))
         }
-        ExecuteMsg::UnionIbc(UnionIbcMsg::OnChannelOpenInit { version, .. }) => {
+        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenInit { version, .. }) => {
             enforce_version(&version, None)?;
             Ok(Response::default())
         }
-        ExecuteMsg::UnionIbc(UnionIbcMsg::OnChannelOpenTry {
+        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenTry {
             version,
             counterparty_version,
             ..
@@ -48,7 +48,7 @@ pub fn execute(
             enforce_version(&version, Some(&counterparty_version))?;
             Ok(Response::default())
         }
-        ExecuteMsg::UnionIbc(UnionIbcMsg::OnRecvPacket { packet, .. }) => {
+        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnRecvPacket { packet, .. }) => {
             let ping_packet = UCS00PingPong::decode(&packet.data)?;
             let config = CONFIG.load(deps.storage)?;
             let msg =
@@ -70,11 +70,11 @@ pub fn execute(
                 .add_attribute("action", if ping_packet.ping { "ping" } else { "pong" })
                 .add_attribute("success", "true"))
         }
-        ExecuteMsg::UnionIbc(UnionIbcMsg::OnTimeoutPacket { .. }) => Ok(Response::default()
+        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket { .. }) => Ok(Response::default()
             .add_attribute("action", "acknowledge")
             .add_attribute("success", "false")
             .add_attribute("error", "timeout")),
-        ExecuteMsg::UnionIbc(
+        ExecuteMsg::UnionIbcMsg(
             UnionIbcMsg::OnChannelCloseInit { .. } | UnionIbcMsg::OnChannelCloseConfirm { .. },
         ) => Err(StdError::generic_err("the show must go on").into()),
         _ => Ok(Response::default()),

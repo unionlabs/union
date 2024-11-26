@@ -58,10 +58,11 @@ pub struct InitMsg {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Initiate {
         channel_id: u32,
         packet: UCS00PingPong,
     },
-    UnionIbc(union_ibc_msg::module::UnionIbcMsg),
+    UnionIbcMsg(union_ibc_msg::module::UnionIbcMsg),
 }

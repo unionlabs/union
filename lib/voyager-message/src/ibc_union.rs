@@ -205,26 +205,36 @@ pub struct MsgConnectionOpenConfirm {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgChannelOpenInit {
-    port_id: String,
-    counterparty_port_id: Bytes,
-    connection_id: u32,
-    version: String,
+    pub port_id: Bytes,
+    pub counterparty_port_id: Bytes,
+    pub connection_id: u32,
+    pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgChannelOpenTry {
-    port_id: String,
-    channel: Channel,
-    counterparty_version: String,
-    proof_init: Bytes,
-    proof_height: u64,
+    pub port_id: Bytes,
+    pub channel: Channel,
+    pub counterparty_version: String,
+    pub proof_init: Bytes,
+    pub proof_height: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgChannelOpenAck {}
+pub struct MsgChannelOpenAck {
+    pub channel_id: u32,
+    pub counterparty_version: String,
+    pub counterparty_channel_id: u32,
+    pub proof_try: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MsgChannelOpenConfirm {}
+pub struct MsgChannelOpenConfirm {
+    pub channel_id: u32,
+    pub proof_ack: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MsgChannelCloseInit {}
@@ -364,7 +374,7 @@ pub struct ConnectionOpenConfirm {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenInit {
-    pub port_id: H160,
+    pub port_id: Bytes,
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub connection: Connection,
@@ -373,7 +383,7 @@ pub struct ChannelOpenInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenTry {
-    pub port_id: H160,
+    pub port_id: Bytes,
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,
@@ -383,7 +393,7 @@ pub struct ChannelOpenTry {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenAck {
-    pub port_id: H160,
+    pub port_id: Bytes,
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,
@@ -393,7 +403,7 @@ pub struct ChannelOpenAck {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelOpenConfirm {
-    pub port_id: H160,
+    pub port_id: Bytes,
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,

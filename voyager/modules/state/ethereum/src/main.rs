@@ -1,7 +1,10 @@
 // #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
 
 use alloy::{
+    primitives::address,
     providers::{Provider, ProviderBuilder, RootProvider},
+    rpc::types::{TransactionInput, TransactionRequest},
+    sol_types::{SolCall, SolValue},
     transports::BoxTransport,
 };
 use ibc_solidity::ibc::{
@@ -204,21 +207,40 @@ impl Module {
 
         let ibc_handler = self.ibc_handler();
 
-        let raw = ibc_handler
-            .channels(channel_id)
-            .block(execution_height.into())
-            .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching channel: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0;
+        // https://github.com/alloy-rs/core/issues/811
+        // let raw = ibc_handler
+        //     .channels(channel_id)
+        //     .block(execution_height.into())
+        //     .call()
+        //     .await
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("error fetching channel: {}", ErrorReporter(err)),
+        //             None::<()>,
+        //         )
+        //     })?
+        //     ._0;
 
-        Ok(Some(raw))
+        let raw = ibc_handler
+            .provider()
+            .call(&TransactionRequest {
+                from: None,
+                to: Some(address!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into()),
+                input: TransactionInput::new(
+                    Ibc::channelsCall { _0: channel_id }.abi_encode().into(),
+                ),
+                ..Default::default()
+            })
+            .block(execution_height.into())
+            .await
+            .unwrap();
+
+        dbg!(&raw);
+
+        let channel = ibc_solidity::ibc::Channel::abi_decode_params(&raw, true).unwrap();
+
+        Ok(Some(channel))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
@@ -333,70 +355,4 @@ impl StateModuleServer<IbcUnion> for Module {
             metadata: Default::default(),
         })
     }
-
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    // async fn query_ibc_proof(
-    //     &self,
-    //     _: &Extensions,
-    //     at: Height,
-    //     path: Path,
-    //     // ibc_store_format: IbcStoreFormat<'static>,
-    // ) -> RpcResult<Value> {
-    //     let location = ibc_commitment_key(match path {
-    //         Path::ClientState(path) => ethabi::client_state_key(path.client_id.id()),
-    //         Path::ClientConsensusState(path) => {
-    //             ethabi::consensus_state_key(path.client_id.id(), path.height.height())
-    //         }
-    //         Path::Connection(path) => ethabi::connection_key(path.connection_id.id()),
-    //         Path::ChannelEnd(path) => ethabi::channel_key(path.channel_id.id()),
-    //         Path::Commitment(_path) => {
-    //             todo!()
-    //             // ethabi::commitments_key(path.channel_id.id(), path.sequence.get())
-    //         }
-    //         Path::Acknowledgement(_path) => {
-    //             todo!()
-    //             // ethabi::acknowledgements_key(path.channel_id.id(), path.sequence.get())
-    //         }
-    //         Path::Receipt(_path) => {
-    //             todo!()
-    //             // ethabi::receipts_key(path.channel_id.id(), path.sequence.get())
-    //         }
-    //         Path::NextSequenceSend(_path) => todo!(),
-    //         Path::NextSequenceRecv(_path) => todo!(),
-    //         Path::NextSequenceAck(_path) => todo!(),
-    //         Path::NextConnectionSequence(_path) => todo!(),
-    //         Path::NextClientSequence(_path) => todo!(),
-    //     });
-
-    //     let execution_height = height.height();
-
-    //     let proof = self
-    //         .provider
-    //         .get_proof(
-    //             self.ibc_handler_address.get().into(),
-    //             vec![location.to_be_bytes().into()],
-    //         )
-    //         .block_id(execution_height.into())
-    //         .await
-    //         .unwrap();
-
-    //     let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-    //         Ok([proof]) => proof,
-    //         Err(invalid) => {
-    //             panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-    //         }
-    //     };
-
-    //     let proof = StorageProof {
-    //         key: U256::from_be_bytes(proof.key.0 .0),
-    //         value: U256::from_be_bytes(proof.value.to_be_bytes()),
-    //         proof: proof
-    //             .proof
-    //             .into_iter()
-    //             .map(|bytes| bytes.to_vec())
-    //             .collect(),
-    //     };
-
-    //     Ok(serde_json::to_value(proof).expect("serialization is infallible; qed;"))
-    // }
 }

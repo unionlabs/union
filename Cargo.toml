@@ -257,7 +257,7 @@ milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e
 tendermint     = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
-alloy = { version = "0.5", default-features = false }
+alloy = { version = "0.6", default-features = false }
 
 # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }

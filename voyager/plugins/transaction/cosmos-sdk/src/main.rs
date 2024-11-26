@@ -976,9 +976,53 @@ fn process_msgs(
                         })
                     }
                     ibc_union::IbcMsg::ChannelOpenInit(_msg_channel_open_init) => todo!(),
-                    ibc_union::IbcMsg::ChannelOpenTry(_msg_channel_open_try) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenTry(msg_channel_open_try) => {
+                        dbg!(&msg_channel_open_try);
+
+                        let channel_open_try = union_ibc_msg::msg::ExecuteMsg::ChannelOpenTry(
+                            union_ibc_msg::msg::MsgChannelOpenTry {
+                                port_id: String::from_utf8(msg_channel_open_try.port_id.to_vec())
+                                    .unwrap(),
+                                channel: msg_channel_open_try.channel,
+                                counterparty_version: msg_channel_open_try.counterparty_version,
+                                proof_init: msg_channel_open_try.proof_init,
+                                proof_height: msg_channel_open_try.proof_height,
+                                relayer: signer.to_string(),
+                            },
+                        );
+
+                        dbg!(&channel_open_try);
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(&channel_open_try).unwrap(),
+                            funds: vec![],
+                        })
+                    }
                     ibc_union::IbcMsg::ChannelOpenAck(_msg_channel_open_ack) => todo!(),
-                    ibc_union::IbcMsg::ChannelOpenConfirm(_msg_channel_open_confirm) => todo!(),
+                    ibc_union::IbcMsg::ChannelOpenConfirm(msg_channel_open_confirm) => {
+                        dbg!(&msg_channel_open_confirm);
+
+                        let channel_open_confirm =
+                            union_ibc_msg::msg::ExecuteMsg::ChannelOpenConfirm(
+                                union_ibc_msg::msg::MsgChannelOpenConfirm {
+                                    channel_id: msg_channel_open_confirm.channel_id,
+                                    proof_ack: msg_channel_open_confirm.proof_ack,
+                                    proof_height: msg_channel_open_confirm.proof_height,
+                                    relayer: signer.to_string(),
+                                },
+                            );
+
+                        dbg!(&channel_open_confirm);
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(&channel_open_confirm).unwrap(),
+                            funds: vec![],
+                        })
+                    }
                     ibc_union::IbcMsg::ChannelCloseInit(_msg_channel_close_init) => todo!(),
                     ibc_union::IbcMsg::ChannelCloseConfirm(_msg_channel_close_confirm) => todo!(),
                     ibc_union::IbcMsg::PacketRecv(_msg_packet_recv) => todo!(),

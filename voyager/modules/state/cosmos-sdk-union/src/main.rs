@@ -213,23 +213,14 @@ impl Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
     async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
-        // let path_string = ChannelEndPath {
-        //     channel_id,
-        //     port_id,
-        // }
-        // .to_string();
+        let channel = self
+            .query_smart::<_, Channel>(
+                &union_ibc_msg::query::QueryMsg::GetChannel { channel_id },
+                Some(height),
+            )
+            .await?;
 
-        // let query_result = self.abci_query(&path_string, height).await?;
-
-        // Ok(match query_result.value {
-        //     Some(value) => Some(
-        //         Channel::decode_as::<Proto>(&value)
-        //             .map_err(fatal_rpc_error("error decoding channel end", None))?,
-        //     ),
-        //     None => None,
-        // })
-
-        todo!()
+        Ok(channel)
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]

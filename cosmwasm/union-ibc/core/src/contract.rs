@@ -85,7 +85,7 @@ pub mod events {
         pub const COUNTERPARTY_CLIENT_ID: &str = "counterparty_client_id";
         pub const COUNTERPARTY_CONNECTION_ID: &str = "counterparty_connection_id";
         pub const PORT_ID: &str = "port_id";
-        pub const COUNTERPARTY_PORT_ID: &str = "port_id";
+        pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
     }
 }
@@ -1003,9 +1003,7 @@ fn channel_open_try(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode_params())
-                .into_bytes()
-                .into(),
+            value: commit(expected_channel.abi_encode()).into_bytes().into(),
         },
     )?;
     let port_id = deps.api.addr_validate(&port_id)?;
@@ -1081,9 +1079,7 @@ fn channel_open_ack(
             path: unionlabs::ics24::ethabi::channel_key(counterparty_channel_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode_params())
-                .into_bytes()
-                .into(),
+            value: commit(expected_channel.abi_encode()).into_bytes().into(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1149,9 +1145,7 @@ fn channel_open_confirm(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode_params())
-                .into_bytes()
-                .into(),
+            value: commit(expected_channel.abi_encode()).into_bytes().into(),
         },
     )?;
     channel.state = ChannelState::Open;
@@ -1248,9 +1242,7 @@ fn channel_close_confirm(
             path: unionlabs::ics24::ethabi::channel_key(channel.counterparty_channel_id)
                 .into_bytes()
                 .into(),
-            value: commit(expected_channel.abi_encode_params())
-                .into_bytes()
-                .into(),
+            value: commit(expected_channel.abi_encode()).into_bytes().into(),
         },
     )?;
     channel.state = ChannelState::Closed;
@@ -1258,7 +1250,7 @@ fn channel_close_confirm(
     store_commit(
         deps.branch(),
         &unionlabs::ics24::ethabi::channel_key(channel_id),
-        &commit(channel.abi_encode_params()),
+        &commit(channel.abi_encode()),
     )?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
@@ -1577,7 +1569,7 @@ fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(),
     store_commit(
         deps,
         &unionlabs::ics24::ethabi::channel_key(channel_id),
-        &commit(channel.abi_encode_params()),
+        &commit(channel.abi_encode()),
     )?;
     Ok(())
 }
@@ -1672,5 +1664,29 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             let connection = CONNECTIONS.load(deps.storage, connection_id)?;
             Ok(to_json_binary(&connection)?)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy::hex;
+
+    use super::*;
+
+    #[test]
+    fn channel_value() {
+        let channel = Channel {
+            state: ChannelState::Init,
+            connection_id: 0,
+            counterparty_channel_id: 0,
+            counterparty_port_id: hex!("30783735366536393666366533313337373033393732376137373665366536363738363336613730333333323735366533393735363733373739363836383761363737343662363837363663333936613636366237333761373436373737333537353638333633393737363136333332373036373733333936383337373736613637").into(),
+            version: "ucs01-relay-1".to_owned()
+        };
+
+        let value = commit(channel.abi_encode());
+
+        dbg!(value);
+        dbg!("0x68361972d5315b7a497e342405661930a6bdb0c17ce58a87227bb676fbcfc3ce");
+        dbg!("0x9f4901a9b797640d3d2507111018b5130d209eb7305bdda6ed3163a6ec4d4c9b");
     }
 }
