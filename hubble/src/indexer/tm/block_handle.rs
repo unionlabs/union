@@ -1,8 +1,12 @@
 use axum::async_trait;
-use color_eyre::eyre::Report;
+use color_eyre::eyre::{eyre, Report};
+use cometbft_rpc::{
+    rpc_types::{BlockMeta, BlockResponse, CommitResponse},
+    types::types::{block_id::BlockId, header::Header},
+};
 use futures::Stream;
 use sqlx::Postgres;
-use tendermint::block::Meta;
+use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::indexer::{
@@ -21,33 +25,33 @@ use crate::indexer::{
 
 #[derive(Clone)]
 pub struct BlockHeader {
-    pub block_id: tendermint::block::Id,
-    pub header: tendermint::block::Header,
+    pub block_id: BlockId,
+    pub header: Header,
 }
 
-impl From<tendermint_rpc::endpoint::block::Response> for BlockHeader {
-    fn from(response: tendermint_rpc::endpoint::block::Response) -> Self {
+impl From<BlockResponse> for BlockHeader {
+    fn from(block_response: BlockResponse) -> Self {
         BlockHeader {
-            block_id: response.block_id,
-            header: response.block.header,
+            block_id: block_response.block_id,
+            header: block_response.block.header,
         }
     }
 }
 
-impl From<tendermint::block::Meta> for BlockHeader {
-    fn from(meta: tendermint::block::Meta) -> Self {
+impl From<BlockMeta> for BlockHeader {
+    fn from(block_meta: BlockMeta) -> Self {
         BlockHeader {
-            block_id: meta.block_id,
-            header: meta.header,
+            block_id: block_meta.block_id,
+            header: block_meta.header,
         }
     }
 }
 
-impl From<tendermint_rpc::endpoint::commit::Response> for BlockHeader {
-    fn from(response: tendermint_rpc::endpoint::commit::Response) -> Self {
+impl From<CommitResponse> for BlockHeader {
+    fn from(commit_response: CommitResponse) -> Self {
         BlockHeader {
-            block_id: response.signed_header.commit.block_id,
-            header: response.signed_header.header,
+            block_id: commit_response.signed_header.commit.block_id,
+            header: commit_response.signed_header.header,
         }
     }
 }
@@ -55,19 +59,33 @@ impl From<tendermint_rpc::endpoint::commit::Response> for BlockHeader {
 impl BlockReferenceProvider for BlockHeader {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
-            height: self.header.height.into(),
-            hash: self.block_id.hash.to_string(),
-            timestamp: self.header.time.into(),
+            height: self.header.height.inner() as u64,
+            hash: self
+                .block_id
+                .hash
+                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .to_string(),
+            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
+                self.header.time.as_unix_nanos() as i128
+            )
+            .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
     }
 }
 
-impl BlockReferenceProvider for Meta {
+impl BlockReferenceProvider for BlockMeta {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
-            height: self.header.height.into(),
-            hash: self.block_id.hash.to_string(),
-            timestamp: self.header.time.into(),
+            height: self.header.height.inner() as u64,
+            hash: self
+                .block_id
+                .hash
+                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .to_string(),
+            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
+                self.header.time.as_unix_nanos() as i128
+            )
+            .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
     }
 }

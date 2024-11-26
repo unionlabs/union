@@ -1,5 +1,5 @@
 use color_eyre::eyre::Report;
-use tendermint_rpc::Error;
+use cometbft_rpc::JsonRpcError;
 
 use crate::indexer::api::IndexerError;
 
@@ -11,8 +11,8 @@ mod fetcher_client;
 mod postgres;
 mod provider;
 
-impl From<Error> for IndexerError {
-    fn from(error: Error) -> Self {
+impl From<JsonRpcError> for IndexerError {
+    fn from(error: JsonRpcError) -> Self {
         Self::ProviderError(Report::from(error))
     }
 }

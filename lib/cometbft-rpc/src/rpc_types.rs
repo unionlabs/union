@@ -1,12 +1,12 @@
 use std::num::NonZeroU64;
 
 use cometbft_types::{
-    abci::{exec_tx_result::ExecTxResult, response_query::QueryResponse},
+    abci::{event::Event, exec_tx_result::ExecTxResult, response_query::QueryResponse},
     crypto::public_key::PublicKey,
     p2p::default_node_info::DefaultNodeInfo,
     types::{
-        block::Block, block_id::BlockId, signed_header::SignedHeader, tx_proof::TxProof,
-        validator::Validator,
+        block::Block, block_id::BlockId, header::Header, signed_header::SignedHeader,
+        tx_proof::TxProof, validator::Validator,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,25 @@ pub struct BlockResponse {
     pub block_id: BlockId,
     // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::Block, _>")]
     pub block: Block,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BlockchainResponse {
+    #[serde(with = "::serde_utils::string")]
+    pub last_height: u64,
+    pub block_metas: Vec<BlockMeta>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BlockMeta {
+    pub block_id: BlockId,
+    #[serde(with = "::serde_utils::string")]
+    pub block_size: u64,
+    pub header: Header,
+    #[serde(with = "::serde_utils::string")]
+    pub num_txs: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -135,6 +154,14 @@ pub struct TxSearchResponse {
     pub txs: Vec<TxResponse>,
     #[serde(with = "::serde_utils::string")]
     pub total_count: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BlockResultsResponse {
+    #[serde(with = "::serde_utils::string")]
+    pub height: u64,
+    pub txs_results: Option<Vec<ExecTxResult>>,
+    pub finalize_block_events: Option<Vec<Event>>,
 }
 
 #[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
