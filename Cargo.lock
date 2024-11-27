@@ -7961,6 +7961,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "multicall"
+version = "1.0.0"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "hex",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "multimap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
