@@ -51,7 +51,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CF_PAGES_COMMIT_SHA: ${{ github.sha }}
-        run: npx --yes wrangler@latest pages --project-name="app" deploy result --binding CF_PAGES_COMMIT_SHA="${{ github.sha }}" >> /tmp/app_deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="app" deploy result -e CF_PAGES_COMMIT_SHA="${{ github.sha }}" >> /tmp/app_deploy.txt
 
       - name: Set Deploy Output
         run: |
