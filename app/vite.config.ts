@@ -51,21 +51,20 @@ export default defineConfig(config => {
     test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
     define: {
       'import.meta.env.VERSION': JSON.stringify(pkg.version),
-      'import.meta.env.COMMIT_HASH': JSON.stringify(process.env.COMMIT_HASH || 'undefined'),
-      'import.meta.env.CF_PAGES_COMMIT_SHA': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA || 'undefined')
+      'import.meta.env.GIT_HASH': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA?.slice(0, 7) || getGitHash())
     }
   }
 })
 
 const getGitHash = () => {
-  const hash = process.env.COMMIT_HASH || process.env.CF_PAGES_COMMIT_SHA;
-  if (hash) {
-    return hash.slice(0, 7);
+  if (process.env.CF_PAGES_COMMIT_SHA) {
+    return process.env.CF_PAGES_COMMIT_SHA.slice(0, 7);
   }
 
   try {
     return execSync("git rev-parse --short HEAD").toString().trim()
-  } catch {
+  } catch (e) {
+    console.log('Git command failed:', e);
     return "unknown"
   }
 }
