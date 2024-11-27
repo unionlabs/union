@@ -8,6 +8,7 @@ members = [
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
+  "cosmwasm/multicall",
 
   "cosmwasm/union-ibc/core",
   "cosmwasm/union-ibc/core/msg",
