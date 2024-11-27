@@ -51,9 +51,8 @@ export default defineConfig(config => {
     test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
     define: {
       'import.meta.env.VERSION': JSON.stringify(pkg.version),
-      'import.meta.env.GIT_HASH': JSON.stringify(getGitHash()),
-      '__COMMIT_HASH__': JSON.stringify(process.env.COMMIT_HASH || 'undefined'),
-      '__CF_PAGES_COMMIT_SHA__': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA || 'undefined')
+      'import.meta.env.COMMIT_HASH': JSON.stringify(process.env.COMMIT_HASH || 'undefined'),
+      'import.meta.env.CF_PAGES_COMMIT_SHA': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA || 'undefined')
     }
   }
 })
