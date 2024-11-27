@@ -46,6 +46,10 @@ export default defineConfig(config => {
       port: Number(PORT)
     },
     experimental: {},
-    test: { include: ["src/**/*.{test,spec}.{js,ts}"] }
+    test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
+    define: {
+      'import.meta.env.VERSION': JSON.stringify(pkg.version),
+      'import.meta.env.GIT_HASH': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA?.slice(0, 7) || 'Development')
+    }
   }
 })
