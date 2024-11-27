@@ -19,6 +19,7 @@ concurrency:
 env:
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
+  CF_PAGES_COMMIT_SHA: ${{ github.sha }}
 
 jobs:
   deploy-preview:
@@ -29,6 +30,7 @@ jobs:
     env:
       npm_config_yes: true
       ENVIRONMENT: 'preview'
+      CF_PAGES_COMMIT_SHA: ${{ github.sha }}
     environment: 'app-preview'
     if: github.event_name == 'pull_request'
     steps:
