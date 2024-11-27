@@ -50,20 +50,23 @@ export default defineConfig(config => {
     experimental: {},
     test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
     define: {
-      "import.meta.env.VERSION": JSON.stringify(pkg.version),
-      "import.meta.env.GIT_HASH": JSON.stringify(getGitHash())
+      'import.meta.env.VERSION': JSON.stringify(pkg.version),
+      'import.meta.env.GIT_HASH': JSON.stringify(getGitHash()),
+      '__COMMIT_HASH__': JSON.stringify(process.env.COMMIT_HASH || 'undefined'),
+      '__CF_PAGES_COMMIT_SHA__': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA || 'undefined')
     }
   }
 })
 
 const getGitHash = () => {
-  if (process.env.CF_PAGES_COMMIT_SHA) {
-    return process.env.CF_PAGES_COMMIT_SHA.slice(0, 7);
+  const hash = process.env.COMMIT_HASH || process.env.CF_PAGES_COMMIT_SHA;
+  if (hash) {
+    return hash.slice(0, 7);
   }
+
   try {
-    const { execSync } = require('child_process');
-    return execSync('git rev-parse --short HEAD').toString().trim();
+    return execSync("git rev-parse --short HEAD").toString().trim()
   } catch {
-    return 'unknown';
+    return "unknown"
   }
-};
+}
