@@ -4,6 +4,7 @@ import { sveltekit } from "@sveltejs/kit/vite"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
+import pkg from './package.json' assert { type: 'json' }
 
 export default defineConfig(config => {
   const {
