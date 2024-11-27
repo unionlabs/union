@@ -57,9 +57,13 @@ export default defineConfig(config => {
 })
 
 const getGitHash = () => {
-  try {
-    return execSync("git rev-parse --short HEAD").toString().trim()
-  } catch {
-    return "unknown"
+  if (process.env.CF_PAGES_COMMIT_SHA) {
+    return process.env.CF_PAGES_COMMIT_SHA.slice(0, 7);
   }
-}
+  try {
+    const { execSync } = require('child_process');
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+};
