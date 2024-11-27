@@ -19,6 +19,7 @@ import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { onMount } from "svelte"
+import { appInfo } from "$lib/version.ts"
 
 let buttonText: string
 
@@ -125,46 +126,52 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
     />
-    <div class="flex items-center space-x-2">
-      <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
-      <Label for="unsupported-assets">Show unverified assets</Label>
-    </div>
-    <div class="mt-auto flex justify-between">
-      <div class="flex items-center space-x-2">
-        <Switch bind:checked={$crtEffectEnabled} id="crt-effect-enabled" />
-        <Label for="unsupported-assets">CRT effect</Label>
+    <div class="flex flex-col gap-4 mt-auto">
+      <div class="text-sm">
+        <p>Version: {appInfo.version}</p>
+        <p>Hash: {appInfo.gitHash}</p>
       </div>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button
-            builders={[builder]}
-            variant="default"
-            size="icon"
-            class="hover:text-black hover:bg-accent"
-          >
-            <Sun
-              class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-            />
-            <Moon
-              class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-            />
-            <span class="sr-only">Toggle theme</span>
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
-          <DropdownMenu.Group>
-            <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
-              System
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
-              Dark
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
-              Light
-            </DropdownMenu.Item>
-          </DropdownMenu.Group>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <div class="flex items-center space-x-2">
+        <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
+        <Label for="unsupported-assets">Show unverified assets</Label>
+      </div>
+      <div class="flex justify-between">
+        <div class="flex items-center space-x-2">
+          <Switch bind:checked={$crtEffectEnabled} id="crt-effect-enabled" />
+          <Label for="unsupported-assets">CRT effect</Label>
+        </div>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild let:builder>
+            <Button
+                    builders={[builder]}
+                    variant="default"
+                    size="icon"
+                    class="hover:text-black hover:bg-accent"
+            >
+              <Sun
+                      class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+              />
+              <Moon
+                      class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+              />
+              <span class="sr-only">Toggle theme</span>
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
+            <DropdownMenu.Group>
+              <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
+                System
+              </DropdownMenu.Item>
+              <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
+                Dark
+              </DropdownMenu.Item>
+              <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
+                Light
+              </DropdownMenu.Item>
+            </DropdownMenu.Group>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
     </div>
   </Sheet.Content>
 </Sheet.Root>

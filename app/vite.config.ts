@@ -4,6 +4,8 @@ import { sveltekit } from "@sveltejs/kit/vite"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
+import { execSync } from "node:child_process"
+import pkg from "./package.json"
 
 export default defineConfig(config => {
   const {
@@ -46,6 +48,18 @@ export default defineConfig(config => {
       port: Number(PORT)
     },
     experimental: {},
-    test: { include: ["src/**/*.{test,spec}.{js,ts}"] }
+    test: { include: ["src/**/*.{test,spec}.{js,ts}"] },
+    define: {
+      "import.meta.env.VERSION": JSON.stringify(pkg.version),
+      "import.meta.env.GIT_HASH": JSON.stringify(getGitHash())
+    }
   }
 })
+
+const getGitHash = () => {
+  try {
+    return execSync("git rev-parse --short HEAD").toString().trim()
+  } catch {
+    return "unknown"
+  }
+}
