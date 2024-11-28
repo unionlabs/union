@@ -466,9 +466,11 @@ _: {
                    'contracts/Multicall.sol' \
                    'contracts/clients/Verifier.sol' \
                    'contracts/apps/ucs/00-pingpong/*' \
+                   'contracts/lib/*' \
                    'contracts/core/OwnableIBCHandler.sol' \
                    'contracts/core/24-host/IBCCommitment.sol' \
                    'contracts/core/25-handler/IBCHandler.sol' \
+                   'contracts/clients/ICS23MembershipVerifier.sol' \
                    'tests/*'
                  genhtml lcov.info.pruned -o $out --branch-coverage
                mv lcov.info.pruned $out/lcov.info
@@ -519,7 +521,7 @@ _: {
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
-              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvvv --match-path evm/tests/src/05-app/Relay.t.sol --gas-report "$@"
+              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvvv --match-path evm/tests/src/02-client/CosmosInCosmosClient.t.sol --gas-report "$@"
             '';
           };
 
