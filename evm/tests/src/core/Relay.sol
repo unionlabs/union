@@ -4,10 +4,7 @@ import "../../../contracts/apps/ucs/01-relay/Relay.sol";
 import "../../../contracts/core/04-channel/IIBCPacket.sol";
 
 contract TestUCS01Relay is UCS01Relay {
-    constructor(
-        IIBCPacket _ibcHandler,
-        address admin
-    ) {
+    constructor(IIBCPacket _ibcHandler, address admin) {
         __Ownable_init(admin);
         // ibcHandler = _ibcHandler;
     }

@@ -9,8 +9,9 @@ import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
+
 contract MockIBCHandler {
-     function sendPacket(
+    function sendPacket(
         uint32 sourceChannel,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
@@ -23,7 +24,6 @@ contract MockIBCHandler {
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
         });
-        
     }
 }
 
@@ -35,8 +35,6 @@ contract MockERC20 is ERC20 {
     }
 }
 
-
-
 contract UCS01RelayTests is Test {
     UCS01Relay relay;
     MockIBCHandler handler; // Mock IBC handler
@@ -44,14 +42,17 @@ contract UCS01RelayTests is Test {
     address user = address(0x1234);
     address relayer = address(0x5678);
     address random_user = address(0x444444);
+
     error OwnableUnauthorizedAccount(address caller);
 
-
     error StringsInsufficientHexLength(uint256 value, uint256 length);
+
     bytes16 private constant HEX_DIGITS = "0123456789abcdef";
 
-
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+    function toHexString(
+        uint256 value,
+        uint256 length
+    ) internal pure returns (string memory) {
         uint256 localValue = value;
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
@@ -66,10 +67,11 @@ contract UCS01RelayTests is Test {
         return string(buffer);
     }
 
-    function toHexString(address addr) internal pure returns (string memory) {
+    function toHexString(
+        address addr
+    ) internal pure returns (string memory) {
         return toHexString(uint256(uint160(addr)), 20);
     }
-
 
     function setUp() public {
         // Deploy the mock IBC handler
@@ -102,7 +104,9 @@ contract UCS01RelayTests is Test {
         uint8 newDecimals = 6;
 
         vm.startPrank(admin);
-        relay.updateMetadata(IERC20Denom(denom), newName, newSymbol, newDecimals);
+        relay.updateMetadata(
+            IERC20Denom(denom), newName, newSymbol, newDecimals
+        );
         vm.stopPrank();
 
         ERC20Denom updatedDenom = ERC20Denom(denom);
@@ -147,8 +151,12 @@ contract UCS01RelayTests is Test {
 
         // Attempt to call `updateMetadata` from a non-owner account
         vm.startPrank(user); // Set `user` as the caller
-    vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, user));
-        relay.updateMetadata(IERC20Denom(denom), newName, newSymbol, newDecimals);
+        vm.expectRevert(
+            abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, user)
+        );
+        relay.updateMetadata(
+            IERC20Denom(denom), newName, newSymbol, newDecimals
+        );
         vm.stopPrank();
     }
 
@@ -160,11 +168,8 @@ contract UCS01RelayTests is Test {
         // Mint tokens for the sender
         token.mint(user, 1000 ether);
 
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: 500 ether,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: 500 ether, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
@@ -183,32 +188,29 @@ contract UCS01RelayTests is Test {
         MockERC20 token = new MockERC20("TestToken", "TTKN");
 
         // Prepare a LocalToken with an invalid amount (0)
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: 0,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: 0, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
 
         // Attempt to call `send` with an invalid amount
         vm.startPrank(user);
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidAmount.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrInvalidAmount.selector)
+        );
         relay.send(1, abi.encodePacked(relayer), tokens, "", 0, 0);
         vm.stopPrank();
     }
+
     function test_sendToken_emitsSentEvent() public {
         MockERC20 token = new MockERC20("TestToken", "TTKN");
 
         // Mint tokens for the sender
         token.mint(user, 1000 ether);
 
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: 500 ether,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: 500 ether, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
@@ -281,11 +283,8 @@ contract UCS01RelayTests is Test {
         // Mint tokens for the sender
         token.mint(user, 1000 ether);
 
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: 500 ether,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: 500 ether, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
@@ -303,11 +302,8 @@ contract UCS01RelayTests is Test {
     function increase_outstanding(MockERC20 token, uint128 amount) public {
         token.mint(user, amount * 2);
 
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: amount,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: amount, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
@@ -324,11 +320,8 @@ contract UCS01RelayTests is Test {
         // Mint tokens for the sender
         token.mint(user, 1000 ether);
 
-        LocalToken memory localToken = LocalToken({
-            denom: address(token),
-            amount: 500 ether,
-            fee: 0
-        });
+        LocalToken memory localToken =
+            LocalToken({denom: address(token), amount: 500 ether, fee: 0});
 
         LocalToken[] memory tokens = new LocalToken[](1);
         tokens[0] = localToken;
@@ -349,7 +342,9 @@ contract UCS01RelayTests is Test {
         string memory invalidVersion = "invalid-version";
 
         // Expect revert due to invalid version
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidProtocolVersion.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrInvalidProtocolVersion.selector)
+        );
         relay.onChanOpenInit(1, 1, invalidVersion, user);
         vm.stopPrank();
     }
@@ -360,11 +355,16 @@ contract UCS01RelayTests is Test {
         string memory invalidCounterpartyVersion = "invalid-version";
 
         // Expect revert due to invalid counterparty version
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector));
-        relay.onChanOpenTry(1, 1, 1, validVersion, invalidCounterpartyVersion, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RelayLib.ErrInvalidCounterpartyProtocolVersion.selector
+            )
+        );
+        relay.onChanOpenTry(
+            1, 1, 1, validVersion, invalidCounterpartyVersion, user
+        );
         vm.stopPrank();
     }
-
 
     function test_onChanOpenTry_invalidVersion_reverts_protocol() public {
         vm.startPrank(address(handler));
@@ -372,8 +372,12 @@ contract UCS01RelayTests is Test {
         string memory invalidCounterpartyVersion = "invalid-version";
 
         // Expect revert due to invalid counterparty version
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidProtocolVersion.selector));
-        relay.onChanOpenTry(1, 1, 1, validVersion, invalidCounterpartyVersion, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrInvalidProtocolVersion.selector)
+        );
+        relay.onChanOpenTry(
+            1, 1, 1, validVersion, invalidCounterpartyVersion, user
+        );
         vm.stopPrank();
     }
 
@@ -409,7 +413,6 @@ contract UCS01RelayTests is Test {
             })
         );
 
-
         // Prepare the IBCPacket for timeout
         IBCPacket memory ibcPacket = IBCPacket({
             sourceChannel: 1,
@@ -427,10 +430,17 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
 
         // Assert that the tokens were refunded
-        assertEq(token.balanceOf(user), 500 ether + extra_amount, "Tokens were not refunded correctly");
-        assertEq(token.balanceOf(address(relay)), extra_amount, "Relay contract still holds tokens");
+        assertEq(
+            token.balanceOf(user),
+            500 ether + extra_amount,
+            "Tokens were not refunded correctly"
+        );
+        assertEq(
+            token.balanceOf(address(relay)),
+            extra_amount,
+            "Relay contract still holds tokens"
+        );
     }
-
 
     function test_onTimeoutPacket_multipleTokens() public {
         MockERC20 token1 = new MockERC20("Token1", "TK1");
@@ -481,10 +491,26 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
 
         // Assert that the tokens were refunded
-        assertEq(token1.balanceOf(user), 300 ether + extra_amount_tok1, "Token1 was not refunded correctly");
-        assertEq(token2.balanceOf(user), 200 ether + extra_amount_tok2, "Token2 was not refunded correctly");
-        assertEq(token1.balanceOf(address(relay)), 0 ether + extra_amount_tok1, "Relay still holds Token1");
-        assertEq(token2.balanceOf(address(relay)), 0 ether + extra_amount_tok2, "Relay still holds Token2");
+        assertEq(
+            token1.balanceOf(user),
+            300 ether + extra_amount_tok1,
+            "Token1 was not refunded correctly"
+        );
+        assertEq(
+            token2.balanceOf(user),
+            200 ether + extra_amount_tok2,
+            "Token2 was not refunded correctly"
+        );
+        assertEq(
+            token1.balanceOf(address(relay)),
+            0 ether + extra_amount_tok1,
+            "Relay still holds Token1"
+        );
+        assertEq(
+            token2.balanceOf(address(relay)),
+            0 ether + extra_amount_tok2,
+            "Relay still holds Token2"
+        );
     }
 
     function test_onRecvPacketProcessing_localTransfer_unauthorized() public {
@@ -496,12 +522,9 @@ contract UCS01RelayTests is Test {
         // Prepare a local token for the RelayPacket
         Token[] memory tokens = new Token[](1);
         string memory prefix = RelayLib.makeDenomPrefix(1);
-        string memory denom_str = string(abi.encodePacked(prefix, toHexString(address(token))));
-        tokens[0] = Token({
-            denom: denom_str,
-            amount: 500 ether,
-            fee: 50 ether
-        });
+        string memory denom_str =
+            string(abi.encodePacked(prefix, toHexString(address(token))));
+        tokens[0] = Token({denom: denom_str, amount: 500 ether, fee: 50 ether});
 
         // Encode the RelayPacket
         RelayPacket memory packet = RelayPacket({
@@ -522,7 +545,9 @@ contract UCS01RelayTests is Test {
 
         // Simulate packet processing
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrUnauthorized.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrUnauthorized.selector)
+        );
         relay.onRecvPacketProcessing(ibcPacket, address(relayer));
         vm.stopPrank();
     }
@@ -536,12 +561,9 @@ contract UCS01RelayTests is Test {
         // Prepare a local token for the RelayPacket
         Token[] memory tokens = new Token[](1);
         string memory prefix = RelayLib.makeDenomPrefix(1);
-        string memory denom_str = string(abi.encodePacked(prefix, toHexString(address(token))));
-        tokens[0] = Token({
-            denom: denom_str,
-            amount: 450 ether,
-            fee: 0
-        });
+        string memory denom_str =
+            string(abi.encodePacked(prefix, toHexString(address(token))));
+        tokens[0] = Token({denom: denom_str, amount: 450 ether, fee: 0});
 
         // Encode the RelayPacket
         RelayPacket memory packet = RelayPacket({
@@ -568,7 +590,11 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
 
         // Assertions
-        assertEq(token.balanceOf(random_user), 450 ether, "Relayer did not receive the correct amount");
+        assertEq(
+            token.balanceOf(random_user),
+            450 ether,
+            "Relayer did not receive the correct amount"
+        );
     }
 
     function test_onRecvPacketProcessing_remoteTransfer() public {
@@ -577,11 +603,7 @@ contract UCS01RelayTests is Test {
         // Prepare a remote-origin token for the RelayPacket
         Token[] memory tokens = new Token[](1);
         string memory denom_str = toHexString(address(token));
-        tokens[0] = Token({
-            denom: denom_str,
-            amount: 450 ether,
-            fee: 0
-        });
+        tokens[0] = Token({denom: denom_str, amount: 450 ether, fee: 0});
 
         // Encode the RelayPacket
         RelayPacket memory packet = RelayPacket({
@@ -606,12 +628,14 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
 
         // Assertions
-        string memory created_denom = RelayLib.makeForeignDenom(
-            1, denom_str
-        );
+        string memory created_denom = RelayLib.makeForeignDenom(1, denom_str);
         address denomAddress = relay.getDenomAddress(1, created_denom);
 
-        assertEq(IERC20(denomAddress).balanceOf(random_user), 450 ether, "Random user did not receive the correct amount");
+        assertEq(
+            IERC20(denomAddress).balanceOf(random_user),
+            450 ether,
+            "Random user did not receive the correct amount"
+        );
     }
 
     function test_onAcknowledgementPacket_success() public {
@@ -620,12 +644,9 @@ contract UCS01RelayTests is Test {
         // Prepare a RelayPacket
         Token[] memory tokens = new Token[](1);
         string memory prefix = RelayLib.makeDenomPrefix(1);
-        string memory denom_str = string(abi.encodePacked(prefix, toHexString(address(token))));
-        tokens[0] = Token({
-            denom: denom_str,
-            amount: 500 ether,
-            fee: 0
-        });
+        string memory denom_str =
+            string(abi.encodePacked(prefix, toHexString(address(token))));
+        tokens[0] = Token({denom: denom_str, amount: 500 ether, fee: 0});
 
         RelayPacket memory packet = RelayPacket({
             sender: abi.encodePacked(user),
@@ -651,7 +672,9 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
 
         // Assert that nothing is refunded since it's a success
-        assertEq(token.balanceOf(address(relay)), 0, "Tokens should not be refunded");
+        assertEq(
+            token.balanceOf(address(relay)), 0, "Tokens should not be refunded"
+        );
     }
 
     function test_onAcknowledgementPacket_invalidAck_reverts() public {
@@ -668,7 +691,9 @@ contract UCS01RelayTests is Test {
         bytes memory invalidAck = hex"02";
 
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidAcknowledgement.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrInvalidAcknowledgement.selector)
+        );
         relay.onAcknowledgementPacket(ibcPacket, invalidAck, address(relayer));
         vm.stopPrank();
     }
@@ -688,21 +713,29 @@ contract UCS01RelayTests is Test {
         string memory invalidVersion = "invalid-version";
 
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RelayLib.ErrInvalidCounterpartyProtocolVersion.selector
+            )
+        );
         relay.onChanOpenAck(1, 1, invalidVersion, address(0));
         vm.stopPrank();
     }
 
     function test_onChanCloseInit_reverts() public {
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrUnstoppable.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrUnstoppable.selector)
+        );
         relay.onChanCloseInit(1, address(0));
         vm.stopPrank();
     }
 
     function test_onChanCloseConfirm_reverts() public {
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(RelayLib.ErrUnstoppable.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RelayLib.ErrUnstoppable.selector)
+        );
         relay.onChanCloseConfirm(1, address(0));
         vm.stopPrank();
     }
@@ -714,17 +747,22 @@ contract UCS01RelayTests is Test {
         vm.stopPrank();
     }
 
-
     function test_onRecvIntentPacket() public {
         vm.startPrank(address(handler));
-        vm.expectRevert(abi.encodeWithSelector(IBCAppLib.ErrNotImplemented.selector));
-        relay.onRecvIntentPacket(IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
-            data: bytes(""),
-            timeoutHeight: 0,
-            timeoutTimestamp: 0
-        }), address(0), bytes(""));
+        vm.expectRevert(
+            abi.encodeWithSelector(IBCAppLib.ErrNotImplemented.selector)
+        );
+        relay.onRecvIntentPacket(
+            IBCPacket({
+                sourceChannel: 1,
+                destinationChannel: 1,
+                data: bytes(""),
+                timeoutHeight: 0,
+                timeoutTimestamp: 0
+            }),
+            address(0),
+            bytes("")
+        );
         vm.stopPrank();
     }
 }

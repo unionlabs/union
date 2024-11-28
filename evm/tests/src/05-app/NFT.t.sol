@@ -7,7 +7,7 @@ import "@openzeppelin/token/ERC721/ERC721.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockIBCHandler {
-     function sendPacket(
+    function sendPacket(
         uint32 sourceChannel,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
@@ -25,15 +25,18 @@ contract MockIBCHandler {
 
 // Mock ERC721 contract
 contract MockERC721 is ERC721 {
-    constructor(string memory name, string memory symbol)
-        ERC721(name, symbol)
-    {}
+    constructor(
+        string memory name,
+        string memory symbol
+    ) ERC721(name, symbol) {}
 
     function mint(address to, uint256 tokenId) external {
         _mint(to, tokenId);
     }
 
-    function burn(uint256 tokenId) external {
+    function burn(
+        uint256 tokenId
+    ) external {
         _burn(tokenId);
     }
 }
@@ -45,12 +48,17 @@ contract UCS02NFTTests is Test {
     address user = address(0x1234);
     address relayer = address(0x5678);
     address randomUser = address(0x9999);
+
     error StringsInsufficientHexLength(uint256 value, uint256 length);
+
     bytes16 private constant HEX_DIGITS = "0123456789abcdef";
 
     event mymsg(string data, uint256 data1);
 
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+    function toHexString(
+        uint256 value,
+        uint256 length
+    ) internal pure returns (string memory) {
         uint256 localValue = value;
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
@@ -65,10 +73,11 @@ contract UCS02NFTTests is Test {
         return string(buffer);
     }
 
-    function toHexString(address addr) internal pure returns (string memory) {
+    function toHexString(
+        address addr
+    ) internal pure returns (string memory) {
         return toHexString(uint256(uint160(addr)), 20);
     }
-
 
     function setUp() public {
         // Deploy the mock IBC handler
@@ -92,7 +101,11 @@ contract UCS02NFTTests is Test {
     }
 
     function test_initialize() public {
-        assertEq(ucs02NFT.ibcAddress(), address(mockIBCHandler), "IBC Handler mismatch");
+        assertEq(
+            ucs02NFT.ibcAddress(),
+            address(mockIBCHandler),
+            "IBC Handler mismatch"
+        );
         assertEq(ucs02NFT.owner(), admin, "Admin mismatch");
     }
 
@@ -114,8 +127,12 @@ contract UCS02NFTTests is Test {
         vm.stopPrank();
 
         // Verify tokens are transferred to the UCS02NFT contract
-        assertEq(mockERC721.ownerOf(1), address(ucs02NFT), "Token 1 not transferred");
-        assertEq(mockERC721.ownerOf(2), address(ucs02NFT), "Token 2 not transferred");
+        assertEq(
+            mockERC721.ownerOf(1), address(ucs02NFT), "Token 1 not transferred"
+        );
+        assertEq(
+            mockERC721.ownerOf(2), address(ucs02NFT), "Token 2 not transferred"
+        );
     }
 
     function test_sendRemoteNative() public {
@@ -240,13 +257,15 @@ contract UCS02NFTTests is Test {
         vm.stopPrank();
 
         // Verify refund
-        MockERC721 new_erc721 = MockERC721(0x4f81992FCe2E1846dD528eC0102e6eE1f61ed3e2);
+        MockERC721 new_erc721 =
+            MockERC721(0x4f81992FCe2E1846dD528eC0102e6eE1f61ed3e2);
         assertEq(new_erc721.ownerOf(3), user, "Token 3 not refunded correctly");
         assertEq(new_erc721.ownerOf(4), user, "Token 4 not refunded correctly");
     }
 
-
-    function test_onAcknowledgementPacket_refund_MustTransferAtLeastOneToken() public {
+    function test_onAcknowledgementPacket_refund_MustTransferAtLeastOneToken()
+        public
+    {
         MockERC721 mockERC721 = new MockERC721("TestNFT", "TNFT");
 
         mockERC721.mint(user, 1);
@@ -256,7 +275,9 @@ contract UCS02NFTTests is Test {
 
         vm.startPrank(user);
         mockERC721.setApprovalForAll(address(ucs02NFT), true);
-        vm.expectRevert(abi.encodeWithSelector(NFTLib.MustTransferAtLeastOneToken.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(NFTLib.MustTransferAtLeastOneToken.selector)
+        );
         ucs02NFT.send(1, "receiver_address", address(mockERC721), tokenIds, 0);
         vm.stopPrank();
     }
@@ -287,7 +308,7 @@ contract UCS02NFTTests is Test {
                         className: "TestNFT",
                         classSymbol: "TNFT",
                         tokenIds: tokenIds,
-                        tokenUris: tokenUris ,
+                        tokenUris: tokenUris,
                         sender: toHexString(user),
                         receiver: "receiver_address",
                         memo: ""
@@ -317,7 +338,11 @@ contract UCS02NFTTests is Test {
         string memory invalidVersion = "invalid-version";
 
         vm.startPrank(address(mockIBCHandler));
-        vm.expectRevert(abi.encodeWithSelector(NFTLib.ErrInvalidCounterpartyProtocolVersion.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NFTLib.ErrInvalidCounterpartyProtocolVersion.selector
+            )
+        );
         ucs02NFT.onChanOpenAck(1, 1, invalidVersion, address(0));
         vm.stopPrank();
     }
@@ -343,18 +368,22 @@ contract UCS02NFTTests is Test {
         vm.stopPrank();
     }
 
-
     function test_onChanOpenTry_invalidVersion_reverts() public {
         vm.startPrank(address(mockIBCHandler));
         string memory validVersion = "ucs02-nft-1";
         string memory invalidCounterpartyVersion = "invalid-version";
 
         // Expect revert due to invalid counterparty version
-        vm.expectRevert(abi.encodeWithSelector(NFTLib.ErrInvalidCounterpartyProtocolVersion.selector));
-        ucs02NFT.onChanOpenTry(1, 1, 1, validVersion, invalidCounterpartyVersion, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NFTLib.ErrInvalidCounterpartyProtocolVersion.selector
+            )
+        );
+        ucs02NFT.onChanOpenTry(
+            1, 1, 1, validVersion, invalidCounterpartyVersion, user
+        );
         vm.stopPrank();
     }
-
 
     function test_onChanOpenTry_invalidVersion_reverts_protocol() public {
         vm.startPrank(address(mockIBCHandler));
@@ -362,10 +391,12 @@ contract UCS02NFTTests is Test {
         string memory invalidCounterpartyVersion = "invalid-version";
 
         // Expect revert due to invalid counterparty version
-        vm.expectRevert(abi.encodeWithSelector(NFTLib.ErrInvalidProtocolVersion.selector));
-        ucs02NFT.onChanOpenTry(1, 1, 1, validVersion, invalidCounterpartyVersion, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(NFTLib.ErrInvalidProtocolVersion.selector)
+        );
+        ucs02NFT.onChanOpenTry(
+            1, 1, 1, validVersion, invalidCounterpartyVersion, user
+        );
         vm.stopPrank();
     }
-
-
 }

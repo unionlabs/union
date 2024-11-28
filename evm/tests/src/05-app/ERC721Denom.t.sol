@@ -9,7 +9,9 @@ contract ERC721DenomTests is Test {
     address admin = address(0xABcD);
     address user = address(0x1234);
     address randomUser = address(0x5678);
+
     error ERC721NonexistentToken(uint256 token);
+
     function setUp() public {
         // Deploy the ERC721Denom contract
         vm.startPrank(admin); // Set admin as the sender for deployment
@@ -37,7 +39,9 @@ contract ERC721DenomTests is Test {
 
         // Attempt to mint from a non-admin address
         vm.startPrank(randomUser);
-        vm.expectRevert(abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector)
+        );
         erc721Denom.mint(user, tokenId, tokenURI);
         vm.stopPrank();
     }
@@ -58,7 +62,9 @@ contract ERC721DenomTests is Test {
         vm.stopPrank();
 
         // Verify that the token no longer exists
-        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, tokenId));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721NonexistentToken.selector, tokenId)
+        );
         erc721Denom.ownerOf(tokenId);
     }
 
@@ -73,7 +79,9 @@ contract ERC721DenomTests is Test {
 
         // Attempt to burn from a non-admin address
         vm.startPrank(randomUser);
-        vm.expectRevert(abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector)
+        );
         erc721Denom.burn(tokenId);
         vm.stopPrank();
     }
@@ -85,7 +93,9 @@ contract ERC721DenomTests is Test {
 
         // Unauthorized user tries to mint
         vm.startPrank(user);
-        vm.expectRevert(abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector)
+        );
         erc721Denom.mint(user, tokenId, tokenURI);
         vm.stopPrank();
 
@@ -96,7 +106,9 @@ contract ERC721DenomTests is Test {
 
         // Unauthorized user tries to burn
         vm.startPrank(randomUser);
-        vm.expectRevert(abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC721Denom.ERC721Unauthorized.selector)
+        );
         erc721Denom.burn(tokenId);
         vm.stopPrank();
     }

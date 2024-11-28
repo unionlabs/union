@@ -14,7 +14,9 @@ import "solidity-bytes-utils/BytesLib.sol";
 contract MockCometblsClient is CometblsClient {
     bool private zkpVerificationResult = true;
 
-    function setZKPVerificationResult(bool result) external {
+    function setZKPVerificationResult(
+        bool result
+    ) external {
         zkpVerificationResult = result;
     }
 
@@ -27,8 +29,8 @@ contract MockCometblsClient is CometblsClient {
         // You can add additional logic to inspect the inputs if needed
         return zkpVerificationResult;
     }
-
 }
+
 contract CometblsClientTest is Test {
     MockCometblsClient cometblsClient;
     address admin = address(0xABcD);
@@ -42,9 +44,7 @@ contract CometblsClientTest is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                CometblsClient.initialize.selector,
-                ibcHandler,
-                admin
+                CometblsClient.initialize.selector, ibcHandler, admin
             )
         );
 
@@ -67,7 +67,7 @@ contract CometblsClientTest is Test {
         ClientState memory clientState = ClientState({
             chainId: bytes31("test-chain"),
             trustingPeriod: 86400, // 1 day in seconds
-            maxClockDrift: 300,   // 5 minutes
+            maxClockDrift: 300, // 5 minutes
             frozenHeight: 0,
             latestHeight: 100,
             contractAddress: keccak256("test")
@@ -83,18 +83,32 @@ contract CometblsClientTest is Test {
         bytes memory consensusStateBytes = abi.encode(consensusState);
 
         vm.prank(ibcHandler); // Simulate call from the IBC handler
-        cometblsClient.createClient(clientId, clientStateBytes, consensusStateBytes);
+        cometblsClient.createClient(
+            clientId, clientStateBytes, consensusStateBytes
+        );
 
         // Verify the client state was stored
         bytes memory storedClientState = cometblsClient.getClientState(clientId);
-        assertEq(keccak256(storedClientState), keccak256(clientStateBytes), "Client state mismatch");
+        assertEq(
+            keccak256(storedClientState),
+            keccak256(clientStateBytes),
+            "Client state mismatch"
+        );
 
         // Verify the consensus state was stored
-        bytes memory storedConsensusState = cometblsClient.getConsensusState(clientId, 100);
-        assertEq(keccak256(storedConsensusState), keccak256(consensusStateBytes), "Consensus state mismatch");
+        bytes memory storedConsensusState =
+            cometblsClient.getConsensusState(clientId, 100);
+        assertEq(
+            keccak256(storedConsensusState),
+            keccak256(consensusStateBytes),
+            "Consensus state mismatch"
+        );
     }
 
-    function misbehaviour_common(uint256 vm_warp, uint64 trustingPeriod) public {
+    function misbehaviour_common(
+        uint256 vm_warp,
+        uint64 trustingPeriod
+    ) public {
         uint32 clientId = 1;
 
         vm.warp(vm_warp);
@@ -119,15 +133,18 @@ contract CometblsClientTest is Test {
         bytes memory consensusStateBytes = abi.encode(consensusState);
 
         vm.prank(ibcHandler);
-        cometblsClient.createClient(clientId, clientStateBytes, consensusStateBytes);
+        cometblsClient.createClient(
+            clientId, clientStateBytes, consensusStateBytes
+        );
         vm.stopPrank();
         clientState.latestHeight = 100;
         clientStateBytes = abi.encode(clientState);
         vm.prank(ibcHandler);
-        cometblsClient.createClient(clientId, clientStateBytes, consensusStateBytes);
+        cometblsClient.createClient(
+            clientId, clientStateBytes, consensusStateBytes
+        );
         vm.stopPrank();
     }
-
 
     function test_misbehaviour_freezesClient() public {
         misbehaviour_common(1000000, 8640000000000000000);
@@ -164,13 +181,12 @@ contract CometblsClientTest is Test {
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
 
-
         // Verify the client is frozen
         bytes memory storedClientState = cometblsClient.getClientState(clientId);
-        ClientState memory frozenState = abi.decode(storedClientState, (ClientState));
+        ClientState memory frozenState =
+            abi.decode(storedClientState, (ClientState));
         assertEq(frozenState.frozenHeight, 1, "Client was not frozen");
     }
-
 
     function test_misbehaviour_freezesClient_fraud() public {
         misbehaviour_common(1000000, 8640000000000000000);
@@ -193,7 +209,7 @@ contract CometblsClientTest is Test {
         Header memory headerB = Header({
             signedHeader: SignedHeader({
                 height: 100,
-                secs: uint64(block.timestamp-1),
+                secs: uint64(block.timestamp - 1),
                 nanos: 0,
                 validatorsHash: keccak256("validatorsA"),
                 nextValidatorsHash: keccak256("validatorsB"),
@@ -203,9 +219,12 @@ contract CometblsClientTest is Test {
             zeroKnowledgeProof: bytes("proofA")
         });
 
-
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidMisbehaviour.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrInvalidMisbehaviour.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
@@ -241,9 +260,12 @@ contract CometblsClientTest is Test {
             zeroKnowledgeProof: bytes("proofA")
         });
 
-
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidMisbehaviour.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrInvalidMisbehaviour.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
@@ -269,7 +291,7 @@ contract CometblsClientTest is Test {
         Header memory headerB = Header({
             signedHeader: SignedHeader({
                 height: 100,
-                secs: uint64(block.timestamp-1),
+                secs: uint64(block.timestamp - 1),
                 nanos: 0,
                 validatorsHash: keccak256("validatorsA"),
                 nextValidatorsHash: keccak256("validatorsB"),
@@ -279,9 +301,12 @@ contract CometblsClientTest is Test {
             zeroKnowledgeProof: bytes("proofA")
         });
 
-
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
@@ -291,8 +316,8 @@ contract CometblsClientTest is Test {
     //     misbehaviour_common(0);
     // }
 
-    function test_misbehaviour_freezesClient_ErrInvalidMisbehaviourHeadersSequence() public {
-
+    function test_misbehaviour_freezesClient_ErrInvalidMisbehaviourHeadersSequence(
+    ) public {
         misbehaviour_common(1000000, 8640000000000000000);
         uint32 clientId = 1;
 
@@ -323,14 +348,18 @@ contract CometblsClientTest is Test {
             zeroKnowledgeProof: bytes("proofA")
         });
 
-
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrUntrustedHeightLTETrustedHeight() public {
+    function test_misbehaviour_freezesClient_ErrUntrustedHeightLTETrustedHeight(
+    ) public {
         misbehaviour_common(1000000, 8640000000000000000);
         uint32 clientId = 1;
 
@@ -361,14 +390,18 @@ contract CometblsClientTest is Test {
             zeroKnowledgeProof: bytes("proofA")
         });
 
-
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrUntrustedHeightLTETrustedHeight.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrUntrustedHeightLTETrustedHeight.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrUntrustedTimestampLTETrustedTimestamp() public {
+    function test_misbehaviour_freezesClient_ErrUntrustedTimestampLTETrustedTimestamp(
+    ) public {
         misbehaviour_common(1000000000000000, 0);
         uint32 clientId = 1;
 
@@ -400,7 +433,13 @@ contract CometblsClientTest is Test {
         });
 
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib
+                    .ErrUntrustedTimestampLTETrustedTimestamp
+                    .selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
@@ -437,13 +476,16 @@ contract CometblsClientTest is Test {
         });
 
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrHeaderExpired.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(CometblsClientLib.ErrHeaderExpired.selector)
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
 
-
-    function test_misbehaviour_freezesClient_ErrMaxClockDriftExceeded() public {
+    function test_misbehaviour_freezesClient_ErrMaxClockDriftExceeded()
+        public
+    {
         misbehaviour_common(1000000, 0);
         uint32 clientId = 1;
 
@@ -475,12 +517,18 @@ contract CometblsClientTest is Test {
         });
 
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrMaxClockDriftExceeded.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrMaxClockDriftExceeded.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrInvalidUntrustedValidatorsHash() public {
+    function test_misbehaviour_freezesClient_ErrInvalidUntrustedValidatorsHash()
+        public
+    {
         misbehaviour_common(1000000, 8640000000000000000);
         uint32 clientId = 1;
 
@@ -512,7 +560,11 @@ contract CometblsClientTest is Test {
         });
 
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidUntrustedValidatorsHash.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CometblsClientLib.ErrInvalidUntrustedValidatorsHash.selector
+            )
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
@@ -550,12 +602,12 @@ contract CometblsClientTest is Test {
 
         cometblsClient.setZKPVerificationResult(false);
         vm.prank(ibcHandler);
-        vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidZKP.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(CometblsClientLib.ErrInvalidZKP.selector)
+        );
         cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
         vm.stopPrank();
     }
-
-
 
     function encodeMemory(
         ConsensusState memory consensusState
@@ -580,13 +632,11 @@ contract CometblsClientTest is Test {
         );
     }
 
-
     function commit(
         ConsensusState memory consensusState
     ) internal pure returns (bytes32) {
         return keccak256(encodeMemory(consensusState));
     }
-
 
     function commit(
         ClientState memory clientState
@@ -627,22 +677,43 @@ contract CometblsClientTest is Test {
 
         // Step 5: Verify the updates
         // Ensure the latest height is updated
-        assertEq(cometblsClient.getLatestHeight(clientId), 101, "Latest height mismatch");
+        assertEq(
+            cometblsClient.getLatestHeight(clientId),
+            101,
+            "Latest height mismatch"
+        );
 
         // Ensure the consensus state is updated
-        bytes memory storedConsensusState = cometblsClient.getConsensusState(clientId, 101);
+        bytes memory storedConsensusState =
+            cometblsClient.getConsensusState(clientId, 101);
         ConsensusState memory updatedConsensusState =
             CometblsClientLib.decodeConsensusStateMemory(storedConsensusState);
 
-        assertEq(updatedConsensusState.timestamp, uint64((block.timestamp+1)*1e9), "Consensus state timestamp mismatch");
-        assertEq(updatedConsensusState.appHash, keccak256("newApp"), "Consensus state appHash mismatch");
-        assertEq(updatedConsensusState.nextValidatorsHash, keccak256("newValidators"), "Consensus state nextValidatorsHash mismatch");
+        assertEq(
+            updatedConsensusState.timestamp,
+            uint64((block.timestamp + 1) * 1e9),
+            "Consensus state timestamp mismatch"
+        );
+        assertEq(
+            updatedConsensusState.appHash,
+            keccak256("newApp"),
+            "Consensus state appHash mismatch"
+        );
+        assertEq(
+            updatedConsensusState.nextValidatorsHash,
+            keccak256("newValidators"),
+            "Consensus state nextValidatorsHash mismatch"
+        );
 
         // Ensure the commitments are correct
         bytes32 expectedClientStateCommitment = commit(clientState);
         bytes32 expectedConsensusStateCommitment = commit(updatedConsensusState);
 
-        assertEq(update.consensusStateCommitment, expectedConsensusStateCommitment, "Consensus state commitment mismatch");
+        assertEq(
+            update.consensusStateCommitment,
+            expectedConsensusStateCommitment,
+            "Consensus state commitment mismatch"
+        );
         assertEq(update.height, 100, "Height mismatch");
     }
 
@@ -655,6 +726,4 @@ contract CometblsClientTest is Test {
     ) public pure returns (bool) {
         return true;
     }
-
-
 }

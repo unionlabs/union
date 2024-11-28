@@ -11,7 +11,6 @@ import "@openzeppelin/token/ERC20/ERC20.sol";
 import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
-
 contract MockLightClient is ILightClient {
     bool isFrozenVar = false;
     bool globalVerifyMembership = true;
@@ -37,6 +36,7 @@ contract MockLightClient is ILightClient {
             height: 0
         });
     }
+
     function getClientState(
         uint32 clientId
     ) external view returns (bytes memory) {
@@ -89,26 +89,36 @@ contract MockLightClient is ILightClient {
         return isFrozenVar;
     }
 
-    function setIsFrozenReturn(bool isFrozen) public {
+    function setIsFrozenReturn(
+        bool isFrozen
+    ) public {
         isFrozenVar = isFrozen;
     }
 
-    function setVerifyMembership(bool verify_membership) public {
+    function setVerifyMembership(
+        bool verify_membership
+    ) public {
         globalVerifyMembership = verify_membership;
     }
 
     function misbehaviour(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external { }
+    ) external {}
 }
 
 contract MockIbcStore {
     address public client;
-    function getClient(uint32 clientId) external view returns (ILightClient) {
+
+    function getClient(
+        uint32 clientId
+    ) external view returns (ILightClient) {
         return ILightClient(client);
     }
-    function setClient(address _client) public {
+
+    function setClient(
+        address _client
+    ) public {
         client = _client;
     }
 }
@@ -116,7 +126,7 @@ contract MockIbcStore {
 contract CosmosInCosmosClientTest is Test {
     CosmosInCosmosClient client;
     address admin = address(0xABcD);
-    address ibcHandler;// = address(0x1234);
+    address ibcHandler; // = address(0x1234);
     MockIbcStore ibcStore;
     MockLightClient lightClient;
 
@@ -128,9 +138,7 @@ contract CosmosInCosmosClientTest is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                CosmosInCosmosClient.initialize.selector,
-                ibcHandler,
-                admin
+                CosmosInCosmosClient.initialize.selector, ibcHandler, admin
             )
         );
         client = CosmosInCosmosClient(address(proxy));
@@ -166,25 +174,36 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(ibcHandler); // Simulate call from the IBC handler
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
 
         // Verify client state
         bytes memory storedClientState = client.getClientState(clientId);
-        assertEq(keccak256(storedClientState), keccak256(clientStateBytes), "Client state mismatch");
+        assertEq(
+            keccak256(storedClientState),
+            keccak256(clientStateBytes),
+            "Client state mismatch"
+        );
         uint64 latestHeight = client.getLatestHeight(clientId);
-        assertEq(latestHeight, clientState.latestHeight, "Latest height mismatch");
+        assertEq(
+            latestHeight, clientState.latestHeight, "Latest height mismatch"
+        );
 
         // Verify consensus state
-        bytes memory storedConsensusState = client.getConsensusState(clientId, 100);
-        assertEq(keccak256(storedConsensusState), keccak256(consensusStateBytes), "Consensus state mismatch");
+        bytes memory storedConsensusState =
+            client.getConsensusState(clientId, 100);
+        assertEq(
+            keccak256(storedConsensusState),
+            keccak256(consensusStateBytes),
+            "Consensus state mismatch"
+        );
         uint64 timestamp_at_height = client.getTimestampAtHeight(clientId, 100);
-        assertEq(timestamp_at_height, consensusState.timestamp, "Timestamp mismatch");
+        assertEq(
+            timestamp_at_height, consensusState.timestamp, "Timestamp mismatch"
+        );
     }
 
     function test_createClient_ErrInvalidInitialConsensusState() public {
@@ -210,18 +229,18 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(ibcHandler); // Simulate call from the IBC handler
-        vm.expectRevert(abi.encodeWithSelector(CosmosInCosmosLib.ErrInvalidInitialConsensusState.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CosmosInCosmosLib.ErrInvalidInitialConsensusState.selector
+            )
+        );
 
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
-
     }
-
 
     function test_updateClient_success() public {
         uint32 clientId = 1;
@@ -244,10 +263,8 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
@@ -257,11 +274,13 @@ contract CosmosInCosmosClientTest is Test {
             l1Height: 101,
             l2Height: 102,
             l2InclusionProof: bytes("proof"),
-            l2ConsensusState: abi.encode(TendermintConsensusState({
-                timestamp: uint64(block.timestamp + 1),
-                appHash: keccak256("newApp"),
-                nextValidatorsHash: keccak256("newValidators")
-            }))
+            l2ConsensusState: abi.encode(
+                TendermintConsensusState({
+                    timestamp: uint64(block.timestamp + 1),
+                    appHash: keccak256("newApp"),
+                    nextValidatorsHash: keccak256("newValidators")
+                })
+            )
         });
         bytes memory clientMessageBytes = abi.encode(
             header.l1Height,
@@ -273,21 +292,28 @@ contract CosmosInCosmosClientTest is Test {
         lightClient.setVerifyMembership(true);
         // Update client
         vm.prank(address(ibcHandler));
-        ConsensusStateUpdate memory update = client.updateClient(clientId, clientMessageBytes);
+        ConsensusStateUpdate memory update =
+            client.updateClient(clientId, clientMessageBytes);
 
         // // Verify updated consensus state
-        bytes memory updatedConsensusState = client.getConsensusState(clientId, 102);
+        bytes memory updatedConsensusState =
+            client.getConsensusState(clientId, 102);
 
         // Decode the updated consensus state
-        ConsensusState memory decodedConsensusState = abi.decode(
-            updatedConsensusState,
-            (ConsensusState)
+        ConsensusState memory decodedConsensusState =
+            abi.decode(updatedConsensusState, (ConsensusState));
+
+        assertEq(
+            decodedConsensusState.timestamp,
+            uint64(block.timestamp + 1),
+            "Consensus state timestamp mismatch"
         );
-
-        assertEq(decodedConsensusState.timestamp, uint64(block.timestamp + 1), "Consensus state timestamp mismatch");
-        assertEq(decodedConsensusState.appHash, keccak256("newApp"), "Consensus state appHash mismatch");
+        assertEq(
+            decodedConsensusState.appHash,
+            keccak256("newApp"),
+            "Consensus state appHash mismatch"
+        );
     }
-
 
     function test_updateClient_revert_invalid_proof() public {
         uint32 clientId = 1;
@@ -310,10 +336,8 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
@@ -323,11 +347,13 @@ contract CosmosInCosmosClientTest is Test {
             l1Height: 101,
             l2Height: 102,
             l2InclusionProof: bytes("proof"),
-            l2ConsensusState: abi.encode(TendermintConsensusState({
-                timestamp: uint64(block.timestamp + 1),
-                appHash: keccak256("newApp"),
-                nextValidatorsHash: keccak256("newValidators")
-            }))
+            l2ConsensusState: abi.encode(
+                TendermintConsensusState({
+                    timestamp: uint64(block.timestamp + 1),
+                    appHash: keccak256("newApp"),
+                    nextValidatorsHash: keccak256("newValidators")
+                })
+            )
         });
         bytes memory clientMessageBytes = abi.encode(
             header.l1Height,
@@ -339,13 +365,19 @@ contract CosmosInCosmosClientTest is Test {
         lightClient.setVerifyMembership(false);
         // Update client
         vm.prank(address(ibcHandler));
-        vm.expectRevert(abi.encodeWithSelector(CosmosInCosmosLib.ErrInvalidL1Proof.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(CosmosInCosmosLib.ErrInvalidL1Proof.selector)
+        );
         client.updateClient(clientId, clientMessageBytes);
     }
 
     function test_misbehavuour_error() public {
         vm.prank(ibcHandler); // Simulate call from the IBC handler
-        vm.expectRevert(abi.encodeWithSelector(CosmosInCosmosLib.ErrInvalidMisbehaviour.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CosmosInCosmosLib.ErrInvalidMisbehaviour.selector
+            )
+        );
         client.misbehaviour(1, bytes(""));
     }
 
@@ -370,10 +402,8 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
@@ -383,11 +413,13 @@ contract CosmosInCosmosClientTest is Test {
             l1Height: 101,
             l2Height: 102,
             l2InclusionProof: bytes("proof"),
-            l2ConsensusState: abi.encode(TendermintConsensusState({
-                timestamp: uint64(block.timestamp + 1),
-                appHash: keccak256("newApp"),
-                nextValidatorsHash: keccak256("newValidators")
-            }))
+            l2ConsensusState: abi.encode(
+                TendermintConsensusState({
+                    timestamp: uint64(block.timestamp + 1),
+                    appHash: keccak256("newApp"),
+                    nextValidatorsHash: keccak256("newValidators")
+                })
+            )
         });
         bytes memory clientMessageBytes = abi.encode(
             header.l1Height,
@@ -424,10 +456,8 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
@@ -437,11 +467,13 @@ contract CosmosInCosmosClientTest is Test {
             l1Height: 101,
             l2Height: 102,
             l2InclusionProof: bytes("proof"),
-            l2ConsensusState: abi.encode(TendermintConsensusState({
-                timestamp: uint64(block.timestamp + 1),
-                appHash: keccak256("newApp"),
-                nextValidatorsHash: keccak256("newValidators")
-            }))
+            l2ConsensusState: abi.encode(
+                TendermintConsensusState({
+                    timestamp: uint64(block.timestamp + 1),
+                    appHash: keccak256("newApp"),
+                    nextValidatorsHash: keccak256("newValidators")
+                })
+            )
         });
         bytes memory clientMessageBytes = abi.encode(
             header.l1Height,
@@ -453,10 +485,11 @@ contract CosmosInCosmosClientTest is Test {
         // Update client
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
-        vm.expectRevert(abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector)
+        );
         client.verifyMembership(1, 1, bytes(""), bytes(""), bytes(""));
     }
-
 
     function test_verifyNonMembershipIsFrozen() public {
         uint32 clientId = 1;
@@ -479,10 +512,8 @@ contract CosmosInCosmosClientTest is Test {
             timestamp: uint64(block.timestamp),
             appHash: keccak256("app")
         });
-        bytes memory consensusStateBytes = abi.encode(
-            consensusState.timestamp,
-            consensusState.appHash
-        );
+        bytes memory consensusStateBytes =
+            abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
         client.createClient(clientId, clientStateBytes, consensusStateBytes);
@@ -492,11 +523,13 @@ contract CosmosInCosmosClientTest is Test {
             l1Height: 101,
             l2Height: 102,
             l2InclusionProof: bytes("proof"),
-            l2ConsensusState: abi.encode(TendermintConsensusState({
-                timestamp: uint64(block.timestamp + 1),
-                appHash: keccak256("newApp"),
-                nextValidatorsHash: keccak256("newValidators")
-            }))
+            l2ConsensusState: abi.encode(
+                TendermintConsensusState({
+                    timestamp: uint64(block.timestamp + 1),
+                    appHash: keccak256("newApp"),
+                    nextValidatorsHash: keccak256("newValidators")
+                })
+            )
         });
         bytes memory clientMessageBytes = abi.encode(
             header.l1Height,
@@ -508,7 +541,9 @@ contract CosmosInCosmosClientTest is Test {
         // Update client
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
-        vm.expectRevert(abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector)
+        );
         client.verifyNonMembership(1, 1, bytes(""), bytes(""));
     }
 }

@@ -75,8 +75,6 @@ contract ERC20DenomTests is Test {
         assertEq(token.decimals(), newDecimals);
     }
 
-
-
     function test_update_revert_nonAdmin() public {
         string memory newName = "UpdatedName";
         string memory newSymbol = "UPD";
@@ -87,5 +85,4 @@ contract ERC20DenomTests is Test {
         token.update(newName, newSymbol, newDecimals);
         vm.stopPrank();
     }
-
 }
