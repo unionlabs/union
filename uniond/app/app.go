@@ -354,6 +354,9 @@ func NewUnionApp(
 	)
 	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
+	// set the version modifier
+	bApp.SetVersionModifier(consensus.ProvideAppVersionModifier(app.ConsensusParamsKeeper))
+
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(
 		appCodec,
