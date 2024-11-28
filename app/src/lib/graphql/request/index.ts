@@ -10,7 +10,7 @@ export async function graphqlRequest<T, V extends Variables = object>(
   document: RequestDocument | TypedDocumentNode<T, V>,
   ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
 ): Promise<T> {
-  const response = await fetch(URLS.GRAPHQL, {
+  const response = await fetch(URLS().GRAPHQL, {
     method: "POST",
     headers: {
       "X-Hasura-Role": "anon",

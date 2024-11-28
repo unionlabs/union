@@ -12,14 +12,14 @@ const packet = readFragment(packetDetailsFragment, packetDetails)
 export let chains: Array<Chain>
 
 const packetSourceDestination = {
-  source_chain_id: packet.source_chain_id,
-  source_connection_id: packet.source_connection_id,
-  source_channel_id: packet.source_channel_id,
-  source_sequence: packet.source_sequence,
-  destination_chain_id: packet.destination_chain_id,
-  destination_connection_id: packet.destination_connection_id,
-  destination_channel_id: packet.destination_channel_id,
-  destination_sequence: packet.destination_sequence
+  source_chain_id: packet.source_chain_id ?? "Undefined",
+  source_connection_id: packet.source_connection_id ?? "Undefined",
+  source_channel_id: packet.source_channel_id ?? "Undefined",
+  source_sequence: packet.source_sequence ?? "Undefined",
+  destination_chain_id: packet.destination_chain_id ?? "Undefined",
+  destination_connection_id: packet.destination_connection_id ?? "Undefined",
+  destination_channel_id: packet.destination_channel_id ?? "Undefined",
+  destination_sequence: packet.destination_sequence ?? "Undefined"
 }
 </script>  
 

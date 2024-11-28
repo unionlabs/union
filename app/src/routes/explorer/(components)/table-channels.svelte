@@ -18,14 +18,14 @@ let channels = createQuery({
   select: data =>
     data.v1_channels.map(channel => ({
       source_chain: {
-        chain_display_name: channel.source?.display_name,
+        chain_display_name: channel.destination_chain?.display_name ?? "unknown",
         chain_id: channel.source_chain_id ?? "unknown",
         connection_id: channel.destination_connection_id ?? "unknown",
         channel_id: channel.source_channel_id ?? "unknown",
         port_id: channel.source_port_id ?? "unknown"
       },
       destination_chain: {
-        chain_display_name: channel.destination?.display_name,
+        chain_display_name: channel.source_chain?.display_name ?? "unknown",
         chain_id: channel.destination_chain_id ?? "unknown",
         connection_id: channel.destination_connection_id ?? "unknown",
         channel_id: channel.destination_channel_id ?? "unknown",

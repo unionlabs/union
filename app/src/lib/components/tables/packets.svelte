@@ -1,9 +1,7 @@
 
 <script lang="ts">
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import type { Chain } from "$lib/types.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
 import CellSequence from "$lib/components/table-cells/cell-sequence.svelte"
 import { derived, type Readable } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"

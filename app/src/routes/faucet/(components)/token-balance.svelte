@@ -9,7 +9,7 @@ export let symbol: string
 
 let chain = chains.filter(c => c.chain_id === "union-testnet-8")
 $: userBalances = userBalancesQuery({
-  userAddr: { cosmos: userAddrCosmos, evm: null },
+  userAddr: { cosmos: userAddrCosmos, evm: null, aptos: null },
   chains: chain,
   connected: true
 })

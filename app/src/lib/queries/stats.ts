@@ -3,21 +3,40 @@ import { statsQueryDocument, transfersPerDayQueryDocument } from "$lib/graphql/q
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
+import type { QueryObserverResult } from "@tanstack/query-core"
+import type { Readable } from "svelte/store"
 
-export const statsQuery = () =>
+interface DailyTransfer {
+  count: number
+  day: string
+}
+
+interface Statistic {
+  name: string
+  value: number
+}
+
+export const statsQuery = (): Readable<QueryObserverResult<Array<Statistic>, Error>> =>
   createQuery({
     queryKey: ["stats"],
-    queryFn: async () => (await request(URLS().GRAPHQL, statsQueryDocument, {})).v1_statistics,
+    queryFn: async () => {
+      const response = await request(URLS().GRAPHQL, statsQueryDocument, {})
+      return response.v1_statistics
+    },
     enabled: true,
     refetchInterval: 5_000,
     refetchOnWindowFocus: false
   })
 
-export const transfersPerDayQuery = (limit: number) =>
+export const transfersPerDayQuery = (
+  limit: number
+): Readable<QueryObserverResult<Array<DailyTransfer>, Error>> =>
   createQuery({
     queryKey: ["transfer-per-day"],
-    queryFn: async () =>
-      (await request(URLS().GRAPHQL, transfersPerDayQueryDocument, { limit })).v1_daily_transfers,
+    queryFn: async () => {
+      const response = await request(URLS().GRAPHQL, transfersPerDayQueryDocument, { limit })
+      return response.v1_daily_transfers
+    },
     enabled: true,
     refetchInterval: 6_000,
     refetchOnWindowFocus: false

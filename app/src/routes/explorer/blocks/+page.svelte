@@ -14,19 +14,40 @@ import { cosmosBlocksQuery } from "$lib/graphql/queries/cosmos-blocks.ts"
 import Table from "../(components)/table.svelte"
 import { truncate } from "$lib/utilities/format"
 
-let cosmosBlocks = createQuery({
+interface CosmosBlock {
+  chain_id: string
+  hash: string
+  height: number
+  time: string
+}
+
+interface CosmosBlocksQueryResponse {
+  data: Array<CosmosBlock>
+}
+
+type ProcessedBlock = {
+  hash: string
+  height: number
+  chain_id: string
+  time: string
+}
+
+function selectFn(response: CosmosBlocksQueryResponse): Array<ProcessedBlock> {
+  if (!response.data) raise("No data found in cosmos blocks")
+  return response.data.map(block => ({
+    hash: block.hash,
+    height: block.height,
+    chain_id: block.chain_id,
+    time: new Date(block.time).toISOString()
+  }))
+}
+
+let cosmosBlocks = createQuery<CosmosBlocksQueryResponse, Error, Array<ProcessedBlock>>({
   queryKey: ["cosmos-blocks"],
   refetchInterval: 6_000,
-  queryFn: async () => request(URLS().GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
-  select: ({ data }) => {
-    if (!data) raise("No data found in cosmos blocks")
-    return data.map(block => ({
-      hash: block.hash,
-      height: block.height,
-      chain_id: block.chain_id,
-      time: new Date(block.time as string).toISOString()
-    }))
-  }
+  queryFn: async () =>
+    request<CosmosBlocksQueryResponse>(URLS().GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
+  select: selectFn
 })
 
 let blocksDataStore = derived(cosmosBlocks, $cosmosBlocks => $cosmosBlocks.data ?? [])
