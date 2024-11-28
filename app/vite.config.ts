@@ -37,10 +37,7 @@ export default defineConfig(config => {
       exclude: ["@tanstack/svelte-query-devtools"]
     },
     ssr: {
-      external: [
-        //
-        "@telegram-apps/bridge"
-      ]
+      external: []
     },
     server: {
       port: Number(PORT)
