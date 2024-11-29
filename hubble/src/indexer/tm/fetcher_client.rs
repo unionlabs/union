@@ -21,6 +21,8 @@ use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
 
+const TX_RESULT_CODE_OK: u32 = 0;
+
 use crate::{
     indexer::{
         api::{
@@ -224,7 +226,7 @@ impl TmFetcherClient {
 
         let pg_transactions = transactions_response
             .into_iter()
-            .filter(|tx| tx.tx_result.code == 0) // 0 == OK
+            .filter(|tx| tx.tx_result.code == TX_RESULT_CODE_OK)
             .map(|tx| {
                 let transaction_hash = tx.hash.to_string();
                 let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
