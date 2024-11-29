@@ -34,7 +34,7 @@ impl From<BlockInsert> for PgLog {
         PgLog {
             chain_id: block.chain_id,
             block_hash: block.hash.clone(),
-            height: block.height as u64,
+            height: block.height.try_into().unwrap(),
             time: block.time,
             data: PgLogData {
                 header: block.header,
@@ -58,11 +58,13 @@ pub async fn insert_batch_logs(
     ) = logs
         .into_iter()
         .map(|l| {
+            let height: i64 = l.height.try_into().unwrap();
+
             (
                 l.chain_id.db,
                 l.block_hash,
                 serde_json::to_value(&l.data).expect("data should be json serializable"),
-                l.height as i64,
+                height,
                 l.time,
             )
         })
@@ -109,17 +111,18 @@ pub async fn delete_eth_log(
     chain_id: i32,
     height: BlockHeight,
 ) -> sqlx::Result<()> {
+    let height: i64 = height.try_into().unwrap();
     sqlx::query!(
         "
         DELETE FROM v1_evm.logs WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
-        height as i32
+        height,
     )
     .execute(tx.as_mut())
     .await?;
 
-    schedule_replication_reset(tx, chain_id, height as i64, "block reorg (delete)").await?;
+    schedule_replication_reset(tx, chain_id, height, "block reorg (delete)").await?;
 
     Ok(())
 }
@@ -149,7 +152,7 @@ pub async fn unmapped_clients(
     .into_iter()
     .map(|record| UnmappedClient {
         transaction_hash: record.transaction_hash.expect("client-created event to have transaction hash"),
-        height: record.height.expect("client-created event to have a height") as u64,
+        height: record.height.expect("client-created event to have a height").try_into().unwrap(),
         client_id: record.client_id,
     })
     .collect_vec();
@@ -174,8 +177,8 @@ pub async fn transaction_filter(
     .into_iter()
     .map(|record| AddressFilter {
         block_range: BlockRange {
-            start_inclusive: record.start_height as u64,
-            end_exclusive: record.end_height as u64,
+            start_inclusive: record.start_height.try_into().unwrap(),
+            end_exclusive: record.end_height.try_into().unwrap(),
         },
         address: record.address.parse().expect("address to be valid"),
     })

@@ -1,11 +1,21 @@
-use std::result::Result;
+use std::{
+    num::{NonZeroU32, NonZeroU64, NonZeroU8},
+    result::Result,
+};
 
 use color_eyre::eyre::Report;
+use cometbft_rpc::{
+    rpc_types::{
+        BlockResponse, BlockResultsResponse, BlockchainResponse, Order, StatusResponse,
+        TxSearchResponse,
+    },
+    Client, JsonRpcError,
+};
+use futures::future;
 use protos::ibc::{
     core::client::v1::{QueryClientStateRequest, QueryClientStateResponse},
     lightclients::wasm::v1::{QueryCodeRequest, QueryCodeResponse},
 };
-use tendermint_rpc::{query::Query, Client, HttpClient, Order};
 use tonic::Response;
 use unionlabs::aptos::block_info::BlockHeight;
 use url::Url;
@@ -17,7 +27,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-    pub rpc_client: RaceClient<HttpClient>,
+    pub rpc_client: RaceClient<Client>,
     pub grpc_client: RaceClient<GrpcClient>,
 }
 
@@ -86,26 +96,29 @@ impl<T> From<RaceClientResponse<T>> for GrpcResult<T> {
 }
 
 impl Provider {
-    pub fn new(rpc_urls: Vec<Url>, grpc_urls: Vec<Url>) -> Self {
-        Self {
-            rpc_client: RaceClient::new(
-                rpc_urls
+    pub async fn new(rpc_urls: Vec<Url>, grpc_urls: Vec<Url>) -> Result<Self, IndexerError> {
+        Ok(Self {
+            rpc_client: {
+                RaceClient::new(
+                    future::join_all(
+                        rpc_urls
+                            .into_iter()
+                            .map(|rpc_url| Client::new(rpc_url.as_str().to_owned())),
+                    )
+                    .await
                     .into_iter()
-                    .map(|rpc_url| {
-                        HttpClient::new(rpc_url.as_str()).expect("rpc-client can be created")
-                    })
-                    .collect(),
-            ),
+                    .collect::<Result<Vec<_>, _>>()?,
+                )
+            },
             grpc_client: RaceClient::new(grpc_urls.into_iter().map(GrpcClient::new).collect()),
-        }
+        })
     }
 
     // RPC
     pub async fn status(
         &self,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<tendermint_rpc::endpoint::status::Response>, tendermint_rpc::error::Error>
-    {
+    ) -> Result<RpcResult<StatusResponse>, JsonRpcError> {
         self.rpc_client
             .race(provider_id.map(Into::into), |c| c.status())
             .await
@@ -117,13 +130,13 @@ impl Provider {
         min_inclusive: BlockHeight,
         max_inclusive: BlockHeight,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<
-        RpcResult<tendermint_rpc::endpoint::blockchain::Response>,
-        tendermint_rpc::error::Error,
-    > {
+    ) -> Result<RpcResult<BlockchainResponse>, JsonRpcError> {
         self.rpc_client
             .race(provider_id.map(Into::into), |c| {
-                c.blockchain(min_inclusive as u32, max_inclusive as u32)
+                c.blockchain(
+                    NonZeroU64::try_from(min_inclusive).expect("non-zero min"),
+                    NonZeroU64::try_from(max_inclusive).expect("non-zero max"),
+                )
             })
             .await
             .map(Into::into)
@@ -132,10 +145,9 @@ impl Provider {
     pub async fn latest_block(
         &self,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<tendermint_rpc::endpoint::block::Response>, tendermint_rpc::error::Error>
-    {
+    ) -> Result<RpcResult<BlockResponse>, JsonRpcError> {
         self.rpc_client
-            .race(provider_id.map(Into::into), |c| c.latest_block())
+            .race(provider_id.map(Into::into), |c| c.block(None))
             .await
             .map(Into::into)
     }
@@ -144,10 +156,11 @@ impl Provider {
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<tendermint_rpc::endpoint::block::Response>, tendermint_rpc::error::Error>
-    {
+    ) -> Result<RpcResult<BlockResponse>, JsonRpcError> {
         self.rpc_client
-            .race(provider_id.map(Into::into), |c| c.block(height as u32))
+            .race(provider_id.map(Into::into), |c| {
+                c.block(Some(NonZeroU64::try_from(height).expect("non-zero height")))
+            })
             .await
             .map(Into::into)
     }
@@ -156,13 +169,10 @@ impl Provider {
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<
-        RpcResult<tendermint_rpc::endpoint::block_results::Response>,
-        tendermint_rpc::error::Error,
-    > {
+    ) -> Result<RpcResult<BlockResultsResponse>, JsonRpcError> {
         self.rpc_client
             .race(provider_id.map(Into::into), |c| {
-                c.block_results(height as u32)
+                c.block_results(Some(NonZeroU64::try_from(height).expect("non-zero height")))
             })
             .await
             .map(Into::into)
@@ -170,19 +180,22 @@ impl Provider {
 
     pub async fn tx_search(
         &self,
-        query: Query,
+        height: BlockHeight,
         prove: bool,
         page: u32,
         per_page: u8,
         order: Order,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<
-        RpcResult<tendermint_rpc::endpoint::tx_search::Response>,
-        tendermint_rpc::error::Error,
-    > {
+    ) -> Result<RpcResult<TxSearchResponse>, JsonRpcError> {
         self.rpc_client
             .race(provider_id.map(Into::into), |c| {
-                c.tx_search(query.clone(), prove, page, per_page, order.clone())
+                c.tx_search(
+                    format!("tx.height={}", height),
+                    prove,
+                    NonZeroU32::try_from(page).expect("non-zero page"),
+                    NonZeroU8::try_from(per_page).expect("non-zero per-page"),
+                    order.clone(),
+                )
             })
             .await
             .map(Into::into)

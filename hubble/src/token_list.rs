@@ -41,7 +41,7 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
                     .filter_map(|token| {
                         chain_ids_and_ids.get(&token.0.to_string()).map(|id| {
                             (
-                                *id as i64,
+                                (*id).into(),
                                 token.1.clone(),
                                 token.2.clone(),
                                 token.3,
@@ -76,7 +76,7 @@ pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
 
             if val.get("statusCode").is_none() {
                 debug!("Token list successfully retrieved from: {}", url);
-                Ok(Some(serde_json::from_value(val).unwrap())) as Result<Option<TokenList>>
+                Ok(Some(serde_json::from_value(val).unwrap()))
             } else {
                 debug!("No valid token list found at: {}", url);
                 Ok(None)

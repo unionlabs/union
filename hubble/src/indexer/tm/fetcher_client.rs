@@ -1,9 +1,13 @@
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
 
 use axum::async_trait;
 use color_eyre::{
     eyre::{eyre, Report},
     Result,
+};
+use cometbft_rpc::{
+    rpc_types::{BlockMeta, BlockResultsResponse, Order, TxResponse},
+    JsonRpcError,
 };
 use futures::{
     join,
@@ -11,16 +15,13 @@ use futures::{
     FutureExt, Stream, StreamExt, TryFutureExt,
 };
 use itertools::Itertools;
+use jsonrpsee::types::{error::INTERNAL_ERROR_CODE, ErrorObject};
 use regex::Regex;
-use tendermint::block::Meta;
-use tendermint_rpc::{
-    error::ErrorDetail,
-    query::{Condition, Query},
-    Code, Error, Order,
-};
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
+
+const TX_RESULT_CODE_OK: u32 = 0;
 
 use crate::{
     indexer::{
@@ -91,7 +92,7 @@ impl TmFetcherClient {
 
     pub fn handle_ok_fetching_metas(
         &self,
-        block_metas: Vec<Meta>,
+        block_metas: Vec<BlockMeta>,
         fetch_mode: FetchMode,
         provider_id: RpcProviderId,
     ) -> BoxStream<Result<TmBlockHandle, IndexerError>> {
@@ -140,13 +141,7 @@ impl TmFetcherClient {
         &self,
         height: BlockHeight,
         provider_id: RpcProviderId,
-    ) -> Result<
-        (
-            tendermint_rpc::endpoint::block_results::Response,
-            Vec<tendermint_rpc::endpoint::tx::Response>,
-        ),
-        IndexerError,
-    > {
+    ) -> Result<(BlockResultsResponse, Vec<TxResponse>), IndexerError> {
         debug!("{}: fetching block results", height);
         let block_results = self
             .provider
@@ -167,18 +162,24 @@ impl TmFetcherClient {
     pub fn check_consistency(
         &self,
         provider_id: RpcProviderId,
-        block_results: &tendermint_rpc::endpoint::block_results::Response,
-        transactions_response: &[tendermint_rpc::endpoint::tx::Response],
+        block_results: &BlockResultsResponse,
+        transactions_response: &[TxResponse],
     ) -> Result<(), IndexerError> {
         let txs_event_count: usize = transactions_response
             .iter()
             .map(|tx| tx.tx_result.events.len())
             .sum();
 
-        let block_tx_event_count = block_results
+        let block_tx_event_count: usize = block_results
             .txs_results
-            .as_ref()
-            .map_or(0, |r| r.iter().map(|result| result.events.len()).sum());
+            .iter()
+            .map(|tx_results| {
+                tx_results
+                    .iter()
+                    .map(|tx_result| tx_result.events.len())
+                    .sum::<usize>()
+            })
+            .sum();
 
         match txs_event_count == block_tx_event_count {
             true => Ok(()),
@@ -195,20 +196,24 @@ impl TmFetcherClient {
     pub fn convert_to_pg_data(
         &self,
         block_header: &BlockHeader,
-        block_results: tendermint_rpc::endpoint::block_results::Response,
-        transactions_response: Vec<tendermint_rpc::endpoint::tx::Response>,
+        block_results: BlockResultsResponse,
+        transactions_response: Vec<TxResponse>,
     ) -> Result<(PgBlock, Vec<PgTransaction>, Vec<PgEvent>), IndexerError> {
         let (block_id, header, block_reference) = (
-            block_header.block_id,
+            block_header.block_id.clone(),
             block_header.header.clone(),
             block_header.block_reference()?,
         );
 
         let pg_block = PgBlock {
             chain_id: self.chain_id,
-            hash: block_id.hash.to_string(),
-            height: header.height.value(),
-            time: header.time.into(),
+            hash: block_id
+                .hash
+                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .to_string(),
+            height: header.height.inner().try_into().unwrap(),
+            time: OffsetDateTime::from_unix_timestamp_nanos(header.time.as_unix_nanos().into())
+                .map_err(|err| IndexerError::ProviderError(err.into()))?,
             data: serde_json::to_value(&header)
                 .unwrap()
                 .replace_escape_chars(),
@@ -221,7 +226,7 @@ impl TmFetcherClient {
 
         let pg_transactions = transactions_response
             .into_iter()
-            .filter(|tx| tx.tx_result.code.is_ok())
+            .filter(|tx| tx.tx_result.code == TX_RESULT_CODE_OK)
             .map(|tx| {
                 let transaction_hash = tx.hash.to_string();
                 let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
@@ -230,7 +235,7 @@ impl TmFetcherClient {
                         if self
                             .filter
                             .as_ref()
-                            .is_some_and(|filter| filter.is_match(event.kind.as_str()))
+                            .is_some_and(|filter| filter.is_match(event.ty.as_str()))
                         {
                             block_index += 1;
                             return None;
@@ -273,9 +278,12 @@ impl TmFetcherClient {
                 )
                 .into_iter()
                 .enumerate()
-                .map(|(i, e)| PgEvent {
-                    block_index: i as i32 + block_index,
-                    ..e
+                .map(|(i, e)| {
+                    let index: i32 = i.try_into().unwrap();
+                    PgEvent {
+                        block_index: index + block_index,
+                        ..e
+                    }
                 }),
         );
 
@@ -283,7 +291,7 @@ impl TmFetcherClient {
     }
 
     pub fn handle_err_fetching_metas(
-        error: Error,
+        error: JsonRpcError,
     ) -> BoxStream<'static, Result<TmBlockHandle, IndexerError>> {
         futures::stream::once(async move { Err(error.into()) }).boxed()
     }
@@ -296,42 +304,24 @@ impl TmFetcherClient {
     ) -> Result<TmBlockHandle, IndexerError> {
         debug!("{}: fetching", selection);
 
-        let block_header: Result<Option<(RpcProviderId, BlockHeader)>, Error> = match selection {
-            BlockSelection::LastFinalized => self
-                .provider
-                .latest_block(provider_id)
-                .inspect_err(|e| debug!(?e, "error fetching latest block"))
-                .await
-                .map(|response| Some((response.provider_id, response.response.into()))),
-            BlockSelection::Height(height) => match self
-                .provider
-                .block(height, provider_id)
-                .inspect_err(|e| debug!(?e, "error fetching block at {}", height))
-                .await
-            {
-                Ok(result) => Ok(Some((result.provider_id, result.response.into()))),
-                Err(err) => match err.detail() {
-                    // TODO: cleanup
-                    // The RPC will return an internal error on queries for blocks exceeding the current height.
-                    // `is_height_exceeded_error` untangles the error and checks for this case.
-                    ErrorDetail::Response(err_detail) => {
-                        let inner = &err_detail.source;
-                        let code = inner.code();
-                        let message = inner.data().unwrap_or_default();
-                        if matches!(code, Code::InternalError)
-                            && (message.contains("must be less than or equal to")
-                                || message.contains("could not find results for height"))
-                        {
-                            trace!("{}: no block: beyond tip error: {}", selection, message,);
-                            Ok(None)
-                        } else {
-                            Err(err)
-                        }
-                    }
-                    _ => Err(err),
+        let block_header: Result<Option<(RpcProviderId, BlockHeader)>, JsonRpcError> =
+            match selection {
+                BlockSelection::LastFinalized => self
+                    .provider
+                    .latest_block(provider_id)
+                    .inspect_err(|e| debug!(?e, "error fetching latest block"))
+                    .await
+                    .map(|response| Some((response.provider_id, response.response.into()))),
+                BlockSelection::Height(height) => match self
+                    .provider
+                    .block(height, provider_id)
+                    .inspect_err(|e| debug!(?e, "error fetching block at {}", height))
+                    .await
+                {
+                    Ok(result) => Ok(Some((result.provider_id, result.response.into()))),
+                    Err(err) => Self::detect_reading_beyond_tip(err, &selection),
                 },
-            },
-        };
+            };
 
         match block_header {
             Ok(Some((provider_id, header))) => {
@@ -368,25 +358,39 @@ impl TmFetcherClient {
         }
     }
 
+    fn detect_reading_beyond_tip(
+        error: JsonRpcError,
+        selection: &BlockSelection,
+    ) -> Result<Option<(RpcProviderId, BlockHeader)>, JsonRpcError> {
+        if let Some(source) = error.source() {
+            if let Some(error_object) = source.downcast_ref::<ErrorObject>() {
+                if let (INTERNAL_ERROR_CODE, Some(message)) = (
+                    error_object.code(),
+                    error_object.data().map(|data| data.to_string()),
+                ) {
+                    if message.contains("must be less than or equal to")
+                        || message.contains("could not find results for height")
+                    {
+                        trace!("{}: no block: beyond tip error: {}", selection, message);
+
+                        return Ok(None); // we're reading beyond the tip
+                    };
+                };
+            };
+        };
+
+        Err(error)
+    }
+
     async fn fetch_transactions_for_block(
         &self,
         height: BlockHeight,
         expected: impl Into<Option<usize>>,
         provider_id: RpcProviderId,
-    ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
+    ) -> Result<Vec<TxResponse>, Report> {
         let expected = expected.into();
 
         debug!("{}: fetching", height);
-        let query = Query {
-            event_type: None,
-            conditions: vec![Condition {
-                key: "tx.height".to_string(),
-                operation: tendermint_rpc::query::Operation::Eq(
-                    tendermint_rpc::query::Operand::Unsigned(height),
-                ),
-            }],
-        };
-
         let mut txs = if let Some(expected) = expected {
             Vec::with_capacity(expected)
         } else {
@@ -398,11 +402,11 @@ impl TmFetcherClient {
             let response = self
                 .provider
                 .tx_search(
-                    query.clone(),
+                    height,
                     false,
                     page,
                     self.tx_search_max_page_size,
-                    Order::Ascending,
+                    Order::Asc,
                     Some(provider_id),
                 )
                 .await?
@@ -411,7 +415,9 @@ impl TmFetcherClient {
             txs.extend(response.txs);
 
             // We always query for the maximum page size. If we get less items, we know pagination is done
-            let current_count = (page - 1) * self.tx_search_max_page_size as u32 + len as u32;
+            let tx_search_max_page_size: u32 = self.tx_search_max_page_size.into();
+            let len: u32 = len.try_into().unwrap();
+            let current_count = (page - 1) * tx_search_max_page_size + len;
             let total_count = response.total_count;
 
             debug!("{height}: fetched transactions page {page} ({current_count}/{total_count})");
@@ -449,76 +455,23 @@ pub trait BlockExt {
     fn events(self, chain_id: ChainId, block_hash: String, time: OffsetDateTime) -> Vec<PgEvent>;
 }
 
-impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
+impl BlockExt for BlockResultsResponse {
     fn events(self, chain_id: ChainId, block_hash: String, time: OffsetDateTime) -> Vec<PgEvent> {
-        let block_height: i32 = self.height.value().try_into().unwrap();
-        let begin_block_events = self
-            .begin_block_events
-            .unwrap_or_default()
-            .into_iter()
-            .map(|e| PgEvent {
-                chain_id,
-                block_hash: block_hash.clone(),
-                block_height: block_height as u64,
-                time,
-                data: serde_json::to_value(e).unwrap().replace_escape_chars(),
-                transaction_hash: None,
-                transaction_index: None,
-                block_index: 0,
-            });
-        let end_block_events = self.end_block_events.into_iter().map(|e| PgEvent {
+        let finalize_block_events = self.finalize_block_events.iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
-            block_height: block_height as u64,
+            block_height: self.height,
             time,
             data: serde_json::to_value(e).unwrap().replace_escape_chars(),
-            transaction_hash: None,
-            transaction_index: None,
-            block_index: 0,
-        });
-        let finalize_block_events = self.finalize_block_events.into_iter().map(|e| PgEvent {
-            chain_id,
-            block_hash: block_hash.clone(),
-            block_height: block_height as u64,
-            time,
-            data: serde_json::to_value(e).unwrap().replace_escape_chars(),
-            transaction_hash: None,
-            transaction_index: None,
-            block_index: 0,
-        });
-        let validator_updates = self.validator_updates.into_iter().map(|e| PgEvent {
-            chain_id,
-            block_hash: block_hash.clone(),
-            block_height: block_height as u64,
-            time,
-            data: serde_json::to_value(WithType::validator_update(e))
-                .unwrap()
-                .replace_escape_chars(),
-            transaction_hash: None,
-            transaction_index: None,
-            block_index: 0,
-        });
-        let consensus_param_updates = self.consensus_param_updates.into_iter().map(|e| PgEvent {
-            chain_id,
-            block_hash: block_hash.clone(),
-            block_height: block_height as u64,
-            time,
-            data: serde_json::to_value(WithType::consensus_param_update(e))
-                .unwrap()
-                .replace_escape_chars(),
             transaction_hash: None,
             transaction_index: None,
             block_index: 0,
         });
 
-        begin_block_events
-            .chain(end_block_events)
-            .chain(finalize_block_events)
-            .chain(validator_updates)
-            .chain(consensus_param_updates)
+        finalize_block_events
             .enumerate()
             .map(|(i, mut event)| {
-                event.block_index = i as i32;
+                event.block_index = i.try_into().unwrap();
                 event
             })
             .collect()
@@ -531,22 +484,6 @@ pub struct WithType<I> {
     kind: &'static str,
     #[serde(flatten)]
     inner: I,
-}
-
-impl<I> WithType<I> {
-    fn validator_update(inner: I) -> Self {
-        WithType {
-            kind: "validator_update",
-            inner,
-        }
-    }
-
-    fn consensus_param_update(inner: I) -> Self {
-        WithType {
-            kind: "consensus_param_update",
-            inner,
-        }
-    }
 }
 
 trait SerdeValueExt {
@@ -599,7 +536,7 @@ impl FetcherClient for TmFetcherClient {
         join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: TmContext,
     ) -> Result<Self, IndexerError> {
-        let provider = Provider::new(context.rpc_urls, context.grpc_urls);
+        let provider = Provider::new(context.rpc_urls, context.grpc_urls).await?;
 
         info!("fetching chain-id from node");
         let chain_id = provider

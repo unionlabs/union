@@ -60,7 +60,8 @@ impl BlockRange {
         let range: Range<BlockHeight> = self.clone().into();
 
         range.step_by(chunk_size).map(move |start_inclusive| {
-            let end_exclusive = (start_inclusive + chunk_size as u64).min(self.end_exclusive);
+            let chunk_size: u64 = chunk_size.try_into().unwrap();
+            let end_exclusive = (start_inclusive + chunk_size).min(self.end_exclusive);
             (start_inclusive..end_exclusive).into()
         })
     }

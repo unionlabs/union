@@ -25,8 +25,9 @@ use unionlabs::{
 };
 
 use crate::rpc_types::{
-    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BroadcastTxSyncResponse,
-    CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
+    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BlockResultsResponse,
+    BlockchainResponse, BroadcastTxSyncResponse, CommitResponse, Order, StatusResponse, TxResponse,
+    TxSearchResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -200,6 +201,19 @@ impl Client {
             .await
     }
 
+    pub async fn blockchain(
+        &self,
+        min_height: NonZeroU64,
+        max_height: NonZeroU64,
+    ) -> Result<BlockchainResponse, JsonRpcError> {
+        self.inner
+            .request(
+                "blockchain",
+                (min_height.to_string(), max_height.to_string()),
+            )
+            .await
+    }
+
     pub async fn tx_search(
         &self,
         query: impl AsRef<str>,
@@ -244,14 +258,14 @@ impl Client {
             .await
     }
 
-    // pub async fn block_results(
-    //     &self,
-    //     height: Option<BoundedI64<1>>,
-    // ) -> Result<TxSearchResponse, JsonRpcError> {
-    //     self.client
-    //         .request("block_results", rpc_params![height.map(|x| x.to_string())])
-    //         .await
-    // }
+    pub async fn block_results(
+        &self,
+        height: Option<NonZeroU64>,
+    ) -> Result<BlockResultsResponse, JsonRpcError> {
+        self.inner
+            .request("block_results", rpc_params![height.map(|x| x.to_string())])
+            .await
+    }
 }
 
 #[derive(Debug, Clone)]

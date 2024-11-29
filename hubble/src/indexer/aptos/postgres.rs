@@ -136,12 +136,13 @@ pub async fn delete_aptos_block_transactions_events(
     internal_chain_id: i32,
     height: BlockHeight,
 ) -> sqlx::Result<()> {
+    let height: i64 = height.try_into().unwrap();
     sqlx::query!(
         "
         DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
-        height as i64
+        height,
     )
     .execute(tx.as_mut())
     .await?;
@@ -151,7 +152,7 @@ pub async fn delete_aptos_block_transactions_events(
         DELETE FROM v1_aptos.transactions WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
-        height as i64
+        height,
     )
     .execute(tx.as_mut())
     .await?;
@@ -161,13 +162,12 @@ pub async fn delete_aptos_block_transactions_events(
         DELETE FROM v1_aptos.blocks WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
-        height as i64,
+        height,
     )
     .execute(tx.as_mut())
     .await?;
 
-    schedule_replication_reset(tx, internal_chain_id, height as i64, "block reorg (delete)")
-        .await?;
+    schedule_replication_reset(tx, internal_chain_id, height, "block reorg (delete)").await?;
 
     Ok(())
 }
@@ -177,6 +177,8 @@ pub async fn active_contracts(
     internal_chain_id: i32,
     height: BlockHeight,
 ) -> sqlx::Result<HashSet<String>> {
+    let height: i64 = height.try_into().unwrap();
+
     let result = sqlx::query!(
         r#"
         SELECT    address
@@ -185,7 +187,7 @@ pub async fn active_contracts(
         AND       $2 between start_height and end_height
         "#,
         internal_chain_id,
-        height as i64,
+        height,
     )
     .fetch_all(tx.as_mut())
     .await?
@@ -219,8 +221,8 @@ pub async fn unmapped_clients(
     .await?
     .into_iter()
     .map(|record| UnmappedClient {
-        version: record.transaction_version.expect("client-created-event to have transaction version") as u64,
-        height: record.height.expect("client-created-event to have a height") as u64,
+        version: record.transaction_version.expect("client-created-event to have transaction version").try_into().unwrap(),
+        height: record.height.expect("client-created-event to have a height").try_into().unwrap(),
         client_id: record.client_id,
     })
     .collect_vec();

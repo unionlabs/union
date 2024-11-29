@@ -29,13 +29,12 @@ use crate::indexer::{
 
 impl BlockReferenceProvider for Block {
     fn block_reference(&self) -> Result<BlockReference, Report> {
+        let block_timestamp: i128 = self.block_timestamp.0.into();
         Ok(BlockReference {
             height: self.block_height.into(),
             hash: self.block_hash.to_string(),
-            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
-                (self.block_timestamp.0 as i128) * 1000,
-            )
-            .map_err(Report::from)?,
+            timestamp: OffsetDateTime::from_unix_timestamp_nanos(block_timestamp * 1000)
+                .map_err(Report::from)?,
         })
     }
 }
@@ -114,22 +113,33 @@ impl BlockHandle for AptosBlockHandle {
                         if active_contracts.contains(&account_address.to_standard_string()) {
                             Some(PgTransaction {
                                 internal_chain_id: self.internal_chain_id,
-                                height: self.reference.height as i64,
-                                version: transaction.info.version.0 as i64,
+                                height: self.reference.height.try_into().unwrap(),
+                                version: transaction.info.version.0.try_into().unwrap(),
                                 transaction_hash: transaction.info.hash.to_string(),
-                                transaction_index: transaction_index as i64,
+                                transaction_index: transaction_index.try_into().unwrap(),
                                 events: transaction
                                     .events
                                     .into_iter()
                                     .enumerate()
                                     .map(|(transaction_event_index, event)| PgEvent {
                                         internal_chain_id: self.internal_chain_id,
-                                        height: self.reference.height as i64,
-                                        version: transaction.info.version.0 as i64,
-                                        index: event_index_iter.next().unwrap() as i64,
-                                        transaction_event_index: transaction_event_index as i64,
-                                        sequence_number: event.sequence_number.0 as i64,
-                                        creation_number: event.guid.creation_number.0 as i64,
+                                        height: self.reference.height.try_into().unwrap(),
+                                        version: transaction.info.version.0.try_into().unwrap(),
+                                        index: event_index_iter.next().unwrap(),
+                                        transaction_event_index: transaction_event_index
+                                            .try_into()
+                                            .unwrap(),
+                                        sequence_number: event
+                                            .sequence_number
+                                            .0
+                                            .try_into()
+                                            .unwrap(),
+                                        creation_number: event
+                                            .guid
+                                            .creation_number
+                                            .0
+                                            .try_into()
+                                            .unwrap(),
                                         account_address: event
                                             .guid
                                             .account_address
@@ -165,11 +175,11 @@ impl BlockHandle for AptosBlockHandle {
                 tx,
                 PgBlock {
                     internal_chain_id: self.internal_chain_id,
-                    height: self.reference.height as i64,
+                    height: self.reference.height.try_into().unwrap(),
                     block_hash: self.reference.hash.clone(),
                     timestamp: self.reference.timestamp,
-                    first_version: block.first_version.0 as i64, // TODO: check if .0 is ok
-                    last_version: block.last_version.0 as i64,
+                    first_version: block.first_version.0.try_into().unwrap(),
+                    last_version: block.last_version.0.try_into().unwrap(),
                     transactions,
                 },
             )

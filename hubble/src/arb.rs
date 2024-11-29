@@ -154,7 +154,9 @@ impl Arb {
         let slot_offset_bytes = self
             .rollup_finalization_config
             .l1_next_node_num_slot_offset_bytes
-            .inner() as usize;
+            .inner()
+            .try_into()
+            .unwrap();
         let raw_slot = self
             .l1_client
             .get_storage_at(
@@ -183,13 +185,13 @@ impl Arb {
 
 impl Querier for Arb {
     async fn get_execution_height(&self, slot: i64) -> Result<(i64, i64)> {
-        let height = (|| self.execution_height_of_beacon_slot(slot as u64))
+        let height = (|| self.execution_height_of_beacon_slot(slot.try_into().unwrap()))
             .retry(
                 &ConstantBuilder::default()
                     .with_delay(Duration::from_millis(500))
                     .with_max_times(60),
             )
             .await?;
-        Ok((slot, height as i64))
+        Ok((slot, height.try_into().unwrap()))
     }
 }

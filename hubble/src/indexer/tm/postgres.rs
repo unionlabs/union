@@ -57,7 +57,10 @@ pub async fn insert_batch_blocks(
         Vec<OffsetDateTime>,
     ) = blocks
         .into_iter()
-        .map(|b| (b.chain_id.db, b.hash, b.data, b.height as i64, b.time))
+        .map(|b| {
+            let height: i64 = b.height.try_into().unwrap();
+            (b.chain_id.db, b.hash, b.data, height, b.time)
+        })
         .multiunzip();
 
     sqlx::query!("
@@ -84,10 +87,12 @@ pub async fn insert_batch_transactions(
     ) = transactions
         .into_iter()
         .map(|t| {
+            let block_height: i64 = t.block_height.try_into().unwrap();
+
             (
                 t.chain_id.db,
                 t.block_hash,
-                t.block_height as i64,
+                block_height,
                 t.hash,
                 t.data,
                 t.index,
@@ -131,10 +136,12 @@ pub async fn insert_batch_events(
     ) = events
         .into_iter()
         .map(|e| {
+            let block_height: i64 = e.block_height.try_into().unwrap();
+
             (
                 e.chain_id.db,
                 e.block_hash,
-                e.block_height as i64,
+                block_height,
                 e.transaction_hash.map(Into::into),
                 e.block_index,
                 e.transaction_index,
@@ -159,12 +166,14 @@ pub async fn delete_tm_block_transactions_events(
     chain_id: i32,
     height: BlockHeight,
 ) -> sqlx::Result<()> {
+    let height: i64 = height.try_into().unwrap();
+
     sqlx::query!(
         "
         DELETE FROM v1_cosmos.events WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
-        height as i32
+        height,
     )
     .execute(tx.as_mut())
     .await?;
@@ -174,7 +183,7 @@ pub async fn delete_tm_block_transactions_events(
         DELETE FROM v1_cosmos.transactions WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
-        height as i32
+        height,
     )
     .execute(tx.as_mut())
     .await?;
@@ -184,12 +193,12 @@ pub async fn delete_tm_block_transactions_events(
         DELETE FROM v1_cosmos.blocks WHERE chain_id = $1 AND height = $2
         ",
         chain_id,
-        height as i32
+        height,
     )
     .execute(tx.as_mut())
     .await?;
 
-    schedule_replication_reset(tx, chain_id, height as i64, "block reorg (delete)").await?;
+    schedule_replication_reset(tx, chain_id, height, "block reorg (delete)").await?;
 
     Ok(())
 }
