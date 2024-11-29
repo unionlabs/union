@@ -102,7 +102,6 @@
   "svelte.enable-ts-plugin": true,
   "editor.overviewRulerBorder": false,
   "workbench.activityBar.location": "top",
-  "window.title": "Join the Union",
   "extensions.experimental.affinity": {
     "better-ts-errors.better-ts-errors": 1
   },
