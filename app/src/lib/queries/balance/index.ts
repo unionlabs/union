@@ -37,14 +37,15 @@ export function userBalancesQuery({
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
 
-          if (rpc?.type === "alchemy") {
-            return await getBalancesFromAlchemy({
+          if (rpc?.type === "routescan") {
+            return await getBalancesFromRoutescan({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
           }
-          if (rpc?.type === "routescan") {
-            return await getBalancesFromRoutescan({
+
+          if (rpc?.type === "alchemy") {
+            return await getBalancesFromAlchemy({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
@@ -61,7 +62,7 @@ export function userBalancesQuery({
 
           return multicallResults
             .map((result, index) => ({
-              balance: result.balance,
+              balance: BigInt(result.balance),
               address: tokenList[index].denom,
               name: tokenList[index].display_name,
               symbol: tokenList[index].display_symbol,

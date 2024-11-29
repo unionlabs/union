@@ -15,9 +15,6 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "temporal-polyfill": "^0.2.5",
-    "mode-watcher": "0.5.0",
-    "svelte-sonner": "^0.3.27",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
@@ -31,16 +28,21 @@
     "@unionlabs/client": "^0.0.39",
     "@wagmi/connectors": "5.5.2",
     "@wagmi/core": "2.15.1",
+    "@xstate/svelte": "^4.0.0",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "1.8.10",
     "graphql-request": "7.1.2",
+    "mode-watcher": "0.5.0",
     "svelte-persisted-store": "^0.11.0",
     "svelte-radix": "^1.1.1",
+    "svelte-sonner": "^0.3.27",
+    "temporal-polyfill": "^0.2.5",
     "three": "0.170.0",
     "valibot": "0.42.1",
     "vaul-svelte": "^0.3.2",
-    "viem": "2.21.52"
+    "viem": "2.21.52",
+    "xstate": "^5.19.0"
   },
   "devDependencies": {
     "@iconify-json/fa6-solid": "1.2.2",
