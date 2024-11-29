@@ -25,6 +25,9 @@ impl<T: FetcherClient> Indexer<T> {
     }
 
     async fn run_to_finalized(&self, fetcher_client: &T) -> Result<(), IndexerError> {
+        let chunk_size: u64 = self.chunk_size.try_into().unwrap();
+        let delay_blocks: u64 = self.finalizer_config.delay_blocks.try_into().unwrap();
+
         loop {
             debug!("fetching last finalized block");
             match fetcher_client
@@ -33,11 +36,7 @@ impl<T: FetcherClient> Indexer<T> {
             {
                 Ok(last_finalized) => {
                     let next_height = self.next_height().await?;
-                    if next_height
-                        + self.chunk_size as u64
-                        + self.finalizer_config.delay_blocks as u64
-                        > last_finalized.reference().height
-                    {
+                    if next_height + chunk_size + delay_blocks > last_finalized.reference().height {
                         info!("near finalized height (current: {} + chunk: {} + delay: {} > finalized: {}) => start 'run to tip'", next_height, self.chunk_size, self.finalizer_config.delay_blocks, last_finalized.reference());
                         return Ok(());
                     }

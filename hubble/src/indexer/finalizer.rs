@@ -20,6 +20,7 @@ use crate::indexer::{
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_finalizer(&self, fetcher_client: T) -> Result<(), IndexerError> {
+        let chunk_size: u64 = self.chunk_size.try_into().unwrap();
         loop {
             if let Some(block_range_to_finalize) = self.block_range_to_finalize().await? {
                 info!("{}: begin", block_range_to_finalize);
@@ -39,15 +40,14 @@ impl<T: FetcherClient> Indexer<T> {
                         // consider the block to be finalized if it's >= than the consensus height, considering the finalization delay blocks.
                         let consensus_height_with_safety_margin = reference
                             .height
-                            .saturating_sub(self.finalizer_config.delay_blocks as u64);
+                            .saturating_sub(self.finalizer_config.delay_blocks.try_into().unwrap());
 
                         let some_blocks_needs_to_be_finalized = block_range_to_finalize
                             .start_inclusive
                             <= consensus_height_with_safety_margin;
                         if some_blocks_needs_to_be_finalized {
                             // find the end of the range to finalize
-                            let end_of_chunk = block_range_to_finalize.start_inclusive
-                                + self.chunk_size as BlockHeight;
+                            let end_of_chunk = block_range_to_finalize.start_inclusive + chunk_size;
                             let end_until_finalized = consensus_height_with_safety_margin + 1;
                             let end_until_last_tracked_block =
                                 block_range_to_finalize.end_exclusive;
@@ -86,7 +86,7 @@ impl<T: FetcherClient> Indexer<T> {
                         {
                             let range_to_monitor = (height
                                 ..(min(
-                                    height + self.chunk_size as BlockHeight,
+                                    height + chunk_size,
                                     block_range_to_finalize.end_exclusive,
                                 )))
                                 .into();

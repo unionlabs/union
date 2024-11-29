@@ -10,12 +10,14 @@ use super::{
     Indexer,
 };
 use crate::indexer::{
-    api::{BlockHandle, BlockHeight, BlockSelection, FetchMode},
+    api::{BlockHandle, BlockSelection, FetchMode},
     HappyRangeFetcher,
 };
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_fixer(&self, fetcher_client: T) -> Result<(), IndexerError> {
+        let chunk_size: u64 = self.chunk_size.try_into().unwrap();
+
         loop {
             if let Some(block_range_to_fix) = self.block_range_to_fix().await? {
                 info!("{}: begin", block_range_to_fix);
@@ -36,7 +38,7 @@ impl<T: FetcherClient> Indexer<T> {
                         if block_range_to_fix.start_inclusive <= last_finalized_reference.height {
                             // find the end of the range to fix
                             let end_of_chunk_exclusive =
-                                block_range_to_fix.start_inclusive + self.chunk_size as BlockHeight;
+                                block_range_to_fix.start_inclusive + chunk_size;
                             let end_until_finalized = last_finalized_reference.height + 1;
                             let end_until_last_block_to_fix = block_range_to_fix.end_exclusive;
 

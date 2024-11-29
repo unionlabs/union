@@ -137,17 +137,23 @@ impl AptosFetcherClient {
 
         let complete_start_inclusive: BlockHeight = block.first_version.into();
         let complete_end_inclusive: BlockHeight = block.last_version.into();
+        let tx_search_max_page_size: u64 = self.tx_search_max_page_size.into();
 
-        let mut result =
-            Vec::with_capacity((complete_end_inclusive + 1 - complete_start_inclusive) as usize);
+        let mut result = Vec::with_capacity(
+            (complete_end_inclusive + 1 - complete_start_inclusive)
+                .try_into()
+                .unwrap(),
+        );
 
         for chunk_start_inclusive in (complete_start_inclusive..=complete_end_inclusive)
-            .step_by(self.tx_search_max_page_size as usize)
+            .step_by(self.tx_search_max_page_size.into())
         {
-            let chunk_end_exclusive = (chunk_start_inclusive + self.tx_search_max_page_size as u64)
-                .min(complete_end_inclusive + 1); // +1, because end is inclusive
+            let chunk_end_exclusive =
+                (chunk_start_inclusive + tx_search_max_page_size).min(complete_end_inclusive + 1); // +1, because end is inclusive
 
-            let chunk_limit = (chunk_end_exclusive - chunk_start_inclusive) as u16;
+            let chunk_limit: u16 = (chunk_end_exclusive - chunk_start_inclusive)
+                .try_into()
+                .unwrap();
 
             trace!(
                 "fetching chunk for block {} - versions: [{},{}]",
@@ -202,7 +208,7 @@ impl AptosFetcherClient {
             chunk_end_exclusive - 1
         );
 
-        let mut result = Vec::with_capacity(self.tx_search_max_page_size as usize);
+        let mut result = Vec::with_capacity(self.tx_search_max_page_size.into());
 
         for transaction_index in chunk_start_inclusive..chunk_end_exclusive {
             trace!(

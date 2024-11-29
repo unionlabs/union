@@ -59,14 +59,14 @@ impl From<CommitResponse> for BlockHeader {
 impl BlockReferenceProvider for BlockHeader {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
-            height: self.header.height.inner() as u64,
+            height: self.header.height.inner().try_into().unwrap(),
             hash: self
                 .block_id
                 .hash
                 .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
-                self.header.time.as_unix_nanos() as i128
+                self.header.time.as_unix_nanos().into(),
             )
             .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
@@ -76,14 +76,14 @@ impl BlockReferenceProvider for BlockHeader {
 impl BlockReferenceProvider for BlockMeta {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
-            height: self.header.height.inner() as u64,
+            height: self.header.height.inner().try_into().unwrap(),
             hash: self
                 .block_id
                 .hash
                 .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
-                self.header.time.as_unix_nanos() as i128
+                self.header.time.as_unix_nanos().into(),
             )
             .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })

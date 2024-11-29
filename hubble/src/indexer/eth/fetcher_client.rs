@@ -50,8 +50,10 @@ impl BlockReferenceProvider for Block {
         Ok(BlockReference {
             height: self.header.number,
             hash: self.header.hash.to_lower_hex(),
-            timestamp: OffsetDateTime::from_unix_timestamp(self.header.timestamp as i64)
-                .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            timestamp: OffsetDateTime::from_unix_timestamp(
+                self.header.timestamp.try_into().unwrap(),
+            )
+            .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
     }
 }
@@ -207,7 +209,7 @@ impl EthFetcherClient {
             .into_iter()
             .map(|((transaction_hash, transaction_index), logs)| {
                 let transaction_hash = transaction_hash.to_lower_hex();
-                let transaction_index = transaction_index as i32;
+                let transaction_index: i32 = transaction_index.try_into().unwrap();
 
                 let events: Vec<EventInsert> = logs
                     .into_iter()
@@ -216,8 +218,8 @@ impl EthFetcherClient {
                         let data = serde_json::to_value(&log).unwrap();
                         EventInsert {
                             data,
-                            log_index: log.log_index.unwrap() as usize,
-                            transaction_log_index: transaction_log_index as i32,
+                            log_index: log.log_index.expect("log_index").try_into().unwrap(),
+                            transaction_log_index: transaction_log_index.try_into().unwrap(),
                         }
                     })
                     .collect();
@@ -248,7 +250,7 @@ impl EthFetcherClient {
             chain_id: self.chain_id,
             hash: block_reference.hash,
             header: block.clone(),
-            height: block_reference.height as i32,
+            height: block_reference.height.try_into().unwrap(),
             time: block_reference.timestamp,
             transactions,
         }))

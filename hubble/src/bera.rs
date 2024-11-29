@@ -10,7 +10,7 @@ use color_eyre::{
 };
 use cometbft_rpc::{rpc_types::AbciQueryResponse, Client};
 use tracing::info;
-use unionlabs::encoding::DecodeAs;
+use unionlabs::{bounded::BoundedI64, encoding::DecodeAs};
 
 use crate::consensus::{Indexer, Querier};
 
@@ -64,11 +64,7 @@ impl Bera {
             .abci_query(
                 "store/beacon/key",
                 data,
-                Some(
-                    (slot as i64 - 1)
-                        .try_into()
-                        .expect("converting slot to abci_query slot"),
-                ),
+                Some(BoundedI64::<1>::new(slot - 1).expect("converting slot to abci_query slot")),
                 prove,
             )
             .await?;
@@ -108,14 +104,16 @@ impl Bera {
 
 impl Querier for Bera {
     async fn get_execution_height(&self, slot: i64) -> Result<(i64, i64)> {
-        let height = (|| self.execution_header_at_beacon_slot(slot as u64))
+        let height = (|| self.execution_header_at_beacon_slot(slot.try_into().unwrap()))
             .retry(
                 &ConstantBuilder::default()
                     .with_delay(Duration::from_millis(500))
                     .with_max_times(60),
             )
             .await?
-            .block_number as i64;
+            .block_number
+            .try_into()
+            .unwrap();
         Ok((slot, height))
     }
 }

@@ -209,8 +209,8 @@ impl TmFetcherClient {
                 .hash
                 .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
                 .to_string(),
-            height: header.height.inner() as u64,
-            time: OffsetDateTime::from_unix_timestamp_nanos(header.time.as_unix_nanos() as i128)
+            height: header.height.inner().try_into().unwrap(),
+            time: OffsetDateTime::from_unix_timestamp_nanos(header.time.as_unix_nanos().into())
                 .map_err(|err| IndexerError::ProviderError(err.into()))?,
             data: serde_json::to_value(&header)
                 .unwrap()
@@ -276,9 +276,12 @@ impl TmFetcherClient {
                 )
                 .into_iter()
                 .enumerate()
-                .map(|(i, e)| PgEvent {
-                    block_index: i as i32 + block_index,
-                    ..e
+                .map(|(i, e)| {
+                    let index: i32 = i.try_into().unwrap();
+                    PgEvent {
+                        block_index: index + block_index,
+                        ..e
+                    }
                 }),
         );
 
@@ -410,7 +413,9 @@ impl TmFetcherClient {
             txs.extend(response.txs);
 
             // We always query for the maximum page size. If we get less items, we know pagination is done
-            let current_count = (page - 1) * self.tx_search_max_page_size as u32 + len as u32;
+            let tx_search_max_page_size: u32 = self.tx_search_max_page_size.into();
+            let len: u32 = len.try_into().unwrap();
+            let current_count = (page - 1) * tx_search_max_page_size + len;
             let total_count = response.total_count;
 
             debug!("{height}: fetched transactions page {page} ({current_count}/{total_count})");
@@ -464,7 +469,7 @@ impl BlockExt for BlockResultsResponse {
         finalize_block_events
             .enumerate()
             .map(|(i, mut event)| {
-                event.block_index = i as i32;
+                event.block_index = i.try_into().unwrap();
                 event
             })
             .collect()

@@ -21,7 +21,7 @@ pub async fn get_current_height(
     .fetch_optional(tx.as_mut())
     .await?;
 
-    Ok(record.map(|h| h.height as BlockHeight))
+    Ok(record.map(|h| h.height.try_into().unwrap()))
 }
 
 pub async fn update_current_height(
@@ -30,6 +30,8 @@ pub async fn update_current_height(
     height: BlockHeight,
     timestamp: OffsetDateTime,
 ) -> sqlx::Result<()> {
+    let height: i64 = height.try_into().unwrap();
+
     sqlx::query!(
         "
         INSERT INTO hubble.indexer_status (indexer_id, height, timestamp)
@@ -40,7 +42,7 @@ pub async fn update_current_height(
             timestamp = excluded.timestamp
         ",
         indexer_id,
-        height as i64,
+        height,
         timestamp,
     )
     .execute(tx.as_mut())
@@ -65,7 +67,12 @@ pub async fn get_block_range_to_finalize(
     .await?;
 
     Ok(match (record.min_height, record.max_height) {
-        (Some(min), Some(max)) => Some((min as BlockHeight..max as BlockHeight + 1).into()),
+        (Some(min), Some(max)) => {
+            let min_inclusive: BlockHeight = min.try_into().unwrap();
+            let max_inclusive: BlockHeight = max.try_into().unwrap();
+            let max_exclusive = max_inclusive + 1;
+            Some((min_inclusive..max_exclusive).into())
+        }
         (None, None) => None,
         _ => unreachable!("expecting min_height and max_height to be either null or available"),
     })
@@ -77,6 +84,7 @@ pub async fn get_next_block_to_monitor(
     consensus_height: BlockHeight,
     min_duration_between_monitor_checks: Duration,
 ) -> sqlx::Result<Option<BlockHeight>> {
+    let consensus_height: i64 = consensus_height.try_into().unwrap();
     let record = sqlx::query!(
         "
         SELECT height height
@@ -86,13 +94,13 @@ pub async fn get_next_block_to_monitor(
         ORDER BY updated_at
         ",
         indexer_id,
-        consensus_height as i64,
+        consensus_height,
         OffsetDateTime::now_utc() - min_duration_between_monitor_checks,
     )
     .fetch_optional(tx.as_mut())
     .await?;
 
-    Ok(record.map(|r| r.height as BlockHeight))
+    Ok(record.map(|r| r.height.try_into().unwrap()))
 }
 
 pub async fn get_block_range_to_fix(
@@ -116,9 +124,13 @@ pub async fn get_block_range_to_fix(
     .await?;
 
     Ok(record.map(|r| {
-        (r.start_height as BlockHeight
-            ..r.end_height.expect("end_height column value") as BlockHeight)
-            .into()
+        let start_inclusive: BlockHeight = r.start_height.try_into().unwrap();
+        let end_exclusive: BlockHeight = r
+            .end_height
+            .expect("end_height column value")
+            .try_into()
+            .unwrap();
+        (start_inclusive..end_exclusive).into()
     }))
 }
 
@@ -127,6 +139,8 @@ pub async fn update_block_range_to_fix(
     indexer_id: IndexerId,
     range: BlockRange,
 ) -> sqlx::Result<()> {
+    let start_inclusive: i64 = range.start_inclusive.try_into().unwrap();
+    let end_exclusive: i64 = range.end_exclusive.try_into().unwrap();
     // update start of ranges
     sqlx::query!(
         "
@@ -136,8 +150,8 @@ pub async fn update_block_range_to_fix(
         AND   start_height = $2
         ",
         indexer_id,
-        range.start_inclusive as i64,
-        range.end_exclusive as i64,
+        start_inclusive,
+        end_exclusive,
     )
     .execute(tx.as_mut())
     .await?;
@@ -151,7 +165,7 @@ pub async fn update_block_range_to_fix(
         AND   end_height <= $2
         ",
         indexer_id,
-        range.end_exclusive as i64,
+        end_exclusive,
     )
     .execute(tx.as_mut())
     .await?;
@@ -164,6 +178,7 @@ pub async fn delete_block_status(
     indexer_id: IndexerId,
     height: BlockHeight,
 ) -> sqlx::Result<Option<BlockHash>> {
+    let height: i64 = height.try_into().unwrap();
     let record = sqlx::query!(
         "
         DELETE FROM hubble.block_status
@@ -171,12 +186,12 @@ pub async fn delete_block_status(
         RETURNING hash
         ",
         indexer_id,
-        height as i64,
+        height,
     )
     .fetch_optional(tx.as_mut())
     .await?;
 
-    Ok(record.map(|r| r.hash as BlockHash))
+    Ok(record.map(|r| r.hash))
 }
 
 pub async fn get_block_status_hash(
@@ -184,18 +199,19 @@ pub async fn get_block_status_hash(
     indexer_id: IndexerId,
     height: BlockHeight,
 ) -> sqlx::Result<Option<BlockHash>> {
+    let height: i64 = height.try_into().unwrap();
     let record = sqlx::query!(
         "
         SELECT hash FROM hubble.block_status
         WHERE indexer_id = $1 AND height = $2
         ",
         indexer_id,
-        height as i64,
+        height,
     )
     .fetch_optional(tx.as_mut())
     .await?;
 
-    Ok(record.map(|r| r.hash as BlockHash))
+    Ok(record.map(|r| r.hash))
 }
 
 pub async fn update_block_status(
@@ -205,6 +221,7 @@ pub async fn update_block_status(
     hash: BlockHash,
     timestamp: OffsetDateTime,
 ) -> sqlx::Result<()> {
+    let height: i64 = height.try_into().unwrap();
     sqlx::query!(
         "
         INSERT INTO hubble.block_status (indexer_id, height, hash, timestamp)
@@ -215,7 +232,7 @@ pub async fn update_block_status(
             timestamp = excluded.timestamp
         ",
         indexer_id,
-        height as i64,
+        height,
         hash,
         timestamp,
     )
