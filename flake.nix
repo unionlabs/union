@@ -499,7 +499,7 @@
                 openssl
                 pkg-config
                 protobuf
-                httpie
+                xh
                 self'.packages.tdc
                 yq
               ])
