@@ -583,6 +583,20 @@
           "pub_key": null,
           "account_number": 79,
           "sequence": 0
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "union1q20xpxw32wmrkm97ha6klj3hqpl4e22jhjj8l4",
+          "pub_key": null,
+          "account_number": 80,
+          "sequence": 0
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "address": "union1yfya5w5c07kkexqhg39g5x7wggrtrvwvrj89vj",
+          "pub_key": null,
+          "account_number": 80,
+          "sequence": 0
         }
       ]
     },
@@ -1314,12 +1328,30 @@
               "amount": "256000000000000000000"
             }
           ]
+        },
+        {
+          "address": "union1q20xpxw32wmrkm97ha6klj3hqpl4e22jhjj8l4",
+          "coins": [
+            {
+              "denom": "muno",
+              "amount": "256000000000000000000"
+            }
+          ]
+        },
+        {
+          "address": "union1yfya5w5c07kkexqhg39g5x7wggrtrvwvrj89vj",
+          "coins": [
+            {
+              "denom": "muno",
+              "amount": "256000000000000000000"
+            }
+          ]
         }
       ],
       "supply": [
         {
           "denom": "muno",
-          "amount": "1001280000002000218000000"
+          "amount": "1001792000002000218000000"
         }
       ],
       "denom_metadata": [],
