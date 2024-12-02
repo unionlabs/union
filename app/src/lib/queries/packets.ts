@@ -21,18 +21,18 @@ const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   return {
     url: `/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`,
     source: {
-      chain_id: packet.source_chain_id,
-      connection_id: packet.source_connection_id,
-      channel_id: packet.source_channel_id,
-      port_id: packet.source_port_id,
-      sequence: packet.source_sequence
+      chain_id: packet.source_chain_id ?? "unknown",
+      connection_id: packet.source_connection_id ?? "unknown",
+      channel_id: packet.source_channel_id ?? "unknown",
+      port_id: packet.source_port_id ?? "unknown",
+      sequence: packet.source_sequence ?? "unknown"
     },
     destination: {
-      chain_id: packet.destination_chain_id,
-      connection_id: packet.destination_connection_id,
-      channel_id: packet.destination_channel_id,
-      port_id: packet.destination_port_id,
-      sequence: packet.destination_sequence
+      chain_id: packet.destination_chain_id ?? "unknown",
+      connection_id: packet.destination_connection_id ?? "unknown",
+      channel_id: packet.destination_channel_id ?? "unknown",
+      port_id: packet.destination_port_id ?? "unknown",
+      sequence: packet.destination_sequence ?? "unknown"
     },
     source_sequence: {
       sequence: packet.source_sequence,
