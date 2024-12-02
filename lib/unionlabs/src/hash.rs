@@ -93,6 +93,7 @@ pub mod hash_v2 {
     use serde::{ser::SerializeTupleStruct, Deserialize, Deserializer, Serialize, Serializer};
 
     use crate::{
+        bytes::Bytes,
         errors::{ExpectedLength, InvalidLength},
         hash::BytesBitIterator,
     };
@@ -304,8 +305,8 @@ pub mod hash_v2 {
 
         #[must_use]
         // TODO: Make this return `Bytes`
-        pub fn into_bytes(self) -> Vec<u8> {
-            self.get().to_vec()
+        pub fn into_bytes(self) -> Bytes<E> {
+            self.get().to_vec().into()
         }
 
         pub fn iter(&self) -> core::slice::Iter<'_, u8> {

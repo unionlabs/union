@@ -54,7 +54,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit.into(),
-                validator_address: validator_address.into_bytes().into(),
+                validator_address: validator_address.into_bytes().into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -64,7 +64,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil.into(),
-                validator_address: validator_address.into_bytes().into(),
+                validator_address: validator_address.into_bytes().into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },

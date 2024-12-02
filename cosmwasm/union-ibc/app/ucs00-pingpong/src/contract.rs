@@ -1,3 +1,4 @@
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{wasm_execute, DepsMut, Env, MessageInfo, Response, StdError};
@@ -59,7 +60,7 @@ pub fn execute(
                     &config.ibc_host,
                     &union_ibc_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.source_channel,
+                            channel_id: packet.destination_channel,
                             packet,
                             acknowledgement: ack_success().into(),
                         },
@@ -79,6 +80,21 @@ pub fn execute(
         ) => Err(StdError::generic_err("the show must go on").into()),
         _ => Ok(Response::default()),
     }
+}
+
+#[cw_serde]
+pub struct MigrateMsg {
+    seconds_before_timeout: u64,
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    CONFIG.update(deps.storage, |mut c| {
+        c.seconds_before_timeout = msg.seconds_before_timeout;
+        Ok::<_, ContractError>(c)
+    })?;
+
+    Ok(Response::new())
 }
 
 fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<(), ContractError> {

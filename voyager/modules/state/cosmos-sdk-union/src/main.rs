@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fmt::{Debug, Display},
-    num::{NonZeroU64, ParseIntError},
+    num::ParseIntError,
     sync::Arc,
 };
 
@@ -223,88 +223,44 @@ impl Module {
         Ok(channel)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
-    async fn query_commitment(
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    async fn query_batch_packets(
         &self,
         height: Height,
         channel_id: u32,
-        sequence: NonZeroU64,
+        batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
-        // let path_string = CommitmentPath {
-        //     port_id,
-        //     channel_id,
-        //     sequence,
-        // }
-        // .to_string();
+        let commitment = self
+            .query_smart::<_, Option<H256>>(
+                &union_ibc_msg::query::QueryMsg::GetBatchPackets {
+                    channel_id,
+                    batch_hash,
+                },
+                Some(height),
+            )
+            .await?;
 
-        // let query_result = self.abci_query(&path_string, height).await?;
-
-        // Ok(match query_result.value {
-        //     Some(value) => Some(
-        //         H256::try_from(value)
-        //             .map_err(fatal_rpc_error("error decoding commitment", None))?,
-        //     ),
-        //     None => None,
-        // })
-
-        todo!()
+        Ok(commitment.flatten())
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
-    async fn query_acknowledgement(
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    async fn query_batch_receipts(
         &self,
         height: Height,
         channel_id: u32,
-        sequence: NonZeroU64,
+        batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
-        // let path_string = AcknowledgementPath {
-        //     port_id,
-        //     channel_id,
-        //     sequence,
-        // }
-        // .to_string();
+        let commitment = self
+            .query_smart::<_, Option<H256>>(
+                &union_ibc_msg::query::QueryMsg::GetBatchReceipts {
+                    channel_id,
+                    batch_hash,
+                },
+                Some(height),
+            )
+            .await?;
 
-        // let query_result = self.abci_query(&path_string, height).await?;
-
-        // Ok(match query_result.value {
-        //     Some(value) => Some(H256::try_from(value).map_err(fatal_rpc_error(
-        //         "error decoding acknowledgement commitment",
-        //         None,
-        //     ))?),
-        //     None => None,
-        // })
-
-        todo!()
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %sequence))]
-    async fn query_receipt(
-        &self,
-        height: Height,
-        channel_id: u32,
-        sequence: NonZeroU64,
-    ) -> RpcResult<bool> {
-        // let path_string = ReceiptPath {
-        //     port_id,
-        //     channel_id,
-        //     sequence,
-        // }
-        // .to_string();
-
-        // let query_result = self.abci_query(&path_string, height).await?;
-
-        // Ok(match query_result.value {
-        //     None => false,
-        //     Some(b) if b == [1] => true,
-        //     Some(invalid) => {
-        //         return Err(fatal_rpc_error("error decoding receipt", None)(format!(
-        //             "value is neither empty nor the single byte 0x01, found {}",
-        //             serde_utils::to_hex(invalid)
-        //         )))
-        //     }
-        // })
-
-        todo!()
+        Ok(commitment.flatten())
     }
 }
 
@@ -358,9 +314,14 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_channel(at, path.channel_id)
                 .await
                 .map(into_value),
-            _ => {
-                todo!()
-            }
+            Path::BatchPackets(path) => self
+                .query_batch_packets(at, path.channel_id, path.batch_hash)
+                .await
+                .map(into_value),
+            Path::BatchReceipts(path) => self
+                .query_batch_receipts(at, path.channel_id, path.batch_hash)
+                .await
+                .map(into_value),
         }
     }
 

@@ -34,6 +34,10 @@ abstract contract IBCHandler is
     ) public virtual initializer {
         __Ownable_init(admin);
         __UUPSUpgradeable_init();
+
+        commitments[nextClientSequencePath] = bytes32(uint256(1));
+        commitments[nextChannelSequencePath] = bytes32(uint256(1));
+        commitments[nextConnectionSequencePath] = bytes32(uint256(1));
     }
 
     function _authorizeUpgrade(

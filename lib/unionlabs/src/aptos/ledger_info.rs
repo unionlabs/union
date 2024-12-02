@@ -94,7 +94,7 @@ impl From<LedgerInfo> for protos::union::ibc::lightclients::movement::v1::Ledger
     fn from(value: LedgerInfo) -> Self {
         Self {
             commit_info: Some(value.commit_info.into()),
-            consensus_data_hash: value.consensus_data_hash.into_bytes(),
+            consensus_data_hash: value.consensus_data_hash.into_bytes().into(),
         }
     }
 }

@@ -160,7 +160,7 @@ checksum = "742b81ecb16cc5e9c029d55257cc8d9d5f9409f6384b65d996e583ad62a8c831"
 dependencies = [
  "alloy-primitives",
  "num_enum",
- "strum 0.26.2",
+ "strum 0.26.3",
 ]
 
 [[package]]
@@ -1780,7 +1780,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "strum 0.26.2",
+ "strum 0.26.3",
  "syn 2.0.77",
  "thiserror",
 ]
@@ -4367,7 +4367,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "strum 0.26.2",
+ "strum 0.26.3",
 ]
 
 [[package]]
@@ -4380,7 +4380,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ed25519-compact",
  "hex",
- "strum 0.26.2",
+ "strum 0.26.3",
  "tiny-hderive",
  "unionlabs",
 ]
@@ -6277,8 +6277,10 @@ dependencies = [
  "cometbft-types",
  "enumorph",
  "hex",
+ "ibc-solidity",
  "serde",
  "serde-utils",
+ "serde_json",
  "thiserror",
  "unionlabs",
 ]
@@ -8151,7 +8153,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "strum 0.26.2",
+ "strum 0.26.3",
  "strum_macros 0.26.4",
  "syn 2.0.77",
 ]
@@ -8168,7 +8170,7 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
- "strum 0.26.2",
+ "strum 0.26.3",
  "strum_macros 0.26.4",
  "syn 2.0.77",
 ]
@@ -9911,7 +9913,7 @@ dependencies = [
  "lru 0.12.5",
  "paste",
  "stability",
- "strum 0.26.2",
+ "strum 0.26.3",
  "strum_macros 0.26.4",
  "unicode-segmentation",
  "unicode-truncate",
@@ -11700,9 +11702,9 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.26.2"
+version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
+checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
 dependencies = [
  "strum_macros 0.26.4",
 ]
@@ -13056,6 +13058,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "sha3 0.10.8",
+ "strum 0.26.3",
  "thiserror",
  "union-ibc-msg",
  "unionlabs",
@@ -13717,6 +13720,7 @@ dependencies = [
 name = "voyager-plugin-transaction-batch"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "cometbft-rpc",
  "dashmap 5.5.3",
  "either",
@@ -13924,6 +13928,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "union-ibc",
  "union-ibc-msg",
  "unionlabs",
  "voyager-message",

@@ -43,7 +43,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, noop, pass::PassResult, Op};
+use voyager_vm::{call, conc, noop, pass::PassResult, Op};
 
 use crate::{
     call::{IbcMessage, ModuleCall},
@@ -174,13 +174,15 @@ impl Module {
         let res = self
             .keyring
             .with(|signer| {
-                let msg = msgs.clone();
+                let msgs = msgs.clone();
+
+                dbg!(&msgs);
 
                 async move {
                     // TODO: Figure out a way to thread this value through
                     let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-                    let msgs = process_msgs(msg, signer, self.ibc_union_contract_address.clone());
+                    let msgs = process_msgs(msgs, signer, self.ibc_union_contract_address.clone());
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
@@ -242,7 +244,7 @@ impl Module {
                     // }
 
                     let batch_size = msgs.len();
-                    let msg_names = msgs.iter().map(move |x| x.1.type_url.clone()).collect::<Vec<_>>();
+                    let msg_names = msgs.iter().map(|x| x.1.type_url.clone()).collect::<Vec<_>>();
 
                     match self.broadcast_tx_commit(
                         signer,
@@ -472,11 +474,19 @@ impl Module {
 
                             "cosmos transaction failed"
                         );
-                        break Err(BroadcastTxCommitError::Tx(error));
+
+                        if let Some(union_ibc_error) = tx.tx_result.log.split(": ").find_map(|x| {
+                            // dbg!(x);
+                            union_ibc::ContractErrorKind::parse_from_error_message(x)
+                        }) {
+                            break Err(BroadcastTxCommitError::UnionIbcError(union_ibc_error));
+                        } else {
+                            break Err(BroadcastTxCommitError::Tx(error));
+                        }
                     }
                 }
                 Err(err) if i > 5 => {
-                    warn!("tx inclusion couldn't be retrieved after {} try", i);
+                    warn!("tx inclusion couldn't be retrieved after {} attempt(s)", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
                 }
                 Err(_) => {
@@ -605,6 +615,8 @@ pub enum BroadcastTxCommitError {
     SimulateTx(#[source] tonic::Status),
     #[error("account sequence mismatch")]
     AccountSequenceMismatch(#[source] Option<tonic::Status>),
+    #[error("union IBC error: {0}")]
+    UnionIbcError(union_ibc::ContractErrorKind),
     #[error("out of gas")]
     OutOfGas,
 }
@@ -668,35 +680,53 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => {
-                self.do_send_transaction(msgs)
-                    .await
-                    .map_err(|err| match &err {
-                        BroadcastTxCommitError::Tx(tx_err) => match tx_err {
-                            CosmosSdkError::CapabilityError(capability_error) => {
-                                ErrorObject::owned(
-                                    FATAL_JSONRPC_ERROR_CODE,
-                                    ErrorReporter(capability_error).to_string(),
-                                    None::<()>,
-                                )
-                            }
-                            CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
-                                ErrorObject::owned(
-                                    FATAL_JSONRPC_ERROR_CODE,
+                let mut out = vec![];
+
+                for msgs in msgs.chunks(5) {
+                    let res = self
+                        .do_send_transaction(msgs.to_vec())
+                        .await
+                        .map_err(|err| match &err {
+                            BroadcastTxCommitError::Tx(tx_err) => match tx_err {
+                                CosmosSdkError::CapabilityError(capability_error) => {
+                                    ErrorObject::owned(
+                                        FATAL_JSONRPC_ERROR_CODE,
+                                        ErrorReporter(capability_error).to_string(),
+                                        None::<()>,
+                                    )
+                                }
+                                CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
+                                    ErrorObject::owned(
+                                        FATAL_JSONRPC_ERROR_CODE,
+                                        ErrorReporter(err).to_string(),
+                                        None::<()>,
+                                    )
+                                }
+                                CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
+                                    ErrorObject::owned(
+                                        FATAL_JSONRPC_ERROR_CODE,
+                                        ErrorReporter(err).to_string(),
+                                        None::<()>,
+                                    )
+                                }
+                                _ => ErrorObject::owned(
+                                    -1,
                                     ErrorReporter(err).to_string(),
                                     None::<()>,
-                                )
-                            }
-                            CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
-                                ErrorObject::owned(
-                                    FATAL_JSONRPC_ERROR_CODE,
-                                    ErrorReporter(err).to_string(),
-                                    None::<()>,
-                                )
-                            }
+                                ),
+                            },
+                            BroadcastTxCommitError::UnionIbcError(_) => ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                ErrorReporter(err).to_string(),
+                                None::<()>,
+                            ),
                             _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                        },
-                        _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                    })
+                        })?;
+
+                    out.push(res);
+                }
+
+                Ok(conc(out))
             }
         }
     }
@@ -1025,9 +1055,49 @@ fn process_msgs(
                     }
                     ibc_union::IbcMsg::ChannelCloseInit(_msg_channel_close_init) => todo!(),
                     ibc_union::IbcMsg::ChannelCloseConfirm(_msg_channel_close_confirm) => todo!(),
-                    ibc_union::IbcMsg::PacketRecv(_msg_packet_recv) => todo!(),
-                    ibc_union::IbcMsg::PacketAcknowledgement(_msg_packet_acknowledgement) => {
-                        todo!()
+                    ibc_union::IbcMsg::PacketRecv(msg_packet_recv) => {
+                        dbg!(&msg_packet_recv);
+
+                        let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketRecv(
+                            union_ibc_msg::msg::MsgPacketRecv {
+                                packets: msg_packet_recv.packets,
+                                relayer_msgs: msg_packet_recv.relayer_msgs,
+                                proof: msg_packet_recv.proof,
+                                proof_height: msg_packet_recv.proof_height,
+                                relayer: signer.to_string(),
+                            },
+                        );
+
+                        dbg!(&packet_recv);
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union::IbcMsg::PacketAcknowledgement(msg_packet_acknowledgement) => {
+                        dbg!(&msg_packet_acknowledgement);
+
+                        let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketAck(
+                            union_ibc_msg::msg::MsgPacketAcknowledgement {
+                                packets: msg_packet_acknowledgement.packets,
+                                acknowledgements: msg_packet_acknowledgement.acknowledgements,
+                                proof: msg_packet_acknowledgement.proof,
+                                proof_height: msg_packet_acknowledgement.proof_height,
+                                relayer: signer.to_string(),
+                            },
+                        );
+
+                        dbg!(&packet_recv);
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_union_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            funds: vec![],
+                        })
                     }
                     ibc_union::IbcMsg::PacketTimeout(_msg_packet_timeout) => todo!(),
                     ibc_union::IbcMsg::IntentPacketRecv(_msg_intent_packet_recv) => todo!(),

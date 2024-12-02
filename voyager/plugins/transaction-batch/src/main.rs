@@ -6,8 +6,10 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use alloy::sol_types::SolValue;
 use either::Either;
-use futures::{stream::FuturesOrdered, StreamExt, TryFutureExt, TryStreamExt};
+use futures::{stream::FuturesOrdered, StreamExt, TryStreamExt};
+use ibc_solidity::ibc::Packet;
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -15,9 +17,10 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
     bytes::Bytes,
+    ethereum::keccak256,
     ibc::core::{
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
@@ -822,43 +825,93 @@ async fn do_make_msg_union(
             ))))
         }
 
-        // EventUnion::ChannelOpenTry(event) => {
-        //     let origin_channel_path = unionlabs::ics24::ethabi::ChannelPath {
-        //         channel_id: event.channel_id.clone(),
-        //     };
+        EventUnion::SendPacket(event) => {
+            let packet = Packet {
+                source_channel: event.packet.source_channel.channel_id,
+                destination_channel: event.packet.destination_channel.channel_id,
+                data: event.packet_data.into(),
+                timeout_height: event.packet.timeout_height,
+                timeout_timestamp: event.packet.timeout_timestamp,
+            };
+            let proof_try = voyager_client
+                .query_ibc_proof(
+                    origin_chain_id,
+                    QueryHeight::Specific(origin_chain_proof_height),
+                    unionlabs::ics24::ethabi::BatchPacketsPath {
+                        channel_id: event.packet.source_channel.channel_id,
+                        batch_hash: keccak256(packet.abi_encode()),
+                    },
+                )
+                .await?;
 
-        //     let proof_try = voyager_client
-        //         .query_ibc_proof(
-        //             &origin_chain_id,
-        //             origin_chain_proof_height,
-        //             origin_channel_path.into(),
-        //         )
-        //         .await?;
+            let client_info = voyager_client
+                .client_info::<IbcUnion>(
+                    target_chain_id,
+                    event.packet.destination_channel.connection.client_id,
+                )
+                .await?;
 
-        //     let client_info = voyager_client
-        //         .client_info(&target_chain_id, event.connection.counterparty_client_id)
-        //         .await?;
+            let encoded_proof_commitment = voyager_client
+                .encode_proof::<IbcUnion>(
+                    client_info.client_type,
+                    client_info.ibc_interface,
+                    proof_try.proof,
+                )
+                .await?;
 
-        //     let encoded_proof_try = voyager_client
-        //         .encode_proof(
-        //             &client_info.client_type,
-        //             &client_info.ibc_interface,
-        //             proof_try.proof,
-        //         )
-        //         .await?;
+            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
+                ibc_union::MsgPacketRecv {
+                    packets: vec![packet],
+                    relayer_msgs: vec![vec![].into()],
+                    proof: encoded_proof_commitment,
+                    proof_height: origin_chain_proof_height.height(),
+                },
+            ))))
+        }
 
-        //     Ok(data(IbcMessage::from(MsgChannelOpenAck {
-        //         port_id: channel_open_try_event.counterparty_port_id,
-        //         channel_id: channel_open_try_event.counterparty_channel_id,
-        //         counterparty_channel_id: channel_open_try_event.channel_id,
-        //         counterparty_version: channel_open_try_event.version,
-        //         proof_try: encoded_proof_try,
-        //         proof_height: origin_chain_proof_height,
-        //     })))
-        // }
+        EventUnion::WriteAcknowledgement(event) => {
+            let packet = Packet {
+                source_channel: event.packet.source_channel.channel_id,
+                destination_channel: event.packet.destination_channel.channel_id,
+                data: event.packet_data.into(),
+                timeout_height: event.packet.timeout_height,
+                timeout_timestamp: event.packet.timeout_timestamp,
+            };
+            let proof_try = voyager_client
+                .query_ibc_proof(
+                    origin_chain_id,
+                    QueryHeight::Specific(origin_chain_proof_height),
+                    unionlabs::ics24::ethabi::BatchReceiptsPath {
+                        channel_id: event.packet.destination_channel.channel_id,
+                        batch_hash: keccak256(packet.abi_encode()),
+                    },
+                )
+                .await?;
 
-        // EventUnion::MakeMsgRecvPacket(msg) => make_msg_recv_packet(ctx, msg).await,
-        _ => todo!(),
+            let client_info = voyager_client
+                .client_info::<IbcUnion>(
+                    target_chain_id,
+                    event.packet.source_channel.connection.client_id,
+                )
+                .await?;
+
+            let encoded_proof_commitment = voyager_client
+                .encode_proof::<IbcUnion>(
+                    client_info.client_type,
+                    client_info.ibc_interface,
+                    proof_try.proof,
+                )
+                .await?;
+
+            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
+                ibc_union::MsgPacketAcknowledgement {
+                    packets: vec![packet],
+                    acknowledgements: vec![event.acknowledgement],
+                    proof: encoded_proof_commitment,
+                    proof_height: origin_chain_proof_height.height(),
+                },
+            ))))
+        }
     }
 }
 
@@ -1169,7 +1222,6 @@ impl Module {
             for (idx, msg) in msgs.into_iter().enumerate() {
                 let Op::Data(msg) = msg else {
                     error!("unexpected message: {msg:?}");
-
                     continue;
                 };
 
@@ -1501,39 +1553,37 @@ where
         .max()
         .expect("batch has at least one event; qed;");
 
+    info!("target height of update for batch is {target_height}");
+
     debug!(%client_id, "querying client meta for client");
 
-    voyager_client
+    let client_meta = voyager_client
         .client_meta::<V>(
             module.chain_id.clone(),
             QueryHeight::Latest,
             client_id.clone(),
         )
-        .map_ok({
-            let client_id = client_id.clone();
-            move |client_meta| {
-                let (idxs, events): (Vec<_>, Vec<_>) = events.into_iter().unzip();
+        .await?;
 
-                (
-                    idxs.into_iter().flatten().collect::<Vec<_>>(),
-                    seq([
-                        call(WaitForHeight {
-                            chain_id: client_meta.chain_id,
-                            height: target_height,
-                            finalized: true,
-                        }),
-                        call(PluginMessage::new(
-                            module.plugin_name(),
-                            ModuleCall::from(MakeTransactionBatchesWithUpdate {
-                                client_id,
-                                batches: events,
-                            }),
-                        )),
-                    ]),
-                )
-            }
-        })
-        .await
+    let (idxs, events): (Vec<_>, Vec<_>) = events.into_iter().unzip();
+
+    Ok((
+        idxs.into_iter().flatten().collect::<Vec<_>>(),
+        seq([
+            call(WaitForHeight {
+                chain_id: client_meta.chain_id,
+                height: target_height,
+                finalized: true,
+            }),
+            call(PluginMessage::new(
+                module.plugin_name(),
+                ModuleCall::from(MakeTransactionBatchesWithUpdate {
+                    client_id,
+                    batches: events,
+                }),
+            )),
+        ]),
+    ))
 }
 
 #[cfg(test)]

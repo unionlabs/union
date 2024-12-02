@@ -589,6 +589,12 @@ pub mod union_ibc {
                 connection_id: u32,
             },
 
+            #[event(tag = "wasm-send_packet")]
+            SendPacket {
+                #[parse(serde_json::from_str)]
+                packet: ibc_solidity::ibc::Packet,
+            },
+
             // #[event(
             //     tag = "write_acknowledgement",
             //     deprecated("packet_data", "packet_ack", "packet_connection")
@@ -728,7 +734,7 @@ pub mod union_ibc {
                 IbcEvent::ChannelOpenConfirm(_) => "channel_open_confirm",
                 // IbcEvent::WriteAcknowledgement(_) => "write_acknowledgement",
                 // IbcEvent::RecvPacket(_) => "recv_packet",
-                // IbcEvent::SendPacket(_) => "send_packet",
+                IbcEvent::SendPacket(_) => "send_packet",
                 // IbcEvent::AcknowledgePacket(_) => "acknowledge_packet",
                 // IbcEvent::TimeoutPacket(_) => "timeout_packet",
             }

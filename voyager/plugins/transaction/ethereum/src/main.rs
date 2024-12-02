@@ -624,18 +624,18 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // IbcMsg::RecvPacket(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .recvPacket(MsgPacketRecv {
-                //             packets: vec![convert_packet(data.packet)?],
-                //             proof: data.proof_commitment.into(),
-                //             proofHeight: data.proof_height.height(),
-                //             relayer: relayer.into(),
-                //             relayerMsgs: vec![],
-                //         })
-                //         .clear_decoder(),
-                // ),
+                IbcMsg::PacketRecv(data) => (
+                    msg,
+                    ibc_handler
+                        .recvPacket(ibc::MsgPacketRecv {
+                            packets: data.packets,
+                            proof: data.proof.into(),
+                            proof_height: data.proof_height,
+                            relayer: relayer.into(),
+                            relayer_msgs: data.relayer_msgs.into_iter().map(Into::into).collect(),
+                        })
+                        .clear_decoder(),
+                ),
                 // IbcMsg::AcknowledgePacket(data) => (
                 //     msg,
                 //     ibc_handler

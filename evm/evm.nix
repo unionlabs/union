@@ -322,16 +322,16 @@ _: {
                   required = true;
                   help = "The sender address that created the contract through the deployer.";
                 }
-                {
-                  arg = "owner_pk";
-                  required = true;
-                  help = "The contract owner public key to prank.";
-                }
               ]
               ++ pkgs.lib.optional (!dry) {
                 arg = "private_key";
                 required = true;
                 help = "The contract owner private key.";
+              }
+              ++ pkgs.lib.optional dry {
+                arg = "owner_pk";
+                required = true;
+                help = "The contract owner public key to prank.";
               };
             text = ''
               OUT="$(mktemp -d)"
@@ -341,7 +341,7 @@ _: {
 
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
-              OWNER="$argc_owner_pk" \
+              OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
               PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
               FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                 --rpc-url ${rpc-url} \
@@ -621,6 +621,12 @@ _: {
           builtins.map (args: {
             name = "eth-upgrade-${args.network}-ucs01";
             value = eth-upgrade ({ protocol = "UCS01"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ucs00";
+            value = eth-upgrade ({ protocol = "UCS00"; } // args);
           }) networks
         )
         // builtins.listToAttrs (

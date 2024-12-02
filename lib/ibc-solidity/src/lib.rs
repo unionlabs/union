@@ -762,3 +762,27 @@ impl Clone for ibc::Ibc::IbcEvents {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloy::{
+        primitives::{bytes, keccak256},
+        sol_types::SolValue,
+    };
+
+    use crate::ibc::Packet;
+
+    #[test]
+    fn packet_hash() {
+        dbg!(keccak256(
+            Packet {
+                source_channel: 1,
+                destination_channel: 1,
+                data: bytes!("0000000000000000000000000000000000000000000000000000000000000000"),
+                timeout_height: 0,
+                timeout_timestamp: 1733160153000000000
+            }
+            .abi_encode()
+        ));
+    }
+}

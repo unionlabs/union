@@ -1,3 +1,5 @@
+use unionlabs::hash::H256;
+
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -10,4 +12,6 @@ pub enum QueryMsg {
     GetConnection { connection_id: u32 },
     GetChannel { channel_id: u32 },
     GetChannels { contract: String },
+    GetBatchPackets { channel_id: u32, batch_hash: H256 },
+    GetBatchReceipts { channel_id: u32, batch_hash: H256 },
 }

@@ -8,7 +8,7 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
 };
 use serde_json::Value;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
 use voyager_core::IbcVersionId;
 
@@ -129,7 +129,7 @@ impl Server {
         chain_id: &ChainId,
         finalized: bool,
     ) -> RpcResult<Height> {
-        debug!("querying latest height");
+        trace!("querying latest height");
 
         let latest_height = self
             .inner
@@ -140,7 +140,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(
+        trace!(
             %latest_height,
             "queried latest height"
         );
@@ -154,7 +154,7 @@ impl Server {
         chain_id: &ChainId,
         finalized: bool,
     ) -> RpcResult<i64> {
-        debug!("querying latest timestamp");
+        trace!("querying latest timestamp");
 
         let latest_timestamp = self
             .inner
@@ -165,7 +165,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(latest_timestamp, "queried latest timestamp");
+        trace!(latest_timestamp, "queried latest timestamp");
 
         Ok(latest_timestamp)
     }
@@ -177,7 +177,7 @@ impl Server {
         ibc_version_id: &IbcVersionId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo> {
-        debug!("fetching client info");
+        trace!("fetching client info");
 
         let client_info = self
             .inner
@@ -188,7 +188,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(
+        trace!(
             %client_info.ibc_interface,
             %client_info.client_type,
             "fetched client info"
@@ -205,7 +205,7 @@ impl Server {
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
-        debug!("fetching client meta");
+        trace!("fetching client meta");
 
         let height = self.query_height(chain_id, at).await?;
 
@@ -232,7 +232,7 @@ impl Server {
             .await
             .map_err(fatal_error)?;
 
-        debug!(%client_state);
+        trace!(%client_state);
 
         let meta = modules
             .client_module(
@@ -245,7 +245,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(
+        trace!(
             client_state_meta.height = %meta.height,
             client_state_meta.chain_id = %meta.chain_id,
             %client_info.ibc_interface,
@@ -263,7 +263,7 @@ impl Server {
         height: Height,
         path: <P::Spec as IbcSpec>::StorePath,
     ) -> RpcResult<IbcState<P::Value>> {
-        debug!("fetching ibc state");
+        trace!("fetching ibc state");
 
         let state_module = self
             .inner
@@ -277,7 +277,7 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
-        debug!(%state, "fetched ibc state");
+        trace!(%state, "fetched ibc state");
 
         Ok(IbcState {
             height,
@@ -292,7 +292,7 @@ impl Server {
         height: Height,
         path: <P::Spec as IbcSpec>::StorePath,
     ) -> RpcResult<IbcProof> {
-        debug!("fetching ibc state");
+        trace!("fetching ibc state");
 
         let proof_module = self
             .inner
@@ -306,7 +306,7 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
-        debug!(%proof, "fetched ibc proof");
+        trace!(%proof, "fetched ibc proof");
 
         Ok(IbcProof { height, proof })
     }
@@ -317,7 +317,7 @@ impl Server {
         chain_id: ChainId,
         height: Height,
     ) -> RpcResult<SelfClientState> {
-        debug!("querying self client state");
+        trace!("querying self client state");
 
         let chain_module = self
             .inner
@@ -331,7 +331,7 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
-        debug!(%state, "fetched self client state");
+        trace!(%state, "fetched self client state");
 
         Ok(SelfClientState { height, state })
     }
@@ -342,7 +342,7 @@ impl Server {
         chain_id: ChainId,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
-        debug!("querying self consensus state");
+        trace!("querying self consensus state");
 
         let chain_module = self
             .inner
@@ -358,7 +358,7 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
-        debug!(%state, "fetched self consensus state");
+        trace!(%state, "fetched self consensus state");
 
         Ok(SelfConsensusState { height, state })
     }
@@ -372,7 +372,7 @@ impl Server {
         ibc_version_id: &IbcVersionId,
         proof: Value,
     ) -> RpcResult<Bytes> {
-        debug!("encoding proof");
+        trace!("encoding proof");
 
         let client_module = self
             .inner
@@ -385,7 +385,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(%proof, "encoded proof");
+        trace!(%proof, "encoded proof");
 
         Ok(proof)
     }
@@ -399,7 +399,7 @@ impl Server {
         ibc_version_id: &IbcVersionId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        debug!("decoding client state meta");
+        trace!("decoding client state meta");
 
         let client_module = self
             .inner
@@ -412,7 +412,7 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(
+        trace!(
             height = %meta.height,
             chain_id = %meta.chain_id,
             "decoded client state meta"
@@ -454,38 +454,6 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)
     }
-
-    // pub async fn query_ibc_state_typed<
-    //     P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable,
-    // >(
-    //     &self,
-    //     chain_id: &ChainId,
-    //     at: Height,
-    //     path: P,
-    // ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-    //     debug!(%chain_id, path = path.as_value(), %at, "querying ibc state");
-
-    //     let ibc_state = self.query_state(chain_id, at, path.clone().into()).await?;
-
-    //     Ok(serde_json::from_value::<P::Value>(ibc_state.state.clone())
-    //         .map(|value| IbcState {
-    //             chain_id: ibc_state.chain_id,
-    //             path: path.clone(),
-    //             height: ibc_state.height,
-    //             state: value,
-    //         })
-    //         .map_err(|e| {
-    //             ErrorObject::owned(
-    //                 FATAL_JSONRPC_ERROR_CODE,
-    //                 format!("unable to deserialize state: {}", ErrorReporter(e)),
-    //                 Some(json!({
-    //                     "chain_id": chain_id,
-    //                     "path": path,
-    //                     "state": ibc_state.state
-    //                 })),
-    //             )
-    //         })?)
-    // }
 }
 
 /// rpc impl

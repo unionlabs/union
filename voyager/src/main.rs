@@ -25,7 +25,7 @@ use voyager_message::{
     call::FetchBlocks,
     context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
     core::QueryHeight,
-    filter::{make_filter, run_filter},
+    filter::{make_filter, run_filter, JaqInterestFilter},
     ibc_v1::IbcV1,
     rpc::{IbcState, VoyagerRpcClient},
     IbcSpec, VoyagerMessage,
@@ -337,8 +337,17 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     print_json(&record);
                 }
-                QueueCmd::QueryFailedById { id } => {
-                    let record = db()?.await?.query_failed_by_id(id.inner()).await?;
+                QueueCmd::QueryFailedById { id, requeue } => {
+                    let q = db()?.await?;
+
+                    let record = q.query_failed_by_id(id.inner()).await?;
+
+                    if requeue {
+                        if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
+                            q.enqueue(record, &JaqInterestFilter::new(vec![]).unwrap())
+                                .await?;
+                        }
+                    }
 
                     print_json(&record);
                 }

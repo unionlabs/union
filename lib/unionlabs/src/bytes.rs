@@ -271,6 +271,14 @@ impl<E: Encoding, const N: usize> From<[u8; N]> for Bytes<E> {
     }
 }
 
+impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<crate::hash::hash_v2::Hash<N, EHash>>
+    for Bytes<EBytes>
+{
+    fn from(value: crate::hash::hash_v2::Hash<N, EHash>) -> Self {
+        Self::new(value.get().as_slice().to_owned())
+    }
+}
+
 // TODO: Feature gate rlp across the crate
 // #[cfg(feature = "rlp")]
 impl<E: Encoding> rlp::Decodable for Bytes<E> {
