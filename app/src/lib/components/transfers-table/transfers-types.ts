@@ -12,6 +12,7 @@ export type Transfer = {
   hash: string
   timestamp: string
   assets: TransferAsset
+  url?: string
 }
 
 export interface PaginatedTransfers {

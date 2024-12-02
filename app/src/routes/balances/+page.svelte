@@ -9,7 +9,7 @@ import BalancesOverview from "$lib/components/balances-overview.svelte"
   <WalletGateCosmos>
     <WalletGateEvm slot="connected" let:userAddrCosmos>
       <div class="max-w-full w-full" slot="connected" let:userAddrEvm>
-        <BalancesOverview {chains} userAddr={({evm: userAddrEvm, cosmos: userAddrCosmos})}/>
+        <BalancesOverview {chains} userAddr={({evm: userAddrEvm, cosmos: userAddrCosmos, aptos: null})}/>
       </div>
     </WalletGateEvm>
   </WalletGateCosmos>

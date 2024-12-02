@@ -2,6 +2,7 @@ import { derived, get } from "svelte/store"
 import { hexToBytes, type Hex } from "viem"
 import { persisted } from "svelte-persisted-store"
 import type { ChainWalletStore } from "../types.ts"
+// @ts-expect-error
 import type { AptosBrowserWallet } from "@unionlabs/client"
 
 export const aptosWalletsInformation = (

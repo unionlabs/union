@@ -1,6 +1,6 @@
-
 <script lang="ts">
-import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
+import type { ColumnDef } from "@tanstack/table-core"
+import { flexRender } from "@tanstack/svelte-table"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellSequence from "$lib/components/table-cells/cell-sequence.svelte"
 import { derived, type Readable } from "svelte/store"
@@ -29,9 +29,14 @@ let packets = chain_id
     : packetsByChainIdQuery(12, chain_id, timestamp)
   : packetsQuery(12, timestamp)
 
-let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
+let packetsDataStore = derived(packets, $packets =>
+  ($packets.data ?? []).map(item => ({
+    ...item,
+    timestamp: item.timestamp?.toString() ?? ""
+  }))
+)
 
-type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]
+type PacketRow = UnwrapReadable<typeof packetsDataStore>[number] & { timestamp?: string }
 
 const columns: Array<ColumnDef<PacketRow>> = [
   {
