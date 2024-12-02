@@ -24,7 +24,6 @@ protos                      = { workspace = true }
 rlp                         = { workspace = true }
 schemars                    = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
-serde-json-wasm             = { workspace = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tiny-keccak                 = { workspace = true, features = ["keccak"] }

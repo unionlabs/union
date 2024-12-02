@@ -18,21 +18,14 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 bytes                     = { workspace = true }
 cometbls-groth16-verifier = { workspace = true }
-cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
+cosmwasm-std                = { version = "2.1.4", features = ["abort", "iterator", "cosmwasm_2_1"] }
 hex                       = { workspace = true }
-prost                     = { workspace = true }
-protos                    = { workspace = true, features = ["proto_full", "std"] }
-ripemd                    = { workspace = true }
 schemars                  = { workspace = true }
 serde                     = { workspace = true, features = ["derive"] }
-serde-json-wasm           = { workspace = true }
-serde-utils               = { workspace = true }
-sha2                      = { workspace = true }
-sha3                      = { workspace = true }
 thiserror                 = { workspace = true }
-
-cometbls-light-client-types = { workspace = true, features = ["proto"] }
-ics008-wasm-client          = { workspace = true }
+union-ibc-light-client      = { workspace = true }
+union-ibc-msg               = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 ics23                       = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 

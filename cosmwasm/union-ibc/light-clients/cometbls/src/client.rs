@@ -32,10 +32,6 @@ use crate::{
     zkp_verifier::ZkpVerifier,
 };
 
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
-
 pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
 impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
@@ -51,7 +47,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
     type ConsensusState = ConsensusState;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,

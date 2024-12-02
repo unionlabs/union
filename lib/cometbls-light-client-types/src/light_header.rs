@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
     hash::{hash_v2::HexUnprefixed, H256},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LightHeader {
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
     pub validators_hash: H256<HexUnprefixed>,

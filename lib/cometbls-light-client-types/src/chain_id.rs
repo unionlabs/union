@@ -1,9 +1,7 @@
 use std::fmt::Display;
 
-use serde::{
-    de::{self, Visitor},
-    Deserialize, Serialize,
-};
+#[cfg(feature = "serde")]
+use serde::de::{self, Visitor};
 use unionlabs::errors::{ExpectedLength, InvalidLength};
 #[cfg(feature = "ethabi")]
 use {alloy::core::primitives::FixedBytes, std::string::FromUtf8Error};
@@ -57,7 +55,8 @@ impl Display for ChainId {
     }
 }
 
-impl Serialize for ChainId {
+#[cfg(feature = "serde")]
+impl serde::Serialize for ChainId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -66,7 +65,8 @@ impl Serialize for ChainId {
     }
 }
 
-impl<'de> Deserialize<'de> for ChainId {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for ChainId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,

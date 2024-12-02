@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
 
 use crate::light_header::LightHeader;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub signed_header: LightHeader,
     pub trusted_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub zero_knowledge_proof: Vec<u8>,
 }
 
@@ -49,113 +49,6 @@ pub mod proto {
                 zero_knowledge_proof: value.zero_knowledge_proof,
             })
         }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-pub mod ethabi {
-    use alloy::sol_types::SolValue;
-    use unionlabs::{
-        bounded::{BoundedI32, BoundedI64, BoundedIntError},
-        encoding::{Decode, Encode, EthAbi},
-        google::protobuf::timestamp::Timestamp,
-        ibc::core::client::height::Height,
-        TryFromEthAbiBytesErrorAlloy,
-    };
-
-    use crate::{Header, LightHeader};
-
-    alloy::sol! {
-        struct SolSignedHeader {
-            uint64 height;
-            uint64 secs;
-            uint64 nanos;
-            bytes32 validatorsHash;
-            bytes32 nextValidatorsHash;
-            bytes32 appHash;
-        }
-
-        struct SolHeader {
-            SolSignedHeader signedHeader;
-            uint64 trustedHeight;
-            bytes zeroKnowledgeProof;
-        }
-    }
-
-    impl Encode<EthAbi> for Header {
-        fn encode(self) -> Vec<u8> {
-            SolHeader {
-                signedHeader: SolSignedHeader {
-                    height: self
-                        .signed_header
-                        .height
-                        .inner()
-                        .try_into()
-                        .expect("value is >= 0 and <= i64::MAX; qed;"),
-                    secs: self
-                        .signed_header
-                        .time
-                        .seconds
-                        .inner()
-                        // TODO: Figure out a better way to represent these types other than by saturating
-                        .clamp(0, i64::MAX)
-                        .try_into()
-                        .expect("value is >= 0 and <= i64::MAX; qed;"),
-                    nanos: self
-                        .signed_header
-                        .time
-                        .nanos
-                        .inner()
-                        .try_into()
-                        .expect("value is >= 0 and <= i32::MAX; qed;"),
-                    validatorsHash: self.signed_header.validators_hash.into(),
-                    nextValidatorsHash: self.signed_header.next_validators_hash.into(),
-                    appHash: self.signed_header.app_hash.into(),
-                },
-                trustedHeight: self.trusted_height.height(),
-                zeroKnowledgeProof: self.zero_knowledge_proof.into(),
-            }
-            .abi_encode_params()
-        }
-    }
-
-    impl Decode<EthAbi> for Header {
-        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
-
-        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let header = SolHeader::abi_decode_params(bytes, true)?;
-
-            Ok(Self {
-                signed_header: LightHeader {
-                    height: BoundedI64::new(header.signedHeader.height)
-                        .map_err(Error::Height)
-                        .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
-                    time: Timestamp {
-                        seconds: BoundedI64::new(header.signedHeader.secs)
-                            .map_err(Error::Secs)
-                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
-                        nanos: BoundedI32::new(header.signedHeader.nanos)
-                            .map_err(Error::Nanos)
-                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
-                    },
-                    validators_hash: header.signedHeader.validatorsHash.into(),
-                    next_validators_hash: header.signedHeader.nextValidatorsHash.into(),
-                    app_hash: header.signedHeader.appHash.into(),
-                },
-                trusted_height: Height::new(header.trustedHeight),
-                zero_knowledge_proof: header.zeroKnowledgeProof.into(),
-            })
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid height")]
-        Height(#[source] BoundedIntError<i64, u64>),
-        #[error("invalid secs")]
-        Secs(#[source] BoundedIntError<i64, u64>),
-        #[error("invalid nanos")]
-        Nanos(#[source] BoundedIntError<i32, u64>),
     }
 }
 

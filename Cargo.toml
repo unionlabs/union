@@ -81,10 +81,9 @@ members = [
 
   "cosmwasm/union-ibc/light-clients/ethereum",
   "cosmwasm/union-ibc/light-clients/arbitrum",
-
   # "cosmwasm/union-ibc/light-clients/berachain",
 
-  # "cosmwasm/union-ibc/light-clients/cometbls",
+  "cosmwasm/union-ibc/light-clients/cometbls",
 
 
   # "cosmwasm/union-ibc/light-clients/evm-in-cosmos",
