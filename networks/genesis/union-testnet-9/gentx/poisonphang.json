@@ -4,7 +4,7 @@
       {
         "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
         "description": {
-          "moniker": "poisonphang-val",
+          "moniker": "poisonphang",
           "identity": "",
           "website": "",
           "security_contact": "",
@@ -24,7 +24,7 @@
         },
         "value": {
           "denom": "muno",
-          "amount": "1000000"
+          "amount": "1000000000000"
         }
       }
     ],
@@ -59,6 +59,6 @@
     "tip": null
   },
   "signatures": [
-    "uaTGv70sPgzREnkWbKoXZBC+RCm8HTN6VFP1zWx+0voFY2H3xxqEf+DQU3crARrf+Qkgox0xBYuxpkXCfFQSUQ=="
+    "BsUiFS4HkRPo0TJMKPJfKnxSClY9jOmCx4z2w/hHSV0XRuaNr7Qz6LY+naNjCzWNWrzVHH2TqPWN8tlYcyE1+Q=="
   ]
 }

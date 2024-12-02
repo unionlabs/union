@@ -4,7 +4,7 @@
       {
         "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
         "description": {
-          "moniker": "o",
+          "moniker": "poisonphang-seed",
           "identity": "",
           "website": "",
           "security_contact": "",
@@ -17,15 +17,18 @@
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "unionvaloper1pn8hdzv8sc8fe6jgngn8l4qc9p8msd79l0khda",
+        "validator_address": "unionvaloper1yfya5w5c07kkexqhg39g5x7wggrtrvwvju4spm",
         "pubkey": {
           "@type": "/cosmos.crypto.bn254.PubKey",
-          "key": "rYr50UbMjcvWy2/Y5di9qvls6JWU4wn48O95i7gPoks="
+          "key": "n3r3v/loN98rUUHj2PpZkvbpaGLjkQ39zV2/czQ/B8c="
         },
-        "value": { "denom": "muno", "amount": "1000000000000" }
+        "value": {
+          "denom": "muno",
+          "amount": "1000000000000"
+        }
       }
     ],
-    "memo": "39b18c2be0a3d3e286c1a0ec050bc3ec2c513da9@198.19.249.10:26656",
+    "memo": "c2bf0d5b2ad3a1df0f4e9cc32debffa239c0af90@49.12.206.139:26656",
     "timeout_height": "0",
     "unordered": false,
     "timeout_timestamp": "0001-01-01T00:00:00Z",
@@ -37,21 +40,25 @@
       {
         "public_key": {
           "@type": "/cosmos.crypto.secp256k1.PubKey",
-          "key": "ArEm95u5IHEOGq1Qsi/9d4hhAURjafbc4AdUVPWp/XPE"
+          "key": "A4LNO70HPIoFJuuWqRLE/imvUb4rDh6FTPOu4dtHIYId"
         },
-        "mode_info": { "single": { "mode": "SIGN_MODE_DIRECT" } },
+        "mode_info": {
+          "single": {
+            "mode": "SIGN_MODE_DIRECT"
+          }
+        },
         "sequence": "0"
       }
     ],
     "fee": {
       "amount": [],
       "gas_limit": "200000",
-      "payer": "union1pn8hdzv8sc8fe6jgngn8l4qc9p8msd79wpyzq5",
+      "payer": "union1yfya5w5c07kkexqhg39g5x7wggrtrvwvrj89vj",
       "granter": ""
     },
     "tip": null
   },
   "signatures": [
-    "dhyJFL1XvyeuqPnBSbwHGlQ197zKFCZr5WAev8b0dCMyV6Se8T47Buhnq3LLLnxiWkM7sx+ifQhM39N+OJfuYw=="
+    "+GRQePnjIAfZ2m8QXxnnm6BwANk7//fy/g546JbWV+pwUV99YwQs5wqcMC7cDQTBDmrlPHOLzZXc7a6u255yoA=="
   ]
 }
