@@ -572,30 +572,23 @@ fn acknowledge_packet(
     relayer: Addr,
 ) -> ContractResult {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
+
     let source_channel = first.source_channel;
     let destination_channel = first.destination_channel;
+
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
-    // TODO: Do the match only on the batch_hash
-    let (commitment_key, commitment_value) = match packets.len() {
-        1 => (
-            BatchReceiptsPath {
-                channel_id: destination_channel,
-                batch_hash: commit_packet(first),
-            }
-            .key(),
-            commit_ack(&acknowledgements[0]),
-        ),
-        _ => (
-            BatchReceiptsPath {
-                channel_id: destination_channel,
-                batch_hash: commit_packets(&packets),
-            }
-            .key(),
-            commit_acks(&acknowledgements),
-        ),
+    let (batch_hash, commitment_value) = match packets.len() {
+        1 => (commit_packet(first), commit_ack(&acknowledgements[0])),
+        _ => (commit_packets(&packets), commit_acks(&acknowledgements)),
     };
+
+    let commitment_key = BatchReceiptsPath {
+        channel_id: destination_channel,
+        batch_hash,
+    }
+    .key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     deps.querier.query_wasm_smart::<()>(
