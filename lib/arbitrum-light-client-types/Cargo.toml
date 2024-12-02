@@ -4,7 +4,7 @@ name    = "arbitrum-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy            = { workspace = true, features = ["sol-types"], optional = true }
+alloy                       = { workspace = true, features = ["sol-types"], optional = true }
 ethereum-light-client-types = { workspace = true }
 rlp                         = { workspace = true, features = ["derive"] }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
@@ -13,8 +13,8 @@ thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [features]
-serde   = ["dep:serde", "ethereum-light-client-types/serde"]
-ethabi  = ["dep:alloy", "ethereum-light-client-types/ethabi"]
+ethabi = ["dep:alloy", "ethereum-light-client-types/ethabi"]
+serde  = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }
