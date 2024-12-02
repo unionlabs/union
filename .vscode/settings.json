@@ -95,7 +95,6 @@
    * feel free to change if you have any strong preferences
    */
   "window.commandCenter": false,
-  "editor.smoothScrolling": true,
   "files.autoGuessEncoding": true,
   "yaml.schemaStore.enable": true,
   "editor.minimap.enabled": false,
