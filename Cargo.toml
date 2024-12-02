@@ -68,30 +68,34 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
+  "lib/ethereum-light-client-types",
+  "lib/arbitrum-light-client-types",
+  "lib/berachain-light-client-types",
+  "lib/cometbls-light-client-types",
+  "lib/scroll-light-client-types",
+  "lib/tendermint-light-client-types",
+  "lib/linea-light-client-types",
+  "lib/movement-light-client-types",
+
   # these will all be re enabled and updated once ethereum-light-client is updated
 
-  # "cosmwasm/union-ibc/light-clients/arbitrum",
-  "cosmwasm/union-ibc/light-clients/arbitrum/types",
+  "cosmwasm/union-ibc/light-clients/ethereum",
+  "cosmwasm/union-ibc/light-clients/arbitrum",
 
   # "cosmwasm/union-ibc/light-clients/berachain",
-  "cosmwasm/union-ibc/light-clients/berachain/types",
 
   # "cosmwasm/union-ibc/light-clients/cometbls",
-  "cosmwasm/union-ibc/light-clients/cometbls/types",
 
-  "cosmwasm/union-ibc/light-clients/ethereum",
-  "cosmwasm/union-ibc/light-clients/ethereum/types",
 
   # "cosmwasm/union-ibc/light-clients/evm-in-cosmos",
 
   # "cosmwasm/union-ibc/light-clients/scroll",
-  "cosmwasm/union-ibc/light-clients/scroll/types",
 
   # "cosmwasm/union-ibc/light-clients/tendermint",
-  "cosmwasm/union-ibc/light-clients/tendermint/types",
 
   # "cosmwasm/union-ibc/light-clients/linea",
-  "cosmwasm/union-ibc/light-clients/linea/types",
+
+  # "cosmwasm/union-ibc/light-clients/movement",
 
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
@@ -143,8 +147,7 @@ members = [
 
   # "cosmwasm/union-ibc/light-clients/movement",
   "cosmwasm/union-ibc/light-clients/movement/types",
-
-  # "lib/aptos-verifier",
+  "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/voyager-core",
@@ -184,17 +187,17 @@ chain-utils      = { path = "lib/chain-utils", default-features = false }
 cometbft-rpc     = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types   = { path = "lib/cometbft-types", default-features = false }
 
-arbitrum-light-client-types = { path = "cosmwasm/union-ibc/light-clients/arbitrum/types", default-features = false }
+arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
-cometbls-light-client-types = { path = "cosmwasm/union-ibc/light-clients/cometbls/types", default-features = false }
+cometbls-light-client-types = { path = "lib/cometbls-light-client-types", default-features = false }
 
-scroll-light-client-types = { path = "cosmwasm/union-ibc/light-clients/scroll/types", default-features = false }
+scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 
 ethereum-light-client       = { path = "cosmwasm/union-ibc/light-clients/ethereum", default-features = false }
-ethereum-light-client-types = { path = "cosmwasm/union-ibc/light-clients/ethereum/types", default-features = false }
+ethereum-light-client-types = { path = "lib/ethereum-light-client-types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
@@ -202,13 +205,13 @@ scroll-api   = { path = "lib/scroll-api", default-features = false }
 scroll-codec = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc   = { path = "lib/scroll-rpc", default-features = false }
 
-berachain-light-client-types = { path = "cosmwasm/union-ibc/light-clients/berachain/types", default-features = false }
+berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "light-clients/tendermint-light-client", default-features = false }
-tendermint-light-client-types = { path = "cosmwasm/union-ibc/light-clients/tendermint/types", default-features = false }
+tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
-linea-light-client-types = { path = "cosmwasm/union-ibc/light-clients/linea/types", default-features = false }
+linea-light-client-types = { path = "lib/linea-light-client-types", default-features = false }
 linea-verifier           = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
@@ -231,7 +234,7 @@ poseidon-rs                    = { path = "lib/poseidon-rs", default-features = 
 protos                         = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
 
-movement-light-client-types = { path = "cosmwasm/union-ibc/light-clients/movement/types", default-features = false }
+movement-light-client-types = { path = "lib/movement-light-client-types", default-features = false }
 
 cosmos-sdk-event = { path = "lib/cosmos-sdk-event", default-features = false }
 
