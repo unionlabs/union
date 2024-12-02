@@ -34,7 +34,7 @@ function formatValue(value: number | string): string {
   <slot/>
 </div>
 
-<style>
+<style lang="postcss">
     .blink {
         animation: blink-animation 0.5s;
     }

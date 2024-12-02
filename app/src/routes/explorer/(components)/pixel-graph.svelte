@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as Tooltip from "$lib/components/ui/tooltip"
 
-export let data: Array<{ count: number; day: Date }> = []
+export let data: Array<{ count: number; day: string }> = []
 
 $: minValue = 0
 $: maxValue = data.length > 0 ? Math.max(...data.map(d => d.count)) : 0
