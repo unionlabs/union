@@ -1,18 +1,40 @@
-module ping_pong::ibc {
+module ping_pong::ping_pong_app {
+    use aptos_framework::object::{Self, Object};
+    use std::option;
+    use ibc::helpers;
+    use ibc::dispatcher;
     use std::event;
     use std::timestamp;
-    use std::object;
     use std::signer;
     use std::string::{Self, String, utf8};
     use ibc::ibc;
     use std::vector;
     use std::bcs;
+    use aptos_framework::function_info;
     use std::from_bcs;
     use ibc::height;
     use ibc::channel;
+    use aptos_std::copyable_any;
     use ibc::packet::{Self, Packet};
+    use ibc::ibc_dispatch;
 
-    const ACK_SUCCESS: vector<u8> = b"\x01";
+    struct PingPongProof has drop, store, key {}
+
+    public(friend) fun new_ping_pong_proof(): PingPongProof {
+        PingPongProof {}
+    }
+
+    const ACK_SUCCESS: vector<u8> = b"1";
+    const ON_RECV_PACKET: u8 = 0;
+    const ON_ACKNOWLEDGE_PACKET: u8 = 1;
+    const ON_TIMEOUT_PACKET: u8 = 2;
+    const ON_CHANNEL_OPEN_INIT: u8 = 3;
+    const ON_CHANNEL_OPEN_TRY: u8 = 4;
+    const ON_CHANNEL_OPEN_ACK: u8 = 5;
+    const ON_CHANNEL_OPEN_CONFIRM: u8 = 6;
+    const ON_CHANNEL_CLOSE_INIT: u8 = 7;
+    const ON_CHANNEL_CLOSE_CONFIRM: u8 = 8;
+
     const ERR_ONLY_ONE_CHANNEL: u64 = 2001;
     const ERR_INVALID_ACK: u64 = 2002;
     const ERR_NO_CHANNEL: u64 = 2003;
@@ -61,6 +83,17 @@ module ping_pong::ibc {
                 self_address: signer::address_of(deployer)
             }
         );
+
+        let cb =
+            function_info::new_function_info(
+                deployer,
+                string::utf8(b"ping_pong_app"),
+                string::utf8(b"on_packet")
+            );
+
+        ibc_dispatch::register_application<PingPongProof>(
+            deployer, cb, new_ping_pong_proof()
+        );
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -89,6 +122,7 @@ module ping_pong::ibc {
 
     public fun decode_packet(data: &vector<u8>): PingPongPacket {
         // bool is left padded [0u8; 32], so we check the last element
+        std::debug::print(data);
         let ping = *vector::borrow(data, 31) == 1;
 
         // // u64 is left padded [0u8; 32], rightmost 8 bytes are used to define u64
@@ -128,179 +162,6 @@ module ping_pong::ibc {
         );
     }
 
-    public entry fun recv_packet(
-        packet_sequence: u64,
-        packet_source_channel: u32,
-        packet_destination_channel: u32,
-        packet_data: vector<u8>,
-        packet_timeout_height: u64,
-        packet_timeout_timestamp: u64,
-        proof: vector<u8>,
-        proof_height: u64
-    ) acquires PingPong, SignerRef {
-        let pp_packet = decode_packet(&packet_data);
-        event::emit(RingEvent { ping: pp_packet.ping });
-
-        // let local_timeout = pp_packet.counterparty_timeout;
-
-        pp_packet.ping = !pp_packet.ping;
-        // pp_packet.counterparty_timeout = timestamp::now_seconds() * 1_000_000_000 + borrow_global<PingPong>(get_vault_addr()).timeout;
-
-        initiate(pp_packet.ping);
-
-        let packet =
-            packet::new(
-                packet_sequence,
-                packet_source_channel,
-                packet_destination_channel,
-                packet_data,
-                packet_timeout_height,
-                packet_timeout_timestamp
-            );
-
-        ibc::recv_packet(
-            &get_signer(),
-            get_self_address(),
-            vector[packet],
-            proof,
-            proof_height,
-            vector[1]
-        );
-    }
-
-    public entry fun acknowledge_packet(
-        packet_sequences: vector<u64>,
-        packet_source_channels: vector<u32>,
-        packet_destination_channels: vector<u32>,
-        packet_datas: vector<vector<u8>>,
-        packet_timeout_heights: vector<u64>,
-        packet_timeout_timestamps: vector<u64>,
-        acknowledgements: vector<vector<u8>>,
-        proof: vector<u8>,
-        proof_height: u64
-    ) acquires SignerRef {
-        let packets: vector<Packet> = vector::empty();
-        let i = 0;
-        while (i < vector::length(&packet_sequences)) {
-            vector::push_back(
-                &mut packets,
-                packet::new(
-                    *vector::borrow(&packet_sequences, i),
-                    *vector::borrow(&packet_source_channels, i),
-                    *vector::borrow(&packet_destination_channels, i),
-                    *vector::borrow(&packet_datas, i),
-                    *vector::borrow(&packet_timeout_heights, i),
-                    *vector::borrow(&packet_timeout_timestamps, i)
-                )
-            );
-            i = i + 1;
-        };
-        ibc::acknowledge_packet(
-            &get_signer(),
-            get_self_address(),
-            packets,
-            acknowledgements,
-            proof,
-            proof_height
-        );
-        event::emit(AcknowledgedEvent {});
-    }
-
-    public fun timeout_packet(_packet: Packet) {
-        event::emit(TimedOutEvent {});
-    }
-
-    public entry fun channel_open_init(
-        connection_id: u32, ordering: u8, version: vector<u8>
-    ) acquires PingPong, SignerRef {
-        // TODO(aeryz): save the channel here
-        ibc::channel_open_init(
-            &get_signer(),
-            get_self_address(),
-            connection_id,
-            ordering,
-            version
-        );
-        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
-            abort ERR_ONLY_ONE_CHANNEL
-        };
-    }
-
-    public entry fun channel_open_try(
-        channel_state: u8,
-        channel_order: u8,
-        connection_id: u32,
-        counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>,
-        proof_init: vector<u8>,
-        proof_height: u64
-    ) acquires PingPong, SignerRef {
-        // TODO(aeryz): save the channel here
-        ibc::channel_open_try(
-            &get_signer(),
-            get_self_address(),
-            channel_state,
-            channel_order,
-            connection_id,
-            counterparty_channel_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
-
-        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
-            abort ERR_ONLY_ONE_CHANNEL
-        };
-    }
-
-    public entry fun channel_open_ack(
-        channel_id: u32,
-        counterparty_version: vector<u8>,
-        counterparty_channel_id: u32,
-        proof_try: vector<u8>,
-        proof_height: u64
-    ) acquires PingPong, SignerRef {
-        // Store the channel_id
-        ibc::channel_open_ack(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height
-        );
-        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
-    }
-
-    public entry fun channel_open_confirm(
-        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
-    ) acquires PingPong, SignerRef {
-        ibc::channel_open_confirm(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            proof_ack,
-            proof_height
-        );
-
-        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
-    }
-
-    public entry fun channel_close_init(
-        _port_id: String, _channel_id: String
-    ) {
-        abort ERR_INFINITE_GAME
-    }
-
-    public entry fun channel_close_confirm(
-        _port_id: String, _channel_id: String
-    ) {
-        abort ERR_INFINITE_GAME
-    }
-
     #[view]
     public fun get_vault_addr(): address {
         object::create_object_address(&@ping_pong, IBC_APP_SEED)
@@ -316,15 +177,181 @@ module ping_pong::ibc {
         vault.self_address
     }
 
-    // #[test]
-    // public fun test_encode() {
-    //     let packet = PingPongPacket { ping: true, counterparty_timeout: 1000 };
-    //     let encoded = encode_packet(&packet);
-    //     let decoded = decode_packet(&encoded);
+    public fun on_recv_intent_packet(packet: Packet): vector<u8> {
+        std::debug::print(&string::utf8(b"NOT IMPLEMENTED"));
+        abort 0
+    }
 
-    //     assert!(decoded.ping == packet.ping, 1);
-    //     assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
-    // }
+    // Functions with the "on_" prefix for each specific operation
+    public fun on_recv_packet(packet: Packet) acquires PingPong, SignerRef {
+        std::debug::print(&string::utf8(b"on_recv_packet called."));
+
+        let packet_data = packet::data(&packet);
+        std::debug::print(&string::utf8(b"packet_data is:"));
+        std::debug::print(packet_data);
+        let pp_packet = decode_packet(packet_data);
+        event::emit(RingEvent { ping: pp_packet.ping });
+
+        pp_packet.ping = !pp_packet.ping;
+
+        initiate(pp_packet.ping);
+
+        dispatcher::set_return_value<PingPongProof>(new_ping_pong_proof(), ACK_SUCCESS);
+
+    }
+
+    public fun on_acknowledge_packet(
+        packet: Packet, acknowledgement: vector<u8>
+    ) {
+        if (acknowledgement != ACK_SUCCESS) {
+            abort ERR_INVALID_ACK
+        };
+        event::emit(AcknowledgedEvent {});
+    }
+
+    public fun on_timeout_packet(_packet: Packet) {
+        event::emit(TimedOutEvent {});
+    }
+
+    public fun on_channel_open_init(
+        _ordering: u8,
+        _connection_id: u32,
+        _channel_id: u32,
+        _version: vector<u8>
+    ) acquires PingPong {
+        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
+            abort ERR_ONLY_ONE_CHANNEL
+        };
+    }
+
+    public fun on_channel_open_try(
+        _ordering: u8,
+        _connection_id: u32,
+        _channel_id: u32,
+        _counterparty_channel_id: u32,
+        _version: vector<u8>,
+        _counterparty_version: vector<u8>
+    ) acquires PingPong {
+        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
+            abort ERR_ONLY_ONE_CHANNEL
+        };
+    }
+
+    public fun on_channel_open_ack(
+        channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: vector<u8>
+    ) acquires PingPong {
+        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
+    }
+
+    public fun on_channel_open_confirm(channel_id: u32) acquires PingPong {
+        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
+    }
+
+    public fun on_channel_close_init(channel_id: u32) {
+        abort ERR_INFINITE_GAME
+    }
+
+    public fun on_channel_close_confirm(channel_id: u32) {
+        abort ERR_INFINITE_GAME
+    }
+
+    public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
+        let value: copyable_any::Any = dispatcher::get_data(new_ping_pong_proof());
+        let type_name_output = *copyable_any::type_name(&value);
+
+        if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::RecvPacketParams>()) {
+            let (pack) =
+                helpers::on_recv_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::RecvPacketParams>(value)
+                );
+            on_recv_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::RecvIntentPacketParams>()) {
+            let (pack) =
+                helpers::on_recv_intent_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::RecvIntentPacketParams>(value)
+                );
+            on_recv_intent_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::AcknowledgePacketParams>()) {
+            let (pack, acknowledgement) =
+                helpers::on_acknowledge_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::AcknowledgePacketParams>(value)
+                );
+            on_acknowledge_packet(pack, acknowledgement);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::TimeoutPacketParams>()) {
+            let (pack) =
+                helpers::on_timeout_packet_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::TimeoutPacketParams>(value)
+                );
+            on_timeout_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenInitParams>()) {
+            let (ordering, connection_id, channel_id, version) =
+                helpers::on_channel_open_init_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenInitParams>(value)
+                );
+            on_channel_open_init(ordering, connection_id, channel_id, version);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenTryParams>()) {
+            let (
+                ordering,
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            ) =
+                helpers::on_channel_open_try_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenTryParams>(value)
+                );
+            on_channel_open_try(
+                ordering,
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenAckParams>()) {
+            let (channel_id, counterparty_channel_id, counterparty_version) =
+                helpers::on_channel_open_ack_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenAckParams>(value)
+                );
+            on_channel_open_ack(
+                channel_id, counterparty_channel_id, counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelOpenConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_open_confirm_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelOpenConfirmParams>(value)
+                );
+            on_channel_open_confirm(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelCloseInitParams>()) {
+            let channel_id =
+                helpers::on_channel_close_init_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelCloseInitParams>(value)
+                );
+            on_channel_close_init(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ibc_dispatch::ChannelCloseConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_close_confirm_deconstruct(
+                    copyable_any::unpack<ibc_dispatch::ChannelCloseConfirmParams>(value)
+                );
+            on_channel_close_confirm(channel_id);
+        } else {
+            std::debug::print(
+                &string::utf8(b"Invalid function type detected in on_packet function!")
+            );
+        };
+        0
+    }
 
     #[test(deployer = @ping_pong)]
     public fun test_signer(deployer: &signer) acquires SignerRef {
