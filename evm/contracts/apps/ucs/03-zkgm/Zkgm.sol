@@ -1,7 +1,12 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "solady/utils/CREATE3.sol";
+import "solady/utils/LibBit.sol";
+import "solady/utils/LibString.sol";
 
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
@@ -12,22 +17,9 @@ import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
 
-struct Acknowledgement {
-    uint256 tag;
-    bytes innerAck;
-}
-
-struct BatchAcknowledgement {
-    bytes[] acknowledgements;
-}
-
-struct AssetTransferAcknowledgement {
-    uint256 fillType;
-    bytes marketMaker;
-}
-
 struct ZkgmPacket {
     bytes32 salt;
+    uint256 path;
     bytes syscall;
 }
 
@@ -59,10 +51,27 @@ struct FungibleAssetTransferPacket {
     bytes sender;
     bytes receiver;
     bytes sentToken;
+    uint256 sentTokenPrefix;
+    string sentSymbol;
+    string sentName;
     uint256 sentAmount;
     bytes askToken;
     uint256 askAmount;
     bool onlyMaker;
+}
+
+struct Acknowledgement {
+    uint256 tag;
+    bytes innerAck;
+}
+
+struct BatchAcknowledgement {
+    bytes[] acknowledgements;
+}
+
+struct AssetTransferAcknowledgement {
+    uint256 fillType;
+    bytes marketMaker;
 }
 
 library ZkgmLib {
@@ -83,6 +92,8 @@ library ZkgmLib {
 
     uint8 public constant ZKGM_VERSION_0 = 0x00;
 
+    bytes32 public constant IBC_VERSION = keccak256("ucs03-zkgm-0");
+
     error ErrUnsupportedVersion();
     error ErrUnimplemented();
     error ErrBatchMustBeSync();
@@ -92,6 +103,11 @@ library ZkgmLib {
     error ErrInvalidAmount();
     error ErrOnlyMaker();
     error ErrInvalidFillType();
+    error ErrInvalidIBCVersion();
+    error ErrInvalidHops();
+    error ErrInvalidAssetOrigin();
+    error ErrInvalidAssetSymbol();
+    error ErrInvalidAssetName();
 
     function encodeAssetTransferAck(
         AssetTransferAcknowledgement memory ack
@@ -216,14 +232,40 @@ library ZkgmLib {
         }
         return (size > 0);
     }
+
+    function updateChannelPath(
+        uint256 path,
+        uint32 nextChannelId
+    ) internal pure returns (uint256) {
+        if (path == 0) {
+            return uint256(nextChannelId);
+        }
+        uint256 nextHopIndex = LibBit.fls(path) / 32 + 1;
+        if (nextHopIndex > 7) {
+            revert ErrInvalidHops();
+        }
+        return (uint256(nextChannelId) << 32 * nextHopIndex) | path;
+    }
+
+    function lastChannelFromPath(
+        uint256 path
+    ) internal pure returns (uint32) {
+        if (path == 0) {
+            return 0;
+        }
+        uint256 currentHopIndex = LibBit.fls(path) / 32;
+        return uint32(path >> currentHopIndex * 32);
+    }
 }
 
 contract Zkgm is IBCAppBase {
     using ZkgmLib for *;
+    using LibString for *;
 
     IBCHandler private ibcHandler;
     mapping(bytes32 => IBCPacket) private inFlightPacket;
     mapping(uint32 => mapping(address => uint256)) private channelBalance;
+    mapping(address => uint256) tokenOrigin;
 
     constructor(
         IBCHandler _ibcHandler
@@ -234,6 +276,120 @@ contract Zkgm is IBCAppBase {
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
     }
+
+    function send(
+        uint32 channelId,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        bytes calldata rawSyscall
+    ) public {
+        verifyInternal(channelId, 0, rawSyscall);
+        ibcHandler.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({salt: salt, path: 0, syscall: rawSyscall})
+            )
+        );
+    }
+
+    function verifyInternal(
+        uint32 channelId,
+        uint256 path,
+        bytes calldata rawSyscall
+    ) internal {
+        SyscallPacket calldata syscallPacket = ZkgmLib.decodeSyscall(rawSyscall);
+        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+            revert ZkgmLib.ErrUnsupportedVersion();
+        }
+        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            verifyFungibleAssetTransfer(
+                channelId,
+                path,
+                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+            verifyBatch(
+                channelId, path, ZkgmLib.decodeBatch(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+            verifyForward(
+                channelId, path, ZkgmLib.decodeForward(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+            verifyMultiplex(
+                channelId, path, ZkgmLib.decodeMultiplex(syscallPacket.packet)
+            );
+        } else {
+            revert ZkgmLib.ErrUnknownSyscall();
+        }
+    }
+
+    function verifyFungibleAssetTransfer(
+        uint32 channelId,
+        uint256 path,
+        FungibleAssetTransferPacket calldata assetTransferPacket
+    ) internal {
+        IERC20Metadata sentToken =
+            IERC20Metadata(address(bytes20(assetTransferPacket.sentToken)));
+        if (!assetTransferPacket.sentName.eq(sentToken.name())) {
+            revert ZkgmLib.ErrInvalidAssetName();
+        }
+        if (!assetTransferPacket.sentSymbol.eq(sentToken.symbol())) {
+            revert ZkgmLib.ErrInvalidAssetSymbol();
+        }
+        uint256 origin = tokenOrigin[address(sentToken)];
+        if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
+            IZkgmERC20(address(sentToken)).burn(
+                msg.sender, assetTransferPacket.sentAmount
+            );
+        } else {
+            // TODO: extract this as a step before verifying to allow for ERC777
+            // send hook
+            SafeERC20.safeTransferFrom(
+                sentToken,
+                msg.sender,
+                address(this),
+                assetTransferPacket.sentAmount
+            );
+        }
+        if (!assetTransferPacket.onlyMaker) {
+            if (assetTransferPacket.sentTokenPrefix != origin) {
+                revert ZkgmLib.ErrInvalidAssetOrigin();
+            }
+        }
+    }
+
+    function verifyBatch(
+        uint32 channelId,
+        uint256 path,
+        BatchPacket calldata batchPacket
+    ) internal {
+        uint256 l = batchPacket.syscallPackets.length;
+        for (uint256 i = 0; i < l; i++) {
+            verifyInternal(channelId, path, batchPacket.syscallPackets[i]);
+        }
+    }
+
+    function verifyForward(
+        uint32 channelId,
+        uint256 path,
+        ForwardPacket calldata forwardPacket
+    ) internal {
+        verifyInternal(
+            channelId,
+            ZkgmLib.updateChannelPath(path, forwardPacket.channelId),
+            forwardPacket.syscallPacket
+        );
+    }
+
+    function verifyMultiplex(
+        uint32 channelId,
+        uint256 path,
+        MultiplexPacket calldata multiplexPacket
+    ) internal {}
 
     function onRecvPacket(
         IBCPacket calldata packet,
@@ -250,7 +406,8 @@ contract Zkgm is IBCAppBase {
             if (acknowledgement.length == 0) {
                 return ZkgmLib.ACK_EMPTY;
             } else if (
-                keccak256(acknowledgement) == keccak256(ZkgmLib.ACK_ERR_ONLYMAKER)
+                keccak256(acknowledgement)
+                    == keccak256(ZkgmLib.ACK_ERR_ONLYMAKER)
             ) {
                 // Special case where we should avoid the packet from being
                 // received entirely as it is only fillable by a market maker.
@@ -289,6 +446,7 @@ contract Zkgm is IBCAppBase {
             relayer,
             relayerMsg,
             zkgmPacket.salt,
+            zkgmPacket.path,
             ZkgmLib.decodeSyscall(zkgmPacket.syscall)
         );
     }
@@ -298,6 +456,7 @@ contract Zkgm is IBCAppBase {
         address relayer,
         bytes calldata relayerMsg,
         bytes32 salt,
+        uint256 path,
         SyscallPacket calldata syscallPacket
     ) internal returns (bytes memory) {
         if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
@@ -309,6 +468,7 @@ contract Zkgm is IBCAppBase {
                 relayer,
                 relayerMsg,
                 salt,
+                path,
                 ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
             );
         } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
@@ -317,6 +477,7 @@ contract Zkgm is IBCAppBase {
                 relayer,
                 relayerMsg,
                 salt,
+                path,
                 ZkgmLib.decodeBatch(syscallPacket.packet)
             );
         } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
@@ -325,6 +486,7 @@ contract Zkgm is IBCAppBase {
                 relayer,
                 relayerMsg,
                 salt,
+                path,
                 ZkgmLib.decodeForward(syscallPacket.packet)
             );
         } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
@@ -345,6 +507,7 @@ contract Zkgm is IBCAppBase {
         address relayer,
         bytes calldata relayerMsg,
         bytes32 salt,
+        uint256 path,
         BatchPacket calldata batchPacket
     ) internal returns (bytes memory) {
         uint256 l = batchPacket.syscallPackets.length;
@@ -357,6 +520,7 @@ contract Zkgm is IBCAppBase {
                 relayer,
                 relayerMsg,
                 keccak256(abi.encode(salt)),
+                path,
                 syscallPacket
             );
             if (acks[i].length == 0) {
@@ -373,8 +537,12 @@ contract Zkgm is IBCAppBase {
         address relayer,
         bytes calldata relayerMsg,
         bytes32 salt,
+        uint256 path,
         ForwardPacket calldata forwardPacket
     ) internal returns (bytes memory) {
+        // TODO: consider using a magic value for few bytes of the salt in order
+        // to know that it's a forwarded packet in the acknowledgement, without
+        // having to index in `inFlightPacket`, saving gas in the process.
         IBCPacket memory sentPacket = ibcHandler.sendPacket(
             forwardPacket.channelId,
             forwardPacket.timeoutHeight,
@@ -382,6 +550,9 @@ contract Zkgm is IBCAppBase {
             ZkgmLib.encode(
                 ZkgmPacket({
                     salt: keccak256(abi.encode(salt)),
+                    path: ZkgmLib.updateChannelPath(
+                        path, ibcPacket.destinationChannel
+                    ),
                     syscall: forwardPacket.syscallPacket
                 })
             )
@@ -432,10 +603,12 @@ contract Zkgm is IBCAppBase {
     }
 
     function predictWrappedToken(
-        uint32 channel,
+        uint256 path,
+        uint32 destinationChannel,
         bytes calldata token
     ) internal returns (address, bytes32) {
-        bytes32 wrappedTokenSalt = keccak256(abi.encode(channel, token));
+        bytes32 wrappedTokenSalt =
+            keccak256(abi.encode(path, destinationChannel, token));
         address wrappedToken =
             CREATE3.predictDeterministicAddress(wrappedTokenSalt);
         return (wrappedToken, wrappedTokenSalt);
@@ -446,28 +619,37 @@ contract Zkgm is IBCAppBase {
         address relayer,
         bytes calldata relayerMsg,
         bytes32 salt,
+        uint256 path,
         FungibleAssetTransferPacket calldata assetTransferPacket
     ) internal returns (bytes memory) {
         if (assetTransferPacket.onlyMaker) {
             return ZkgmLib.ACK_ERR_ONLYMAKER;
         }
+        // The protocol can only wrap or unwrap an asset, hence 1:1 baked.
+        // The fee is the difference, which can only be positive.
         if (assetTransferPacket.askAmount > assetTransferPacket.sentAmount) {
             revert ZkgmLib.ErrInvalidAmount();
         }
         (address wrappedToken, bytes32 wrappedTokenSalt) = predictWrappedToken(
-            ibcPacket.destinationChannel, assetTransferPacket.sentToken
+            path, ibcPacket.destinationChannel, assetTransferPacket.sentToken
         );
         address askToken = address(bytes20(assetTransferPacket.askToken));
         address receiver = address(bytes20(assetTransferPacket.receiver));
+        // Previously asserted to be <=.
         uint256 fee =
             assetTransferPacket.sentAmount - assetTransferPacket.askAmount;
         if (askToken == wrappedToken) {
             if (!ZkgmLib.isDeployed(wrappedToken)) {
                 CREATE3.deployDeterministic(
                     abi.encodePacked(
-                        type(ZkgmERC20).creationCode, "test", "test"
+                        type(ZkgmERC20).creationCode,
+                        assetTransferPacket.sentSymbol,
+                        assetTransferPacket.sentName
                     ),
                     wrappedTokenSalt
+                );
+                tokenOrigin[wrappedToken] = ZkgmLib.updateChannelPath(
+                    path, ibcPacket.destinationChannel
                 );
             }
             IZkgmERC20(wrappedToken).mint(
@@ -477,11 +659,18 @@ contract Zkgm is IBCAppBase {
                 IZkgmERC20(wrappedToken).mint(relayer, fee);
             }
         } else {
-            channelBalance[ibcPacket.destinationChannel][askToken] -=
-                assetTransferPacket.askAmount;
-            IERC20(askToken).transfer(receiver, assetTransferPacket.askAmount);
-            if (fee > 0) {
-                IERC20(askToken).transfer(relayer, fee);
+            if (assetTransferPacket.sentTokenPrefix == ibcPacket.sourceChannel)
+            {
+                channelBalance[ibcPacket.destinationChannel][askToken] -=
+                    assetTransferPacket.askAmount;
+                SafeERC20.safeTransfer(
+                    IERC20(askToken), receiver, assetTransferPacket.askAmount
+                );
+                if (fee > 0) {
+                    SafeERC20.safeTransfer(IERC20(askToken), relayer, fee);
+                }
+            } else {
+                return ZkgmLib.ACK_ERR_ONLYMAKER;
             }
         }
         return ZkgmLib.encodeAssetTransferAck(
@@ -639,17 +828,39 @@ contract Zkgm is IBCAppBase {
         bool successful,
         bytes calldata ack
     ) internal {
-        AssetTransferAcknowledgement calldata assetTransferAck =
-            ZkgmLib.decodeAssetTransferAck(ack);
-        if (assetTransferAck.fillType == ZkgmLib.FILL_TYPE_PROTOCOL) {
-            // The protocol filled, fee was paid to relayer.
-        } else if (assetTransferAck.fillType == ZkgmLib.FILL_TYPE_MARKETMAKER) {
-            IERC20(address(bytes20(assetTransferPacket.sentToken))).transfer(
-                address(bytes20(assetTransferAck.marketMaker)),
-                assetTransferPacket.sentAmount
-            );
+        if (successful) {
+            AssetTransferAcknowledgement calldata assetTransferAck =
+                ZkgmLib.decodeAssetTransferAck(ack);
+            if (assetTransferAck.fillType == ZkgmLib.FILL_TYPE_PROTOCOL) {
+                // The protocol filled, fee was paid to relayer.
+            } else if (
+                assetTransferAck.fillType == ZkgmLib.FILL_TYPE_MARKETMAKER
+            ) {
+                // A market maker filled, we pay with the sent asset.
+                address marketMaker =
+                    address(bytes20(assetTransferAck.marketMaker));
+                address sentToken =
+                    address(bytes20(assetTransferPacket.sentToken));
+                if (
+                    ZkgmLib.lastChannelFromPath(
+                        assetTransferPacket.sentTokenPrefix
+                    ) == ibcPacket.sourceChannel
+                ) {
+                    IZkgmERC20(address(sentToken)).mint(
+                        marketMaker, assetTransferPacket.sentAmount
+                    );
+                } else {
+                    SafeERC20.safeTransfer(
+                        IERC20(sentToken),
+                        marketMaker,
+                        assetTransferPacket.sentAmount
+                    );
+                }
+            } else {
+                revert ZkgmLib.ErrInvalidFillType();
+            }
         } else {
-            revert ZkgmLib.ErrInvalidFillType();
+            refund(ibcPacket.sourceChannel, assetTransferPacket);
         }
     }
 
@@ -658,31 +869,158 @@ contract Zkgm is IBCAppBase {
         address relayer
     ) external virtual override onlyIBC {
         ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
-        acknowledgeInternal(
+        timeoutInternal(
             ibcPacket,
             relayer,
             zkgmPacket.salt,
-            ZkgmLib.decodeSyscall(zkgmPacket.syscall),
-            false,
-            ibcPacket.data
+            ZkgmLib.decodeSyscall(zkgmPacket.syscall)
         );
+    }
+
+    function timeoutInternal(
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes32 salt,
+        SyscallPacket calldata syscallPacket
+    ) internal {
+        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+            revert ZkgmLib.ErrUnsupportedVersion();
+        }
+        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            timeoutFungibleAssetTransfer(
+                ibcPacket,
+                relayer,
+                salt,
+                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+            timeoutBatch(
+                ibcPacket,
+                relayer,
+                salt,
+                ZkgmLib.decodeBatch(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+            timeoutForward(
+                ibcPacket,
+                relayer,
+                salt,
+                ZkgmLib.decodeForward(syscallPacket.packet)
+            );
+        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+            timeoutMultiplex(
+                ibcPacket,
+                relayer,
+                salt,
+                ZkgmLib.decodeMultiplex(syscallPacket.packet)
+            );
+        } else {
+            revert ZkgmLib.ErrUnknownSyscall();
+        }
+    }
+
+    function timeoutBatch(
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes32 salt,
+        BatchPacket calldata batchPacket
+    ) internal {
+        uint256 l = batchPacket.syscallPackets.length;
+        for (uint256 i = 0; i < l; i++) {
+            timeoutInternal(
+                ibcPacket,
+                relayer,
+                keccak256(abi.encode(salt)),
+                ZkgmLib.decodeSyscall(batchPacket.syscallPackets[i])
+            );
+        }
+    }
+
+    function timeoutForward(
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes32 salt,
+        ForwardPacket calldata forwardPacket
+    ) internal {}
+
+    function timeoutMultiplex(
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes32 salt,
+        MultiplexPacket calldata multiplexPacket
+    ) internal {
+        if (!multiplexPacket.eureka) {
+            IBCPacket memory multiplexIbcPacket = IBCPacket({
+                sourceChannel: ibcPacket.sourceChannel,
+                destinationChannel: ibcPacket.destinationChannel,
+                data: abi.encode(
+                    multiplexPacket.contractAddress,
+                    multiplexPacket.contractCalldata
+                ),
+                timeoutHeight: ibcPacket.timeoutHeight,
+                timeoutTimestamp: ibcPacket.timeoutTimestamp
+            });
+            IIBCModule(address(bytes20(multiplexPacket.sender))).onTimeoutPacket(
+                multiplexIbcPacket, relayer
+            );
+        }
+    }
+
+    function timeoutFungibleAssetTransfer(
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes32 salt,
+        FungibleAssetTransferPacket calldata assetTransferPacket
+    ) internal {
+        refund(ibcPacket.sourceChannel, assetTransferPacket);
+    }
+
+    function refund(
+        uint32 sourceChannel,
+        FungibleAssetTransferPacket calldata assetTransferPacket
+    ) internal {
+        address sender = address(bytes20(assetTransferPacket.sender));
+        address sentToken = address(bytes20(assetTransferPacket.sentToken));
+        if (
+            ZkgmLib.lastChannelFromPath(assetTransferPacket.sentTokenPrefix)
+                == sourceChannel
+        ) {
+            IZkgmERC20(address(sentToken)).mint(
+                sender, assetTransferPacket.sentAmount
+            );
+        } else {
+            SafeERC20.safeTransfer(
+                IERC20(sentToken), sender, assetTransferPacket.sentAmount
+            );
+        }
     }
 
     function onChanOpenInit(
         uint32,
         uint32,
-        string calldata,
+        string calldata version,
         address
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        if (keccak256(bytes(version)) != ZkgmLib.IBC_VERSION) {
+            revert ZkgmLib.ErrInvalidIBCVersion();
+        }
+    }
 
     function onChanOpenTry(
         uint32,
         uint32,
         uint32,
-        string calldata,
-        string calldata,
+        string calldata version,
+        string calldata counterpartyVersion,
         address
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        if (keccak256(bytes(version)) != ZkgmLib.IBC_VERSION) {
+            revert ZkgmLib.ErrInvalidIBCVersion();
+        }
+        if (keccak256(bytes(counterpartyVersion)) != ZkgmLib.IBC_VERSION) {
+            revert ZkgmLib.ErrInvalidIBCVersion();
+        }
+    }
 
     function onChanOpenAck(
         uint32 channelId,
