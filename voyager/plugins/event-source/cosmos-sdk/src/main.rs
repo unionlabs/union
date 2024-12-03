@@ -36,8 +36,8 @@ use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, QueryHeight},
     data::{ChainEvent, Data},
+    ibc_classic::{self, IbcClassic},
     ibc_union::{self, IbcUnion},
-    ibc_v1::{self, IbcV1},
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::missing_state,
@@ -344,8 +344,8 @@ impl Module {
     ) -> RpcResult<(
         ChainId,
         ClientInfo,
-        ibc_v1::ChannelMetadata,
-        ibc_v1::ChannelMetadata,
+        ibc_classic::ChannelMetadata,
+        ibc_classic::ChannelMetadata,
         channel::order::Order,
     )> {
         let self_connection = voyager_rpc_client
@@ -361,11 +361,11 @@ impl Module {
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info::<IbcV1>(self.chain_id.clone(), self_connection.client_id.clone())
+            .client_info::<IbcClassic>(self.chain_id.clone(), self_connection.client_id.clone())
             .await?;
 
         let client_meta = voyager_rpc_client
-            .client_meta::<IbcV1>(
+            .client_meta::<IbcClassic>(
                 self.chain_id.clone(),
                 event_height.into(),
                 self_connection.client_id.clone(),
@@ -398,20 +398,20 @@ impl Module {
             .state
             .ok_or_else(missing_state("channel must exist", None))?;
 
-        let source_channel = ibc_v1::ChannelMetadata {
+        let source_channel = ibc_classic::ChannelMetadata {
             port_id: self_port_id.clone(),
             channel_id: self_channel_id.clone(),
             version: this_channel.version,
-            connection: ibc_v1::ConnectionMetadata {
+            connection: ibc_classic::ConnectionMetadata {
                 client_id: self_connection.client_id,
                 connection_id: self_connection_id.clone(),
             },
         };
-        let destination_channel = ibc_v1::ChannelMetadata {
+        let destination_channel = ibc_classic::ChannelMetadata {
             port_id: other_port_id.clone(),
             channel_id: other_channel_id.clone(),
             version: counterparty_channel.version,
-            connection: ibc_v1::ConnectionMetadata {
+            connection: ibc_classic::ConnectionMetadata {
                 client_id: self_connection.counterparty.client_id,
                 connection_id: self_connection
                     .counterparty
@@ -506,7 +506,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             txr.tx_result.events.into_iter().filter_map(move |event| {
                                 debug!(%event.ty, "observed event");
                                 IbcEvent::try_from_tendermint_event(event.clone())
-                                    .map(|r| r.map(RawEvent::IbcV1))
+                                    .map(|r| r.map(RawEvent::IbcClassic))
                                     .or_else(|| {
                                         ibc_events::union_ibc::IbcEvent::try_from_tendermint_event(
                                             event,
@@ -586,11 +586,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 match event {
-                    RawEvent::IbcV1(IbcEvent::SubmitEvidence(SubmitEvidence { .. })) => {
+                    RawEvent::IbcClassic(IbcEvent::SubmitEvidence(SubmitEvidence { .. })) => {
                         // TODO: Not sure how to handle this one, since it only contains the hash
                         panic!()
                     }
-                    RawEvent::IbcV1(
+                    RawEvent::IbcClassic(
                         IbcEvent::CreateClient(CreateClient { ref client_id, .. })
                         | IbcEvent::UpdateClient(UpdateClient { ref client_id, .. })
                         | IbcEvent::ClientMisbehaviour(ClientMisbehaviour { ref client_id, .. })
@@ -603,11 +603,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }),
                     ) => {
                         let client_info = voyager_client
-                            .client_info::<IbcV1>(self.chain_id.clone(), client_id.clone())
+                            .client_info::<IbcClassic>(self.chain_id.clone(), client_id.clone())
                             .await?;
 
                         let client_meta = voyager_client
-                            .client_meta::<IbcV1>(
+                            .client_meta::<IbcClassic>(
                                 self.chain_id.clone(),
                                 height.into(),
                                 client_id.clone(),
@@ -620,44 +620,34 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
-                                RawEvent::IbcV1(IbcEvent::CreateClient(event)) => {
-                                    ibc_v1::CreateClient {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
+                                RawEvent::IbcClassic(IbcEvent::CreateClient(event)) => {
+                                    ibc_classic::CreateClient {
                                         client_id: event.client_id,
                                         client_type: ClientType::new(event.client_type),
                                         consensus_height: event.consensus_height,
                                     }
                                     .into()
                                 }
-                                RawEvent::IbcV1(IbcEvent::UpdateClient(event)) => {
-                                    ibc_v1::UpdateClient {
+                                RawEvent::IbcClassic(IbcEvent::UpdateClient(event)) => {
+                                    ibc_classic::UpdateClient {
                                         client_id: event.client_id,
                                         client_type: ClientType::new(event.client_type),
                                         consensus_heights: event.consensus_heights,
                                     }
                                     .into()
                                 }
-                                RawEvent::IbcV1(IbcEvent::ConnectionOpenInit(event)) => {
-                                    ibc_v1::ConnectionOpenInit {
+                                RawEvent::IbcClassic(IbcEvent::ConnectionOpenInit(event)) => {
+                                    ibc_classic::ConnectionOpenInit {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
                                     }
                                 }
                                 .into(),
-                                RawEvent::IbcV1(IbcEvent::ConnectionOpenTry(event)) => {
-                                    ibc_v1::ConnectionOpenTry {
-                                        client_id: event.client_id,
-                                        connection_id: event.connection_id,
-                                        counterparty_client_id: event.counterparty_client_id,
-                                        counterparty_connection_id: event
-                                            .counterparty_connection_id,
-                                    }
-                                }
-                                .into(),
-                                RawEvent::IbcV1(IbcEvent::ConnectionOpenAck(event)) => {
-                                    ibc_v1::ConnectionOpenAck {
+                                RawEvent::IbcClassic(IbcEvent::ConnectionOpenTry(event)) => {
+                                    ibc_classic::ConnectionOpenTry {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -666,8 +656,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                RawEvent::IbcV1(IbcEvent::ConnectionOpenConfirm(event)) => {
-                                    ibc_v1::ConnectionOpenConfirm {
+                                RawEvent::IbcClassic(IbcEvent::ConnectionOpenAck(event)) => {
+                                    ibc_classic::ConnectionOpenAck {
+                                        client_id: event.client_id,
+                                        connection_id: event.connection_id,
+                                        counterparty_client_id: event.counterparty_client_id,
+                                        counterparty_connection_id: event
+                                            .counterparty_connection_id,
+                                    }
+                                }
+                                .into(),
+                                RawEvent::IbcClassic(IbcEvent::ConnectionOpenConfirm(event)) => {
+                                    ibc_classic::ConnectionOpenConfirm {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -680,7 +680,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             }),
                         }))
                     }
-                    RawEvent::IbcV1(
+                    RawEvent::IbcClassic(
                         IbcEvent::ChannelOpenInit(ChannelOpenInit {
                             ref connection_id, ..
                         })
@@ -701,14 +701,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcV1>(
+                            .client_info::<IbcClassic>(
                                 self.chain_id.clone(),
                                 connection.client_id.clone(),
                             )
                             .await?;
 
                         let client_meta = voyager_client
-                            .client_meta::<IbcV1>(
+                            .client_meta::<IbcClassic>(
                                 self.chain_id.clone(),
                                 height.into(),
                                 connection.client_id.clone(),
@@ -721,10 +721,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
-                                RawEvent::IbcV1(IbcEvent::ChannelOpenInit(event)) => {
-                                    ibc_v1::ChannelOpenInit {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
+                                RawEvent::IbcClassic(IbcEvent::ChannelOpenInit(event)) => {
+                                    ibc_classic::ChannelOpenInit {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -733,8 +733,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                RawEvent::IbcV1(IbcEvent::ChannelOpenTry(event)) => {
-                                    ibc_v1::ChannelOpenTry {
+                                RawEvent::IbcClassic(IbcEvent::ChannelOpenTry(event)) => {
+                                    ibc_classic::ChannelOpenTry {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -748,7 +748,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             }),
                         }))
                     }
-                    RawEvent::IbcV1(
+                    RawEvent::IbcClassic(
                         IbcEvent::ChannelOpenAck(ChannelOpenAck {
                             ref connection_id,
                             ref port_id,
@@ -775,14 +775,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = voyager_client
-                            .client_info::<IbcV1>(
+                            .client_info::<IbcClassic>(
                                 self.chain_id.clone(),
                                 connection.client_id.clone(),
                             )
                             .await?;
 
                         let client_meta = voyager_client
-                            .client_meta::<IbcV1>(
+                            .client_meta::<IbcClassic>(
                                 self.chain_id.clone(),
                                 height.into(),
                                 connection.client_id.clone(),
@@ -808,10 +808,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(match event {
-                                RawEvent::IbcV1(IbcEvent::ChannelOpenAck(event)) => {
-                                    ibc_v1::ChannelOpenAck {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
+                                RawEvent::IbcClassic(IbcEvent::ChannelOpenAck(event)) => {
+                                    ibc_classic::ChannelOpenAck {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -821,8 +821,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                RawEvent::IbcV1(IbcEvent::ChannelOpenConfirm(event)) => {
-                                    ibc_v1::ChannelOpenConfirm {
+                                RawEvent::IbcClassic(IbcEvent::ChannelOpenConfirm(event)) => {
+                                    ibc_classic::ChannelOpenConfirm {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -837,7 +837,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is this chain
-                    RawEvent::IbcV1(IbcEvent::SendPacket(event)) => {
+                    RawEvent::IbcClassic(IbcEvent::SendPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -862,11 +862,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(
-                                ibc_v1::SendPacket {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(
+                                ibc_classic::SendPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: ibc_v1::PacketMetadata {
+                                    packet: ibc_classic::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -879,7 +879,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    RawEvent::IbcV1(IbcEvent::TimeoutPacket(event)) => {
+                    RawEvent::IbcClassic(IbcEvent::TimeoutPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -904,10 +904,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(
-                                ibc_v1::TimeoutPacket {
-                                    packet: ibc_v1::PacketMetadata {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(
+                                ibc_classic::TimeoutPacket {
+                                    packet: ibc_classic::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -920,7 +920,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    RawEvent::IbcV1(IbcEvent::AcknowledgePacket(event)) => {
+                    RawEvent::IbcClassic(IbcEvent::AcknowledgePacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -945,10 +945,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(
-                                ibc_v1::AcknowledgePacket {
-                                    packet: ibc_v1::PacketMetadata {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(
+                                ibc_classic::AcknowledgePacket {
+                                    packet: ibc_classic::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -962,7 +962,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
-                    RawEvent::IbcV1(IbcEvent::WriteAcknowledgement(event)) => {
+                    RawEvent::IbcClassic(IbcEvent::WriteAcknowledgement(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -987,12 +987,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(
-                                ibc_v1::WriteAcknowledgement {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(
+                                ibc_classic::WriteAcknowledgement {
                                     packet_data: event.packet_data_hex,
                                     packet_ack: event.packet_ack_hex,
-                                    packet: ibc_v1::PacketMetadata {
+                                    packet: ibc_classic::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -1005,7 +1005,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    RawEvent::IbcV1(IbcEvent::RecvPacket(event)) => {
+                    RawEvent::IbcClassic(IbcEvent::RecvPacket(event)) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -1030,11 +1030,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcV1::ID,
-                            event: into_value::<ibc_v1::FullIbcEvent>(
-                                ibc_v1::RecvPacket {
+                            ibc_version_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic::FullIbcEvent>(
+                                ibc_classic::RecvPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: ibc_v1::PacketMetadata {
+                                    packet: ibc_classic::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,

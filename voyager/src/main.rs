@@ -26,7 +26,8 @@ use voyager_message::{
     context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
     core::QueryHeight,
     filter::{make_filter, run_filter, JaqInterestFilter},
-    ibc_v1::IbcV1,
+    ibc_classic::IbcClassic,
+    ibc_union::IbcUnion,
     rpc::{IbcState, VoyagerRpcClient},
     IbcSpec, VoyagerMessage,
 };
@@ -443,7 +444,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 QueryHeight::Latest => {
                     let config = get_voyager_config()?;
 
-                    let context = Context::new(config.plugins, config.modules).await?;
+                    let context = Context::new(config.plugins, config.modules, |h| {
+                        h.register::<IbcClassic>();
+                        h.register::<IbcUnion>();
+                    })
+                    .await?;
 
                     let latest_height = context
                         .rpc_server
@@ -457,7 +462,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 QueryHeight::Finalized => {
                     let config = get_voyager_config()?;
 
-                    let context = Context::new(config.plugins, config.modules).await?;
+                    let context = Context::new(config.plugins, config.modules, |h| {
+                        h.register::<IbcClassic>();
+                        h.register::<IbcUnion>();
+                    })
+                    .await?;
 
                     let latest_height = context
                         .rpc_server
@@ -498,7 +507,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     height,
                     decode,
                 } => {
-                    let ibc_handlers = [(IbcV1::ID, IbcSpecHandler::new::<IbcV1>())]
+                    let ibc_handlers = [(IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>())]
                         .into_iter()
                         .collect::<HashMap<_, _>>();
 
@@ -591,7 +600,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             } => {
                 let voyager_config = get_voyager_config()?;
 
-                let ctx = Context::new(voyager_config.plugins, voyager_config.modules).await?;
+                let ctx = Context::new(voyager_config.plugins, voyager_config.modules, |h| {
+                    h.register::<IbcClassic>();
+                    h.register::<IbcUnion>();
+                })
+                .await?;
 
                 // weird race condition in Context::new that i don't feel like debugging right now
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -654,8 +667,8 @@ pub mod utils {
         context::Context,
         core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
         data::{IbcDatagram, WithChainId},
+        ibc_classic::IbcClassic,
         ibc_union::IbcUnion,
-        ibc_v1::IbcV1,
         module::{ClientModuleClient, ConsensusModuleClient},
         VoyagerMessage,
     };
@@ -721,9 +734,9 @@ pub mod utils {
         Ok(data(WithChainId {
             chain_id,
             message: match ibc_version_id.as_str() {
-                IbcVersionId::V1_0_0 => {
-                    IbcDatagram::new::<IbcV1>(voyager_message::ibc_v1::IbcMessage::from(
-                        voyager_message::ibc_v1::MsgCreateClientData {
+                IbcVersionId::CLASSIC => {
+                    IbcDatagram::new::<IbcClassic>(voyager_message::ibc_classic::IbcMessage::from(
+                        voyager_message::ibc_classic::MsgCreateClientData {
                             msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
                                 client_state: client_module
                                     .encode_client_state(self_client_state, metadata)

@@ -60,8 +60,8 @@ pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
+pub mod ibc_classic;
 pub mod ibc_union;
-pub mod ibc_v1;
 
 pub enum VoyagerMessage {}
 
@@ -152,20 +152,6 @@ impl RawClientId {
     pub fn as_raw(&self) -> &Value {
         &self.0
     }
-}
-
-#[macro_export]
-macro_rules! any_ibc_spec {
-    ($ibc_version_id:ident, $V:ident, $expr:expr, $else:expr) => {
-        if $ibc_version_id == $crate::ibc_v1::IbcV1::ID {
-            type $V = $crate::ibc_v1::IbcV1;
-            $expr
-        }
-        // else if $ibc_version_id == IbcV1::ID {}
-        else {
-            $else
-        }
-    };
 }
 
 /// Error code for fatal errors. If a plugin or module responds with this error

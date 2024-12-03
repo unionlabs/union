@@ -39,7 +39,7 @@ use unionlabs::{
 use voyager_message::{
     core::ChainId,
     data::{Data, WithChainId},
-    ibc_union, ibc_v1,
+    ibc_classic, ibc_union,
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -751,7 +751,7 @@ fn process_msgs(
         .map(|msg| {
             let encoded = match msg.clone() {
                 IbcMessage::IbcV1(msg) => match msg {
-                    ibc_v1::IbcMessage::ConnectionOpenInit(message) => {
+                    ibc_classic::IbcMessage::ConnectionOpenInit(message) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
                             client_id: message.client_id.to_string(),
                             counterparty: Some(message.counterparty.into()),
@@ -760,7 +760,7 @@ fn process_msgs(
                             delay_period: message.delay_period,
                         })
                     }
-                    ibc_v1::IbcMessage::ConnectionOpenTry(message) => {
+                    ibc_classic::IbcMessage::ConnectionOpenTry(message) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: message.client_id.to_string(),
                             counterparty: Some(message.counterparty.into()),
@@ -777,7 +777,7 @@ fn process_msgs(
                         })
                     }
                     #[allow(deprecated)]
-                    ibc_v1::IbcMessage::ConnectionOpenAck(message) => {
+                    ibc_classic::IbcMessage::ConnectionOpenAck(message) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                             client_state: Some(
                                 protos::google::protobuf::Any::decode(&*message.client_state)
@@ -797,7 +797,7 @@ fn process_msgs(
                             proof_try: message.proof_try.into(),
                         })
                     }
-                    ibc_v1::IbcMessage::ConnectionOpenConfirm(message) => mk_any(
+                    ibc_classic::IbcMessage::ConnectionOpenConfirm(message) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: message.connection_id.to_string(),
                             proof_ack: message.proof_ack.into(),
@@ -805,14 +805,14 @@ fn process_msgs(
                             signer: signer.to_string(),
                         },
                     ),
-                    ibc_v1::IbcMessage::ChannelOpenInit(message) => {
+                    ibc_classic::IbcMessage::ChannelOpenInit(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                             port_id: message.port_id.to_string(),
                             channel: Some(message.channel.into()),
                             signer: signer.to_string(),
                         })
                     }
-                    ibc_v1::IbcMessage::ChannelOpenTry(message) => {
+                    ibc_classic::IbcMessage::ChannelOpenTry(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
                             port_id: message.port_id.to_string(),
                             channel: Some(message.channel.into()),
@@ -823,7 +823,7 @@ fn process_msgs(
                             ..Default::default()
                         })
                     }
-                    ibc_v1::IbcMessage::ChannelOpenAck(message) => {
+                    ibc_classic::IbcMessage::ChannelOpenAck(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
                             port_id: message.port_id.to_string(),
                             channel_id: message.channel_id.to_string(),
@@ -834,7 +834,7 @@ fn process_msgs(
                             signer: signer.to_string(),
                         })
                     }
-                    ibc_v1::IbcMessage::ChannelOpenConfirm(message) => {
+                    ibc_classic::IbcMessage::ChannelOpenConfirm(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                             port_id: message.port_id.to_string(),
                             channel_id: message.channel_id.to_string(),
@@ -843,7 +843,7 @@ fn process_msgs(
                             proof_ack: message.proof_ack.into(),
                         })
                     }
-                    ibc_v1::IbcMessage::RecvPacket(message) => {
+                    ibc_classic::IbcMessage::RecvPacket(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(message.packet.into()),
                             proof_height: Some(message.proof_height.into()),
@@ -851,7 +851,7 @@ fn process_msgs(
                             proof_commitment: message.proof_commitment.into(),
                         })
                     }
-                    ibc_v1::IbcMessage::AcknowledgePacket(message) => {
+                    ibc_classic::IbcMessage::AcknowledgePacket(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(message.packet.into()),
                             acknowledgement: message.acknowledgement.into(),
@@ -860,7 +860,7 @@ fn process_msgs(
                             signer: signer.to_string(),
                         })
                     }
-                    ibc_v1::IbcMessage::TimeoutPacket(message) => {
+                    ibc_classic::IbcMessage::TimeoutPacket(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
                             packet: Some(message.packet.into()),
                             proof_unreceived: message.proof_unreceived,
@@ -869,7 +869,7 @@ fn process_msgs(
                             signer: signer.to_string(),
                         })
                     }
-                    ibc_v1::IbcMessage::CreateClient(message) => {
+                    ibc_classic::IbcMessage::CreateClient(message) => {
                         mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
                             client_state: Some(
                                 protos::google::protobuf::Any::decode(&*message.msg.client_state)
@@ -884,7 +884,7 @@ fn process_msgs(
                             signer: signer.to_string(),
                         })
                     }
-                    ibc_v1::IbcMessage::UpdateClient(message) => {
+                    ibc_classic::IbcMessage::UpdateClient(message) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                             signer: signer.to_string(),
                             client_id: message.client_id.to_string(),

@@ -10,8 +10,8 @@ use voyager_message::{
     call::WaitForTrustedHeight,
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates, WithChainId},
+    ibc_classic::IbcClassic,
     ibc_union::IbcUnion,
-    ibc_v1::IbcV1,
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, promise, seq, Op};
@@ -25,9 +25,9 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum ModuleCallback {
-    MakeIbcMessagesFromUpdateV1(MakeIbcMessagesFromUpdate<IbcV1>),
+    MakeIbcMessagesFromUpdateV1(MakeIbcMessagesFromUpdate<IbcClassic>),
     MakeIbcMessagesFromUpdateUnion(MakeIbcMessagesFromUpdate<IbcUnion>),
-    MakeBatchTransactionV1(MakeBatchTransaction<IbcV1>),
+    MakeBatchTransactionV1(MakeBatchTransaction<IbcClassic>),
     MakeBatchTransactionUnion(MakeBatchTransaction<IbcUnion>),
 }
 

@@ -36,13 +36,12 @@ use voyager_core::{ClientType, IbcVersionId};
 use crate::{IbcSpec, IbcStorePathKey};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum IbcV1 {}
+pub enum IbcClassic {}
 
-impl IbcSpec for IbcV1 {
-    const ID: IbcVersionId = IbcVersionId::new_static(IbcVersionId::V1_0_0);
+impl IbcSpec for IbcClassic {
+    const ID: IbcVersionId = IbcVersionId::new_static(IbcVersionId::CLASSIC);
 
     type ClientId = ClientId;
-    // type Height = Height;
 
     type StorePath = unionlabs::ics24::Path;
 
@@ -70,7 +69,7 @@ macro_rules! impl_ibc_store_path_key_via_ibc_path {
     ($($ty:ty,)*) => {
         $(
             impl IbcStorePathKey for $ty {
-                type Spec = IbcV1;
+                type Spec = IbcClassic;
 
                 type Value = <Self as IbcPath>::Value;
             }
@@ -114,7 +113,7 @@ pub enum IbcMessage {
 }
 
 impl IbcMessage {
-    /// Returns the proof height of the IBC message, if it has one.
+    /// Returns the proof height of the IBC message, if it contains one.
     /// (ConnectionOpenInit does not contain a proof, for example)
     pub fn proof_height(&self) -> Option<Height> {
         match self {

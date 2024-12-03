@@ -8,8 +8,8 @@ use voyager_message::{
     call::FetchUpdateHeaders,
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::{ChainId, QueryHeight},
+    ibc_classic::IbcClassic,
     ibc_union::IbcUnion,
-    ibc_v1::IbcV1,
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{now, promise, Op};
@@ -24,10 +24,10 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {
-    MakeTransactionBatchesWithUpdateV1(MakeTransactionBatchesWithUpdate<IbcV1>),
+    MakeTransactionBatchesWithUpdateV1(MakeTransactionBatchesWithUpdate<IbcClassic>),
     MakeTransactionBatchesWithUpdateUnion(MakeTransactionBatchesWithUpdate<IbcUnion>),
 
-    MakeMsgV1(MakeMsg<IbcV1>),
+    MakeMsgV1(MakeMsg<IbcClassic>),
     MakeMsgUnion(MakeMsg<IbcUnion>),
 }
 
