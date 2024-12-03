@@ -18,7 +18,7 @@ import LogoDisplay from "../components/brand/LogoDisplay.astro";
           <div class="w-2 h-2 bg-accent-500"></div>
           <p class="font-mono text-2xl">LOGOTYPE</p>
         </div>
-        <LogoDisplay />
+        <LogoDisplay/>
       </div>
     </div>
 
@@ -28,12 +28,14 @@ import LogoDisplay from "../components/brand/LogoDisplay.astro";
         <div class="w-2 h-2 bg-accent-500"></div>
         <p class="font-mono text-2xl">COLORS</p>
       </div>
-      <ColorPalette
-              label="Primary"
-              colors={['#000000', '#FFFFFF']}
-      />
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-5 gap-4">
+        <ColorPalette
+                label="Primary"
+                colors={['#000000', '#FFFFFF']}
+                class="col-span-full md:col-span-3"
+                vertical
+        />
         <ColorPalette
                 label="Secondary"
                 colors={['#A0ECFD', '#030711', '#9CA3AF', '#111214']}
@@ -41,12 +43,6 @@ import LogoDisplay from "../components/brand/LogoDisplay.astro";
                 vertical
         />
 
-        <ColorPalette
-                label="Tertiary"
-                colors={['#FFBC97', '#FD6363', '#A3DC76', '#78F1B7']}
-                class="col-span-full md:col-span-1"
-                vertical
-        />
       </div>
     </div>
 
