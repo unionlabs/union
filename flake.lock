@@ -96,17 +96,17 @@
     "cosmossdk": {
       "flake": false,
       "locked": {
-        "lastModified": 1732568466,
-        "narHash": "sha256-r/A5EqyRjIhgOjO6SrnUzGvKUjRMiGmOX4yBhDlLeWM=",
+        "lastModified": 1733197962,
+        "narHash": "sha256-8v4cobX/o5+k4dotZwN0QOo5gOO6v0qqPwyNCXDvk2s=",
         "owner": "unionlabs",
         "repo": "cosmos-sdk",
-        "rev": "47461c9ec8480ee71f07ac4a2417f35ccd3e65b8",
+        "rev": "2b819f25de4d2f408fe3e7628bcb3e059244fd1c",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
         "repo": "cosmos-sdk",
-        "rev": "47461c9ec8480ee71f07ac4a2417f35ccd3e65b8",
+        "rev": "2b819f25de4d2f408fe3e7628bcb3e059244fd1c",
         "type": "github"
       }
     },
