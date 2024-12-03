@@ -1,0 +1,82 @@
+---
+interface Props {
+  label: string;
+  colors: string[];
+  class?: string;
+  vertical?: boolean;
+}
+
+const { label, colors, class: className = '', vertical = false } = Astro.props;
+
+// Function to determine if text should be black or white based on background color
+function shouldUseBlackText(hexColor: string) {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+
+  // Convert hex to rgb
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Calculate relative luminance
+  // Using relative luminance formula from WCAG 2.0
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return true if background is light (should use black text)
+  return luminance > 0.5;
+}
+---
+
+<div class:list={["flex md:flex-col w-full gap-4 h-fit", className]}>
+  <div class="flex md:flex-col gap-2 md:order-last">
+    <p class="[writing-mode:vertical-lr] md:[writing-mode:lr] text-accent-500">
+      {label.toUpperCase()}
+    </p>
+    <div class="flex flex-col md:flex-row md:items-end md:order-first">
+      <div class="w-4 h-[1px] md:h-4 md:w-[1px] bg-accent-500"></div>
+      <div class="w-[1px] h-full md:w-full md:h-[1px] bg-accent-500"></div>
+      <div class="w-4 h-[1px] md:h-4 md:w-[1px] bg-accent-500"></div>
+    </div>
+  </div>
+  <div class="flex flex-col md:flex-row border border-white w-full h-72">
+    {
+      colors.map((color) => (
+              <button
+                      class:list={[
+                        "flex items-center justify-center p-4 w-full h-full cursor-pointer transition-all hover:opacity-90",
+                        { "text-black": shouldUseBlackText(color) },
+                        { "text-white": !shouldUseBlackText(color) },
+                        {"md:[writing-mode:vertical-lr]": vertical}
+                      ]}
+                      style={`background-color: ${color}`}
+                      data-color={color}
+              >
+                <span data-copy class="font-mono uppercase">{color}</span>
+              </button>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  const buttons = document.querySelectorAll('[data-color]');
+
+  buttons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const color = button.getAttribute('data-color');
+      const span = button.querySelector('[data-copy]');
+      const originalText = span.textContent;
+
+      try {
+        await navigator.clipboard.writeText(color);
+        span.textContent = 'Copied';
+
+        setTimeout(() => {
+          span.textContent = originalText;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+  });
+</script>

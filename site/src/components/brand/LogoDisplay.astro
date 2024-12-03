@@ -1,0 +1,101 @@
+---
+interface Props {
+  logoPath?: string;
+  class?: string;
+}
+
+const {logoPath, class: className = ''} = Astro.props;
+---
+
+<div class="flex flex-col gap-4">
+  <div class="w-full h-64 bg-black flex items-center justify-center border border-white" id="header">
+    {logoPath ? (
+            <img
+                    src={logoPath}
+                    alt="Logo"
+                    class="max-h-32 w-auto"
+                    id="logo"
+            />
+    ) : (
+            <span class="text-white text-2xl font-medium" id="logo">NO LOGO</span>
+    )}
+  </div>
+
+  <div class="flex gap-2">
+    <button
+            class="px-4 py-2 bg-black text-white border border-white hover:bg-white hover:text-black uppercase font-semibold font-mono"
+            data-theme="light"
+    >
+      Light
+    </button>
+    <button
+            class="px-4 py-2 bg-black text-white border border-white hover:bg-white hover:text-black uppercase font-semibold font-mono"
+            data-theme="dark"
+    >
+      Dark
+    </button>
+    <button
+            class="px-4 py-2 bg-black text-white border border-white hover:bg-white hover:text-black uppercase font-semibold font-mono"
+            data-theme="mixed"
+    >
+      Mixed
+    </button>
+  </div>
+</div>
+
+<script>
+  const logo = document.getElementById('logo');
+  const header = document.getElementById('header');
+  const themeButtons = document.querySelectorAll('[data-theme]');
+
+  themeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const theme = button.getAttribute('data-theme');
+
+      // Reset all buttons to black
+      themeButtons.forEach(btn => {
+        btn.classList.remove('bg-white', 'text-black');
+        btn.classList.add('bg-black', 'text-white');
+      });
+
+      // Make clicked button white
+      button.classList.remove('bg-black', 'text-white');
+      button.classList.add('bg-white', 'text-black');
+
+      // Handle logo filters
+      logo.classList.remove('invert', 'mix-blend-difference');
+
+      // Handle header background
+      header.classList.remove('bg-white', 'bg-black');
+
+      switch (theme) {
+        case 'light':
+          header.classList.add('bg-white');
+          logo.classList.add('invert-0');
+          if (logo.tagName === 'SPAN') {
+            logo.classList.remove('text-white');
+            logo.classList.add('text-black');
+          }
+          break;
+        case 'dark':
+          header.classList.add('bg-black');
+          logo.classList.add('invert');
+          if (logo.tagName === 'SPAN') {
+            logo.classList.remove('text-black');
+            logo.classList.add('text-white');
+          }
+          break;
+      }
+    });
+  });
+
+  // Set initial active state on first button and header
+  themeButtons[0].classList.remove('bg-black', 'text-white');
+  themeButtons[0].classList.add('bg-white', 'text-black');
+  header.classList.remove('bg-black');
+  header.classList.add('bg-white');
+  if (logo.tagName === 'SPAN') {
+    logo.classList.remove('text-white');
+    logo.classList.add('text-black');
+  }
+</script>

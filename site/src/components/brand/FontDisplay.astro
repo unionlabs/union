@@ -1,0 +1,49 @@
+---
+// FontDisplay.astro
+interface Props {
+  fontFamily: string;
+  label: string;
+  weights?: number[];
+  sampleText?: string;
+  class?: string;
+}
+
+const {
+  fontFamily,
+  label,
+  weights = [400],
+  sampleText = "The quick brown fox jumps over the lazy dog",
+  class: className = ''
+} = Astro.props;
+---
+
+<div class:list={["flex md:flex-col w-full gap-4", className]}>
+  <div class="flex md:flex-col gap-2 md:order-last">
+    <p class="[writing-mode:vertical-lr] md:[writing-mode:lr] text-accent-500">
+      {label.toUpperCase()}
+    </p>
+    <div class="flex flex-col md:flex-row md:items-end md:order-first">
+      <div class="w-4 h-[1px] md:h-4 md:w-[1px] bg-accent-500"></div>
+      <div class="w-[1px] h-full md:w-full md:h-[1px] bg-accent-500"></div>
+      <div class="w-4 h-[1px] md:h-4 md:w-[1px] bg-accent-500"></div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-8 w-full border border-white p-6">
+    <div class="flex flex-col gap-2">
+      <p class="text-sm text-accent-500">Font Family</p>
+      <p class="text-xl">{fontFamily}</p>
+    </div>
+
+    <div class="flex flex-col gap-6">
+      {weights.map(weight => (
+              <div class="flex flex-col gap-2">
+                <p class="text-sm text-accent-500">Weight {weight}</p>
+                <p style={`font-family: ${fontFamily}; font-weight: ${weight};`} class="text-2xl">
+                  {sampleText}
+                </p>
+              </div>
+      ))}
+    </div>
+  </div>
+</div>
