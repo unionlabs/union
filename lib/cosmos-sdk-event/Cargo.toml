@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "ibc-events"
+name    = "cosmos-sdk-event"
 version = "0.1.0"
 
 [dependencies]

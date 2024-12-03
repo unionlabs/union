@@ -29,20 +29,5 @@ pub struct FetchTransactions {
 pub struct MakeChainEvent {
     pub height: Height,
     pub tx_hash: H256,
-    pub event: RawEvent,
-}
-
-#[model]
-pub enum RawEvent {
-    IbcClassic(ibc_events::IbcEvent),
-    IbcUnion(ibc_events::union_ibc::IbcEvent),
-}
-
-impl RawEvent {
-    pub fn name(&self) -> &'static str {
-        match self {
-            RawEvent::IbcClassic(ibc_event) => ibc_event.name(),
-            RawEvent::IbcUnion(ibc_event) => ibc_event.name(),
-        }
-    }
+    pub event: crate::ibc_events::IbcEvent,
 }
