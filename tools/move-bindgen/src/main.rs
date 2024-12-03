@@ -277,8 +277,14 @@ async fn main() -> Result<(), Bde> {
                     }
                 };
 
-                (item_fn, return_type_referenced_structs.into_iter().flatten().chain(param_types_referenced_structs).collect::<Vec<_>>())
-            
+                (
+                    item_fn,
+                    return_type_referenced_structs
+                        .into_iter()
+                        .flatten()
+                        .chain(param_types_referenced_structs)
+                        .collect::<Vec<_>>()
+                )
             })
             .unzip();
 
@@ -333,23 +339,21 @@ clippy::too_many_arguments)]
                 .collect::<Vec<_>>();
 
             for (s, rs) in struct_results {
-                
-                        let key = (mod_name.clone(), s.ident.clone());
-                        referenced_structs.remove(&key);
-                        already_found_structs.insert(key);
+                let key = (mod_name.clone(), s.ident.clone());
+                referenced_structs.remove(&key);
+                already_found_structs.insert(key);
 
-                        // dbg!(&rs);
-                        for r in rs {
-                            if !already_found_structs.contains(&r) {
-                                referenced_structs.insert(r);
-                            }
-                        }
+                // dbg!(&rs);
+                for r in rs {
+                    if !already_found_structs.contains(&r) {
+                        referenced_structs.insert(r);
+                    }
+                }
 
-                        mod_map
-                            .entry(mod_name.clone())
-                            .or_default()
-                            .insert(s.ident.clone(), s);
-                    
+                mod_map
+                    .entry(mod_name.clone())
+                    .or_default()
+                    .insert(s.ident.clone(), s);
             }
         }
     }
@@ -615,7 +619,10 @@ fn move_type_to_output_type(typ: &MoveType) -> (Type, Vec<(Ident, Ident)>) {
 
             (
                 parse_quote!(super::#module::#name<#(#generic_type_params)*>),
-                [(module, name)].into_iter().chain(struct_type_identifiers.into_iter().flatten()).collect(),
+                [(module, name)]
+                    .into_iter()
+                    .chain(struct_type_identifiers.into_iter().flatten())
+                    .collect(),
             )
         }
         // MoveType::GenericTypeParam { index } => {
