@@ -34,14 +34,14 @@ pub struct MakeChainEvent {
 
 #[model]
 pub enum RawEvent {
-    IbcV1(ibc_events::IbcEvent),
+    IbcClassic(ibc_events::IbcEvent),
     IbcUnion(ibc_events::union_ibc::IbcEvent),
 }
 
 impl RawEvent {
     pub fn name(&self) -> &'static str {
         match self {
-            RawEvent::IbcV1(ibc_event) => ibc_event.name(),
+            RawEvent::IbcClassic(ibc_event) => ibc_event.name(),
             RawEvent::IbcUnion(ibc_event) => ibc_event.name(),
         }
     }

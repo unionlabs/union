@@ -11,7 +11,7 @@ use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
     data::Data,
-    ibc_v1::IbcV1,
+    ibc_classic::IbcClassic,
     module::{PluginInfo, PluginServer},
     DefaultCmd, IbcSpec, Plugin, VoyagerMessage,
 };
@@ -290,7 +290,7 @@ else
     false
 end
     "#,
-            ibc_version_id = IbcV1::ID
+            ibc_version_id = IbcClassic::ID
         )
     }
 }

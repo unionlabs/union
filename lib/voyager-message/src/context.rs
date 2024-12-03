@@ -26,8 +26,6 @@ use voyager_vm::QueueError;
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
-    ibc_union::IbcUnion,
-    ibc_v1::IbcV1,
     into_value,
     module::{
         ClientModuleClient, ClientModuleInfo, ConsensusModuleClient, ConsensusModuleInfo,
@@ -70,7 +68,17 @@ pub struct Modules {
 
     // ibc version id => handler
     #[debug(skip)]
-    pub ibc_spec_handlers: HashMap<IbcVersionId, IbcSpecHandler>,
+    pub ibc_spec_handlers: IbcSpecHandlers,
+}
+
+pub struct IbcSpecHandlers {
+    pub(crate) handlers: HashMap<IbcVersionId, IbcSpecHandler>,
+}
+
+impl IbcSpecHandlers {
+    pub fn register<S: IbcSpec>(&mut self) {
+        self.handlers.insert(S::ID, IbcSpecHandler::new::<S>());
+    }
 }
 
 /// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
@@ -225,8 +233,15 @@ impl Context {
     pub async fn new(
         plugin_configs: Vec<PluginConfig>,
         module_configs: ModulesConfig,
+        register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
+
+        let mut ibc_spec_handlers = IbcSpecHandlers {
+            handlers: Default::default(),
+        };
+
+        register_ibc_spec_handlers(&mut ibc_spec_handlers);
 
         let mut modules = Modules {
             state_modules: Default::default(),
@@ -235,12 +250,7 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
-            ibc_spec_handlers: [
-                (IbcV1::ID, IbcSpecHandler::new::<IbcV1>()),
-                (IbcUnion::ID, IbcSpecHandler::new::<IbcUnion>()),
-            ]
-            .into_iter()
-            .collect(),
+            ibc_spec_handlers,
         };
 
         let mut plugins = HashMap::default();
@@ -385,7 +395,7 @@ impl Context {
 
                 if prev.is_some() {
                     return Err(anyhow!(
-                        "multiple consensus modules configured for consensus id `{}`",
+                        "multiple consensus modules configured for chain id `{}`",
                         chain_id
                     ));
                 }
@@ -414,6 +424,16 @@ impl Context {
                  ibc_version_id,
              },
              rpc_client| {
+                if !modules
+                    .ibc_spec_handlers
+                    .handlers
+                    .contains_key(ibc_version_id)
+                {
+                    return Err(anyhow!(
+                        "IBC version `{ibc_version_id}` is not supported in this build of voyager"
+                    ));
+                }
+
                 let prev = modules.client_modules.insert(
                     (
                         client_type.clone(),
@@ -449,38 +469,6 @@ impl Context {
             },
         )
         .await?;
-
-        // let plugin_configs = plugin_configs
-        //     .into_iter()
-        //     .map(|plugin_config| {
-        //         let server = main_rpc_server.clone();
-        //         async move {
-        //             let plugin_info = get_plugin_info(&plugin_config)?;
-
-        //             info!("starting rpc server for {}", plugin_info.name);
-        //             tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
-
-        //             Ok::<_, BoxDynError>((plugin_config, plugin_info))
-        //         }
-        //     })
-        //     .collect::<FuturesUnordered<_>>()
-        //     .try_collect::<Vec<_>>()
-        //     .await?;
-
-        // match kind {
-        //     ModuleInfo::Client(ClientModuleInfo {
-        //         client_type,
-        //         consensus_type,
-        //         ibc_interface,
-        //     }) => {
-
-        //         info!(
-        //             %client_type,
-        //             %ibc_interface,
-        //             "registered client module"
-        //         );
-        //     }
-        // }
 
         main_rpc_server.start(Arc::new(modules));
 
@@ -633,17 +621,6 @@ impl Modules {
             }
         })
     }
-
-    // pub fn chain_module<'a, 'b, 'c: 'a>(
-    //     &'a self,
-    //     chain_id: &ChainId,
-    // ) -> Result<&'a (impl ChainModuleClient + 'a), ChainModuleNotFound> {
-    //     Ok(self
-    //         .chain_modules
-    //         .get(chain_id)
-    //         .ok_or_else(|| ChainModuleNotFound(chain_id.clone()))?
-    //         .client())
-    // }
 
     pub fn state_module<'a, 'b, 'c: 'a>(
         &'a self,

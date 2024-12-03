@@ -35,7 +35,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
-    ibc_v1::IbcV1,
+    ibc_classic::IbcClassic,
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
@@ -46,7 +46,7 @@ const IBC_STORE_PATH: &str = "store/ibc/key";
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    <Module as StateModule<IbcV1>>::run().await;
+    <Module as StateModule<IbcClassic>>::run().await;
 }
 
 #[derive(clap::Subcommand)]
@@ -73,7 +73,7 @@ pub struct Config {
     pub grpc_url: String,
 }
 
-impl StateModule<IbcV1> for Module {
+impl StateModule<IbcClassic> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
@@ -505,7 +505,7 @@ pub struct ChainIdParseError {
 }
 
 #[async_trait]
-impl StateModuleServer<IbcV1> for Module {
+impl StateModuleServer<IbcClassic> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         match client_id.to_string().rsplit_once('-') {

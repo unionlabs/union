@@ -177,13 +177,13 @@ impl IbcVersionId {
     /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
     ///
     /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
-    pub const V1_0_0: &'static str = "1.0.0";
+    pub const CLASSIC: &'static str = "ibc-classic";
 
     // TODO: Potentially rename?
     /// IBC version <TODO>, as per the [union ethabi IBC specification](union-ethabi).
     ///
     /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
-    pub const UNION: &'static str = "union";
+    pub const UNION: &'static str = "ibc-union";
 }
 
 /// Identifier used to uniquely identify a chain, as provided by the chain

@@ -3,8 +3,8 @@ use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
+    ibc_classic::{self, IbcClassic},
     ibc_union::{self, IbcUnion},
-    ibc_v1::{self, IbcV1},
 };
 
 use crate::IbcSpecExt;
@@ -12,7 +12,7 @@ use crate::IbcSpecExt;
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleData {
-    BatchEventsV1(EventBatch<IbcV1>),
+    BatchEventsV1(EventBatch<IbcClassic>),
     BatchEventsUnion(EventBatch<IbcUnion>),
 }
 
@@ -38,31 +38,31 @@ pub struct BatchableEvent<V: IbcSpecExt> {
 #[model]
 #[derive(Enumorph)]
 pub enum EventV1 {
-    ConnectionOpenInit(ibc_v1::ConnectionOpenInit),
-    ConnectionOpenTry(ibc_v1::ConnectionOpenTry),
-    ConnectionOpenAck(ibc_v1::ConnectionOpenAck),
+    ConnectionOpenInit(ibc_classic::ConnectionOpenInit),
+    ConnectionOpenTry(ibc_classic::ConnectionOpenTry),
+    ConnectionOpenAck(ibc_classic::ConnectionOpenAck),
 
-    ChannelOpenInit(ibc_v1::ChannelOpenInit),
-    ChannelOpenTry(ibc_v1::ChannelOpenTry),
-    ChannelOpenAck(ibc_v1::ChannelOpenAck),
+    ChannelOpenInit(ibc_classic::ChannelOpenInit),
+    ChannelOpenTry(ibc_classic::ChannelOpenTry),
+    ChannelOpenAck(ibc_classic::ChannelOpenAck),
 
-    SendPacket(ibc_v1::SendPacket),
-    WriteAcknowledgement(ibc_v1::WriteAcknowledgement),
+    SendPacket(ibc_classic::SendPacket),
+    WriteAcknowledgement(ibc_classic::WriteAcknowledgement),
 }
 
-impl TryFrom<ibc_v1::FullIbcEvent> for EventV1 {
+impl TryFrom<ibc_classic::FullIbcEvent> for EventV1 {
     type Error = ();
 
-    fn try_from(value: ibc_v1::FullIbcEvent) -> Result<Self, Self::Error> {
+    fn try_from(value: ibc_classic::FullIbcEvent) -> Result<Self, Self::Error> {
         match value {
-            ibc_v1::FullIbcEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
-            ibc_v1::FullIbcEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
-            ibc_v1::FullIbcEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
-            ibc_v1::FullIbcEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
-            ibc_v1::FullIbcEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
-            ibc_v1::FullIbcEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
-            ibc_v1::FullIbcEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
-            ibc_v1::FullIbcEvent::WriteAcknowledgement(e) => Ok(Self::WriteAcknowledgement(e)),
+            ibc_classic::FullIbcEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
+            ibc_classic::FullIbcEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
+            ibc_classic::FullIbcEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
+            ibc_classic::FullIbcEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
+            ibc_classic::FullIbcEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
+            ibc_classic::FullIbcEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
+            ibc_classic::FullIbcEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
+            ibc_classic::FullIbcEvent::WriteAcknowledgement(e) => Ok(Self::WriteAcknowledgement(e)),
             _ => Err(()),
         }
     }

@@ -37,8 +37,8 @@ use voyager_message::{
     call::WaitForHeight,
     core::{ChainId, QueryHeight},
     data::{ChainEvent, Data, IbcDatagram},
+    ibc_classic::{IbcClassic, IbcMessage},
     ibc_union::{self, IbcUnion},
-    ibc_v1::{IbcMessage, IbcV1},
     module::{PluginInfo, PluginServer},
     DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient,
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
@@ -121,7 +121,7 @@ pub trait IbcSpecExt: IbcSpec {
     fn event_name(msg: &Self::BatchableEvent) -> &'static str;
 }
 
-impl IbcSpecExt for IbcV1 {
+impl IbcSpecExt for IbcClassic {
     type BatchableEvent = crate::data::EventV1;
 
     fn proof_height(msg: &Self::Datagram) -> Height {
@@ -294,7 +294,7 @@ end
                 chain_id = module.chain_id,
                 plugin_name = module.plugin_name(),
                 clients_filter = module.client_configs.jaq_filter(),
-                ibc_v1_id = IbcV1::ID,
+                ibc_v1_id = IbcClassic::ID,
                 ibc_union_id = IbcUnion::ID,
             ),
         }
@@ -922,7 +922,7 @@ async fn do_make_msg_v1(
         origin_chain_proof_height,
         target_chain_id,
         event,
-    }: MakeMsg<IbcV1>,
+    }: MakeMsg<IbcClassic>,
 ) -> RpcResult<Op<VoyagerMessage>> {
     match event {
         EventV1::ConnectionOpenInit(connection_open_init_event) => {
@@ -940,7 +940,7 @@ async fn do_make_msg_v1(
             )
             .await?;
 
-            Ok(data(IbcDatagram::new::<IbcV1>(IbcMessage::from(
+            Ok(data(IbcDatagram::new::<IbcClassic>(IbcMessage::from(
                 MsgConnectionOpenTry {
                     client_id: connection_open_init_event.counterparty_client_id,
                     counterparty: connection::counterparty::Counterparty {
@@ -1216,7 +1216,8 @@ impl Module {
         msgs: Vec<Op<VoyagerMessage>>,
     ) -> Pin<Box<dyn Future<Output = RpcResult<PassResult<VoyagerMessage>>> + Send + 'a>> {
         Box::pin(async move {
-            let mut batchers_v1 = HashMap::<ClientId, Vec<(usize, BatchableEvent<IbcV1>)>>::new();
+            let mut batchers_v1 =
+                HashMap::<ClientId, Vec<(usize, BatchableEvent<IbcClassic>)>>::new();
             let mut batchers_union = HashMap::<u32, Vec<(usize, BatchableEvent<IbcUnion>)>>::new();
 
             for (idx, msg) in msgs.into_iter().enumerate() {
@@ -1237,7 +1238,7 @@ impl Module {
                             .try_into()
                             .expect("how many milliseconds can there be man");
 
-                        if let Some(full_ibc_event) = chain_event.decode_event::<IbcV1>() {
+                        if let Some(full_ibc_event) = chain_event.decode_event::<IbcClassic>() {
                             let full_ibc_event = full_ibc_event.unwrap();
 
                             let client_id = full_ibc_event
@@ -1374,7 +1375,7 @@ async fn mk_connection_handshake_state_and_proofs(
     // proofs
     let target_client_info = voyager_client
         // counterparty_client_id from open_init/try is the client on the target chain
-        .client_info::<IbcV1>(target_chain_id.clone(), counterparty_client_id.clone())
+        .client_info::<IbcClassic>(target_chain_id.clone(), counterparty_client_id.clone())
         .await?;
 
     debug!(
@@ -1388,7 +1389,7 @@ async fn mk_connection_handshake_state_and_proofs(
     // client state
     let origin_client_info = voyager_client
         // client_id from open_init/try is the client on the origin chain
-        .client_info::<IbcV1>(origin_chain_id.clone(), client_id.clone())
+        .client_info::<IbcClassic>(origin_chain_id.clone(), client_id.clone())
         .await?;
 
     debug!(
@@ -1432,7 +1433,7 @@ async fn mk_connection_handshake_state_and_proofs(
     debug!(%connection_proof);
 
     let encoded_connection_state_proof = voyager_client
-        .encode_proof::<IbcV1>(
+        .encode_proof::<IbcClassic>(
             target_client_info.client_type.clone(),
             target_client_info.ibc_interface.clone(),
             connection_proof,

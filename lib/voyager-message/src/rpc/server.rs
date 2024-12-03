@@ -224,6 +224,7 @@ impl Server {
                 (self
                     .modules()?
                     .ibc_spec_handlers
+                    .handlers
                     .get(ibc_version_id)
                     .unwrap()
                     .client_state_path)(client_id.clone())

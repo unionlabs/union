@@ -12,8 +12,8 @@ use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
 use unionlabs::ErrorReporter;
 use voyager_message::{
-    context::Context, filter::JaqInterestFilter, into_value, module::PluginInfo,
-    pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
+    context::Context, filter::JaqInterestFilter, ibc_classic::IbcClassic, ibc_union::IbcUnion,
+    into_value, module::PluginInfo, pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
 };
 use voyager_vm::{
     engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, Op, Queue,
@@ -147,9 +147,12 @@ impl Voyager {
             .context("error initializing queue")?;
 
         Ok(Self {
-            context: Context::new(config.plugins, config.modules)
-                .await
-                .context("error initializing plugins")?,
+            context: Context::new(config.plugins, config.modules, |h| {
+                h.register::<IbcClassic>();
+                h.register::<IbcUnion>();
+            })
+            .await
+            .context("error initializing plugins")?,
             num_workers: config.voyager.num_workers,
             rest_laddr: config.voyager.rest_laddr,
             rpc_laddr: config.voyager.rpc_laddr,
