@@ -1,6 +1,7 @@
 ---
+import ButtonA from "../ButtonA.astro";
 interface Props {
-  fontFamily: string;
+  fontFamily: 'mono' | 'supermolot';  // restrict to these two options
   label: string;
   sampleText?: string;
   class?: string;
@@ -12,6 +13,19 @@ const {
   sampleText,
   class: className = ''
 } = Astro.props;
+
+const fontDetails = {
+  mono: {
+    name: 'JetBrains Mono',
+    variants: ['Regular', 'Bold']
+  },
+  supermolot: {
+    name: 'Supermolot',
+    variants: ['Regular', 'Bold']
+  }
+};
+
+const currentFont = fontDetails[fontFamily];
 ---
 
 <div class="h-fit">
@@ -30,7 +44,12 @@ const {
       <slot />
     </div>
   </div>
-  <div class="p-8">
-    <p>{sampleText}</p>
+  <div class="flex flex-col gap-4 p-8">
+    {currentFont.variants.map(variant => (
+            <p class={`font-${fontFamily} ${variant.toLowerCase() === 'bold' ? 'font-bold' : 'font-normal'} text-lg`}>
+              {currentFont.name} {variant}
+            </p>
+    ))}
+    <a href="#" class="text-accent-500 font-mono font-bold">[DOWNLOAD]</a>
   </div>
 </div>
