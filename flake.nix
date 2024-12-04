@@ -267,6 +267,7 @@
         ./e2e/e2e.nix
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
+        ./zkgm-dev/zkgm-dev.nix
         treefmt-nix.flakeModule
       ];
 
