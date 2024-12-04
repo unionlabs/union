@@ -1339,12 +1339,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrum-light-client"
+version = "0.1.0"
+dependencies = [
+ "arbitrum-light-client-types",
+ "arbitrum-verifier",
+ "base64 0.21.7",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "hex",
+ "protos",
+ "rlp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "tiny-keccak",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "ethereum-light-client-types",
  "hex-literal",
- "protos",
  "rlp",
  "serde",
  "sha3 0.10.8",
@@ -3120,12 +3145,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "cometbls-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "bytes",
+ "cometbls-groth16-verifier",
+ "cometbls-light-client-types",
+ "cosmwasm-std 2.1.4",
+ "hex",
+ "ics23",
+ "lazy_static",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "cometbls-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
  "hex-literal",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde-utils",

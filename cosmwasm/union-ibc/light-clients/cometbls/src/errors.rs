@@ -1,9 +1,8 @@
-use cometbls_light_client_types::ClientState;
-use ics008_wasm_client::IbcClientError;
+use cosmwasm_std::StdError;
+use union_ibc_light_client::IbcClientError;
 use unionlabs::{
-    encoding::{DecodeErrorOf, Proto},
     hash::{hash_v2::HexUnprefixed, H256},
-    ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    ibc::core::client::height::Height,
 };
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};
@@ -41,12 +40,6 @@ pub enum Error {
 
     #[error("unimplemented feature")]
     Unimplemented,
-
-    #[error("unable to decode merkle proof")]
-    MerkleProofDecode(#[source] DecodeErrorOf<Proto, MerkleProof>),
-
-    #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
 
     #[error("Client state not found")]
     ClientStateNotFound,
@@ -87,5 +80,11 @@ impl<T: ZkpVerifier> From<Error> for IbcClientError<CometblsLightClient<T>> {
 impl<T: ZkpVerifier> From<InvalidHeaderError> for IbcClientError<CometblsLightClient<T>> {
     fn from(value: InvalidHeaderError) -> Self {
         IbcClientError::ClientSpecific(Error::InvalidHeader(value))
+    }
+}
+
+impl From<Error> for StdError {
+    fn from(value: Error) -> Self {
+        StdError::generic_err(value.to_string())
     }
 }

@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::commitment::merkle_root::MerkleRoot,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub timestamp: u64,
     pub app_hash: MerkleRoot,
@@ -63,55 +63,40 @@ pub mod proto {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use std::string::FromUtf8Error;
-
     use alloy::sol_types::SolValue;
-    use unionlabs::{
-        encoding::{Decode, Encode, EthAbi},
-        ibc::core::commitment::merkle_root::MerkleRoot,
-        TryFromEthAbiBytesErrorAlloy,
-    };
+    use unionlabs::impl_ethabi_via_try_from_into;
 
-    use crate::ConsensusState;
+    use super::*;
+
+    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
 
     alloy::sol! {
         struct SolConsensusState {
             uint64 timestamp;
-            bytes32 appHash;
-            bytes32 nextValidatorsHash;
+            bytes32 app_hash;
+            bytes32 next_validators_hash;
         }
     }
 
-    impl Encode<EthAbi> for ConsensusState {
-        fn encode(self) -> Vec<u8> {
-            SolConsensusState {
-                timestamp: self.timestamp,
-                appHash: self.app_hash.hash.into(),
-                nextValidatorsHash: self.next_validators_hash.into(),
+    impl From<ConsensusState> for SolConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                app_hash: value.app_hash.hash.get().into(),
+                next_validators_hash: value.next_validators_hash.get().into(),
             }
-            .abi_encode_params()
         }
     }
 
-    impl Decode<EthAbi> for ConsensusState {
-        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
-
-        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let consensus_state = SolConsensusState::abi_decode(bytes, true)?;
-
-            Ok(Self {
-                timestamp: consensus_state.timestamp,
+    impl From<SolConsensusState> for ConsensusState {
+        fn from(value: SolConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
                 app_hash: MerkleRoot {
-                    hash: consensus_state.appHash.into(),
+                    hash: H256::new(value.app_hash.0),
                 },
-                next_validators_hash: consensus_state.nextValidatorsHash.into(),
-            })
+                next_validators_hash: H256::new(value.next_validators_hash.0),
+            }
         }
-    }
-
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid chain_id")]
-        ChainId(#[from] FromUtf8Error),
     }
 }

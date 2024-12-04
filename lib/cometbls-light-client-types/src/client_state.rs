@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{hash::H256, ibc::core::client::height::Height};
 
 use crate::chain_id::ChainId;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trusting_period: u64,
@@ -19,7 +19,10 @@ pub struct ClientState {
     pub frozen_height: Height,
     pub latest_height: Height,
     /// For clients that connect to the cosmwasm implementation of union IBC, the contract address of the IBC host is required in order to verify storage proofs. For clients connecting to IBC classic, this field is not required and can be ignored during client creation and migration.
-    #[serde(default, skip_serializing_if = "H256::is_zero")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "H256::is_zero")
+    )]
     pub contract_address: H256,
 }
 

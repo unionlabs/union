@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
-
 use crate::header::Header;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Misbehaviour {
     pub header_a: Header,
     pub header_b: Header,

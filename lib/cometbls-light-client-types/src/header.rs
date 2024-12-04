@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
 
 use crate::light_header::LightHeader;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub signed_header: LightHeader,
     pub trusted_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub zero_knowledge_proof: Vec<u8>,
 }
 
@@ -57,13 +57,14 @@ pub mod ethabi {
     use alloy::sol_types::SolValue;
     use unionlabs::{
         bounded::{BoundedI32, BoundedI64, BoundedIntError},
-        encoding::{Decode, Encode, EthAbi},
         google::protobuf::timestamp::Timestamp,
         ibc::core::client::height::Height,
-        TryFromEthAbiBytesErrorAlloy,
+        impl_ethabi_via_try_from_into, TryFromEthAbiBytesErrorAlloy,
     };
 
     use crate::{Header, LightHeader};
+
+    impl_ethabi_via_try_from_into!(Header => SolHeader);
 
     alloy::sol! {
         struct SolSignedHeader {
@@ -82,17 +83,17 @@ pub mod ethabi {
         }
     }
 
-    impl Encode<EthAbi> for Header {
-        fn encode(self) -> Vec<u8> {
+    impl From<Header> for SolHeader {
+        fn from(value: Header) -> Self {
             SolHeader {
                 signedHeader: SolSignedHeader {
-                    height: self
+                    height: value
                         .signed_header
                         .height
                         .inner()
                         .try_into()
                         .expect("value is >= 0 and <= i64::MAX; qed;"),
-                    secs: self
+                    secs: value
                         .signed_header
                         .time
                         .seconds
@@ -101,49 +102,46 @@ pub mod ethabi {
                         .clamp(0, i64::MAX)
                         .try_into()
                         .expect("value is >= 0 and <= i64::MAX; qed;"),
-                    nanos: self
+                    nanos: value
                         .signed_header
                         .time
                         .nanos
                         .inner()
                         .try_into()
                         .expect("value is >= 0 and <= i32::MAX; qed;"),
-                    validatorsHash: self.signed_header.validators_hash.into(),
-                    nextValidatorsHash: self.signed_header.next_validators_hash.into(),
-                    appHash: self.signed_header.app_hash.into(),
+                    validatorsHash: value.signed_header.validators_hash.into(),
+                    nextValidatorsHash: value.signed_header.next_validators_hash.into(),
+                    appHash: value.signed_header.app_hash.into(),
                 },
-                trustedHeight: self.trusted_height.height(),
-                zeroKnowledgeProof: self.zero_knowledge_proof.into(),
+                trustedHeight: value.trusted_height.height(),
+                zeroKnowledgeProof: value.zero_knowledge_proof.into(),
             }
-            .abi_encode_params()
         }
     }
 
-    impl Decode<EthAbi> for Header {
+    impl TryFrom<SolHeader> for Header {
         type Error = TryFromEthAbiBytesErrorAlloy<Error>;
 
-        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let header = SolHeader::abi_decode_params(bytes, true)?;
-
+        fn try_from(value: SolHeader) -> Result<Self, Self::Error> {
             Ok(Self {
                 signed_header: LightHeader {
-                    height: BoundedI64::new(header.signedHeader.height)
+                    height: BoundedI64::new(value.signedHeader.height)
                         .map_err(Error::Height)
                         .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
                     time: Timestamp {
-                        seconds: BoundedI64::new(header.signedHeader.secs)
+                        seconds: BoundedI64::new(value.signedHeader.secs)
                             .map_err(Error::Secs)
                             .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
-                        nanos: BoundedI32::new(header.signedHeader.nanos)
+                        nanos: BoundedI32::new(value.signedHeader.nanos)
                             .map_err(Error::Nanos)
                             .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
                     },
-                    validators_hash: header.signedHeader.validatorsHash.into(),
-                    next_validators_hash: header.signedHeader.nextValidatorsHash.into(),
-                    app_hash: header.signedHeader.appHash.into(),
+                    validators_hash: value.signedHeader.validatorsHash.into(),
+                    next_validators_hash: value.signedHeader.nextValidatorsHash.into(),
+                    app_hash: value.signedHeader.appHash.into(),
                 },
-                trusted_height: Height::new(header.trustedHeight),
-                zero_knowledge_proof: header.zeroKnowledgeProof.into(),
+                trusted_height: Height::new(value.trustedHeight),
+                zero_knowledge_proof: value.zeroKnowledgeProof.into(),
             })
         }
     }

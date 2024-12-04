@@ -5,10 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     errors::InvalidLength,
-    hash::{
-        hash_v2::{Encoding, HexPrefixed},
-        H160,
-    },
+    hash::hash_v2::{Encoding, HexPrefixed},
 };
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
@@ -212,7 +209,7 @@ impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy::core::primitives::Addre
     type Error = InvalidLength;
 
     fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
-        <H160>::try_from(value).map(Self::from)
+        <crate::hash::H160>::try_from(value).map(Self::from)
     }
 }
 

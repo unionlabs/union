@@ -1,4 +1,6 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use serde::{Deserialize, Serialize};
 use union_ibc_light_client::{
     msg::{InstantiateMsg, QueryMsg},
@@ -7,7 +9,7 @@ use union_ibc_light_client::{
 
 use crate::client::EthereumLightClient;
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
@@ -17,7 +19,7 @@ pub fn instantiate(
     union_ibc_light_client::instantiate(deps, env, info, msg)
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     union_ibc_light_client::query::<EthereumLightClient>(deps, env, msg).map_err(Into::into)
 }

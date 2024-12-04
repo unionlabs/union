@@ -9,18 +9,19 @@ version              = "0.1.0"
 workspace = true
 
 [dependencies]
-alloy       = { workspace = true, features = ["sol-types"] }
-prost       = { workspace = true }
-protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"] }
-serde       = { workspace = true, features = ["derive"] }
+alloy       = { workspace = true, features = ["sol-types"], optional = true }
+protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
+serde       = { workspace = true, features = ["derive"], optional = true }
 serde-utils = { workspace = true }
 thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
 
+
 [features]
-default = ["proto", "ethabi"]
-ethabi  = ["unionlabs/ethabi"]
-proto   = ["unionlabs/proto"]
+default = []
+ethabi  = ["dep:alloy", "unionlabs/ethabi"]
+proto   = ["dep:protos", "unionlabs/proto"]
+serde   = ["dep:serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -4,7 +4,7 @@ use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
 use union_ibc_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
-use unionlabs::encoding::Proto;
+use unionlabs::encoding::Bincode;
 
 use crate::errors::Error;
 
@@ -25,7 +25,7 @@ impl IbcClient for ArbitrumLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
