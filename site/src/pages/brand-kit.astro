@@ -6,6 +6,7 @@ import ColorPalette from "../components/brand/ColorPalette.astro";
 import H1 from "../components/typography/h1.astro";
 import FontDisplay from "../components/brand/FontDisplay.astro";
 import LogoDisplay from "../components/brand/LogoDisplay.astro";
+import PdfDisplay from "../components/brand/PdfDisplay.astro";
 ---
 
 <Layout title="Brand">
@@ -43,6 +44,16 @@ import LogoDisplay from "../components/brand/LogoDisplay.astro";
                 vertical
         />
 
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-accent-500"></div>
+          <p class="font-mono text-2xl">BRAND GUIDE</p>
+        </div>
+        <PdfDisplay />
       </div>
     </div>
 

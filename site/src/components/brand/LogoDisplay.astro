@@ -3,16 +3,16 @@ interface Props {
   class?: string;
 }
 
-const { class: className = '' } = Astro.props;
+const {class: className = ''} = Astro.props;
 
 const themes = [
-  { id: 'light', label: 'LIGHT' },
-  { id: 'dark', label: 'DARK' }
+  {id: 'light', label: 'LIGHT'},
+  {id: 'dark', label: 'DARK'}
 ];
 
 const themeColors = {
-  light: { bg: 'bg-white', logo: '/logo-black.svg' },
-  dark: { bg: 'bg-black', logo: '/logo-white.svg' }
+  light: {bg: 'bg-white', logo: '/logo-black.svg'},
+  dark: {bg: 'bg-black', logo: '/logo-white.svg'}
 };
 
 // Initial theme
@@ -20,7 +20,8 @@ const initialTheme = 'dark';
 ---
 
 <div class="flex flex-col gap-4">
-  <div class={`w-full h-64 ${themeColors[initialTheme].bg} flex items-center justify-center border border-gray-200 transition-colors duration-300`} id="header">
+  <div class={`w-full h-64 ${themeColors[initialTheme].bg} flex items-center justify-center border border-gray-200 transition-colors duration-300`}
+       id="header">
     <img
             src="/logo-black.svg"
             alt="Logo"
@@ -35,10 +36,11 @@ const initialTheme = 'dark';
     />
   </div>
 
-  <div class="flex gap-2 w-full">
-    {themes.map(theme => (
-            <button
-                    class={`
+  <div class="flex flex-col sm:flex-row gap-2 w-full justify-between">
+    <div class="flex gap-2">
+      {themes.map(theme => (
+              <button
+                      class={`
           w-full sm:w-fit px-4 py-2 
           ${theme.id === initialTheme ? 'bg-white text-black' : 'bg-black text-white'} 
           border border-gray-200 
@@ -46,11 +48,20 @@ const initialTheme = 'dark';
           uppercase font-semibold font-mono 
           transition-colors duration-300
         `}
-                    data-theme={theme.id}
-            >
-              {theme.label}
-            </button>
-    ))}
+                      data-theme={theme.id}
+              >
+                {theme.label}
+              </button>
+      ))}
+    </div>
+    <div class="flex lg:-ml-4 gap-2 max-w-xl">
+      <div class="pt-1">
+        <div class="w-[5px] h-[5px] bg-accent-500"></div>
+      </div>
+      <p class="font-mono max-w-xs box-decoration-clone text-xs">Usage examples. For more information, please refer to
+        our <a href="#" class="text-accent-500">Branding guide.</a></p>
+    </div>
+
   </div>
 </div>
 
