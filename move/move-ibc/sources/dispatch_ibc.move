@@ -105,9 +105,7 @@ module ibc::ibc_dispatch {
     #[event]
     struct ConnectionOpenInit has copy, drop, store {
         connection_id: u32,
-        client_type: String,
         client_id: u32,
-        counterparty_client_type: String,
         counterparty_client_id: u32
     }
 
@@ -147,9 +145,7 @@ module ibc::ibc_dispatch {
     #[event]
     struct ConnectionOpenTry has copy, drop, store {
         connection_id: u32,
-        client_type: String,
         client_id: u32,
-        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -157,9 +153,7 @@ module ibc::ibc_dispatch {
     #[event]
     struct ConnectionOpenAck has copy, drop, store {
         connection_id: u32,
-        client_type: String,
         client_id: u32,
-        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -167,9 +161,7 @@ module ibc::ibc_dispatch {
     #[event]
     struct ConnectionOpenConfirm has copy, drop, store {
         connection_id: u32,
-        client_type: String,
         client_id: u32,
-        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -514,8 +506,6 @@ module ibc::ibc_dispatch {
                 client_id,
                 counterparty_client_id,
                 0,
-                client_type,
-                counterparty_client_type
             );
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
@@ -525,9 +515,7 @@ module ibc::ibc_dispatch {
         event::emit(
             ConnectionOpenInit {
                 connection_id: connection_id,
-                client_type: client_type,
                 client_id: client_id,
-                counterparty_client_type: counterparty_client_type,
                 counterparty_client_id: counterparty_client_id
             }
         )
@@ -555,8 +543,6 @@ module ibc::ibc_dispatch {
                     client_id,
                     counterparty_client_id,
                     counterparty_connection_id,
-                    client_type,
-                    counterparty_client_type
                 )
             );
 
@@ -567,8 +553,6 @@ module ibc::ibc_dispatch {
                 counterparty_client_id,
                 client_id,
                 0, // counterparty_connection_id
-                counterparty_client_type,
-                utf8(b"")
             );
 
         // Verify the connection state
@@ -585,10 +569,8 @@ module ibc::ibc_dispatch {
         event::emit(
             ConnectionOpenTry {
                 connection_id,
-                client_type,
                 client_id: client_id,
                 counterparty_client_id: counterparty_client_id,
-                counterparty_client_type: counterparty_client_type,
                 counterparty_connection_id: counterparty_connection_id
             }
         );
@@ -622,8 +604,6 @@ module ibc::ibc_dispatch {
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
                 connection_id,
-                *connection_end::counterparty_client_type(connection),
-                *connection_end::client_type(connection)
             );
 
         // Verify the connection state
@@ -645,7 +625,6 @@ module ibc::ibc_dispatch {
         event::emit(
             ConnectionOpenAck {
                 connection_id,
-                client_type: *connection_end::client_type(connection),
                 client_id: connection_end::client_id(connection),
                 counterparty_client_id: connection_end::counterparty_client_id(
                     connection
@@ -653,9 +632,6 @@ module ibc::ibc_dispatch {
                 counterparty_connection_id: connection_end::counterparty_connection_id(
                     connection
                 ),
-                counterparty_client_type: *connection_end::counterparty_client_type(
-                    connection
-                )
             }
         );
 
@@ -685,8 +661,6 @@ module ibc::ibc_dispatch {
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
                 connection_id,
-                *connection_end::counterparty_client_type(connection),
-                *connection_end::client_type(connection)
             );
         let counterparty_connection_id =
             connection_end::counterparty_connection_id(connection);
@@ -707,11 +681,7 @@ module ibc::ibc_dispatch {
         event::emit(
             ConnectionOpenAck {
                 connection_id: connection_id,
-                client_type: *connection_end::client_type(connection),
                 client_id: connection_end::client_id(connection),
-                counterparty_client_type: *connection_end::counterparty_client_type(
-                    connection
-                ),
                 counterparty_client_id: connection_end::counterparty_client_id(connection),
                 counterparty_connection_id: connection_end::counterparty_connection_id(
                     connection

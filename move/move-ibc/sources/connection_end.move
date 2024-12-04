@@ -8,8 +8,6 @@ module ibc::connection_end {
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
-        client_type: String,
-        counterparty_client_type: String
     }
 
     // Getters
@@ -27,14 +25,6 @@ module ibc::connection_end {
 
     public fun counterparty_connection_id(connection: &ConnectionEnd): u32 {
         connection.counterparty_connection_id
-    }
-
-    public fun client_type(connection: &ConnectionEnd): &String {
-        &connection.client_type
-    }
-
-    public fun counterparty_client_type(connection: &ConnectionEnd): &String {
-        &connection.counterparty_client_type
     }
 
     // Setters
@@ -60,43 +50,14 @@ module ibc::connection_end {
         connection.counterparty_connection_id = new_id;
     }
 
-    public fun set_client_type(
-        connection: &mut ConnectionEnd, new_client_type: String
-    ) {
-        connection.client_type = new_client_type;
-    }
-
-    public fun set_counterparty_client_type(
-        connection: &mut ConnectionEnd, new_client_type: String
-    ) {
-        connection.counterparty_client_type = new_client_type;
-    }
-
     // Encode and decode functions (empty for now)
     public fun encode(connection: &ConnectionEnd): vector<u8> {
-        // Placeholder implementation
-
         let buf = vector::empty();
-
-        let client_type = vector::empty();
-        ethabi::encode_string(&mut client_type, &connection.client_type);
-        let counterparty_client_type = vector::empty();
-        ethabi::encode_string(
-            &mut counterparty_client_type, &connection.counterparty_client_type
-        );
 
         ethabi::encode_uint(&mut buf, connection.state);
         ethabi::encode_uint(&mut buf, connection.client_id);
         ethabi::encode_uint(&mut buf, connection.counterparty_client_id);
         ethabi::encode_uint(&mut buf, connection.counterparty_connection_id);
-
-        // offset of `client_type`
-        ethabi::encode_uint<u64>(&mut buf, 32 * 6);
-        // offset of `counterparty_client_type`
-        ethabi::encode_uint<u64>(&mut buf, 32 * 6 + vector::length(&client_type));
-
-        vector::append(&mut buf, client_type);
-        vector::append(&mut buf, counterparty_client_type);
 
         buf
     }
@@ -107,22 +68,18 @@ module ibc::connection_end {
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
-        client_type: String,
-        counterparty_client_type: String
     ): ConnectionEnd {
         ConnectionEnd {
             state,
             client_id,
             counterparty_client_id,
             counterparty_connection_id,
-            client_type,
-            counterparty_client_type
         }
     }
 
     // Default function
     public fun default(): ConnectionEnd {
-        new(0, 0, 0, 0, utf8(b""), utf8(b""))
+        new(0, 0, 0, 0)
     }
 
     #[test]
