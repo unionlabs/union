@@ -111,8 +111,6 @@ impl EthFetcherClient {
             )
             .await;
 
-        info!("block: {block:?}");
-
         match block {
             Ok(rpc_result) => match rpc_result {
                 Some(result) => {
