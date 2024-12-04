@@ -1,45 +1,53 @@
 ---
-import H3 from "../typography/h3.astro";
-import ButtonA from "../ButtonA.astro";
+import H3 from "../typography/h3.astro"
+import ButtonA from "../ButtonA.astro"
 const slides = [
-  {image: "/pdf-example-1.png", label: "Brand Guidelines - Example 1"},
-  {image: "/pdf-example-2.png", label: "Brand Guidelines - Example 2"},
-  {image: "/pdf-example-3.png", label: "Brand Guidelines - Example 3"}
-];
+  { image: "/pdf-example-1.png", label: "Brand Guidelines - Example 1" },
+  { image: "/pdf-example-2.png", label: "Brand Guidelines - Example 2" },
+  { image: "/pdf-example-3.png", label: "Brand Guidelines - Example 3" }
+]
 ---
 
 <div class="flex flex-col md:flex-row gap-4 w-full" id="brand-guide">
   <!-- Left side - Slider -->
-  <div class="relative w-full md:w-2/3 h-96 overflow-hidden border border-white">
+  <div
+    class="relative w-full md:w-2/3 h-96 overflow-hidden border border-white"
+  >
     <div class="flex transition-transform duration-500 ease-out" id="slider">
-      {slides.map((slide, index) => (
-              <div class="min-w-full flex-shrink-0">
-                <img
-                        src={slide.image}
-                        alt={slide.label}
-                        class="h-96 w-full object-cover object-center"
-                />
-              </div>
-      ))}
+      {
+        slides.map((slide, index) => (
+          <div class="min-w-full flex-shrink-0">
+            <img
+              src={slide.image}
+              alt={slide.label}
+              class="h-96 w-full object-cover object-center"
+            />
+          </div>
+        ))
+      }
     </div>
 
     <!-- Slide indicators -->
     <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-      {slides.map((_, index) => (
-              <button
-                      class:list={[
-                        "h-2 transition-all",
-                        index === 0 ? "w-6 bg-white" : "w-2 bg-white/50"
-                      ]}
-                      data-index={index}
-                      aria-label={`Go to slide ${index + 1}`}
-              />
-      ))}
+      {
+        slides.map((_, index) => (
+          <button
+            class:list={[
+              "h-2 transition-all",
+              index === 0 ? "w-6 bg-white" : "w-2 bg-white/50",
+            ]}
+            data-index={index}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))
+      }
     </div>
   </div>
 
   <!-- Right side - Download section -->
-  <div class="w-full md:w-1/3 md:h-96 border border-white bg-black p-8 flex flex-col">
+  <div
+    class="w-full md:w-1/3 md:h-96 border border-white bg-black p-8 flex flex-col"
+  >
     <div class="flex flex-col justify-between space-y-4 h-full">
       <div>
         <H3 class="text-2xl font-semibold text-white">Brand Guidelines</H3>
@@ -47,15 +55,18 @@ const slides = [
           Complete guide for using our brand assets and design system.
         </p>
       </div>
-      <ButtonA href="https://drive.google.com/file/d/1DMZ2R9vHDlKS64YA3fS1zlIghtiehpi5/view?usp=sharing" target="_blank">Download PDF</ButtonA>
+      <ButtonA
+        href="https://drive.google.com/file/d/1DMZ2R9vHDlKS64YA3fS1zlIghtiehpi5/view?usp=sharing"
+        target="_blank">Download PDF</ButtonA
+      >
     </div>
   </div>
 </div>
 
 <script>
   let currentSlide = 0;
-  const slider = document.getElementById('slider');
-  const indicators = document.querySelectorAll('[data-index]');
+  const slider = document.getElementById("slider");
+  const indicators = document.querySelectorAll("[data-index]");
   const slideCount = indicators.length;
 
   function updateSlide(index: number) {
@@ -67,19 +78,19 @@ const slides = [
     // Update indicators
     indicators.forEach((indicator, i) => {
       if (i === currentSlide) {
-        indicator.classList.remove('w-2', 'bg-white/50');
-        indicator.classList.add('w-6', 'bg-white');
+        indicator.classList.remove("w-2", "bg-white/50");
+        indicator.classList.add("w-6", "bg-white");
       } else {
-        indicator.classList.remove('w-6', 'bg-white');
-        indicator.classList.add('w-2', 'bg-white/50');
+        indicator.classList.remove("w-6", "bg-white");
+        indicator.classList.add("w-2", "bg-white/50");
       }
     });
   }
 
   // Add click handlers to indicators
   indicators.forEach((indicator) => {
-    indicator.addEventListener('click', () => {
-      const index = Number(indicator.getAttribute('data-index'));
+    indicator.addEventListener("click", () => {
+      const index = Number(indicator.getAttribute("data-index"));
       updateSlide(index);
     });
   });

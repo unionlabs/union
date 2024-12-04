@@ -1,24 +1,24 @@
 ---
 interface Props {
-  label: string;
-  colors: string[];
-  class?: string;
-  vertical?: boolean;
+  label: string
+  colors: Array<string>
+  class?: string
+  vertical?: boolean
 }
 
-const { label, colors, class: className = '', vertical = false } = Astro.props;
+const { label, colors, class: className = "", vertical = false } = Astro.props
 
 // Function to determine if text should be black or white based on background color
 function shouldUseBlackText(hexColor: string) {
-  const hex = hexColor.replace('#', '');
+  const hex = hexColor.replace("#", "")
 
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
+  const r = Number.parseInt(hex.substring(0, 2), 16)
+  const g = Number.parseInt(hex.substring(2, 4), 16)
+  const b = Number.parseInt(hex.substring(4, 6), 16)
 
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 
-  return luminance > 0.5;
+  return luminance > 0.5
 }
 ---
 
@@ -36,41 +36,43 @@ function shouldUseBlackText(hexColor: string) {
   <div class="flex flex-col md:flex-row border border-white w-full h-72">
     {
       colors.map((color) => (
-              <button
-                      class:list={[
-                        "flex items-center justify-center p-4 w-full h-full cursor-pointer transition-all hover:opacity-90",
-                        { "text-black": shouldUseBlackText(color) },
-                        { "text-white": !shouldUseBlackText(color) },
-                        {"md:[writing-mode:vertical-lr]": vertical}
-                      ]}
-                      style={`background-color: ${color}`}
-                      data-color={color}
-              >
-                <span data-copy class="font-mono uppercase">{color}</span>
-              </button>
+        <button
+          class:list={[
+            "flex items-center justify-center p-4 w-full h-full cursor-pointer transition-all hover:opacity-90",
+            { "text-black": shouldUseBlackText(color) },
+            { "text-white": !shouldUseBlackText(color) },
+            { "md:[writing-mode:vertical-lr]": vertical },
+          ]}
+          style={`background-color: ${color}`}
+          data-color={color}
+        >
+          <span data-copy class="font-mono uppercase">
+            {color}
+          </span>
+        </button>
       ))
     }
   </div>
 </div>
 
 <script>
-  const buttons = document.querySelectorAll('[data-color]');
+  const buttons = document.querySelectorAll("[data-color]");
 
-  buttons.forEach(button => {
-    button.addEventListener('click', async () => {
-      const color = button.getAttribute('data-color');
-      const span = button.querySelector('[data-copy]');
+  buttons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const color = button.getAttribute("data-color");
+      const span = button.querySelector("[data-copy]");
       const originalText = span.textContent;
 
       try {
         await navigator.clipboard.writeText(color);
-        span.textContent = 'Copied';
+        span.textContent = "Copied";
 
         setTimeout(() => {
           span.textContent = originalText;
         }, 2000);
       } catch (err) {
-        console.error('Failed to copy:', err);
+        console.error("Failed to copy:", err);
       }
     });
   });

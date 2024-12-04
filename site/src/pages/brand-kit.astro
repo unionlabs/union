@@ -1,12 +1,12 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import ContainedSection from "../components/ContainedSection.astro";
-import ColorPalette from "../components/brand/ColorPalette.astro";
-import H1 from "../components/typography/h1.astro";
-import FontDisplay from "../components/brand/FontDisplay.astro";
-import LogoDisplay from "../components/brand/LogoDisplay.astro";
-import PdfDisplay from "../components/brand/PdfDisplay.astro";
-import {Image} from "astro:assets"
+import Layout from "../layouts/Layout.astro"
+import ContainedSection from "../components/ContainedSection.astro"
+import ColorPalette from "../components/brand/ColorPalette.astro"
+import H1 from "../components/typography/h1.astro"
+import FontDisplay from "../components/brand/FontDisplay.astro"
+import LogoDisplay from "../components/brand/LogoDisplay.astro"
+import PdfDisplay from "../components/brand/PdfDisplay.astro"
+import { Image } from "astro:assets"
 import supermolot from "#/components/brand/supermolot-example.svg"
 import jetbrains from "#/components/brand/jetbrains-example.svg"
 ---
@@ -22,10 +22,14 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
             <div class="w-2 h-2 bg-accent-500"></div>
             <p class="font-mono text-2xl">LOGOTYPE</p>
           </div>
-          <a class="font-bold font-mono text-accent-500" target="_blank"
-             href="https://drive.google.com/drive/folders/1Q4Qci4TtHYCWvB9oNA-SuYEPgyA_AMVI">[DOWNLOAD]</a>
+          <a
+            class="font-bold font-mono text-accent-500"
+            target="_blank"
+            href="https://drive.google.com/drive/folders/1Q4Qci4TtHYCWvB9oNA-SuYEPgyA_AMVI"
+            >[DOWNLOAD]</a
+          >
         </div>
-        <LogoDisplay/>
+        <LogoDisplay />
       </div>
     </div>
 
@@ -37,18 +41,17 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
 
       <div class="grid grid-cols-5 gap-4">
         <ColorPalette
-                label="Primary"
-                colors={['#000000', '#FFFFFF']}
-                class="col-span-full md:col-span-3"
-                vertical
+          label="Primary"
+          colors={["#000000", "#FFFFFF"]}
+          class="col-span-full md:col-span-3"
+          vertical
         />
         <ColorPalette
-                label="Secondary"
-                colors={['#A0ECFD', '#030711', '#9CA3AF', '#111214']}
-                class="col-span-full md:col-span-2"
-                vertical
+          label="Secondary"
+          colors={["#A0ECFD", "#030711", "#9CA3AF", "#111214"]}
+          class="col-span-full md:col-span-2"
+          vertical
         />
-
       </div>
     </div>
 
@@ -60,18 +63,26 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FontDisplay
-                  fontFamily="mono"
-                  label="Jet Brains"
-                  link="https://drive.google.com/file/d/1Gq_txYmdtL7lebQTuFCqRP4apDMDU4yN/view?usp=sharing"
+            fontFamily="mono"
+            label="Jet Brains"
+            link="https://drive.google.com/file/d/1Gq_txYmdtL7lebQTuFCqRP4apDMDU4yN/view?usp=sharing"
           >
-            <Image src={jetbrains} alt="Jet brains example" class="h-full w-fit"/>
+            <Image
+              src={jetbrains}
+              alt="Jet brains example"
+              class="h-full w-fit"
+            />
           </FontDisplay>
           <FontDisplay
-                  fontFamily="supermolot"
-                  label="Supermolot"
-                  link="https://drive.google.com/file/d/1kS9aRiy5f7zS70VHROiYXcZHLJFExMFO/view?usp=sharing"
+            fontFamily="supermolot"
+            label="Supermolot"
+            link="https://drive.google.com/file/d/1kS9aRiy5f7zS70VHROiYXcZHLJFExMFO/view?usp=sharing"
           >
-            <Image src={supermolot} alt="supermolot example" class="h-full w-fit"/>
+            <Image
+              src={supermolot}
+              alt="supermolot example"
+              class="h-full w-fit"
+            />
           </FontDisplay>
         </div>
       </div>
@@ -83,9 +94,8 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
           <div class="w-2 h-2 bg-accent-500"></div>
           <p class="font-mono text-2xl">BRAND GUIDE</p>
         </div>
-        <PdfDisplay/>
+        <PdfDisplay />
       </div>
     </div>
-
   </ContainedSection>
 </Layout>
