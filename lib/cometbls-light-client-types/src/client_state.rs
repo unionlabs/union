@@ -75,3 +75,66 @@ pub mod proto {
         }
     }
 }
+
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use std::string::FromUtf8Error;
+
+    use alloy::sol_types::SolValue;
+    use unionlabs::{
+        encoding::{Decode, Encode, EthAbi},
+        ibc::core::client::height::Height,
+        TryFromEthAbiBytesErrorAlloy,
+    };
+
+    use crate::{ChainId, ClientState};
+
+    alloy::sol! {
+        struct SolClientState {
+            bytes31 chainId;
+            uint64 trustingPeriod;
+            uint64 maxClockDrift;
+            uint64 frozenHeight;
+            uint64 latestHeight;
+            bytes32 contractAddress;
+        }
+    }
+
+    impl Encode<EthAbi> for ClientState {
+        fn encode(self) -> Vec<u8> {
+            SolClientState {
+                chainId: self.chain_id.into_fixed_bytes(),
+                trustingPeriod: self.trusting_period,
+                maxClockDrift: self.max_clock_drift,
+                frozenHeight: self.frozen_height.height(),
+                latestHeight: self.latest_height.height(),
+                contractAddress: self.contract_address.into(),
+            }
+            .abi_encode_params()
+        }
+    }
+
+    impl Decode<EthAbi> for ClientState {
+        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
+
+        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+            let client_state = SolClientState::abi_decode(bytes, true)?;
+
+            Ok(Self {
+                chain_id: ChainId::try_from_fixed_bytes(client_state.chainId)
+                    .map_err(|err| TryFromEthAbiBytesErrorAlloy::Convert(Error::ChainId(err)))?,
+                trusting_period: client_state.trustingPeriod,
+                max_clock_drift: client_state.maxClockDrift,
+                frozen_height: Height::new(client_state.frozenHeight),
+                latest_height: Height::new(client_state.latestHeight),
+                contract_address: client_state.contractAddress.into(),
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {
+        #[error("invalid chain_id")]
+        ChainId(#[from] FromUtf8Error),
+    }
+}

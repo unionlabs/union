@@ -214,13 +214,13 @@ fn verify_header<T: ZkpVerifier>(
         .into());
     }
 
-    Ok(T::verify_zkp(
+    T::verify_zkp(
         &client_state.chain_id,
         trusted_validators_hash.into_encoding(),
         &header.signed_header,
         &header.zero_knowledge_proof,
     )
-    .map_err(Error::InvalidZKP)?)
+    .map_err(Error::InvalidZKP)
 }
 
 fn verify_misbehaviour<T: ZkpVerifier>(
@@ -231,7 +231,7 @@ fn verify_misbehaviour<T: ZkpVerifier>(
     misbehaviour: Misbehaviour,
 ) -> Result<(), Error> {
     if misbehaviour.header_a.signed_header.height < misbehaviour.header_b.signed_header.height {
-        return Err(Error::InvalidMisbehaviourHeaderSequence.into());
+        return Err(Error::InvalidMisbehaviourHeaderSequence);
     }
 
     verify_header(ctx, client_state, consensus_state_a, &misbehaviour.header_a)?;
@@ -247,7 +247,7 @@ fn verify_misbehaviour<T: ZkpVerifier>(
         return Ok(());
     }
 
-    Err(Error::MisbehaviourNotFound.into())
+    Err(Error::MisbehaviourNotFound)
 }
 
 fn update_state(

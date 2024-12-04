@@ -9,7 +9,7 @@ ark-bn254                   = { version = "0.4", default-features = false, featu
 ark-serialize               = "0.4.2"
 clap                        = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 cometbft-rpc                = { workspace = true }
-cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi"] }
+cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde"] }
 dashmap                     = { workspace = true }
 enumorph                    = { workspace = true }
 futures                     = { workspace = true }

@@ -11,46 +11,6 @@ pub struct ConsensusState {
     pub next_validators_hash: H256<HexUnprefixed>,
 }
 
-#[cfg(feature = "ethabi")]
-pub mod ethabi {
-    use alloy::sol_types::SolValue;
-    use unionlabs::impl_ethabi_via_try_from_into;
-
-    use super::*;
-
-    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
-
-    alloy::sol! {
-        struct SolConsensusState {
-            uint64 timestamp;
-            bytes32 app_hash;
-            bytes32 next_validators_hash;
-        }
-    }
-
-    impl From<ConsensusState> for SolConsensusState {
-        fn from(value: ConsensusState) -> Self {
-            Self {
-                timestamp: value.timestamp,
-                app_hash: value.app_hash.hash.get().into(),
-                next_validators_hash: value.next_validators_hash.get().into(),
-            }
-        }
-    }
-
-    impl From<SolConsensusState> for ConsensusState {
-        fn from(value: SolConsensusState) -> Self {
-            Self {
-                timestamp: value.timestamp,
-                app_hash: MerkleRoot {
-                    hash: H256::new(value.app_hash.0),
-                },
-                next_validators_hash: H256::new(value.next_validators_hash.0),
-            }
-        }
-    }
-}
-
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
@@ -96,6 +56,46 @@ pub mod proto {
                 timestamp: value.timestamp,
                 root: Some(value.app_hash.into()),
                 next_validators_hash: value.next_validators_hash.into(),
+            }
+        }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use alloy::sol_types::SolValue;
+    use unionlabs::impl_ethabi_via_try_from_into;
+
+    use super::*;
+
+    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
+
+    alloy::sol! {
+        struct SolConsensusState {
+            uint64 timestamp;
+            bytes32 app_hash;
+            bytes32 next_validators_hash;
+        }
+    }
+
+    impl From<ConsensusState> for SolConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                app_hash: value.app_hash.hash.get().into(),
+                next_validators_hash: value.next_validators_hash.get().into(),
+            }
+        }
+    }
+
+    impl From<SolConsensusState> for ConsensusState {
+        fn from(value: SolConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                app_hash: MerkleRoot {
+                    hash: H256::new(value.app_hash.0),
+                },
+                next_validators_hash: H256::new(value.next_validators_hash.0),
             }
         }
     }

@@ -52,6 +52,111 @@ pub mod proto {
     }
 }
 
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use alloy::sol_types::SolValue;
+    use unionlabs::{
+        bounded::{BoundedI32, BoundedI64, BoundedIntError},
+        google::protobuf::timestamp::Timestamp,
+        ibc::core::client::height::Height,
+        impl_ethabi_via_try_from_into, TryFromEthAbiBytesErrorAlloy,
+    };
+
+    use crate::{Header, LightHeader};
+
+    impl_ethabi_via_try_from_into!(Header => SolHeader);
+
+    alloy::sol! {
+        struct SolSignedHeader {
+            uint64 height;
+            uint64 secs;
+            uint64 nanos;
+            bytes32 validatorsHash;
+            bytes32 nextValidatorsHash;
+            bytes32 appHash;
+        }
+
+        struct SolHeader {
+            SolSignedHeader signedHeader;
+            uint64 trustedHeight;
+            bytes zeroKnowledgeProof;
+        }
+    }
+
+    impl From<Header> for SolHeader {
+        fn from(value: Header) -> Self {
+            SolHeader {
+                signedHeader: SolSignedHeader {
+                    height: value
+                        .signed_header
+                        .height
+                        .inner()
+                        .try_into()
+                        .expect("value is >= 0 and <= i64::MAX; qed;"),
+                    secs: value
+                        .signed_header
+                        .time
+                        .seconds
+                        .inner()
+                        // TODO: Figure out a better way to represent these types other than by saturating
+                        .clamp(0, i64::MAX)
+                        .try_into()
+                        .expect("value is >= 0 and <= i64::MAX; qed;"),
+                    nanos: value
+                        .signed_header
+                        .time
+                        .nanos
+                        .inner()
+                        .try_into()
+                        .expect("value is >= 0 and <= i32::MAX; qed;"),
+                    validatorsHash: value.signed_header.validators_hash.into(),
+                    nextValidatorsHash: value.signed_header.next_validators_hash.into(),
+                    appHash: value.signed_header.app_hash.into(),
+                },
+                trustedHeight: value.trusted_height.height(),
+                zeroKnowledgeProof: value.zero_knowledge_proof.into(),
+            }
+        }
+    }
+
+    impl TryFrom<SolHeader> for Header {
+        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
+
+        fn try_from(value: SolHeader) -> Result<Self, Self::Error> {
+            Ok(Self {
+                signed_header: LightHeader {
+                    height: BoundedI64::new(value.signedHeader.height)
+                        .map_err(Error::Height)
+                        .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                    time: Timestamp {
+                        seconds: BoundedI64::new(value.signedHeader.secs)
+                            .map_err(Error::Secs)
+                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                        nanos: BoundedI32::new(value.signedHeader.nanos)
+                            .map_err(Error::Nanos)
+                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                    },
+                    validators_hash: value.signedHeader.validatorsHash.into(),
+                    next_validators_hash: value.signedHeader.nextValidatorsHash.into(),
+                    app_hash: value.signedHeader.appHash.into(),
+                },
+                trusted_height: Height::new(value.trustedHeight),
+                zero_knowledge_proof: value.zeroKnowledgeProof.into(),
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {
+        #[error("invalid height")]
+        Height(#[source] BoundedIntError<i64, u64>),
+        #[error("invalid secs")]
+        Secs(#[source] BoundedIntError<i64, u64>),
+        #[error("invalid nanos")]
+        Nanos(#[source] BoundedIntError<i32, u64>),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;

@@ -144,9 +144,7 @@ members = [
 
   "drip",
 
-  # "cosmwasm/union-ibc/light-clients/movement",
-  "cosmwasm/union-ibc/light-clients/movement/types",
-  "lib/aptos-verifier",
+  # "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/voyager-core",
