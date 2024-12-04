@@ -1,0 +1,139 @@
+name: Deploy Zkgm-dev
+
+on:
+  push:
+    branches:
+      - main
+      - release/zkgm-dev
+    paths:
+      - 'zkgm-dev/**'
+  pull_request:
+    paths:
+      - 'zkgm-dev/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: '--no-warnings'
+  ACTIONS_RUNNER_DEBUG: true
+  ASTRO_TELEMETRY_DISABLED: true
+
+jobs:
+  deploy-preview:
+    runs-on: ['ubuntu-latest']
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      npm_config_yes: true
+    environment: 'zkgm-dev-preview'
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        run: |
+          nix build .#zkgm-dev
+      - name: '[preview] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="zkgm-dev" deploy result >> /tmp/zkgm-dev_deploy.txt
+
+      - name: Set Deploy Output
+        run: |
+          {
+            echo 'DEPLOY_OUTPUT<<EOF'
+            tail -n 2 /tmp/zkgm-dev_deploy.txt
+            echo 'EOF'
+          } >> $GITHUB_ENV
+
+      - name: Comment Site Deploy Results
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            # zkgm.dev 🦀
+            ${{ env.DEPLOY_OUTPUT }}
+
+            **${{ env.LAST_UPDATED_AT }}**
+          comment_tag: deploy-zkgm-dev-preview-result
+
+  deploy-manual:
+    runs-on: ['ubuntu-latest']
+    env:
+      npm_config_yes: true
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        run: |
+          nix build .#zkgm-dev
+      - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="zkgm-dev" deploy result
+
+  deploy-staging:
+    runs-on: ['ubuntu-latest']
+    env:
+      npm_config_yes: true
+    environment: 'zkgm-dev-staging'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        run: |
+          nix build .#zkgm-dev
+      - name: '[staging] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="zkgm-dev" --branch="staging" deploy result
+
+  deploy-production:
+    runs-on: ['ubuntu-latest']
+    env:
+      npm_config_yes: true
+    environment: 'zkgm-dev-production'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/zkgm-dev'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        run: |
+          nix build .#zkgm-dev
+      - name: '[production] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="zkgm-dev" --branch="main" deploy result
