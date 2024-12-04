@@ -1,9 +1,9 @@
 use alloy::{
     eips::BlockId,
-    network::{Ethereum, Network},
+    network::{AnyNetwork, AnyRpcBlock, Network},
     primitives::TxHash,
     providers::{Provider as AlloyProvider, ProviderBuilder, RootProvider},
-    rpc::types::{Block, BlockTransactionsKind, Filter, Log},
+    rpc::types::{BlockTransactionsKind, Filter, Log},
     transports::{
         http::{Client, Http},
         RpcError, TransportErrorKind,
@@ -15,7 +15,7 @@ use crate::race_client::{RaceClient, RaceClientId, RaceClientResponse};
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-    pub rpc_client: RaceClient<RootProvider<Http<Client>>>,
+    pub rpc_client: RaceClient<RootProvider<Http<Client>, AnyNetwork>>,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -56,7 +56,7 @@ impl Provider {
             rpc_client: RaceClient::new(
                 rpc_urls
                     .into_iter()
-                    .map(|url| ProviderBuilder::new().on_http(url))
+                    .map(|url| ProviderBuilder::new().network::<AnyNetwork>().on_http(url))
                     .collect(),
             ),
         }
@@ -77,7 +77,7 @@ impl Provider {
         id: BlockId,
         kind: BlockTransactionsKind,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<Option<RpcResult<Block>>, RpcError<TransportErrorKind>> {
+    ) -> Result<Option<RpcResult<AnyRpcBlock>>, RpcError<TransportErrorKind>> {
         self.rpc_client
             .race_some(provider_id.map(Into::into), |c| c.get_block(id, kind))
             .await
@@ -100,7 +100,7 @@ impl Provider {
         tx_hash: TxHash,
         provider_id: Option<RpcProviderId>,
     ) -> Result<
-        Option<RpcResult<<Ethereum as Network>::TransactionResponse>>,
+        Option<RpcResult<<AnyNetwork as Network>::TransactionResponse>>,
         RpcError<TransportErrorKind>,
     > {
         self.rpc_client
