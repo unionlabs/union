@@ -1,36 +1,29 @@
 use std::collections::VecDeque;
 
-use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
+use ethereum_light_client_types::{account_proof::AccountProof, storage_proof::StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::{hash_v2::Hash, H160},
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-    },
-    id::ClientId,
-    uint::U256,
-    validated::ValidateT,
+    hash::H160,
+    ibc::core::client::height::Height,
 };
 use voyager_message::{
     call::Call,
     core::ChainId,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
-    module::{ConsensusModuleServer, PluginInfo, PluginServer, UnexpectedChainIdError},
-    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    module::{PluginInfo, PluginServer, UnexpectedChainIdError},
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{data, pass::PassResult, Op, Visit};
 
@@ -49,7 +42,7 @@ struct StateProofResponse {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +55,7 @@ pub struct Module {
     /// The address of the settlement contract on Eth.
     pub l1_settlement_address: H160,
 
-    pub l1_client_id: ClientId,
+    pub l1_client_id: u32,
 
     pub aptos_client: aptos_rest_client::Client,
 
@@ -94,7 +87,7 @@ impl Plugin for Module {
             ibc_handler_address: config.ibc_handler_address,
             aptos_client,
             l1_settlement_address: config.l1_settlement_address,
-            l1_client_id: config.l1_client_id.validate().unwrap(),
+            l1_client_id: config.l1_client_id,
             movement_rest_url: config.movement_rest_url,
         })
     }
@@ -135,7 +128,7 @@ pub struct Config {
     pub l1_settlement_address: H160,
 
     /// Id of the light client that this client depends on
-    pub l1_client_id: String,
+    pub l1_client_id: u32,
 
     /// The RPC endpoint for aptos.
     pub aptos_rest_api: String,
@@ -189,8 +182,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
-                                from: fetch.update_from.revision_height,
-                                to: fetch.update_to.revision_height,
+                                from: fetch.update_from.revision(),
+                                to: fetch.update_to.height(),
                             }),
                         ))
                     })
@@ -214,19 +207,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
-                            height: Height {
-                                revision_number: 0,
-                                revision_height: to,
-                            },
+                            height: Height::new(to),
                         },
                         serde_json::to_value(movement_light_client_types::Header {
                             // dummy value for now, until movement settles on a public L1
-                            // 0-1, otherwise it's omitted in the proto encoding(?)
-                            l1_height: Height::default().increment(),
-                            trusted_height: Height {
-                                revision_number: 0,
-                                revision_height: from,
-                            },
+                            l1_height: 0,
+                            trusted_height: Height::new(from),
                             state_proof: StateProof::default(),
                             tx_index: 0,
                             tx_proof: TransactionInfoWithProof::default(),
@@ -259,69 +245,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
-#[async_trait]
-impl ConsensusModuleServer for Module {
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(height.revision_height).await;
-
-        let vault_addr = self
-            .get_vault_addr(
-                (*self.ibc_handler_address.0.get()).into(),
-                Some(ledger_version),
-            )
-            .await
-            .unwrap();
-
-        let table_handle = self
-            .aptos_client
-            .get_account_resource(
-                vault_addr.into(),
-                &format!("0x{}::ibc::IBCStore", self.ibc_handler_address),
-            )
-            .await
-            .unwrap()
-            .into_inner()
-            .unwrap()
-            .data["commitments"]["handle"]
-            .clone()
-            .as_str()
-            .unwrap()
-            .to_owned();
-
-        Ok(
-            serde_json::to_value(movement_light_client_types::ClientState {
-                chain_id: self.chain_id.to_string(),
-                l1_client_id: self.l1_client_id.clone(),
-                l1_contract_address: self.l1_settlement_address,
-                l2_contract_address: self.ibc_handler_address,
-                table_handle: AccountAddress(Hash::new(
-                    U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
-                )),
-                frozen_height: Height {
-                    revision_number: 0,
-                    revision_height: 0,
-                },
-                latest_block_num: height.revision_height,
-            })
-            .expect("infallible"),
-        )
-    }
-
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, _height: Height) -> RpcResult<Value> {
-        Ok(
-            serde_json::to_value(movement_light_client_types::ConsensusState {
-                state_root: Default::default(),
-                timestamp: 1000,
-                state_proof_hash: Default::default(),
-            })
-            .expect("infallible"),
-        )
-    }
-}
-
 pub async fn get_lc_header(
     movement_rest_url: &str,
     from: u64,
@@ -340,12 +263,8 @@ pub async fn get_lc_header(
 
     movement_light_client_types::Header {
         // dummy value for now, until movement settles on a public L1
-        // 0-1, otherwise it's omitted in the proto encoding(?)
-        l1_height: Height::default().increment(),
-        trusted_height: Height {
-            revision_number: 0,
-            revision_height: from,
-        },
+        l1_height: 0,
+        trusted_height: Height::new(from),
         state_proof: state_proof.state_proof,
         tx_index: state_proof.tx_index,
         tx_proof: state_proof.tx_proof,

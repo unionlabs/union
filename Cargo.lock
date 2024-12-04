@@ -13436,6 +13436,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "move-core-types",
+ "movement-light-client-types",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-tendermint"
 version = "0.1.0"
 dependencies = [

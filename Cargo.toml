@@ -128,7 +128,7 @@ members = [
 
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
-  # "voyager/plugins/client-update/movement",
+  "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
 
   "voyager/plugins/event-source/cosmos-sdk",
