@@ -18,7 +18,7 @@ _: {
     {
       packages = {
         zkgm-dev = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-Vs6UkwWFyLUbR5XKzTw90pMzTLqVRCK/iSBRvNoMCtU=";
+          npmDepsHash = "sha256-zHh5qqZMYuXqyMFs5BgAMdQGwW6oNlEwrZIJZYyqSaw=";
           src = ./.;
           sourceRoot = "zkgm-dev";
           npmFlags = [ "--legacy-peer-deps" ];
