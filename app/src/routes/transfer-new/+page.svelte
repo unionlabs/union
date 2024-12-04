@@ -18,43 +18,38 @@ import {
   type AptosBrowserWallet,
   type TransferAssetsParameters
 } from "@unionlabs/client"
+import * as v from "valibot"
 import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
 import { goto } from "$app/navigation"
 import { onDestroy, onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { userAddrEvm } from "$lib/wallet/evm"
-import type { Step } from "$lib/stepper-types"
 import { config } from "$lib/wallet/evm/config"
 import { toIsoString } from "$lib/utilities/date"
 import { truncate } from "$lib/utilities/format.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
-import Stepper from "$lib/components/stepper.svelte"
-import { debounce, raise, sleep } from "$lib/utilities/index.ts"
+import Chevron from "./(components)/chevron.svelte"
 import { userBalancesQuery } from "$lib/queries/balance"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Input } from "$lib/components/ui/input/index.js"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
-import ChainDialog from "./(component)/chain-dialog.svelte"
-import Chevron from "../transfer/(components)/chevron.svelte"
-import { getSupportedAsset, zip } from "$lib/utilities/helpers.ts"
+import ChainDialog from "./(components)/chain-dialog.svelte"
+import ChainButton from "./(components)/chain-button.svelte"
+import AssetsDialog from "./(components)/assets-dialog.svelte"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { debounce, raise, sleep } from "$lib/utilities/index.ts"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+import { transferSchema, type TransferSchema } from "./validation.ts"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import ChainButton from "../transfer/(components)/chain-button.svelte"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import AssetsDialog from "./(component)/assets-dialog.svelte"
 import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
 import { aptosStore, userAddressAptos, getAptosWallet } from "$lib/wallet/aptos"
 import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
-import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
-import CardSectionHeading from "../transfer/(components)/card-section-heading.svelte"
 import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
-import { enhance } from "$app/forms"
-import { transferSchema, type TransferSchema } from "./validation.ts"
-import * as v from "valibot"
 
 type SearchParams = { [key: string]: string }
 
@@ -107,24 +102,14 @@ $: rawBalances = userBalancesQuery({
 
 $: balances = derived([rawBalances, sourceChain], ([$rawBalances, $sourceChain]) => {
   if (!($sourceChain && $rawBalances)) return []
-  const balances = $rawBalances.flatMap(x => x.data as any)
-  const chainAssets = Object.groupBy($sourceChain.assets, asset => asset.denom)
-  return balances
-    .map(balance => {
-      try {
-        const asset = chainAssets[balance.address]?.at(0)
-        if (asset?.denom === balance?.address) return { ...balance, ...asset }
-        return balance
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : error
-        console.error(errorMessage)
-        return balance
-      }
-    })
-    .sort((a, b) => (a.balance > b.balance ? -1 : 1))
+  return $rawBalances.data[source] ?? []
 })
 
+// @ts-ignore
 $: assetInfo = $balances.find(x => x?.address === asset)
+$: {
+  console.log(asset, assetInfo)
+}
 
 /**
  * observer observs the transfer state and updates the url accordingly
@@ -233,7 +218,7 @@ onDestroy(() => unsubscribe())
     <Card.Header>header</Card.Header>
     <Card.Content class={cn('flex flex-col gap-4')}>
       <section>
-        <CardSectionHeading>From</CardSectionHeading>
+        <h2 class="card-section-heading">From</h2>
         <ChainButton bind:dialogOpen={dialogOpenFromChain}>
           {$sourceChain?.display_name ?? 'Select chain'}
         </ChainButton>
@@ -242,7 +227,8 @@ onDestroy(() => unsubscribe())
             <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
           </Button>
         </div>
-        <CardSectionHeading>To</CardSectionHeading>
+        <h2 class="card-section-heading">to</h2>
+
         <ChainButton bind:dialogOpen={dialogOpenToChain}>
           {$destinationChain?.display_name ?? 'Select chain'}
         </ChainButton>
@@ -253,7 +239,7 @@ onDestroy(() => unsubscribe())
         on:click={() => (dialogOpenAsset = !dialogOpenAsset)}
       >
         <div class="flex-1 text-left font-bold text-md">
-          {assetInfo?.display_symbol ?? 'Select Asset'}
+          {assetInfo?.symbol ?? 'Select Asset'}
         </div>
         <Chevron />
       </Button>
@@ -313,4 +299,8 @@ onDestroy(() => unsubscribe())
   </Card.Root>
 </form>
 
-<style lang="postcss"></style>
+<style lang="postcss">
+  .card-section-heading {
+    @apply font-bold font-supermolot text-xl mt-2 mb-1;
+  }
+</style>

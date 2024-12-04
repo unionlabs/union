@@ -19,6 +19,16 @@ export function userBalancesQuery({
   connected?: boolean
 }) {
   return createQueries({
+    combine: resultArray => ({
+      data: resultArray.reduce(
+        (accumulator, current, index) => {
+          accumulator[chains[index].chain_id] = current.data
+          return accumulator
+        },
+        {} as Record<string, any>
+      ),
+      pending: resultArray.some(result => result.isLoading)
+    }),
     queries: chains.map(chain => ({
       queryKey: [
         "balances",
