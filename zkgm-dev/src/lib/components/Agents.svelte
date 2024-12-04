@@ -110,7 +110,7 @@
       <img
               src="/agents/{char.id}.png"
               alt="Agent {char.id}"
-              class="w-12 h-12"
+              class="w-12 h-12 md:w-16 md:h-16"
       />
     </div>
   {/each}
