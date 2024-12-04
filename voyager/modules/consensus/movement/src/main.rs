@@ -2,6 +2,7 @@ use aptos_move_ibc::ibc::ClientExt;
 use aptos_rest_client::error::RestError;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use movement_light_client_types::{ClientState, ConsensusState};
@@ -15,9 +16,8 @@ use unionlabs::{
     },
     hash::{hash_v2::Hash, H160},
     ibc::core::client::height::Height,
-    id::ClientId,
     uint::U256,
-    validated::ValidateT,
+    ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
@@ -47,7 +47,7 @@ pub struct Module {
     /// The address of the settlement contract on Eth.
     pub l1_settlement_address: H160,
 
-    pub l1_client_id: ClientId,
+    pub l1_client_id: u32,
 
     pub aptos_client: aptos_rest_client::Client,
 
@@ -73,7 +73,7 @@ impl ConsensusModule for Module {
             ibc_handler_address: config.ibc_handler_address,
             aptos_client,
             l1_settlement_address: config.l1_settlement_address,
-            l1_client_id: config.l1_client_id.validate().unwrap(),
+            l1_client_id: config.l1_client_id,
             movement_rest_url: config.movement_rest_url,
         })
     }
@@ -94,7 +94,7 @@ pub struct Config {
     pub l1_settlement_address: H160,
 
     /// Id of the light client that this client depends on
-    pub l1_client_id: String,
+    pub l1_client_id: u32,
 
     /// The RPC endpoint for aptos.
     pub aptos_rest_api: String,
@@ -131,7 +131,7 @@ pub enum ModuleInitError {
 impl ConsensusModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(height.revision_height).await;
+        let ledger_version = self.ledger_version_of_height(height.height()).await;
 
         let vault_addr = self
             .get_vault_addr(
@@ -165,11 +165,8 @@ impl ConsensusModuleServer for Module {
             table_handle: AccountAddress(Hash::new(
                 U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
             )),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_block_num: height.revision_height,
+            frozen_height: Height::new(0),
+            latest_block_num: height.height(),
         })
         .expect("infallible"))
     }
@@ -183,5 +180,48 @@ impl ConsensusModuleServer for Module {
             state_proof_hash: Default::default(),
         })
         .expect("infallible"))
+    }
+
+    /// Query the latest finalized height of this chain.
+    async fn query_latest_height(&self, _: &Extensions, _finalized: bool) -> RpcResult<Height> {
+        match self.aptos_client.get_index().await {
+            Ok(ledger_info) => {
+                let height = ledger_info.inner().block_height.0;
+
+                debug!(height, "latest height");
+
+                Ok(Height::new(height))
+            }
+            Err(err) => Err(ErrorObject::owned(
+                -1,
+                ErrorReporter(err).to_string(),
+                None::<()>,
+            )),
+        }
+    }
+
+    /// Query the latest finalized timestamp of this chain.
+    // TODO: Make this return a better type than i64
+    async fn query_latest_timestamp(&self, ext: &Extensions, finalized: bool) -> RpcResult<i64> {
+        let latest_height = self.query_latest_height(ext, finalized).await?;
+
+        match self
+            .aptos_client
+            .get_block_by_height(latest_height.height(), false)
+            .await
+        {
+            Ok(block) => {
+                let timestamp = block.inner().block_timestamp.0;
+
+                debug!(%timestamp, %latest_height, "latest timestamp");
+
+                Ok(timestamp.try_into().unwrap())
+            }
+            Err(err) => Err(ErrorObject::owned(
+                -1,
+                ErrorReporter(err).to_string(),
+                None::<()>,
+            )),
+        }
     }
 }

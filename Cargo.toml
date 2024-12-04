@@ -123,7 +123,7 @@ members = [
 
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
-  # "voyager/modules/consensus/movement",
+  "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
 
   "voyager/plugins/client-update/cometbls",
