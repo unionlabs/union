@@ -1309,17 +1309,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-verifier"
-version = "0.1.0"
-dependencies = [
- "bcs 0.1.6",
- "hex-literal",
- "sha3 0.10.8",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
