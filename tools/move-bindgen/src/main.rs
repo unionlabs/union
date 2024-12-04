@@ -184,7 +184,7 @@ async fn main() -> Result<(), Bde> {
                 let tracing_instrument_fields = if param_types.is_empty() {
                     quote!()
                 } else {
-                    quote!(#(%#idents,)*)
+                    quote!(#(?#idents,)*)
                 };
 
                 let generic_type_params = f.generic_type_params
