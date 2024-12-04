@@ -17,9 +17,13 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
 
     <div class="flex flex-col gap-4 mt-8">
       <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 bg-accent-500"></div>
-          <p class="font-mono text-2xl">LOGOTYPE</p>
+        <div class="flex w-full justify-between items-center">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-accent-500"></div>
+            <p class="font-mono text-2xl">LOGOTYPE</p>
+          </div>
+          <a class="font-bold font-mono text-accent-500" target="_blank"
+             href="https://drive.google.com/drive/folders/1Q4Qci4TtHYCWvB9oNA-SuYEPgyA_AMVI">[DOWNLOAD]</a>
         </div>
         <LogoDisplay/>
       </div>
@@ -58,12 +62,14 @@ import jetbrains from "#/components/brand/jetbrains-example.svg"
           <FontDisplay
                   fontFamily="mono"
                   label="Jet Brains"
+                  link="https://drive.google.com/file/d/1Gq_txYmdtL7lebQTuFCqRP4apDMDU4yN/view?usp=sharing"
           >
             <Image src={jetbrains} alt="Jet brains example" class="h-full w-fit"/>
           </FontDisplay>
           <FontDisplay
                   fontFamily="supermolot"
                   label="Supermolot"
+                  link="https://drive.google.com/file/d/1kS9aRiy5f7zS70VHROiYXcZHLJFExMFO/view?usp=sharing"
           >
             <Image src={supermolot} alt="supermolot example" class="h-full w-fit"/>
           </FontDisplay>

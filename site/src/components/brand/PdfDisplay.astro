@@ -2,9 +2,9 @@
 import H3 from "../typography/h3.astro";
 import ButtonA from "../ButtonA.astro";
 const slides = [
-  {image: "/icon-192.png", label: "Brand Guidelines - Example 1"},
-  {image: "/icon-192.png", label: "Brand Guidelines - Example 2"},
-  {image: "/icon-192.png", label: "Brand Guidelines - Example 3"}
+  {image: "/pdf-example-1.png", label: "Brand Guidelines - Example 1"},
+  {image: "/pdf-example-2.png", label: "Brand Guidelines - Example 2"},
+  {image: "/pdf-example-3.png", label: "Brand Guidelines - Example 3"}
 ];
 ---
 
@@ -17,7 +17,7 @@ const slides = [
                 <img
                         src={slide.image}
                         alt={slide.label}
-                        class="h-96 w-full object-cover"
+                        class="h-96 w-full object-cover object-center"
                 />
               </div>
       ))}
@@ -47,7 +47,7 @@ const slides = [
           Complete guide for using our brand assets and design system.
         </p>
       </div>
-      <ButtonA href="https://drive.google.com/file/d/1DMZ2R9vHDlKS64YA3fS1zlIghtiehpi5/view?usp=sharing" target>Download PDF</ButtonA>
+      <ButtonA href="https://drive.google.com/file/d/1DMZ2R9vHDlKS64YA3fS1zlIghtiehpi5/view?usp=sharing" target="_blank">Download PDF</ButtonA>
     </div>
   </div>
 </div>

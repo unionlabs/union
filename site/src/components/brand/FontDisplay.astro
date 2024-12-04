@@ -5,13 +5,15 @@ interface Props {
   label: string;
   sampleText?: string;
   class?: string;
+  link: string;
 }
 
 const {
   label,
   fontFamily,
   sampleText,
-  class: className = ''
+  class: className = '',
+  link
 } = Astro.props;
 
 const fontDetails = {
@@ -50,6 +52,6 @@ const currentFont = fontDetails[fontFamily];
               {currentFont.name} {variant}
             </p>
     ))}
-    <a href="#" class="text-accent-500 font-mono font-bold">[DOWNLOAD]</a>
+    <a href={link} target="_blank" class="text-accent-500 font-mono font-bold">[DOWNLOAD]</a>
   </div>
 </div>
