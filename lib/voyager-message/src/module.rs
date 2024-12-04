@@ -5,13 +5,15 @@ use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member};
-use voyager_core::{ConsensusType, IbcVersionId};
+use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
+    core::{
+        ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
+    },
     data::Data,
-    IbcSpec, RawClientId, VoyagerMessage,
+    RawClientId, VoyagerMessage,
 };
 
 fn ok<T>(t: T) -> Result<T, BoxDynError> {
@@ -23,16 +25,16 @@ fn ok<T>(t: T) -> Result<T, BoxDynError> {
 pub struct StateModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId,
-    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-    pub ibc_version_id: IbcVersionId,
+    #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+    pub ibc_spec_id: IbcSpecId,
 }
 
 impl StateModuleInfo {
     pub fn id(&self) -> String {
-        format!("state/{}/{}", self.ibc_version_id, self.chain_id)
+        format!("state/{}/{}", self.ibc_spec_id, self.chain_id)
     }
 
-    // TODO: Add this for ibc_version_id
+    // TODO: Add this for ibc_spec_id
     pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
         if chain_id.as_ref() != self.chain_id.as_str() {
             Err(UnexpectedChainIdError {
@@ -50,16 +52,16 @@ impl StateModuleInfo {
 pub struct ProofModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId,
-    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-    pub ibc_version_id: IbcVersionId,
+    #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+    pub ibc_spec_id: IbcSpecId,
 }
 
 impl ProofModuleInfo {
     pub fn id(&self) -> String {
-        format!("proof/{}/{}", self.ibc_version_id, self.chain_id)
+        format!("proof/{}/{}", self.ibc_spec_id, self.chain_id)
     }
 
-    // TODO: Add this for ibc_version_id
+    // TODO: Add this for ibc_spec_id
     pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
         if chain_id.as_ref() != self.chain_id.as_str() {
             Err(UnexpectedChainIdError {
@@ -132,8 +134,8 @@ pub struct ClientModuleInfo {
     pub ibc_interface: IbcInterface,
 
     /// The IBC version that this client module provides functionality for.
-    #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-    pub ibc_version_id: IbcVersionId,
+    #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+    pub ibc_spec_id: IbcSpecId,
 }
 
 impl ClientModuleInfo {
@@ -186,14 +188,14 @@ impl ClientModuleInfo {
         }
     }
 
-    pub fn ensure_ibc_version_id(
+    pub fn ensure_ibc_spec_id(
         &self,
-        ibc_version_id: impl AsRef<str>,
+        ibc_spec_id: impl AsRef<str>,
     ) -> Result<(), UnexpectedIbcVersionIdError> {
-        if ibc_version_id.as_ref() != self.ibc_version_id.as_str() {
+        if ibc_spec_id.as_ref() != self.ibc_spec_id.as_str() {
             Err(UnexpectedIbcVersionIdError {
-                expected: self.ibc_version_id.clone(),
-                found: ibc_version_id.as_ref().to_owned(),
+                expected: self.ibc_spec_id.clone(),
+                found: ibc_spec_id.as_ref().to_owned(),
             })
         } else {
             Ok(())
@@ -232,7 +234,7 @@ pub struct UnexpectedIbcInterfaceError {
 #[derive(Debug, Clone, thiserror::Error)]
 #[error("invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcVersionIdError {
-    pub expected: IbcVersionId,
+    pub expected: IbcSpecId,
     pub found: String,
 }
 

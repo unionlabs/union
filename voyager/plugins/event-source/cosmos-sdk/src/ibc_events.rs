@@ -388,7 +388,7 @@ event! {
         #[event(tag = "wasm-send_packet")]
         UnionSendPacket {
             #[parse(serde_json::from_str)]
-            packet: ibc_solidity::ibc::Packet,
+            packet: ibc_solidity::Packet,
         },
 
         // #[event(

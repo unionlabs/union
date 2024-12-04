@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use ibc_solidity::ibc;
+use ibc_solidity::Ibc;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::hash::H256;
@@ -34,23 +34,23 @@ pub struct MakeFullEvent {
 
 #[model]
 pub enum IbcEvents {
-    ClientRegistered(ibc::Ibc::ClientRegistered),
-    ClientCreated(ibc::Ibc::ClientCreated),
-    ClientUpdated(ibc::Ibc::ClientUpdated),
-    ConnectionOpenInit(ibc::Ibc::ConnectionOpenInit),
-    ConnectionOpenTry(ibc::Ibc::ConnectionOpenTry),
-    ConnectionOpenAck(ibc::Ibc::ConnectionOpenAck),
-    ConnectionOpenConfirm(ibc::Ibc::ConnectionOpenConfirm),
-    ChannelOpenInit(ibc::Ibc::ChannelOpenInit),
-    ChannelOpenTry(ibc::Ibc::ChannelOpenTry),
-    ChannelOpenAck(ibc::Ibc::ChannelOpenAck),
-    ChannelOpenConfirm(ibc::Ibc::ChannelOpenConfirm),
-    ChannelCloseInit(ibc::Ibc::ChannelCloseInit),
-    ChannelCloseConfirm(ibc::Ibc::ChannelCloseConfirm),
-    SendPacket(ibc::Ibc::SendPacket),
-    RecvPacket(ibc::Ibc::RecvPacket),
-    RecvIntentPacket(ibc::Ibc::RecvIntentPacket),
-    WriteAcknowledgement(ibc::Ibc::WriteAcknowledgement),
-    AcknowledgePacket(ibc::Ibc::AcknowledgePacket),
-    TimeoutPacket(ibc::Ibc::TimeoutPacket),
+    ClientRegistered(Ibc::ClientRegistered),
+    ClientCreated(Ibc::ClientCreated),
+    ClientUpdated(Ibc::ClientUpdated),
+    ConnectionOpenInit(Ibc::ConnectionOpenInit),
+    ConnectionOpenTry(Ibc::ConnectionOpenTry),
+    ConnectionOpenAck(Ibc::ConnectionOpenAck),
+    ConnectionOpenConfirm(Ibc::ConnectionOpenConfirm),
+    ChannelOpenInit(Ibc::ChannelOpenInit),
+    ChannelOpenTry(Ibc::ChannelOpenTry),
+    ChannelOpenAck(Ibc::ChannelOpenAck),
+    ChannelOpenConfirm(Ibc::ChannelOpenConfirm),
+    ChannelCloseInit(Ibc::ChannelCloseInit),
+    ChannelCloseConfirm(Ibc::ChannelCloseConfirm),
+    SendPacket(Ibc::SendPacket),
+    RecvPacket(Ibc::RecvPacket),
+    RecvIntentPacket(Ibc::RecvIntentPacket),
+    WriteAcknowledgement(Ibc::WriteAcknowledgement),
+    AcknowledgePacket(Ibc::AcknowledgePacket),
+    TimeoutPacket(Ibc::TimeoutPacket),
 }

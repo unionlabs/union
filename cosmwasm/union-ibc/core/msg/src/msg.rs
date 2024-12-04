@@ -1,4 +1,4 @@
-use ibc_solidity::ibc::Packet;
+use ibc_solidity::Packet;
 use unionlabs::bytes::Bytes;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -107,7 +107,7 @@ pub struct MsgChannelOpenInit {
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenTry {
     pub port_id: String,
-    pub channel: ibc_solidity::ibc::Channel,
+    pub channel: ibc_solidity::Channel,
     pub counterparty_version: String,
     pub proof_init: Bytes,
     pub proof_height: u64,

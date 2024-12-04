@@ -1,10 +1,10 @@
 use enumorph::Enumorph;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use unionlabs::ErrorReporter;
-use voyager_message::{
-    data::IbcDatagram, ibc_classic::IbcClassic, ibc_union::IbcUnion, FATAL_JSONRPC_ERROR_CODE,
-};
+use voyager_message::{data::IbcDatagram, FATAL_JSONRPC_ERROR_CODE};
 
 #[model]
 #[derive(Enumorph)]
@@ -15,8 +15,8 @@ pub enum ModuleCall {
 #[model]
 #[derive(Enumorph)]
 pub enum IbcMessage {
-    IbcV1(voyager_message::ibc_classic::IbcMessage),
-    IbcUnion(voyager_message::ibc_union::IbcMsg),
+    IbcV1(ibc_classic_spec::Datagram),
+    IbcUnion(ibc_union_spec::Datagram),
 }
 
 impl IbcMessage {
@@ -37,7 +37,7 @@ impl IbcMessage {
                 )),
                 None => Err(ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!("unknown IBC version id: {}", datagram.ibc_version_id),
+                    format!("unknown IBC version id: {}", datagram.ibc_spec_id),
                     None::<()>,
                 )),
             },

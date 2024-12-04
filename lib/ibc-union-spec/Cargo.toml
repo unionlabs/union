@@ -1,0 +1,18 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ibc-union-spec"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[dependencies]
+enumorph     = { workspace = true }
+ibc-solidity = { workspace = true }
+macros       = { workspace = true }
+serde        = { workspace = true, features = ["derive"] }
+sha3         = { workspace = true }
+unionlabs    = { workspace = true }
+voyager-core = { workspace = true }
+
+[lints]
+workspace = true

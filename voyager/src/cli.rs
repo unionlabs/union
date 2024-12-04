@@ -3,7 +3,7 @@ use std::{ffi::OsString, str::FromStr};
 use clap::{self, Parser, Subcommand};
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
-    core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
+    core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
     RawClientId, VoyagerMessage,
 };
@@ -189,8 +189,8 @@ pub enum RpcCmd {
         on: ChainId,
         // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
         client_id: RawClientId,
-        #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-        ibc_version_id: IbcVersionId,
+        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[arg(long, short = 'd', default_value_t = false)]
@@ -201,8 +201,8 @@ pub enum RpcCmd {
         on: ChainId,
         // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
         client_id: RawClientId,
-        #[arg(value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-        ibc_version_id: IbcVersionId,
+        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         trusted_height: Height,
@@ -220,8 +220,8 @@ pub enum MsgCmd {
         tracking: ChainId,
         #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
         ibc_interface: IbcInterface,
-        #[arg(long, value_parser(|s: &str| ok(IbcVersionId::new(s.to_owned()))))]
-        ibc_version_id: IbcVersionId,
+        #[arg(long, value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
         client_type: ClientType,
         #[arg(long, default_value_t = QueryHeight::Latest)]

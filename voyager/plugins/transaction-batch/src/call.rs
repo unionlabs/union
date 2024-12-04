@@ -1,4 +1,6 @@
 use enumorph::Enumorph;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use serde_json::json;
@@ -8,8 +10,6 @@ use voyager_message::{
     call::FetchUpdateHeaders,
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::{ChainId, QueryHeight},
-    ibc_classic::IbcClassic,
-    ibc_union::IbcUnion,
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{now, promise, Op};
@@ -124,7 +124,7 @@ where
                     [],
                     AggregateMsgUpdateClientsFromOrderedHeaders {
                         chain_id: module.chain_id.clone(),
-                        ibc_version_id: V::ID,
+                        ibc_spec_id: V::ID,
                         counterparty_client_id: RawClientId::new(self.client_id.clone()),
                     },
                 )],

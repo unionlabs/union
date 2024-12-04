@@ -383,25 +383,49 @@ impl ClientModuleServer for Module {
 fn encode_merkle_proof_for_evm(
     proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
 ) -> Vec<u8> {
+    alloy::sol! {
+        struct ExistenceProof {
+            bytes key;
+            bytes value;
+            bytes leafPrefix;
+            InnerOp[] path;
+        }
+
+        struct NonExistenceProof {
+            bytes key;
+            ExistenceProof left;
+            ExistenceProof right;
+        }
+
+        struct InnerOp {
+            bytes prefix;
+            bytes suffix;
+        }
+
+        struct ProofSpec {
+            uint256 childSize;
+            uint256 minPrefixLength;
+            uint256 maxPrefixLength;
+        }
+    }
+
     let merkle_proof = ics23::merkle_proof::MerkleProof::try_from(
         protos::ibc::core::commitment::v1::MerkleProof::from(proof),
     )
     .unwrap();
 
-    let convert_inner_op =
-        |i: unionlabs::union::ics23::inner_op::InnerOp| ibc_solidity::ics23::InnerOp {
-            prefix: i.prefix.into(),
-            suffix: i.suffix.into(),
-        };
+    let convert_inner_op = |i: unionlabs::union::ics23::inner_op::InnerOp| InnerOp {
+        prefix: i.prefix.into(),
+        suffix: i.suffix.into(),
+    };
 
-    let convert_existence_proof = |e: unionlabs::union::ics23::existence_proof::ExistenceProof| {
-        ibc_solidity::ics23::ExistenceProof {
+    let convert_existence_proof =
+        |e: unionlabs::union::ics23::existence_proof::ExistenceProof| ExistenceProof {
             key: e.key.into(),
             value: e.value.into(),
             leafPrefix: e.leaf_prefix.into(),
             path: e.path.into_iter().map(convert_inner_op).collect(),
-        }
-    };
+        };
 
     let exist_default = || ics23::existence_proof::ExistenceProof {
         key: vec![].into(),
@@ -415,7 +439,7 @@ fn encode_merkle_proof_for_evm(
             (convert_existence_proof(a), convert_existence_proof(b)).abi_encode_params()
         }
         ics23::merkle_proof::MerkleProof::NonMembership(a, b) => (
-            ibc_solidity::ics23::NonExistenceProof {
+            NonExistenceProof {
                 key: a.key.into(),
                 left: convert_existence_proof(a.left.unwrap_or_else(exist_default)),
                 right: convert_existence_proof(a.right.unwrap_or_else(exist_default)),

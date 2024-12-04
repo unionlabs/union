@@ -9,7 +9,8 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
-use ibc_solidity::ibc::{Channel, Connection};
+use ibc_solidity::{Channel, Connection};
+use ibc_union_spec::{IbcUnion, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -25,12 +26,10 @@ use unionlabs::{
     bytes::Bytes,
     hash::{hash_v2::Base64, H256},
     ibc::core::client::height::Height,
-    ics24::ethabi::Path,
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
-    ibc_union::IbcUnion,
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
@@ -296,29 +295,34 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_state(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: StorePath,
+    ) -> RpcResult<Value> {
         match path {
-            Path::ClientState(path) => self
+            StorePath::ClientState(path) => self
                 .query_client_state(at, path.client_id)
                 .await
                 .map(into_value),
-            Path::ConsensusState(path) => self
+            StorePath::ConsensusState(path) => self
                 .query_consensus_state(at, path.client_id, path.height)
                 .await
                 .map(into_value),
-            Path::Connection(path) => self
+            StorePath::Connection(path) => self
                 .query_connection(at, path.connection_id)
                 .await
                 .map(into_value),
-            Path::Channel(path) => self
+            StorePath::Channel(path) => self
                 .query_channel(at, path.channel_id)
                 .await
                 .map(into_value),
-            Path::BatchPackets(path) => self
+            StorePath::BatchPackets(path) => self
                 .query_batch_packets(at, path.channel_id, path.batch_hash)
                 .await
                 .map(into_value),
-            Path::BatchReceipts(path) => self
+            StorePath::BatchReceipts(path) => self
                 .query_batch_receipts(at, path.channel_id, path.batch_hash)
                 .await
                 .map(into_value),

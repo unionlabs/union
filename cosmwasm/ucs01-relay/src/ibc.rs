@@ -7,7 +7,7 @@ use cosmwasm_std::{
     IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, Reply, Response, SubMsgResult,
     Timestamp,
 };
-use ibc_solidity::ibc::{Channel, Packet};
+use ibc_solidity::{Channel, Packet};
 use prost::{Message, Name};
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;

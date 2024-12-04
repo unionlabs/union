@@ -21,11 +21,11 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
-use voyager_core::{ConsensusType, IbcVersionId};
+use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::QueueError;
 
 use crate::{
-    core::{ChainId, ClientType, IbcInterface},
+    core::{ChainId, ClientType, IbcInterface, IbcSpec},
     into_value,
     module::{
         ClientModuleClient, ClientModuleInfo, ConsensusModuleClient, ConsensusModuleInfo,
@@ -33,7 +33,7 @@ use crate::{
         StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    IbcSpec, RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -53,14 +53,14 @@ pub struct Context {
 
 #[derive(macros::Debug)]
 pub struct Modules {
-    state_modules: HashMap<(ChainId, IbcVersionId), ModuleRpcClient>,
-    proof_modules: HashMap<(ChainId, IbcVersionId), ModuleRpcClient>,
+    state_modules: HashMap<(ChainId, IbcSpecId), ModuleRpcClient>,
+    proof_modules: HashMap<(ChainId, IbcSpecId), ModuleRpcClient>,
 
     /// map of chain id to consensus module.
     consensus_modules: HashMap<ChainId, ModuleRpcClient>,
 
     /// map of client type to ibc interface to client module.
-    client_modules: HashMap<(ClientType, IbcInterface, IbcVersionId), ModuleRpcClient>,
+    client_modules: HashMap<(ClientType, IbcInterface, IbcSpecId), ModuleRpcClient>,
 
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
@@ -72,7 +72,7 @@ pub struct Modules {
 }
 
 pub struct IbcSpecHandlers {
-    pub(crate) handlers: HashMap<IbcVersionId, IbcSpecHandler>,
+    pub(crate) handlers: HashMap<IbcSpecId, IbcSpecHandler>,
 }
 
 impl IbcSpecHandlers {
@@ -334,17 +334,17 @@ impl Context {
             |info| info.id(),
             |StateModuleInfo {
                  chain_id,
-                 ibc_version_id,
+                 ibc_spec_id,
              },
              rpc_client| {
                 let prev = modules
                     .state_modules
-                    .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
+                    .insert((chain_id.clone(), ibc_spec_id.clone()), rpc_client);
 
                 if prev.is_some() {
                     return Err(anyhow!(
                         "multiple state modules configured for chain id \
-                        `{chain_id}` and IBC version `{ibc_version_id}`",
+                        `{chain_id}` and IBC version `{ibc_spec_id}`",
                     ));
                 }
 
@@ -360,17 +360,17 @@ impl Context {
             |info| info.id(),
             |ProofModuleInfo {
                  chain_id,
-                 ibc_version_id,
+                 ibc_spec_id,
              },
              rpc_client| {
                 let prev = modules
                     .proof_modules
-                    .insert((chain_id.clone(), ibc_version_id.clone()), rpc_client);
+                    .insert((chain_id.clone(), ibc_spec_id.clone()), rpc_client);
 
                 if prev.is_some() {
                     return Err(anyhow!(
                         "multiple proof modules configured for chain id \
-                        `{chain_id}` and IBC version `{ibc_version_id}`",
+                        `{chain_id}` and IBC version `{ibc_spec_id}`",
                     ));
                 }
 
@@ -421,16 +421,12 @@ impl Context {
                  client_type,
                  consensus_type,
                  ibc_interface,
-                 ibc_version_id,
+                 ibc_spec_id,
              },
              rpc_client| {
-                if !modules
-                    .ibc_spec_handlers
-                    .handlers
-                    .contains_key(ibc_version_id)
-                {
+                if !modules.ibc_spec_handlers.handlers.contains_key(ibc_spec_id) {
                     return Err(anyhow!(
-                        "IBC version `{ibc_version_id}` is not supported in this build of voyager"
+                        "IBC version `{ibc_spec_id}` is not supported in this build of voyager"
                     ));
                 }
 
@@ -438,7 +434,7 @@ impl Context {
                     (
                         client_type.clone(),
                         ibc_interface.clone(),
-                        ibc_version_id.clone(),
+                        ibc_spec_id.clone(),
                     ),
                     rpc_client.clone(),
                 );
@@ -447,7 +443,7 @@ impl Context {
                     return Err(anyhow!(
                         "multiple client modules configured for client \
                         type `{client_type}`, IBC interface `{ibc_interface}`, \
-                        and IBC version `{ibc_version_id}`",
+                        and IBC version `{ibc_spec_id}`",
                     ));
                 }
 
@@ -555,9 +551,9 @@ impl Modules {
             .state_modules
             .keys()
             .cloned()
-            .map(|(chain_id, ibc_version_id)| StateModuleInfo {
+            .map(|(chain_id, ibc_spec_id)| StateModuleInfo {
                 chain_id,
-                ibc_version_id,
+                ibc_spec_id,
             })
             .collect();
 
@@ -565,9 +561,9 @@ impl Modules {
             .proof_modules
             .keys()
             .cloned()
-            .map(|(chain_id, ibc_version_id)| ProofModuleInfo {
+            .map(|(chain_id, ibc_spec_id)| ProofModuleInfo {
                 chain_id,
-                ibc_version_id,
+                ibc_spec_id,
             })
             .collect();
 
@@ -585,11 +581,11 @@ impl Modules {
             .client_modules
             .keys()
             .map(
-                |(client_type, ibc_interface, ibc_version_id)| ClientModuleInfo {
+                |(client_type, ibc_interface, ibc_spec_id)| ClientModuleInfo {
                     consensus_type: self.client_consensus_types[client_type].clone(),
                     client_type: client_type.clone(),
                     ibc_interface: ibc_interface.clone(),
-                    ibc_version_id: ibc_version_id.clone(),
+                    ibc_spec_id: ibc_spec_id.clone(),
                 },
             )
             .collect();
@@ -625,14 +621,14 @@ impl Modules {
     pub fn state_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
     ) -> Result<&'a (impl RawStateModuleClient + 'a), StateModuleNotFound> {
         Ok(self
             .state_modules
-            .get(&(chain_id.clone(), ibc_version_id.clone()))
+            .get(&(chain_id.clone(), ibc_spec_id.clone()))
             .ok_or_else(|| StateModuleNotFound {
                 chain_id: chain_id.clone(),
-                ibc_version_id: ibc_version_id.clone(),
+                ibc_spec_id: ibc_spec_id.clone(),
             })?
             .client())
     }
@@ -640,14 +636,14 @@ impl Modules {
     pub fn proof_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
     ) -> Result<&'a (impl RawProofModuleClient + 'a), ProofModuleNotFound> {
         Ok(self
             .proof_modules
-            .get(&(chain_id.clone(), ibc_version_id.clone()))
+            .get(&(chain_id.clone(), ibc_spec_id.clone()))
             .ok_or_else(|| ProofModuleNotFound {
                 chain_id: chain_id.clone(),
-                ibc_version_id: ibc_version_id.clone(),
+                ibc_spec_id: ibc_spec_id.clone(),
             })?
             .client())
     }
@@ -667,18 +663,18 @@ impl Modules {
         &'a self,
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
     ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
         match self.client_modules.get(&(
             client_type.clone(),
             ibc_interface.clone(),
-            ibc_version_id.clone(),
+            ibc_spec_id.clone(),
         )) {
             Some(client_module) => Ok(client_module.client()),
             None => Err(ClientModuleNotFound::NotFound {
                 client_type: client_type.clone(),
                 ibc_interface: ibc_interface.clone(),
-                ibc_version_id: ibc_version_id.clone(),
+                ibc_spec_id: ibc_spec_id.clone(),
             }),
         }
     }
@@ -850,19 +846,19 @@ macro_rules! module_error {
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for state on chain `{chain_id}` and IBC version `{ibc_version_id}`")]
+#[error("no module loaded for state on chain `{chain_id}` and IBC version `{ibc_spec_id}`")]
 pub struct StateModuleNotFound {
     pub chain_id: ChainId,
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
 }
 
 module_error!(StateModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for proofs on chain `{chain_id}` and IBC version `{ibc_version_id}`")]
+#[error("no module loaded for proofs on chain `{chain_id}` and IBC version `{ibc_spec_id}`")]
 pub struct ProofModuleNotFound {
     pub chain_id: ChainId,
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
 }
 
 module_error!(ProofModuleNotFound);
@@ -878,12 +874,12 @@ pub enum ClientModuleNotFound {
     #[error("no client module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType },
     #[error(
-        "no client module loaded supporting client type `{client_type}`, IBC interface `{ibc_interface}`, and IBC version `{ibc_version_id}`",
+        "no client module loaded supporting client type `{client_type}`, IBC interface `{ibc_interface}`, and IBC version `{ibc_spec_id}`",
     )]
     NotFound {
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
     },
 }
 

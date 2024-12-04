@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 
 use enumorph::Enumorph;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
@@ -10,8 +12,6 @@ use voyager_message::{
     call::WaitForTrustedHeight,
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates, WithChainId},
-    ibc_classic::IbcClassic,
-    ibc_union::IbcUnion,
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, promise, seq, Op};
@@ -175,7 +175,7 @@ pub struct MakeBatchTransaction<V: IbcSpecExt> {
 }
 
 impl<V: IbcSpecExt> MakeBatchTransaction<V> {
-    #[instrument(skip_all, fields(ibc_version_id = %V::ID, %chain_id, datas_len = datas.len()))]
+    #[instrument(skip_all, fields(ibc_spec_id = %V::ID, %chain_id, datas_len = datas.len()))]
     pub fn call(self, chain_id: ChainId, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
@@ -212,7 +212,7 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                     .updates
                     .into_iter()
                     .map(|(_, msg)| {
-                        assert_eq!(msg.ibc_version_id, V::ID);
+                        assert_eq!(msg.ibc_spec_id, V::ID);
 
                         V::update_client_datagram(
                             msg.client_id.decode_spec::<V>().unwrap(),
@@ -236,7 +236,7 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                         call(WaitForTrustedHeight {
                             chain_id: chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
-                            ibc_version_id: V::ID,
+                            ibc_spec_id: V::ID,
                             height: required_consensus_height,
                         }),
                         data(WithChainId {

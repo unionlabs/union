@@ -5,7 +5,7 @@ use cosmwasm_std::{
     IbcReceiveResponse, IbcTimeout, IbcTimeoutBlock, MessageInfo, StdError, Timestamp, Uint128,
     Uint512, WasmMsg,
 };
-use ibc_solidity::ibc::{Channel, Packet};
+use ibc_solidity::{Channel, Packet};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{

@@ -1,4 +1,4 @@
-use ibc_solidity::ibc::Packet;
+use ibc_solidity::Packet;
 use unionlabs::bytes::Bytes;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

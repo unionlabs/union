@@ -5,6 +5,8 @@ use std::{fmt::Debug, net::SocketAddr, panic::AssertUnwindSafe};
 use anyhow::{bail, Context as _};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{future::BoxFuture, stream::FuturesUnordered, Future, FutureExt, StreamExt};
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use pg_queue::{PgQueue, PgQueueConfig};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,8 +14,8 @@ use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
 use unionlabs::ErrorReporter;
 use voyager_message::{
-    context::Context, filter::JaqInterestFilter, ibc_classic::IbcClassic, ibc_union::IbcUnion,
-    into_value, module::PluginInfo, pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
+    context::Context, filter::JaqInterestFilter, into_value, module::PluginInfo,
+    pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
 };
 use voyager_vm::{
     engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, Op, Queue,

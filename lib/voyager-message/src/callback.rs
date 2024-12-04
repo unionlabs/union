@@ -6,7 +6,7 @@ use itertools::Itertools;
 use macros::model;
 use serde::de::DeserializeOwned;
 use unionlabs::traits::Member;
-use voyager_core::{ClientInfo, IbcVersionId};
+use voyager_core::{ClientInfo, IbcSpecId};
 use voyager_vm::{CallbackT, Op, QueueError};
 
 use crate::{
@@ -46,7 +46,7 @@ impl CallbackT<VoyagerMessage> for Callback {
         match self {
             Callback::AggregateMsgUpdateClientsFromOrderedHeaders(
                 AggregateMsgUpdateClientsFromOrderedHeaders {
-                    ibc_version_id,
+                    ibc_spec_id,
                     chain_id,
                     counterparty_client_id,
                 },
@@ -76,7 +76,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                     ..
                 } = ctx
                     .rpc_server
-                    .client_info(&chain_id, &ibc_version_id, counterparty_client_id.clone())
+                    .client_info(&chain_id, &ibc_spec_id, counterparty_client_id.clone())
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -84,7 +84,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .rpc_server
                     .modules()
                     .map_err(error_object_to_queue_error)?
-                    .client_module(&client_type, &ibc_interface, &ibc_version_id)?;
+                    .client_module(&client_type, &ibc_interface, &ibc_spec_id)?;
 
                 Ok(voyager_vm::data(OrderedClientUpdates {
                     // REVIEW: Use FuturesOrdered here?
@@ -97,7 +97,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                                         meta,
                                         ClientUpdate {
                                             client_id: counterparty_client_id.clone(),
-                                            ibc_version_id: ibc_version_id.clone(),
+                                            ibc_spec_id: ibc_spec_id.clone(),
                                             client_message: encoded_header,
                                         },
                                     )
@@ -120,7 +120,7 @@ impl CallbackT<VoyagerMessage> for Callback {
 /// Required data: [`OrderedHeaders`]
 #[model]
 pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
     pub chain_id: ChainId,
     pub counterparty_client_id: RawClientId,
 }

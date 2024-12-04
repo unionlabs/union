@@ -9,6 +9,7 @@ enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true }
 futures                     = { workspace = true }
 ibc-solidity                = { workspace = true, features = ["rpc", "serde"] }
+ibc-union-spec.workspace    = true
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }

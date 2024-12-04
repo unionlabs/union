@@ -73,8 +73,6 @@ pub mod bounded;
 
 pub mod constants;
 
-pub mod ics24;
-
 pub mod validated;
 
 pub mod bytes;

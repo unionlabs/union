@@ -4,7 +4,7 @@ pub mod contract;
 pub mod state;
 
 use cosmwasm_std::{Addr, StdError};
-use ibc_solidity::ibc::{ChannelState, ConnectionState};
+use ibc_solidity::{ChannelState, ConnectionState};
 use thiserror::Error;
 use unionlabs::bytes::Bytes;
 

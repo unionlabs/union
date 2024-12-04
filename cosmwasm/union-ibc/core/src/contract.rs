@@ -7,7 +7,11 @@ use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
 use cw_storage_plus::Item;
-use ibc_solidity::ibc::{Channel, ChannelState, Connection, ConnectionState, Packet};
+use ibc_solidity::{Channel, ChannelState, Connection, ConnectionState, Packet};
+use ibc_union_spec::{
+    BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
+    ConsensusStatePath, COMMITMENT_MAGIC,
+};
 use serde::{Deserialize, Serialize};
 use union_ibc_msg::{
     lightclient::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
@@ -25,10 +29,6 @@ use union_ibc_msg::{
 use unionlabs::{
     ethereum::keccak256,
     hash::{hash_v2::HexPrefixed, H256},
-    ics24::ethabi::{
-        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath, COMMITMENT_MAGIC,
-    },
 };
 
 use crate::{

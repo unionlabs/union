@@ -6,6 +6,7 @@ use std::{
     num::ParseIntError,
 };
 
+use ibc_union_spec::{IbcUnion, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -19,12 +20,10 @@ use unionlabs::{
     bounded::BoundedI64,
     hash::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    ics24::ethabi::Path,
     ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
-    ibc_union::IbcUnion,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
     ProofModule, FATAL_JSONRPC_ERROR_CODE,
@@ -112,7 +111,12 @@ pub struct ChainIdParseError {
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_proof(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: StorePath,
+    ) -> RpcResult<Value> {
         let data = [0x03]
             .into_iter()
             .chain(*self.ibc_union_contract_address.data())

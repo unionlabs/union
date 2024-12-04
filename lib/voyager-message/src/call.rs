@@ -3,7 +3,7 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use tracing::{debug, error, info};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
-use voyager_core::{IbcVersionId, QueryHeight};
+use voyager_core::{IbcSpecId, QueryHeight};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
@@ -107,7 +107,7 @@ pub struct WaitForTimestamp {
 #[model]
 pub struct WaitForTrustedHeight {
     pub chain_id: ChainId,
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
     pub client_id: RawClientId,
     pub height: Height,
 }
@@ -117,10 +117,10 @@ impl CallT<VoyagerMessage> for Call {
     async fn process(self, ctx: &Context) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             // Call::Version(VersionMessage {
-            //     ibc_version_id,
+            //     ibc_spec_id,
             //     data,
             // }) => {
-            //     (ctx.ibc_spec_handlers.get(&ibc_version_id).unwrap().call)(&ctx.rpc_server, data)
+            //     (ctx.ibc_spec_handlers.get(&ibc_spec_id).unwrap().call)(&ctx.rpc_server, data)
             //         .await
             // }
             Call::FetchBlocks(FetchBlocks {
@@ -243,7 +243,7 @@ impl CallT<VoyagerMessage> for Call {
 
             Call::WaitForTrustedHeight(WaitForTrustedHeight {
                 chain_id,
-                ibc_version_id,
+                ibc_spec_id,
                 client_id,
                 height,
             }) => {
@@ -251,7 +251,7 @@ impl CallT<VoyagerMessage> for Call {
                     .rpc_server
                     .client_meta(
                         &chain_id,
-                        &ibc_version_id,
+                        &ibc_spec_id,
                         QueryHeight::Latest,
                         client_id.clone(),
                     )
@@ -272,7 +272,7 @@ impl CallT<VoyagerMessage> for Call {
                         defer(now() + 1),
                         call(WaitForTrustedHeight {
                             chain_id,
-                            ibc_version_id,
+                            ibc_spec_id,
                             client_id,
                             height,
                         }),
