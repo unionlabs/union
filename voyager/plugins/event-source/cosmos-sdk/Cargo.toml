@@ -6,10 +6,11 @@ version = "0.1.0"
 [dependencies]
 clap               = { workspace = true, features = ["derive"] }
 cometbft-rpc       = { workspace = true }
+cosmos-sdk-event   = { workspace = true }
 dashmap            = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
-ibc-events         = { workspace = true }
+ibc-solidity       = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 prost              = { workspace = true }

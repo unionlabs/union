@@ -229,7 +229,7 @@
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
         ./site/site.nix
-        ./lib/near/near.nix
+        # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/union-ibc/light-clients/ethereum/ethereum-light-client.nix
         # ./cosmwasm/union-ibc/light-clients/cometbls/cometbls-light-client.nix

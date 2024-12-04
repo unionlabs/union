@@ -30,7 +30,7 @@ members = [
   "lib/chain-utils",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
-  "lib/ibc-vm-rs",
+  # "lib/ibc-vm-rs",
   "cosmwasm/ics08-light-clients/interface",
   "lib/ics23",
   "lib/linea-verifier",
@@ -52,11 +52,11 @@ members = [
   "lib/voyager-message",
   "lib/voyager-core",
   "lib/galois-rpc",
-  "lib/ibc-events",
+  "lib/cosmos-sdk-event",
 
-  "lib/near/near-ibc",
-  "lib/near/near-light-client",
-  "lib/near/dummy-ibc-app",
+  # "lib/near/near-ibc",
+  # "lib/near/near-light-client",
+  # "lib/near/dummy-ibc-app",
   # "lib/near/near-ibc-tests",
 
   "lib/ibc-solidity",
@@ -217,9 +217,9 @@ union-ibc              = { path = "cosmwasm/union-ibc/core", default-features = 
 union-ibc-light-client = { path = "cosmwasm/union-ibc/core/light-client-interface", default-features = false }
 union-ibc-msg          = { path = "cosmwasm/union-ibc/core/msg", default-features = false }
 
-gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
-ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
+gnark-key-parser = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc       = { path = "lib/gnark-mimc", default-features = false }
+# ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
 ics008-wasm-client             = { path = "cosmwasm/ics08-light-clients/interface", default-features = false }
 ics23                          = { path = "lib/ics23", default-features = false }
 macros                         = { path = "lib/macros", default-features = false }
@@ -233,7 +233,7 @@ reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", 
 
 movement-light-client-types = { path = "cosmwasm/union-ibc/light-clients/movement/types", default-features = false }
 
-ibc-events = { path = "lib/ibc-events", default-features = false }
+cosmos-sdk-event = { path = "lib/cosmos-sdk-event", default-features = false }
 
 serde-utils      = { path = "lib/serde-utils", default-features = false }
 ssz              = { path = "lib/ssz", default-features = false }

@@ -17,7 +17,6 @@ enumorph                       = { workspace = true }
 frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }
 hex                            = { workspace = true }
-ibc-events                     = { workspace = true }
 ibc-solidity                   = { workspace = true, features = ["serde"] }
 itertools                      = "0.13.0"
 jaq-core                       = "1.5.1"
