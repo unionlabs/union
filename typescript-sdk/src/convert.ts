@@ -1,4 +1,3 @@
-import { isHex } from "viem"
 import { raise } from "./utilities/index.ts"
 import { bech32, hex, bytes } from "@scure/base"
 import type { Bech32Address, HexAddress } from "./types.ts"
@@ -13,9 +12,8 @@ import { isValidBech32Address } from "./utilities/address.ts"
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
   if (!isValidBech32Address(address)) raise(`Invalid bech32 address: ${address}`)
-  const { words } = bech32.decode(address)
-  const byteArray = bech32.fromWords(words)
-  return `0x${bytesToHex(byteArray)}`
+  const { bytes } = bech32.decodeToBytes(address)
+  return `0x${bytesToHex(bytes)}`
 }
 
 /**
@@ -32,7 +30,6 @@ export function hexAddressToBech32({
   address,
   bech32Prefix
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
-  if (!isHex(address)) raise("Invalid hex address")
   const words = bech32.toWords(hexToBytes(address))
   return bech32.encode(bech32Prefix, words, false)
 }
@@ -84,7 +81,9 @@ export function bech32ToBytes(bech32Address: string): Uint8Array {
  * bytesToHex(new Uint8Array([1, 2, 3]))
  * ```
  */
-export const bytesToHex = (bytes: Uint8Array): string => hex.encode(bytes)
+export function bytesToHex(bytes: Uint8Array): string {
+  return hex.encode(bytes)
+}
 
 /**
  * convert a hex string to a byte array

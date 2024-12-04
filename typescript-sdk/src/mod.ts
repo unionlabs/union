@@ -19,13 +19,13 @@ import {
   scrollSepolia,
   arbitrumSepolia,
   berachainTestnetbArtio
-} from "./client/evm.ts"
+} from "./evm/client.ts"
 import {
   cosmosChainId,
   type CosmosChainId,
   createCosmosClient,
   type CosmosClientParameters
-} from "./client/cosmos.ts"
+} from "./cosmos/client.ts"
 import {
   aptosChainId,
   type AptosChainId,
@@ -41,9 +41,16 @@ export {
   isValidBech32Address,
   extractBech32AddressPrefix
 } from "./utilities/address.ts"
+export {
+  getCosmosHeight,
+  getCosmosTransactionReceipt,
+  getAptosAccountTransactions,
+  getCosmosAccountTransactions
+} from "./query/on-chain.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
 import type { ChainId, TransferAssetsParameters } from "./types.ts"
+
 export { http, fallback } from "viem"
 /**
  * @module

@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import "#patch.ts"
+import "scripts/patch"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"

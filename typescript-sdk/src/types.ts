@@ -1,7 +1,9 @@
 import type { Account as ViemAccount, Address } from "viem"
-import type { evmChainId, EvmChainId } from "./client/evm.ts"
-import type { cosmosChainId, CosmosChainId } from "./client/cosmos.ts"
+import type { evmChainId, EvmChainId } from "./evm/client.ts"
+import type { cosmosChainId, CosmosChainId } from "./cosmos/client.ts"
 import type { aptosChainId, AptosChainId, AptosAccount } from "./aptos/client.ts"
+
+export type LooseAutocomplete<T extends string> = T | Omit<string, T>
 
 export type SelectFields<T, K extends keyof T> = T extends any ? Pick<T, K> : never
 
@@ -57,6 +59,8 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
 
 /** Currently supported networks. */
 export type Network = "evm" | "cosmos" | "aptos"
+
+export type Hex = `0x${string}`
 
 /** Hex address of the form `0x${string}`. Used for EVM addresses. */
 export type HexAddress = `0x${string}`

@@ -3,20 +3,19 @@ import {
   aptosTransferSimulate,
   aptosSameChainTransfer,
   transferAssetFromAptos,
-  type AptosTransferParams,
   waitForTransactionReceipt,
   type AptosPublicAccountInfo
 } from "./transfer.ts"
 import { err, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
-import { cosmosChainId } from "../client/cosmos.ts"
+import { cosmosChainId } from "../cosmos/client.ts"
 import type { TransferAssetsParameters } from "../types.ts"
 import { Aptos, Network, AptosConfig } from "@aptos-labs/ts-sdk"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
 import type { AptosBrowserWallet, AuthAccess } from "./wallet.ts"
 
-export type { AptosAccount, AptosBrowserWallet, AptosTransferParams, AptosPublicAccountInfo }
+export type { AptosAccount, AptosBrowserWallet }
 
 export const aptosChainId = ["2"] as const
 export type AptosChainId = `${(typeof aptosChainId)[number]}`

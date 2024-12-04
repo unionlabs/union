@@ -1,4 +1,5 @@
 import { ofetch } from "ofetch"
+import process from "node:process"
 import type { ChainId } from "../../types.ts"
 import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"

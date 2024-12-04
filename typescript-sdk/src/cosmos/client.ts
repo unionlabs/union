@@ -5,7 +5,7 @@ import {
   cosmosSameChainTransfer,
   cosmwasmTransferSimulate,
   cosmosSameChainTransferSimulate
-} from "../transfer/cosmos.ts"
+} from "./transfer.ts"
 import { err, type Result } from "neverthrow"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"

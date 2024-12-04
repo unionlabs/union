@@ -1,28 +1,21 @@
-import {
-  erc20Abi,
-  type Hex,
-  getAddress,
-  type Address,
-  type Account,
-  type WalletClient,
-  type PublicActions
-} from "viem"
 import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { err, ok, type Result } from "neverthrow"
+import type { Hex, HexAddress } from "../types.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import { simulateTransaction } from "../query/offchain/tenderly.ts"
+import { erc20Abi, getAddress, type Account, type WalletClient, type PublicActions } from "viem"
 
-export type TransferAssetFromEvmParams = {
+export type EvmTransferParams = {
   memo?: string
   amount: bigint
   receiver: string
   account?: Account
   simulate?: boolean
   autoApprove?: boolean
-  denomAddress: Address
   sourceChannel: string
-  relayContractAddress: Address
+  denomAddress: HexAddress
+  relayContractAddress: HexAddress
 }
 
 /**
@@ -52,14 +45,14 @@ export async function transferAssetFromEvm(
     simulate = true,
     autoApprove = false,
     relayContractAddress
-  }: TransferAssetFromEvmParams
+  }: EvmTransferParams
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
   denomAddress = getAddress(denomAddress)
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
-  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
+  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as HexAddress
 
   if (autoApprove) {
     const approveResponse = await evmApproveTransferAsset(client, {
@@ -112,8 +105,8 @@ export async function transferAssetFromEvm(
   return ok(hash)
 }
 
-export type ApproveTransferAssetFromEvmParams = Pick<
-  TransferAssetFromEvmParams,
+export type EvmApproveTransferParams = Pick<
+  EvmTransferParams,
   "amount" | "account" | "simulate" | "denomAddress" | "receiver"
 >
 
@@ -136,7 +129,7 @@ export type ApproveTransferAssetFromEvmParams = Pick<
  */
 export async function evmApproveTransferAsset(
   client: WalletClient & PublicActions,
-  { amount, account, receiver, denomAddress, simulate = true }: ApproveTransferAssetFromEvmParams
+  { amount, account, receiver, denomAddress, simulate = true }: EvmApproveTransferParams
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
@@ -175,10 +168,7 @@ export async function evmSameChainTransfer(
     receiver,
     denomAddress,
     simulate = true
-  }: Omit<
-    TransferAssetFromEvmParams,
-    "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove"
-  >
+  }: Omit<EvmTransferParams, "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove">
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
@@ -244,17 +234,17 @@ export async function transferAssetFromEvmSimulate(
     memo?: string
     amount: bigint
     receiver: string
-    account?: Address
-    denomAddress: Address
+    account?: HexAddress
+    denomAddress: HexAddress
     sourceChannel: string
-    relayContractAddress: Address
+    relayContractAddress: HexAddress
   }
 ): Promise<Result<string, Error>> {
   if (!account) return err(new Error("No account found"))
 
   denomAddress = getAddress(denomAddress)
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
-  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
+  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as HexAddress
 
   memo ??= timestamp()
 
