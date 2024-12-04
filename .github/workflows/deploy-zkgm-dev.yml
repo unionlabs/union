@@ -61,7 +61,7 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            # Ceremony 🤌
+            # zkgm.dev 🦀
             ${{ env.DEPLOY_OUTPUT }}
 
             **${{ env.LAST_UPDATED_AT }}**
