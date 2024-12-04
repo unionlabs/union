@@ -109,7 +109,7 @@ members = [
   "voyager/modules/state/cosmos-sdk",
   "voyager/modules/state/cosmos-sdk-union",
   "voyager/modules/state/ethereum",
-  # "voyager/modules/state/movement",
+  "voyager/modules/state/movement",
 
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
