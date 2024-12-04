@@ -2,8 +2,9 @@ use std::{collections::HashMap, fmt::Display};
 
 use alloy::{
     eips::BlockId,
+    network::AnyRpcBlock,
     primitives::{Address, BloomInput, FixedBytes},
-    rpc::types::{Block, BlockTransactionsKind, Filter, Log},
+    rpc::types::{BlockTransactionsKind, Filter, Log},
 };
 use axum::async_trait;
 use color_eyre::eyre::Report;
@@ -45,7 +46,7 @@ trait BlockReferenceProvider {
     fn block_reference(&self) -> Result<BlockReference, Report>;
 }
 
-impl BlockReferenceProvider for Block {
+impl BlockReferenceProvider for AnyRpcBlock {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
             height: self.header.number,
@@ -110,6 +111,8 @@ impl EthFetcherClient {
             )
             .await;
 
+        info!("block: {block:?}");
+
         match block {
             Ok(rpc_result) => match rpc_result {
                 Some(result) => {
@@ -147,7 +150,7 @@ impl EthFetcherClient {
 
     pub async fn fetch_details(
         &self,
-        block: &Block,
+        block: &AnyRpcBlock,
         provider_id: RpcProviderId,
     ) -> Result<Option<BlockInsert>, IndexerError> {
         let block_reference = block.block_reference()?;

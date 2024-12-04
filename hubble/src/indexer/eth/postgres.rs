@@ -1,4 +1,4 @@
-use alloy::rpc::types::Block;
+use alloy::network::AnyRpcBlock;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -26,7 +26,7 @@ pub struct PgLog {
 #[derive(Serialize, Deserialize)]
 pub struct PgLogData {
     pub transactions: Vec<TransactionInsert>,
-    pub header: Block,
+    pub header: AnyRpcBlock,
 }
 
 impl From<BlockInsert> for PgLog {

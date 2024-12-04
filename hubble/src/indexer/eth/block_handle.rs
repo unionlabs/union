@@ -1,4 +1,4 @@
-use alloy::rpc::types::Block;
+use alloy::network::AnyRpcBlock;
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
@@ -21,7 +21,7 @@ use crate::{
 
 #[derive(Clone)]
 pub enum BlockDetails {
-    Lazy(Block),
+    Lazy(AnyRpcBlock),
     Eager(Option<BlockInsert>),
 }
 
@@ -30,7 +30,7 @@ pub enum BlockDetails {
 pub struct BlockInsert {
     pub chain_id: ChainId,
     pub hash: String,
-    pub header: Block,
+    pub header: AnyRpcBlock,
     pub height: i32,
     pub time: OffsetDateTime,
     pub transactions: Vec<TransactionInsert>,
