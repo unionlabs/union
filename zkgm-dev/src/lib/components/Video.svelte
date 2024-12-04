@@ -1,10 +1,12 @@
 <script lang="ts">
   import Glitch from "$lib/components/Glitch.svelte";
   import {fade} from "svelte/transition";
+  import Agents from "$lib/components/Agents.svelte";
+  import Bar from "$lib/components/Bar.svelte";
 
-  let isPlaying = $state(false);
-  let isLoading = $state(false);
-  let video: HTMLVideoElement;
+  let isPlaying: boolean = $state(false);
+  let isLoading: boolean = $state(false);
+  let video: HTMLVideoElement | null = $state(null)
 
   function startVideo() {
     isLoading = true;
@@ -54,9 +56,11 @@
     <track kind="captions" src="dsa">
     <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/zkgm-v1.mp4" type="video/webm"/>
   </video>
-  <main class="h-svh w-full flex justify-center items-center" in:fade>
+  <div class="h-svh w-full flex flex-col justify-between items-center relative" in:fade>
+    <Bar/>
     <Glitch text="ZKGM"/>
-  </main>
+    <Agents/>
+  </div>
 {/if}
 
 <style lang="postcss">
