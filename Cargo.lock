@@ -13332,6 +13332,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-movement"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "enumorph",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "movement-light-client-types",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-tendermint"
 version = "0.1.0"
 dependencies = [

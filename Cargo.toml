@@ -118,7 +118,7 @@ members = [
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
-  # "voyager/modules/client/movement",
+  "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
 
   "voyager/modules/consensus/cometbls",
