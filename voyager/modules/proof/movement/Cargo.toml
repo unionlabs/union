@@ -1,0 +1,36 @@
+[package]
+name = "voyager-proof-module-movement"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aptos-crypto                = { workspace = true }
+aptos-move-ibc              = { workspace = true }
+aptos-rest-client           = { workspace = true }
+aptos-types                 = { workspace = true }
+bcs                         = { workspace = true }
+clap                        = { workspace = true, features = ["derive"] }
+enumorph                    = { workspace = true }
+futures                     = { workspace = true }
+hex                         = { workspace = true }
+hex-literal                 = { workspace = true }
+jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                      = { workspace = true }
+move-bindgen                = { workspace = true }
+move-core-types             = { workspace = true }
+movement-light-client-types = { workspace = true, features = ["serde"] }
+prost                       = { workspace = true }
+protos                      = { workspace = true }
+reqwest                     = { workspace = true, features = ["json"] }
+serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
+serde_json                  = { workspace = true }
+sha2                        = { workspace = true }
+sha3                        = { workspace = true }
+thiserror                   = { workspace = true }
+tokio                       = { workspace = true }
+tracing                     = { workspace = true }
+tracing-subscriber          = { workspace = true }
+unionlabs                   = { workspace = true }
+voyager-message             = { workspace = true }
+voyager-vm                  = { workspace = true }
