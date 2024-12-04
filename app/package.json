@@ -28,7 +28,6 @@
     "@unionlabs/client": "^0.0.39",
     "@wagmi/connectors": "5.5.2",
     "@wagmi/core": "2.15.1",
-    "@xstate/svelte": "^4.0.0",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "1.8.10",
@@ -41,8 +40,7 @@
     "three": "0.170.0",
     "valibot": "0.42.1",
     "vaul-svelte": "^0.3.2",
-    "viem": "2.21.52",
-    "xstate": "^5.19.0"
+    "viem": "2.21.52"
   },
   "devDependencies": {
     "@iconify-json/fa6-solid": "1.2.2",
@@ -50,7 +48,7 @@
     "@iconify-json/lucide": "^1.2.3",
     "@iconify-json/mdi": "^1.2.0",
     "@iconify-json/tabler": "1.2.8",
-    "@keplr-wallet/types": "0.12.157",
+    "@keplr-wallet/types": "^0.12.158",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.83.0",
