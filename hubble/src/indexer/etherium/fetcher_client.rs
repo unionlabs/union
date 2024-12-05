@@ -19,7 +19,7 @@ use crate::{
             BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
             IndexerError,
         },
-        eth::{
+        etherium::{
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
@@ -268,7 +268,7 @@ impl FetcherClient for EthFetcherClient {
         join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: EthContext,
     ) -> Result<Self, IndexerError> {
-        let provider = Provider::new(context.urls);
+        let provider = Provider::new(context.rpc_urls);
 
         info!("fetching chain-id from node");
         let chain_id = provider.get_chain_id(None).await?.response;

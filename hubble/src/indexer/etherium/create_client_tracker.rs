@@ -7,7 +7,7 @@ use unionlabs::encoding::{DecodeAs, EthAbi};
 
 use crate::indexer::{
     api::IndexerError,
-    eth::{postgres::unmapped_clients, provider::Provider},
+    etherium::{postgres::unmapped_clients, provider::Provider},
 };
 
 sol! {

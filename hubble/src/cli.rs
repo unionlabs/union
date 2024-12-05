@@ -4,7 +4,7 @@ use clap::Parser;
 use tracing::{info_span, Instrument};
 use url::Url;
 
-use crate::logging::LogFormat;
+use crate::{indexer, logging::LogFormat};
 
 /// Hubble is state machine observer.
 #[derive(Parser, Debug)]
@@ -68,35 +68,23 @@ impl IntoIterator for Indexers {
 #[serde(tag = "type")]
 #[allow(clippy::large_enum_variant)]
 pub enum IndexerConfig {
-    #[serde(rename = "beacon")]
-    Beacon(crate::beacon::Config),
-    #[serde(rename = "bera")]
-    Bera(crate::bera::Config),
-    #[serde(rename = "arb")]
-    Arb(crate::arb::Config),
-    #[serde(rename = "scroll")]
-    Scroll(crate::scroll::Config),
-    #[serde(rename = "dummy-fetcher")]
-    DummyFetcher(crate::indexer::dummy::config::Config),
-    #[serde(rename = "eth-fetcher")]
-    EthFetcher(crate::indexer::eth::config::Config),
-    #[serde(rename = "tm-fetcher")]
-    TmFetcher(crate::indexer::tm::config::Config),
-    #[serde(rename = "aptos-fetcher")]
-    AptosFetcher(crate::indexer::aptos::config::Config),
+    #[serde(rename = "dummy")]
+    Dummy(indexer::dummy::config::Config),
+    #[serde(rename = "etherium")]
+    Etherium(indexer::etherium::config::Config),
+    #[serde(rename = "tendermint")]
+    Tendermint(indexer::tendermint::config::Config),
+    #[serde(rename = "aptos")]
+    Aptos(indexer::aptos::config::Config),
 }
 
 impl IndexerConfig {
     pub fn label(&self) -> &str {
         match &self {
-            Self::Beacon(cfg) => &cfg.label,
-            Self::Bera(cfg) => &cfg.label,
-            Self::Arb(cfg) => &cfg.label,
-            Self::Scroll(cfg) => &cfg.label,
-            Self::DummyFetcher(cfg) => &cfg.indexer_id,
-            Self::EthFetcher(cfg) => &cfg.indexer_id,
-            Self::TmFetcher(cfg) => &cfg.indexer_id,
-            Self::AptosFetcher(cfg) => &cfg.indexer_id,
+            Self::Dummy(cfg) => &cfg.indexer_id,
+            Self::Etherium(cfg) => &cfg.indexer_id,
+            Self::Tendermint(cfg) => &cfg.indexer_id,
+            Self::Aptos(cfg) => &cfg.indexer_id,
         }
     }
 }
@@ -109,39 +97,7 @@ impl IndexerConfig {
         let indexer_span = info_span!("indexer", label);
 
         match self {
-            Self::Beacon(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
-            Self::Bera(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
-            Self::Arb(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
-            Self::Scroll(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
-            Self::DummyFetcher(cfg) => {
+            Self::Dummy(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?
@@ -149,7 +105,7 @@ impl IndexerConfig {
                     .instrument(indexer_span)
                     .await
             }
-            Self::EthFetcher(cfg) => {
+            Self::Etherium(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?
@@ -157,7 +113,7 @@ impl IndexerConfig {
                     .instrument(indexer_span)
                     .await
             }
-            Self::TmFetcher(cfg) => {
+            Self::Tendermint(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?
@@ -165,7 +121,7 @@ impl IndexerConfig {
                     .instrument(indexer_span)
                     .await
             }
-            Self::AptosFetcher(cfg) => {
+            Self::Aptos(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?

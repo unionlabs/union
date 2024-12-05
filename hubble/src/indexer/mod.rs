@@ -1,12 +1,12 @@
 pub mod api;
 pub mod aptos;
 pub mod dummy;
-pub mod eth;
+pub mod etherium;
 mod fetcher;
 mod finalizer;
 mod fixer;
 mod postgres;
-pub mod tm;
+pub mod tendermint;
 
 use std::{future::Future, time::Duration};
 

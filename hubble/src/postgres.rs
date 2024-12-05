@@ -90,42 +90,6 @@ pub async fn fetch_or_insert_chain_id_tx(
     Ok(db_chain_id)
 }
 
-pub async fn get_chain_id<'a, A: Acquire<'a, Database = Postgres>>(
-    db: A,
-    canonical: String,
-) -> sqlx::Result<Option<ChainId>> {
-    let mut conn = db.acquire().await?;
-    let id = sqlx::query!(
-        "SELECT id FROM \"hubble\".chains WHERE chain_id = $1 LIMIT 1",
-        canonical.to_string()
-    )
-    .fetch_optional(&mut *conn)
-    .await?
-    .map(|r| ChainId::new(r.id, canonical.leak()));
-    Ok(id)
-}
-
-pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postgres>>(
-    db: A,
-    execution_heights: Vec<i64>,
-    consensus_heights: Vec<i64>,
-    chain_id: ChainId,
-) -> sqlx::Result<()> {
-    let mut conn = db.acquire().await?;
-    sqlx::query!(
-        "
-        INSERT INTO hubble.consensus_heights (chain_id, consensus_height, execution_height)
-        SELECT $1, unnest($2::bigint[]), unnest($3::bigint[])
-        ",
-        chain_id.db,
-        &consensus_heights,
-        &execution_heights,
-    )
-    .execute(&mut *conn)
-    .await?;
-    Ok(())
-}
-
 pub async fn schedule_replication_reset(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     chain_id: i32,
@@ -142,26 +106,6 @@ pub async fn schedule_replication_reset(
     .await?;
 
     Ok(())
-}
-
-pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(
-    db: A,
-    chain_id: ChainId,
-) -> sqlx::Result<i64> {
-    let mut conn = db.acquire().await?;
-    let height = sqlx::query!(
-        "
-        SELECT MAX(consensus_height) as height from hubble.consensus_heights
-        WHERE chain_id = $1
-        ",
-        chain_id.db
-    )
-    .fetch_optional(&mut *conn)
-    .await?
-    .map(|r| r.height.unwrap_or_default())
-    .unwrap_or(0);
-
-    Ok(height)
 }
 
 pub async fn insert_client_mapping<'a, A: Acquire<'a, Database = Postgres>>(
