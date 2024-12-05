@@ -5,7 +5,7 @@ use url::Url;
 
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
-    tm::{context::TmContext, fetcher_client::TmFetcherClient},
+    tendermint::{context::TmContext, fetcher_client::TmFetcherClient},
     FinalizerConfig, Indexer,
 };
 

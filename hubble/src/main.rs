@@ -9,18 +9,13 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-mod arb;
-mod beacon;
-mod bera;
 mod cli;
-mod consensus;
 mod healthz;
 mod indexer;
 mod logging;
 mod metrics;
 mod postgres;
 mod race_client;
-mod scroll;
 mod token_list;
 
 #[cfg(not(target_env = "msvc"))]

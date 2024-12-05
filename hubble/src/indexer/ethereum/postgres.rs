@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 use crate::{
     indexer::{
         api::{BlockHash, BlockHeight, BlockRange},
-        eth::{
+        ethereum::{
             block_handle::{BlockInsert, TransactionInsert},
             fetcher_client::{AddressFilter, TransactionFilter},
         },

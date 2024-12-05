@@ -78,19 +78,10 @@
                 example = "amazing-testnet";
                 default = null;
               };
-              options.label = mkOption {
-                type = types.str;
-                example = "something-custom";
-              };
               options.filter = mkOption {
                 type = types.nullOr types.str;
                 description = "A regex which if matches, removes the event from the insertion";
                 example = "coin_received";
-                default = null;
-              };
-              options.urls = mkOption {
-                type = types.nullOr (types.listOf types.str);
-                example = [ "https://rpc.example.com" ];
                 default = null;
               };
               options.rpc_urls = mkOption {
@@ -105,52 +96,11 @@
                 example = [ "https://grpc.example.com" ];
                 default = null;
               };
-              # arb consensus height indexer
-              options.l1_url = mkOption {
-                type = types.nullOr types.str;
-                example = "https://rpc.example.com";
-                default = null;
-              };
-              options.l2_url = mkOption {
-                type = types.nullOr types.str;
-                example = "https://rpc.example.com";
-                default = null;
-              };
-              options.beacon_url = mkOption {
-                type = types.nullOr types.str;
-                example = "https://rpc.example.com";
-                default = null;
-              };
-              options.rollup_finalization_config = mkOption {
-                type = types.nullOr types.attrs;
-                default = null;
-              };
-
-              # scroll
-              options.scroll_api_url = mkOption {
-                type = types.nullOr types.str;
-                default = null;
-              };
-
-              options.chain_id = mkOption {
-                type = types.nullOr types.str;
-                example = "union-testnet-8";
-                default = null;
-              };
-              options.grpc_url = mkOption {
-                type = types.nullOr types.str;
-                example = "https://grpc.example.com";
-                default = null;
-              };
               options.type = mkOption {
                 type = types.enum [
-                  "beacon"
-                  "bera"
-                  "arb"
-                  "scroll"
-                  "eth-fetcher"
-                  "tm-fetcher"
-                  "aptos-fetcher"
+                  "ethereum"
+                  "tendermint"
+                  "aptos"
                 ];
               };
               options.start_height = mkOption {
@@ -168,36 +118,6 @@
                 description = "Maximum number of transactions to fetch in one page";
                 example = 1;
                 default = 100;
-              };
-              options.until = mkOption {
-                type = types.int;
-                example = 1;
-                default = 1000000000000;
-              };
-              options.harden = mkOption {
-                type = types.bool;
-                example = true;
-                default = true;
-              };
-              options.interval = mkOption {
-                example = {
-                  secs = 1;
-                };
-                default = {
-                  secs = 12;
-                  nanos = 0;
-                };
-                type = types.submodule {
-                  options = {
-                    secs = mkOption {
-                      type = types.int;
-                    };
-                    nanos = mkOption {
-                      type = types.int;
-                      default = 0;
-                    };
-                  };
-                };
               };
               options.finalizer = mkOption {
                 description = "control finalizer behavior";

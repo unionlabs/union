@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
-    eth::{context::EthContext, fetcher_client::EthFetcherClient},
+    ethereum::{context::EthContext, fetcher_client::EthFetcherClient},
     FinalizerConfig, Indexer,
 };
 
@@ -16,7 +16,7 @@ pub struct Config {
     pub indexer_id: IndexerId,
     pub start_height: BlockHeight,
     pub chunk_size: Option<usize>,
-    pub urls: Vec<Url>,
+    pub rpc_urls: Vec<Url>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
     pub client_tracking: Option<bool>,
@@ -31,7 +31,7 @@ impl Config {
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
             self.finalizer,
             EthContext {
-                urls: self.urls,
+                rpc_urls: self.rpc_urls,
                 client_tracking: self.client_tracking.unwrap_or(DEFAULT_CLIENT_TRACKING),
             },
         ))

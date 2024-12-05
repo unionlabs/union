@@ -10,7 +10,7 @@ use tracing::debug;
 use crate::{
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
-        eth::{
+        ethereum::{
             fetcher_client::EthFetcherClient,
             postgres::{delete_eth_log, insert_batch_logs},
             provider::RpcProviderId,

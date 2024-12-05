@@ -29,7 +29,7 @@ use crate::{
             BlockHeight, BlockRange, BlockReferenceProvider, BlockSelection, FetchMode,
             FetcherClient, IndexerError,
         },
-        tm::{
+        tendermint::{
             block_handle::{BlockDetails, BlockHeader, TmBlockHandle},
             context::TmContext,
             create_client_tracker::schedule_create_client_checker,

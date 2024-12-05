@@ -13,7 +13,7 @@ use crate::indexer::{
     api::{
         BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode, IndexerError,
     },
-    tm::{
+    tendermint::{
         fetcher_client::TmFetcherClient,
         postgres::{
             delete_tm_block_transactions_events, insert_batch_blocks, insert_batch_events,
