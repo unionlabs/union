@@ -2,6 +2,7 @@ module ibc::helpers {
     use ibc::ibc;
     use ibc::packet::Packet;
     use std::vector;
+    use std::string::String;
     use std::copyable_any;
 
     public fun on_recv_packet_deconstruct(
@@ -36,7 +37,7 @@ module ibc::helpers {
 
     public fun on_channel_open_init_deconstruct(
         init_param: ibc::ChannelOpenInitParams
-    ): (u8, u32, u32, vector<u8>) {
+    ): (u8, u32, u32, String) {
         let ordering =
             ibc::get_ordering_from_channel_open_init_param(&init_param);
         let connection_id =
@@ -49,7 +50,7 @@ module ibc::helpers {
 
     public fun on_channel_open_try_deconstruct(
         try_param: ibc::ChannelOpenTryParams
-    ): (u8, u32, u32, u32, vector<u8>, vector<u8>) {
+    ): (u8, u32, u32, u32, String, String) {
         let ordering = ibc::get_ordering_from_channel_open_try_param(&try_param);
         let connection_id =
             ibc::get_connection_id_from_channel_open_try_param(&try_param);
@@ -74,7 +75,7 @@ module ibc::helpers {
 
     public fun on_channel_open_ack_deconstruct(
         ack_param: ibc::ChannelOpenAckParams
-    ): (u32, u32, vector<u8>) {
+    ): (u32, u32, String) {
         let channel_id =
             ibc::get_channel_id_from_channel_open_ack_param(&ack_param);
         let counterparty_version =

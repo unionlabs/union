@@ -1,6 +1,7 @@
 module ibc::channel {
     use std::option::{Self, Option};
     use std::vector;
+    use std::string::{Self, String};
     use ibc::ethabi;
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
@@ -18,7 +19,7 @@ module ibc::channel {
         ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>
+        version: String,
     }
 
     // Getters
@@ -38,7 +39,7 @@ module ibc::channel {
         channel.counterparty_channel_id
     }
 
-    public fun version(channel: &Channel): &vector<u8> {
+    public fun version(channel: &Channel): &String {
         &channel.version
     }
 
@@ -63,7 +64,7 @@ module ibc::channel {
         channel.counterparty_channel_id = new_id;
     }
 
-    public fun set_version(channel: &mut Channel, new_version: vector<u8>) {
+    public fun set_version(channel: &mut Channel, new_version: String) {
         channel.version = new_version;
     }
 
@@ -76,8 +77,8 @@ module ibc::channel {
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
 
-        let i = 32 - vector::length(&channel.version);
-        vector::append(&mut buf, channel.version);
+        let i = 32 - string::length(&channel.version);
+        vector::append(&mut buf, *string::bytes(&channel.version));
         while (i > 0) {
             vector::push_back(&mut buf, 0);
             i = i - 1;
@@ -102,7 +103,7 @@ module ibc::channel {
 
             i = i + 1;
         };
-        let version = vector::slice(&buf, index, i);
+        let version = string::utf8(vector::slice(&buf, index, i));
 
         option::some(
             new(
@@ -121,14 +122,14 @@ module ibc::channel {
         ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>
+        version: String,
     ): Channel {
         Channel { state, ordering, connection_id, counterparty_channel_id, version }
     }
 
     // Default function
     public fun default(): Channel {
-        new(0, 0, 0, 0, vector::empty())
+        new(0, 0, 0, 0, string::utf8(b""))
     }
 
     #[test]

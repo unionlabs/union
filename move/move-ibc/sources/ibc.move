@@ -114,7 +114,7 @@ module ibc::ibc {
         port_id: String,
         channel_id: u32,
         connection_id: u32,
-        version: vector<u8>
+        version: String,
     }
 
     #[event]
@@ -123,7 +123,7 @@ module ibc::ibc {
         channel_id: u32,
         counterparty_channel_id: u32,
         connection_id: u32,
-        version: vector<u8>
+        version: String,
     }
 
     #[event]
@@ -239,7 +239,7 @@ module ibc::ibc {
         ordering: u8,
         connection_id: u32,
         channel_id: u32,
-        version: vector<u8>
+        version: String
     }
 
     struct ChannelOpenTryParams has copy, drop, store {
@@ -247,14 +247,14 @@ module ibc::ibc {
         connection_id: u32,
         channel_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>
+        version: String,
+        counterparty_version: String,
     }
 
     struct ChannelOpenAckParams has copy, drop, store {
         channel_id: u32,
         counterparty_channel_id: u32,
-        counterparty_version: vector<u8>
+        counterparty_version: String,
     }
 
     struct ChannelOpenConfirmParams has copy, drop, store {
@@ -318,7 +318,7 @@ module ibc::ibc {
 
     public fun get_version_from_channel_open_init_param(
         param: &ChannelOpenInitParams
-    ): &vector<u8> {
+    ): &String {
         &param.version
     }
 
@@ -349,13 +349,13 @@ module ibc::ibc {
 
     public fun get_version_from_channel_open_try_param(
         param: &ChannelOpenTryParams
-    ): &vector<u8> {
+    ): &String {
         &param.version
     }
 
     public fun get_counterparty_version_from_channel_open_try_param(
         param: &ChannelOpenTryParams
-    ): &vector<u8> {
+    ): &String {
         &param.counterparty_version
     }
 
@@ -374,7 +374,7 @@ module ibc::ibc {
 
     public fun get_counterparty_version_from_channel_open_ack_param(
         param: &ChannelOpenAckParams
-    ): &vector<u8> {
+    ): &String {
         &param.counterparty_version
     }
 
@@ -783,7 +783,7 @@ module ibc::ibc {
         port_id: address,
         connection_id: u32,
         ordering: u8,
-        version: vector<u8>
+        version: String,
     ) acquires IBCStore, Port {
         let port = borrow_global<Port<T>>(get_vault_addr());
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
@@ -851,8 +851,8 @@ module ibc::ibc {
         channel_order: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>,
+        version: String,
+        counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64
     ) acquires IBCStore, Port {
@@ -947,7 +947,7 @@ module ibc::ibc {
     public entry fun channel_open_ack<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
-        counterparty_version: vector<u8>,
+        counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64
