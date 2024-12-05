@@ -3,7 +3,7 @@
 Hubble is a multi-stage ETL indexer for various chains. Currently, it supports:
 
 - Aptos
-- Etherium
+- Ethereum
 - Tendermint
 
 with lightclient counterparty tracking.

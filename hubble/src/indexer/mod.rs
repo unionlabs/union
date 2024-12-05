@@ -1,7 +1,7 @@
 pub mod api;
 pub mod aptos;
 pub mod dummy;
-pub mod etherium;
+pub mod ethereum;
 mod fetcher;
 mod finalizer;
 mod fixer;

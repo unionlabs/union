@@ -70,8 +70,8 @@ impl IntoIterator for Indexers {
 pub enum IndexerConfig {
     #[serde(rename = "dummy")]
     Dummy(indexer::dummy::config::Config),
-    #[serde(rename = "etherium")]
-    Etherium(indexer::etherium::config::Config),
+    #[serde(rename = "ethereum")]
+    Ethereum(indexer::ethereum::config::Config),
     #[serde(rename = "tendermint")]
     Tendermint(indexer::tendermint::config::Config),
     #[serde(rename = "aptos")]
@@ -82,7 +82,7 @@ impl IndexerConfig {
     pub fn label(&self) -> &str {
         match &self {
             Self::Dummy(cfg) => &cfg.indexer_id,
-            Self::Etherium(cfg) => &cfg.indexer_id,
+            Self::Ethereum(cfg) => &cfg.indexer_id,
             Self::Tendermint(cfg) => &cfg.indexer_id,
             Self::Aptos(cfg) => &cfg.indexer_id,
         }
@@ -105,7 +105,7 @@ impl IndexerConfig {
                     .instrument(indexer_span)
                     .await
             }
-            Self::Etherium(cfg) => {
+            Self::Ethereum(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?

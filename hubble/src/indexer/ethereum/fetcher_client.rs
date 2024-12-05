@@ -19,7 +19,7 @@ use crate::{
             BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
             IndexerError,
         },
-        etherium::{
+        ethereum::{
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },

@@ -98,7 +98,7 @@
               };
               options.type = mkOption {
                 type = types.enum [
-                  "etherium"
+                  "ethereum"
                   "tendermint"
                   "aptos"
                 ];

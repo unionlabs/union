@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
-    etherium::{context::EthContext, fetcher_client::EthFetcherClient},
+    ethereum::{context::EthContext, fetcher_client::EthFetcherClient},
     FinalizerConfig, Indexer,
 };
 
