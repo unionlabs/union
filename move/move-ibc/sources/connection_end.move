@@ -104,9 +104,7 @@ module ibc::connection_end {
             state: 1,
             client_id: 100,
             counterparty_client_id: 200,
-            counterparty_connection_id: 300,
-            client_type: utf8(b"cometbls"),
-            counterparty_client_type: utf8(b"movement")
+            counterparty_connection_id: 300
         };
 
         let encoded = encode(&connection);

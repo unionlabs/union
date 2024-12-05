@@ -2,7 +2,6 @@ module ibc::relay_app {
     use ibc::ibc;
     use ibc::helpers;
     use ibc::packet::{Packet};
-    use ibc::ibc;
     use ibc::dispatcher;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
@@ -34,7 +33,6 @@ module ibc::relay_app {
     const E_UNAUTHORIZED: u64 = 2;
     const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
     const E_INVALID_PROTOCOL_VERSION: u64 = 4;
-    const E_INVALID_PROTOCOL_ORDERING: u64 = 5;
     const E_INVALID_COUNTERPARTY_PROTOCOL_VERSION: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
@@ -131,8 +129,8 @@ module ibc::relay_app {
     }
 
     // View/Pure Functions
-    public fun is_valid_version(version_bytes: vector<u8>): bool {
-        version_bytes == VERSION
+    public fun is_valid_version(version_bytes: String): bool {
+        version_bytes == string::utf8(VERSION)
     }
 
     public fun starts_with(s: String, prefix: String): bool {
@@ -259,17 +257,12 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_init(
-        ordering: u8,
         connection_id: u32,
         channel_id: u32,
-        version: vector<u8>
+        version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
-        };
-
-        if (ordering != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
         };
     }
 
@@ -279,28 +272,22 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_try(
-        ordering: u8,
         _connection_id: u32,
         _channel_id: u32,
         _counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>
+        version: String,
+        counterparty_version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
         };
-
-        if (ordering != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
-        };
-
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
     }
 
     public fun on_channel_open_ack(
-        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: vector<u8>
+        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: String
     ) {
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
@@ -900,15 +887,14 @@ module ibc::relay_app {
             on_timeout_packet(pack);
         } else if (type_name_output
             == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
-            let (ordering, connection_id, channel_id, version) =
+            let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
                     copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
                 );
-            on_channel_open_init(ordering, connection_id, channel_id, version);
+            on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output
             == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
             let (
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -919,7 +905,6 @@ module ibc::relay_app {
                     copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,

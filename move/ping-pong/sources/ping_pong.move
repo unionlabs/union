@@ -16,7 +16,6 @@ module ping_pong::ping_pong_app {
     use ibc::channel;
     use aptos_std::copyable_any;
     use ibc::packet::{Self, Packet};
-    use ibc::ibc;
 
     struct PingPongProof has drop, store, key {}
 
@@ -212,10 +211,9 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_init(
-        _ordering: u8,
         _connection_id: u32,
         _channel_id: u32,
-        _version: vector<u8>
+        _version: String
     ) acquires PingPong {
         if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
@@ -223,12 +221,11 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_try(
-        _ordering: u8,
         _connection_id: u32,
         _channel_id: u32,
         _counterparty_channel_id: u32,
-        _version: vector<u8>,
-        _counterparty_version: vector<u8>
+        _version: String,
+        _counterparty_version: String
     ) acquires PingPong {
         if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
@@ -236,7 +233,7 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_ack(
-        channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: vector<u8>
+        channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
     ) acquires PingPong {
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
@@ -286,15 +283,14 @@ module ping_pong::ping_pong_app {
             on_timeout_packet(pack);
         } else if (type_name_output
             == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
-            let (ordering, connection_id, channel_id, version) =
+            let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
                     copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
                 );
-            on_channel_open_init(ordering, connection_id, channel_id, version);
+            on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output
             == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
             let (
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -305,7 +301,6 @@ module ping_pong::ping_pong_app {
                     copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
