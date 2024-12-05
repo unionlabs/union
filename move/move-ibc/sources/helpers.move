@@ -23,8 +23,7 @@ module ibc::helpers {
         ack_param: ibc::AcknowledgePacketParams
     ): (Packet, vector<u8>) {
         let pack = ibc::get_packet_from_ack_param(&ack_param);
-        let acknowledgement =
-            ibc::get_acknowledgement_from_ack_param(&ack_param);
+        let acknowledgement = ibc::get_acknowledgement_from_ack_param(&ack_param);
         (*pack, *acknowledgement)
     }
 
@@ -37,34 +36,26 @@ module ibc::helpers {
 
     public fun on_channel_open_init_deconstruct(
         init_param: ibc::ChannelOpenInitParams
-    ): (u8, u32, u32, String) {
-        let ordering =
-            ibc::get_ordering_from_channel_open_init_param(&init_param);
+    ): (u32, u32, String) {
         let connection_id =
             ibc::get_connection_id_from_channel_open_init_param(&init_param);
-        let channel_id =
-            ibc::get_channel_id_from_channel_open_init_param(&init_param);
+        let channel_id = ibc::get_channel_id_from_channel_open_init_param(&init_param);
         let version = ibc::get_version_from_channel_open_init_param(&init_param);
-        (ordering, connection_id, channel_id, *version)
+        (connection_id, channel_id, *version)
     }
 
     public fun on_channel_open_try_deconstruct(
         try_param: ibc::ChannelOpenTryParams
-    ): (u8, u32, u32, u32, String, String) {
-        let ordering = ibc::get_ordering_from_channel_open_try_param(&try_param);
+    ): (u32, u32, u32, String, String) {
         let connection_id =
             ibc::get_connection_id_from_channel_open_try_param(&try_param);
-        let channel_id =
-            ibc::get_channel_id_from_channel_open_try_param(&try_param);
+        let channel_id = ibc::get_channel_id_from_channel_open_try_param(&try_param);
         let counterparty_channel_id =
-            ibc::get_counterparty_channel_id_from_channel_open_try_param(
-                &try_param
-            );
+            ibc::get_counterparty_channel_id_from_channel_open_try_param(&try_param);
         let version = ibc::get_version_from_channel_open_try_param(&try_param);
         let counterparty_version =
             ibc::get_counterparty_version_from_channel_open_try_param(&try_param);
         (
-            ordering,
             connection_id,
             channel_id,
             counterparty_channel_id,
@@ -76,14 +67,11 @@ module ibc::helpers {
     public fun on_channel_open_ack_deconstruct(
         ack_param: ibc::ChannelOpenAckParams
     ): (u32, u32, String) {
-        let channel_id =
-            ibc::get_channel_id_from_channel_open_ack_param(&ack_param);
+        let channel_id = ibc::get_channel_id_from_channel_open_ack_param(&ack_param);
         let counterparty_version =
             ibc::get_counterparty_version_from_channel_open_ack_param(&ack_param);
         let counterparty_channel_id =
-            ibc::get_counterparty_channel_id_from_channel_open_ack_param(
-                &ack_param
-            );
+            ibc::get_counterparty_channel_id_from_channel_open_ack_param(&ack_param);
         (channel_id, counterparty_channel_id, *counterparty_version)
     }
 
@@ -107,9 +95,7 @@ module ibc::helpers {
         close_confirm_param: ibc::ChannelCloseConfirmParams
     ): u32 {
         let channel_id =
-            ibc::get_channel_id_from_channel_close_confirm_param(
-                &close_confirm_param
-            );
+            ibc::get_channel_id_from_channel_close_confirm_param(&close_confirm_param);
         channel_id
     }
 }

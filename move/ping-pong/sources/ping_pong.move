@@ -91,9 +91,7 @@ module ping_pong::ping_pong_app {
                 string::utf8(b"on_packet")
             );
 
-        ibc::register_application<PingPongProof>(
-            deployer, cb, new_ping_pong_proof()
-        );
+        ibc::register_application<PingPongProof>(deployer, cb, new_ping_pong_proof());
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -259,8 +257,7 @@ module ping_pong::ping_pong_app {
         let value: copyable_any::Any = dispatcher::get_data(new_ping_pong_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output
-            == std::type_info::type_name<ibc::RecvPacketParams>()) {
+        if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
             let (pack) =
                 helpers::on_recv_packet_deconstruct(
                     copyable_any::unpack<ibc::RecvPacketParams>(value)

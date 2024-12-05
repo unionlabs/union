@@ -7,7 +7,7 @@ module ibc::connection_end {
         state: u64,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     }
 
     // Getters
@@ -67,13 +67,13 @@ module ibc::connection_end {
         state: u64,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     ): ConnectionEnd {
         ConnectionEnd {
             state,
             client_id,
             counterparty_client_id,
-            counterparty_connection_id,
+            counterparty_connection_id
         }
     }
 

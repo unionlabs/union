@@ -305,7 +305,7 @@ module ibc::ibc {
                 CONN_STATE_INIT,
                 client_id,
                 counterparty_client_id,
-                0,
+                0
             );
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
@@ -343,7 +343,7 @@ module ibc::ibc {
                     CONN_STATE_TRYOPEN,
                     client_id,
                     counterparty_client_id,
-                    counterparty_connection_id,
+                    counterparty_connection_id
                 )
             );
 
@@ -353,7 +353,7 @@ module ibc::ibc {
                 CONN_STATE_INIT,
                 counterparty_client_id,
                 client_id,
-                0, // counterparty_connection_id
+                0 // counterparty_connection_id
             );
 
         // Verify the connection state
@@ -404,7 +404,7 @@ module ibc::ibc {
                 CONN_STATE_TRYOPEN,
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
-                connection_id,
+                connection_id
             );
 
         // Verify the connection state
@@ -432,7 +432,7 @@ module ibc::ibc {
                 ),
                 counterparty_connection_id: connection_end::counterparty_connection_id(
                     connection
-                ),
+                )
             }
         );
 
@@ -461,7 +461,7 @@ module ibc::ibc {
                 CONN_STATE_OPEN,
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
-                connection_id,
+                connection_id
             );
         let counterparty_connection_id =
             connection_end::counterparty_connection_id(connection);

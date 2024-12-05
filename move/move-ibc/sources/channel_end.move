@@ -16,10 +16,10 @@ module ibc::channel {
 
     struct Channel has copy, store, drop, key {
         state: u8,
-        ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: String,
+        counterparty_port_id: vector<u8>,
+        version: String
     }
 
     // Getters
@@ -27,8 +27,8 @@ module ibc::channel {
         channel.state
     }
 
-    public fun ordering(channel: &Channel): u8 {
-        channel.ordering
+    public fun counterparty_port_id(channel: &Channel): &vector<u8> {
+        &channel.counterparty_port_id
     }
 
     public fun connection_id(channel: &Channel): u32 {
@@ -48,8 +48,10 @@ module ibc::channel {
         channel.state = new_state;
     }
 
-    public fun set_ordering(channel: &mut Channel, new_ordering: u8) {
-        channel.ordering = new_ordering;
+    public fun set_counterparty_port_id(
+        channel: &mut Channel, new_counterparty_port_id: vector<u8>
+    ) {
+        channel.counterparty_port_id = new_counterparty_port_id;
     }
 
     public fun set_connection_id(
@@ -70,10 +72,11 @@ module ibc::channel {
 
     // Encode and decode functions (empty for now)
     public fun encode(channel: &Channel): vector<u8> {
+        // TODO(aeryz): fix this
         let buf = vector::empty<u8>();
 
         ethabi::encode_uint<u8>(&mut buf, channel.state);
-        ethabi::encode_uint<u8>(&mut buf, channel.ordering);
+        // ethabi::encode_uint<u8>(&mut buf, channel.ordering);
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
 
@@ -87,11 +90,12 @@ module ibc::channel {
         buf
     }
 
+    // FIXME(aeryz):
     public fun decode(buf: vector<u8>): Option<Channel> {
         let index = 0;
 
         let state = (ethabi::decode_uint(&buf, &mut index) as u8);
-        let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
+        // let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
         let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
         let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
 
@@ -105,12 +109,14 @@ module ibc::channel {
         };
         let version = string::utf8(vector::slice(&buf, index, i));
 
+        let counterparty_port_id = vector::empty();
+
         option::some(
             new(
                 state,
-                ordering,
                 connection_id,
                 counterparty_connection_id,
+                counterparty_port_id,
                 version
             )
         )
@@ -119,17 +125,23 @@ module ibc::channel {
     // Constructor
     public fun new(
         state: u8,
-        ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: String,
+        counterparty_port_id: vector<u8>,
+        version: String
     ): Channel {
-        Channel { state, ordering, connection_id, counterparty_channel_id, version }
+        Channel {
+            state,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            version
+        }
     }
 
     // Default function
     public fun default(): Channel {
-        new(0, 0, 0, 0, string::utf8(b""))
+        new(0, 0, 0, vector::empty(), string::utf8(b""))
     }
 
     #[test]

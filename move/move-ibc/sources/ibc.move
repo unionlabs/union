@@ -33,10 +33,6 @@ module ibc::ibc {
     const CHAN_STATE_OPEN: u8 = 3;
     const CHAN_STATE_CLOSED: u8 = 4;
 
-    const CHAN_ORDERING_NONE: u8 = 0;
-    const CHAN_ORDERING_UNORDERED: u8 = 1;
-    const CHAN_ORDERING_ORDERED: u8 = 2;
-
     const CONN_STATE_UNSPECIFIED: u64 = 0;
     const CONN_STATE_INIT: u64 = 1;
     const CONN_STATE_TRYOPEN: u64 = 2;
@@ -67,7 +63,6 @@ module ibc::ibc {
     const E_HEIGHT_TIMEOUT: u64 = 1024;
     const E_PACKET_ALREADY_RECEIVED: u64 = 1025;
     const E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH: u64 = 1026;
-    const E_UNKNOWN_CHANNEL_ORDERING: u64 = 1027;
     const E_CONNECTION_DOES_NOT_EXIST: u64 = 1028;
     const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 1028;
     const E_ACKNOWLEDGEMENT_ALREADY_EXISTS: u64 = 1029;
@@ -84,7 +79,6 @@ module ibc::ibc {
     const E_NOT_ENOUGH_PACKETS: u64 = 1040;
     const E_PACKET_NOT_RECEIVED: u64 = 1041;
     const E_ACK_ALREADY_EXIST: u64 = 1042;
-    const E_CANNOT_INTENT_ORDERED: u64 = 1043;
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
     const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
 
@@ -113,23 +107,26 @@ module ibc::ibc {
     struct ChannelOpenInit has copy, drop, store {
         port_id: String,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         connection_id: u32,
-        version: String,
+        version: String
     }
 
     #[event]
     struct ChannelOpenTry has copy, drop, store {
         port_id: String,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
         connection_id: u32,
-        version: String,
+        version: String
     }
 
     #[event]
     struct ChannelOpenAck has copy, drop, store {
         port_id: String,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
         connection_id: u32
     }
@@ -138,6 +135,7 @@ module ibc::ibc {
     struct ChannelOpenConfirm has copy, drop, store {
         port_id: String,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
         connection_id: u32
     }
@@ -236,25 +234,23 @@ module ibc::ibc {
     }
 
     struct ChannelOpenInitParams has copy, drop, store {
-        ordering: u8,
         connection_id: u32,
         channel_id: u32,
         version: String
     }
 
     struct ChannelOpenTryParams has copy, drop, store {
-        ordering: u8,
         connection_id: u32,
         channel_id: u32,
         counterparty_channel_id: u32,
         version: String,
-        counterparty_version: String,
+        counterparty_version: String
     }
 
     struct ChannelOpenAckParams has copy, drop, store {
         channel_id: u32,
         counterparty_channel_id: u32,
-        counterparty_version: String,
+        counterparty_version: String
     }
 
     struct ChannelOpenConfirmParams has copy, drop, store {
@@ -298,12 +294,6 @@ module ibc::ibc {
     }
 
     // Getters for ChannelOpenInitParams
-    public fun get_ordering_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): u8 {
-        param.ordering
-    }
-
     public fun get_connection_id_from_channel_open_init_param(
         param: &ChannelOpenInitParams
     ): u32 {
@@ -323,12 +313,6 @@ module ibc::ibc {
     }
 
     // Getters for ChannelOpenTryParams
-    public fun get_ordering_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): u8 {
-        param.ordering
-    }
-
     public fun get_connection_id_from_channel_open_try_param(
         param: &ChannelOpenTryParams
     ): u32 {
@@ -505,7 +489,7 @@ module ibc::ibc {
                 CONN_STATE_INIT,
                 client_id,
                 counterparty_client_id,
-                0,
+                0
             );
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
@@ -542,7 +526,7 @@ module ibc::ibc {
                     CONN_STATE_TRYOPEN,
                     client_id,
                     counterparty_client_id,
-                    counterparty_connection_id,
+                    counterparty_connection_id
                 )
             );
 
@@ -552,7 +536,7 @@ module ibc::ibc {
                 CONN_STATE_INIT,
                 counterparty_client_id,
                 client_id,
-                0, // counterparty_connection_id
+                0 // counterparty_connection_id
             );
 
         // Verify the connection state
@@ -603,7 +587,7 @@ module ibc::ibc {
                 CONN_STATE_TRYOPEN,
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
-                connection_id,
+                connection_id
             );
 
         // Verify the connection state
@@ -631,7 +615,7 @@ module ibc::ibc {
                 ),
                 counterparty_connection_id: connection_end::counterparty_connection_id(
                     connection
-                ),
+                )
             }
         );
 
@@ -660,7 +644,7 @@ module ibc::ibc {
                 CONN_STATE_OPEN,
                 connection_end::counterparty_client_id(connection),
                 connection_end::client_id(connection),
-                connection_id,
+                connection_id
             );
         let counterparty_connection_id =
             connection_end::counterparty_connection_id(connection);
@@ -679,7 +663,7 @@ module ibc::ibc {
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
         event::emit(
-            ConnectionOpenAck {
+            ConnectionOpenConfirm {
                 connection_id: connection_id,
                 client_id: connection_end::client_id(connection),
                 counterparty_client_id: connection_end::counterparty_client_id(connection),
@@ -781,9 +765,9 @@ module ibc::ibc {
 
     public entry fun channel_open_init<T: key + store + drop>(
         port_id: address,
+        counterparty_port_id: vector<u8>,
         connection_id: u32,
-        ordering: u8,
-        version: String,
+        version: String
     ) acquires IBCStore, Port {
         let port = borrow_global<Port<T>>(get_vault_addr());
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
@@ -798,7 +782,6 @@ module ibc::ibc {
 
         let channel = channel::default();
         channel::set_state(&mut channel, CHAN_STATE_INIT);
-        channel::set_ordering(&mut channel, ordering);
         channel::set_connection_id(&mut channel, connection_id);
         channel::set_version(&mut channel, version);
 
@@ -825,7 +808,6 @@ module ibc::ibc {
         let param =
             copyable_any::pack<ChannelOpenInitParams>(
                 ChannelOpenInitParams {
-                    ordering: ordering,
                     connection_id: connection_id,
                     channel_id: channel_id,
                     version: version
@@ -838,6 +820,7 @@ module ibc::ibc {
         event::emit(
             ChannelOpenInit {
                 port_id: port_id,
+                counterparty_port_id: counterparty_port_id,
                 channel_id: channel_id,
                 connection_id: connection_id,
                 version: version
@@ -848,9 +831,9 @@ module ibc::ibc {
     public entry fun channel_open_try<T: key + store + drop>(
         port_id: address,
         channel_state: u8,
-        channel_order: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
+        counterparty_port_id: vector<u8>,
         version: String,
         counterparty_version: String,
         proof_init: vector<u8>,
@@ -866,9 +849,9 @@ module ibc::ibc {
         let expected_channel =
             channel::new(
                 CHAN_STATE_INIT,
-                channel_order,
                 get_counterparty_connection(connection_id),
                 counterparty_channel_id,
+                counterparty_port_id,
                 counterparty_version
             );
 
@@ -889,6 +872,7 @@ module ibc::ibc {
                 port_id,
                 channel_id,
                 counterparty_channel_id,
+                counterparty_port_id,
                 connection_id,
                 version: counterparty_version
             }
@@ -899,9 +883,9 @@ module ibc::ibc {
         let channel =
             channel::new(
                 channel_state,
-                channel_order,
                 connection_id,
                 counterparty_channel_id,
+                counterparty_port_id,
                 version
             );
 
@@ -930,7 +914,6 @@ module ibc::ibc {
         let param =
             copyable_any::pack<ChannelOpenTryParams>(
                 ChannelOpenTryParams {
-                    ordering: channel_order,
                     connection_id: connection_id,
                     channel_id: channel_id,
                     counterparty_channel_id: counterparty_channel_id,
@@ -942,11 +925,22 @@ module ibc::ibc {
 
         dispatcher::delete_storage<T>();
 
+        event::emit(
+            ChannelOpenTry {
+                port_id,
+                channel_id,
+                counterparty_port_id,
+                counterparty_channel_id,
+                connection_id,
+                version
+            }
+        );
     }
 
     public entry fun channel_open_ack<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
@@ -972,9 +966,9 @@ module ibc::ibc {
         let expected_channel =
             channel::new(
                 CHAN_STATE_TRYOPEN,
-                channel::ordering(&chan),
                 get_counterparty_connection(connection_id),
                 counterparty_channel_id,
+                counterparty_port_id,
                 counterparty_version
             );
 
@@ -1003,7 +997,8 @@ module ibc::ibc {
                 port_id,
                 channel_id,
                 counterparty_channel_id,
-                connection_id: connection_id
+                counterparty_port_id,
+                connection_id
             }
         );
 
@@ -1012,9 +1007,9 @@ module ibc::ibc {
         let param =
             copyable_any::pack<ChannelOpenAckParams>(
                 ChannelOpenAckParams {
-                    channel_id: channel_id,
-                    counterparty_channel_id: counterparty_channel_id,
-                    counterparty_version: counterparty_version
+                    channel_id,
+                    counterparty_channel_id,
+                    counterparty_version
                 }
             );
         engine::dispatch<T>(param);
@@ -1025,6 +1020,7 @@ module ibc::ibc {
     public entry fun channel_open_confirm<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
+        counterparty_port_id: vector<u8>,
         proof_ack: vector<u8>,
         proof_height: u64
     ) acquires IBCStore, Port {
@@ -1047,9 +1043,9 @@ module ibc::ibc {
         let expected_channel =
             channel::new(
                 CHAN_STATE_OPEN,
-                channel::ordering(&chan),
                 get_counterparty_connection(connection_id),
                 channel_id,
+                counterparty_port_id,
                 *channel::version(&chan)
             );
 
@@ -1077,6 +1073,7 @@ module ibc::ibc {
                 port_id,
                 channel_id,
                 counterparty_channel_id: channel::counterparty_channel_id(&chan),
+                counterparty_port_id,
                 connection_id: channel::connection_id(&chan)
             }
         );
@@ -1188,7 +1185,6 @@ module ibc::ibc {
             };
         };
 
-        let ordering = channel::ordering(&channel);
         let i = 0;
         while (i < l) {
             let packet = *vector::borrow(&packets, i);
@@ -1214,21 +1210,9 @@ module ibc::ibc {
                     commitment::commit_packet(&packet)
                 );
 
-            let already_received = false;
-
-            if (ordering == CHAN_ORDERING_UNORDERED) {
-                already_received = set_packet_receive(commitment_key);
-            } else if (ordering == CHAN_ORDERING_ORDERED) {
-                if (intent) {
-                    abort E_CANNOT_INTENT_ORDERED
-                };
-                set_next_sequence_recv(destination_channel, packet::sequence(&packet));
-            };
-
-            if (!already_received) {
+            if (!set_packet_receive(commitment_key)) {
                 let acknowledgement = vector::empty();
                 if (intent) {
-
                     let param =
                         copyable_any::pack<RecvIntentPacketParams>(
                             RecvIntentPacketParams { packet: packet }
@@ -1401,7 +1385,6 @@ module ibc::ibc {
             abort err
         };
 
-        let ordering = channel::ordering(&channel);
         let i = 0;
         while (i < l) {
             let packet = *vector::borrow(&packets, i);
@@ -1416,9 +1399,6 @@ module ibc::ibc {
 
             let acknowledgement = *vector::borrow(&acknowledgements, i);
             // onAcknowledgementPacket(...)
-            if (ordering == CHAN_ORDERING_ORDERED) {
-                set_next_sequence_ack(source_channel, packet::sequence(&packet));
-            };
 
             let param =
                 copyable_any::pack<AcknowledgePacketParams>(
@@ -1472,29 +1452,12 @@ module ibc::ibc {
             light_client::get_timestamp_at_height(client_id, proof_height);
         assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
 
-        let ordering = channel::ordering(&channel);
-
-        if (ordering == CHAN_ORDERING_ORDERED) {
-            let err =
-                verify_commitment(
-                    client_id,
-                    proof_height,
-                    proof,
-                    commitment::next_sequence_recv_commitment_key(destination_channel),
-                    bcs::to_bytes(&next_sequence_recv)
-                );
-            assert!(err == 0, err);
-        } else if (ordering == CHAN_ORDERING_UNORDERED) {
-            let commitment_key =
-                commitment::batch_receipts_commitment_key(
-                    destination_channel, commitment::commit_packet(&packet)
-                );
-            let err =
-                verify_absent_commitment(client_id, proof_height, proof, commitment_key);
-            assert!(err == 0, err);
-        } else {
-            abort E_UNKNOWN_CHANNEL_ORDERING
-        };
+        let commitment_key =
+            commitment::batch_receipts_commitment_key(
+                destination_channel, commitment::commit_packet(&packet)
+            );
+        let err = verify_absent_commitment(client_id, proof_height, proof, commitment_key);
+        assert!(err == 0, err);
 
         if (packet::timeout_timestamp(&packet) != 0) {
             assert!(
@@ -1510,12 +1473,6 @@ module ibc::ibc {
             );
         };
 
-        if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) {
-            assert!(
-                next_sequence_recv > packet::sequence(&packet),
-                E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE
-            );
-        };
         let commitment_key =
             commitment::batch_packets_commitment_key(
                 source_channel, commitment::commit_packet(&packet)
@@ -1787,16 +1744,6 @@ module ibc::ibc {
         } else {
             option::some<Channel>(*smart_table::borrow(&store.channels, channel_id))
         }
-    }
-
-    fun ordering_to_string(ordering: u8): String {
-        let return_val = string::utf8(b"ORDER_INVALID");
-        if (ordering == 1) {
-            return_val = string::utf8(b"ORDER_UNORDERED");
-        } else if (ordering == 2) {
-            return_val = string::utf8(b"ORDER_ORDERED");
-        };
-        return_val
     }
 
     fun generate_channel_identifier(): u32 acquires IBCStore {

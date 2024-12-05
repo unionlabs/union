@@ -255,9 +255,7 @@ module ibc::relay_app {
                 string::utf8(b"on_packet")
             );
 
-        ibc::register_application<UcsRelayProof>(
-            account, cb, new_ucs_relay_proof()
-        );
+        ibc::register_application<UcsRelayProof>(account, cb, new_ucs_relay_proof());
     }
 
     public fun on_channel_open_init(
@@ -873,8 +871,7 @@ module ibc::relay_app {
         let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output
-            == std::type_info::type_name<ibc::RecvPacketParams>()) {
+        if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
             let (pack) =
                 helpers::on_recv_packet_deconstruct(
                     copyable_any::unpack<ibc::RecvPacketParams>(value)
