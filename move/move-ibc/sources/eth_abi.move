@@ -19,6 +19,8 @@ module ibc::ethabi {
 
         vector::append(buf, len_bytes);
         vector::append(buf, *bytes);
+        std::debug::print(&len_bytes);
+        std::debug::print(&len);
 
         // Calculate padding to align to 32 bytes
         let padding_len = (32 - (len % 32)) % 32;
@@ -79,11 +81,6 @@ module ibc::ethabi {
         let result = from_bcs::to_u256(reversed_bytes);
 
         result
-    }
-
-    public fun encode_u8(buf: &mut vector<u8>, data: u8) {
-        let u8_data = bcs::to_bytes(&(data as u8));
-        vector::append(buf, u8_data);
     }
 
     public fun decode_u8(buf: &vector<u8>, index: &mut u64): u8 {

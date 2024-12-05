@@ -75,17 +75,37 @@ module ibc::channel {
         // TODO(aeryz): fix this
         let buf = vector::empty<u8>();
 
+        // offset of version ????
+        ethabi::encode_uint<u64>(&mut buf, 32 * 1);
+
         ethabi::encode_uint<u8>(&mut buf, channel.state);
-        // ethabi::encode_uint<u8>(&mut buf, channel.ordering);
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
 
-        let i = 32 - string::length(&channel.version);
-        vector::append(&mut buf, *string::bytes(&channel.version));
-        while (i > 0) {
-            vector::push_back(&mut buf, 0);
-            i = i - 1;
-        };
+        // offset of counterparty_port_id?
+        ethabi::encode_uint<u64>(&mut buf, 32 * 5);
+
+        // no idea what is this
+        ethabi::encode_uint<u64>(&mut buf, 32 * 11);
+
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &channel.counterparty_port_id,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+
+        // something is wrong in the encode_string i don't know what
+        // ethabi::encode_string(&mut buf, &channel.version);
+
+        // let i = 32 - string::length(&channel.version);
+        
+        // vector::append(&mut buf, *string::bytes(&channel.version));
+        // while (i > 0) {
+        //     vector::push_back(&mut buf, 0);
+        //     i = i - 1;
+        // };
 
         buf
     }
@@ -95,11 +115,23 @@ module ibc::channel {
         let index = 0;
 
         let state = (ethabi::decode_uint(&buf, &mut index) as u8);
-        // let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
         let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
         let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
 
         let i = index;
+        std::debug::print(&i);
+        while (i < index + 32) {
+            let char = *vector::borrow(&buf, i);
+
+            if (char == 0) { break };
+
+            i = i + 1;
+        };
+        let counterparty_port_id = vector::slice(&buf, index, i);
+
+
+        let i = index;
+        std::debug::print(&i);
         while (i < index + 32) {
             let char = *vector::borrow(&buf, i);
 
@@ -109,7 +141,6 @@ module ibc::channel {
         };
         let version = string::utf8(vector::slice(&buf, index, i));
 
-        let counterparty_port_id = vector::empty();
 
         option::some(
             new(
@@ -144,15 +175,22 @@ module ibc::channel {
         new(0, 0, 0, vector::empty(), string::utf8(b""))
     }
 
-    // #[test]
-    // public fun test_encode_decode_channel() {
-    //     let buf =
-    //         x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c868656c6c6f000000000000000000000000000000000000000000000000000000";
-    //     let channel = new(1, 1, 100, 200, b"hello");
+    #[test]
+    public fun test_encode_decode_channel() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f0000000000000000000000000000000000000000000000000000000000000005312e302e30000000000000000000000000000000000000000000000000000000";
 
-    //     let encoded = encode(&channel);
+        let channel = new(
+            1,
+            1,
+            100,
+            b"hello",
+            string::utf8(b"1.0.0")
+        );
 
-    //     assert!(buf == encoded, 1);
-    //     assert!(decode(encoded) == option::some(channel), 1);
-    // }
+        let encoded = encode(&channel);
+        std::debug::print(&encoded);
+        assert!(buf == encoded, 1);
+        assert!(decode(encoded) == option::some(channel), 1);
+    }
 }

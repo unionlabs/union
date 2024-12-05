@@ -339,7 +339,7 @@ module ibc::relay_app {
             &mut buf,
             &packet.sender,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -348,7 +348,7 @@ module ibc::relay_app {
             &mut buf,
             &packet.receiver,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
