@@ -1,6 +1,9 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
-use aptos_move_ibc::ibc::{self, ClientExt as _};
+use aptos_move_ibc::{
+    connection_end::ConnectionEnd,
+    ibc::{self, ClientExt as _},
+};
 use aptos_rest_client::{
     aptos_api_types::{Address, MoveType},
     error::RestError,
@@ -15,33 +18,29 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
     hash::H256,
-    ibc::core::{
-        channel::{self, channel::Channel, order::Order},
-        client::height::Height,
-        commitment::merkle_prefix::MerklePrefix,
-        connection::{self, connection_end::ConnectionEnd},
-    },
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    ibc::core::client::height::Height,
+    ics24::ethabi::{ChannelPath, ConnectionPath},
     ErrorReporter,
 };
 use voyager_message::{
     call::Call,
     core::{ChainId, ClientInfo, ClientType, QueryHeight},
-    data::{
-        AcknowledgePacket, ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm,
-        ChannelOpenInit, ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck,
-        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data,
-        FullIbcEvent, PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
+    data::{ChainEvent, Data},
+    ibc_union::{
+        AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+        ChannelOpenTry, ClientCreated, ClientUpdated, ConnectionMetadata, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, FullIbcEvent, IbcUnion,
+        PacketMetadata, RecvPacket, SendPacket, WriteAcknowledgement,
     },
+    into_value,
     module::{PluginInfo, PluginServer},
-    rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient},
-    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
-    VoyagerMessage,
+    rpc::missing_state,
+    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, defer, now, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlocks, FetchTransactions, MakeEvent, ModuleCall},
+    call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall},
     callback::ModuleCallback,
 };
 
@@ -53,7 +52,7 @@ pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(clap::Subcommand)]
@@ -159,77 +158,67 @@ impl Module {
     async fn make_packet_metadata(
         &self,
         event_height: Height,
-        self_port_id: PortId,
-        self_channel_id: ChannelId,
+        self_channel_id: u32,
         voyager_rpc_client: &VoyagerClient,
-    ) -> RpcResult<(
-        ChainId,
-        ClientInfo,
-        ChannelMetadata,
-        ChannelMetadata,
-        channel::order::Order,
-    )> {
+    ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
         let self_channel = voyager_rpc_client
-            .query_channel(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_port_id.clone(),
-                self_channel_id.clone(),
+                ChannelPath {
+                    channel_id: self_channel_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?
+            .await?
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
-        let self_connection_id = self_channel.connection_hops[0].clone();
+        let self_connection_id = self_channel.connection_id;
         let self_connection = voyager_rpc_client
-            .query_connection(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_id.clone(),
+                ConnectionPath {
+                    connection_id: self_connection_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let self_connection_state = self_connection
             .state
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info(
+            .client_info::<IbcUnion>(
                 self.chain_id.clone(),
                 self_connection_state.client_id.clone(),
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let client_meta = voyager_rpc_client
-            .client_meta(
+            .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
                 self_connection_state.client_id.clone(),
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
-        let other_port_id = self_channel.counterparty.port_id.clone();
-        let other_channel_id = self_channel.counterparty.channel_id.clone().unwrap();
+        let other_channel_id = self_channel.counterparty_channel_id;
         let other_channel = voyager_rpc_client
-            .query_channel(
+            .query_ibc_state(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
-                other_port_id.clone(),
-                other_channel_id.clone(),
+                ChannelPath {
+                    channel_id: other_channel_id,
+                },
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+            .await?;
 
         let other_channel_state = other_channel
             .state
             .ok_or_else(missing_state("channel must exist", None))?;
 
         let source_channel = ChannelMetadata {
-            port_id: self_port_id.clone(),
             channel_id: self_channel_id.clone(),
             version: self_channel.version,
             connection: ConnectionMetadata {
@@ -238,12 +227,11 @@ impl Module {
             },
         };
         let destination_channel = ChannelMetadata {
-            port_id: other_port_id,
             channel_id: other_channel_id,
             version: other_channel_state.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.counterparty.client_id,
-                connection_id: self_connection_state.counterparty.connection_id.unwrap(),
+                client_id: self_connection_state.counterparty_client_id,
+                connection_id: self_connection_state.counterparty_connection_id,
             },
         };
 
@@ -252,7 +240,6 @@ impl Module {
             client_info,
             source_channel,
             destination_channel,
-            self_channel.ordering,
         ))
     }
 }
@@ -401,7 +388,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // TODO: Check the type before deserializing
                         call(PluginMessage::new(
                             self.plugin_name(),
-                            ModuleCall::from(MakeEvent {
+                            ModuleCall::from(MakeFullEvent {
                                 event,
                                 tx_hash: H256::new(*hash.0),
                                 height,
@@ -454,85 +441,67 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                 },
             ])),
-            ModuleCall::MakeEvent(MakeEvent {
+            ModuleCall::MakeFullEvent(MakeFullEvent {
                 event,
                 tx_hash,
                 height,
             }) => {
-                fn ibc_height(h: aptos_move_ibc::height::Height) -> Height {
-                    Height::new_with_revision(h.revision_number.0, h.revision_height.0)
-                }
-
-                let (full_event, client_id): (FullIbcEvent, ClientId) = match event {
+                let (full_event, client_id): (FullIbcEvent, u32) = match event {
                     events::IbcEvent::CreateClient(event) => (
-                        CreateClient {
-                            client_id: event.client_id.parse().unwrap(),
+                        ClientCreated {
+                            client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
-                            consensus_height: ibc_height(event.consensus_height),
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::UpdateClient(event) => (
-                        UpdateClient {
-                            client_id: event.client_id.parse().unwrap(),
+                        ClientUpdated {
+                            client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
-                            consensus_heights: vec![ibc_height(event.height)],
+                            height: event.height,
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenInit(event) => (
                         ConnectionOpenInit {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
-                                .unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                            client_id: event.client_id,
+                            connection_id: event.connection_id,
+                            counterparty_client_id: event.counterparty_client_id,
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenTry(event) => (
                         ConnectionOpenTry {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
-                                .unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: ConnectionId::from_str_prefixed(
-                                &event.counterparty_connection_id,
-                            )
-                            .unwrap(),
+                            client_id: event.client_id,
+                            connection_id: event.connection_id,
+                            counterparty_client_id: event.counterparty_client_id,
+                            counterparty_connection_id: event.counterparty_connection_id,
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenAck(event) => (
                         ConnectionOpenAck {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
-                                .unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: ConnectionId::from_str_prefixed(
-                                &event.counterparty_connection_id,
-                            )
-                            .unwrap(),
+                            client_id: event.client_id,
+                            connection_id: event.connection_id,
+                            counterparty_client_id: event.counterparty_client_id,
+                            counterparty_connection_id: event.counterparty_connection_id,
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenConfirm(event) => (
                         ConnectionOpenConfirm {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: ConnectionId::from_str_prefixed(&event.connection_id)
-                                .unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: ConnectionId::from_str_prefixed(
-                                &event.counterparty_connection_id,
-                            )
-                            .unwrap(),
+                            client_id: event.client_id,
+                            connection_id: event.connection_id,
+                            counterparty_client_id: event.counterparty_client_id,
+                            counterparty_connection_id: event.counterparty_connection_id,
                         }
                         .into(),
-                        event.client_id.parse().unwrap(),
+                        event.client_id,
                     ),
                     events::IbcEvent::ChannelOpenInit(event) => {
                         let ledger_version = self.ledger_version_of_height(height).await;
@@ -540,24 +509,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = self
                             .get_connection(
                                 self.ibc_handler_address.into(),
-                                (event.connection_id,),
                                 Some(ledger_version),
+                                (event.connection_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let connection = convert_connection(connection);
-
-                        let client_id = connection.client_id.clone();
+                        let client_id = connection.client_id;
 
                         (
                             ChannelOpenInit {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
-                                    .unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                                channel_id: event.channel_id,
+                                counterparty_port_id: event.counterparty_port_id.into(),
                                 connection,
                                 version: event.version,
                             }
@@ -571,28 +537,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = self
                             .get_connection(
                                 self.ibc_handler_address.into(),
-                                (event.connection_id,),
                                 Some(ledger_version),
+                                (event.connection_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let connection = convert_connection(connection);
 
-                        let client_id = connection.client_id.clone();
+                        let client_id = connection.client_id;
 
                         (
                             ChannelOpenTry {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
-                                    .unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: ChannelId::from_str_prefixed(
-                                    &event.counterparty_channel_id,
-                                )
-                                .unwrap(),
+                                channel_id: event.channel_id,
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: event.version,
                             }
@@ -606,41 +567,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = self
                             .get_connection(
                                 self.ibc_handler_address.into(),
-                                (event.connection_id,),
                                 Some(ledger_version),
+                                (event.connection_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let channel = self
                             .get_channel(
                                 self.ibc_handler_address.into(),
-                                (event.port_id.clone(), event.channel_id.clone()),
                                 Some(ledger_version),
+                                (event.channel_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let connection = convert_connection(connection);
-
-                        let channel = convert_channel(channel);
 
                         let client_id = connection.client_id.clone();
 
                         (
                             ChannelOpenAck {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
-                                    .unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: ChannelId::from_str_prefixed(
-                                    &event.counterparty_channel_id,
-                                )
-                                .unwrap(),
+                                channel_id: event.channel_id,
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: channel.version,
                             }
@@ -654,41 +607,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let connection = self
                             .get_connection(
                                 self.ibc_handler_address.into(),
-                                (event.connection_id,),
                                 Some(ledger_version),
+                                (event.connection_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let channel = self
                             .get_channel(
                                 self.ibc_handler_address.into(),
-                                (event.port_id.clone(), event.channel_id.clone()),
                                 Some(ledger_version),
+                                (event.channel_id,),
                             )
                             .await
                             .unwrap()
-                            .into_option()
                             .unwrap();
 
                         let connection = convert_connection(connection);
 
-                        let channel = convert_channel(channel);
-
-                        let client_id = connection.client_id.clone();
+                        let client_id = connection.client_id;
 
                         (
                             ChannelOpenConfirm {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: ChannelId::from_str_prefixed(&event.channel_id)
-                                    .unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: ChannelId::from_str_prefixed(
-                                    &event.counterparty_channel_id,
-                                )
-                                .unwrap(),
+                                channel_id: event.channel_id,
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: channel.version,
                             }
@@ -702,13 +647,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             _client_info,
                             destination_channel,
                             source_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_port.parse().unwrap(),
-                                ChannelId::from_str_prefixed(&event.packet.destination_channel)
-                                    .unwrap(),
+                                event.packet.destination_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -717,15 +659,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             WriteAcknowledgement {
-                                packet_data: event.packet.data.0.into(),
-                                packet_ack: event.acknowledgement.0.into(),
+                                packet_data: event.packet.data.into(),
+                                acknowledgement: event.acknowledgement.into(),
                                 packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
                                     source_channel,
                                     destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                                    timeout_height: event.packet.timeout_height,
+                                    timeout_timestamp: event.packet.timeout_timestamp,
                                 },
                             }
                             .into(),
@@ -738,13 +678,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             _client_info,
                             destination_channel,
                             source_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_port.parse().unwrap(),
-                                ChannelId::from_str_prefixed(&event.packet.destination_channel)
-                                    .unwrap(),
+                                event.packet.destination_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -753,15 +690,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             RecvPacket {
-                                packet_data: event.packet.data.0.into(),
+                                packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
                                     source_channel,
                                     destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                                    timeout_height: event.packet.timeout_height,
+                                    timeout_timestamp: event.packet.timeout_timestamp,
                                 },
+                                // TODO(aeryz): why is this H160?
+                                relayer: Default::default(),
+                                relayer_msg: Default::default(),
                             }
                             .into(),
                             client_id,
@@ -773,12 +711,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             _client_info,
                             source_channel,
                             destination_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.source_port.parse().unwrap(),
-                                ChannelId::from_str_prefixed(&event.source_channel).unwrap(),
+                                event.source_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -787,14 +723,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             SendPacket {
-                                packet_data: event.data.0.into(),
+                                packet_data: event.data.into(),
                                 packet: PacketMetadata {
-                                    sequence: (*event.sequence.inner()).try_into().unwrap(),
                                     source_channel,
                                     destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.timeout_height),
-                                    timeout_timestamp: *event.timeout_timestamp.inner(),
+                                    timeout_height: event.timeout_height,
+                                    timeout_timestamp: event.timeout_timestamp,
                                 },
                             }
                             .into(),
@@ -807,12 +741,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             _client_info,
                             source_channel,
                             destination_channel,
-                            channel_ordering,
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.source_port.parse().unwrap(),
-                                ChannelId::from_str_prefixed(&event.packet.source_channel).unwrap(),
+                                event.packet.source_channel,
                                 e.try_get()?,
                             )
                             .await?;
@@ -821,14 +753,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         (
                             AcknowledgePacket {
+                                packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
                                     source_channel,
                                     destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                                    timeout_height: event.packet.timeout_height,
+                                    timeout_timestamp: event.packet.timeout_timestamp,
                                 },
+                                relayer: Default::default(),
+                                acknowledgement: event.acknowledgement.into(),
                             }
                             .into(),
                             client_id,
@@ -840,18 +773,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 let client_info = voyager_client
-                    .client_info(self.chain_id.clone(), client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .client_info::<IbcUnion>(self.chain_id.clone(), client_id.clone())
+                    .await?;
 
                 let client_meta = voyager_client
-                    .client_meta(
+                    .client_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         self.make_height(height).into(),
                         client_id.clone(),
                     )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
@@ -860,7 +791,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
                     provable_height: self.make_height(height),
-                    event: full_event,
+                    event: into_value::<FullIbcEvent>(full_event),
+                    ibc_version_id: IbcUnion::ID,
                 }))
             }
         }
@@ -871,59 +803,17 @@ pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
     ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
 }
 
-pub fn convert_connection(
-    connection: aptos_move_ibc::connection_end::ConnectionEnd,
-) -> ConnectionEnd {
-    ConnectionEnd {
-        client_id: connection.client_id.parse().unwrap(),
-        versions: connection
-            .versions
-            .into_iter()
-            .map(|version| connection::version::Version {
-                identifier: version.identifier,
-                features: version
-                    .features
-                    .into_iter()
-                    .map(|feature| Order::from_proto_str(&feature).expect("unknown feature"))
-                    .collect(),
-            })
-            .collect(),
-        state: connection::state::State::try_from(u8::try_from(connection.state.0).unwrap())
-            .unwrap(),
-        counterparty: connection::counterparty::Counterparty {
-            client_id: connection.counterparty.client_id.parse().unwrap(),
-            connection_id: if connection.counterparty.connection_id.is_empty() {
-                None
-            } else {
-                Some(
-                    ConnectionId::from_str_prefixed(&connection.counterparty.connection_id)
-                        .unwrap(),
-                )
-            },
-            prefix: MerklePrefix {
-                key_prefix: connection.counterparty.prefix.key_prefix.into(),
-            },
+fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::ibc::Connection {
+    ibc_solidity::ibc::Connection {
+        state: match connection.state {
+            0 => ibc_solidity::ibc::ConnectionState::Unspecified,
+            1 => ibc_solidity::ibc::ConnectionState::Init,
+            2 => ibc_solidity::ibc::ConnectionState::TryOpen,
+            3 => ibc_solidity::ibc::ConnectionState::Open,
+            _ => panic!("connection state cannot be more than 3"),
         },
-        delay_period: connection.delay_period.0,
-    }
-}
-
-pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
-    Channel {
-        state: channel.state.try_into().unwrap(),
-        ordering: channel.ordering.try_into().unwrap(),
-        counterparty: channel::counterparty::Counterparty {
-            port_id: channel.counterparty.port_id.parse().unwrap(),
-            channel_id: Some(
-                ChannelId::from_str_prefixed(&channel.counterparty.channel_id).unwrap(),
-            ),
-        },
-        connection_hops: channel
-            .connection_hops
-            .into_iter()
-            .map(|hop| ConnectionId::from_str_prefixed(&hop).unwrap())
-            .collect(),
-        version: channel.version,
-        upgrade_sequence: 0,
+        client_id: connection.client_id,
+        counterparty_client_id: connection.counterparty_client_id,
+        counterparty_connection_id: connection.counterparty_connection_id,
     }
 }

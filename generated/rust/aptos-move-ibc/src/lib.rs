@@ -8,7 +8,7 @@
     clippy::too_many_arguments
 )]
 
-pub mod packet {
+pub mod channel {
     #[derive(
         Debug,
         Clone,
@@ -21,66 +21,13 @@ pub mod packet {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = packet)]
-    pub struct Packet {
-        pub sequence: u64,
-        pub source_channel: u32,
-        pub destination_channel: u32,
-        pub data: Vec<u8>,
-        pub timeout_height: u64,
-        pub timeout_timestamp: u64,
-    }
-}
-
-pub mod dispatcher {
-    pub trait ClientExt {
-        fn client(&self) -> &::move_bindgen::aptos_rest_client::Client;
-        #[::move_bindgen::tracing::instrument(
-            skip_all,
-            fields(%contract_address, ?ledger_version, )
-        )]
-        async fn get_vault_addr(
-            &self,
-            contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
-            ledger_version: Option<u64>,
-        ) -> ::core::result::Result<
-            ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
-            ::move_bindgen::aptos_rest_client::error::RestError,
-        > {
-            let response = self
-                .client()
-                .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
-                        function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
-                            module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
-                                address: contract_address.into(),
-                                name: stringify!(dispatcher).parse().unwrap(),
-                            },
-                            name: stringify!(get_vault_addr).parse().unwrap(),
-                        },
-                        type_arguments: vec![],
-                        arguments: vec![],
-                    },
-                    ledger_version,
-                )
-                .await?
-                .into_inner();
-            let value = ::move_bindgen::serde_json::Value::from(response);
-            ::move_bindgen::tracing::debug!(% value, "fetched response");
-            let (ret_0,) = ::move_bindgen::serde_json::from_value::<
-                (
-                    <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
-                ),
-            >(value)?;
-            Ok(
-                (
-                    <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
-                        ret_0,
-                    ),
-                )
-                    .0,
-            )
-        }
+    #[move_output_type(module = channel)]
+    pub struct Channel {
+        pub state: u8,
+        pub connection_id: u32,
+        pub counterparty_channel_id: u32,
+        pub counterparty_port_id: Vec<u8>,
+        pub version: String,
     }
 }
 
@@ -143,9 +90,10 @@ pub mod ibc {
         >(
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
-            (_0, _1, _2, _3, _4, _5): (
+            (_0, _1, _2, _3, _4, _5, _6): (
                 ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
                 u32,
+                Vec<u8>,
                 String,
                 u32,
                 Vec<u8>,
@@ -166,14 +114,16 @@ pub mod ibc {
                     ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < u32 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < String as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
+                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(& < String as
+                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(& < u32 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_4)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u64 as
+                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
                     ::move_bindgen::MoveOutputType > ::into_raw(_5)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(& < u64 as
+                    ::move_bindgen::MoveOutputType > ::into_raw(_6)).unwrap(),
                 ],
             )
         }
@@ -182,9 +132,10 @@ pub mod ibc {
         >(
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
-            (_0, _1, _2, _3): (
+            (_0, _1, _2, _3, _4): (
                 ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
                 u32,
+                Vec<u8>,
                 Vec<u8>,
                 u64,
             ),
@@ -205,8 +156,10 @@ pub mod ibc {
                     ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
                     ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u64 as
+                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
                     ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(& < u64 as
+                    ::move_bindgen::MoveOutputType > ::into_raw(_4)).unwrap(),
                 ],
             )
         }
@@ -217,8 +170,8 @@ pub mod ibc {
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
             (_0, _1, _2, _3): (
                 ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
+                Vec<u8>,
                 u32,
-                u8,
                 String,
             ),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
@@ -234,9 +187,9 @@ pub mod ibc {
                     ::move_bindgen::bcs::to_bytes(& <
                     ::move_bindgen::aptos_rest_client::aptos_api_types::Address as
                     ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
+                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
                     ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u8 as
+                    ::move_bindgen::bcs::to_bytes(& < u32 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < String as
                     ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
@@ -251,9 +204,9 @@ pub mod ibc {
             (_0, _1, _2, _3, _4, _5, _6, _7, _8): (
                 ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
                 u8,
-                u8,
                 u32,
                 u32,
+                Vec<u8>,
                 String,
                 String,
                 Vec<u8>,
@@ -274,11 +227,11 @@ pub mod ibc {
                     ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < u8 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u8 as
+                    ::move_bindgen::bcs::to_bytes(& < u32 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < u32 as
                     ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
+                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
                     ::move_bindgen::MoveOutputType > ::into_raw(_4)).unwrap(),
                     ::move_bindgen::bcs::to_bytes(& < String as
                     ::move_bindgen::MoveOutputType > ::into_raw(_5)).unwrap(),
@@ -958,67 +911,11 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     #[move_output_type(module = ibc)]
-    pub struct ConnectionOpenConfirm {
-        pub connection_id: u32,
-        pub client_id: u32,
-        pub counterparty_client_id: u32,
-        pub counterparty_connection_id: u32,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct SubmitMisbehaviour {
-        pub client_id: u32,
-        pub client_type: String,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
     pub struct ConnectionOpenAck {
         pub connection_id: u32,
         pub client_id: u32,
         pub counterparty_client_id: u32,
         pub counterparty_connection_id: u32,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct ChannelOpenTry {
-        pub port_id: String,
-        pub channel_id: u32,
-        pub counterparty_channel_id: u32,
-        pub connection_id: u32,
-        pub version: String,
     }
     #[derive(
         Debug,
@@ -1051,10 +948,83 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     #[move_output_type(module = ibc)]
-    pub struct ConnectionOpenInit {
+    pub struct ChannelOpenInit {
+        pub port_id: String,
+        pub channel_id: u32,
+        pub counterparty_port_id: Vec<u8>,
+        pub connection_id: u32,
+        pub version: String,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct RecvIntentPacket {
+        pub packet: super::packet::Packet,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct ChannelOpenAck {
+        pub port_id: String,
+        pub channel_id: u32,
+        pub counterparty_port_id: Vec<u8>,
+        pub counterparty_channel_id: u32,
+        pub connection_id: u32,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct ConnectionOpenConfirm {
         pub connection_id: u32,
         pub client_id: u32,
         pub counterparty_client_id: u32,
+        pub counterparty_connection_id: u32,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct RecvPacket {
+        pub packet: super::packet::Packet,
     }
     #[derive(
         Debug,
@@ -1087,98 +1057,13 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     #[move_output_type(module = ibc)]
-    pub struct WriteAcknowledgement {
-        pub packet: super::packet::Packet,
-        pub acknowledgement: Vec<u8>,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct ChannelOpenInit {
-        pub port_id: String,
-        pub channel_id: u32,
-        pub connection_id: u32,
-        pub version: String,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct ConnectionOpenTry {
-        pub connection_id: u32,
-        pub client_id: u32,
-        pub counterparty_client_id: u32,
-        pub counterparty_connection_id: u32,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct RecvIntentPacket {
-        pub packet: super::packet::Packet,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct RecvPacket {
-        pub packet: super::packet::Packet,
-    }
-    #[derive(
-        Debug,
-        Clone,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        ::move_bindgen::serde::Serialize,
-        ::move_bindgen::serde::Deserialize,
-        ::move_bindgen::MoveOutputType,
-    )]
-    #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = ibc)]
-    pub struct ChannelOpenAck {
-        pub port_id: String,
-        pub channel_id: u32,
-        pub counterparty_channel_id: u32,
-        pub connection_id: u32,
+    pub struct SendPacket {
+        pub sequence: u64,
+        pub source_channel: u32,
+        pub destination_channel: u32,
+        pub data: Vec<u8>,
+        pub timeout_height: u64,
+        pub timeout_timestamp: u64,
     }
     #[derive(
         Debug,
@@ -1196,8 +1081,81 @@ pub mod ibc {
     pub struct ChannelOpenConfirm {
         pub port_id: String,
         pub channel_id: u32,
+        pub counterparty_port_id: Vec<u8>,
         pub counterparty_channel_id: u32,
         pub connection_id: u32,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct TimeoutPacket {
+        pub packet: super::packet::Packet,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct ChannelOpenTry {
+        pub port_id: String,
+        pub channel_id: u32,
+        pub counterparty_port_id: Vec<u8>,
+        pub counterparty_channel_id: u32,
+        pub connection_id: u32,
+        pub version: String,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct ConnectionOpenInit {
+        pub connection_id: u32,
+        pub client_id: u32,
+        pub counterparty_client_id: u32,
+    }
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ::move_bindgen::serde::Serialize,
+        ::move_bindgen::serde::Deserialize,
+        ::move_bindgen::MoveOutputType,
+    )]
+    #[serde(crate = "::move_bindgen::serde")]
+    #[move_output_type(module = ibc)]
+    pub struct WriteAcknowledgement {
+        pub packet: super::packet::Packet,
+        pub acknowledgement: Vec<u8>,
     }
     #[derive(
         Debug,
@@ -1229,8 +1187,9 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     #[move_output_type(module = ibc)]
-    pub struct TimeoutPacket {
-        pub packet: super::packet::Packet,
+    pub struct SubmitMisbehaviour {
+        pub client_id: u32,
+        pub client_type: String,
     }
     #[derive(
         Debug,
@@ -1245,13 +1204,11 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     #[move_output_type(module = ibc)]
-    pub struct SendPacket {
-        pub sequence: u64,
-        pub source_channel: u32,
-        pub destination_channel: u32,
-        pub data: Vec<u8>,
-        pub timeout_height: u64,
-        pub timeout_timestamp: u64,
+    pub struct ConnectionOpenTry {
+        pub connection_id: u32,
+        pub client_id: u32,
+        pub counterparty_client_id: u32,
+        pub counterparty_connection_id: u32,
     }
 }
 
@@ -1277,7 +1234,7 @@ pub mod connection_end {
     }
 }
 
-pub mod channel {
+pub mod packet {
     #[derive(
         Debug,
         Clone,
@@ -1290,12 +1247,65 @@ pub mod channel {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    #[move_output_type(module = channel)]
-    pub struct Channel {
-        pub state: u8,
-        pub ordering: u8,
-        pub connection_id: u32,
-        pub counterparty_channel_id: u32,
-        pub version: String,
+    #[move_output_type(module = packet)]
+    pub struct Packet {
+        pub sequence: u64,
+        pub source_channel: u32,
+        pub destination_channel: u32,
+        pub data: Vec<u8>,
+        pub timeout_height: u64,
+        pub timeout_timestamp: u64,
+    }
+}
+
+pub mod dispatcher {
+    pub trait ClientExt {
+        fn client(&self) -> &::move_bindgen::aptos_rest_client::Client;
+        #[::move_bindgen::tracing::instrument(
+            skip_all,
+            fields(%contract_address, ?ledger_version, )
+        )]
+        async fn get_vault_addr(
+            &self,
+            contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
+            ledger_version: Option<u64>,
+        ) -> ::core::result::Result<
+            ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
+            ::move_bindgen::aptos_rest_client::error::RestError,
+        > {
+            let response = self
+                .client()
+                .view(
+                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                        function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
+                            module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                                address: contract_address.into(),
+                                name: stringify!(dispatcher).parse().unwrap(),
+                            },
+                            name: stringify!(get_vault_addr).parse().unwrap(),
+                        },
+                        type_arguments: vec![],
+                        arguments: vec![],
+                    },
+                    ledger_version,
+                )
+                .await?
+                .into_inner();
+            let value = ::move_bindgen::serde_json::Value::from(response);
+            ::move_bindgen::tracing::debug!(% value, "fetched response");
+            let (ret_0,) = ::move_bindgen::serde_json::from_value::<
+                (
+                    <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
+                ),
+            >(value)?;
+            Ok(
+                (
+                    <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
+                        ret_0,
+                    ),
+                )
+                    .0,
+            )
+        }
     }
 }

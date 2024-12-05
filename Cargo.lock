@@ -13676,6 +13676,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-event-source-plugin-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bcs 0.1.6",
+ "clap 4.5.4",
+ "enumorph",
+ "futures",
+ "hex",
+ "hex-literal",
+ "ibc-solidity",
+ "jsonrpsee",
+ "macros",
+ "move-bindgen",
+ "move-core-types",
+ "prost 0.12.6",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [

@@ -8,7 +8,7 @@ use unionlabs::hash::H256;
 pub enum ModuleCall {
     FetchTransactions(FetchTransactions),
     FetchBlocks(FetchBlocks),
-    MakeEvent(MakeEvent),
+    MakeFullEvent(MakeFullEvent),
 }
 
 #[model]
@@ -22,7 +22,7 @@ pub struct FetchTransactions {
 }
 
 #[model]
-pub struct MakeEvent {
+pub struct MakeFullEvent {
     pub event: crate::events::IbcEvent,
     pub tx_hash: H256,
     pub height: u64,

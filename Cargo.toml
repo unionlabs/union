@@ -133,7 +133,7 @@ members = [
 
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
-  # "voyager/plugins/event-source/movement",
+  "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",

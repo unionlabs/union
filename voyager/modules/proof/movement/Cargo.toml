@@ -1,7 +1,7 @@
 [package]
-name = "voyager-proof-module-movement"
-version = "0.1.0"
 edition = "2021"
+name    = "voyager-proof-module-movement"
+version = "0.1.0"
 
 [dependencies]
 aptos-crypto                = { workspace = true }

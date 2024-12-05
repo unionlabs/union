@@ -10,6 +10,7 @@ aptos-types                 = { workspace = true }
 bitvec                      = { workspace = true }
 chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }
+ethereum-light-client-types = { workspace = true }
 futures                     = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
@@ -29,4 +30,3 @@ tracing-subscriber          = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
-ethereum-light-client-types = { workspace = true }
