@@ -9,7 +9,6 @@
 <style>
   .hero-container {
     position: relative;
-    padding: 200px 0;
     text-align: center;
   }
 

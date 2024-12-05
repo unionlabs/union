@@ -79,8 +79,12 @@
   {#if isPlaying}
     <div class="h-svh w-full flex flex-col justify-between items-center relative" in:fade>
       <Bar/>
-      <Glitch text="ZKGM"/>
-      <Agents/>
+      <div class="flex-grow flex items-center">
+        <Glitch text="ZKGM"/>
+      </div>
+      <div class="h-24 w-full flex-shrink-0">
+        <Agents/>
+      </div>
     </div>
   {/if}
 </div>

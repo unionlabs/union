@@ -100,7 +100,7 @@
 
 <div
         bind:this={containerRef}
-        class="relative w-full h-24 bg-transparent overflow-hidden"
+        class="relative w-full h-full bg-transparent overflow-hidden"
 >
   {#each characters as char (char.id)}
     <div
@@ -110,7 +110,7 @@
       <img
               src="/agents/{char.id}.png"
               alt="Agent {char.id}"
-              class="w-12 h-12 md:w-16 md:h-16"
+              class="h-16 w-16 flex-shrink-0"
       />
     </div>
   {/each}
