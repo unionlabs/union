@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Blink from "$lib/components/Blink.svelte";
+import Blink from "$lib/components/Blink.svelte"
 </script>
 
 <div class="w-full bg-transparent p-4 flex items-center justify-between">

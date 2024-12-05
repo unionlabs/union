@@ -1,43 +1,43 @@
 <script lang="ts">
-  import Glitch from "$lib/components/Glitch.svelte";
-  import {fade} from "svelte/transition";
-  import Agents from "$lib/components/Agents.svelte";
-  import Bar from "$lib/components/Bar.svelte";
+import Glitch from "$lib/components/Glitch.svelte"
+import { fade } from "svelte/transition"
+import Agents from "$lib/components/Agents.svelte"
+import Bar from "$lib/components/Bar.svelte"
 
-  let isPlaying: boolean = $state(false);
-  let video: HTMLVideoElement | null = $state(null);
-  let overlay: boolean = $state(true);
+let isPlaying: boolean = $state(false)
+let video: HTMLVideoElement | null = $state(null)
+let overlay: boolean = $state(true)
 
-  function handleTouch() {
-    if (!isPlaying) {
-      startVideo();
+function handleTouch() {
+  if (!isPlaying) {
+    startVideo()
+  }
+}
+
+async function startVideo() {
+  if (video) {
+    // Reset video state
+    video.muted = true
+    video.currentTime = 0
+    video.playsInline = true
+    video.load()
+
+    try {
+      await video.play()
+      setTimeout(() => {
+        if (video) {
+          video.muted = false
+          isPlaying = true
+          overlay = false
+        }
+      }, 100)
+    } catch (error) {
+      console.error("Error playing video:", error)
+      isPlaying = false
+      overlay = true
     }
   }
-
-  async function startVideo() {
-    if (video) {
-      // Reset video state
-      video.muted = true;
-      video.currentTime = 0;
-      video.playsInline = true;
-      video.load();
-
-      try {
-        await video.play();
-        setTimeout(() => {
-          if (video) {
-            video.muted = false;
-            isPlaying = true;
-            overlay = false;
-          }
-        }, 100);
-      } catch (error) {
-        console.error('Error playing video:', error);
-        isPlaying = false;
-        overlay = true;
-      }
-    }
-  }
+}
 </script>
 
 <div

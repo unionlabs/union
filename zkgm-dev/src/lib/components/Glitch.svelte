@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { text } = $props()
+let { text } = $props()
 </script>
 
 <div class="hero-container">

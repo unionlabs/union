@@ -1,101 +1,102 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
-  import { browser } from '$app/environment';
+import { onMount, onDestroy } from "svelte"
+import { browser } from "$app/environment"
 
-  let containerWidth;
-  let containerRef;
+let containerWidth
+let containerRef
 
-  let characters = [
-    { id: 'omar', x: 10, direction: 1, speed: 2 },
-    { id: 'lukas', x: 300, direction: -1, speed: 3 },
-    { id: 'ben', x: 600, direction: 1, speed: 1.5 },
-    { id: 'cor', x: 900, direction: -1, speed: 2.5 }
-  ];
+let characters = [
+  { id: "omar", x: 10, direction: 1, speed: 2 },
+  { id: "lukas", x: 300, direction: -1, speed: 3 },
+  { id: "ben", x: 600, direction: 1, speed: 1.5 },
+  { id: "cor", x: 900, direction: -1, speed: 2.5 }
+]
 
-  const CHARACTER_WIDTH = 48;
-  const COLLISION_THRESHOLD = 2;
-  const MIN_SPEED = 1;
-  const MAX_SPEED = 4;
-  let animationFrameId;
+const CHARACTER_WIDTH = 48
+const COLLISION_THRESHOLD = 2
+const MIN_SPEED = 1
+const MAX_SPEED = 4
+let animationFrameId
 
-  function getRandomSpeed() {
-    return MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
+function getRandomSpeed() {
+  return MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED)
+}
+
+function handleResize() {
+  if (containerRef) {
+    containerWidth = containerRef.offsetWidth
   }
+}
 
-  function handleResize() {
-    if (containerRef) {
-      containerWidth = containerRef.offsetWidth;
+function updatePositions() {
+  const newPositions = characters.map(char => {
+    const newX = char.x + char.speed * char.direction
+    return { ...char, newX }
+  })
+
+  characters = newPositions.map((char, index) => {
+    let finalX = char.newX
+    let newDirection = char.direction
+    let newSpeed = char.speed
+
+    if (finalX <= 0) {
+      newDirection = 1
+      finalX = 0
+      newSpeed = getRandomSpeed()
+    } else if (finalX >= containerWidth - CHARACTER_WIDTH) {
+      newDirection = -1
+      finalX = containerWidth - CHARACTER_WIDTH
+      newSpeed = getRandomSpeed()
     }
-  }
 
-  function updatePositions() {
-    const newPositions = characters.map(char => {
-      const newX = char.x + (char.speed * char.direction);
-      return { ...char, newX };
-    });
+    for (let i = 0; i < newPositions.length; i++) {
+      if (i !== index) {
+        const other = newPositions[i]
 
-    characters = newPositions.map((char, index) => {
-      let finalX = char.newX;
-      let newDirection = char.direction;
-      let newSpeed = char.speed;
-
-      if (finalX <= 0) {
-        newDirection = 1;
-        finalX = 0;
-        newSpeed = getRandomSpeed();
-      } else if (finalX >= containerWidth - CHARACTER_WIDTH) {
-        newDirection = -1;
-        finalX = containerWidth - CHARACTER_WIDTH;
-        newSpeed = getRandomSpeed();
-      }
-
-      for (let i = 0; i < newPositions.length; i++) {
-        if (i !== index) {
-          const other = newPositions[i];
-
-          const distance = char.direction > 0
+        const distance =
+          char.direction > 0
             ? other.newX - (char.newX + CHARACTER_WIDTH)
-            : char.newX - (other.newX + CHARACTER_WIDTH);
+            : char.newX - (other.newX + CHARACTER_WIDTH)
 
-          const isApproaching = (char.direction > 0 && other.direction < 0) ||
-            (char.direction < 0 && other.direction > 0);
+        const isApproaching =
+          (char.direction > 0 && other.direction < 0) || (char.direction < 0 && other.direction > 0)
 
-          if (isApproaching && Math.abs(distance) <= COLLISION_THRESHOLD) {
-            finalX = char.x;
-            newDirection *= -1;
-            newSpeed = getRandomSpeed();
-            break;
-          }
+        if (isApproaching && Math.abs(distance) <= COLLISION_THRESHOLD) {
+          finalX = char.x
+          newDirection *= -1
+          newSpeed = getRandomSpeed()
+          break
         }
       }
+    }
 
-      return {
-        ...char,
-        x: finalX,
-        direction: newDirection,
-        speed: newSpeed
-      };
-    });
+    return {
+      ...char,
+      x: finalX,
+      direction: newDirection,
+      speed: newSpeed
+    }
+  })
 
-    animationFrameId = browser ? requestAnimationFrame(updatePositions) : null;
+  animationFrameId = browser ? requestAnimationFrame(updatePositions) : null
+}
+
+onMount(() => {
+  if (browser) {
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    animationFrameId = requestAnimationFrame(updatePositions)
   }
+})
 
-  onMount(() => {
-    if (browser) {
-      handleResize();
-      window.addEventListener('resize', handleResize);
-      animationFrameId = requestAnimationFrame(updatePositions);
+onDestroy(() => {
+  if (browser) {
+    window.removeEventListener("resize", handleResize)
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId)
     }
-  });
-
-  onDestroy(() => {
-    if (browser) {
-      window.removeEventListener('resize', handleResize);
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    }
-  });
+  }
+})
 </script>
 
 <div
