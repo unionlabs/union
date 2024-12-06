@@ -166,7 +166,6 @@ module ibc::ibc {
 
     #[event]
     struct SendPacket has drop, store {
-        sequence: u64,
         source_channel: u32,
         destination_channel: u32,
         data: vector<u8>,
@@ -399,7 +398,8 @@ module ibc::ibc {
         client_registry: SmartTable<String, address>,
         commitments: Table<vector<u8>, vector<u8>>,
         connections: SmartTable<u32, ConnectionEnd>,
-        channels: SmartTable<u32, Channel>
+        channels: SmartTable<u32, Channel>,
+        channel_to_module: SmartTable<u32, address>,
     }
 
     struct SignerRef has key {
@@ -419,7 +419,8 @@ module ibc::ibc {
             commitments: table::new(),
             client_impls: smart_table::new(),
             connections: smart_table::new(),
-            channels: smart_table::new()
+            channels: smart_table::new(),
+            channel_to_module: smart_table::new(),
         };
 
         move_to(vault_signer, store);
@@ -475,9 +476,7 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_init(
-        client_type: String,
         client_id: u32,
-        counterparty_client_type: String,
         counterparty_client_id: u32
     ) acquires IBCStore {
         let connection_id = generate_connection_identifier();
@@ -506,10 +505,8 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_try(
-        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
-        client_type: String,
         client_id: u32,
         proof_init: vector<u8>,
         proof_height: u64
@@ -772,13 +769,15 @@ module ibc::ibc {
         let port = borrow_global<Port<T>>(get_vault_addr());
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
 
-        let port_id = address_to_string(port_id);
-
         ensure_connection_state(connection_id);
 
         let channel_id = generate_channel_identifier();
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        smart_table::upsert(&mut store.channel_to_module, channel_id, port_id);
+
+        let port_id = address_to_string(port_id);
 
         let channel = channel::default();
         channel::set_state(&mut channel, CHAN_STATE_INIT);
@@ -842,8 +841,6 @@ module ibc::ibc {
         let port = borrow_global<Port<T>>(get_vault_addr());
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
 
-        let port_id = address_to_string(port_id);
-
         let client_id = ensure_connection_state(connection_id);
 
         let expected_channel =
@@ -867,6 +864,12 @@ module ibc::ibc {
 
         let channel_id = generate_channel_identifier();
 
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        smart_table::upsert(&mut store.channel_to_module, channel_id, port_id);
+
+        let port_id = address_to_string(port_id);
+
         event::emit(
             ChannelOpenTry {
                 port_id,
@@ -877,8 +880,6 @@ module ibc::ibc {
                 version: counterparty_version
             }
         );
-
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let channel =
             channel::new(
@@ -940,7 +941,6 @@ module ibc::ibc {
     public entry fun channel_open_ack<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
-        counterparty_port_id: vector<u8>,
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
@@ -968,7 +968,7 @@ module ibc::ibc {
                 CHAN_STATE_TRYOPEN,
                 get_counterparty_connection(connection_id),
                 counterparty_channel_id,
-                counterparty_port_id,
+                *channel::counterparty_port_id(&chan),
                 counterparty_version
             );
 
@@ -997,7 +997,7 @@ module ibc::ibc {
                 port_id,
                 channel_id,
                 counterparty_channel_id,
-                counterparty_port_id,
+                counterparty_port_id: *channel::counterparty_port_id(&chan),
                 connection_id
             }
         );
@@ -1020,7 +1020,6 @@ module ibc::ibc {
     public entry fun channel_open_confirm<T: key + store + drop>(
         port_id: address,
         channel_id: u32,
-        counterparty_port_id: vector<u8>,
         proof_ack: vector<u8>,
         proof_height: u64
     ) acquires IBCStore, Port {
@@ -1045,7 +1044,7 @@ module ibc::ibc {
                 CHAN_STATE_OPEN,
                 get_counterparty_connection(connection_id),
                 channel_id,
-                counterparty_port_id,
+                *channel::counterparty_port_id(&chan),
                 *channel::version(&chan)
             );
 
@@ -1073,7 +1072,7 @@ module ibc::ibc {
                 port_id,
                 channel_id,
                 counterparty_channel_id: channel::counterparty_channel_id(&chan),
-                counterparty_port_id,
+                counterparty_port_id: *channel::counterparty_port_id(&chan),
                 connection_id: channel::connection_id(&chan)
             }
         );
@@ -1096,7 +1095,7 @@ module ibc::ibc {
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>
-    ): u64 acquires IBCStore {
+    ) acquires IBCStore {
         authorize_app(ibc_app, source_port);
 
         if (timeout_timestamp != 0 && timeout_height == 0) {
@@ -1105,13 +1104,10 @@ module ibc::ibc {
 
         let channel = ensure_channel_state(source_channel);
 
-        let sequence = generate_packet_sequence(source_channel);
-
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let packet =
             packet::new(
-                sequence,
                 source_channel,
                 channel::counterparty_channel_id(&channel),
                 data,
@@ -1130,7 +1126,6 @@ module ibc::ibc {
 
         event::emit(
             SendPacket {
-                sequence: sequence,
                 source_channel: source_channel,
                 destination_channel: channel::counterparty_channel_id(&channel),
                 data: data,
@@ -1138,7 +1133,6 @@ module ibc::ibc {
                 timeout_timestamp: timeout_timestamp
             }
         );
-        sequence
     }
 
     public fun process_receive<T: key + store + drop>(
@@ -1250,10 +1244,9 @@ module ibc::ibc {
     /// storage to be reverted. This will result in acks won't be able to written.
     public entry fun recv_packet<T: key + store + drop>(
         port_id: address,
-        packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
-        packet_datas: vector<vector<u8>>,
+        packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         proof: vector<u8>,
@@ -1264,14 +1257,13 @@ module ibc::ibc {
 
         let packets: vector<Packet> = vector::empty();
         let i = 0;
-        while (i < vector::length(&packet_sequences)) {
+        while (i < vector::length(&packet_source_channels)) {
             vector::push_back(
                 &mut packets,
                 packet::new(
-                    *vector::borrow(&packet_sequences, i),
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
-                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_data, i),
                     *vector::borrow(&packet_timeout_heights, i),
                     *vector::borrow(&packet_timeout_timestamps, i)
                 )
@@ -1320,7 +1312,6 @@ module ibc::ibc {
 
     public entry fun acknowledge_packet<T: key + store + drop>(
         port_id: address,
-        packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_datas: vector<vector<u8>>,
@@ -1335,11 +1326,10 @@ module ibc::ibc {
 
         let packets: vector<Packet> = vector::empty();
         let i = 0;
-        while (i < vector::length(&packet_sequences)) {
+        while (i < vector::length(&packet_source_channels)) {
             vector::push_back(
                 &mut packets,
                 packet::new(
-                    *vector::borrow(&packet_sequences, i),
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
                     *vector::borrow(&packet_datas, i),
@@ -1419,7 +1409,6 @@ module ibc::ibc {
 
     public entry fun timeout_packet<T: key + store + drop>(
         port_id: address,
-        packet_sequence: u64,
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
@@ -1435,7 +1424,6 @@ module ibc::ibc {
 
         let packet =
             packet::new(
-                packet_sequence,
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
@@ -1491,6 +1479,12 @@ module ibc::ibc {
     }
 
     // ========= UTILS and VIEW functions ========= //
+
+    #[view]
+    public fun get_module(channel_id: u32): address acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        *smart_table::borrow(&store.channel_to_module, channel_id)
+    }
 
     #[view]
     public fun client_state(client_id: u32): vector<u8> {
@@ -1636,22 +1630,6 @@ module ibc::ibc {
             );
         };
         already_received
-    }
-
-    fun generate_packet_sequence(channel_id: u32): u64 acquires IBCStore {
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        let commitment_key = commitment::next_sequence_send_commitment_key(channel_id);
-
-        let data = table::borrow(&store.commitments, commitment_key);
-        let seq = from_bcs::to_u64(*data);
-
-        table::upsert(
-            &mut store.commitments,
-            commitment_key,
-            bcs::to_bytes<u64>(&(seq + 1))
-        );
-        seq
     }
 
     // Function to generate a client identifier

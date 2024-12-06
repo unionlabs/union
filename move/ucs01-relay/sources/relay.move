@@ -89,7 +89,6 @@ module ibc::relay_app {
     // Events
     #[event]
     struct DenomCreated has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         denom: String,
         token: address
@@ -97,7 +96,6 @@ module ibc::relay_app {
 
     #[event]
     struct Received has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -108,7 +106,6 @@ module ibc::relay_app {
 
     #[event]
     struct Sent has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -119,7 +116,6 @@ module ibc::relay_app {
 
     #[event]
     struct Refunded has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -312,7 +308,6 @@ module ibc::relay_app {
 
         // Call the refund_tokens function to refund the sender
         refund_tokens(
-            ibc::packet::sequence(&packet),
             ibc::packet::source_channel(&packet),
             &relay_packet
         );
@@ -590,7 +585,6 @@ module ibc::relay_app {
                     // Emit the DenomCreated event
                     event::emit(
                         DenomCreated {
-                            packet_sequence: ibc::packet::sequence(&ibc_packet),
                             channel_id: source_channel,
                             denom: denom,
                             token: denom_address
@@ -608,7 +602,6 @@ module ibc::relay_app {
             // Emit the Received event
             event::emit(
                 Received {
-                    packet_sequence: ibc::packet::sequence(&ibc_packet),
                     channel_id: destination_channel,
                     sender: packet.sender,
                     receiver: packet.receiver,
@@ -657,7 +650,7 @@ module ibc::relay_app {
     }
 
     fun refund_tokens(
-        sequence: u64, channel_id: u32, packet: &RelayPacket
+        channel_id: u32, packet: &RelayPacket
     ) acquires RelayStore, SignerRef {
         let receiver = packet.receiver;
         let user_to_refund = from_bcs::to_address(packet.sender);
@@ -696,7 +689,6 @@ module ibc::relay_app {
             // Emit a Refunded event
             event::emit(
                 Refunded {
-                    packet_sequence: sequence,
                     channel_id: channel_id,
                     sender: packet.sender,
                     receiver: receiver,
@@ -730,7 +722,6 @@ module ibc::relay_app {
         if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
             let relay_packet = decode_packet(*ibc::packet::data(&packet));
             refund_tokens(
-                ibc::packet::sequence(&packet),
                 ibc::packet::source_channel(&packet),
                 &relay_packet
             );
@@ -784,7 +775,7 @@ module ibc::relay_app {
             extension
         };
 
-        let packet_sequence =
+        let _ =
             ibc::ibc::send_packet(
                 &get_signer(),
                 get_self_address(),
@@ -802,7 +793,6 @@ module ibc::relay_app {
 
             event::emit(
                 Sent {
-                    packet_sequence: packet_sequence,
                     channel_id: source_channel,
                     sender: bcs::to_bytes(&signer::address_of(sender)),
                     receiver: receiver,
