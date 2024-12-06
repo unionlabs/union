@@ -3,18 +3,12 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
-use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
-    ibc::core::client::height::Height,
-    ics24::{IbcPath, Path},
-    traits::Member,
-};
-use voyager_core::IbcVersionId;
+use unionlabs::{bytes::Bytes, hash::H256, ibc::core::client::height::Height, traits::Member};
+use voyager_core::IbcSpecId;
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta},
-    into_value, IbcSpec, PluginMessage, RawClientId,
+    core::{ChainId, ClientInfo, ClientStateMeta, IbcSpec},
+    into_value, PluginMessage, RawClientId,
 };
 
 #[model]
@@ -45,21 +39,6 @@ impl Data {
     }
 }
 
-// #[model]
-// pub struct VersionMessage {
-//     pub ibc_version_id: IbcVersionId,
-//     pub data: Value,
-// }
-
-// impl VersionMessage {
-//     pub fn new<V: IbcSpec>(data: Value) -> Self {
-//         Self {
-//             ibc_version_id: V::ID,
-//             data,
-//         }
-//     }
-// }
-
 #[model]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
@@ -74,15 +53,15 @@ pub struct ChainEvent {
     /// the state root of the chain identified by [`Self::chain_id`].
     pub provable_height: Height,
 
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
     /// The full IBC event, encoded as JSON value. This is really [`IbcSpec::Event`],
-    /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
+    /// and will be interpreted based on the implementation defined by [`Self::ibc_spec_id`].
     pub event: Value,
 }
 
 impl ChainEvent {
     pub fn decode_event<V: IbcSpec>(&self) -> Option<Result<V::Event, serde_json::Error>> {
-        if self.ibc_version_id == V::ID {
+        if self.ibc_spec_id == V::ID {
             Some(serde_json::from_value(self.event.clone()))
         } else {
             None
@@ -92,24 +71,25 @@ impl ChainEvent {
 
 #[model]
 pub struct IbcDatagram {
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
     /// The IBC datagram, encoded as JSON value. This is really [`IbcSpec::Datagram`],
-    /// and will be interpreted based on the implementation defined by [`Self::ibc_version_id`].
+    /// and will be interpreted based on the implementation defined by [`Self::ibc_spec_id`].
     pub datagram: Value,
 }
 
 impl IbcDatagram {
     pub fn decode_datagram<V: IbcSpec>(&self) -> Option<Result<V::Datagram, serde_json::Error>> {
-        if self.ibc_version_id == V::ID {
+        if self.ibc_spec_id == V::ID {
             Some(serde_json::from_value(self.datagram.clone()))
         } else {
             None
         }
     }
 
+    // TODO: Make this accept Into<V::Datagram>?
     pub fn new<V: IbcSpec>(datagram: V::Datagram) -> Self {
         Self {
-            ibc_version_id: V::ID,
+            ibc_spec_id: V::ID,
             datagram: into_value(datagram),
         }
     }
@@ -119,33 +99,6 @@ impl IbcDatagram {
 pub struct UnfinalizedTrustedClientState {
     pub height: Height,
     pub client_state: ClientStateMeta,
-}
-
-#[model]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct IbcState<P: IbcPath> {
-    pub chain_id: ChainId,
-    pub path: P,
-    /// The height that the state was read at.
-    pub height: Height,
-    pub state: P::Value,
-}
-
-#[model]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct IbcProof<P: IbcPath> {
-    pub path: P,
-    pub height: Height,
-    pub proof: Bytes,
-}
-
-#[model]
-pub struct RawIbcProof {
-    pub path: Path,
-    pub height: Height,
-    /// The raw proof, encoded as JSON, which will be encoded by the relevant
-    /// client module.
-    pub proof: Value,
 }
 
 #[model]
@@ -168,7 +121,7 @@ pub struct OrderedClientUpdates {
 #[model]
 pub struct ClientUpdate {
     pub client_id: RawClientId,
-    pub ibc_version_id: IbcVersionId,
+    pub ibc_spec_id: IbcSpecId,
     pub client_message: Bytes,
 }
 

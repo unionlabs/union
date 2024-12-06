@@ -13,10 +13,8 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
-use ibc_solidity::ibc::{
-    self,
-    Ibc::{self, IbcErrors},
-};
+use ibc_solidity::Ibc::{self, IbcErrors};
+use ibc_union_spec::{Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -29,11 +27,10 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
+    core::{ChainId, IbcSpec},
     data::{Data, WithChainId},
-    ibc_union::{IbcMsg, IbcUnion, MsgCreateClient},
     module::{PluginInfo, PluginServer},
-    DefaultCmd, IbcSpec, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, Op};
 
@@ -150,16 +147,16 @@ if ."@type" == "data" then
     # pull all transaction data messages
     ($data."@type" == "identified_ibc_datagram"
         and $data."@value".chain_id == "{chain_id}"
-        and $data."@value".message.ibc_version_id == "{ibc_version_id}")
+        and $data."@value".message.ibc_spec_id == "{ibc_spec_id}")
     or ($data."@type" == "identified_ibc_datagram_batch"
         and $data."@value".chain_id == "{chain_id}"
-        and all($data."@value".message[] | select(.ibc_version_id == "{ibc_version_id}")))
+        and all($data."@value".message[] | select(.ibc_spec_id == "{ibc_spec_id}")))
 else
     false
 end
 "#,
                 chain_id = config.chain_id,
-                ibc_version_id = IbcUnion::ID,
+                ibc_spec_id = IbcUnion::ID,
             ),
         }
     }
@@ -190,7 +187,7 @@ pub enum TxSubmitError {
     #[error("out of gas")]
     OutOfGas,
     #[error("0x revert")]
-    EmptyRevert(Vec<IbcMsg>),
+    EmptyRevert(Vec<Datagram>),
     #[error("gas price is too high: max {max}, price {price}")]
     GasPriceTooHigh { max: u128, price: u128 },
     #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
@@ -333,7 +330,7 @@ impl Module {
     async fn submit_transaction(
         &self,
         wallet: &LocalSigner<SigningKey>,
-        ibc_messages: Vec<IbcMsg>,
+        ibc_messages: Vec<Datagram>,
     ) -> Result<(), TxSubmitError> {
         let signer = ProviderBuilder::new()
             .with_recommended_fillers()
@@ -495,55 +492,51 @@ impl Module {
 
 #[allow(clippy::type_complexity)]
 fn process_msgs<T: Transport + Clone, P: Provider<T>>(
-    ibc_handler: &ibc_solidity::ibc::Ibc::IbcInstance<T, P>,
-    msgs: Vec<IbcMsg>,
+    ibc_handler: &ibc_solidity::Ibc::IbcInstance<T, P>,
+    msgs: Vec<Datagram>,
     relayer: H160,
-) -> RpcResult<Vec<(IbcMsg, RawCallBuilder<T, &P>)>> {
+) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P>)>> {
     dbg!(&msgs);
 
     msgs.clone()
         .into_iter()
         .map(|msg| {
             Ok(match msg.clone() {
-                IbcMsg::CreateClient(MsgCreateClient {
-                    client_type,
-                    client_state_bytes,
-                    consensus_state_bytes,
-                }) => (
+                Datagram::CreateClient(data) => (
                     msg,
                     ibc_handler
-                        .createClient(ibc::MsgCreateClient {
-                            client_type: client_type.to_string(),
-                            client_state_bytes: client_state_bytes.into(),
-                            consensus_state_bytes: consensus_state_bytes.into(),
+                        .createClient(ibc_solidity::MsgCreateClient {
+                            client_type: data.client_type.to_string(),
+                            client_state_bytes: data.client_state_bytes.into(),
+                            consensus_state_bytes: data.consensus_state_bytes.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::UpdateClient(data) => (
+                Datagram::UpdateClient(data) => (
                     msg,
                     ibc_handler
-                        .updateClient(ibc::MsgUpdateClient {
+                        .updateClient(ibc_solidity::MsgUpdateClient {
                             client_id: data.client_id,
                             client_message: data.client_message.into(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ConnectionOpenInit(data) => (
+                Datagram::ConnectionOpenInit(data) => (
                     msg,
                     ibc_handler
-                        .connectionOpenInit(ibc::MsgConnectionOpenInit {
+                        .connectionOpenInit(ibc_solidity::MsgConnectionOpenInit {
                             client_id: data.client_id,
                             counterparty_client_id: data.counterparty_client_id,
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ConnectionOpenTry(data) => (
+                Datagram::ConnectionOpenTry(data) => (
                     msg,
                     ibc_handler
-                        .connectionOpenTry(ibc::MsgConnectionOpenTry {
+                        .connectionOpenTry(ibc_solidity::MsgConnectionOpenTry {
                             counterparty_client_id: data.counterparty_client_id,
                             counterparty_connection_id: data.counterparty_connection_id,
                             client_id: data.client_id,
@@ -553,10 +546,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ConnectionOpenAck(data) => (
+                Datagram::ConnectionOpenAck(data) => (
                     msg,
                     ibc_handler
-                        .connectionOpenAck(ibc::MsgConnectionOpenAck {
+                        .connectionOpenAck(ibc_solidity::MsgConnectionOpenAck {
                             connection_id: data.connection_id,
                             counterparty_connection_id: data.counterparty_connection_id,
                             proof_height: data.proof_height,
@@ -565,10 +558,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ConnectionOpenConfirm(data) => (
+                Datagram::ConnectionOpenConfirm(data) => (
                     msg,
                     ibc_handler
-                        .connectionOpenConfirm(ibc::MsgConnectionOpenConfirm {
+                        .connectionOpenConfirm(ibc_solidity::MsgConnectionOpenConfirm {
                             connection_id: data.connection_id,
                             proof_ack: data.proof_ack.into(),
                             proof_height: data.proof_height,
@@ -576,10 +569,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ChannelOpenInit(data) => (
+                Datagram::ChannelOpenInit(data) => (
                     msg,
                     ibc_handler
-                        .channelOpenInit(ibc::MsgChannelOpenInit {
+                        .channelOpenInit(ibc_solidity::MsgChannelOpenInit {
                             port_id: data.port_id.try_into().unwrap(),
                             relayer: relayer.into(),
                             counterparty_port_id: data.counterparty_port_id.into(),
@@ -588,10 +581,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ChannelOpenTry(data) => (
+                Datagram::ChannelOpenTry(data) => (
                     msg,
                     ibc_handler
-                        .channelOpenTry(ibc::MsgChannelOpenTry {
+                        .channelOpenTry(ibc_solidity::MsgChannelOpenTry {
                             channel: data.channel,
                             counterparty_version: data.counterparty_version,
                             proof_init: data.proof_init.into(),
@@ -600,10 +593,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ChannelOpenAck(data) => (
+                Datagram::ChannelOpenAck(data) => (
                     msg,
                     ibc_handler
-                        .channelOpenAck(ibc::MsgChannelOpenAck {
+                        .channelOpenAck(ibc_solidity::MsgChannelOpenAck {
                             channel_id: data.channel_id,
                             counterparty_version: data.counterparty_version,
                             counterparty_channel_id: data.counterparty_channel_id,
@@ -613,10 +606,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::ChannelOpenConfirm(data) => (
+                Datagram::ChannelOpenConfirm(data) => (
                     msg,
                     ibc_handler
-                        .channelOpenConfirm(ibc::MsgChannelOpenConfirm {
+                        .channelOpenConfirm(ibc_solidity::MsgChannelOpenConfirm {
                             channel_id: data.channel_id,
                             proof_ack: data.proof_ack.into(),
                             proof_height: data.proof_height,
@@ -624,10 +617,10 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                IbcMsg::PacketRecv(data) => (
+                Datagram::PacketRecv(data) => (
                     msg,
                     ibc_handler
-                        .recvPacket(ibc::MsgPacketRecv {
+                        .recvPacket(ibc_solidity::MsgPacketRecv {
                             packets: data.packets,
                             proof: data.proof.into(),
                             proof_height: data.proof_height,
@@ -636,7 +629,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // IbcMsg::AcknowledgePacket(data) => (
+                // Datagram::AcknowledgePacket(data) => (
                 //     msg,
                 //     ibc_handler
                 //         .acknowledgePacket(MsgPacketAcknowledgement {
@@ -648,7 +641,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                 //         })
                 //         .clear_decoder(),
                 // ),
-                // IbcMsg::TimeoutPacket(data) => (
+                // Datagram::TimeoutPacket(data) => (
                 //     msg,
                 //     ibc_handler
                 //         .timeoutPacket(MsgPacketTimeout {
@@ -698,7 +691,7 @@ mod tests {
         hex,
         primitives::{fixed_bytes, LogData},
     };
-    use ibc_solidity::ibc::Ibc::ClientCreated;
+    use ibc_solidity::Ibc::ClientCreated;
 
     use super::*;
 

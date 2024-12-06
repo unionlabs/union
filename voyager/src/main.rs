@@ -15,6 +15,8 @@ use std::{
 
 use anyhow::{anyhow, Context as _};
 use clap::Parser;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
@@ -24,12 +26,10 @@ use tracing_subscriber::EnvFilter;
 use voyager_message::{
     call::FetchBlocks,
     context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
-    core::QueryHeight,
+    core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
-    ibc_classic::IbcClassic,
-    ibc_union::IbcUnion,
     rpc::{IbcState, VoyagerRpcClient},
-    IbcSpec, VoyagerMessage,
+    VoyagerMessage,
 };
 use voyager_vm::{call, filter::FilterResult, Op, Queue};
 
@@ -503,7 +503,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 RpcCmd::ClientState {
                     on,
                     client_id,
-                    ibc_version_id,
+                    ibc_spec_id,
                     height,
                     decode,
                 } => {
@@ -514,9 +514,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     let ibc_state = voyager_client
                         .query_ibc_state(
                             on.clone(),
-                            ibc_version_id.clone(),
+                            ibc_spec_id.clone(),
                             height,
-                            (ibc_handlers.get(&ibc_version_id).unwrap().client_state_path)(
+                            (ibc_handlers.get(&ibc_spec_id).unwrap().client_state_path)(
                                 client_id.clone(),
                             )?,
                         )
@@ -524,14 +524,14 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     if decode {
                         let client_info = voyager_client
-                            .client_info(on, ibc_version_id.clone(), client_id)
+                            .client_info(on, ibc_spec_id.clone(), client_id)
                             .await?;
 
                         let decoded = voyager_client
                             .decode_client_state(
                                 client_info.client_type,
                                 client_info.ibc_interface,
-                                ibc_version_id,
+                                ibc_spec_id,
                                 serde_json::from_value(ibc_state.state).unwrap(),
                             )
                             .await?;
@@ -547,7 +547,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 RpcCmd::ConsensusState {
                     // on,
                     // client_id,
-                    // ibc_version_id,
+                    // ibc_spec_id,
                     // trusted_height,
                     // height,
                     // decode,
@@ -564,7 +564,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     // if decode {
                     //     let client_info = voyager_client
-                    //         .client_info(on, ibc_version_id, client_id)
+                    //         .client_info(on, ibc_spec_id, client_id)
                     //         .await?;
 
                     //     let decoded = voyager_client
@@ -592,7 +592,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 on,
                 tracking,
                 ibc_interface,
-                ibc_version_id,
+                ibc_spec_id,
                 client_type,
                 height,
                 metadata,
@@ -616,7 +616,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     on,
                     client_type,
                     ibc_interface,
-                    ibc_version_id,
+                    ibc_spec_id,
                     metadata,
                 )
                 .await?;
@@ -661,14 +661,14 @@ fn print_json<T: Serialize>(t: &T) {
 // TODO: Extract all logic here to a plugin
 pub mod utils {
     use anyhow::{anyhow, bail};
+    use ibc_classic_spec::IbcClassic;
+    use ibc_union_spec::IbcUnion;
     use serde_json::Value;
     use tracing::trace;
     use voyager_message::{
         context::Context,
-        core::{ChainId, ClientType, IbcInterface, IbcVersionId, QueryHeight},
+        core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         data::{IbcDatagram, WithChainId},
-        ibc_classic::IbcClassic,
-        ibc_union::IbcUnion,
         module::{ClientModuleClient, ConsensusModuleClient},
         VoyagerMessage,
     };
@@ -682,7 +682,7 @@ pub mod utils {
         chain_id: ChainId,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         metadata: Value,
     ) -> anyhow::Result<Op<VoyagerMessage>> {
         let height = ctx
@@ -725,44 +725,39 @@ pub mod utils {
             ));
         }
 
-        let client_module = ctx.rpc_server.modules()?.client_module(
-            &client_type,
-            &ibc_interface,
-            &ibc_version_id,
-        )?;
+        let client_module =
+            ctx.rpc_server
+                .modules()?
+                .client_module(&client_type, &ibc_interface, &ibc_spec_id)?;
 
         Ok(data(WithChainId {
             chain_id,
-            message: match ibc_version_id.as_str() {
-                IbcVersionId::CLASSIC => {
-                    IbcDatagram::new::<IbcClassic>(voyager_message::ibc_classic::IbcMessage::from(
-                        voyager_message::ibc_classic::MsgCreateClientData {
-                            msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
-                                client_state: client_module
-                                    .encode_client_state(self_client_state, metadata)
-                                    .await?,
-                                consensus_state: client_module
-                                    .encode_consensus_state(self_consensus_state)
-                                    .await?,
-                            },
-                            client_type: client_type.clone(),
-                        },
-                    ))
-                }
-                IbcVersionId::UNION => {
-                    IbcDatagram::new::<IbcUnion>(voyager_message::ibc_union::IbcMsg::from(
-                        voyager_message::ibc_union::MsgCreateClient {
-                            client_type,
-                            client_state_bytes: client_module
+            message: match ibc_spec_id.as_str() {
+                IbcSpecId::CLASSIC => IbcDatagram::new::<IbcClassic>(
+                    ibc_classic_spec::Datagram::from(ibc_classic_spec::MsgCreateClientData {
+                        msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
+                            client_state: client_module
                                 .encode_client_state(self_client_state, metadata)
                                 .await?,
-                            consensus_state_bytes: client_module
+                            consensus_state: client_module
                                 .encode_consensus_state(self_consensus_state)
                                 .await?,
                         },
-                    ))
-                }
-                _ => bail!("unknown IBC version id `{ibc_version_id}`"),
+                        client_type: client_type.clone(),
+                    }),
+                ),
+                IbcSpecId::UNION => IbcDatagram::new::<IbcUnion>(ibc_union_spec::Datagram::from(
+                    ibc_union_spec::MsgCreateClient {
+                        client_type,
+                        client_state_bytes: client_module
+                            .encode_client_state(self_client_state, metadata)
+                            .await?,
+                        consensus_state_bytes: client_module
+                            .encode_consensus_state(self_consensus_state)
+                            .await?,
+                    },
+                )),
+                _ => bail!("unknown IBC version id `{ibc_spec_id}`"),
             },
         }))
     }

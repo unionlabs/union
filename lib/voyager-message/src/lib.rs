@@ -1,11 +1,6 @@
 #![feature(trait_alias)]
 
-use std::{
-    env::VarError,
-    fmt::{Debug, Display},
-    future::Future,
-    time::Duration,
-};
+use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 
 use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
@@ -25,7 +20,8 @@ use serde_json::{json, Value};
 use tracing::{debug, debug_span, error, info, instrument, trace, Instrument};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
-    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcVersionId, QueryHeight,
+    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcStorePathKey,
+    QueryHeight,
 };
 use voyager_vm::{QueueError, QueueMessage};
 
@@ -60,9 +56,6 @@ pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
-pub mod ibc_classic;
-pub mod ibc_union;
-
 pub enum VoyagerMessage {}
 
 impl QueueMessage for VoyagerMessage {
@@ -73,36 +66,6 @@ impl QueueMessage for VoyagerMessage {
     type Filter = JaqInterestFilter;
 
     type Context = Context;
-}
-
-pub trait IbcSpec {
-    const ID: IbcVersionId;
-
-    type ClientId: Display + Member;
-
-    /// The type used to index into the IBC store.
-    type StorePath: Member;
-
-    /// The messages submitted on chain.
-    type Datagram: Member;
-
-    /// Events emitted on chain.
-    type Event: Member;
-
-    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
-
-    fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
-    fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
-}
-
-pub trait IbcStorePathKey:
-    Member
-    + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
-    + Into<<Self::Spec as IbcSpec>::StorePath>
-{
-    type Spec: IbcSpec;
-
-    type Value: Member;
 }
 
 /// Simple wrapper around a [`Value`] for raw client ids.

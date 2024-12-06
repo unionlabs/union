@@ -10,7 +10,7 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, instrument, trace};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
-use voyager_core::IbcVersionId;
+use voyager_core::IbcSpecId;
 
 // use valuable::Valuable;
 // use voyager_core::IbcStoreFormat;
@@ -170,11 +170,11 @@ impl Server {
         Ok(latest_timestamp)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %ibc_version_id, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, client_id = %client_id.0))]
     pub async fn client_info(
         &self,
         chain_id: &ChainId,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo> {
         trace!("fetching client info");
@@ -182,7 +182,7 @@ impl Server {
         let client_info = self
             .inner
             .modules()?
-            .state_module(chain_id, ibc_version_id)
+            .state_module(chain_id, ibc_spec_id)
             .map_err(fatal_error)?
             .client_info_raw(client_id.clone())
             .await
@@ -197,11 +197,11 @@ impl Server {
         Ok(client_info)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %ibc_version_id, height = %at, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
     pub async fn client_meta(
         &self,
         chain_id: &ChainId,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
@@ -211,7 +211,7 @@ impl Server {
 
         let modules = self.inner.modules()?;
 
-        let state_module = modules.state_module(chain_id, ibc_version_id)?;
+        let state_module = modules.state_module(chain_id, ibc_spec_id)?;
 
         let client_info = state_module
             .client_info_raw(client_id.clone())
@@ -225,7 +225,7 @@ impl Server {
                     .modules()?
                     .ibc_spec_handlers
                     .handlers
-                    .get(ibc_version_id)
+                    .get(ibc_spec_id)
                     .unwrap()
                     .client_state_path)(client_id.clone())
                 .unwrap(),
@@ -239,7 +239,7 @@ impl Server {
             .client_module(
                 &client_info.client_type,
                 &client_info.ibc_interface,
-                ibc_version_id,
+                ibc_spec_id,
             )
             .map_err(fatal_error)?
             .decode_client_state_meta(client_state.as_str().unwrap().parse().unwrap())
@@ -365,12 +365,12 @@ impl Server {
     }
 
     // TODO: Use valuable here
-    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_version_id, %proof))]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id, %proof))]
     pub async fn encode_proof(
         &self,
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         proof: Value,
     ) -> RpcResult<Bytes> {
         trace!("encoding proof");
@@ -378,7 +378,7 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module(client_type, ibc_interface, ibc_version_id)
+            .client_module(client_type, ibc_interface, ibc_spec_id)
             .map_err(fatal_error)?;
 
         let proof = client_module
@@ -392,12 +392,12 @@ impl Server {
     }
 
     // TODO: Use valuable here
-    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_version_id))]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
     pub async fn decode_client_state_meta(
         &self,
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
         trace!("decoding client state meta");
@@ -405,7 +405,7 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module(client_type, ibc_interface, ibc_version_id)
+            .client_module(client_type, ibc_interface, ibc_spec_id)
             .map_err(fatal_error)?;
 
         let meta = client_module
@@ -422,34 +422,34 @@ impl Server {
         Ok(meta)
     }
 
-    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_version_id))]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
     pub async fn decode_client_state(
         &self,
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module(client_type, ibc_interface, ibc_version_id)
+            .client_module(client_type, ibc_interface, ibc_spec_id)
             .map_err(fatal_error)?
             .decode_client_state(client_state)
             .await
             .map_err(json_rpc_error_to_error_object)
     }
 
-    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_version_id))]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
     pub async fn decode_consensus_state(
         &self,
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
-        ibc_version_id: &IbcVersionId,
+        ibc_spec_id: &IbcSpecId,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module(client_type, ibc_interface, ibc_version_id)
+            .client_module(client_type, ibc_interface, ibc_spec_id)
             .map_err(fatal_error)?
             .decode_consensus_state(consensus_state)
             .await
@@ -483,21 +483,20 @@ impl VoyagerRpcServer for Server {
     async fn client_info(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo> {
-        self.client_info(&chain_id, &ibc_version_id, client_id)
-            .await
+        self.client_info(&chain_id, &ibc_spec_id, client_id).await
     }
 
     async fn client_meta(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
-        self.client_meta(&chain_id, &ibc_version_id, at, client_id)
+        self.client_meta(&chain_id, &ibc_spec_id, at, client_id)
             .await
     }
 
@@ -546,7 +545,7 @@ impl VoyagerRpcServer for Server {
     async fn query_ibc_state(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcState<Value>> {
@@ -557,7 +556,7 @@ impl VoyagerRpcServer for Server {
         let state_module = self
             .inner
             .modules()?
-            .state_module(&chain_id, &ibc_version_id)
+            .state_module(&chain_id, &ibc_spec_id)
             .map_err(fatal_error)?;
 
         let state = state_module
@@ -575,7 +574,7 @@ impl VoyagerRpcServer for Server {
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcProof> {
@@ -586,7 +585,7 @@ impl VoyagerRpcServer for Server {
         let proof_module = self
             .inner
             .modules()?
-            .proof_module(&chain_id, &ibc_version_id)
+            .proof_module(&chain_id, &ibc_spec_id)
             .map_err(fatal_error)?;
 
         let proof = proof_module
@@ -623,10 +622,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         proof: Value,
     ) -> RpcResult<Bytes> {
-        self.encode_proof(&client_type, &ibc_interface, &ibc_version_id, proof)
+        self.encode_proof(&client_type, &ibc_interface, &ibc_spec_id, proof)
             .await
     }
 
@@ -635,10 +634,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        self.decode_client_state_meta(&client_type, &ibc_interface, &ibc_version_id, client_state)
+        self.decode_client_state_meta(&client_type, &ibc_interface, &ibc_spec_id, client_state)
             .await
     }
 
@@ -646,10 +645,10 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_client_state(&client_type, &ibc_interface, &ibc_version_id, client_state)
+        self.decode_client_state(&client_type, &ibc_interface, &ibc_spec_id, client_state)
             .await
     }
 
@@ -657,16 +656,11 @@ impl VoyagerRpcServer for Server {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_consensus_state(
-            &client_type,
-            &ibc_interface,
-            &ibc_version_id,
-            consensus_state,
-        )
-        .await
+        self.decode_consensus_state(&client_type, &ibc_interface, &ibc_spec_id, consensus_state)
+            .await
     }
 }
 

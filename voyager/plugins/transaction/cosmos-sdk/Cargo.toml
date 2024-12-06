@@ -4,29 +4,31 @@ name    = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.1.0"
 
 [dependencies]
-bip32              = { workspace = true }
-chain-utils        = { workspace = true }
-cometbft-rpc       = { workspace = true }
-dashmap            = { workspace = true }
-enumorph           = { workspace = true }
-futures            = { workspace = true }
-hex                = { workspace = true }
-ibc-solidity       = { workspace = true }
-jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
-macros             = { workspace = true }
-prost              = { workspace = true }
-protos             = { workspace = true }
-serde              = { workspace = true, features = ["derive"] }
-serde-utils        = { workspace = true }
-serde_json         = { workspace = true }
-sha2               = { workspace = true }
-thiserror          = { workspace = true }
-tokio              = { workspace = true }
-tonic              = { workspace = true }
-tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
-union-ibc          = { workspace = true, features = ["library"] }
-union-ibc-msg      = { workspace = true }
-unionlabs          = { workspace = true }
-voyager-message    = { workspace = true }
-voyager-vm         = { workspace = true }
+bip32                      = { workspace = true }
+chain-utils                = { workspace = true }
+cometbft-rpc               = { workspace = true }
+dashmap                    = { workspace = true }
+enumorph                   = { workspace = true }
+futures                    = { workspace = true }
+hex                        = { workspace = true }
+ibc-classic-spec.workspace = true
+ibc-solidity               = { workspace = true }
+ibc-union-spec.workspace   = true
+jsonrpsee                  = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                     = { workspace = true }
+prost                      = { workspace = true }
+protos                     = { workspace = true }
+serde                      = { workspace = true, features = ["derive"] }
+serde-utils                = { workspace = true }
+serde_json                 = { workspace = true }
+sha2                       = { workspace = true }
+thiserror                  = { workspace = true }
+tokio                      = { workspace = true }
+tonic                      = { workspace = true }
+tracing                    = { workspace = true }
+tracing-subscriber         = { workspace = true }
+union-ibc                  = { workspace = true, features = ["library"] }
+union-ibc-msg              = { workspace = true }
+unionlabs                  = { workspace = true }
+voyager-message            = { workspace = true }
+voyager-vm                 = { workspace = true }

@@ -6301,12 +6301,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-classic-spec"
+version = "0.1.0"
+dependencies = [
+ "enumorph",
+ "macros",
+ "serde",
+ "subset-of",
+ "thiserror",
+ "tracing",
+ "unionlabs",
+ "voyager-core",
+]
+
+[[package]]
 name = "ibc-solidity"
 version = "0.1.0"
 dependencies = [
  "alloy",
  "schemars",
  "serde",
+]
+
+[[package]]
+name = "ibc-union-spec"
+version = "0.1.0"
+dependencies = [
+ "enumorph",
+ "ibc-solidity",
+ "macros",
+ "serde",
+ "sha3 0.10.8",
+ "unionlabs",
+ "voyager-core",
 ]
 
 [[package]]
@@ -12918,6 +12945,7 @@ dependencies = [
  "ethabi",
  "hex",
  "ibc-solidity",
+ "ibc-union-spec",
  "serde",
  "serde_json",
  "sha2 0.10.8",
@@ -13184,7 +13212,9 @@ dependencies = [
  "enumorph",
  "frame-support-procedural",
  "futures",
+ "ibc-classic-spec",
  "ibc-solidity",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "pg-queue",
@@ -13477,7 +13507,9 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "ibc-classic-spec",
  "ibc-solidity",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
@@ -13504,6 +13536,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "serde",
@@ -13565,6 +13598,8 @@ version = "0.1.0"
 dependencies = [
  "enumorph",
  "futures",
+ "ibc-classic-spec",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "regex",
@@ -13590,7 +13625,9 @@ dependencies = [
  "either",
  "enumorph",
  "futures",
+ "ibc-classic-spec",
  "ibc-solidity",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13618,6 +13655,7 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "ibc-classic-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13645,6 +13683,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13672,6 +13711,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "serde",
@@ -13696,6 +13736,7 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "ibc-classic-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13723,6 +13764,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13752,6 +13794,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "serde",
@@ -13778,7 +13821,9 @@ dependencies = [
  "enumorph",
  "futures",
  "hex",
+ "ibc-classic-spec",
  "ibc-solidity",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
@@ -13810,6 +13855,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ibc-solidity",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",

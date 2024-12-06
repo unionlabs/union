@@ -10,7 +10,9 @@ dashmap                        = { workspace = true }
 either                         = { workspace = true }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }
+ibc-classic-spec.workspace     = true
 ibc-solidity.workspace         = true
+ibc-union-spec.workspace       = true
 itertools                      = "0.13.0"
 jsonrpsee                      = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                         = { workspace = true }

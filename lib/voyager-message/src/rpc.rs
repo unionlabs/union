@@ -8,7 +8,7 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
-use voyager_core::IbcVersionId;
+use voyager_core::IbcSpecId;
 
 use crate::{
     context::LoadedModulesInfo,
@@ -49,7 +49,7 @@ pub trait VoyagerRpc {
     async fn client_info(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo>;
 
@@ -57,7 +57,7 @@ pub trait VoyagerRpc {
     async fn client_meta(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta>;
@@ -66,7 +66,7 @@ pub trait VoyagerRpc {
     async fn query_ibc_state(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcState<Value>>;
@@ -75,7 +75,7 @@ pub trait VoyagerRpc {
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcProof>;
@@ -107,7 +107,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         proof: Value,
     ) -> RpcResult<Bytes>;
 
@@ -116,7 +116,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta>;
 
@@ -125,7 +125,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<Value>;
 
@@ -134,7 +134,7 @@ pub trait VoyagerRpc {
         &self,
         client_type: ClientType,
         ibc_interface: IbcInterface,
-        ibc_version_id: IbcVersionId,
+        ibc_spec_id: IbcSpecId,
         consensus_state: Bytes,
     ) -> RpcResult<Value>;
 }

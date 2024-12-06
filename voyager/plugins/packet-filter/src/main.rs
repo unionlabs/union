@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use ibc_classic_spec::IbcClassic;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -10,10 +11,10 @@ use serde_with::{serde_as, DisplayFromStr};
 use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
+    core::IbcSpec,
     data::Data,
-    ibc_classic::IbcClassic,
     module::{PluginInfo, PluginServer},
-    DefaultCmd, IbcSpec, Plugin, VoyagerMessage,
+    DefaultCmd, Plugin, VoyagerMessage,
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
@@ -221,6 +222,7 @@ impl Module {
 
     /// Construct the filter that will run on every event. If this returns true, then this plugin will receive the event in it's optimization queue and drop it.
     /// To accomplish this, the filter expresses "inverted interest" - since the regex filters filter *in* what we want to keep, this filter must return false for all messages that match the regex filters, the regex filters and true for everything else.
+    // TODO: Support IBC union as well
     pub fn make_filter(&self) -> String {
         // let filter = Term::<&str>::IfThenElse(vec![], Some(Box::new(Term::Call("false", vec![]))));
 
@@ -248,7 +250,7 @@ impl Module {
 if ."@type" == "data" then
     ."@value" as $data |
 
-    if $data."@type" == "ibc_event" and $data."@value".ibc_version_id == {ibc_version_id} then
+    if $data."@type" == "ibc_event" and $data."@value".ibc_spec_id == {ibc_spec_id} then
         $data."@value".chain_id as $chain_id |
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event |
@@ -290,7 +292,7 @@ else
     false
 end
     "#,
-            ibc_version_id = IbcClassic::ID
+            ibc_spec_id = IbcClassic::ID
         )
     }
 }

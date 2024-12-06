@@ -5,6 +5,7 @@ use alloy::{
     transports::BoxTransport,
 };
 use ethereum_light_client_types::StorageProof;
+use ibc_union_spec::{IbcUnion, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -14,12 +15,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
 use unionlabs::{
-    ethereum::ibc_commitment_key, hash::H160, ibc::core::client::height::Height,
-    ics24::ethabi::Path, uint::U256, ErrorReporter,
+    ethereum::ibc_commitment_key, hash::H160, ibc::core::client::height::Height, uint::U256,
+    ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
-    ibc_union::IbcUnion,
     module::{ProofModuleInfo, ProofModuleServer},
     ProofModule,
 };
@@ -79,7 +79,12 @@ impl Module {
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_proof(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: StorePath,
+    ) -> RpcResult<Value> {
         let location = ibc_commitment_key(path.key());
 
         let execution_height = at.height();

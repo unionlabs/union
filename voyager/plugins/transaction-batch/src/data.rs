@@ -1,11 +1,9 @@
 use enumorph::Enumorph;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::ibc::core::client::height::Height;
-use voyager_message::{
-    ibc_classic::{self, IbcClassic},
-    ibc_union::{self, IbcUnion},
-};
 
 use crate::IbcSpecExt;
 
@@ -34,70 +32,72 @@ pub struct BatchableEvent<V: IbcSpecExt> {
 }
 
 // REVIEW: We probably want to add a way to have "a packet timed out" be a variant here as well
-/// A subset of [`FullIbcEvent`], containing only events that cause an action on the counterparty chain.
+/// A subset of [`FullEvent`], containing only events that cause an action on the counterparty chain.
 #[model]
 #[derive(Enumorph)]
-pub enum EventV1 {
-    ConnectionOpenInit(ibc_classic::ConnectionOpenInit),
-    ConnectionOpenTry(ibc_classic::ConnectionOpenTry),
-    ConnectionOpenAck(ibc_classic::ConnectionOpenAck),
+pub enum EventClassic {
+    ConnectionOpenInit(ibc_classic_spec::ConnectionOpenInit),
+    ConnectionOpenTry(ibc_classic_spec::ConnectionOpenTry),
+    ConnectionOpenAck(ibc_classic_spec::ConnectionOpenAck),
 
-    ChannelOpenInit(ibc_classic::ChannelOpenInit),
-    ChannelOpenTry(ibc_classic::ChannelOpenTry),
-    ChannelOpenAck(ibc_classic::ChannelOpenAck),
+    ChannelOpenInit(ibc_classic_spec::ChannelOpenInit),
+    ChannelOpenTry(ibc_classic_spec::ChannelOpenTry),
+    ChannelOpenAck(ibc_classic_spec::ChannelOpenAck),
 
-    SendPacket(ibc_classic::SendPacket),
-    WriteAcknowledgement(ibc_classic::WriteAcknowledgement),
+    SendPacket(ibc_classic_spec::SendPacket),
+    WriteAcknowledgement(ibc_classic_spec::WriteAcknowledgement),
 }
 
-impl TryFrom<ibc_classic::FullIbcEvent> for EventV1 {
+impl TryFrom<ibc_classic_spec::FullEvent> for EventClassic {
     type Error = ();
 
-    fn try_from(value: ibc_classic::FullIbcEvent) -> Result<Self, Self::Error> {
+    fn try_from(value: ibc_classic_spec::FullEvent) -> Result<Self, Self::Error> {
         match value {
-            ibc_classic::FullIbcEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
-            ibc_classic::FullIbcEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
-            ibc_classic::FullIbcEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
-            ibc_classic::FullIbcEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
-            ibc_classic::FullIbcEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
-            ibc_classic::FullIbcEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
-            ibc_classic::FullIbcEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
-            ibc_classic::FullIbcEvent::WriteAcknowledgement(e) => Ok(Self::WriteAcknowledgement(e)),
+            ibc_classic_spec::FullEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
+            ibc_classic_spec::FullEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
+            ibc_classic_spec::FullEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
+            ibc_classic_spec::FullEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
+            ibc_classic_spec::FullEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
+            ibc_classic_spec::FullEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
+            ibc_classic_spec::FullEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
+            ibc_classic_spec::FullEvent::WriteAcknowledgement(e) => {
+                Ok(Self::WriteAcknowledgement(e))
+            }
             _ => Err(()),
         }
     }
 }
 
 // REVIEW: We probably want to add a way to have "a packet timed out" be a variant here as well
-/// A subset of [`FullIbcEvent`], containing only events that cause an action on the counterparty chain.
+/// A subset of [`FullEvent`], containing only events that cause an action on the counterparty chain.
 #[model]
 #[derive(Enumorph)]
 pub enum EventUnion {
-    ConnectionOpenInit(ibc_union::ConnectionOpenInit),
-    ConnectionOpenTry(ibc_union::ConnectionOpenTry),
-    ConnectionOpenAck(ibc_union::ConnectionOpenAck),
+    ConnectionOpenInit(ibc_union_spec::ConnectionOpenInit),
+    ConnectionOpenTry(ibc_union_spec::ConnectionOpenTry),
+    ConnectionOpenAck(ibc_union_spec::ConnectionOpenAck),
 
-    ChannelOpenInit(ibc_union::ChannelOpenInit),
-    ChannelOpenTry(ibc_union::ChannelOpenTry),
-    ChannelOpenAck(ibc_union::ChannelOpenAck),
+    ChannelOpenInit(ibc_union_spec::ChannelOpenInit),
+    ChannelOpenTry(ibc_union_spec::ChannelOpenTry),
+    ChannelOpenAck(ibc_union_spec::ChannelOpenAck),
 
-    SendPacket(ibc_union::SendPacket),
-    WriteAcknowledgement(ibc_union::WriteAcknowledgement),
+    SendPacket(ibc_union_spec::SendPacket),
+    WriteAcknowledgement(ibc_union_spec::WriteAcknowledgement),
 }
 
-impl TryFrom<ibc_union::FullIbcEvent> for EventUnion {
+impl TryFrom<ibc_union_spec::FullEvent> for EventUnion {
     type Error = ();
 
-    fn try_from(value: ibc_union::FullIbcEvent) -> Result<Self, Self::Error> {
+    fn try_from(value: ibc_union_spec::FullEvent) -> Result<Self, Self::Error> {
         match value {
-            ibc_union::FullIbcEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
-            ibc_union::FullIbcEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
-            ibc_union::FullIbcEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
-            ibc_union::FullIbcEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
-            ibc_union::FullIbcEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
-            ibc_union::FullIbcEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
-            ibc_union::FullIbcEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
-            ibc_union::FullIbcEvent::WriteAcknowledgement(e) => Ok(Self::WriteAcknowledgement(e)),
+            ibc_union_spec::FullEvent::ConnectionOpenInit(e) => Ok(Self::ConnectionOpenInit(e)),
+            ibc_union_spec::FullEvent::ConnectionOpenTry(e) => Ok(Self::ConnectionOpenTry(e)),
+            ibc_union_spec::FullEvent::ConnectionOpenAck(e) => Ok(Self::ConnectionOpenAck(e)),
+            ibc_union_spec::FullEvent::ChannelOpenInit(e) => Ok(Self::ChannelOpenInit(e)),
+            ibc_union_spec::FullEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
+            ibc_union_spec::FullEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
+            ibc_union_spec::FullEvent::SendPacket(e) => Ok(Self::SendPacket(e)),
+            ibc_union_spec::FullEvent::WriteAcknowledgement(e) => Ok(Self::WriteAcknowledgement(e)),
             _ => Err(()),
         }
     }

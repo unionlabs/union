@@ -6,7 +6,7 @@
         "path": "./target/debug/voyager-state-module-cosmos-sdk",
         "info": {
           "chain_id": "union-devnet-1",
-          "ibc_version_id": "1.0.0"
+          "ibc_spec_id": "1.0.0"
         },
         "config": {
           "ws_url": "http://localhost:26657",
@@ -18,7 +18,7 @@
         "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-devnet-1",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         },
         "config": {
           "ws_url": "http://localhost:26657",
@@ -31,7 +31,7 @@
         "path": "./target/debug/voyager-state-module-ethereum",
         "info": {
           "chain_id": "32382",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         },
         "config": {
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
@@ -45,7 +45,7 @@
         "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-devnet-1",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         },
         "config": {
           "ws_url": "http://localhost:26657",
@@ -58,7 +58,7 @@
         "path": "./target/debug/voyager-proof-module-ethereum",
         "info": {
           "chain_id": "32382",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         },
         "config": {
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
@@ -103,7 +103,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-solidity",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         }
       },
       {
@@ -113,7 +113,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-move/aptos",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         }
       },
       {
@@ -123,7 +123,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-go-v8/08-wasm",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         }
       },
       {
@@ -133,7 +133,7 @@
           "client_type": "ethereum",
           "consensus_type": "ethereum",
           "ibc_interface": "ibc-cosmwasm",
-          "ibc_version_id": "ibc-union"
+          "ibc_spec_id": "ibc-union"
         },
         "config": {
           "chain_spec": "minimal"

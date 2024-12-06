@@ -1,21 +1,24 @@
 #![warn(clippy::pedantic)]
 
 use core::{fmt, str::FromStr};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use macros::{apply, model};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{
+    bytes::Bytes,
     hash::H256,
     ibc::core::client::height::{Height, HeightFromStrError},
+    traits::Member,
 };
 
 /// Represents the IBC interface of a chain.
 ///
 /// Since multiple chains with different consensus mechanisms can have the same
 /// execution environment, this value is used to describe how the IBC state is
-/// stored on-chain and how the IBC stack is to be interacted with.
+/// stored on-chain and how the IBC stack is to be interacted with. This notably
+/// is NOT the IBC specification - an IBC interface can support multiple [`IbcSpec`]s.
 #[apply(str_newtype)]
 pub struct IbcInterface;
 
@@ -156,33 +159,65 @@ impl ConsensusType {
     // lots more to come - near, linea, polygon - stay tuned
 }
 
-/// The IBC version describes the format for both the store and the datagrams.
+/// An IBC specification describes the format of the store, datagrams, and events.
 ///
 /// Typically, an IBC interface will support exactly one IBC version, however
 /// it is possible to support multiple. For example, the union virtualized IBC
-/// stack on cosmwasm supports both IBC 1.0.0 *and* the union ethabi IBC
+/// stack on cosmwasm will support both IBC classic *and* the union IBC
 /// specification.
 ///
-/// [State lenses] are possible between IBC interfaces that support the same IBC
-/// version.
+/// [State lenses] are possible between clients on IBC interfaces that support the
+/// same IBC spec.
 ///
 /// [State lenses]: https://research.union.build/State-Lenses-9e3d6578ec0e48fca8e502a0d28f485c
-// TODO: maybe rename to IbcSpec or something similar
-#[apply(str_newtype)]
-pub struct IbcVersionId;
+pub trait IbcSpec {
+    const ID: IbcSpecId;
 
-/// Well-known IBC version identifiers, defined as constants for reusability and to allow
+    type ClientId: Display + Member;
+
+    /// The type used to index into the IBC store.
+    type StorePath: Member;
+
+    /// The messages submitted on chain.
+    type Datagram: Member;
+
+    /// Events emitted on chain.
+    type Event: Member;
+
+    fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
+
+    fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
+    fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
+}
+
+/// A subset of [`IbcSpec::StorePath`]. This should be implemented by all variants of the `StorePath` enum for an `IbcSpec` implementation.
+pub trait IbcStorePathKey:
+    Member
+    + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
+    + Into<<Self::Spec as IbcSpec>::StorePath>
+{
+    /// The [`IbcSpec`] that this store path key indexes into.
+    type Spec: IbcSpec;
+
+    /// The value stored under this key.
+    type Value: Member;
+}
+
+/// An identifier for an [`IbcSpec`].
+#[apply(str_newtype)]
+pub struct IbcSpecId;
+
+/// Well-known IBC spec identifiers, defined as constants for reusability and to allow
 /// for pattern matching.
-impl IbcVersionId {
-    /// IBC version 1.0.0, as per the [ICS-003 connection semantics](ics3).
+impl IbcSpecId {
+    /// IBC classic, as per the [ICS-003 connection semantics](ics3).
     ///
     /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
     pub const CLASSIC: &'static str = "ibc-classic";
 
-    // TODO: Potentially rename?
-    /// IBC version <TODO>, as per the [union ethabi IBC specification](union-ethabi).
+    /// IBC union, as per the [union IBC specification](ibc-union).
     ///
-    /// [union-ethabi]: https://docs.union.build/protocol/specifications/ibc/
+    /// [ibc-union]: https://docs.union.build/protocol/specifications/ibc/
     pub const UNION: &'static str = "ibc-union";
 }
 

@@ -9,7 +9,9 @@ use std::{
 use alloy::sol_types::SolValue;
 use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt, TryStreamExt};
-use ibc_solidity::ibc::Packet;
+use ibc_classic_spec::IbcClassic;
+use ibc_solidity::Packet;
+use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -28,27 +30,24 @@ use unionlabs::{
             self, connection_end::ConnectionEnd, msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
-    ics24::ConnectionPath,
     id::{ClientId, ConnectionId},
     traits::Member,
     DELAY_PERIOD,
 };
 use voyager_message::{
     call::WaitForHeight,
-    core::{ChainId, QueryHeight},
+    core::{ChainId, IbcSpec, QueryHeight},
     data::{ChainEvent, Data, IbcDatagram},
-    ibc_classic::{IbcClassic, IbcMessage},
-    ibc_union::{self, IbcUnion},
     module::{PluginInfo, PluginServer},
-    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, RawClientId, VoyagerClient,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeMsg, MakeTransactionBatchesWithUpdate, ModuleCall},
     callback::ModuleCallback,
-    data::{BatchableEvent, EventBatch, EventUnion, EventV1, ModuleData},
+    data::{BatchableEvent, EventBatch, EventClassic, EventUnion, ModuleData},
 };
 
 pub mod call;
@@ -122,7 +121,7 @@ pub trait IbcSpecExt: IbcSpec {
 }
 
 impl IbcSpecExt for IbcClassic {
-    type BatchableEvent = crate::data::EventV1;
+    type BatchableEvent = crate::data::EventClassic;
 
     fn proof_height(msg: &Self::Datagram) -> Height {
         msg.proof_height()
@@ -131,14 +130,14 @@ impl IbcSpecExt for IbcClassic {
 
     fn event_name(msg: &Self::BatchableEvent) -> &'static str {
         match msg {
-            EventV1::ConnectionOpenInit(_) => "connection_open_init",
-            EventV1::ConnectionOpenTry(_) => "connection_open_try",
-            EventV1::ConnectionOpenAck(_) => "connection_open_ack",
-            EventV1::ChannelOpenInit(_) => "channel_open_init",
-            EventV1::ChannelOpenTry(_) => "channel_open_try",
-            EventV1::ChannelOpenAck(_) => "channel_open_ack",
-            EventV1::SendPacket(_) => "send_packet",
-            EventV1::WriteAcknowledgement(_) => "write_acknowledgement",
+            EventClassic::ConnectionOpenInit(_) => "connection_open_init",
+            EventClassic::ConnectionOpenTry(_) => "connection_open_try",
+            EventClassic::ConnectionOpenAck(_) => "connection_open_ack",
+            EventClassic::ChannelOpenInit(_) => "channel_open_init",
+            EventClassic::ChannelOpenTry(_) => "channel_open_try",
+            EventClassic::ChannelOpenAck(_) => "channel_open_ack",
+            EventClassic::SendPacket(_) => "send_packet",
+            EventClassic::WriteAcknowledgement(_) => "write_acknowledgement",
         }
     }
 }
@@ -221,7 +220,7 @@ if ."@type" == "data" then
     # the counterparty of the event origin is the destination
 
     # ibc v1
-    if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_version_id == "{ibc_v1_id}" then
+    if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_spec_id == "{ibc_v1_id}" then
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event_data |
 
@@ -253,7 +252,7 @@ if ."@type" == "data" then
             and $data."@value".plugin == "{plugin_name}"
             and $data."@value".message."@type" == "event_batch")
     # ibc union
-    elif $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_version_id == "{ibc_union_id}" then
+    elif $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_spec_id == "{ibc_union_id}" then
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event_data |
 
@@ -429,7 +428,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -447,7 +446,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -462,15 +461,15 @@ async fn do_make_msg_union(
                 .await?;
             debug!(%encoded_connection_state_proof);
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgConnectionOpenTry {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenTry {
                     client_id: connection_open_init_event.counterparty_client_id,
                     counterparty_client_id: connection_open_init_event.client_id,
                     counterparty_connection_id: connection_open_init_event.connection_id,
                     proof_height: origin_chain_proof_height.height(),
                     proof_init: encoded_connection_state_proof,
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::ConnectionOpenTry(connection_open_try_event) => {
@@ -511,7 +510,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -529,7 +528,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -544,14 +543,14 @@ async fn do_make_msg_union(
                 .await?;
             debug!(%encoded_connection_state_proof);
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgConnectionOpenAck {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenAck {
                     connection_id: connection_open_try_event.counterparty_connection_id,
                     counterparty_connection_id: connection_open_try_event.connection_id,
                     proof_height: origin_chain_proof_height.height(),
                     proof_try: encoded_connection_state_proof,
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::ConnectionOpenAck(connection_open_ack_event) => {
@@ -592,7 +591,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -610,7 +609,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ConnectionPath { connection_id },
+                    ibc_union_spec::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -625,106 +624,21 @@ async fn do_make_msg_union(
                 .await?;
             debug!(%encoded_connection_state_proof);
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgConnectionOpenConfirm {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenConfirm {
                     connection_id: connection_open_ack_event.counterparty_connection_id,
                     proof_height: origin_chain_proof_height.height(),
                     proof_ack: encoded_connection_state_proof,
-                },
-            ))))
+                }),
+            )))
         }
 
-        // EventUnion::MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck {
-        //     origin_chain_id,
-        //     origin_chain_proof_height,
-        //     target_chain_id,
-        //     connection_open_try_event,
-        // }) => {
-        //     let ConnectionHandshakeStateAndProofs {
-        //         connection_state,
-        //         encoded_connection_state_proof,
-        //         consensus_height,
-        //     } = mk_connection_handshake_state_and_proofs(
-        //         &voyager_client,
-        //         origin_chain_id,
-        //         target_chain_id,
-        //         connection_open_try_event.client_id,
-        //         connection_open_try_event.counterparty_client_id,
-        //         connection_open_try_event.connection_id.clone(),
-        //         origin_chain_proof_height,
-        //     )
-        //     .await?;
-
-        //     Ok(voyager_vm::data(IbcMessage::from(MsgConnectionOpenAck {
-        //         connection_id: connection_open_try_event.counterparty_connection_id,
-        //         counterparty_connection_id: connection_open_try_event.connection_id,
-        //         client_state: encoded_client_state,
-        //         version: connection_state.versions[0].clone(),
-        //         proof_height: origin_chain_proof_height,
-        //         proof_try: encoded_connection_state_proof,
-        //         proof_client: encoded_client_state_proof,
-        //         proof_consensus: encoded_consensus_state_proof,
-        //         consensus_height,
-        //     })))
-        // }
-
-        // EventUnion::MakeMsgConnectionOpenConfirm(MakeMsgConnectionOpenConfirm {
-        //     origin_chain_id,
-        //     origin_chain_proof_height,
-        //     target_chain_id,
-        //     connection_open_ack_event,
-        // }) => {
-        //     // info of the client on the target chain that will verify the storage
-        //     // proofs
-        //     let target_client_info = &voyager_client
-        //         .rpc_server
-        //         // counterparty_client_id from open_try is the client on the target chain
-        //         .client_info(
-        //             &target_chain_id,
-        //             connection_open_ack_event.counterparty_client_id.clone(),
-        //         )
-        //         .await
-        //         ?;
-
-        //     // proof of connection_state, encoded for the client on the target chain
-        //     // this is encoded via the client module for the client on the origin chain
-        //     // (the chain the event was emitted on)
-        //     let connection_proof = &voyager_client
-        //         .rpc_server
-        //         .encode_proof(
-        //             &target_client_info.client_type,
-        //             &target_client_info.ibc_interface,
-        //             &voyager_client
-        //                 .rpc_server
-        //                 .query_ibc_proof(
-        //                     &origin_chain_id,
-        //                     origin_chain_proof_height,
-        //                     ConnectionPath {
-        //                         connection_id: connection_open_ack_event.connection_id.clone(),
-        //                     }
-        //                     .into(),
-        //                 )
-        //                 .await
-        //                 ?
-        //                 .proof,
-        //         )
-        //         .await
-        //         ?;
-
-        //     Ok(voyager_vm::data(IbcMessage::from(
-        //         MsgConnectionOpenConfirm {
-        //             connection_id: connection_open_ack_event.counterparty_connection_id,
-        //             proof_height: origin_chain_proof_height,
-        //             proof_ack: connection_proof,
-        //         },
-        //     )))
-        // }
         EventUnion::ChannelOpenInit(event) => {
             let proof_init = voyager_client
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ChannelPath {
+                    ibc_union_spec::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -742,11 +656,11 @@ async fn do_make_msg_union(
                 )
                 .await?;
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgChannelOpenTry {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenTry {
                     port_id: event.counterparty_port_id,
-                    channel: ibc_solidity::ibc::Channel {
-                        state: ibc_solidity::ibc::ChannelState::TryOpen,
+                    channel: ibc_solidity::Channel {
+                        state: ibc_solidity::ChannelState::TryOpen,
                         counterparty_channel_id: event.channel_id,
                         counterparty_port_id: event.port_id.into(),
                         connection_id: event.connection.counterparty_connection_id,
@@ -755,8 +669,8 @@ async fn do_make_msg_union(
                     counterparty_version: event.version,
                     proof_init: encoded_proof_init,
                     proof_height: origin_chain_proof_height.height(),
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::ChannelOpenTry(event) => {
@@ -764,7 +678,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ChannelPath {
+                    ibc_union_spec::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -782,15 +696,15 @@ async fn do_make_msg_union(
                 )
                 .await?;
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgChannelOpenAck {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenAck {
                     channel_id: event.counterparty_channel_id,
                     counterparty_channel_id: event.channel_id,
                     counterparty_version: event.version,
                     proof_try: encoded_proof_try,
                     proof_height: origin_chain_proof_height.height(),
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::ChannelOpenAck(event) => {
@@ -798,7 +712,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::ChannelPath {
+                    ibc_union_spec::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -816,13 +730,13 @@ async fn do_make_msg_union(
                 )
                 .await?;
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgChannelOpenConfirm {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenConfirm {
                     channel_id: event.counterparty_channel_id,
                     proof_ack: encoded_proof_ack,
                     proof_height: origin_chain_proof_height.height(),
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::SendPacket(event) => {
@@ -837,7 +751,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::BatchPacketsPath {
+                    ibc_union_spec::BatchPacketsPath {
                         channel_id: event.packet.source_channel.channel_id,
                         batch_hash: keccak256(packet.abi_encode()),
                     },
@@ -859,14 +773,14 @@ async fn do_make_msg_union(
                 )
                 .await?;
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgPacketRecv {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgPacketRecv {
                     packets: vec![packet],
                     relayer_msgs: vec![vec![].into()],
                     proof: encoded_proof_commitment,
                     proof_height: origin_chain_proof_height.height(),
-                },
-            ))))
+                }),
+            )))
         }
 
         EventUnion::WriteAcknowledgement(event) => {
@@ -881,7 +795,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    unionlabs::ics24::ethabi::BatchReceiptsPath {
+                    ibc_union_spec::BatchReceiptsPath {
                         channel_id: event.packet.destination_channel.channel_id,
                         batch_hash: keccak256(packet.abi_encode()),
                     },
@@ -903,14 +817,14 @@ async fn do_make_msg_union(
                 )
                 .await?;
 
-            Ok(data(IbcDatagram::new::<IbcUnion>(ibc_union::IbcMsg::from(
-                ibc_union::MsgPacketAcknowledgement {
+            Ok(data(IbcDatagram::new::<IbcUnion>(
+                ibc_union_spec::Datagram::from(ibc_union_spec::MsgPacketAcknowledgement {
                     packets: vec![packet],
                     acknowledgements: vec![event.acknowledgement],
                     proof: encoded_proof_commitment,
                     proof_height: origin_chain_proof_height.height(),
-                },
-            ))))
+                }),
+            )))
         }
     }
 }
@@ -925,7 +839,7 @@ async fn do_make_msg_v1(
     }: MakeMsg<IbcClassic>,
 ) -> RpcResult<Op<VoyagerMessage>> {
     match event {
-        EventV1::ConnectionOpenInit(connection_open_init_event) => {
+        EventClassic::ConnectionOpenInit(connection_open_init_event) => {
             let ConnectionHandshakeStateAndProof {
                 connection_state,
                 encoded_connection_state_proof,
@@ -940,8 +854,8 @@ async fn do_make_msg_v1(
             )
             .await?;
 
-            Ok(data(IbcDatagram::new::<IbcClassic>(IbcMessage::from(
-                MsgConnectionOpenTry {
+            Ok(data(IbcDatagram::new::<IbcClassic>(
+                ibc_classic_spec::Datagram::from(MsgConnectionOpenTry {
                     client_id: connection_open_init_event.counterparty_client_id,
                     counterparty: connection::counterparty::Counterparty {
                         client_id: connection_open_init_event.client_id,
@@ -956,8 +870,8 @@ async fn do_make_msg_v1(
                     counterparty_versions: connection_state.versions,
                     proof_height: origin_chain_proof_height,
                     proof_init: encoded_connection_state_proof,
-                },
-            ))))
+                }),
+            )))
         }
 
         // MakeMsgV1::MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck {
@@ -1228,15 +1142,15 @@ impl Module {
 
                 match ChainEvent::try_from(msg) {
                     Ok(chain_event) => {
-                        // the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
-                        // this is the client that will need to be updated before this ibc message can be sent
-
                         let first_seen_at: u64 = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_millis()
                             .try_into()
                             .expect("how many milliseconds can there be man");
+
+                        // client_id is the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
+                        // this is the client that will need to be updated before this ibc message can be sent
 
                         if let Some(full_ibc_event) = chain_event.decode_event::<IbcClassic>() {
                             let full_ibc_event = full_ibc_event.unwrap();
@@ -1404,7 +1318,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .query_ibc_state(
             origin_chain_id.clone(),
             origin_chain_proof_height.into(),
-            ConnectionPath {
+            ibc_classic_spec::ConnectionPath {
                 connection_id: connection_id.clone(),
             },
         )
@@ -1424,7 +1338,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .query_ibc_proof(
             origin_chain_id.clone(),
             QueryHeight::Specific(origin_chain_proof_height),
-            ConnectionPath {
+            ibc_classic_spec::ConnectionPath {
                 connection_id: connection_id.clone(),
             },
         )

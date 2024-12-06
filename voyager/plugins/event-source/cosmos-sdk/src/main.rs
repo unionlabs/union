@@ -9,6 +9,8 @@ use std::{
 };
 
 use dashmap::DashMap;
+use ibc_classic_spec::IbcClassic;
+use ibc_union_spec::IbcUnion;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -23,20 +25,17 @@ use unionlabs::{
         channel::{self},
         client::height::Height,
     },
-    ics24::{ChannelEndPath, ConnectionPath},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     option_unwrap, parse_wasm_client_type, ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType, QueryHeight},
+    core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     data::{ChainEvent, Data},
-    ibc_classic::{self, IbcClassic},
-    ibc_union::{self, IbcUnion},
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::missing_state,
-    ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
@@ -346,15 +345,15 @@ impl Module {
     ) -> RpcResult<(
         ChainId,
         ClientInfo,
-        ibc_classic::ChannelMetadata,
-        ibc_classic::ChannelMetadata,
+        ibc_classic_spec::ChannelMetadata,
+        ibc_classic_spec::ChannelMetadata,
         channel::order::Order,
     )> {
         let self_connection = voyager_rpc_client
             .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                ConnectionPath {
+                ibc_classic_spec::ConnectionPath {
                     connection_id: self_connection_id.clone(),
                 },
             )
@@ -378,7 +377,7 @@ impl Module {
             .query_ibc_state(
                 self.chain_id.clone(),
                 event_height.into(),
-                ChannelEndPath {
+                ibc_classic_spec::ChannelEndPath {
                     port_id: self_port_id.clone(),
                     channel_id: self_channel_id.clone(),
                 },
@@ -391,7 +390,7 @@ impl Module {
             .query_ibc_state(
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
-                ChannelEndPath {
+                ibc_classic_spec::ChannelEndPath {
                     port_id: other_port_id.clone(),
                     channel_id: other_channel_id.clone(),
                 },
@@ -400,20 +399,20 @@ impl Module {
             .state
             .ok_or_else(missing_state("channel must exist", None))?;
 
-        let source_channel = ibc_classic::ChannelMetadata {
+        let source_channel = ibc_classic_spec::ChannelMetadata {
             port_id: self_port_id.clone(),
             channel_id: self_channel_id.clone(),
             version: this_channel.version,
-            connection: ibc_classic::ConnectionMetadata {
+            connection: ibc_classic_spec::ConnectionMetadata {
                 client_id: self_connection.client_id,
                 connection_id: self_connection_id.clone(),
             },
         };
-        let destination_channel = ibc_classic::ChannelMetadata {
+        let destination_channel = ibc_classic_spec::ChannelMetadata {
             port_id: other_port_id.clone(),
             channel_id: other_channel_id.clone(),
             version: counterparty_channel.version,
-            connection: ibc_classic::ConnectionMetadata {
+            connection: ibc_classic_spec::ConnectionMetadata {
                 client_id: self_connection.counterparty.client_id,
                 connection_id: self_connection
                     .counterparty
@@ -614,22 +613,22 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
-                                IbcEvent::CreateClient(event) => ibc_classic::CreateClient {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(match event {
+                                IbcEvent::CreateClient(event) => ibc_classic_spec::CreateClient {
                                     client_id: event.client_id,
                                     client_type: ClientType::new(event.client_type),
                                     consensus_height: event.consensus_height,
                                 }
                                 .into(),
-                                IbcEvent::UpdateClient(event) => ibc_classic::UpdateClient {
+                                IbcEvent::UpdateClient(event) => ibc_classic_spec::UpdateClient {
                                     client_id: event.client_id,
                                     client_type: ClientType::new(event.client_type),
                                     consensus_heights: event.consensus_heights,
                                 }
                                 .into(),
                                 IbcEvent::ConnectionOpenInit(event) => {
-                                    ibc_classic::ConnectionOpenInit {
+                                    ibc_classic_spec::ConnectionOpenInit {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -637,7 +636,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 }
                                 .into(),
                                 IbcEvent::ConnectionOpenTry(event) => {
-                                    ibc_classic::ConnectionOpenTry {
+                                    ibc_classic_spec::ConnectionOpenTry {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -647,7 +646,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 }
                                 .into(),
                                 IbcEvent::ConnectionOpenAck(event) => {
-                                    ibc_classic::ConnectionOpenAck {
+                                    ibc_classic_spec::ConnectionOpenAck {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -657,7 +656,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 }
                                 .into(),
                                 IbcEvent::ConnectionOpenConfirm(event) => {
-                                    ibc_classic::ConnectionOpenConfirm {
+                                    ibc_classic_spec::ConnectionOpenConfirm {
                                         client_id: event.client_id,
                                         connection_id: event.connection_id,
                                         counterparty_client_id: event.counterparty_client_id,
@@ -681,7 +680,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ConnectionPath {
+                                ibc_classic_spec::ConnectionPath {
                                     connection_id: connection_id.clone(),
                                 },
                             )
@@ -710,10 +709,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(match event {
                                 IbcEvent::ChannelOpenInit(event) => {
-                                    ibc_classic::ChannelOpenInit {
+                                    ibc_classic_spec::ChannelOpenInit {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -722,15 +721,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     }
                                 }
                                 .into(),
-                                IbcEvent::ChannelOpenTry(event) => ibc_classic::ChannelOpenTry {
-                                    port_id: event.port_id,
-                                    channel_id: event.channel_id,
-                                    counterparty_port_id: event.counterparty_port_id,
-                                    counterparty_channel_id: event.counterparty_channel_id,
-                                    connection,
-                                    version: event.version,
+                                IbcEvent::ChannelOpenTry(event) => {
+                                    ibc_classic_spec::ChannelOpenTry {
+                                        port_id: event.port_id,
+                                        channel_id: event.channel_id,
+                                        counterparty_port_id: event.counterparty_port_id,
+                                        counterparty_channel_id: event.counterparty_channel_id,
+                                        connection,
+                                        version: event.version,
+                                    }
+                                    .into()
                                 }
-                                .into(),
                                 _ => unreachable!("who needs flow typing"),
                             }),
                         }))
@@ -752,7 +753,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ConnectionPath {
+                                ibc_classic_spec::ConnectionPath {
                                     connection_id: connection_id.clone(),
                                 },
                             )
@@ -779,7 +780,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 height.into(),
-                                ChannelEndPath {
+                                ibc_classic_spec::ChannelEndPath {
                                     port_id: port_id.to_owned(),
                                     channel_id: channel_id.to_owned(),
                                 },
@@ -794,10 +795,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(match event {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(match event {
                                 IbcEvent::ChannelOpenAck(event) => {
-                                    ibc_classic::ChannelOpenAck {
+                                    ibc_classic_spec::ChannelOpenAck {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -808,7 +809,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 }
                                 .into(),
                                 IbcEvent::ChannelOpenConfirm(event) => {
-                                    ibc_classic::ChannelOpenConfirm {
+                                    ibc_classic_spec::ChannelOpenConfirm {
                                         port_id: event.port_id,
                                         channel_id: event.channel_id,
                                         counterparty_port_id: event.counterparty_port_id,
@@ -848,11 +849,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(
-                                ibc_classic::SendPacket {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(
+                                ibc_classic_spec::SendPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: ibc_classic::PacketMetadata {
+                                    packet: ibc_classic_spec::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -890,10 +891,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(
-                                ibc_classic::TimeoutPacket {
-                                    packet: ibc_classic::PacketMetadata {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(
+                                ibc_classic_spec::TimeoutPacket {
+                                    packet: ibc_classic_spec::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -931,10 +932,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(
-                                ibc_classic::AcknowledgePacket {
-                                    packet: ibc_classic::PacketMetadata {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(
+                                ibc_classic_spec::AcknowledgePacket {
+                                    packet: ibc_classic_spec::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -973,12 +974,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(
-                                ibc_classic::WriteAcknowledgement {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(
+                                ibc_classic_spec::WriteAcknowledgement {
                                     packet_data: event.packet_data_hex,
                                     packet_ack: event.packet_ack_hex,
-                                    packet: ibc_classic::PacketMetadata {
+                                    packet: ibc_classic_spec::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -1016,11 +1017,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcClassic::ID,
-                            event: into_value::<ibc_classic::FullIbcEvent>(
-                                ibc_classic::RecvPacket {
+                            ibc_spec_id: IbcClassic::ID,
+                            event: into_value::<ibc_classic_spec::FullEvent>(
+                                ibc_classic_spec::RecvPacket {
                                     packet_data: event.packet_data_hex,
-                                    packet: ibc_classic::PacketMetadata {
+                                    packet: ibc_classic_spec::PacketMetadata {
                                         sequence: event.packet_sequence,
                                         source_channel,
                                         destination_channel,
@@ -1054,9 +1055,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ClientCreated {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::CreateClient {
                                     client_id: create_client.client_id,
                                     client_type: ClientType::new(create_client.client_type),
                                 }
@@ -1085,9 +1086,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ClientUpdated {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::UpdateClient {
                                     client_id: update_client.client_id,
                                     client_type: client_info.client_type,
                                     height: update_client.height,
@@ -1120,9 +1121,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ConnectionOpenInit {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ConnectionOpenInit {
                                     client_id: connection_open_init.client_id,
                                     connection_id: connection_open_init.connection_id,
                                     counterparty_client_id: connection_open_init
@@ -1156,9 +1157,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ConnectionOpenTry {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ConnectionOpenTry {
                                     connection_id: connection_open_try.connection_id,
                                     counterparty_connection_id: connection_open_try
                                         .counterparty_connection_id,
@@ -1194,9 +1195,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ConnectionOpenAck {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ConnectionOpenAck {
                                     connection_id: connection_open_ack.connection_id,
                                     counterparty_connection_id: connection_open_ack
                                         .counterparty_connection_id,
@@ -1232,9 +1233,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ConnectionOpenConfirm {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ConnectionOpenConfirm {
                                     connection_id: connection_open_confirm.connection_id,
                                     counterparty_connection_id: connection_open_confirm
                                         .counterparty_connection_id,
@@ -1253,7 +1254,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                unionlabs::ics24::ethabi::ConnectionPath {
+                                ibc_union_spec::ConnectionPath {
                                     connection_id: channel_open_try.connection_id,
                                 },
                             )
@@ -1279,9 +1280,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ChannelOpenTry {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ChannelOpenTry {
                                     port_id: channel_open_try.port_id.into_bytes().into(),
                                     channel_id: channel_open_try.channel_id,
                                     counterparty_port_id: channel_open_try
@@ -1303,7 +1304,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                unionlabs::ics24::ethabi::ChannelPath {
+                                ibc_union_spec::ChannelPath {
                                     channel_id: channel_open_confirm.channel_id,
                                 },
                             )
@@ -1315,7 +1316,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                unionlabs::ics24::ethabi::ConnectionPath {
+                                ibc_union_spec::ConnectionPath {
                                     connection_id: channel_open_confirm.connection_id,
                                 },
                             )
@@ -1341,9 +1342,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::ChannelOpenConfirm {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::ChannelOpenConfirm {
                                     port_id: channel_open_confirm.port_id.into_bytes().into(),
                                     channel_id: channel_open_confirm.channel_id,
                                     counterparty_port_id: channel_open_confirm
@@ -1367,7 +1368,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                unionlabs::ics24::ethabi::ChannelPath {
+                                ibc_union_spec::ChannelPath {
                                     channel_id: packet.source_channel,
                                 },
                             )
@@ -1379,7 +1380,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                unionlabs::ics24::ethabi::ConnectionPath {
+                                ibc_union_spec::ConnectionPath {
                                     connection_id: source_channel.connection_id,
                                 },
                             )
@@ -1408,23 +1409,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             counterparty_chain_id: client_meta.chain_id,
                             tx_hash,
                             provable_height,
-                            ibc_version_id: IbcUnion::ID,
-                            event: into_value::<ibc_union::FullIbcEvent>(
-                                ibc_union::SendPacket {
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(
+                                ibc_union_spec::SendPacket {
                                     packet_data: packet.data.into(),
-                                    packet: ibc_union::PacketMetadata {
-                                        source_channel: ibc_union::ChannelMetadata {
+                                    packet: ibc_union_spec::PacketMetadata {
+                                        source_channel: ibc_union_spec::ChannelMetadata {
                                             channel_id: packet.source_channel,
                                             version: source_channel.version.clone(),
-                                            connection: ibc_union::ConnectionMetadata {
+                                            connection: ibc_union_spec::ConnectionMetadata {
                                                 client_id: source_connection.client_id,
                                                 connection_id: source_channel.connection_id,
                                             },
                                         },
-                                        destination_channel: ibc_union::ChannelMetadata {
+                                        destination_channel: ibc_union_spec::ChannelMetadata {
                                             channel_id: packet.destination_channel,
                                             version: source_channel.version,
-                                            connection: ibc_union::ConnectionMetadata {
+                                            connection: ibc_union_spec::ConnectionMetadata {
                                                 client_id: source_connection.counterparty_client_id,
                                                 connection_id: source_connection
                                                     .counterparty_connection_id,

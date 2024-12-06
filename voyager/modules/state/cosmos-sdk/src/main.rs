@@ -9,6 +9,11 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
+use ibc_classic_spec::{
+    AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
+    ConnectionPath, IbcClassic, NextClientSequencePath, NextConnectionSequencePath,
+    NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath, StorePath,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -25,17 +30,11 @@ use unionlabs::{
         channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
-    ics24::{
-        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
-        NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, Path, ReceiptPath,
-    },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     parse_wasm_client_type, ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
-    ibc_classic::IbcClassic,
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
@@ -559,53 +558,58 @@ impl StateModuleServer<IbcClassic> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_state(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: StorePath,
+    ) -> RpcResult<Value> {
         match path {
-            Path::ClientState(path) => self
+            StorePath::ClientState(path) => self
                 .query_client_state(at, path.client_id)
                 .await
                 .map(into_value),
-            Path::ClientConsensusState(path) => self
+            StorePath::ClientConsensusState(path) => self
                 .query_client_consensus_state(at, path.client_id, path.height)
                 .await
                 .map(into_value),
-            Path::Connection(path) => self
+            StorePath::Connection(path) => self
                 .query_connection(at, path.connection_id)
                 .await
                 .map(into_value),
-            Path::ChannelEnd(path) => self
+            StorePath::ChannelEnd(path) => self
                 .query_channel(at, path.port_id, path.channel_id)
                 .await
                 .map(into_value),
-            Path::Commitment(path) => self
+            StorePath::Commitment(path) => self
                 .query_commitment(at, path.port_id, path.channel_id, path.sequence)
                 .await
                 .map(into_value),
-            Path::Acknowledgement(path) => self
+            StorePath::Acknowledgement(path) => self
                 .query_acknowledgement(at, path.port_id, path.channel_id, path.sequence)
                 .await
                 .map(into_value),
-            Path::Receipt(path) => self
+            StorePath::Receipt(path) => self
                 .query_receipt(at, path.port_id, path.channel_id, path.sequence)
                 .await
                 .map(into_value),
-            Path::NextSequenceSend(path) => self
+            StorePath::NextSequenceSend(path) => self
                 .query_next_sequence_send(at, path.port_id, path.channel_id)
                 .await
                 .map(into_value),
-            Path::NextSequenceRecv(path) => self
+            StorePath::NextSequenceRecv(path) => self
                 .query_next_sequence_recv(at, path.port_id, path.channel_id)
                 .await
                 .map(into_value),
-            Path::NextSequenceAck(path) => self
+            StorePath::NextSequenceAck(path) => self
                 .query_next_sequence_ack(at, path.port_id, path.channel_id)
                 .await
                 .map(into_value),
-            Path::NextConnectionSequence(_path) => self
+            StorePath::NextConnectionSequence(_path) => self
                 .query_next_connection_sequence(at)
                 .await
                 .map(into_value),
-            Path::NextClientSequence(_path) => {
+            StorePath::NextClientSequence(_path) => {
                 self.query_next_client_sequence(at).await.map(into_value)
             }
         }

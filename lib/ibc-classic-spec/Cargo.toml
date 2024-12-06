@@ -1,0 +1,19 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "ibc-classic-spec"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+enumorph.workspace     = true
+macros.workspace       = true
+serde                  = { workspace = true, features = ["derive"] }
+subset-of.workspace    = true
+thiserror.workspace    = true
+tracing.workspace      = true
+unionlabs.workspace    = true
+voyager-core.workspace = true
+
+[lints]
+workspace = true
