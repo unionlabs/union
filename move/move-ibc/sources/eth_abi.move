@@ -19,8 +19,6 @@ module ibc::ethabi {
 
         vector::append(buf, len_bytes);
         vector::append(buf, *bytes);
-        std::debug::print(&len_bytes);
-        std::debug::print(&len);
 
         // Calculate padding to align to 32 bytes
         let padding_len = (32 - (len % 32)) % 32;
