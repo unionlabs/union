@@ -10,19 +10,25 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
+use ibc_union_spec::{Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
+};
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{StructTag, TypeTag},
 };
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use tracing::instrument;
-use unionlabs::hash::H256;
+use unionlabs::{hash::H256, ErrorReporter};
 use voyager_message::{
     core::ChainId,
-    data::{log_msg, Data, IbcMessage, WithChainId},
+    data::{Data, WithChainId},
     module::{PluginInfo, PluginServer},
-    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, noop, pass::PassResult, Op};
 
@@ -34,7 +40,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_plugin_server::<Module>().await
+    Module::run().await
 }
 
 #[derive(Debug, Clone)]
@@ -155,10 +161,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .into_iter()
                 .enumerate()
                 .map(|(idx, op)| {
-                    (
+                    Ok((
                         vec![idx],
                         match op {
-                            Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagram(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -166,10 +172,22 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(vec![message]),
+                                    ModuleCall::SubmitTransaction(vec![message
+                                        .decode_datagram::<IbcUnion>()
+                                        .unwrap()
+                                        .map_err(|e| {
+                                            ErrorObject::owned(
+                                                FATAL_JSONRPC_ERROR_CODE,
+                                                format!(
+                                                    "unable to deserialize datagram: {}",
+                                                    ErrorReporter(e)
+                                                ),
+                                                None::<()>,
+                                            )
+                                        })?]),
                                 ))
                             }
-                            Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
+                            Op::Data(Data::IdentifiedIbcDatagramBatch(WithChainId {
                                 chain_id,
                                 message,
                             })) => {
@@ -177,14 +195,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                                 call(PluginMessage::new(
                                     self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(message),
+                                    ModuleCall::SubmitTransaction(
+                                        message
+                                            .into_iter()
+                                            .map(|message| {
+                                                message
+                                                    .decode_datagram::<IbcUnion>()
+                                                    .unwrap()
+                                                    .map_err(|e| {
+                                                        ErrorObject::owned(
+                                                            FATAL_JSONRPC_ERROR_CODE,
+                                                            format!(
+                                                            "unable to deserialize datagram: {}",
+                                                            ErrorReporter(e)
+                                                        ),
+                                                            None::<()>,
+                                                        )
+                                                    })
+                                            })
+                                            .collect::<Result<_, _>>()?,
+                                    ),
                                 ))
                             }
                             _ => panic!("unexpected message: {op:?}"),
                         },
-                    )
+                    ))
                 })
-                .collect(),
+                .collect::<RpcResult<_>>()?,
         })
     }
 
@@ -215,14 +252,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         dbg!(&account);
 
                         let msgs =
-                            process_msgs(self.ibc_handler_address.into(), self, msgs.clone());
+                            process_msgs(self.ibc_handler_address.into(), self, msgs.clone()).await;
 
                         let mut txs = vec![];
 
                         for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
-                            log_msg(&self.chain_id.to_string(), &msg);
-                            // dbg!(msg);
-
                             let raw = RawTransaction::new_entry_function(
                                 sender,
                                 account.sequence_number + i as u64,
@@ -272,239 +306,237 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
+fn ibc_app_witness(module: AccountAddress) -> TypeTag {
+    TypeTag::Struct(Box::new(StructTag {
+        address: module,
+        module: Identifier::new("ibc_app").unwrap(),
+        name: Identifier::new("IbcAppWitness").unwrap(),
+        type_args: vec![],
+    }))
+}
+
 #[allow(clippy::type_complexity)]
-fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
+async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
     ibc_handler_address: AccountAddress,
     client: &T,
-    msgs: Vec<IbcMessage>,
-) -> Vec<(IbcMessage, EntryFunction)> {
-    msgs.clone()
-        .into_iter()
-        .map(|msg| match msg.clone() {
-            IbcMessage::CreateClient(data) => (
+    msgs: Vec<Datagram>,
+) -> Vec<(Datagram, EntryFunction)> {
+    let mut data = vec![];
+    for msg in msgs {
+        let item = match msg.clone() {
+            Datagram::CreateClient(data) => (
                 msg,
                 client.create_client(
                     ibc_handler_address,
                     (
                         data.client_type.to_string(),
-                        data.msg.client_state.into_vec(),
-                        data.msg.consensus_state.into_vec(),
+                        data.client_state_bytes.into_vec(),
+                        data.consensus_state_bytes.into_vec(),
                     ),
                 ),
             ),
-            IbcMessage::UpdateClient(data) => (
+            Datagram::UpdateClient(data) => (
                 msg,
                 client.update_client(
                     ibc_handler_address,
-                    (data.client_id.to_string(), data.client_message.into_vec()),
+                    (data.client_id, data.client_message.into_vec()),
                 ),
             ),
-            IbcMessage::ConnectionOpenInit(data) => (
+            Datagram::ConnectionOpenInit(data) => (
                 msg,
                 client.connection_open_init(
                     ibc_handler_address,
-                    (
-                        data.client_id.to_string(),
-                        data.version.identifier,
-                        data.version
-                            .features
-                            .into_iter()
-                            .map(|f| f.to_string())
-                            .collect::<Vec<String>>(),
-                        data.counterparty.client_id.to_string(),
-                        if let Some(conn) = data.counterparty.connection_id {
-                            conn.to_string()
-                        } else {
-                            String::new()
-                        },
-                        data.counterparty.prefix.key_prefix,
-                        data.delay_period,
-                    ),
+                    (data.client_id, data.counterparty_client_id),
                 ),
             ),
 
-            IbcMessage::ConnectionOpenTry(data) => (
+            Datagram::ConnectionOpenTry(data) => (
                 msg,
                 client.connection_open_try(
                     ibc_handler_address,
                     (
-                        data.counterparty.client_id.to_string(),
-                        if let Some(conn) = data.counterparty.connection_id {
-                            conn.to_string()
-                        } else {
-                            String::new()
-                        },
-                        data.counterparty.prefix.key_prefix,
-                        data.delay_period,
-                        data.client_id.to_string(),
-                        data.client_state.into_vec(),
-                        data.counterparty_versions
-                            .iter()
-                            .map(|v| v.identifier.clone())
-                            .collect::<Vec<String>>(),
-                        data.counterparty_versions
-                            .iter()
-                            .map(|v| {
-                                v.features
-                                    .iter()
-                                    .map(|f| f.to_string())
-                                    .collect::<Vec<String>>()
-                            })
-                            .collect::<Vec<Vec<String>>>(),
+                        data.counterparty_client_id,
+                        data.counterparty_connection_id,
+                        data.client_id,
                         data.proof_init.into_vec(),
-                        data.proof_client.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                        data.proof_height,
                     ),
                 ),
             ),
-            IbcMessage::ConnectionOpenAck(data) => (
+            Datagram::ConnectionOpenAck(data) => (
                 msg,
                 client.connection_open_ack(
                     ibc_handler_address,
                     (
-                        data.connection_id.to_string(),
-                        data.client_state.into_vec(),
-                        data.version.identifier,
-                        data.version
-                            .features
-                            .iter()
-                            .map(ToString::to_string)
-                            .collect::<Vec<String>>(),
+                        data.connection_id,
+                        data.counterparty_connection_id,
                         data.proof_try.into_vec(),
-                        data.proof_client.into_vec(),
-                        data.counterparty_connection_id.to_string(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                        data.proof_height,
                     ),
                 ),
             ),
-            IbcMessage::ConnectionOpenConfirm(data) => (
+            Datagram::ConnectionOpenConfirm(data) => (
                 msg,
                 client.connection_open_confirm(
                     ibc_handler_address,
                     (
-                        data.connection_id.to_string(),
+                        data.connection_id,
                         data.proof_ack.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                        data.proof_height,
                     ),
                 ),
             ),
-            IbcMessage::ChannelOpenInit(data) => (
+            Datagram::ChannelOpenInit(data) => (
                 msg,
                 client.channel_open_init(
-                    data.port_id.to_string().parse().unwrap(),
+                    ibc_handler_address,
                     (
-                        data.channel
-                            .connection_hops
-                            .iter()
-                            .map(ToString::to_string)
-                            .collect::<Vec<String>>(),
-                        data.channel.ordering as u8,
-                        data.channel.counterparty.port_id.to_string(),
-                        data.channel
-                            .counterparty
-                            .channel_id
+                        AccountAddress::try_from(data.port_id.as_ref())
                             .unwrap()
-                            .to_string_prefixed(),
-                        data.channel.version,
+                            .into(),
+                        data.counterparty_port_id.into_vec(),
+                        data.connection_id,
+                        data.version,
                     ),
+                    (ibc_app_witness(data.port_id.as_ref().try_into().unwrap()),),
                 ),
             ),
-            IbcMessage::ChannelOpenTry(data) => (
+            Datagram::ChannelOpenTry(data) => (
                 msg,
                 client.channel_open_try(
-                    data.port_id.to_string().parse().unwrap(),
+                    ibc_handler_address,
                     (
-                        data.channel
-                            .connection_hops
-                            .iter()
-                            .map(ToString::to_string)
-                            .collect::<Vec<String>>(),
-                        data.channel.ordering as u8,
-                        data.channel.counterparty.port_id.to_string(),
-                        data.channel
-                            .counterparty
-                            .channel_id
+                        AccountAddress::try_from(data.port_id.as_ref())
                             .unwrap()
-                            .to_string_prefixed(),
-                        data.counterparty_version,
+                            .into(),
+                        data.channel.state as u8,
+                        data.channel.connection_id,
+                        data.channel.counterparty_channel_id,
+                        data.channel.counterparty_port_id.to_vec(),
                         data.channel.version,
-                        data.proof_init.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
-                    ),
-                ),
-            ),
-            IbcMessage::ChannelOpenAck(data) => (
-                msg,
-                client.channel_open_ack(
-                    data.port_id.to_string().parse().unwrap(),
-                    (
-                        data.channel_id.to_string(),
-                        data.counterparty_channel_id.to_string(),
                         data.counterparty_version,
-                        data.proof_try.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                        data.proof_init.into_vec(),
+                        data.proof_height,
                     ),
+                    (ibc_app_witness(data.port_id.as_ref().try_into().unwrap()),),
                 ),
             ),
-            IbcMessage::ChannelOpenConfirm(data) => (
-                msg,
-                client.channel_open_confirm(
-                    data.port_id.to_string().parse().unwrap(),
-                    (
-                        data.channel_id.to_string(),
-                        data.proof_ack.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+            Datagram::ChannelOpenAck(data) => {
+                let port_id = client
+                    .get_module(ibc_handler_address, None, (data.channel_id,))
+                    .await
+                    .unwrap();
+                (
+                    msg,
+                    client.channel_open_ack(
+                        ibc_handler_address,
+                        (
+                            port_id,
+                            data.channel_id,
+                            data.counterparty_version,
+                            data.counterparty_channel_id,
+                            data.proof_try.into_vec(),
+                            data.proof_height,
+                        ),
+                        (ibc_app_witness(port_id.into()),),
                     ),
-                ),
-            ),
-            IbcMessage::RecvPacket(data) => (
-                msg,
-                client.recv_packet(
-                    data.packet.destination_port.to_string().parse().unwrap(),
-                    (
-                        data.packet.sequence.get(),
-                        data.packet.source_port.to_string(),
-                        data.packet.source_channel.to_string(),
-                        data.packet.destination_port.to_string(),
-                        data.packet.destination_channel.to_string(),
-                        data.packet.data.into_vec(),
-                        data.packet.timeout_height.revision(),
-                        data.packet.timeout_height.height(),
-                        data.packet.timeout_timestamp,
-                        data.proof_commitment.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                )
+            }
+            Datagram::ChannelOpenConfirm(data) => {
+                let port_id = client
+                    .get_module(ibc_handler_address, None, (data.channel_id,))
+                    .await
+                    .unwrap();
+                (
+                    msg,
+                    client.channel_open_confirm(
+                        ibc_handler_address,
+                        (
+                            port_id,
+                            data.channel_id,
+                            data.proof_ack.into_vec(),
+                            data.proof_height,
+                        ),
+                        (ibc_app_witness(port_id.into()),),
                     ),
-                ),
-            ),
-            IbcMessage::AcknowledgePacket(data) => (
-                msg,
-                client.acknowledge_packet(
-                    data.packet.source_port.to_string().parse().unwrap(),
-                    (
-                        data.packet.sequence.get(),
-                        data.packet.source_port.to_string(),
-                        data.packet.source_channel.to_string(),
-                        data.packet.destination_port.to_string(),
-                        data.packet.destination_channel.to_string(),
-                        data.packet.data.into_vec(),
-                        data.packet.timeout_height.revision(),
-                        data.packet.timeout_height.height(),
-                        data.packet.timeout_timestamp,
-                        data.acknowledgement.into_vec(),
-                        data.proof_acked.into_vec(),
-                        data.proof_height.revision(),
-                        data.proof_height.height(),
+                )
+            }
+            Datagram::PacketRecv(data) => {
+                let (
+                    source_channels,
+                    (destination_channels, (packet_data, (timeout_heights, timeout_timestamps))),
+                ): (Vec<_>, (Vec<_>, (Vec<_>, (Vec<_>, Vec<_>)))) = data
+                    .packets
+                    .into_iter()
+                    .map(|p| {
+                        (
+                            p.source_channel,
+                            (
+                                p.destination_channel,
+                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                            ),
+                        )
+                    })
+                    .unzip();
+
+                let port_id = client
+                    .get_module(ibc_handler_address, None, (source_channels[0],))
+                    .await
+                    .unwrap();
+
+                (
+                    msg,
+                    client.recv_packet(
+                        ibc_handler_address,
+                        (
+                            port_id,
+                            source_channels,
+                            destination_channels,
+                            packet_data,
+                            timeout_heights,
+                            timeout_timestamps,
+                            data.proof.into_vec(),
+                            data.proof_height,
+                        ),
+                        (ibc_app_witness(port_id.into()),),
                     ),
-                ),
-            ),
+                )
+            }
+            Datagram::PacketAcknowledgement(data) => {
+                let (source_channels, destination_channels) = data
+                    .packets
+                    .into_iter()
+                    .map(|p| (p.source_channel, p.destination_channel))
+                    .collect::<(Vec<u32>, Vec<u32>)>();
+
+                let port_id = client
+                    .get_module(ibc_handler_address, None, (source_channels[0],))
+                    .await
+                    .unwrap();
+
+                (
+                    msg,
+                    client.acknowledge_packet(
+                        ibc_handler_address,
+                        (
+                            port_id,
+                            source_channels,
+                            destination_channels,
+                            vec![],
+                            vec![],
+                            vec![],
+                            vec![],
+                            vec![],
+                            0,
+                        ),
+                        (ibc_app_witness(port_id.into()),),
+                    ),
+                )
+            }
             _ => todo!(),
-        })
-        .collect()
+        };
+        data.push(item);
+    }
+
+    data
 }

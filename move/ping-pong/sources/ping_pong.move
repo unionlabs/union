@@ -16,7 +16,6 @@ module ping_pong::ping_pong_app {
     use ibc::channel;
     use aptos_std::copyable_any;
     use ibc::packet::{Self, Packet};
-    use ibc::ibc_dispatch;
 
     struct PingPongProof has drop, store, key {}
 
@@ -91,9 +90,7 @@ module ping_pong::ping_pong_app {
                 string::utf8(b"on_packet")
             );
 
-        ibc_dispatch::register_application<PingPongProof>(
-            deployer, cb, new_ping_pong_proof()
-        );
+        ibc::register_application<PingPongProof>(deployer, cb, new_ping_pong_proof());
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -214,10 +211,7 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_init(
-        _ordering: u8,
-        _connection_id: u32,
-        _channel_id: u32,
-        _version: vector<u8>
+        _connection_id: u32, _channel_id: u32, _version: String
     ) acquires PingPong {
         if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
@@ -225,12 +219,11 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_try(
-        _ordering: u8,
         _connection_id: u32,
         _channel_id: u32,
         _counterparty_channel_id: u32,
-        _version: vector<u8>,
-        _counterparty_version: vector<u8>
+        _version: String,
+        _counterparty_version: String
     ) acquires PingPong {
         if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
@@ -238,7 +231,7 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_ack(
-        channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: vector<u8>
+        channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
     ) acquires PingPong {
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
@@ -259,45 +252,43 @@ module ping_pong::ping_pong_app {
         let value: copyable_any::Any = dispatcher::get_data(new_ping_pong_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::RecvPacketParams>()) {
+        if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
             let (pack) =
                 helpers::on_recv_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::RecvPacketParams>(value)
+                    copyable_any::unpack<ibc::RecvPacketParams>(value)
                 );
             on_recv_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::RecvIntentPacketParams>()) {
+            == std::type_info::type_name<ibc::RecvIntentPacketParams>()) {
             let (pack) =
                 helpers::on_recv_intent_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::RecvIntentPacketParams>(value)
+                    copyable_any::unpack<ibc::RecvIntentPacketParams>(value)
                 );
             on_recv_intent_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::AcknowledgePacketParams>()) {
+            == std::type_info::type_name<ibc::AcknowledgePacketParams>()) {
             let (pack, acknowledgement) =
                 helpers::on_acknowledge_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::AcknowledgePacketParams>(value)
+                    copyable_any::unpack<ibc::AcknowledgePacketParams>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::TimeoutPacketParams>()) {
+            == std::type_info::type_name<ibc::TimeoutPacketParams>()) {
             let (pack) =
                 helpers::on_timeout_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::TimeoutPacketParams>(value)
+                    copyable_any::unpack<ibc::TimeoutPacketParams>(value)
                 );
             on_timeout_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenInitParams>()) {
-            let (ordering, connection_id, channel_id, version) =
+            == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
+            let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenInitParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
                 );
-            on_channel_open_init(ordering, connection_id, channel_id, version);
+            on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenTryParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
             let (
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -305,10 +296,9 @@ module ping_pong::ping_pong_app {
                 counterparty_version
             ) =
                 helpers::on_channel_open_try_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenTryParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -316,33 +306,33 @@ module ping_pong::ping_pong_app {
                 counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenAckParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenAckParams>()) {
             let (channel_id, counterparty_channel_id, counterparty_version) =
                 helpers::on_channel_open_ack_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenAckParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenAckParams>(value)
                 );
             on_channel_open_ack(
                 channel_id, counterparty_channel_id, counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenConfirmParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_open_confirm_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenConfirmParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenConfirmParams>(value)
                 );
             on_channel_open_confirm(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelCloseInitParams>()) {
+            == std::type_info::type_name<ibc::ChannelCloseInitParams>()) {
             let channel_id =
                 helpers::on_channel_close_init_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelCloseInitParams>(value)
+                    copyable_any::unpack<ibc::ChannelCloseInitParams>(value)
                 );
             on_channel_close_init(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelCloseConfirmParams>()) {
+            == std::type_info::type_name<ibc::ChannelCloseConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_close_confirm_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelCloseConfirmParams>(value)
+                    copyable_any::unpack<ibc::ChannelCloseConfirmParams>(value)
                 );
             on_channel_close_confirm(channel_id);
         } else {

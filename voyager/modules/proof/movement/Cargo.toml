@@ -1,28 +1,33 @@
 [package]
 edition = "2021"
-name    = "voyager-client-update-plugin-movement"
+name    = "voyager-proof-module-movement"
 version = "0.1.0"
 
 [dependencies]
+aptos-crypto                = { workspace = true }
 aptos-move-ibc              = { workspace = true }
 aptos-rest-client           = { workspace = true }
 aptos-types                 = { workspace = true }
-bitvec                      = { workspace = true }
-chain-utils                 = { workspace = true }
+bcs                         = { workspace = true }
+clap                        = { workspace = true, features = ["derive"] }
 enumorph                    = { workspace = true }
-ethereum-light-client-types = { workspace = true }
 futures                     = { workspace = true }
+hex                         = { workspace = true }
+hex-literal                 = { workspace = true }
+ibc-union-spec              = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
+move-bindgen                = { workspace = true }
 move-core-types             = { workspace = true }
 movement-light-client-types = { workspace = true, features = ["serde"] }
-num-bigint                  = { workspace = true }
 prost                       = { workspace = true }
 protos                      = { workspace = true }
 reqwest                     = { workspace = true, features = ["json"] }
 serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
 serde_json                  = { workspace = true }
-subset-of                   = { workspace = true }
+sha2                        = { workspace = true }
+sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }

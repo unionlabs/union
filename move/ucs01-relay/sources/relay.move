@@ -2,7 +2,6 @@ module ibc::relay_app {
     use ibc::ibc;
     use ibc::helpers;
     use ibc::packet::{Packet};
-    use ibc::ibc_dispatch;
     use ibc::dispatcher;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
@@ -34,7 +33,6 @@ module ibc::relay_app {
     const E_UNAUTHORIZED: u64 = 2;
     const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
     const E_INVALID_PROTOCOL_VERSION: u64 = 4;
-    const E_INVALID_PROTOCOL_ORDERING: u64 = 5;
     const E_INVALID_COUNTERPARTY_PROTOCOL_VERSION: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
@@ -91,7 +89,6 @@ module ibc::relay_app {
     // Events
     #[event]
     struct DenomCreated has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         denom: String,
         token: address
@@ -99,7 +96,6 @@ module ibc::relay_app {
 
     #[event]
     struct Received has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -110,7 +106,6 @@ module ibc::relay_app {
 
     #[event]
     struct Sent has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -121,7 +116,6 @@ module ibc::relay_app {
 
     #[event]
     struct Refunded has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -131,8 +125,8 @@ module ibc::relay_app {
     }
 
     // View/Pure Functions
-    public fun is_valid_version(version_bytes: vector<u8>): bool {
-        version_bytes == VERSION
+    public fun is_valid_version(version_bytes: String): bool {
+        version_bytes == string::utf8(VERSION)
     }
 
     public fun starts_with(s: String, prefix: String): bool {
@@ -255,23 +249,14 @@ module ibc::relay_app {
                 string::utf8(b"on_packet")
             );
 
-        ibc_dispatch::register_application<UcsRelayProof>(
-            account, cb, new_ucs_relay_proof()
-        );
+        ibc::register_application<UcsRelayProof>(account, cb, new_ucs_relay_proof());
     }
 
     public fun on_channel_open_init(
-        ordering: u8,
-        connection_id: u32,
-        channel_id: u32,
-        version: vector<u8>
+        connection_id: u32, channel_id: u32, version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
-        };
-
-        if (ordering != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
         };
     }
 
@@ -281,28 +266,22 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_try(
-        ordering: u8,
         _connection_id: u32,
         _channel_id: u32,
         _counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>
+        version: String,
+        counterparty_version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
         };
-
-        if (ordering != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
-        };
-
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
     }
 
     public fun on_channel_open_ack(
-        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: vector<u8>
+        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: String
     ) {
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
@@ -327,7 +306,6 @@ module ibc::relay_app {
 
         // Call the refund_tokens function to refund the sender
         refund_tokens(
-            ibc::packet::sequence(&packet),
             ibc::packet::source_channel(&packet),
             &relay_packet
         );
@@ -354,7 +332,7 @@ module ibc::relay_app {
             &mut buf,
             &packet.sender,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -363,7 +341,7 @@ module ibc::relay_app {
             &mut buf,
             &packet.receiver,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -605,7 +583,6 @@ module ibc::relay_app {
                     // Emit the DenomCreated event
                     event::emit(
                         DenomCreated {
-                            packet_sequence: ibc::packet::sequence(&ibc_packet),
                             channel_id: source_channel,
                             denom: denom,
                             token: denom_address
@@ -623,7 +600,6 @@ module ibc::relay_app {
             // Emit the Received event
             event::emit(
                 Received {
-                    packet_sequence: ibc::packet::sequence(&ibc_packet),
                     channel_id: destination_channel,
                     sender: packet.sender,
                     receiver: packet.receiver,
@@ -671,9 +647,7 @@ module ibc::relay_app {
         }
     }
 
-    fun refund_tokens(
-        sequence: u64, channel_id: u32, packet: &RelayPacket
-    ) acquires RelayStore, SignerRef {
+    fun refund_tokens(channel_id: u32, packet: &RelayPacket) acquires RelayStore, SignerRef {
         let receiver = packet.receiver;
         let user_to_refund = from_bcs::to_address(packet.sender);
 
@@ -711,7 +685,6 @@ module ibc::relay_app {
             // Emit a Refunded event
             event::emit(
                 Refunded {
-                    packet_sequence: sequence,
                     channel_id: channel_id,
                     sender: packet.sender,
                     receiver: receiver,
@@ -745,7 +718,6 @@ module ibc::relay_app {
         if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
             let relay_packet = decode_packet(*ibc::packet::data(&packet));
             refund_tokens(
-                ibc::packet::sequence(&packet),
                 ibc::packet::source_channel(&packet),
                 &relay_packet
             );
@@ -799,7 +771,7 @@ module ibc::relay_app {
             extension
         };
 
-        let packet_sequence =
+        let _ =
             ibc::ibc::send_packet(
                 &get_signer(),
                 get_self_address(),
@@ -817,7 +789,6 @@ module ibc::relay_app {
 
             event::emit(
                 Sent {
-                    packet_sequence: packet_sequence,
                     channel_id: source_channel,
                     sender: bcs::to_bytes(&signer::address_of(sender)),
                     receiver: receiver,
@@ -873,45 +844,43 @@ module ibc::relay_app {
         let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::RecvPacketParams>()) {
+        if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
             let (pack) =
                 helpers::on_recv_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::RecvPacketParams>(value)
+                    copyable_any::unpack<ibc::RecvPacketParams>(value)
                 );
             on_recv_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::RecvIntentPacketParams>()) {
+            == std::type_info::type_name<ibc::RecvIntentPacketParams>()) {
             let (pack) =
                 helpers::on_recv_intent_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::RecvIntentPacketParams>(value)
+                    copyable_any::unpack<ibc::RecvIntentPacketParams>(value)
                 );
             on_recv_intent_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::AcknowledgePacketParams>()) {
+            == std::type_info::type_name<ibc::AcknowledgePacketParams>()) {
             let (pack, acknowledgement) =
                 helpers::on_acknowledge_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::AcknowledgePacketParams>(value)
+                    copyable_any::unpack<ibc::AcknowledgePacketParams>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::TimeoutPacketParams>()) {
+            == std::type_info::type_name<ibc::TimeoutPacketParams>()) {
             let (pack) =
                 helpers::on_timeout_packet_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::TimeoutPacketParams>(value)
+                    copyable_any::unpack<ibc::TimeoutPacketParams>(value)
                 );
             on_timeout_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenInitParams>()) {
-            let (ordering, connection_id, channel_id, version) =
+            == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
+            let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenInitParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
                 );
-            on_channel_open_init(ordering, connection_id, channel_id, version);
+            on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenTryParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
             let (
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -919,10 +888,9 @@ module ibc::relay_app {
                 counterparty_version
             ) =
                 helpers::on_channel_open_try_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenTryParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
-                ordering,
                 connection_id,
                 channel_id,
                 counterparty_channel_id,
@@ -930,33 +898,33 @@ module ibc::relay_app {
                 counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenAckParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenAckParams>()) {
             let (channel_id, counterparty_channel_id, counterparty_version) =
                 helpers::on_channel_open_ack_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenAckParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenAckParams>(value)
                 );
             on_channel_open_ack(
                 channel_id, counterparty_channel_id, counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelOpenConfirmParams>()) {
+            == std::type_info::type_name<ibc::ChannelOpenConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_open_confirm_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelOpenConfirmParams>(value)
+                    copyable_any::unpack<ibc::ChannelOpenConfirmParams>(value)
                 );
             on_channel_open_confirm(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelCloseInitParams>()) {
+            == std::type_info::type_name<ibc::ChannelCloseInitParams>()) {
             let channel_id =
                 helpers::on_channel_close_init_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelCloseInitParams>(value)
+                    copyable_any::unpack<ibc::ChannelCloseInitParams>(value)
                 );
             on_channel_close_init(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc_dispatch::ChannelCloseConfirmParams>()) {
+            == std::type_info::type_name<ibc::ChannelCloseConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_close_confirm_deconstruct(
-                    copyable_any::unpack<ibc_dispatch::ChannelCloseConfirmParams>(value)
+                    copyable_any::unpack<ibc::ChannelCloseConfirmParams>(value)
                 );
             on_channel_close_confirm(channel_id);
         } else {
