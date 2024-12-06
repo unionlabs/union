@@ -399,7 +399,7 @@ module ibc::ibc {
         commitments: Table<vector<u8>, vector<u8>>,
         connections: SmartTable<u32, ConnectionEnd>,
         channels: SmartTable<u32, Channel>,
-        channel_to_module: SmartTable<u32, address>,
+        channel_to_module: SmartTable<u32, address>
     }
 
     struct SignerRef has key {
@@ -420,7 +420,7 @@ module ibc::ibc {
             client_impls: smart_table::new(),
             connections: smart_table::new(),
             channels: smart_table::new(),
-            channel_to_module: smart_table::new(),
+            channel_to_module: smart_table::new()
         };
 
         move_to(vault_signer, store);
@@ -476,8 +476,7 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_init(
-        client_id: u32,
-        counterparty_client_id: u32
+        client_id: u32, counterparty_client_id: u32
     ) acquires IBCStore {
         let connection_id = generate_connection_identifier();
 

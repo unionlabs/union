@@ -211,9 +211,7 @@ module ping_pong::ping_pong_app {
     }
 
     public fun on_channel_open_init(
-        _connection_id: u32,
-        _channel_id: u32,
-        _version: String
+        _connection_id: u32, _channel_id: u32, _version: String
     ) acquires PingPong {
         if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL

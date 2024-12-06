@@ -81,7 +81,6 @@ module ucs01::ethabi {
         result
     }
 
-
     public fun decode_u8(buf: &vector<u8>, index: &mut u64): u8 {
         let padded_bytes = vector::slice(buf, *index, *index + 1);
 

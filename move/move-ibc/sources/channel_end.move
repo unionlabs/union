@@ -131,7 +131,6 @@ module ibc::channel {
 
         let encoded = encode(&channel);
 
-
         std::debug::print(&encoded);
 
         assert!(buf == encoded, 1);

@@ -253,9 +253,7 @@ module ibc::relay_app {
     }
 
     public fun on_channel_open_init(
-        connection_id: u32,
-        channel_id: u32,
-        version: String
+        connection_id: u32, channel_id: u32, version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
@@ -649,9 +647,7 @@ module ibc::relay_app {
         }
     }
 
-    fun refund_tokens(
-        channel_id: u32, packet: &RelayPacket
-    ) acquires RelayStore, SignerRef {
+    fun refund_tokens(channel_id: u32, packet: &RelayPacket) acquires RelayStore, SignerRef {
         let receiver = packet.receiver;
         let user_to_refund = from_bcs::to_address(packet.sender);
 

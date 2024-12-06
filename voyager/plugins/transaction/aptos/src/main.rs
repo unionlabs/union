@@ -388,7 +388,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
             ),
             IbcMsg::ChannelOpenInit(data) => (
                 msg,
-                client.channel_open_init::<u8>(
+                client.channel_open_init(
                     ibc_handler_address,
                     (
                         AccountAddress::try_from(data.port_id.as_ref())
@@ -403,7 +403,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
             ),
             IbcMsg::ChannelOpenTry(data) => (
                 msg,
-                client.channel_open_try::<u8>(
+                client.channel_open_try(
                     ibc_handler_address,
                     (
                         AccountAddress::try_from(data.port_id.as_ref())
@@ -428,7 +428,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     .unwrap();
                 (
                     msg,
-                    client.channel_open_ack::<u8>(
+                    client.channel_open_ack(
                         ibc_handler_address,
                         (
                             port_id,
@@ -449,7 +449,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     .unwrap();
                 (
                     msg,
-                    client.channel_open_confirm::<u8>(
+                    client.channel_open_confirm(
                         ibc_handler_address,
                         (
                             port_id,
@@ -462,11 +462,22 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 )
             }
             IbcMsg::PacketRecv(data) => {
-                let (source_channels, destination_channels) = data
+                let (
+                    source_channels,
+                    (destination_channels, (packet_data, (timeout_heights, timeout_timestamps))),
+                ): (Vec<_>, (Vec<_>, (Vec<_>, (Vec<_>, Vec<_>)))) = data
                     .packets
                     .into_iter()
-                    .map(|p| (p.source_channel, p.destination_channel))
-                    .collect::<(Vec<u32>, Vec<u32>)>();
+                    .map(|p| {
+                        (
+                            p.source_channel,
+                            (
+                                p.destination_channel,
+                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                            ),
+                        )
+                    })
+                    .unzip();
 
                 let port_id = client
                     .get_module(ibc_handler_address, None, (source_channels[0],))
@@ -475,18 +486,19 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
 
                 (
                     msg,
-                    client.recv_packet::<u8>(
+                    client.recv_packet(
                         ibc_handler_address,
                         (
                             port_id,
                             source_channels,
                             destination_channels,
-                            vec![],
-                            vec![],
-                            vec![],
-                            vec![],
-                            0,
+                            packet_data,
+                            timeout_heights,
+                            timeout_timestamps,
+                            data.proof.into_vec(),
+                            data.proof_height,
                         ),
+                        (ibc_app_witness(port_id.into()),),
                     ),
                 )
             }
@@ -504,7 +516,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
 
                 (
                     msg,
-                    client.acknowledge_packet::<u8>(
+                    client.acknowledge_packet(
                         ibc_handler_address,
                         (
                             port_id,
@@ -517,6 +529,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                             vec![],
                             0,
                         ),
+                        (ibc_app_witness(port_id.into()),),
                     ),
                 )
             }
