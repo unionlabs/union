@@ -182,7 +182,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
-                                from: fetch.update_from.revision(),
+                                from: fetch.update_from.height(),
                                 to: fetch.update_to.height(),
                             }),
                         ))
