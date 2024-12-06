@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
+use ibc_union_spec::{IbcUnion, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -18,13 +19,11 @@ use unionlabs::{
     },
     hash::H256,
     ibc::core::client::height::Height,
-    ics24::ethabi::Path,
     uint::U256,
     ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
-    ibc_union::IbcUnion,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
     ProofModule,
@@ -113,7 +112,12 @@ impl Module {
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, _path: Path) -> RpcResult<Value> {
+    async fn query_ibc_proof(
+        &self,
+        _: &Extensions,
+        at: Height,
+        _path: StorePath,
+    ) -> RpcResult<Value> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         let vault_addr = self

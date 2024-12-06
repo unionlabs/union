@@ -15,6 +15,7 @@ futures            = { workspace = true }
 hex                = { workspace = true }
 hex-literal        = { workspace = true }
 ibc-solidity       = { workspace = true }
+ibc-union-spec     = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 move-bindgen       = { workspace = true }

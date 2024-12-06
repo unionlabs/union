@@ -15,6 +15,7 @@ bip32              = { workspace = true }
 chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
+ibc-union-spec     = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 move-bindgen       = { workspace = true }

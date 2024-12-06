@@ -10,6 +10,7 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
+use ibc_union_spec::{Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -26,7 +27,6 @@ use unionlabs::{hash::H256, ErrorReporter};
 use voyager_message::{
     core::ChainId,
     data::{Data, WithChainId},
-    ibc_union::{IbcMsg, IbcUnion},
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -319,12 +319,12 @@ fn ibc_app_witness(module: AccountAddress) -> TypeTag {
 async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
     ibc_handler_address: AccountAddress,
     client: &T,
-    msgs: Vec<IbcMsg>,
-) -> Vec<(IbcMsg, EntryFunction)> {
+    msgs: Vec<Datagram>,
+) -> Vec<(Datagram, EntryFunction)> {
     let mut data = vec![];
     for msg in msgs {
         let item = match msg.clone() {
-            IbcMsg::CreateClient(data) => (
+            Datagram::CreateClient(data) => (
                 msg,
                 client.create_client(
                     ibc_handler_address,
@@ -335,14 +335,14 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 ),
             ),
-            IbcMsg::UpdateClient(data) => (
+            Datagram::UpdateClient(data) => (
                 msg,
                 client.update_client(
                     ibc_handler_address,
                     (data.client_id, data.client_message.into_vec()),
                 ),
             ),
-            IbcMsg::ConnectionOpenInit(data) => (
+            Datagram::ConnectionOpenInit(data) => (
                 msg,
                 client.connection_open_init(
                     ibc_handler_address,
@@ -350,7 +350,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 ),
             ),
 
-            IbcMsg::ConnectionOpenTry(data) => (
+            Datagram::ConnectionOpenTry(data) => (
                 msg,
                 client.connection_open_try(
                     ibc_handler_address,
@@ -363,7 +363,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 ),
             ),
-            IbcMsg::ConnectionOpenAck(data) => (
+            Datagram::ConnectionOpenAck(data) => (
                 msg,
                 client.connection_open_ack(
                     ibc_handler_address,
@@ -375,7 +375,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 ),
             ),
-            IbcMsg::ConnectionOpenConfirm(data) => (
+            Datagram::ConnectionOpenConfirm(data) => (
                 msg,
                 client.connection_open_confirm(
                     ibc_handler_address,
@@ -386,7 +386,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 ),
             ),
-            IbcMsg::ChannelOpenInit(data) => (
+            Datagram::ChannelOpenInit(data) => (
                 msg,
                 client.channel_open_init(
                     ibc_handler_address,
@@ -401,7 +401,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     (ibc_app_witness(data.port_id.as_ref().try_into().unwrap()),),
                 ),
             ),
-            IbcMsg::ChannelOpenTry(data) => (
+            Datagram::ChannelOpenTry(data) => (
                 msg,
                 client.channel_open_try(
                     ibc_handler_address,
@@ -421,7 +421,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     (ibc_app_witness(data.port_id.as_ref().try_into().unwrap()),),
                 ),
             ),
-            IbcMsg::ChannelOpenAck(data) => {
+            Datagram::ChannelOpenAck(data) => {
                 let port_id = client
                     .get_module(ibc_handler_address, None, (data.channel_id,))
                     .await
@@ -442,7 +442,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 )
             }
-            IbcMsg::ChannelOpenConfirm(data) => {
+            Datagram::ChannelOpenConfirm(data) => {
                 let port_id = client
                     .get_module(ibc_handler_address, None, (data.channel_id,))
                     .await
@@ -461,7 +461,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 )
             }
-            IbcMsg::PacketRecv(data) => {
+            Datagram::PacketRecv(data) => {
                 let (
                     source_channels,
                     (destination_channels, (packet_data, (timeout_heights, timeout_timestamps))),
@@ -502,7 +502,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 )
             }
-            IbcMsg::PacketAcknowledgement(data) => {
+            Datagram::PacketAcknowledgement(data) => {
                 let (source_channels, destination_channels) = data
                     .packets
                     .into_iter()

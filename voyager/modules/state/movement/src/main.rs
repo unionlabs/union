@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
+use ibc_union_spec::{IbcUnion, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -18,12 +19,10 @@ use unionlabs::{
     },
     hash::H256,
     ibc::core::client::height::Height,
-    ics24::ethabi::Path,
     ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
-    ibc_union::IbcUnion,
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule,
@@ -176,11 +175,16 @@ impl StateModuleServer<IbcUnion> for Module {
         }
     }
 
-    async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_state(
+        &self,
+        _: &Extensions,
+        at: Height,
+        path: StorePath,
+    ) -> RpcResult<Value> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         Ok(match path {
-            Path::ClientState(path) => {
+            StorePath::ClientState(path) => {
                 let client_state_bytes = self
                     .client_state(
                         self.ibc_handler_address.into(),
@@ -192,7 +196,7 @@ impl StateModuleServer<IbcUnion> for Module {
 
                 into_value(client_state_bytes)
             }
-            Path::ConsensusState(path) => {
+            StorePath::ConsensusState(path) => {
                 let consensus_state_bytes = self
                     .consensus_state(
                         self.ibc_handler_address.into(),
@@ -204,7 +208,7 @@ impl StateModuleServer<IbcUnion> for Module {
 
                 into_value(consensus_state_bytes)
             }
-            Path::Connection(path) => into_value(
+            StorePath::Connection(path) => into_value(
                 self.get_connection(
                     self.ibc_handler_address.into(),
                     Some(ledger_version),
@@ -213,7 +217,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map_err(rest_error_to_rpc_error)?,
             ),
-            Path::Channel(path) => into_value(
+            StorePath::Channel(path) => into_value(
                 self.get_channel(
                     self.ibc_handler_address.into(),
                     Some(ledger_version),
@@ -223,7 +227,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .map_err(rest_error_to_rpc_error)?,
             ),
             // TODO(aeryz): check if we have to do `TryInto<H256>` here
-            Path::BatchPackets(path) => into_value(
+            StorePath::BatchPackets(path) => into_value(
                 self.get_commitment(
                     self.ibc_handler_address.into(),
                     Some(ledger_version),
@@ -232,7 +236,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map_err(rest_error_to_rpc_error)?,
             ),
-            Path::BatchReceipts(path) => {
+            StorePath::BatchReceipts(path) => {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),

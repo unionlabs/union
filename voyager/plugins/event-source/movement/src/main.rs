@@ -9,6 +9,12 @@ use aptos_rest_client::{
     error::RestError,
     Transaction,
 };
+use ibc_union_spec::{
+    AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+    ChannelOpenTry, ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
+    ConnectionOpenInit, ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion,
+    PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -16,26 +22,15 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
-use unionlabs::{
-    hash::H256,
-    ibc::core::client::height::Height,
-    ics24::ethabi::{ChannelPath, ConnectionPath},
-    ErrorReporter,
-};
+use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientInfo, ClientType, QueryHeight},
+    core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     data::{ChainEvent, Data},
-    ibc_union::{
-        AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-        ChannelOpenTry, ClientCreated, ClientUpdated, ConnectionMetadata, ConnectionOpenAck,
-        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, FullIbcEvent, IbcUnion,
-        PacketMetadata, RecvPacket, SendPacket, WriteAcknowledgement,
-    },
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::missing_state,
-    DefaultCmd, ExtensionsExt, IbcSpec, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, defer, now, pass::PassResult, seq, BoxDynError, Op};
 
@@ -446,9 +441,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
-                let (full_event, client_id): (FullIbcEvent, u32) = match event {
+                let (full_event, client_id): (FullEvent, u32) = match event {
                     events::IbcEvent::CreateClient(event) => (
-                        ClientCreated {
+                        CreateClient {
                             client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
                         }
@@ -456,7 +451,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         event.client_id,
                     ),
                     events::IbcEvent::UpdateClient(event) => (
-                        ClientUpdated {
+                        UpdateClient {
                             client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
                             height: event.height,
@@ -697,8 +692,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_height: event.packet.timeout_height,
                                     timeout_timestamp: event.packet.timeout_timestamp,
                                 },
-                                // TODO(aeryz): why is this H160?
-                                relayer: Default::default(),
                                 relayer_msg: Default::default(),
                             }
                             .into(),
@@ -760,7 +753,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_height: event.packet.timeout_height,
                                     timeout_timestamp: event.packet.timeout_timestamp,
                                 },
-                                relayer: Default::default(),
                                 acknowledgement: event.acknowledgement.into(),
                             }
                             .into(),
@@ -791,8 +783,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
                     provable_height: self.make_height(height),
-                    event: into_value::<FullIbcEvent>(full_event),
-                    ibc_version_id: IbcUnion::ID,
+                    event: into_value::<FullEvent>(full_event),
+                    ibc_spec_id: IbcUnion::ID,
                 }))
             }
         }
@@ -803,13 +795,13 @@ pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
     ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
 }
 
-fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::ibc::Connection {
-    ibc_solidity::ibc::Connection {
+fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
+    ibc_solidity::Connection {
         state: match connection.state {
-            0 => ibc_solidity::ibc::ConnectionState::Unspecified,
-            1 => ibc_solidity::ibc::ConnectionState::Init,
-            2 => ibc_solidity::ibc::ConnectionState::TryOpen,
-            3 => ibc_solidity::ibc::ConnectionState::Open,
+            0 => ibc_solidity::ConnectionState::Unspecified,
+            1 => ibc_solidity::ConnectionState::Init,
+            2 => ibc_solidity::ConnectionState::TryOpen,
+            3 => ibc_solidity::ConnectionState::Open,
             _ => panic!("connection state cannot be more than 3"),
         },
         client_id: connection.client_id,
