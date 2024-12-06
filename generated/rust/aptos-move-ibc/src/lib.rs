@@ -1,6 +1,8 @@
 #![allow(
     async_fn_in_trait,
     non_snake_case,
+    clippy::type_complexity,
+    clippy::needless_borrows_for_generic_args,
     clippy::useless_conversion,
     clippy::unused_unit,
     clippy::too_many_arguments

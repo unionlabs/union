@@ -4,24 +4,16 @@ use std::{
 };
 
 pub use aptos_rest_client;
+use aptos_rest_client::aptos_api_types::HexEncodedBytes;
 pub use aptos_types;
 pub use bcs;
 pub use move_bindgen_derive::MoveOutputType;
 pub use move_core_types;
-use move_core_types::{
-    account_address::AccountAddress,
-    ident_str,
-    language_storage::{StructTag, TypeTag},
-};
+use move_core_types::account_address::AccountAddress;
 pub use serde;
 use serde::{Deserialize, Serialize};
 pub use serde_json;
 pub use tracing;
-
-/// Types that can be used as inputs to a move function.
-pub trait MoveParamType {
-    fn type_tag() -> TypeTag;
-}
 
 /// Types that can either be returned from #[view] functions or read from storage.
 pub trait MoveOutputType {
@@ -35,17 +27,10 @@ pub trait MoveOutputType {
 macro_rules! impl_param_and_output {
     (
         $T:ty,
-        $type_tag:expr,
         $raw:ty,
         |$from_raw_param:ident| $from_raw:expr,
         |$into_raw_param:ident| $into_raw:expr
     ) => {
-        impl MoveParamType for $T {
-            fn type_tag() -> TypeTag {
-                $type_tag
-            }
-        }
-
         impl MoveOutputType for $T {
             type Raw = $raw;
 
@@ -61,39 +46,25 @@ macro_rules! impl_param_and_output {
     };
 }
 
-impl_param_and_output!(bool, TypeTag::Bool, bool, |raw| raw, |this| this);
-impl_param_and_output!(u8, TypeTag::U8, u8, |raw| raw, |this| this);
-impl_param_and_output!(u16, TypeTag::U16, u16, |raw| raw, |this| this);
-impl_param_and_output!(u32, TypeTag::U32, u32, |raw| raw, |this| this);
+impl_param_and_output!(bool, bool, |raw| raw, |this| this);
+impl_param_and_output!(u8, u8, |raw| raw, |this| this);
+impl_param_and_output!(u16, u16, |raw| raw, |this| this);
+impl_param_and_output!(u32, u32, |raw| raw, |this| this);
 impl_param_and_output!(
     u64,
-    TypeTag::U64,
     aptos_rest_client::aptos_api_types::U64,
     |raw| raw.0,
     |this| this.into()
 );
 impl_param_and_output!(
     u128,
-    TypeTag::U128,
     aptos_rest_client::aptos_api_types::U128,
     |raw| raw.0,
     |this| this.into()
 );
-impl_param_and_output!(
-    String,
-    TypeTag::Struct(Box::new(StructTag {
-        address: AccountAddress::ONE,
-        module: ident_str!("string").into(),
-        name: ident_str!("String").into(),
-        type_args: vec![],
-    })),
-    String,
-    |raw| raw,
-    |this| this
-);
+impl_param_and_output!(String, String, |raw| raw, |this| this);
 impl_param_and_output!(
     aptos_rest_client::aptos_api_types::Address,
-    TypeTag::Address,
     aptos_rest_client::aptos_api_types::Address,
     |raw| raw,
     |this| this
@@ -105,12 +76,6 @@ impl_param_and_output!(
 //         TypeTag::U256
 //     }
 // }
-
-impl<T: MoveParamType> MoveParamType for Vec<T> {
-    fn type_tag() -> TypeTag {
-        TypeTag::Vector(Box::new(T::type_tag()))
-    }
-}
 
 impl<T: MoveOutputType> MoveOutputType for Vec<T> {
     type Raw = RawVec<T::Raw>;
@@ -144,7 +109,7 @@ impl<T: Serialize + 'static> Serialize for RawVec<T> {
 }
 
 // TODO: Figure out a way to not clone here
-impl<'de, T: Clone + Deserialize<'de> + 'static> Deserialize<'de> for RawVec<T> {
+impl<'de, T: Deserialize<'de> + 'static> Deserialize<'de> for RawVec<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -155,23 +120,11 @@ impl<'de, T: Clone + Deserialize<'de> + 'static> Deserialize<'de> for RawVec<T> 
 
         if is_u8::<T>() {
             aptos_rest_client::aptos_api_types::HexEncodedBytes::deserialize(deserializer)
-                // TODO: Figure out a way to not clone here
-                .map(|v| {
-                    (&v.0 as &dyn Any)
-                        .downcast_ref::<Vec<T>>()
-                        .expect("T is u8; qed;")
-                        .clone()
-                })
+                .map(|v| unsafe { std::mem::transmute::<Vec<u8>, Vec<T>>(v.0) })
                 .map(Self)
         } else {
             <Vec<T>>::deserialize(deserializer).map(Self)
         }
-    }
-}
-
-impl MoveParamType for aptos_rest_client::aptos_api_types::HexEncodedBytes {
-    fn type_tag() -> TypeTag {
-        TypeTag::Vector(Box::new(TypeTag::U8))
     }
 }
 
@@ -191,6 +144,95 @@ impl<T: MoveOutputType> MoveOutputType for Option<T> {
     fn into_raw(self) -> Self::Raw {
         Self::Raw {
             vec: self.into_iter().map(T::into_raw).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct TypeInfo {
+    pub account_address: AccountAddress,
+    pub module_name: Vec<u8>,
+    pub struct_name: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RawTypeInfo {
+    pub account_address: AccountAddress,
+    pub module_name: HexEncodedBytes,
+    pub struct_name: HexEncodedBytes,
+}
+
+impl MoveOutputType for TypeInfo {
+    type Raw = RawTypeInfo;
+
+    fn from_raw(raw: Self::Raw) -> Self {
+        Self {
+            account_address: raw.account_address,
+            module_name: raw.module_name.0,
+            struct_name: raw.struct_name.0,
+        }
+    }
+
+    fn into_raw(self) -> Self::Raw {
+        Self::Raw {
+            account_address: self.account_address,
+            module_name: HexEncodedBytes(self.module_name),
+            struct_name: HexEncodedBytes(self.struct_name),
+        }
+    }
+}
+
+pub mod fungible_asset {
+    use serde::{Deserialize, Serialize};
+
+    use crate::MoveOutputType;
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct Metadata {
+        name: String,
+        symbol: String,
+        decimals: u8,
+        icon_uri: String,
+        project_uri: String,
+    }
+
+    impl MoveOutputType for Metadata {
+        type Raw = Metadata;
+
+        fn from_raw(raw: Self::Raw) -> Self {
+            raw
+        }
+
+        fn into_raw(self) -> Self::Raw {
+            self
+        }
+    }
+}
+
+pub mod object {
+    use std::marker::PhantomData;
+
+    use move_core_types::account_address::AccountAddress;
+    use serde::{Deserialize, Serialize};
+
+    use crate::MoveOutputType;
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub struct Object<T> {
+        inner: AccountAddress,
+        #[serde(skip)]
+        __marker: PhantomData<fn() -> T>,
+    }
+
+    impl<T> MoveOutputType for Object<T> {
+        type Raw = Object<T>;
+
+        fn from_raw(raw: Self::Raw) -> Self {
+            raw
+        }
+
+        fn into_raw(self) -> Self::Raw {
+            self
         }
     }
 }
@@ -233,17 +275,6 @@ impl<K: Ord + MoveOutputType, V: MoveOutputType> MoveOutputType for BTreeMap<K, 
 pub struct MoveStruct<T> {
     pub address: AccountAddress,
     pub value: T,
-}
-
-impl<T: MoveParamType> MoveParamType for MoveStruct<T> {
-    fn type_tag() -> TypeTag {
-        TypeTag::Struct(Box::new(StructTag {
-            address: todo!(),
-            module: todo!(),
-            name: todo!(),
-            type_args: todo!(),
-        }))
-    }
 }
 
 #[cfg(test)]
