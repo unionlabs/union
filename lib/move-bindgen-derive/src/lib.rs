@@ -2,8 +2,8 @@ use std::convert;
 
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, parse_quote_spanned, spanned::Spanned, Data, DeriveInput, Expr,
-    Field, MetaNameValue, WhereClause, WherePredicate,
+    parse_macro_input, parse_quote, parse_quote_spanned, spanned::Spanned, Data, DeriveInput,
+    Field, WhereClause, WherePredicate,
 };
 
 #[proc_macro_derive(MoveOutputType, attributes(move_output_type))]
@@ -17,7 +17,6 @@ pub fn type_tagged(ts: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 fn derive_type_tagged(
     DeriveInput {
-        attrs,
         ident,
         generics,
         data,
@@ -36,23 +35,23 @@ fn derive_type_tagged(
         });
     where_clause.predicates.extend(bounds.clone());
 
-    let [module] = attrs
-        .into_iter()
-        .filter(|attr| attr.path().is_ident("move_output_type"))
-        .map(|attr| {
-            let mnv =
-                syn::parse2::<MetaNameValue>(attr.meta.require_list().unwrap().tokens.clone())
-                    .unwrap();
+    // let [module] = attrs
+    //     .into_iter()
+    //     .filter(|attr| attr.path().is_ident("move_output_type"))
+    //     .map(|attr| {
+    //         let mnv =
+    //             syn::parse2::<MetaNameValue>(attr.meta.require_list().unwrap().tokens.clone())
+    //                 .unwrap();
 
-            assert!(mnv.path.is_ident("module"));
-            match &mnv.value {
-                Expr::Path(expr) => expr.path.require_ident().unwrap().clone(),
-                _ => panic!("???"),
-            }
-        })
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+    //         assert!(mnv.path.is_ident("module"));
+    //         match &mnv.value {
+    //             Expr::Path(expr) => expr.path.require_ident().unwrap().clone(),
+    //             _ => panic!("???"),
+    //         }
+    //     })
+    //     .collect::<Vec<_>>()
+    //     .try_into()
+    //     .unwrap();
 
     let (raw_ident, raw, from_raw, into_raw) = match data {
         Data::Struct(data) => {

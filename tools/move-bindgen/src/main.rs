@@ -58,7 +58,8 @@ async fn main() -> Result<(), Bde> {
             .fields
             .iter()
             .map(|f| {
-                let ident = format_ident!("{}", f.name.to_string());
+                let ident = syn::parse_str::<Ident>(&format!("{}", f.name))
+                    .unwrap_or_else(|_| format_ident!("r#{}", f.name.to_string()));
                 // println!("  {ident}: {:?}", f.typ);
 
                 let (field_ty, contained_struct_types) = move_type_to_output_type(&f.typ);
@@ -86,7 +87,7 @@ async fn main() -> Result<(), Bde> {
                     ::move_bindgen::MoveOutputType,
                 )]
                 #[serde(crate = "::move_bindgen::serde")]
-                #[move_output_type(module = #mod_name)]
+                // #[move_output_type(module = #mod_name)]
                 pub struct #ident<#(#generics)*> {
                     #(#fields)*
                 }
@@ -181,15 +182,24 @@ async fn main() -> Result<(), Bde> {
                     quote!((#(#idents,)*): (#(#param_types,)*),)
                 };
 
+                let generic_type_params = f.generic_type_params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, _)| format_ident!("t{i}"));
+
+                let generic_type_params_args = if f.generic_type_params.is_empty() {
+                    quote!()
+                } else {
+                    let params = f.generic_type_params.iter().map(|_| quote!(impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>));
+                    let generic_type_params = generic_type_params.clone();
+                    quote!((#(#generic_type_params,)*): (#(#params,)*),)
+                };
+
                 let tracing_instrument_fields = if param_types.is_empty() {
                     quote!()
                 } else {
                     quote!(#(?#idents,)*)
                 };
-
-                let generic_type_params = f.generic_type_params
-                    .iter().enumerate()
-                    .map(|(index, _)| format_ident!("T{index}"));
 
                 let item_fn: ItemFn = if f.is_view {
                     parse_quote! {
@@ -201,11 +211,12 @@ async fn main() -> Result<(), Bde> {
                                 #tracing_instrument_fields,
                             )
                         )]
-                        async fn #ident<#(#generic_type_params,)*>(
+                        async fn #ident(
                             &self,
                             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
                             ledger_version: Option<u64>,
                             #params
+                            #generic_type_params_args
                         ) -> ::core::result::Result<#return_type, ::move_bindgen::aptos_rest_client::error::RestError>
                         {
                             let response = self
@@ -221,8 +232,7 @@ async fn main() -> Result<(), Bde> {
                                             name: stringify!(#ident).parse().unwrap(),
                                         },
                                         type_arguments: vec![
-                                            // TODO: Support generics on view functions
-                                            // #(#mts_ts,)*
+                                            #(#generic_type_params.into().into()),*
                                         ],
                                         arguments: vec![#(
                                             ::move_bindgen::serde_json::to_value(
@@ -248,16 +258,13 @@ async fn main() -> Result<(), Bde> {
                         }
                     }
                 } else {
-                    let params = if param_types.is_empty() {
-                        quote!()
-                    } else {
-                        quote!((#(#idents,)*): (#(#param_types,)*),)
-                    };
-
                     parse_quote! {
-                        fn #ident<
-                            #(#generic_type_params: ::move_bindgen::serde::Serialize + ::move_bindgen::MoveOutputType,)*
-                        >(&self, contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress, #params) -> ::move_bindgen::aptos_types::transaction::EntryFunction
+                        fn #ident(
+                            &self,
+                            contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
+                            #params
+                            #generic_type_params_args
+                        ) -> ::move_bindgen::aptos_types::transaction::EntryFunction
                         {
                             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
                                 ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
@@ -266,7 +273,7 @@ async fn main() -> Result<(), Bde> {
                                 }.into(),
                                 stringify!(#ident).parse().unwrap(),
                                 // TODO: We don't use this currently but this should be fixed somehow(?)
-                                vec![],
+                                vec![#(#generic_type_params.into().into()),*],
                                 vec![#(::move_bindgen::bcs::to_bytes(
                                     &<#param_types as ::move_bindgen::MoveOutputType>::into_raw(
                                         #idents
@@ -305,11 +312,16 @@ async fn main() -> Result<(), Bde> {
 
     let mut output = String::new();
 
-    output += "#![allow(async_fn_in_trait,
-non_snake_case,
-clippy::useless_conversion,
-clippy::unused_unit,
-clippy::too_many_arguments)]
+    output += "
+#![allow(
+    async_fn_in_trait,
+    non_snake_case,
+    clippy::type_complexity,
+    clippy::needless_borrows_for_generic_args,
+    clippy::useless_conversion,
+    clippy::unused_unit,
+    clippy::too_many_arguments
+)]
 ";
 
     dbg!(&referenced_structs);
@@ -318,7 +330,7 @@ clippy::too_many_arguments)]
 
     // resolve types referenced in events and fns
     while !referenced_structs.is_empty() {
-        // dbg!(&referenced_structs, &already_found_structs);
+        dbg!(&referenced_structs, &already_found_structs);
 
         for abi in &abis {
             let mod_name = format_ident!("{}", abi.name.to_string());
@@ -559,6 +571,26 @@ fn move_type_to_param_type(typ: &MoveType) -> Type {
             parse_quote!(Vec<#param>)
         }
         MoveType::Struct(s) if is_string(s) => parse_quote!(String),
+        MoveType::Struct(s) if is_option(s) => {
+            let t = move_type_to_param_type(&s.generic_type_params[0]);
+
+            parse_quote!(Option<#t>)
+        }
+        MoveType::Struct(s) if is_type_info(s) => {
+            parse_quote!(::move_bindgen::TypeInfo)
+        }
+        MoveType::Struct(s) if is_fungible_asset_metadata(s) => {
+            parse_quote!(::move_bindgen::fungible_asset::Metadata)
+        }
+        MoveType::Struct(s) if is_object_object(s) => {
+            let t = move_type_to_param_type(&s.generic_type_params[0]);
+
+            parse_quote!(::move_bindgen::object::Object<#t>)
+        }
+        MoveType::GenericTypeParam { index } => {
+            let ident = format_ident!("T{index}");
+            parse_quote!(#ident)
+        }
         typ => panic!("unsupported param type: {typ:?}"),
     }
 }
@@ -588,6 +620,20 @@ fn move_type_to_output_type(typ: &MoveType) -> (Type, Vec<(Ident, Ident)>) {
                 move_type_to_output_type(&s.generic_type_params[0]);
 
             (parse_quote!(Option<#param>), contained_struct_types)
+        }
+        MoveType::Struct(s) if is_type_info(s) => (parse_quote!(::move_bindgen::TypeInfo), vec![]),
+        MoveType::Struct(s) if is_fungible_asset_metadata(s) => (
+            parse_quote!(::move_bindgen::fungible_asset::Metadata),
+            vec![],
+        ),
+        MoveType::Struct(s) if is_object_object(s) => {
+            let (param, contained_struct_types) =
+                move_type_to_output_type(&s.generic_type_params[0]);
+
+            (
+                parse_quote!(::move_bindgen::object::Object<#param>),
+                contained_struct_types,
+            )
         }
         MoveType::Struct(s) if is_simple_map(s) => {
             let (key, key_contained_struct_types) =
@@ -624,6 +670,10 @@ fn move_type_to_output_type(typ: &MoveType) -> (Type, Vec<(Ident, Ident)>) {
                     .chain(struct_type_identifiers.into_iter().flatten())
                     .collect(),
             )
+        }
+        MoveType::GenericTypeParam { index } => {
+            let ident = format_ident!("T{index}");
+            (parse_quote!(#ident), vec![])
         }
         // MoveType::GenericTypeParam { index } => {
         //     parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::GenericTypeParam { index: #index })
@@ -703,6 +753,27 @@ fn is_option(mt: &MoveStructTag) -> bool {
     mt.address == "0x1".parse().unwrap()
         && mt.module == "option".parse().unwrap()
         && mt.name == "Option".parse().unwrap()
+        && mt.generic_type_params.len() == 1
+}
+
+fn is_type_info(mt: &MoveStructTag) -> bool {
+    mt.address == "0x1".parse().unwrap()
+        && mt.module == "type_info".parse().unwrap()
+        && mt.name == "TypeInfo".parse().unwrap()
+        && mt.generic_type_params.is_empty()
+}
+
+fn is_fungible_asset_metadata(mt: &MoveStructTag) -> bool {
+    mt.address == "0x1".parse().unwrap()
+        && mt.module == "fungible_asset".parse().unwrap()
+        && mt.name == "Metadata".parse().unwrap()
+        && mt.generic_type_params.is_empty()
+}
+
+fn is_object_object(mt: &MoveStructTag) -> bool {
+    mt.address == "0x1".parse().unwrap()
+        && mt.module == "object".parse().unwrap()
+        && mt.name == "Object".parse().unwrap()
         && mt.generic_type_params.len() == 1
 }
 
