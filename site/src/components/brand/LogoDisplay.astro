@@ -1,0 +1,120 @@
+---
+interface Props {
+  class?: string
+}
+
+const { class: className = "" } = Astro.props
+
+const themes = [
+  { id: "light", label: "LIGHT" },
+  { id: "dark", label: "DARK" }
+]
+
+const themeColors = {
+  light: { bg: "bg-white", logo: "/logo-black.svg" },
+  dark: { bg: "bg-black", logo: "/logo-white.svg" }
+}
+
+// Initial theme
+const initialTheme = "dark"
+---
+
+<div class="flex flex-col gap-4">
+  <div
+    class={`w-full h-72 ${themeColors[initialTheme].bg} flex items-center justify-center border border-gray-200 transition-colors duration-300`}
+    id="header"
+  >
+    <img
+      src="/logo-black.svg"
+      alt="Logo"
+      class="max-h-12 md:max-h-20 w-auto hidden"
+      id="logo-light"
+    />
+    <img
+      src="/logo-white.svg"
+      alt="Logo"
+      class="max-h-12 md:max-h-20 w-auto"
+      id="logo-dark"
+    />
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-2 w-full justify-between">
+    <div class="flex gap-2">
+      {
+        themes.map((theme) => (
+          <button
+            class={`
+          w-full sm:w-fit px-4 py-2 
+          ${theme.id === initialTheme ? "bg-white text-black" : "bg-black text-white"} 
+          border border-gray-200 
+          hover:bg-white hover:text-black 
+          uppercase font-semibold font-mono 
+          transition-colors duration-300
+        `}
+            data-theme={theme.id}
+          >
+            {theme.label}
+          </button>
+        ))
+      }
+    </div>
+    <div class="flex lg:-ml-4 gap-2 max-w-xl">
+      <div class="pt-1">
+        <div class="w-[5px] h-[5px] bg-accent-500"></div>
+      </div>
+      <p class="font-mono max-w-xs box-decoration-clone text-xs">
+        Usage examples. For more information, please refer to our <a
+          href="#brand-guide"
+          class="text-accent-500">Branding guide.</a
+        >
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const logoLight = document.getElementById("logo-light");
+  const logoDark = document.getElementById("logo-dark");
+  const header = document.getElementById("header");
+  const themeButtons = document.querySelectorAll("[data-theme]");
+
+  themeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const theme = button.getAttribute("data-theme");
+      if (!theme) return;
+
+      // Reset all buttons to black
+      themeButtons.forEach((btn) => {
+        btn.classList.remove("bg-white", "text-black");
+        btn.classList.add("bg-black", "text-white");
+      });
+
+      // Make clicked button white
+      button.classList.remove("bg-black", "text-white");
+      button.classList.add("bg-white", "text-black");
+
+      // Update header background
+      if (header) {
+        header.classList.remove("bg-white", "bg-black");
+        header.classList.add(theme === "light" ? "bg-white" : "bg-black");
+      }
+
+      // Toggle logo visibility
+      if (logoLight && logoDark) {
+        if (theme === "light") {
+          logoLight.classList.remove("hidden");
+          logoDark.classList.add("hidden");
+        } else {
+          logoLight.classList.add("hidden");
+          logoDark.classList.remove("hidden");
+        }
+      }
+    });
+  });
+
+  // Set initial theme
+  const initialButton = document.querySelector('[data-theme="dark"]');
+  if (initialButton instanceof HTMLElement) {
+    initialButton.click();
+  }
+</script>

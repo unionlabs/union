@@ -1,102 +1,101 @@
 ---
-import LanderSection from "#/components/LanderSection.astro"
-import IntroHeading from "#/components/typography/IntroHeading.astro"
-import Card from "#/components/Card.astro"
-import ButtonA from "#/components/ButtonA.astro"
-
-const colors = [
-  {
-    name: "White",
-    code: "#FFFFFF"
-  },
-  {
-    name: "Gray 300",
-    code: "#D1D5DB"
-  },
-  {
-    name: "Gray 400",
-    code: "#9ca3af"
-  },
-  {
-    name: "Background Gray",
-    code: "#1F1F1F"
-  },
-  {
-    name: "Black",
-    code: "#000000"
-  },
-  {
-    name: "Accent",
-    code: "#A0ECFD"
-  }
-]
+import Layout from "../layouts/Layout.astro"
+import ContainedSection from "../components/ContainedSection.astro"
+import ColorPalette from "../components/brand/ColorPalette.astro"
+import H1 from "../components/typography/h1.astro"
+import FontDisplay from "../components/brand/FontDisplay.astro"
+import LogoDisplay from "../components/brand/LogoDisplay.astro"
+import PdfDisplay from "../components/brand/PdfDisplay.astro"
+import { Image } from "astro:assets"
+import supermolot from "#/components/brand/supermolot-example.svg"
+import jetbrains from "#/components/brand/jetbrains-example.svg"
 ---
 
-<LanderSection>
-  <IntroHeading main title="Union Brand Kit">Logo, fonts, colors.</IntroHeading>
-  <Card padded>
-    <p class="mb-4 text-lg">
-      Here's our Logo Kit .zip with the following files. We provide svg and png
-      versions for all assets:
-    </p>
-    <ul class="mb-4 text-gray-400">
-      <li class="font-mono">
-        union-logo-banner-black-transparent.&#123;svg,png&#125;
-      </li>
-      <li class="font-mono">
-        union-logo-banner-transparent.&#123;svg,png&#125;
-      </li>
-      <li class="font-mono">union-logo-banner.&#123;svg,png&#125;</li>
-      <li class="font-mono">
-        union-logo-black-transparent.&#123;svg,png&#125;
-      </li>
-      <li class="font-mono">union-logo-transparent.&#123;svg,png&#125;</li>
-      <li class="font-mono">
-        union-logo-wide-black-transparent.&#123;svg,png&#125;
-      </li>
-      <li class="font-mono">union-logo-wide-transparent.&#123;svg,png&#125;</li>
-      <li class="font-mono">union-logo-wide.&#123;svg,png&#125;</li>
-      <li class="font-mono">union-logo.&#123;svg,png&#125;</li>
-    </ul>
-    <ButtonA href="/union-logo.zip">Download union-logo.zip</ButtonA>
-  </Card>
-</LanderSection>
-<LanderSection>
-  <IntroHeading title="Fonts" />
-  <Card padded>
-    <p class="mb-4 text-lg">
-      Our font is the <b>Display Variant</b> of Inter v4. The display variant is
-      assigned to an opsz variable-font axis, and exposed as a second family "Inter
-      Display" as static fonts.
-    </p>
+<Layout title="Brand">
+  <ContainedSection className="py-16">
+    <H1>Our <span class="text-accent-500">brand</span></H1>
 
-    <ButtonA
-      href="https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip"
-      >Download Inter-4.0.zip</ButtonA
-    >
-  </Card>
-</LanderSection>
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex flex-col gap-4">
+        <div class="flex w-full justify-between items-center">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-accent-500"></div>
+            <p class="font-mono text-2xl">LOGOTYPE</p>
+          </div>
+          <a
+            class="font-bold font-mono text-accent-500"
+            target="_blank"
+            href="https://drive.google.com/drive/folders/1Q4Qci4TtHYCWvB9oNA-SuYEPgyA_AMVI"
+            >[DOWNLOAD]</a
+          >
+        </div>
+        <LogoDisplay />
+      </div>
+    </div>
 
-<LanderSection>
-  <IntroHeading title="Colors" />
-  <Card>
-    <ul
-      class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full m-0 p-0"
-    >
-      {
-        colors.map((color) => (
-          <li class=" w-full p-4 flex gap-4">
-            <div
-              style={`background-color: ${color.code}`}
-              class="rounded w-12 h-12"
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 bg-accent-500"></div>
+        <p class="font-mono text-2xl">COLORS</p>
+      </div>
+
+      <div class="grid grid-cols-5 gap-4">
+        <ColorPalette
+          label="Primary"
+          colors={["#000000", "#FFFFFF"]}
+          class="col-span-full md:col-span-3"
+          vertical
+        />
+        <ColorPalette
+          label="Secondary"
+          colors={["#A0ECFD", "#030711", "#9CA3AF", "#111214"]}
+          class="col-span-full md:col-span-2"
+          vertical
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-accent-500"></div>
+          <p class="font-mono text-2xl">TYPOGRAPHY</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FontDisplay
+            fontFamily="mono"
+            label="Jet Brains"
+            link="https://drive.google.com/file/d/1Gq_txYmdtL7lebQTuFCqRP4apDMDU4yN/view?usp=sharing"
+          >
+            <Image
+              src={jetbrains}
+              alt="Jet brains example"
+              class="h-full w-fit"
             />
-            <div>
-              <div class="text-xl font-bold">{color.name}</div>
-              <div class="font-mono"> {color.code}</div>
-            </div>
-          </li>
-        ))
-      }
-    </ul>
-  </Card>
-</LanderSection>
+          </FontDisplay>
+          <FontDisplay
+            fontFamily="supermolot"
+            label="Supermolot"
+            link="https://drive.google.com/file/d/1kS9aRiy5f7zS70VHROiYXcZHLJFExMFO/view?usp=sharing"
+          >
+            <Image
+              src={supermolot}
+              alt="supermolot example"
+              class="h-full w-fit"
+            />
+          </FontDisplay>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-accent-500"></div>
+          <p class="font-mono text-2xl">BRAND GUIDE</p>
+        </div>
+        <PdfDisplay />
+      </div>
+    </div>
+  </ContainedSection>
+</Layout>
