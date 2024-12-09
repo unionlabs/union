@@ -22,7 +22,7 @@ use unionlabs::{
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
     signer::CosmosSigner,
-    ErrorReporter, MaybeRecoverableError, WasmClientType,
+    ErrorReporter, WasmClientType,
 };
 
 use crate::{
@@ -529,24 +529,6 @@ pub enum BroadcastTxCommitError {
     AccountSequenceMismatch(#[source] Option<tonic::Status>),
     #[error("out of gas")]
     OutOfGas,
-}
-
-impl MaybeRecoverableError for BroadcastTxCommitError {
-    fn is_recoverable(&self) -> bool {
-        match self {
-            // tx wasn't included, retry unconditionally
-            Self::Inclusion(_) => true,
-            Self::Tx(code) => matches!(
-                code,
-                CosmosSdkError::SdkError(SdkError::ErrTxInMempoolCache)
-                    | CosmosSdkError::SdkError(SdkError::ErrMempoolIsFull)
-                    | CosmosSdkError::SdkError(SdkError::ErrTxTimeoutHeight)
-                    | CosmosSdkError::SdkError(SdkError::ErrWrongSequence)
-            ),
-            Self::SimulateTx(_) => false,
-            _ => false,
-        }
-    }
 }
 
 #[allow(non_upper_case_globals)] // TODO: Report this upstream to num_enum

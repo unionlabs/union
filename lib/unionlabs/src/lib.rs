@@ -34,16 +34,11 @@ pub const DELAY_PERIOD: u64 = 0;
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
 
-pub mod cosmwasm;
-
 #[cfg(feature = "near")]
 pub mod near;
 
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
-
-/// Defines types that are extended from tendermint in cometbls
-pub mod cometbls;
 
 /// Defines types that wrap the cosmos specification, matching the proto module structure.
 pub mod cosmos;
@@ -73,6 +68,7 @@ pub mod bounded;
 
 pub mod constants;
 
+// TODO: Remove (only used in ucs01-relay-api currently)
 pub mod validated;
 
 pub mod bytes;
@@ -170,16 +166,8 @@ macro_rules! export_wasm_client_type {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WasmClientType {
-    Ethereum,
     Cometbls,
     Tendermint,
-    Scroll,
-    Arbitrum,
-    Linea,
-    // TODO: Rename to beacon-kit
-    Berachain,
-    EvmInCosmos,
-    Movement,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -208,15 +196,8 @@ impl FromStr for WasmClientType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Ethereum" => Ok(WasmClientType::Ethereum),
             "Cometbls" => Ok(WasmClientType::Cometbls),
             "Tendermint" => Ok(WasmClientType::Tendermint),
-            "Scroll" => Ok(WasmClientType::Scroll),
-            "Arbitrum" => Ok(WasmClientType::Arbitrum),
-            "Linea" => Ok(WasmClientType::Linea),
-            "Berachain" => Ok(WasmClientType::Berachain),
-            "EvmInCosmos" => Ok(WasmClientType::EvmInCosmos),
-            "Movement" => Ok(WasmClientType::Movement),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -225,15 +206,8 @@ impl FromStr for WasmClientType {
 impl Display for WasmClientType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Ethereum => write!(f, "Ethereum"),
             Self::Cometbls => write!(f, "Cometbls"),
             Self::Tendermint => write!(f, "Tendermint"),
-            Self::Scroll => write!(f, "Scroll"),
-            Self::Arbitrum => write!(f, "Arbitrum"),
-            Self::Linea => write!(f, "Linea"),
-            Self::Berachain => write!(f, "Berachain"),
-            Self::EvmInCosmos => write!(f, "EvmInCosmos"),
-            Self::Movement => write!(f, "Movement"),
         }
     }
 }
@@ -266,13 +240,6 @@ pub fn parse_wasm_client_type(
         .map(str::parse)
         .transpose()
 }
-
-// TODO: remove this as it is unused
-pub trait MaybeRecoverableError: core::error::Error {
-    fn is_recoverable(&self) -> bool;
-}
-
-fn _is_object_safe(_: &dyn MaybeRecoverableError) {}
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)

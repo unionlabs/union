@@ -519,17 +519,10 @@ impl StateModuleServer<IbcClassic> for Module {
                 Ok(ClientInfo {
                     client_type: match self.client_type_of_checksum(checksum).await? {
                         Some(ty) => match ty {
-                            WasmClientType::Ethereum => ClientType::new(ClientType::ETHEREUM),
                             WasmClientType::Cometbls => {
                                 ClientType::new(ClientType::COMETBLS_GROTH16)
                             }
                             WasmClientType::Tendermint => ClientType::new(ClientType::TENDERMINT),
-                            WasmClientType::Scroll => ClientType::new(ClientType::SCROLL),
-                            WasmClientType::Arbitrum => ClientType::new(ClientType::ARBITRUM),
-                            WasmClientType::Linea => todo!(),
-                            WasmClientType::Berachain => ClientType::new(ClientType::BEACON_KIT),
-                            WasmClientType::Movement => ClientType::new(ClientType::MOVEMENT),
-                            WasmClientType::EvmInCosmos => todo!(),
                         },
                         None => {
                             warn!(%client_id, "unknown client type for 08-wasm client");
