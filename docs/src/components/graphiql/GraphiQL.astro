@@ -33,7 +33,7 @@ interface Props {}
 </script>
 
 <style lang="postcss" is:global>
-  :root {
+:root {
   --sl-mobile-toc-height: 0;
   --color-base: #1f1f1f;
 }
@@ -44,40 +44,40 @@ interface Props {}
 
 .graphiql-execute-button {
   background-color: theme(colors.accent.500) !important;
-  & svg {
-    color: #1F1F1F !important;
-  }
 }
 
 .graphiql-horizontal-drag-bar {
   width: 2px !important;
   height: 100% !important;
-  background-color: #1f1f1f !important;
 }
 
-.graphiql-container,
-.graphiql-editors,
-.graphiql-editor,
-.graphiql-explorer,
-.graphiql-session,
-.graphiql-dialog {
-  background-color: #1f1f1f !important;
+html[data-theme='dark'] {
+  & .graphiql-toolbar,
+  .graphiql-editor-tool,
+  .graphiql-editor-tools,
+  .CodeMirror-scroll,
+  .CodeMirror-gutter,
+  .graphiql-query-editor,
+  .graphiql-session,
+  .graphiql-session-header {
+    background-color: #131313 !important;
+  }
+
+  & .graphiql-container,
+  .graphiql-editors,
+  .graphiql-editor,
+  .graphiql-explorer,
+  .graphiql-dialog,
+  .graphiql-horizontal-drag-bar {
+    background-color: #1f1f1f !important;
+  }
+
+  & .graphiql-execute-button svg {
+    color: #1F1F1F !important;
+  }
 }
 
-.graphiql-toolbar,
-.graphiql-editor-tool,
-.graphiql-editor-tools,
-.CodeMirror-scroll,
-.CodeMirror-gutter,
-.graphiql-query-editor,
-.graphiql-session,
-.graphiql-session-header {
-  background-color: #131313 !important;
-}
-
-.graphiql-query-editor {
-  /* padding: 0px !important; */
-}
+.graphiql-query-editor {}
 
 .graphiql-session {
   border-radius: 0 0 0.5rem 0.5rem;
@@ -142,6 +142,7 @@ main[data-pagefind-body] {
   cursor: default !important;
   color: transparent !important;
   background: transparent !important;
+
   & svg {
     visibility: hidden !important;
     color: transparent !important;
