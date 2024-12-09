@@ -52,6 +52,7 @@ impl<T: ZkpVerifier> union_ibc_light_client::IbcClient for CometblsLightClient<T
             &storage_proof,
             &SDK_SPECS,
             &consensus_state.app_hash,
+            // FIXME: concat(contract, key) right?
             &[b"wasm".to_vec(), key],
             value,
         )
@@ -69,6 +70,7 @@ impl<T: ZkpVerifier> union_ibc_light_client::IbcClient for CometblsLightClient<T
             &storage_proof,
             &SDK_SPECS,
             &consensus_state.app_hash,
+            // FIXME: concat(contract, key) right?
             &[b"wasm".to_vec(), key],
         )
         .map_err(Into::<Error>::into)?)

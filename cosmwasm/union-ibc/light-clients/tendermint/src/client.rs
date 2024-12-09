@@ -4,7 +4,7 @@ use cometbft_types::types::{
 use cosmwasm_std::Empty;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
-use tendermint_verifier::types::SignatureVerifier;
+use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use union_ibc_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
@@ -14,7 +14,7 @@ use unionlabs::{
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
         client::height::Height,
-        commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof},
+        commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
 };
 
@@ -54,9 +54,7 @@ impl IbcClient for TendermintLightClient {
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-
         let path = MerklePath::decode_as::<Proto>(&key).unwrap();
-        // .map_err(|e| Self::Error::from(MerkleProofDecode(e)))?;
 
         ics23::ibc_api::verify_membership(
             &storage_proof,
@@ -81,7 +79,6 @@ impl IbcClient for TendermintLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-
         let path = MerklePath::decode_as::<Proto>(&key).unwrap();
 
         ics23::ibc_api::verify_non_membership(
@@ -101,105 +98,20 @@ impl IbcClient for TendermintLightClient {
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
-        mut header: Self::Header,
+        header: Self::Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
         union_ibc_light_client::IbcClientError<Self>,
     > {
-        set_total_voting_power(&mut header.validator_set).map_err(Error::from)?;
-        set_total_voting_power(&mut header.trusted_validators).map_err(Error::from)?;
-
-        let mut client_state = ctx.read_self_client_state()?;
+        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
-
-        check_trusted_header(&header, consensus_state.next_validators_hash.as_encoding())
-            .map_err(Error::from)?;
-
-        let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
-            Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
-        )?;
-
-        if revision_number != header.trusted_height.revision() {
-            return Err(Error::from(RevisionNumberMismatch {
-                trusted_revision_number: revision_number,
-                header_revision_number: header.trusted_height.revision(),
-            })
-            .into());
-        }
-
-        let signed_height = header
-            .signed_header
-            .header
-            .height
-            .inner()
-            .try_into()
-            .expect("value is bounded >= 0; qed;");
-
-        if signed_height <= header.trusted_height.height() {
-            return Err(IbcClientError::ClientSpecific(
-                InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
-                    signed_height,
-                    trusted_height: header.trusted_height.height(),
-                }
-                .into(),
-            ));
-        }
-
-        let block_timestamp = ctx.env.block.time;
-
-        // FIXME: unionlabs is tied to cosmwasm <2, the TryFrom impl can't be used
-        let block_timestamp_proto = unionlabs::google::protobuf::timestamp::Timestamp {
-            seconds: i64::try_from(block_timestamp.seconds())
-                .expect("impossible")
-                .try_into()
-                .expect("impossible"),
-            nanos: i32::try_from(block_timestamp.subsec_nanos())
-                .expect("impossible")
-                .try_into()
-                .expect("impossible"),
-        };
-
-        tendermint_verifier::verify::verify(
-            &construct_partial_header(
-                client_state.chain_id.clone(),
-                i64::try_from(header.trusted_height.height())
-                    .map_err(|_| {
-                        Error::from(IbcHeightTooLargeForTendermintHeight(
-                            header.trusted_height.height(),
-                        ))
-                    })?
-                    .try_into()
-                    .expect(
-                        "value is converted from u64, which is positive, \
-                        and the expected bounded type is >= 0; qed;",
-                    ),
-                consensus_state.timestamp,
-                consensus_state.next_validators_hash,
-            ),
-            &header.trusted_validators,
-            &header.signed_header,
-            &header.validator_set,
-            client_state.trusting_period,
-            block_timestamp_proto,
-            client_state.max_clock_drift,
-            &client_state.trust_level,
+        Ok(verify_header(
+            client_state,
+            consensus_state,
+            header,
+            ctx.env.block.time,
             &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
-        )
-        .map_err(Error::TendermintVerify)?;
-
-        let update_height = header
-            .signed_header
-            .header
-            .height
-            .inner()
-            .try_into()
-            .expect("impossible");
-
-        if client_state.latest_height.height() < update_height {
-            *client_state.latest_height.height_mut() = update_height;
-        }
-
-        Ok((update_height, client_state, consensus_state))
+        )?)
     }
 
     fn misbehaviour(
@@ -242,6 +154,111 @@ impl IbcClient for TendermintLightClient {
     ) -> Result<(), IbcClientError<Self>> {
         Ok(())
     }
+}
+
+pub fn verify_header<V: HostFns>(
+    mut client_state: ClientState,
+    consensus_state: ConsensusState,
+    mut header: Header,
+    block_timestamp: cosmwasm_std::Timestamp,
+    signature_verifier: &SignatureVerifier<V>,
+) -> Result<(u64, ClientState, ConsensusState), Error> {
+    set_total_voting_power(&mut header.validator_set).map_err(Error::from)?;
+    set_total_voting_power(&mut header.trusted_validators).map_err(Error::from)?;
+
+    check_trusted_header(&header, consensus_state.next_validators_hash.as_encoding())
+        .map_err(Error::from)?;
+
+    let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
+        Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
+    )?;
+
+    if revision_number != header.trusted_height.revision() {
+        return Err(Error::from(RevisionNumberMismatch {
+            trusted_revision_number: revision_number,
+            header_revision_number: header.trusted_height.revision(),
+        }));
+    }
+
+    let signed_height = header
+        .signed_header
+        .header
+        .height
+        .inner()
+        .try_into()
+        .expect("value is bounded >= 0; qed;");
+
+    if signed_height <= header.trusted_height.height() {
+        return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
+            signed_height,
+            trusted_height: header.trusted_height.height(),
+        }
+        .into());
+    }
+
+    // FIXME: unionlabs is tied to cosmwasm <2, the TryFrom impl can't be used
+    let block_timestamp_proto = unionlabs::google::protobuf::timestamp::Timestamp {
+        seconds: i64::try_from(block_timestamp.seconds())
+            .expect("impossible")
+            .try_into()
+            .expect("impossible"),
+        nanos: i32::try_from(block_timestamp.subsec_nanos())
+            .expect("impossible")
+            .try_into()
+            .expect("impossible"),
+    };
+
+    tendermint_verifier::verify::verify(
+        &construct_partial_header(
+            client_state.chain_id.clone(),
+            i64::try_from(header.trusted_height.height())
+                .map_err(|_| {
+                    Error::from(IbcHeightTooLargeForTendermintHeight(
+                        header.trusted_height.height(),
+                    ))
+                })?
+                .try_into()
+                .expect(
+                    "value is converted from u64, which is positive, \
+                        and the expected bounded type is >= 0; qed;",
+                ),
+            consensus_state.timestamp,
+            consensus_state.next_validators_hash,
+        ),
+        &header.trusted_validators,
+        &header.signed_header,
+        &header.validator_set,
+        client_state.trusting_period,
+        block_timestamp_proto,
+        client_state.max_clock_drift,
+        &client_state.trust_level,
+        signature_verifier,
+    )
+    .map_err(Error::TendermintVerify)?;
+
+    let update_height = header
+        .signed_header
+        .header
+        .height
+        .inner()
+        .try_into()
+        .expect("impossible");
+
+    if client_state.latest_height.height() < update_height {
+        *client_state.latest_height.height_mut() = update_height;
+    }
+
+    Ok((
+        update_height,
+        client_state,
+        ConsensusState {
+            timestamp: header.signed_header.header.time,
+            root: MerkleRoot {
+                hash: (*header.signed_header.header.app_hash.get()).into(),
+            },
+            next_validators_hash: header.signed_header.header.next_validators_hash,
+        },
+    ))
 }
 
 pub fn set_total_voting_power(validator_set: &mut ValidatorSet) -> Result<(), MathOverflow> {

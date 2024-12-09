@@ -4,6 +4,7 @@ name    = "berachain-light-client-types"
 version = "0.1.0"
 
 [dependencies]
+alloy                         = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types              = { workspace = true }
 ethereum-light-client-types   = { workspace = true }
 protos                        = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
@@ -14,4 +15,6 @@ unionlabs                     = { workspace = true }
 
 [features]
 default = []
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+proto   = ["dep:protos"]
 serde   = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]

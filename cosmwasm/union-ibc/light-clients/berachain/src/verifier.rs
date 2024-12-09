@@ -1,45 +1,35 @@
 use cometbft_types::crypto::public_key::PublicKey;
-use cosmwasm_std::Deps;
-use ethereum_light_client::custom_query::VerificationContext;
-use ethereum_verifier::verify::BlsVerify;
+use cosmwasm_std::{Deps, Empty, BLS12_381_G1_GENERATOR};
 use sha2::Digest;
 use tendermint_verifier::types::HostFns;
-use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
 
-pub struct Bls12_381Verifier<'a> {
-    inner: VerificationContext<'a>,
+pub struct Bls12Verifier<'a> {
+    pub deps: Deps<'a, Empty>,
 }
 
-impl<'a> Bls12_381Verifier<'a> {
-    pub fn new(deps: Deps<'a, UnionCustomQuery>) -> Self {
-        Self {
-            inner: VerificationContext { deps },
-        }
-    }
-}
-
-impl<'a> HostFns for Bls12_381Verifier<'a> {
-    fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
+impl HostFns for Bls12Verifier<'_> {
+    fn verify_signature(
+        &self,
+        pubkey: &cometbft_types::crypto::public_key::PublicKey,
+        msg: &[u8],
+        sig: &[u8],
+    ) -> bool {
         match pubkey {
-            PublicKey::Bls12_381(ref key) => {
-                let Ok(key) = key.try_into() else {
-                    return false;
-                };
-
-                let Ok(sig) = sig.try_into() else {
-                    return false;
-                };
-
+            PublicKey::Bls12_381(ref pubkey) => {
                 let msg = if msg.len() > 32 {
                     sha2::Sha256::new().chain_update(msg).finalize().to_vec()
                 } else {
                     msg.to_vec()
                 };
 
-                match self.inner.fast_aggregate_verify([&key], msg, sig) {
-                    Ok(()) => true,
-                    Err(_) => false,
-                }
+                let valid = self.deps.api.bls12_381_pairing_equality(
+                    &BLS12_381_G1_GENERATOR,
+                    sig,
+                    pubkey,
+                    &msg,
+                );
+
+                valid.is_ok()
             }
             _ => false,
         }
@@ -47,7 +37,7 @@ impl<'a> HostFns for Bls12_381Verifier<'a> {
 
     fn verify_batch_signature(
         &self,
-        pubkeys: &[PublicKey],
+        pubkeys: &[cometbft_types::crypto::public_key::PublicKey],
         msgs: &[&[u8]],
         sigs: &[&[u8]],
     ) -> bool {

@@ -35,11 +35,13 @@ ics23                         = { workspace = true }
 tendermint-light-client       = { workspace = true, features = ["library"] }
 tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 tendermint-verifier           = { workspace = true }
+union-ibc-light-client        = { workspace = true }
+union-ibc-msg                 = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }
-ethereum-light-client = { workspace = true, features = ["test-utils"] }
+ethereum-light-client = { workspace = true }
 lazy_static           = "1.4.0"
 serde_json            = { workspace = true }
 

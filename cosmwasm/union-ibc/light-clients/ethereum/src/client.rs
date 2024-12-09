@@ -87,16 +87,9 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     }
 
     fn verify_creation(
-        client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        if client_state.latest_height != consensus_state.slot {
-            return Err(Error::InvalidInitialState {
-                client_state_latest_slot: client_state.latest_height,
-                consensus_state_slot: consensus_state.slot,
-            }
-            .into());
-        }
         Ok(())
     }
 
