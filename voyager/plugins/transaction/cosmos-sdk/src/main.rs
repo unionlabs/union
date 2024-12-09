@@ -61,7 +61,7 @@ async fn main() {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
@@ -72,7 +72,7 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub chain_id: ChainId,
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
     pub ws_url: String,
     pub grpc_url: String,
@@ -103,7 +103,7 @@ impl Plugin for Module {
         .bech32_prefix;
 
         Ok(Self {
-            ibc_union_contract_address: config.ibc_union_contract_address,
+            ibc_host_contract_address: config.ibc_host_contract_address,
             keyring: CosmosKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
@@ -181,7 +181,7 @@ impl Module {
                     // TODO: Figure out a way to thread this value through
                     let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-                    let msgs = process_msgs(msgs, signer, self.ibc_union_contract_address.clone());
+                    let msgs = process_msgs(msgs, signer, self.ibc_host_contract_address.clone());
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
@@ -744,7 +744,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &CosmosSigner,
-    ibc_union_contract_address: Bech32<H256>,
+    ibc_host_contract_address: Bech32<H256>,
 ) -> Vec<(IbcMessage, protos::google::protobuf::Any)> {
     msgs.into_iter()
         .map(|msg| {
@@ -898,7 +898,7 @@ fn process_msgs(
                     ibc_union_spec::Datagram::CreateClient(msg_create_client) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
                                 union_ibc_msg::msg::MsgCreateClient {
                                     client_type: msg_create_client.client_type.to_string(),
@@ -914,7 +914,7 @@ fn process_msgs(
                     ibc_union_spec::Datagram::UpdateClient(msg_update_client) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::UpdateClient(
                                 union_ibc_msg::msg::MsgUpdateClient {
                                     client_id: msg_update_client.client_id,
@@ -929,7 +929,7 @@ fn process_msgs(
                     ibc_union_spec::Datagram::ConnectionOpenInit(msg_connection_open_init) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
                                     union_ibc_msg::msg::MsgConnectionOpenInit {
@@ -947,7 +947,7 @@ fn process_msgs(
                     ibc_union_spec::Datagram::ConnectionOpenTry(msg_connection_open_try) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenTry(
                                     union_ibc_msg::msg::MsgConnectionOpenTry {
@@ -969,7 +969,7 @@ fn process_msgs(
                     ibc_union_spec::Datagram::ConnectionOpenAck(msg_connection_open_ack) => {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
                                 &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenAck(
                                     union_ibc_msg::msg::MsgConnectionOpenAck {
@@ -990,7 +990,7 @@ fn process_msgs(
                         msg_connection_open_confirm,
                     ) => mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                         sender: signer.to_string(),
-                        contract: ibc_union_contract_address.to_string(),
+                        contract: ibc_host_contract_address.to_string(),
                         msg: serde_json::to_vec(
                             &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
                                 union_ibc_msg::msg::MsgConnectionOpenConfirm {
@@ -1024,7 +1024,7 @@ fn process_msgs(
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&channel_open_try).unwrap(),
                             funds: vec![],
                         })
@@ -1047,7 +1047,7 @@ fn process_msgs(
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&channel_open_confirm).unwrap(),
                             funds: vec![],
                         })
@@ -1073,7 +1073,7 @@ fn process_msgs(
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&packet_recv).unwrap(),
                             funds: vec![],
                         })
@@ -1095,7 +1095,7 @@ fn process_msgs(
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
-                            contract: ibc_union_contract_address.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&packet_recv).unwrap(),
                             funds: vec![],
                         })

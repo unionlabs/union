@@ -49,7 +49,7 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,7 +57,7 @@ pub struct Module {
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -88,7 +88,7 @@ impl ProofModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
-            ibc_union_contract_address: config.ibc_union_contract_address,
+            ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
 }
@@ -119,7 +119,7 @@ impl ProofModuleServer<IbcUnion> for Module {
     ) -> RpcResult<Value> {
         let data = [0x03]
             .into_iter()
-            .chain(*self.ibc_union_contract_address.data())
+            .chain(*self.ibc_host_contract_address.data())
             .chain(path.key())
             .collect::<Vec<_>>();
 

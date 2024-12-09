@@ -55,7 +55,7 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 }
@@ -65,7 +65,7 @@ pub struct Module {
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
-    pub ibc_union_contract_address: Bech32<H256>,
+    pub ibc_host_contract_address: Bech32<H256>,
 }
 
 impl StateModule<IbcUnion> for Module {
@@ -96,7 +96,7 @@ impl StateModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
-            ibc_union_contract_address: config.ibc_union_contract_address,
+            ibc_host_contract_address: config.ibc_host_contract_address,
             checksum_cache: Arc::new(DashMap::default()),
         })
     }
@@ -117,7 +117,7 @@ impl Module {
             .abci_query(
                 "/cosmwasm.wasm.v1.Query/SmartContractState",
                 QuerySmartContractStateRequest {
-                    address: self.ibc_union_contract_address.to_string(),
+                    address: self.ibc_host_contract_address.to_string(),
                     query_data: serde_json::to_vec(query).unwrap(),
                 }
                 .encode_to_vec()

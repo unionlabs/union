@@ -23,7 +23,7 @@
         "config": {
           "ws_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
-          "ibc_union_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
+          "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
       },
       {
@@ -50,7 +50,7 @@
         "config": {
           "ws_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
-          "ibc_union_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
+          "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
       },
       {
@@ -166,7 +166,7 @@
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "ibc_union_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2",
+        "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2",
         "keyring": {
           "name": "union-devnet",
           "keys": [

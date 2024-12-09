@@ -36,15 +36,13 @@ pub enum Error {
     #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
     MisbehaviourCannotExist(u64, u64),
 
-    #[error(transparent)]
-    StdError(#[from] StdError),
-
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
 
     #[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
     InvalidCommitmentKey { expected: U256, found: U256 },
 
+    // REVIEW: Unused?
     #[error(
         "client state's latest slot ({client_state_latest_slot}) \
         expected to be equal to consensus state's slot ({consensus_state_slot})"
