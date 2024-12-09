@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     cosmos::ics23::proof_spec::ProofSpec, google::protobuf::duration::Duration,
     ibc::core::client::height::Height,
@@ -6,7 +5,8 @@ use unionlabs::{
 
 use crate::Fraction;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,

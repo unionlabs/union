@@ -1,15 +1,54 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     google::protobuf::timestamp::Timestamp,
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::commitment::merkle_root::MerkleRoot,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub timestamp: Timestamp,
     pub root: MerkleRoot,
     pub next_validators_hash: H256<HexUnprefixed>,
+}
+
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use alloy::sol_types::SolValue;
+    use unionlabs::impl_ethabi_via_try_from_into;
+
+    use super::*;
+
+    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
+
+    alloy::sol! {
+        struct SolConsensusState {
+            uint64 timestamp;
+            bytes32 root;
+            bytes32 nextValidatorsHash;
+        }
+    }
+
+    impl From<ConsensusState> for SolConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp.as_unix_nanos(),
+                root: value.root.hash.get().into(),
+                nextValidatorsHash: value.next_validators_hash.get().into(),
+            }
+        }
+    }
+
+    impl From<SolConsensusState> for ConsensusState {
+        fn from(value: SolConsensusState) -> Self {
+            Self {
+                timestamp: Timestamp::try_from_unix_nanos(value.timestamp.into())
+                    .expect("impossible"),
+                root: H256::new(value.root.0).into(),
+                next_validators_hash: H256::new(value.nextValidatorsHash.0),
+            }
+        }
+    }
 }
 
 #[cfg(feature = "proto")]

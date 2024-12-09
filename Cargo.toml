@@ -90,7 +90,7 @@ members = [
 
   # "cosmwasm/union-ibc/light-clients/scroll",
 
-  # "cosmwasm/union-ibc/light-clients/tendermint",
+  "cosmwasm/union-ibc/light-clients/tendermint",
 
   # "cosmwasm/union-ibc/light-clients/linea",
 

@@ -1,12 +1,9 @@
-use cometbft_types::{
-    crypto::public_key::PublicKey,
-    types::{
-        block_id::BlockId, canonical_block_id::CanonicalBlockId,
-        canonical_part_set_header::CanonicalPartSetHeader, canonical_vote::CanonicalVote,
-        commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
-        signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
-        validator_set::ValidatorSet,
-    },
+use cometbft_types::types::{
+    block_id::BlockId, canonical_block_id::CanonicalBlockId,
+    canonical_part_set_header::CanonicalPartSetHeader, canonical_vote::CanonicalVote,
+    commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
+    signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
+    validator_set::ValidatorSet,
 };
 use prost::Message;
 use unionlabs::{
@@ -72,12 +69,7 @@ pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
         .iter()
         .map(|validator| {
             SimpleValidator {
-                pub_key: match &validator.pub_key {
-                    // hackerman
-                    // https://github.com/unionlabs/cometbls/issues/86
-                    PublicKey::Bls12_381(key) => PublicKey::Bn254(key.clone()),
-                    key => key.clone(),
-                },
+                pub_key: validator.pub_key.clone(),
                 voting_power: validator.voting_power.inner(),
             }
             .encode_as::<Proto>()
