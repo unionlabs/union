@@ -10,6 +10,12 @@ pub struct MerkleRoot {
     pub hash: H256<Base64>,
 }
 
+impl From<H256<Base64>> for MerkleRoot {
+    fn from(value: H256<Base64>) -> Self {
+        Self { hash: value }
+    }
+}
+
 impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
     fn from(value: MerkleRoot) -> Self {
         Self {

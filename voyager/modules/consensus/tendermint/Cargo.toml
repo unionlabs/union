@@ -16,7 +16,7 @@ prost                         = { workspace = true }
 protos                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = ["proto"] }
+tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }
 thiserror                     = { workspace = true }
 tokio                         = { workspace = true }
 tracing                       = { workspace = true }

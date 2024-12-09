@@ -1,5 +1,5 @@
-use ics008_wasm_client::{IbcClient, IbcClientError};
 use tendermint_light_client_types::{ClientState, Header};
+use union_ibc_light_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
@@ -130,22 +130,6 @@ pub struct MathOverflow;
 impl From<Error> for IbcClientError<TendermintLightClient> {
     fn from(value: Error) -> Self {
         IbcClientError::ClientSpecific(value)
-    }
-}
-
-// convenience
-impl<T: IbcClient<Error: From<InvalidHeaderError>>> From<InvalidHeaderError> for IbcClientError<T> {
-    fn from(value: InvalidHeaderError) -> Self {
-        IbcClientError::ClientSpecific(T::Error::from(value))
-    }
-}
-
-// convenience
-impl<T: IbcClient<Error: From<MigrateClientStoreError>>> From<MigrateClientStoreError>
-    for IbcClientError<T>
-{
-    fn from(value: MigrateClientStoreError) -> Self {
-        IbcClientError::ClientSpecific(T::Error::from(value))
     }
 }
 

@@ -19,7 +19,7 @@ prost                         = { workspace = true }
 protos                        = { workspace = true }
 serde-utils                   = { workspace = true }
 sha2                          = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = ["proto"] }
+tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 

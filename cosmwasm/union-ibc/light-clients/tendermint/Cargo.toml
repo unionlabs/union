@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bytes           = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+cosmwasm-std    = { version = "2.1.4", features = ["abort", "cosmwasm_2_1"] }
 hex             = { workspace = true }
 prost           = { workspace = true }
 protos          = { workspace = true, features = ["proto_full", "std"] }
@@ -30,11 +30,12 @@ sha3            = { workspace = true }
 thiserror       = { workspace = true }
 
 cometbft-types                = { workspace = true, features = ["proto", "hash"] }
-ics008-wasm-client            = { workspace = true }
 ics23                         = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = ["proto"] }
+tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 tendermint-verifier           = { workspace = true }
-unionlabs                     = { workspace = true, features = ["cosmwasm"] }
+union-ibc-light-client        = { workspace = true }
+union-ibc-msg                 = { workspace = true }
+unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

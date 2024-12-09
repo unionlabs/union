@@ -1,8 +1,8 @@
 use cometbft_types::types::{signed_header::SignedHeader, validator_set::ValidatorSet};
-use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub validator_set: ValidatorSet,
