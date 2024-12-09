@@ -1,15 +1,10 @@
-use berachain_light_client_types::ClientState;
-use ethereum_light_client::errors::{CanonicalizeStoredValueError, StoredValueMismatch};
-use ics008_wasm_client::IbcClientError;
+use ics23::ibc_api::VerifyMembershipError;
 use tendermint_light_client::errors::{
     IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError, InvalidHostTimestamp,
     MathOverflow, MerkleProofDecode, MigrateClientStoreError, NegativeTimestamp,
     RevisionNumberMismatch, TrustedValidatorsMismatch,
 };
-use unionlabs::{
-    encoding::{DecodeErrorOf, Proto},
-    ibc::lightclients::ethereum::storage_proof::StorageProof,
-};
+use union_ibc_light_client::IbcClientError;
 
 use crate::client::BerachainLightClient;
 
@@ -25,19 +20,10 @@ pub enum Error {
     InvalidHeader(#[from] InvalidHeaderError),
 
     #[error(transparent)]
-    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
-
-    #[error(transparent)]
-    StoredValueMismatch(#[from] StoredValueMismatch),
-
-    #[error(transparent)]
     MathOverflow(#[from] MathOverflow),
 
     #[error(transparent)]
     MerkleProofDecode(#[from] MerkleProofDecode),
-
-    #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
 
     #[error(transparent)]
     IbcHeightTooLargeForTendermintHeight(#[from] IbcHeightTooLargeForTendermintHeight),
@@ -52,9 +38,7 @@ pub enum Error {
     #[error(transparent)]
     TrustedValidatorsMismatch(#[from] TrustedValidatorsMismatch),
 
-    // #[error("verify membership error")]
-    // VerifyMembership(#[from] ethereum_light_client::errors::Error),
-    #[error("invalid execution payload header")]
+    #[error(transparent)]
     ExecutionPayloadHeader(#[from] beacon_api_types::execution_payload_header::ssz::Error),
 
     #[error(transparent)]
@@ -69,14 +53,17 @@ pub enum Error {
     #[error("IBC path is empty")]
     EmptyIbcPath,
 
-    #[error("unable to decode storage proof")]
-    StorageProofDecode(#[source] DecodeErrorOf<Proto, StorageProof>),
-
     #[error("unable to verify execution header proof")]
     ExecutionHeaderVerify(#[source] ics23::ibc_api::VerifyMembershipError),
 
-    #[error("unable to verify account storage root")]
-    VerifyAccountStorageRoot(#[source] ethereum_verifier::error::Error),
+    #[error(transparent)]
+    VerifyMembership(#[from] VerifyMembershipError),
+
+    #[error(transparent)]
+    Tendermint(#[from] tendermint_light_client::errors::Error),
+
+    #[error(transparent)]
+    VerifyStorage(#[from] evm_storage_verifier::error::Error),
 }
 
 // required for IbcClient trait
