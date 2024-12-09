@@ -110,6 +110,17 @@ module ucs03::fa_coin {
         fungible_asset::name<Metadata>(asset_metadata)
     }
 
+    #[view]
+    public fun name_with_metadata(asset: Object<Metadata>): string::String {
+        fungible_asset::name<Metadata>(asset)
+    }
+
+    #[view]
+    public fun symbol_with_metadata(asset: Object<Metadata>): string::String {
+        fungible_asset::symbol<Metadata>(asset)
+    }
+
+
     /// Deposit function override to ensure that the account is not denylisted and the FA coin is not paused.
     /// OPTIONAL
     public fun deposit<T: key>(
