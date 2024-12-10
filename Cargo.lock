@@ -1310,6 +1310,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-verifier"
+version = "0.1.0"
+dependencies = [
+ "bcs 0.1.6",
+ "hex-literal",
+ "sha3 0.10.8",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
@@ -3202,6 +3213,8 @@ name = "cometbls-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bcs 0.1.6",
+ "hex",
  "hex-literal",
  "protos",
  "serde",
@@ -7924,9 +7937,9 @@ dependencies = [
 name = "movement-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "ethereum-light-client-types",
  "hex-literal",
- "protos",
  "rlp",
  "serde",
  "sha3 0.10.8",
@@ -13034,6 +13047,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "union-ibc-movement-lc"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-types",
+ "aptos-verifier",
+ "bcs 0.1.6",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "hex",
+ "hex-literal",
+ "movement-light-client-types",
+ "protos",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "thiserror",
+ "union-ibc-light-client",
+ "union-ibc-msg",
+ "unionlabs",
+]
+
+[[package]]
 name = "union-ibc-msg"
 version = "1.0.0"
 dependencies = [
@@ -13300,49 +13342,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-chain-module-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bcs 0.1.6",
- "clap 4.5.4",
- "enumorph",
- "futures",
- "hex",
- "hex-literal",
- "ibc-union-spec",
- "jsonrpsee",
- "macros",
- "move-bindgen",
- "move-core-types",
- "movement-light-client-types",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
  "alloy",
  "ark-bn254",
  "ark-serialize 0.4.2",
+ "bcs 0.1.6",
  "clap 4.5.4",
  "cometbft-rpc",
  "cometbls-light-client-types",
@@ -13350,6 +13356,7 @@ dependencies = [
  "enumorph",
  "futures",
  "hex",
+ "hex-literal",
  "ibc-solidity",
  "jsonrpsee",
  "macros",
@@ -14058,6 +14065,43 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-state-module-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bcs 0.1.6",
+ "clap 4.5.4",
+ "enumorph",
+ "futures",
+ "hex",
+ "hex-literal",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "macros",
+ "move-bindgen",
+ "move-core-types",
+ "movement-light-client-types",
+ "prost 0.12.6",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
  "thiserror",
  "tokio",
  "tracing",

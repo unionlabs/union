@@ -104,7 +104,7 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
+    ($data."@type" == "identified_ibc_datagram_batch" or $data."@type" == "identified_ibc_datagram")
         and $data."@value".chain_id == "{chain_id}"
 else
     false

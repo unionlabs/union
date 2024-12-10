@@ -25,3 +25,5 @@ serde   = ["dep:serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }
+bcs = { workspace = true }
+hex = { workspace = true }

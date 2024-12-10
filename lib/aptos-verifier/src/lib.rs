@@ -77,17 +77,12 @@ pub fn verify_membership(
         return Err(StorageVerificationError::ExpectedMembershipVerification.into());
     };
 
-    let mut buf = vec![1];
-    bcs::serialize_into(&mut buf, &table_handle).unwrap();
-    buf.write_all(key).unwrap();
-
-    let hash = Sha3_256::new()
-        .chain_update(Sha3_256::new().chain_update("APTOS::StateKey").finalize())
-        .chain_update(&buf)
-        .finalize()
-        .into();
-
-    verify_existence_proof(proof, expected_root_hash, hash, value_hash)
+    verify_existence_proof(
+        proof,
+        expected_root_hash,
+        proof_leaf.key.into(),
+        proof_leaf.value_hash.into(),
+    )
 }
 
 pub fn verify_existence_proof(

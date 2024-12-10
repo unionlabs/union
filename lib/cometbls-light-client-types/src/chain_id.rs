@@ -71,35 +71,8 @@ impl<'de> serde::Deserialize<'de> for ChainId {
     where
         D: serde::Deserializer<'de>,
     {
-        struct ChainIdVisitor;
+        let s = <String as serde::Deserialize>::deserialize(deserializer)?;
 
-        impl<'de> Visitor<'de> for ChainIdVisitor {
-            type Value = ChainId;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string between 0 and 31 bytes")
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                ChainId::from_string(v).map_err(|_| {
-                    de::Error::invalid_value(
-                        de::Unexpected::Str(v),
-                        &"a string between 0 and 31 bytes",
-                    )
-                })
-            }
-
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                self.visit_str(v)
-            }
-        }
-
-        deserializer.deserialize_any(ChainIdVisitor)
+        ChainId::from_string(s).map_err(|e| de::Error::custom(e))
     }
 }

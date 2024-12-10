@@ -99,9 +99,13 @@ impl<T: Serialize + 'static> Serialize for RawVec<T> {
     {
         match (&self.0 as &dyn Any).downcast_ref::<Vec<u8>>() {
             Some(vec_u8) => {
-                // TODO: Figure out a way to not clone here
-                aptos_rest_client::aptos_api_types::HexEncodedBytes(vec_u8.to_vec())
-                    .serialize(serializer)
+                if serializer.is_human_readable() {
+                    // TODO: Figure out a way to not clone here
+                    aptos_rest_client::aptos_api_types::HexEncodedBytes(vec_u8.to_vec())
+                        .serialize(serializer)
+                } else {
+                    self.0.serialize(serializer)
+                }
             }
             None => self.0.serialize(serializer),
         }

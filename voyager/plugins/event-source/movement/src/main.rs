@@ -20,11 +20,12 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
+use move_bindgen::MoveOutputType;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    call::Call,
+    call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     data::{ChainEvent, Data},
     into_value,
@@ -316,9 +317,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
                             "ClientCreatedEvent" => {
-                                serde_json::from_value::<ibc::ClientCreatedEvent>(data)
-                                    .unwrap()
-                                    .into()
+                                let raw_created_event =
+                                    serde_json::from_value::<ibc::RawClientCreatedEvent>(data)
+                                        .unwrap();
+                                ibc::ClientCreatedEvent::from_raw(raw_created_event).into()
                             }
                             "ClientUpdated" => serde_json::from_value::<ibc::ClientUpdated>(data)
                                 .unwrap()
@@ -427,7 +429,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                         }
                         Ordering::Equal | Ordering::Greater => seq([
-                            defer(now() + 1),
+                            call(WaitForHeight {
+                                chain_id: self.chain_id.clone(),
+                                height: Height::new(height + 1),
+                                finalized: true,
+                            }),
                             call(PluginMessage::new(
                                 self.plugin_name(),
                                 ModuleCall::from(FetchBlocks { height: height + 1 }),

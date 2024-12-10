@@ -32,3 +32,5 @@ voyager-vm                  = { workspace = true }
 
 [dev-dependencies]
 hex.workspace = true
+hex-literal.workspace = true
+bcs.workspace = true

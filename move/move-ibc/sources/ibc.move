@@ -446,8 +446,6 @@ module ibc::ibc {
             light_client::create_client(
                 &get_ibc_signer(),
                 client_id,
-                // from_bcs::to_bytes(client_state),
-                // from_bcs::to_bytes(consensus_state),
                 client_state,
                 consensus_state
             );
@@ -1637,7 +1635,7 @@ module ibc::ibc {
 
         let next_sequence =
             table::borrow_with_default(
-                &store.commitments, b"nextClientSequence", &bcs::to_bytes<u64>(&0u64)
+                &store.commitments, b"nextClientSequence", &bcs::to_bytes<u32>(&0)
             );
         let next_sequence = from_bcs::to_u32(*next_sequence);
 
@@ -1860,6 +1858,13 @@ module ibc::ibc {
     //     let order_invalid = ordering_to_string(order_invalid);
     //     assert!(order_invalid == string::utf8(b"ORDER_INVALID"), 2003);
     // }
+
+    #[test(alice = @ibc)]
+    fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
+        init_module(alice);        
+
+        create_client(utf8(b"cometbls"), x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b", x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d");
+    }
 
     // #[test(alice = @ibc)]
     // public fun test_get_counterparty_hops(alice: &signer) acquires IBCStore {
