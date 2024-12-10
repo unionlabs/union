@@ -43,16 +43,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Prysm bls12-381 native for eth LC aggregate/verify custom query
-    blst = {
-      url = "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
-      flake = false;
-    };
-    bls-eth-go = {
-      url = "git+https://github.com/herumi/bls-eth-go-binary?ref=refs/tags/v1.33.0&submodules=1";
-      flake = false;
-    };
-
     ibc-go = {
       url = "github:unionlabs/ibc-go-union?rev=bfabb646cf7384bd33ee672f51a0e1325f545c10";
       flake = false;
@@ -83,24 +73,12 @@
       url = "github:CosmWasm/wasmvm/v1.5.4";
       flake = false;
     };
-    wasmvm-1_5_0 = {
-      url = "github:CosmWasm/wasmvm/v1.5.0";
-      flake = false;
-    };
-    wasmvm-2_0_0 = {
-      url = "github:CosmWasm/wasmvm/v2.0.0";
-      flake = false;
-    };
     wasmvm-2_1_2 = {
       url = "github:CosmWasm/wasmvm/v2.1.2";
       flake = false;
     };
     wasmvm-2_1_3 = {
       url = "github:CosmWasm/wasmvm/v2.1.3";
-      flake = false;
-    };
-    wasmvm-2_2_0 = {
-      url = "github:CosmWasm/wasmvm/v2.2.0-rc.2";
       flake = false;
     };
     stargaze = {
@@ -249,7 +227,6 @@
         ./tools/tools.nix
         ./tools/wasm-light-client.nix
         ./tools/libwasmvm/libwasmvm.nix
-        ./tools/libblst/libblst.nix
         ./tools/tidy/tidy.nix
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix

@@ -23,42 +23,6 @@
         "type": "github"
       }
     },
-    "bls-eth-go": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1704351134,
-        "narHash": "sha256-PpBs308170CHZt809QIdyy93D5x+5WTL7hlPytJrpXM=",
-        "ref": "refs/tags/v1.33.0",
-        "rev": "eb66a90ff51d7c982d668d6942e89815a8f7e323",
-        "revCount": 335,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/herumi/bls-eth-go-binary"
-      },
-      "original": {
-        "ref": "refs/tags/v1.33.0",
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/herumi/bls-eth-go-binary"
-      }
-    },
-    "blst": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1691598027,
-        "narHash": "sha256-oqljy+ZXJAXEB/fJtmB8rlAr4UXM+Z2OkDa20gpILNA=",
-        "owner": "supranational",
-        "repo": "blst",
-        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "supranational",
-        "repo": "blst",
-        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
-        "type": "github"
-      }
-    },
     "cometbls": {
       "flake": false,
       "locked": {
@@ -584,8 +548,6 @@
     "root": {
       "inputs": {
         "arion": "arion",
-        "bls-eth-go": "bls-eth-go",
-        "blst": "blst",
         "cometbls": "cometbls",
         "cosmosproto": "cosmosproto",
         "cosmossdk": "cosmossdk",
@@ -621,11 +583,8 @@
         "v0_25_0": "v0_25_0",
         "wasmd": "wasmd",
         "wasmvm": "wasmvm",
-        "wasmvm-1_5_0": "wasmvm-1_5_0",
-        "wasmvm-2_0_0": "wasmvm-2_0_0",
         "wasmvm-2_1_2": "wasmvm-2_1_2",
-        "wasmvm-2_1_3": "wasmvm-2_1_3",
-        "wasmvm-2_2_0": "wasmvm-2_2_0"
+        "wasmvm-2_1_3": "wasmvm-2_1_3"
       }
     },
     "rust-overlay": {
@@ -853,40 +812,6 @@
         "type": "github"
       }
     },
-    "wasmvm-1_5_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1698746477,
-        "narHash": "sha256-l0cNF0YjviEl/JLJ4VdvDtIGuAYyFfncVo83ROfQFD8=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "2041b184c146f278157d195361bc6cc6b56cc9d4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v1.5.0",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
-    "wasmvm-2_0_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1710250586,
-        "narHash": "sha256-OmETCXyhCXWOEW/emf1ZruLMPlH8iLvM8xrqFoDaxnw=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "5307690b77a5fef2da3747ec72abe8f29664aeca",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v2.0.0",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
     "wasmvm-2_1_2": {
       "flake": false,
       "locked": {
@@ -917,23 +842,6 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.1.3",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
-    "wasmvm-2_2_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1729869383,
-        "narHash": "sha256-dXLpgzsRw6j0foLAtzXc4apCWc4t9P0i+cuSdoZ5Gnk=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "2b79acde904d975904c2674fef3b30ac011bcf30",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v2.2.0-rc.2",
         "repo": "wasmvm",
         "type": "github"
       }

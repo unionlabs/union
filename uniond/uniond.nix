@@ -1,5 +1,4 @@
-{ inputs, ... }:
-{
+_: {
   perSystem =
     {
       pkgs,
@@ -16,8 +15,7 @@
     }:
     let
       libwasmvm = self'.packages.libwasmvm-2_1_3;
-      CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
-      CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
+      CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -s -w";
 
       mkUniondImage =
         uniond:
@@ -42,26 +40,6 @@
     in
     {
       packages = {
-        bls-eth =
-          let
-            isAarch64 = (builtins.head (pkgs.lib.splitString "-" system)) == "aarch64";
-          in
-          pkgs.pkgsStatic.stdenv.mkDerivation {
-            pname = "bls-eth";
-            version = inputs.bls-eth-go.shortRev;
-            src = inputs.bls-eth-go;
-            nativeBuildInputs = [
-              pkgs.pkgsStatic.nasm
-            ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
-            installPhase = ''
-              mkdir -p $out/lib
-              ls -al bls/lib/linux/
-              mv bls/lib/linux/${if isAarch64 then "arm64" else "amd64"}/*.a $out/lib
-            '';
-            enableParallelBuilding = true;
-            doCheck = true;
-          };
-
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
           (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
@@ -83,7 +61,6 @@
               // (
                 if pkgs.stdenv.isLinux then
                   {
-                    inherit CGO_CFLAGS;
                     inherit CGO_LDFLAGS;
                     nativeBuildInputs = [ goPkgs.musl ];
                     ldflags = [
