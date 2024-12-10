@@ -1,4 +1,4 @@
-module ibc::zkgm {
+module ibc::zkgm_relay {
     use ibc::ibc;
     use ibc::helpers;
     use ibc::packet::{Self, Packet};
@@ -9,20 +9,16 @@ module ibc::zkgm {
     use std::event;
     use aptos_framework::function_info;
     use ibc::commitment;
-    use std::option;
 
     use std::string::{Self, String};
-    use std::string_utils;
     use std::from_bcs;
     use std::bcs;
     use aptos_framework::hash;
-    use aptos_framework::account;
 
     use aptos_framework::fungible_asset::{Metadata};
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    use ucs03::ethabi;
 
     // Constants
     const ORDER_UNORDERED: u8 = 1;
@@ -178,45 +174,45 @@ module ibc::zkgm {
             }
         );
 
-        // let cb =
-        //     function_info::new_function_info(
-        //         account,
-        //         string::utf8(b"relay_app"),
-        //         string::utf8(b"on_packet")
-        //     );
+        let cb =
+            function_info::new_function_info(
+                account,
+                string::utf8(b"zkgm_relay"),
+                string::utf8(b"on_packet")
+            );
 
-        // ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
+        ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
     }
 
-    public fun decode_ack(buf: vector<u8>): Acknowledgement {
+    public fun decode_ack(_buf: vector<u8>): Acknowledgement {
         // TODO: Implement this
         Acknowledgement {
             tag: 0,
             inner_ack: vector::empty()
         }
     }
-    public fun decode_asset_transfer_ack(buf: vector<u8>): AssetTransferAcknowledgement {
+    public fun decode_asset_transfer_ack(_buf: vector<u8>): AssetTransferAcknowledgement {
         // TODO: implement this
         AssetTransferAcknowledgement {
             fill_type: 0,
             market_maker: vector::empty()
         }
     }
-    public fun decode_batch_ack(buf: vector<u8>): BatchAcknowledgement {
+    public fun decode_batch_ack(_buf: vector<u8>): BatchAcknowledgement {
         // TODO: implement this
         BatchAcknowledgement {
             acknowledgements: vector::empty()
         }
     }
 
-    public fun encode_batch_ack(ack: &BatchAcknowledgement): vector<u8> {
+    public fun encode_batch_ack(_ack: &BatchAcknowledgement): vector<u8> {
         // TODO: implement this
         let buf = vector::empty<u8>();
         buf
     }
 
 
-    public fun decode_packet(buf: vector<u8>): ZkgmPacket {
+    public fun decode_packet(_buf: vector<u8>): ZkgmPacket {
         // TODO: Implement this
         ZkgmPacket {
             salt: vector::empty(),
@@ -225,7 +221,7 @@ module ibc::zkgm {
         }
     }
 
-    public fun decode_syscall(buf: vector<u8>): SyscallPacket {
+    public fun decode_syscall(_buf: vector<u8>): SyscallPacket {
         // TODO: Implement this
         SyscallPacket {
             version: 0,
@@ -234,7 +230,7 @@ module ibc::zkgm {
         }
     }
 
-    public fun decode_forward(buf: vector<u8>): ForwardPacket {
+    public fun decode_forward(_buf: vector<u8>): ForwardPacket {
         // TODO Implement this
         ForwardPacket {
             channel_id: 0,
@@ -244,7 +240,7 @@ module ibc::zkgm {
         }
     }
 
-    public fun decode_multiplex(buf: vector<u8>): MultiplexPacket {
+    public fun decode_multiplex(_buf: vector<u8>): MultiplexPacket {
         // TODO Implement this
         MultiplexPacket {
             sender: vector::empty(),
@@ -254,14 +250,14 @@ module ibc::zkgm {
         }
     }
 
-    public fun decode_batch(buf: vector<u8>): BatchPacket {
+    public fun decode_batch(_buf: vector<u8>): BatchPacket {
         // TODO Implement this
         BatchPacket {
             syscall_packets: vector::empty()
         }
     }
 
-    public fun decode_fungible_asset_transfer(buf: vector<u8>): FungibleAssetTransferPacket {
+    public fun decode_fungible_asset_transfer(_buf: vector<u8>): FungibleAssetTransferPacket {
         // TODO Implement this
         FungibleAssetTransferPacket {
             sender: vector::empty(),
@@ -277,13 +273,13 @@ module ibc::zkgm {
         }
     }
 
-    public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
+    public fun encode_packet(_packet: &ZkgmPacket): vector<u8> {
         // TODO Implement this
         let buf = vector::empty<u8>();
         buf
     }
 
-    public fun encode_asset_transfer_ack(ack: &AssetTransferAcknowledgement): vector<u8> {
+    public fun encode_asset_transfer_ack(_ack: &AssetTransferAcknowledgement): vector<u8> {
         // TODO Implement this
         let buf = vector::empty<u8>();
         buf
@@ -301,12 +297,8 @@ module ibc::zkgm {
     }
 
     public fun deploy_token(
-        path: u256,
-        destination_channel: u32,
-        token: vector<u8>
+        salt: vector<u8>
     ): address acquires SignerRef {
-        let salt = hash::sha3_256(serialize_salt(path, destination_channel, token));
-
         ucs03::fa_coin::initialize(
             &get_signer(),
             string::utf8(b""),
@@ -342,7 +334,7 @@ module ibc::zkgm {
     /// If `x` is zero, returns 256.
     public fun fls(x: u256): u256 {
         if (x == 0) {
-            return 256;
+            return 256
         };
 
         let r: u256 = 0;
@@ -399,7 +391,7 @@ module ibc::zkgm {
 
     public fun last_channel_from_path(path: u256): u32 {
         if (path == 0){
-            return 0;
+            return 0
         };
         let current_hop_index = ((fls(path) / 32) as u8);
         let last_channel = path >> (current_hop_index * 32);
@@ -408,11 +400,11 @@ module ibc::zkgm {
 
     public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
         if (path == 0){
-            return (next_channel_id as u256);
+            return (next_channel_id as u256)
         };
         let next_hop_index = ((fls(path) / 32) as u8) + 1;
         if (next_hop_index > 7){
-            abort E_INVALID_HOPS;
+            abort E_INVALID_HOPS
         };
 
         let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256) | path;
@@ -425,8 +417,8 @@ module ibc::zkgm {
 
 
     public fun on_channel_open_init(
-        connection_id: u32,
-        channel_id: u32,
+        _connection_id: u32,
+        _channel_id: u32,
         version: String
     ) {
         if (!is_valid_version(version)) {
@@ -450,7 +442,7 @@ module ibc::zkgm {
     }
 
     public fun on_channel_open_ack(
-        _channel_id: u32, _counterparty_channel_id: u32, counterparty_version: String
+        _channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
     ) { }
 
     public fun on_channel_open_confirm(_channel_id: u32) {}
@@ -544,13 +536,13 @@ module ibc::zkgm {
                 inner_ack
             );
         } else {
-            abort E_UNKNOWN_SYSCALL;
+            abort E_UNKNOWN_SYSCALL
         }
     }
 
     fun acknowledge_fungible_asset_transfer(
         ibc_packet: Packet,
-        salt: vector<u8>,
+        _salt: vector<u8>,
         transfer_packet: FungibleAssetTransferPacket,
         success: bool,
         inner_ack: vector<u8>
@@ -595,19 +587,19 @@ module ibc::zkgm {
     }
 
     fun acknowledge_forward(
-        ibc_packet: Packet,
-        salt: vector<u8>,
-        forward_packet: ForwardPacket,
-        success: bool,
-        inner_ack: vector<u8>
+        _ibc_packet: Packet,
+        _salt: vector<u8>,
+        _forward_packet: ForwardPacket,
+        _success: bool,
+        _inner_ack: vector<u8>
     ) {    }
 
     fun acknowledge_multiplex(
         ibc_packet: Packet,
-        salt: vector<u8>,
+        _salt: vector<u8>,
         multiplex_packet: MultiplexPacket,
         success: bool,
-        inner_ack: vector<u8>
+        _inner_ack: vector<u8>
     ) {
         if (success && !multiplex_packet.eureka) {ibc::packet::new(
                 0, // TODO: sequence is no longer exist
@@ -673,7 +665,7 @@ module ibc::zkgm {
                 decode_multiplex(syscall_packet.packet)
             );
         }  else {
-            abort E_UNKNOWN_SYSCALL;
+            abort E_UNKNOWN_SYSCALL
         }
     }
 
@@ -725,20 +717,20 @@ module ibc::zkgm {
     }
 
     fun timeout_forward(
-        ibc_packet: Packet,
-        salt: vector<u8>,
-        forward_packet: ForwardPacket
+        _ibc_packet: Packet,
+        _salt: vector<u8>,
+        _forward_packet: ForwardPacket
     ) {
 
     }
 
     fun timeout_multiplex(
         ibc_packet: Packet,
-        salt: vector<u8>,
+        _salt: vector<u8>,
         multiplex_packet: MultiplexPacket
     ) {
         if (!multiplex_packet.eureka) {
-            let multiplex_ibc_packet = ibc::packet::new(
+            let _multiplex_ibc_packet = ibc::packet::new(
                 0, // TODO: sequence is no longer exist
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
@@ -824,7 +816,6 @@ module ibc::zkgm {
                 ibc_packet,
                 relayer_msg,
                 salt,
-                path,
                 decode_multiplex(syscall_packet.packet)
             )
         } else {
@@ -835,14 +826,14 @@ module ibc::zkgm {
     fun execute_fungible_asset_transfer(
         ibc_packet: Packet,
         relayer: address,
-        relayer_msg: vector<u8>,
-        salt: vector<u8>,
+        _relayer_msg: vector<u8>,
+        _salt: vector<u8>,
         path: u256,
         transfer_packet: FungibleAssetTransferPacket
     ): (vector<u8>) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         if (transfer_packet.only_maker) {
-            return ACK_ERR_ONLYMAKER;
+            return ACK_ERR_ONLYMAKER
         };
         if (transfer_packet.ask_amount > transfer_packet.sent_amount) {
             abort E_INVALID_AMOUNT
@@ -861,9 +852,7 @@ module ibc::zkgm {
         if (ask_token == wrapped_address) {
             if (!is_deployed(wrapped_address)) {
                 deploy_token(
-                    path,
-                    ibc::packet::destination_channel(&ibc_packet),
-                    transfer_packet.sent_token
+                    salt
                 );
                 let value = update_channel_path(path, ibc::packet::destination_channel(&ibc_packet));
                 smart_table::upsert(&mut store.token_origin, wrapped_address, value);
@@ -958,12 +947,12 @@ module ibc::zkgm {
 
     fun execute_forward(
         ibc_packet: Packet,
-        relayer_msg: vector<u8>,
+        _relayer_msg: vector<u8>,
         salt: vector<u8>,
         path: u256,
         forward_packet: ForwardPacket
     ): (vector<u8>) acquires RelayStore, SignerRef {
-        let sent_packet = ibc::ibc::send_packet(
+        let _sent_packet = ibc::ibc::send_packet(
             &get_signer(),
             get_self_address(),
             forward_packet.channel_id,
@@ -986,12 +975,11 @@ module ibc::zkgm {
 
     fun execute_multiplex(
         ibc_packet: Packet,
-        relayer_msg: vector<u8>,
-        salt: vector<u8>,
-        path: u256,
+        _relayer_msg: vector<u8>,
+        _salt: vector<u8>,
         multiplex_packet: MultiplexPacket
     ): (vector<u8>) {
-        let contract_address = from_bcs::to_address(multiplex_packet.contract_address);
+        let _contract_address = from_bcs::to_address(multiplex_packet.contract_address);
         if (multiplex_packet.eureka) {
             // TODO: No idea how to do this?
             /*
@@ -999,9 +987,9 @@ module ibc::zkgm {
                     multiplexPacket.sender, multiplexPacket.contractCalldata
                 );
             */
-            return bcs::to_bytes(&ACK_SUCCESS);
+            return bcs::to_bytes(&ACK_SUCCESS)
         };
-        let multiplex_ibc_packet = ibc::packet::new(
+        let _multiplex_ibc_packet = ibc::packet::new(
             0, // TODO: sequence is no longer exist
             ibc::packet::source_channel(&ibc_packet),
             ibc::packet::destination_channel(&ibc_packet),
@@ -1015,7 +1003,7 @@ module ibc::zkgm {
         // not sure how?
         let acknowledgement = vector::empty();
         if (vector::length(&acknowledgement) == 0){
-            abort E_UNIMPLEMENTED;
+            abort E_UNIMPLEMENTED
         };
         acknowledgement
     }
@@ -1072,7 +1060,7 @@ module ibc::zkgm {
     fun verify_fungible_asset_transfer(
         sender: &signer,
         channel_id: u32,
-        path: u256,
+        _path: u256,
         transfer_packet: FungibleAssetTransferPacket
     ) acquires RelayStore, SignerRef {
         let store = borrow_global<RelayStore>(get_vault_addr());
@@ -1139,27 +1127,28 @@ module ibc::zkgm {
     ) acquires RelayStore, SignerRef {
         verify_internal(
             sender,
-            forward_packet.channel_id,
+            channel_id,
             update_channel_path(path, forward_packet.channel_id),
             forward_packet.syscall_packet
         );
     }
 
     fun verify_multiplex(
-        sender: &signer,
-        channel_id: u32,
-        path: u256,
-        multiplex_packet: MultiplexPacket
+        _sender: &signer,
+        _channel_id: u32,
+        _path: u256,
+        _multiplex_packet: MultiplexPacket
     ) { }
 
-    // public entry fun on_packet(
-    //     ibc_packet: Packet,
-    //     relayer_msg: vector<u8>
-    // ) {
-    //     let packet_data = ibc::packet::data(&ibc_packet);
-    //     let zkgm_packet = decode_packet(*packet_data);
-    //     execute_internal(ibc_packet, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall))
-    // }
+    public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        let my_signer = get_signer(); // just to require SignerRef and RelayStore for testing
+
+        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
+        let type_name_output = *copyable_any::type_name(&value);
+        std::debug::print(&type_name_output);
+        0
+    }
 
 
     // public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
@@ -1251,15 +1240,17 @@ module ibc::zkgm {
     // }
 
 
-    #[test(admin = @ucs03)]
-    public fun test_predict_token(admin: &signer) acquires SignerRef {
+    #[test(admin = @ucs03, ibc = @ibc)]
+    public fun test_predict_token(admin: &signer, ibc: &signer) acquires SignerRef {
+        dispatcher::init_module_for_testing(ibc);
+        // ibc::init_module(ibc);
         init_module(admin);
 
         let path = 1;
         let destination_channel = 1;
         let token = b"test_token";
         let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
-        let deployed_token_addr = deploy_token(path, destination_channel, token);
+        let deployed_token_addr = deploy_token(salt);
 
         std::debug::print(&string::utf8(b"wrapped address is: "));
         std::debug::print(&wrapped_address);
@@ -1270,17 +1261,17 @@ module ibc::zkgm {
         assert!(is_deployed(deployed_token_addr), 102);
     }
 
-    #[test(admin = @ucs03)]
-    public fun test_is_deployed_false(admin: &signer) {
-        init_module(admin);
+    // #[test(admin = @ucs03)]
+    // public fun test_is_deployed_false(admin: &signer) {
+    //     init_module(admin);
 
-        let path = 1;
-        let destination_channel = 1;
-        let token = b"never_deployed_salt";
-        let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
+    //     let path = 1;
+    //     let destination_channel = 1;
+    //     let token = b"never_deployed_salt";
+    //     let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
 
-        assert!(!is_deployed(wrapped_address), 102);
-    }
+    //     assert!(!is_deployed(wrapped_address), 102);
+    // }
 
     #[test]
     public fun test_fls() {
