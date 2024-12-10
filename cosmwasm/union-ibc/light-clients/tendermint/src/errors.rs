@@ -57,6 +57,9 @@ pub enum Error {
 
     #[error(transparent)]
     InvalidHostTimestamp(#[from] InvalidHostTimestamp),
+
+    #[error("invalid or empty validator set, supported keys are: bls12381 and ed25519")]
+    InvalidValidatorSet,
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
