@@ -9,46 +9,41 @@ pub struct ConsensusState {
     pub state_proof_hash: H256,
 }
 
-#[cfg(feature = "proto")]
-pub mod proto {
-    use unionlabs::{errors::InvalidLength, impl_proto_via_try_from_into};
+#[cfg(feature = "ethabi")]
+pub mod ethabi {
+    use alloy::sol_types::SolValue;
+    use unionlabs::impl_ethabi_via_try_from_into;
 
-    use crate::ConsensusState;
+    use super::*;
 
-    impl_proto_via_try_from_into!(ConsensusState => protos::union::ibc::lightclients::movement::v1::ConsensusState);
+    impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
 
-    impl From<ConsensusState> for protos::union::ibc::lightclients::movement::v1::ConsensusState {
+    alloy::sol! {
+        struct SolConsensusState {
+            bytes32 state_root;
+            uint64 timestamp;
+            /// This is the hash of the `StateProof` which is committed to l1
+            bytes32 state_proof_hash;
+        }
+    }
+
+    impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                state_root: value.state_root.into(),
+                state_root: value.state_root.get().into(),
                 timestamp: value.timestamp,
-                state_proof_hash: value.state_proof_hash.into(),
+                state_proof_hash: value.state_proof_hash.get().into(),
             }
         }
     }
 
-    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid state root")]
-        StateRoot(#[source] InvalidLength),
-        #[error("invalid state proof hash")]
-        StateProofHash(#[source] InvalidLength),
-    }
-
-    impl TryFrom<protos::union::ibc::lightclients::movement::v1::ConsensusState> for ConsensusState {
-        type Error = Error;
-
-        fn try_from(
-            value: protos::union::ibc::lightclients::movement::v1::ConsensusState,
-        ) -> Result<Self, Self::Error> {
-            Ok(Self {
-                state_root: value.state_root.try_into().map_err(Error::StateRoot)?,
+    impl From<SolConsensusState> for ConsensusState {
+        fn from(value: SolConsensusState) -> Self {
+            Self {
+                state_root: H256::new(value.state_root.0),
                 timestamp: value.timestamp,
-                state_proof_hash: value
-                    .state_proof_hash
-                    .try_into()
-                    .map_err(Error::StateProofHash)?,
-            })
+                state_proof_hash: H256::new(value.state_proof_hash.0),
+            }
         }
     }
 }

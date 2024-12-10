@@ -7,7 +7,7 @@ use unionlabs::{
     aptos::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
-    encoding::Proto,
+    encoding::Bincode,
     hash::H256,
     uint::U256,
 };
@@ -38,7 +38,7 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: union_ibc_light_client::IbcClientCtx<Self>,

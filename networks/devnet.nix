@@ -122,7 +122,7 @@
           #   instances = [ ];
           # }
         ];
-        portIncrease = 0;
+        portIncrease = 100;
         has08Wasm = true;
       };
 

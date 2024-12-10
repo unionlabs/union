@@ -94,7 +94,7 @@ members = [
 
   # "cosmwasm/union-ibc/light-clients/linea",
 
-  # "cosmwasm/union-ibc/light-clients/movement",
+  "cosmwasm/union-ibc/light-clients/movement",
 
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",

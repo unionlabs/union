@@ -17,6 +17,7 @@ use unionlabs::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
+    bytes::Bytes,
     hash::H256,
     ibc::core::client::height::Height,
     ErrorReporter,
@@ -159,20 +160,11 @@ impl Module {
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
-        match client_id.to_string().rsplit_once('-') {
-            Some(("cometbls", _)) => Ok(ClientInfo {
-                client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
-                ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
-                metadata: Default::default(),
-            }),
-            _ => Err(ErrorObject::owned(
-                -1,
-                format!("unknown client type (client id `{client_id}`)"),
-                Some(json!({
-                    "client_id": client_id.to_string()
-                })),
-            )),
-        }
+        Ok(ClientInfo {
+            client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
+            ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
+            metadata: Default::default(),
+        })
     }
 
     async fn query_ibc_state(
@@ -185,26 +177,28 @@ impl StateModuleServer<IbcUnion> for Module {
 
         Ok(match path {
             StorePath::ClientState(path) => {
-                let client_state_bytes = self
+                let client_state_bytes: Bytes = self
                     .client_state(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
                         (path.client_id,),
                     )
                     .await
-                    .map_err(rest_error_to_rpc_error)?;
+                    .map_err(rest_error_to_rpc_error)?
+                    .into();
 
                 into_value(client_state_bytes)
             }
             StorePath::ConsensusState(path) => {
-                let consensus_state_bytes = self
+                let consensus_state_bytes: Bytes = self
                     .consensus_state(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
                         (path.client_id, path.height),
                     )
                     .await
-                    .map_err(rest_error_to_rpc_error)?;
+                    .map_err(rest_error_to_rpc_error)?
+                    .into();
 
                 into_value(consensus_state_bytes)
             }

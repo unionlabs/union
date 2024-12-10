@@ -100,3 +100,25 @@ pub mod ethabi {
         }
     }
 }
+
+#[test]
+fn encode_consensus() {
+    let client_state = ConsensusState {
+        timestamp: 20000,
+        app_hash: MerkleRoot {
+            hash: H256::new([
+                0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3,
+                4, 5, 6, 7,
+            ]),
+        },
+        next_validators_hash: H256::new([
+            0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4,
+            5, 6, 7,
+        ]),
+    };
+
+    let mut buf = Vec::new();
+
+    bcs::serialize_into(&mut buf, &client_state).unwrap();
+    panic!("fuck {:?}", hex::encode(buf));
+}

@@ -190,7 +190,7 @@
     },
     "ModulesConfig": {
       "type": "object",
-      "required": ["chain", "client", "consensus"],
+      "required": ["chain", "client", "consensus", "proof"],
       "properties": {
         "chain": {
           "type": "array",

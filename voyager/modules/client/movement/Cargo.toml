@@ -9,7 +9,7 @@ enumorph                    = { workspace = true }
 futures                     = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
-movement-light-client-types = { workspace = true, features = ["serde", "proto"] }
+movement-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 prost                       = { workspace = true }
 protos                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }

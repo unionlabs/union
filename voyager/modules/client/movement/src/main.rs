@@ -12,9 +12,8 @@ use unionlabs::{
     self,
     aptos::storage_proof::StorageProof,
     bytes::Bytes,
-    encoding::{Bincode, DecodeAs, EncodeAs, Proto},
-    google::protobuf::any::Any,
-    ibc::{core::client::height::Height, lightclients::wasm},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
+    ibc::core::client::height::Height,
     ErrorReporter,
 };
 use voyager_message::{
@@ -34,13 +33,8 @@ pub struct Module {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {}
 
-type SelfConsensusState = Any<
-    wasm::consensus_state::ConsensusState<
-        movement_light_client_types::consensus_state::ConsensusState,
-    >,
->;
-type SelfClientState =
-    Any<wasm::client_state::ClientState<movement_light_client_types::client_state::ClientState>>;
+type SelfConsensusState = movement_light_client_types::consensus_state::ConsensusState;
+type SelfClientState = movement_light_client_types::client_state::ClientState;
 
 impl ClientModule for Module {
     type Config = Config;
@@ -48,7 +42,7 @@ impl ClientModule for Module {
     async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::MOVEMENT)?;
         info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
-        info.ensure_ibc_interface(IbcInterface::IBC_GO_V8_08_WASM)?;
+        info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Module {})
     }
@@ -56,7 +50,7 @@ impl ClientModule for Module {
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<Proto>(consensus_state).map_err(|err| {
+        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -66,7 +60,7 @@ impl Module {
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<Proto>(client_state).map_err(|err| {
+        <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),
@@ -94,8 +88,8 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            chain_id: ChainId::new(cs.0.data.chain_id.to_string()),
-            height: Module::make_height(cs.0.data.latest_block_num),
+            chain_id: ChainId::new(cs.chain_id.to_string()),
+            height: Module::make_height(cs.latest_block_num),
         })
     }
 
@@ -108,7 +102,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: cs.0.data.timestamp,
+            timestamp_nanos: cs.timestamp,
         })
     }
 
@@ -173,7 +167,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<Bincode>())
+            .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
     }
 

@@ -1,10 +1,7 @@
 use cosmwasm_std::StdError;
-use movement_light_client_types::{ClientState, ConsensusState};
 use union_ibc_light_client::IbcClientError;
 use unionlabs::{
-    aptos::storage_proof::TryFromStorageProofError,
-    encoding::{DecodeErrorOf, Proto},
-    ibc::core::client::height::Height,
+    aptos::storage_proof::TryFromStorageProofError, ibc::core::client::height::Height,
     TryFromProtoBytesError,
 };
 
@@ -12,10 +9,6 @@ use crate::client::MovementLightClient;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
-    #[error("unable to decode consensus state")]
-    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
     #[error("header verification failure ({0})")]
     HeaderVerification(#[from] aptos_verifier::Error),
     #[error("invalid state_proof storage proof")]
