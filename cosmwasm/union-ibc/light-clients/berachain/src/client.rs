@@ -1,20 +1,16 @@
 use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
-use ics23::ibc_api::SDK_SPECS;
-use tendermint_verifier::types::SignatureVerifier;
+use ethereum_light_client_types::StorageProof;
+use tendermint_light_client::client::TendermintLightClient;
 use union_ibc_light_client::IbcClient;
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{Bincode, EncodeAs, Ssz},
-    ibc::core::commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
 };
 
-use crate::{errors::Error, verifier::Bls12Verifier};
-
-const WASM_PREFIX: &[u8] = b"wasm";
-const WASM_STORAGE_PREFIX: u8 = 0x03;
+use crate::errors::Error;
 
 pub struct BerachainLightClient;
 
@@ -34,7 +30,7 @@ impl IbcClient for BerachainLightClient {
 
     type CustomQuery = Empty;
 
-    type StorageProof = MerkleProof;
+    type StorageProof = StorageProof;
 
     fn verify_membership(
         ctx: union_ibc_light_client::IbcClientCtx<Self>,
@@ -43,24 +39,15 @@ impl IbcClient for BerachainLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(ics23::ibc_api::verify_membership(
-            &storage_proof,
-            &SDK_SPECS,
-            &consensus_state.comet.root,
-            &[
-                WASM_PREFIX.to_vec(),
-                [
-                    vec![WASM_STORAGE_PREFIX],
-                    client_state.ibc_contract_address.get().to_vec(),
-                    key,
-                ]
-                .concat(),
-            ],
+        ethereum_light_client::client::verify_membership(
+            key,
+            consensus_state.storage_root,
+            storage_proof,
             value,
         )
-        .map_err(Into::<Error>::into)?)
+        .map_err(Into::<Error>::into)?;
+        Ok(())
     }
 
     fn verify_non_membership(
@@ -69,23 +56,14 @@ impl IbcClient for BerachainLightClient {
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(ics23::ibc_api::verify_non_membership(
-            &storage_proof,
-            &SDK_SPECS,
-            &consensus_state.comet.root,
-            &[
-                WASM_PREFIX.to_vec(),
-                [
-                    vec![WASM_STORAGE_PREFIX],
-                    client_state.ibc_contract_address.get().to_vec(),
-                    key,
-                ]
-                .concat(),
-            ],
+        ethereum_light_client::client::verify_non_membership(
+            key,
+            consensus_state.storage_root,
+            storage_proof,
         )
-        .map_err(Into::<Error>::into)?)
+        .map_err(Into::<Error>::into)?;
+        Ok(())
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
@@ -93,21 +71,14 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        client_state.execution_latest_height
+        client_state.latest_height
     }
 
-    fn status(client_state: &Self::ClientState) -> Status {
-        if client_state
-            .comet
-            .frozen_height
-            .unwrap_or_default()
-            .height()
-            != 0
-        {
-            Status::Frozen
-        } else {
-            Status::Active
-        }
+    fn status(_client_state: &Self::ClientState) -> Status {
+        // FIXME: expose the ctx to this call to allow threading this call to L1
+        // client. generally, we want to thread if a client is an L2 so always
+        // provide the ctx?
+        Status::Active
     }
 
     fn verify_creation(
@@ -126,27 +97,23 @@ impl IbcClient for BerachainLightClient {
         union_ibc_light_client::IbcClientError<Self>,
     > {
         let mut client_state = ctx.read_self_client_state()?;
-        let consensus_state =
-            ctx.read_self_consensus_state(header.cometbft_header.trusted_height.height())?;
 
-        // 1. verify that the cometbft consensus transition is correct
-        let (_, next_comet_client_state, new_comet_consensus_state) =
-            tendermint_light_client::client::verify_header(
-                client_state.comet.clone(),
-                consensus_state.comet,
-                header.cometbft_header.clone(),
-                ctx.env.block.time,
-                &SignatureVerifier::new(Bls12Verifier { deps: ctx.deps }),
+        // 1. extract L1 state
+        let l1_client_state = ctx
+            .read_client_state::<TendermintLightClient>(client_state.l1_client_id)
+            .map_err(Into::<Error>::into)?;
+        let l1_consensus_state = ctx
+            .read_consensus_state::<TendermintLightClient>(
+                client_state.l1_client_id,
+                header.l1_height.height(),
             )
             .map_err(Into::<Error>::into)?;
 
         // 2. verify that the evm execution header is part of the cometbft consensus state
         ics23::ibc_api::verify_membership(
             &header.execution_header_proof,
-            &client_state.comet.proof_specs,
-            &MerkleRoot {
-                hash: (*header.cometbft_header.signed_header.header.app_hash.get()).into(),
-            },
+            &l1_client_state.proof_specs,
+            &l1_consensus_state.root.hash.into(),
             &[
                 b"beacon".to_vec(),
                 [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
@@ -166,15 +133,14 @@ impl IbcClient for BerachainLightClient {
         )
         .map_err(Into::<Error>::into)?;
 
-        // Create/update consensus/execution states
+        // 4. update
         let update_height = header.execution_header.block_number;
-        if client_state.execution_latest_height < update_height {
-            client_state.execution_latest_height = update_height;
+        if client_state.latest_height < update_height {
+            client_state.latest_height = update_height;
         }
-        client_state.comet = next_comet_client_state;
         let new_consensus_state = ConsensusState {
-            comet: new_comet_consensus_state,
             timestamp: header.execution_header.timestamp,
+            state_root: header.execution_header.state_root,
             storage_root: header.account_proof.storage_root,
         };
 

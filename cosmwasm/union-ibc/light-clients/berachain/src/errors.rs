@@ -1,14 +1,17 @@
 use ics23::ibc_api::VerifyMembershipError;
-use tendermint_light_client::errors::{
-    IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError, InvalidHostTimestamp,
-    MathOverflow, MerkleProofDecode, MigrateClientStoreError, NegativeTimestamp,
-    RevisionNumberMismatch, TrustedValidatorsMismatch,
+use tendermint_light_client::{
+    client::TendermintLightClient,
+    errors::{
+        IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError,
+        InvalidHostTimestamp, MathOverflow, MerkleProofDecode, MigrateClientStoreError,
+        NegativeTimestamp, RevisionNumberMismatch, TrustedValidatorsMismatch,
+    },
 };
 use union_ibc_light_client::IbcClientError;
 
 use crate::client::BerachainLightClient;
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("unimplemented")]
     Unimplemented,
@@ -57,13 +60,16 @@ pub enum Error {
     ExecutionHeaderVerify(#[source] ics23::ibc_api::VerifyMembershipError),
 
     #[error(transparent)]
-    VerifyMembership(#[from] VerifyMembershipError),
-
-    #[error(transparent)]
-    Tendermint(#[from] tendermint_light_client::errors::Error),
+    L1VerifyMembership(#[from] VerifyMembershipError),
 
     #[error(transparent)]
     VerifyStorage(#[from] evm_storage_verifier::error::Error),
+
+    #[error(transparent)]
+    VerifyMembership(#[from] ethereum_light_client::errors::Error),
+
+    #[error("error while querying l1 state: {0}")]
+    L1Error(#[from] IbcClientError<TendermintLightClient>),
 }
 
 // required for IbcClient trait

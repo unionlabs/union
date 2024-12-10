@@ -1,5 +1,6 @@
-use cometbft_types::types::{
-    commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet,
+use cometbft_types::{
+    crypto::public_key::PublicKey,
+    types::{commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet},
 };
 use cosmwasm_std::Empty;
 use ics23::ibc_api::SDK_SPECS;
@@ -23,7 +24,7 @@ use crate::{
         Error, IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError,
         MathOverflow, RevisionNumberMismatch, TrustedValidatorsMismatch,
     },
-    verifier::Ed25519Verifier,
+    verifier::{Bls12Verifier, Ed25519Verifier},
 };
 
 pub struct TendermintLightClient;
@@ -105,13 +106,23 @@ impl IbcClient for TendermintLightClient {
     > {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
-        Ok(verify_header(
-            client_state,
-            consensus_state,
-            header,
-            ctx.env.block.time,
-            &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
-        )?)
+        match header.validator_set.validators.first().map(|v| &v.pub_key) {
+            Some(PublicKey::Bls12_381(_)) => Ok(verify_header(
+                client_state,
+                consensus_state,
+                header,
+                ctx.env.block.time,
+                &SignatureVerifier::new(Bls12Verifier::new(ctx.deps)),
+            )?),
+            Some(PublicKey::Ed25519(_)) => Ok(verify_header(
+                client_state,
+                consensus_state,
+                header,
+                ctx.env.block.time,
+                &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
+            )?),
+            _ => Err(Error::InvalidValidatorSet.into()),
+        }
     }
 
     fn misbehaviour(
