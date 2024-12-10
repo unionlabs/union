@@ -862,7 +862,6 @@ files.extend-exclude = [
 "legendres"               = "legendres"
 "legos"                   = "legos"
 "lerp"                    = "lerp"
-"libblst"                 = "libblst"
 "libc"                    = "libc"
 "libclang"                = "libclang"
 "libcxx"                  = "libcxx"
