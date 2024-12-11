@@ -1,4 +1,4 @@
-module ibc::zkgm_relay {
+module ucs03::zkgm_relay {
     use ibc::ibc;
     use ibc::helpers;
     use ibc::packet::{Self, Packet};
@@ -182,6 +182,40 @@ module ibc::zkgm_relay {
             );
 
         ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
+    }
+
+    // Initialize the RelayStore and SignerRef
+    fun init_module_for_testing(account: &signer) {
+        assert!(signer::address_of(account) == @ucs03, E_UNAUTHORIZED);
+
+        let vault_constructor_ref = &object::create_named_object(account, IBC_APP_SEED);
+        let vault_signer = &object::generate_signer(vault_constructor_ref);
+
+        let store = RelayStore {
+            in_flight_packet: smart_table::new(),
+            channel_balance: smart_table::new(),
+            token_origin: smart_table::new()
+        };
+
+        move_to(vault_signer, store);
+
+        move_to(
+            vault_signer,
+            SignerRef {
+                self_ref: object::generate_extend_ref(vault_constructor_ref),
+                self_address: signer::address_of(account)
+            }
+        );
+
+        let cb =
+            function_info::new_function_info(
+                account,
+                string::utf8(b"zkgm_relay"),
+                string::utf8(b"on_packet")
+            );
+
+        dispatcher::register<ZKGMProof>(cb, new_ucs_relay_proof(), bcs::to_bytes(&signer::address_of(account)));
+        // ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
     }
 
     public fun decode_ack(_buf: vector<u8>): Acknowledgement {
@@ -1251,12 +1285,11 @@ module ibc::zkgm_relay {
     //     0
     // }
 
-
     #[test(admin = @ucs03, ibc = @ibc)]
     public fun test_predict_token(admin: &signer, ibc: &signer) acquires SignerRef {
         dispatcher::init_module_for_testing(ibc);
         // ibc::init_module(ibc);
-        init_module(admin);
+        init_module_for_testing(admin);
 
         let path = 1;
         let destination_channel = 1;
@@ -1273,17 +1306,19 @@ module ibc::zkgm_relay {
         assert!(is_deployed(deployed_token_addr), 102);
     }
 
-    // #[test(admin = @ucs03)]
-    // public fun test_is_deployed_false(admin: &signer) {
-    //     init_module(admin);
+    #[test(admin = @ucs03, ibc = @ibc)]
+    public fun test_is_deployed_false(admin: &signer, ibc: &signer) {
+        dispatcher::init_module_for_testing(ibc);
+        init_module_for_testing(admin);
 
-    //     let path = 1;
-    //     let destination_channel = 1;
-    //     let token = b"never_deployed_salt";
-    //     let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
 
-    //     assert!(!is_deployed(wrapped_address), 102);
-    // }
+        let path = 1;
+        let destination_channel = 1;
+        let token = b"never_deployed_salt";
+        let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
+
+        assert!(!is_deployed(wrapped_address), 102);
+    }
 
     #[test]
     public fun test_fls() {
