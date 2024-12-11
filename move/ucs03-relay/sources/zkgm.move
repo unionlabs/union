@@ -619,7 +619,6 @@ module ibc::zkgm_relay {
         _inner_ack: vector<u8>
     ) {
         if (success && !multiplex_packet.eureka) {ibc::packet::new(
-                0, // TODO: sequence is no longer exist
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
                 multiplex_packet.contract_calldata, // TODO: abi.encode contract_addr & contractcalldata
@@ -748,7 +747,6 @@ module ibc::zkgm_relay {
     ) {
         if (!multiplex_packet.eureka) {
             let _multiplex_ibc_packet = ibc::packet::new(
-                0, // TODO: sequence is no longer exist
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
                 multiplex_packet.contract_calldata, // TODO: abi.encode contract_addr & contractcalldata
@@ -765,7 +763,6 @@ module ibc::zkgm_relay {
 
     public entry fun execute(
         //ibc_packet: Packet,
-        sequence: u64, // TODO: fix tihs sequence thing later
         source_channel: u32,
         destination_channel: u32,
         data: vector<u8>,
@@ -779,7 +776,6 @@ module ibc::zkgm_relay {
         // no need to check msg.sender since its not public entry function
         // sender will be address(this) anyway
         let ibc_packet = ibc::packet::new(
-            sequence,
             source_channel,
             destination_channel,
             data,
@@ -1007,7 +1003,6 @@ module ibc::zkgm_relay {
             return bcs::to_bytes(&ACK_SUCCESS)
         };
         let _multiplex_ibc_packet = ibc::packet::new(
-            0, // TODO: sequence is no longer exist
             ibc::packet::source_channel(&ibc_packet),
             ibc::packet::destination_channel(&ibc_packet),
             multiplex_packet.contract_calldata, // TODO: abi.encode multiplexPacket.sender & multiplexPacket.contractCalldata
