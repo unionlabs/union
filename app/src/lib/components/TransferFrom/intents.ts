@@ -32,8 +32,8 @@ export interface IntentStore {
 }
 
 const defaultParams: RawTransferIntents = {
-  source: "",
-  destination: "",
+  source: "union-testnet-8",
+  destination: "union-testnet-8",
   asset: "",
   receiver: "",
   amount: "",
