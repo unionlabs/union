@@ -16,6 +16,7 @@ import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
 import {CosmosInCosmosClient} from
     "../contracts/clients/CosmosInCosmosClient.sol";
+import {EvmInCosmosClient} from "../contracts/clients/EvmInCosmosClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
