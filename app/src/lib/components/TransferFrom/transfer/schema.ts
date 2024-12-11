@@ -40,27 +40,50 @@ export const transferSchema = v.pipe(
       v.string(),
       v.trim(),
       v.title("Amount"),
-      v.description("Amount must be a valid number greater than 0"),
-      v.check(value => {
-        const parsedValue = Number.parseFloat(value)
-        return !Number.isNaN(parsedValue) && parsedValue > 0
-      }, "Amount must be greater than 0")
+      v.description("Amount must be a valid number greater than 0 and not exceed balance"),
+    ),
+    balance: v.pipe(
+      v.string(),
+      v.trim(),
+      v.title("Balance"),
+      v.description("Current balance for the asset")
     )
   }),
+  // Check amount against balance
   v.forward(
     v.partialCheck(
-      [["destination"], ["receiver"]], // Validate receiver against destination chain
+      [["amount"], ["balance"]],
+      input => {
+        const amount = Number.parseFloat(input.amount)
+        const balance = Number.parseFloat(input.balance)
+
+        // Check if values are valid numbers and amount is positive
+        if (Number.isNaN(amount) || Number.isNaN(balance) || amount <= 0) {
+          return false
+        }
+
+        // Check if balance covers amount
+        return amount <= balance
+      },
+      "Amount must be a valid number greater than 0 and not exceed available balance"
+    ),
+    ["amount"]
+  ),
+  // Validate receiver address
+  v.forward(
+    v.partialCheck(
+      [["destination"], ["receiver"]],
       input => {
         if (aptosChainId.includes(input.destination)) {
-          return isHex(input.receiver) // Aptos: Hexadecimal address
+          return isHex(input.receiver)
         }
         if (evmChainId.includes(input.destination)) {
-          return isValidEvmAddress(input.receiver) // EVM: Valid Ethereum address
+          return isValidEvmAddress(input.receiver)
         }
         if (cosmosChainId.includes(input.destination)) {
-          return isValidBech32Address(input.receiver) // Cosmos: Bech32 address
+          return isValidBech32Address(input.receiver)
         }
-        return false // If destination doesn't match any chain, fail validation
+        return false
       },
       "`receiver` must be a valid address for the selected destination chain"
     ),

@@ -1,29 +1,29 @@
-<!-- Debug.svelte -->
 <script lang="ts">
-import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
-import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
-import type { IntentStore } from "./intents.ts"
-import type { Chain, UserAddresses } from "$lib/types"
-import type { Readable } from "svelte/store"
-import type { Balance } from "./transfer.ts" // Assuming you have Balance type exported
+  import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
+  import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
+  import type { IntentStore } from "../transfer/intents.ts"
+  import type { ValidationStore } from "../transfer/validation.ts"
+  import type { ContextStore } from "../transfer/context.ts"
 
-interface DebugProps {
-  intents: IntentStore
-  chains: Array<Chain>
-  userAddress: Readable<UserAddresses>
-  sourceChain: Readable<Chain | undefined>
-  destinationChain: Readable<Chain | undefined>
-  balances: Readable<Array<Balance>>
-  assetInfo: Readable<Balance | undefined>
-}
+  interface DebugProps {
+    intents: IntentStore
+    validation: ValidationStore
+    context: ContextStore
+  }
 
-export let intents: DebugProps["intents"]
-export let chains: DebugProps["chains"]
-export let userAddress: DebugProps["userAddress"]
-export let sourceChain: DebugProps["sourceChain"]
-export let destinationChain: DebugProps["destinationChain"]
-export let balances: DebugProps["balances"]
-export let assetInfo: DebugProps["assetInfo"]
+  export let intents: DebugProps["intents"]
+  export let validation: DebugProps["validation"]
+  export let context: DebugProps["context"]
+
+  // Destructure the context for easier access to stores
+  const {
+    userAddress,
+    sourceChain,
+    destinationChain,
+    balances,
+    assetInfo,
+    chains
+  } = context
 </script>
 
 <div class="p-4 w-full">
@@ -38,15 +38,13 @@ export let assetInfo: DebugProps["assetInfo"]
     <div class="summary mb-4">
       <h3 class="text-union-accent-500">Raw Intents</h3>
       {#each Object.entries($intents) as [key, value]}
-        {#if key !== "errors" && key !== "isValid"}
-          <p class="text-sm">{key}: "{value}"</p>
-        {/if}
+        <p class="text-sm">{key}: "{value}"</p>
       {/each}
     </div>
 
     <div class="summary mb-4">
-      <h3 class="text-red-500">Errors:</h3>
-      {#each Object.entries($intents.errors) as [key, value]}
+      <h3 class="text-red-500">Validation Errors:</h3>
+      {#each Object.entries($validation) as [key, value]}
         <p class="text-sm">{key}: "{value}"</p>
       {/each}
     </div>
