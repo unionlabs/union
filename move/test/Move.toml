@@ -1,0 +1,18 @@
+[package]
+authors = []
+name    = "another_app"
+version = "1.0.0"
+
+[addresses]
+some_addr = "_"
+
+[dev-addresses]
+some_addr = "0x22222"
+
+[dependencies.AptosFramework]
+git    = "https://github.com/aeryz/aptos-core.git"
+rev    = "d34bb3e3dad03241967c0263a6f1fcfe6bccb7d7"
+subdir = "aptos-move/framework/aptos-framework"
+
+
+[dev-dependencies]

@@ -1,0 +1,24 @@
+[package]
+authors = []
+name    = "my_app"
+version = "1.0.0"
+
+[addresses]
+my_app_addr = "_"
+some_addr   = "_"
+
+[dev-addresses]
+my_app_addr = "0x22222"
+some_addr   = "0x44444"
+
+[dependencies.AptosFramework]
+git    = "https://github.com/aeryz/aptos-core.git"
+rev    = "d34bb3e3dad03241967c0263a6f1fcfe6bccb7d7"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies]
+# AptosStdlib = { git = "https://github.com/aeryz/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "movement" }
+another_app = { local = "../test" }
+
+
+[dev-dependencies]
