@@ -1,4 +1,5 @@
 <script lang="ts">
+import { get } from "svelte/store"
 import { page } from "$app/stores"
 import { Button } from "$lib/components/ui/button"
 
@@ -6,7 +7,7 @@ let copied = false
 
 async function copyUrl() {
   try {
-    await navigator.clipboard.writeText($page.url.href)
+    await navigator.clipboard.writeText(get(page).url.href)
     copied = true
     setTimeout(() => {
       copied = false

@@ -4,15 +4,13 @@ import { debounce } from "$lib/utilities"
 import type { Chain } from "$lib/types.ts"
 import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/config.ts"
 import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
-import { Button } from "$lib/components/ui/button"
 import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
 
 export let chains: Array<Chain>
-$: console.log(chains)
 
 const intents = createIntentStore()
 
-async function handleSubmit(event) {
+function handleSubmit(event) {
   event.preventDefault()
   event.stopPropagation()
 }
@@ -36,12 +34,7 @@ async function handleSubmit(event) {
               placeholder="Enter source chain"
               class="w-[300px] p-1 {$intents.errors.source ? 'border-red-500' : ''}"
               value={$intents.source}
-              on:input={event =>
-                        debounce(
-                            () => intents.updateField('source', event.target?.value || ''),
-                            1_000
-                        )()
-                    }
+              on:input={event => intents.updateField('source', event)}
       />
       {#if $intents.errors.source}
         <span class="text-red-500 text-sm">{$intents.errors.source}</span>
@@ -57,12 +50,7 @@ async function handleSubmit(event) {
               placeholder="Enter destination chain"
               class="w-[300px] p-1 {$intents.errors.destination ? 'border-red-500' : ''}"
               value={$intents.destination}
-              on:input={event =>
-                        debounce(
-                            () => intents.updateField('destination', event.target?.value || ''),
-                            1_000
-                        )()
-                    }
+              on:input={event => intents.updateField('destination', event)}
       />
       {#if $intents.errors.destination}
         <span class="text-red-500 text-sm">{$intents.errors.destination}</span>
@@ -78,12 +66,7 @@ async function handleSubmit(event) {
               placeholder="Enter asset"
               class="w-[300px] p-1 {$intents.errors.asset ? 'border-red-500' : ''}"
               value={$intents.asset}
-              on:input={event =>
-                        debounce(
-                            () => intents.updateField('asset', event.target?.value || ''),
-                            1_000
-                        )()
-                    }
+              on:input={event => intents.updateField('asset', event)}
       />
       {#if $intents.errors.asset}
         <span class="text-red-500 text-sm">{$intents.errors.asset}</span>
@@ -110,12 +93,7 @@ async function handleSubmit(event) {
               pattern="^[0-9]*[.,]?[0-9]*$"
               class="w-[300px] p-1 {$intents.errors.amount ? 'border-red-500' : ''}"
               value={$intents.amount}
-              on:input={event =>
-                        debounce(
-                            () => intents.updateField('amount', event.target?.value || ''),
-                            1_000
-                        )()
-                    }
+              on:input={event => intents.updateField('amount', event)}
       />
       {#if $intents.errors.amount}
         <span class="text-red-500 text-sm">{$intents.errors.amount}</span>
@@ -137,12 +115,7 @@ async function handleSubmit(event) {
               class="w-[300px] p-1 disabled:bg-black/30 {$intents.errors.receiver ? 'border-red-500' : ''}"
               placeholder="Enter destination address"
               value={$intents.receiver}
-              on:input={event =>
-                        debounce(
-                            () => intents.updateField('receiver', event.target?.value || ''),
-                            1_000
-                        )()
-                    }
+              on:input={event => intents.updateField('receiver', event)}
       />
       {#if $intents.errors.receiver}
         <span class="text-red-500 text-sm">{$intents.errors.receiver}</span>
@@ -159,7 +132,7 @@ async function handleSubmit(event) {
         <CopyUrlButton/>
         <ResetButton onReset={intents.reset}/>
       </div>
-      
+
       <h2 class="mb-4">TRANSFER DEBUG</h2>
 
       <div class="summary mb-4">

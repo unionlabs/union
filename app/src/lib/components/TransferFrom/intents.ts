@@ -3,6 +3,7 @@ import { browser } from "$app/environment"
 import { page } from "$app/stores"
 import { transferSchema } from "./validation.ts"
 import { safeParse } from "valibot"
+import { debounce } from "$lib/utilities"
 
 //Need to clean up the types so they make sense
 //RawTransferIntents should not contain errors etc just the raw inputs
@@ -22,10 +23,10 @@ interface RawTransferIntents extends FormFields {
   isValid: boolean
 }
 
-export interface IntentStore {
+interface IntentStore {
   subscribe: (callback: (value: RawTransferIntents) => void) => () => void
   set: (value: Partial<FormFields>) => void
-  updateField: (key: keyof FormFields, value: string) => void
+  updateField: (field: keyof FormFields, valueOrEvent: string | Event) => void
   reset: () => void
   validate: () => Promise<boolean>
 }
@@ -44,21 +45,25 @@ export function createIntentStore(): IntentStore {
   const store = writable<RawTransferIntents>(defaultParams)
   const { subscribe, set, update } = store
 
-  function updateUrl({ source, destination, asset, receiver, amount }: FormFields) {
-    if (browser) {
-      const url = new URL(window.location.href)
-      const params = { source, destination, asset, receiver, amount }
+  const debouncedUpdateUrl = debounce(
+    ({ source, destination, asset, receiver, amount }: FormFields) => {
+      if (browser) {
+        const url = new URL(window.location.href)
+        const params = { source, destination, asset, receiver, amount }
 
-      Object.entries(params).forEach(([key, val]) => {
-        if (val) {
-          url.searchParams.set(key, val)
-        } else {
-          url.searchParams.delete(key)
-        }
-      })
-      history.replaceState({}, "", url.toString())
-    }
-  }
+        Object.entries(params).forEach(([key, val]) => {
+          if (val) {
+            url.searchParams.set(key, val)
+          } else {
+            url.searchParams.delete(key)
+          }
+        })
+        history.replaceState({}, "", url.toString())
+        window.dispatchEvent(new PopStateEvent("popstate"))
+      }
+    },
+    1000
+  )
 
   function validate(params: FormFields): FieldErrors {
     const result = safeParse(transferSchema, params)
@@ -113,7 +118,7 @@ export function createIntentStore(): IntentStore {
       update(state => {
         const newParams = { ...state, ...value }
         const errors = validate(newParams)
-        updateUrl(newParams)
+        debouncedUpdateUrl(newParams)
         return {
           ...newParams,
           errors,
@@ -122,11 +127,16 @@ export function createIntentStore(): IntentStore {
       })
     },
 
-    updateField: (key: keyof FormFields, value: string) => {
+    updateField: (field: keyof FormFields, valueOrEvent: string | Event) => {
+      const value =
+        valueOrEvent instanceof Event
+          ? (valueOrEvent.target as HTMLInputElement).value
+          : valueOrEvent
+
       update(state => {
-        const newParams = { ...state, [key]: value }
+        const newParams = { ...state, [field]: value }
         const errors = validate(newParams)
-        updateUrl(newParams)
+        debouncedUpdateUrl(newParams)
         return {
           ...newParams,
           errors,
