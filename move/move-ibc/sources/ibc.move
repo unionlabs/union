@@ -1092,7 +1092,7 @@ module ibc::ibc {
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>
-    ) acquires IBCStore {
+    ): packet::Packet acquires IBCStore {
         authorize_app(ibc_app, source_port);
 
         if (timeout_timestamp != 0 && timeout_height == 0) {
@@ -1130,6 +1130,8 @@ module ibc::ibc {
                 timeout_timestamp: timeout_timestamp
             }
         );
+
+        packet
     }
 
     public fun process_receive<T: key + store + drop>(
