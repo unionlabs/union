@@ -48,6 +48,21 @@ export function createIntentStore(): IntentStore {
   )
 
   if (browser) {
+    const setDefaultParamsIfEmpty = (searchParams: URLSearchParams) => {
+      if ([...searchParams.entries()].length === 0) {
+        const url = new URL(window.location.href)
+        Object.entries(defaultParams).forEach(([key, val]) => {
+          if (val) {
+            url.searchParams.set(key, val)
+          }
+        })
+        history.replaceState({}, "", url.toString())
+        window.dispatchEvent(new PopStateEvent("popstate"))
+      }
+    }
+
+    setDefaultParamsIfEmpty(new URL(window.location.href).searchParams)
+
     page.subscribe(pageData => {
       if (pageData?.url?.searchParams) {
         const newParams: Partial<FormFields> = {}
@@ -93,7 +108,15 @@ export function createIntentStore(): IntentStore {
 
     reset: () => {
       if (browser) {
-        history.replaceState({}, "", window.location.pathname)
+        const url = new URL(window.location.href)
+        url.search = ""
+        Object.entries(defaultParams).forEach(([key, val]) => {
+          if (val) {
+            url.searchParams.set(key, val)
+          }
+        })
+        history.replaceState({}, "", url.toString())
+        window.dispatchEvent(new PopStateEvent("popstate"))
       }
       set(defaultParams)
     }
