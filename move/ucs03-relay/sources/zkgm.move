@@ -552,7 +552,24 @@ module ibc::zkgm_relay {
             if (asset_transfer_ack.fill_type == FILL_TYPE_PROTOCOL ){
                 // The protocol is filled, fee was paid to relayer.
             } else if (asset_transfer_ack.fill_type == FILL_TYPE_MARKETMAKER) {
-                // TODO: implement here
+                let market_maker = from_bcs::to_address(asset_transfer_ack.market_maker);
+                let sent_token = from_bcs::to_address(transfer_packet.sent_token);
+                let asset = get_metadata(sent_token);
+                if (last_channel_from_path(transfer_packet.sent_token_prefix) == ibc::packet::source_channel(&ibc_packet)){
+                    ucs03::fa_coin::mint_with_metadata(
+                        &get_signer(),
+                        market_maker,
+                        transfer_packet.sent_amount,
+                        asset
+                    );
+                } else {
+                    primary_fungible_store::transfer(
+                        &get_signer(),
+                        asset,
+                        market_maker,
+                        transfer_packet.sent_amount
+                    );
+                }
             } else {
                 abort E_INVALID_FILL_TYPE
             }
