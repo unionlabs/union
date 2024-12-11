@@ -1,19 +1,12 @@
 <script lang="ts">
-import { createIntentStore } from "./intents.ts"
-import { debounce } from "$lib/utilities"
-import type { Chain } from "$lib/types.ts"
-import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/config.ts"
-import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
-import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
+  import {TRANSFER_DEBUG} from "$lib/components/TransferFrom/config.ts"
+  import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
+  import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
+  import {createTransferStore} from "$lib/components/TransferFrom/transfer.ts"
+  import DebugBox from "$lib/components/TransferFrom/components/DebugBox.svelte"
 
-export let chains: Array<Chain>
-
-const intents = createIntentStore()
-
-function handleSubmit(event) {
-  event.preventDefault()
-  event.stopPropagation()
-}
+  const {intents, chains, userAddress, sourceChain, destinationChain, balances, assetInfo} =
+    createTransferStore()
 </script>
 
 <form
@@ -22,7 +15,6 @@ function handleSubmit(event) {
         action="transfer"
         data-form="transfer"
         class="flex flex-col p-4"
-        on:submit={handleSubmit}
 >
   <div class="flex flex-col gap-4">
     <div class="flex flex-col gap-1">
@@ -125,31 +117,5 @@ function handleSubmit(event) {
 </form>
 
 {#if TRANSFER_DEBUG}
-  <div class="p-4 w-full">
-    <div class="p-4 bg-black w-full">
-
-      <div class="mb-4 flex items-center gap-4">
-        <CopyUrlButton/>
-        <ResetButton onReset={intents.reset}/>
-      </div>
-
-      <h2 class="mb-4">TRANSFER DEBUG</h2>
-
-      <div class="summary mb-4">
-        <h3 class="text-union-accent-500">Raw Intents</h3>
-        {#each Object.entries($intents) as [key, value]}
-          {#if key !== "errors" && key !== "isValid"}
-            <p class="text-sm">{key}: "{value}"</p>
-          {/if}
-        {/each}
-      </div>
-
-      <div class="summary mb-4">
-        <h3 class="text-red-500">Errors:</h3>
-        {#each Object.entries($intents.errors) as [key, value]}
-          <p class="text-sm">{key}: "{value}"</p>
-        {/each}
-      </div>
-    </div>
-  </div>
+  <DebugBox {intents} {chains} {userAddress} {sourceChain} {destinationChain} {balances} {assetInfo}/>
 {/if}

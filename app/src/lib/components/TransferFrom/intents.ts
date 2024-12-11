@@ -8,7 +8,7 @@ import { debounce } from "$lib/utilities"
 //Need to clean up the types so they make sense
 //RawTransferIntents should not contain errors etc just the raw inputs
 
-type FormFields = {
+export type FormFields = {
   source: string
   destination: string
   asset: string
@@ -23,7 +23,7 @@ interface RawTransferIntents extends FormFields {
   isValid: boolean
 }
 
-interface IntentStore {
+export interface IntentStore {
   subscribe: (callback: (value: RawTransferIntents) => void) => () => void
   set: (value: Partial<FormFields>) => void
   updateField: (field: keyof FormFields, valueOrEvent: string | Event) => void
