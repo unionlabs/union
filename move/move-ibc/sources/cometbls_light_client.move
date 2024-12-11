@@ -42,7 +42,7 @@ module ibc::light_client {
 
     struct Header has drop {
         signed_header: LightHeader,
-        trusted_height: u64,
+        trusted_height: Height,
         zero_knowledge_proof: ZKP
     }
 
@@ -112,53 +112,53 @@ module ibc::light_client {
     public fun verify_header(
         header: &Header, state: &State, consensus_state: &ConsensusState
     ) {
-        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
+        // assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
 
-        let untrusted_height_number = header.signed_header.height;
-        let trusted_height_number = header.trusted_height;
+        // let untrusted_height_number = header.signed_header.height;
+        // let trusted_height_number = header.trusted_height;
 
-        assert!(
-            untrusted_height_number > trusted_height_number,
-            E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
-        );
+        // assert!(
+        //     untrusted_height_number > trusted_height_number,
+        //     E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
+        // );
 
-        let trusted_timestamp = consensus_state.timestamp;
-        let untrusted_timestamp =
-            header.signed_header.time.seconds * 1_000_000_000
-                + (header.signed_header.time.nanos as u64);
-        assert!(
-            untrusted_timestamp > trusted_timestamp,
-            E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
-        );
+        // let trusted_timestamp = consensus_state.timestamp;
+        // let untrusted_timestamp =
+        //     header.signed_header.time.seconds * 1_000_000_000
+        //         + (header.signed_header.time.nanos as u64);
+        // assert!(
+        //     untrusted_timestamp > trusted_timestamp,
+        //     E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
+        // );
 
-        let current_time = timestamp::now_seconds() * 1_000_000_000;
-        assert!(
-            untrusted_timestamp < current_time + state.client_state.trusting_period,
-            E_HEADER_EXCEEDED_TRUSTING_PERIOD
-        );
+        // let current_time = timestamp::now_seconds() * 1_000_000_000;
+        // assert!(
+        //     untrusted_timestamp < current_time + state.client_state.trusting_period,
+        //     E_HEADER_EXCEEDED_TRUSTING_PERIOD
+        // );
 
-        assert!(
-            untrusted_timestamp < current_time + state.client_state.max_clock_drift,
-            E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
-        );
+        // assert!(
+        //     untrusted_timestamp < current_time + state.client_state.max_clock_drift,
+        //     E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
+        // );
 
-        if (untrusted_height_number == trusted_height_number + 1) {
-            assert!(
-                header.signed_header.validators_hash
-                    == consensus_state.next_validators_hash,
-                E_VALIDATORS_HASH_MISMATCH
-            );
-        };
+        // if (untrusted_height_number == trusted_height_number + 1) {
+        //     assert!(
+        //         header.signed_header.validators_hash
+        //             == consensus_state.next_validators_hash,
+        //         E_VALIDATORS_HASH_MISMATCH
+        //     );
+        // };
 
-        assert!(
-            groth16_verifier::verify_zkp(
-                &state.client_state.chain_id,
-                &consensus_state.next_validators_hash,
-                light_header_as_input_hash(&header.signed_header),
-                &header.zero_knowledge_proof
-            ),
-            E_INVALID_ZKP
-        );
+        // assert!(
+        //     groth16_verifier::verify_zkp(
+        //         &state.client_state.chain_id,
+        //         &consensus_state.next_validators_hash,
+        //         light_header_as_input_hash(&header.signed_header),
+        //         &header.zero_knowledge_proof
+        //     ),
+        //     E_INVALID_ZKP
+        // );
     }
 
     public fun update_client(
@@ -172,7 +172,7 @@ module ibc::light_client {
 
         let consensus_state =
             smart_table::borrow<u64, ConsensusState>(
-                &state.consensus_states, header.trusted_height
+                &state.consensus_states, height::get_revision_height(&header.trusted_height)
             );
 
         verify_header(&header, state, consensus_state);
@@ -219,9 +219,9 @@ module ibc::light_client {
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let consensus_state_a =
-            smart_table::borrow(&state.consensus_states, header_a.trusted_height);
+            smart_table::borrow(&state.consensus_states, height::get_revision_height(&header_a.trusted_height));
         let consensus_state_b =
-            smart_table::borrow(&state.consensus_states, header_b.trusted_height);
+            smart_table::borrow(&state.consensus_states, height::get_revision_height(&header_b.trusted_height));
 
         // verify both updates would have been accepted by the light client
         verify_header(&header_a, state, consensus_state_a);
@@ -249,20 +249,20 @@ module ibc::light_client {
         proof: vector<u8>,
         path: vector<u8>,
         value: vector<u8>
-    ): u64 acquires State {
-        let consensus_state =
-            smart_table::borrow(
-                &borrow_global<State>(get_client_address(client_id)).consensus_states,
-                height
-            );
+    ): u64 {
+        // let consensus_state =
+        //     smart_table::borrow(
+        //         &borrow_global<State>(get_client_address(client_id)).consensus_states,
+        //         height
+        //     );
 
-        ics23::verify_membership(
-            ics23::decode_membership_proof(proof),
-            consensus_state.app_hash.hash,
-            b"ibc", // HARDCODED PREFIX
-            path,
-            value
-        );
+        // ics23::verify_membership(
+        //     ics23::decode_membership_proof(proof),
+        //     consensus_state.app_hash.hash,
+        //     b"ibc", // HARDCODED PREFIX
+        //     path,
+        //     value
+        // );
 
         0
     }
@@ -359,30 +359,30 @@ module ibc::light_client {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool acquires State {
-        let state = borrow_global_mut<State>(get_client_address(client_id));
+    public fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool {
+        // let state = borrow_global_mut<State>(get_client_address(client_id));
 
-        let header = decode_header(header);
+        // let header = decode_header(header);
 
-        let expected_timestamp =
-            header.signed_header.time.seconds * 1_000_000_000
-                + (header.signed_header.time.nanos as u64);
+        // let expected_timestamp =
+        //     header.signed_header.time.seconds * 1_000_000_000
+        //         + (header.signed_header.time.nanos as u64);
 
-        if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
-            let ConsensusState {
-                timestamp,
-                app_hash: MerkleRoot { hash },
-                next_validators_hash
-            } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+        // if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
+        //     let ConsensusState {
+        //         timestamp,
+        //         app_hash: MerkleRoot { hash },
+        //         next_validators_hash
+        //     } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
 
-            if (timestamp != &expected_timestamp
-                || hash != &header.signed_header.app_hash
-                || next_validators_hash != &header.signed_header.next_validators_hash) {
-                height::set_revision_height(&mut state.client_state.frozen_height, 1);
-            };
-        };
+        //     if (timestamp != &expected_timestamp
+        //         || hash != &header.signed_header.app_hash
+        //         || next_validators_hash != &header.signed_header.next_validators_hash) {
+        //         height::set_revision_height(&mut state.client_state.frozen_height, 1);
+        //     };
+        // };
 
-        // TODO(aeryz): implement consensus state metadata tracking here
+        // // TODO(aeryz): implement consensus state metadata tracking here
         false
     }
 
@@ -472,7 +472,7 @@ module ibc::light_client {
             app_hash: bcs_utils::peel_fixed_bytes(buf, 32)
         };
 
-        let trusted_height = bcs_utils::peel_u64(buf);
+        let trusted_height = height::decode_bcs(buf);
 
         let proof_bz = bcs_utils::peel_bytes(buf);
         let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);

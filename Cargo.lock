@@ -14088,6 +14088,7 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",

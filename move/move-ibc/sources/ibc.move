@@ -1686,13 +1686,13 @@ module ibc::ibc {
             table::borrow_with_default(
                 &store.commitments,
                 b"nextConnectionSequence",
-                &bcs::to_bytes<u64>(&0)
+                &bcs::to_bytes<u32>(&0)
             );
         let next_sequence = from_bcs::to_u32(*next_sequence_bytes);
         table::upsert(
             &mut store.commitments,
             b"nextConnectionSequence",
-            bcs::to_bytes(&(next_sequence + 1))
+            bcs::to_bytes<u32>(&(next_sequence + 1))
         );
 
         next_sequence
@@ -1729,7 +1729,7 @@ module ibc::ibc {
             table::borrow_with_default(
                 &store.commitments,
                 b"nextChannelSequence",
-                &bcs::to_bytes<u64>(&0)
+                &bcs::to_bytes<u32>(&0)
             );
         let next_sequence = from_bcs::to_u32(*next_sequence_bytes);
 
