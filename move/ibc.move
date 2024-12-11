@@ -418,7 +418,7 @@ module ibc::ibc {
             );
         assert!(err == 0, err);
 
-        connection_end::set_state(connection, CONN_STATE_TRYOPEN);
+        connection_end::set_state(connection, CONN_STATE_OPEN);
         connection_end::set_counterparty_connection_id(
             connection, counterparty_connection_id
         );

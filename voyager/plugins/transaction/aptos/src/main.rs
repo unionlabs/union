@@ -391,9 +391,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.channel_open_init(
                     ibc_handler_address,
                     (
-                        AccountAddress::try_from(data.port_id.as_ref())
-                            .unwrap()
-                            .into(),
+                        AccountAddress::try_from(data.port_id.as_ref()).unwrap(),
                         data.counterparty_port_id.into_vec(),
                         data.connection_id,
                         data.version,

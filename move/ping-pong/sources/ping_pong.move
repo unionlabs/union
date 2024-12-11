@@ -1,4 +1,4 @@
-module ping_pong::ping_pong_app {
+module ping_pong::ibc_app {
     use aptos_framework::object::{Self, Object};
     use std::option;
     use ibc::helpers;
@@ -17,10 +17,10 @@ module ping_pong::ping_pong_app {
     use aptos_std::copyable_any;
     use ibc::packet::{Self, Packet};
 
-    struct PingPongProof has drop, store, key {}
+    struct IbcAppWitness has drop, store, key {}
 
-    public(friend) fun new_ping_pong_proof(): PingPongProof {
-        PingPongProof {}
+    public(friend) fun new_ping_pong_proof(): IbcAppWitness {
+        IbcAppWitness {}
     }
 
     const ACK_SUCCESS: vector<u8> = b"1";
@@ -86,11 +86,11 @@ module ping_pong::ping_pong_app {
         let cb =
             function_info::new_function_info(
                 deployer,
-                string::utf8(b"ping_pong_app"),
+                string::utf8(b"ibc_app"),
                 string::utf8(b"on_packet")
             );
 
-        ibc::register_application<PingPongProof>(deployer, cb, new_ping_pong_proof());
+        ibc::register_application<IbcAppWitness>(deployer, cb, new_ping_pong_proof());
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -193,7 +193,7 @@ module ping_pong::ping_pong_app {
 
         initiate(pp_packet.ping);
 
-        dispatcher::set_return_value<PingPongProof>(new_ping_pong_proof(), ACK_SUCCESS);
+        dispatcher::set_return_value<IbcAppWitness>(new_ping_pong_proof(), ACK_SUCCESS);
 
     }
 
