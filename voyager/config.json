@@ -48,7 +48,7 @@
         "config": {
           "rpc_url": "http://localhost:30731",
           "movement_rpc_url": "http://localhost:30832",
-          "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf"
+          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
         }
       }
     ],
@@ -88,7 +88,7 @@
         "config": {
           "rpc_url": "http://localhost:30731",
           "movement_rpc_url": "http://localhost:30832",
-          "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf"
+          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
         }
       }
     ],
@@ -128,7 +128,7 @@
           "consensus_type": "movement"
         },
         "config": {
-          "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf",
+          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
           "l1_settlement_address": "0x0000000000000000000000000000000000000000",
           "l1_client_id": 0,
           "aptos_rest_api": "http://localhost:30731",
@@ -200,7 +200,7 @@
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
         "movement_rpc_url": "http://localhost:30832",
-        "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf"
+        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
       }
     },
     {
@@ -294,7 +294,7 @@
       "config": {
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf",
+        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
         "keyring": {
           "name": "aptos-devnet",
           "keys": [
@@ -378,7 +378,7 @@
       "path": "./target/debug/voyager-client-update-plugin-movement",
       "config": {
         "chain_id": "27",
-        "ibc_handler_address": "644ac9a938fc35187400e4c743b4da5ca4fc7fddba9b205e7d4ac0f3d4f1c5bf",
+        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": 0,
         "aptos_rest_api": "http://localhost:30731",

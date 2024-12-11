@@ -249,7 +249,7 @@ pub mod ibc {
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
             (_0, _1, _2, _3): (
-                ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
+                ::move_bindgen::aptos_types::account_address::AccountAddress,
                 Vec<u8>,
                 u32,
                 String,
@@ -265,15 +265,19 @@ pub mod ibc {
                 stringify!(channel_open_init).parse().unwrap(),
                 vec![t0.into().into()],
                 vec![
-                    ::move_bindgen::bcs::to_bytes(& <
-                    ::move_bindgen::aptos_rest_client::aptos_api_types::Address as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < String as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_0).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_1),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_2),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<String as ::move_bindgen::MoveOutputType>::into_raw(_3),
+                    )
+                    .unwrap(),
                 ],
             )
         }
