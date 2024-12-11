@@ -71,7 +71,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     fork_parameters: &ForkParameters,
     bls_verifier: V,
 ) -> Result<(), Error> {
-    // Verify sync committee has sufficient participants
+    // verify that the sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
     let set_bits = sync_aggregate
         .sync_committee_bits
@@ -85,7 +85,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     is_valid_light_client_header::<C>(fork_parameters, &update.attested_header)?;
 
-    // Verify update does not skip a sync committee period
+    // verify that the update does not skip a sync committee period
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
 
@@ -139,7 +139,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         )?;
     }
 
-    // Verify update is relevant
+    // verify that the update is relevant
     let update_attested_period = compute_sync_committee_period_at_slot::<C>(update_attested_slot);
 
     // There are two options to do a light client update:

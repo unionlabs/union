@@ -214,7 +214,7 @@ pub fn verify_header<C: ChainSpec>(
     let (current_sync_committee, next_sync_committee) =
         header.consensus_update.currently_trusted_sync_committee();
 
-    validate_light_client_update::<C, VerificationContext>(
+    validate_light_client_update::<C, _>(
         &header.consensus_update.clone().into(),
         current_sync_committee,
         next_sync_committee,

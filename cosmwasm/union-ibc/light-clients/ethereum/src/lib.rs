@@ -3,3 +3,6 @@ pub mod client;
 pub mod contract;
 pub mod errors;
 pub mod verification;
+
+#[cfg(test)]
+pub mod tests;
