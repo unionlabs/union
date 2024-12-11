@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use aptos_move_ibc::ibc::ClientExt as _;
+use aptos_move_ibc::{channel::Channel, connection_end::ConnectionEnd, ibc::ClientExt as _};
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use ibc_union_spec::{IbcUnion, StorePath};
@@ -202,24 +202,30 @@ impl StateModuleServer<IbcUnion> for Module {
 
                 into_value(consensus_state_bytes)
             }
-            StorePath::Connection(path) => into_value(
-                self.get_connection(
-                    self.ibc_handler_address.into(),
-                    Some(ledger_version),
-                    (path.connection_id,),
-                )
-                .await
-                .map_err(rest_error_to_rpc_error)?,
-            ),
-            StorePath::Channel(path) => into_value(
-                self.get_channel(
-                    self.ibc_handler_address.into(),
-                    Some(ledger_version),
-                    (path.channel_id,),
-                )
-                .await
-                .map_err(rest_error_to_rpc_error)?,
-            ),
+            StorePath::Connection(path) => {
+                let connection = self
+                    .get_connection(
+                        self.ibc_handler_address.into(),
+                        Some(ledger_version),
+                        (path.connection_id,),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?
+                    .unwrap();
+                into_value(convert_connection(connection))
+            }
+            StorePath::Channel(path) => {
+                let channel = self
+                    .get_channel(
+                        self.ibc_handler_address.into(),
+                        Some(ledger_version),
+                        (path.channel_id,),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?
+                    .unwrap();
+                into_value(convert_channel(channel))
+            }
             // TODO(aeryz): check if we have to do `TryInto<H256>` here
             StorePath::BatchPackets(path) => into_value(
                 self.get_commitment(
@@ -390,5 +396,37 @@ pub async fn get_storage_proof(
                 .map(Into::into)
                 .collect(),
         },
+    }
+}
+
+fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
+    ibc_solidity::Connection {
+        state: match connection.state {
+            0 => ibc_solidity::ConnectionState::Unspecified,
+            1 => ibc_solidity::ConnectionState::Init,
+            2 => ibc_solidity::ConnectionState::TryOpen,
+            3 => ibc_solidity::ConnectionState::Open,
+            _ => panic!("connection state cannot be greater than 3"),
+        },
+        client_id: connection.client_id,
+        counterparty_client_id: connection.counterparty_client_id,
+        counterparty_connection_id: connection.counterparty_connection_id,
+    }
+}
+
+fn convert_channel(channel: Channel) -> ibc_solidity::Channel {
+    ibc_solidity::Channel {
+        state: match channel.state {
+            0 => ibc_solidity::ChannelState::Unspecified,
+            1 => ibc_solidity::ChannelState::Init,
+            2 => ibc_solidity::ChannelState::TryOpen,
+            3 => ibc_solidity::ChannelState::Open,
+            4 => ibc_solidity::ChannelState::Closed,
+            _ => panic!("channel state cannot be greater than 4"),
+        },
+        connection_id: channel.connection_id,
+        counterparty_channel_id: channel.counterparty_channel_id,
+        counterparty_port_id: channel.counterparty_port_id.into(),
+        version: channel.version,
     }
 }

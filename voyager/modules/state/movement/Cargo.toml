@@ -35,3 +35,4 @@ tracing-subscriber          = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
+ibc-solidity = { workspace = true }

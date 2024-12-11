@@ -390,7 +390,8 @@ pub mod ibc {
                     )
                     .unwrap(),
                     ::move_bindgen::bcs::to_bytes(
-                        &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_3),
+                        &_3,
+                        // &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_3),
                     )
                     .unwrap(),
                 ],

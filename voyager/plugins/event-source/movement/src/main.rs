@@ -322,9 +322,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         .unwrap();
                                 ibc::ClientCreatedEvent::from_raw(raw_created_event).into()
                             }
-                            "ClientUpdated" => serde_json::from_value::<ibc::ClientUpdated>(data)
-                                .unwrap()
-                                .into(),
+                            "ClientUpdated" => {
+                                let raw_updated_event =
+                                    serde_json::from_value::<ibc::RawClientUpdated>(data).unwrap();
+                                ibc::ClientUpdated::from_raw(raw_updated_event).into()
+                            }
                             "ConnectionOpenInit" => {
                                 serde_json::from_value::<ibc::ConnectionOpenInit>(data)
                                     .unwrap()
