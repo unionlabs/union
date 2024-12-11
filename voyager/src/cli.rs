@@ -224,7 +224,7 @@ pub enum MsgCmd {
         ibc_spec_id: IbcSpecId,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
         client_type: ClientType,
-        #[arg(long, default_value_t = QueryHeight::Latest)]
+        #[arg(long, default_value_t = QueryHeight::Finalized)]
         height: QueryHeight,
         #[arg(
             long,

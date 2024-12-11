@@ -89,6 +89,21 @@
           type = types.package;
           default = self.packages.${pkgs.system}.voyager;
         };
+        modules = mkOption {
+          # The configuration design is breaking quite often, would be a waste
+          # of effort to fix the type for now.
+          # type = types.submodule {
+          #   options = {
+          #     enabled = mkOption {
+          #       type = types.bool;
+          #       default = true;
+          #     };
+          #     path = mkOption { type = types.path; };
+          #     config = mkOption { type = types.attrs; };
+          #   };
+          # };
+          type = types.attrs;
+        };
         plugins = mkOption {
           # The configuration design is breaking quite often, would be a waste
           # of effort to fix the type for now.
@@ -172,7 +187,7 @@
         let
           configJson = pkgs.writeText "config.json" (
             builtins.toJSON {
-              inherit (cfg) plugins;
+              inherit (cfg) plugins modules;
               voyager = cfg.voyager-extra // {
                 num_workers = cfg.workers;
                 queue = {
@@ -188,30 +203,18 @@
           );
         in
         mkIf cfg.enable {
+          environment.systemPackages = [
+            (pkgs.writeShellApplication {
+              name = "voyager";
+              runtimeInputs = [ cfg.package ];
+              text = ''
+                ${pkgs.lib.getExe cfg.package} --config-file-path ${configJson} "$@"
+              '';
+            })
+          ];
           systemd.services = {
-            # voyager-migration = {
-            #   wantedBy = [ "multi-user.target" ];
-            #   after = [ "network.target" ];
-            #   description = "Voyager Migration";
-            #   serviceConfig = {
-            #     Type = "oneshot";
-            #     ExecStart = ''
-            #       ${pkgs.lib.meta.getExe cfg.package} \
-            #         --config-file-path ${configJson} \
-            #         -l ${cfg.log-format} \
-            #         run-migrations
-            #     '';
-            #   };
-            #   environment = {
-            #     RUST_LOG = "debug";
-            #     RUST_BACKTRACE = "full";
-            #   };
-            # };
             voyager = {
               wantedBy = [ "multi-user.target" ];
-              # after = [ "voyager-migration.service" ];
-              # partOf = [ "voyager-migration.service" ];
-              # requires = [ "voyager-migration.service" ];
               description = "Voyager";
               serviceConfig = {
                 Type = "simple";
@@ -221,7 +224,7 @@
                     -l ${cfg.log-format} ${
                       pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"
                     } \
-                    relay
+                    start
                 '';
                 Restart = mkForce "always";
                 RestartSec = 10;

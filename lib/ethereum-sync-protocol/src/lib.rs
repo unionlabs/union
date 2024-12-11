@@ -42,11 +42,6 @@ pub trait BlsVerify {
     ) -> Result<(), Error>;
 }
 
-pub enum UpdateType {
-    EpochChange(SyncCommittee),
-    WithinEpoch(SyncCommittee),
-}
-
 /// Verifies if the light client `update` is valid.
 ///
 /// * `update`: The light client update we want to verify.

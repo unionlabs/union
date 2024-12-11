@@ -55,13 +55,25 @@ Production contracts will get solely upgraded through the proxy and have the sam
 
 ### Sepolia
 
-- Deployer: [0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F](https://sepolia.etherscan.io/address/0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F)
-- Sender: [0x2c077908e1173ff1a6097ca9e2af547c1e5130c4](https://sepolia.etherscan.io/address/0x2c077908e1173ff1a6097ca9e2af547c1e5130c4)
-- IBCHandler: [0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb](https://sepolia.etherscan.io/address/0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb)
-- CometblsClient: [0x96979ed96ae00d724109b5ad859568e1239c0837](https://sepolia.etherscan.io/address/0x96979ed96ae00d724109b5ad859568e1239c0837)
-- UCS01: [0xd0081080ae8493cf7340458eaf4412030df5feeb](https://sepolia.etherscan.io/address/0xd0081080ae8493cf7340458eaf4412030df5feeb)
-- UCS02: [0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9](https://sepolia.etherscan.io/address/0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9)
-- Multicall: [0x70BEDecc56C7104e410c1e4c25FcA0bcd29A0bA9](https://sepolia.etherscan.io/address/0x70bedecc56c7104e410c1e4c25fca0bcd29a0ba9)
+- Deployer: [0x8473C8A647f7EEE80dE978251DAEfD6EFa63ED7C](https://sepolia.etherscan.io/address/0x8473C8A647f7EEE80dE978251DAEfD6EFa63ED7C)
+- Sender: [0x153919669Edc8A5D0c8D1E4507c9CE60435A1177](https://sepolia.etherscan.io/address/0x153919669Edc8A5D0c8D1E4507c9CE60435A1177)
+- IBCHandler: [0xE3e97964d842623D2Da087978Fbe343523D810B2](https://sepolia.etherscan.io/address/0xE3e97964d842623D2Da087978Fbe343523D810B2)
+- CometblsClient: [0xbFFc83e32Bd9428f00bE562e5608DB945c7fF475](https://sepolia.etherscan.io/address/0xbFFc83e32Bd9428f00bE562e5608DB945c7fF475)
+- UCS00: [0xf81158aC87f2cdc8543E40aBD8Fe8Ad1efe50e5e](https://sepolia.etherscan.io/address/0xf81158aC87f2cdc8543E40aBD8Fe8Ad1efe50e5e)
+- UCS01: [0x3188A9D9a3AdfaFf95074dfBF14ed3ab6C3C0B6E](https://sepolia.etherscan.io/address/0x3188A9D9a3AdfaFf95074dfBF14ed3ab6C3C0B6E)
+- UCS02: [0xcd83BFe45F4bc25Db2A153D6Aba40B99a2D90C61](https://sepolia.etherscan.io/address/0xcd83BFe45F4bc25Db2A153D6Aba40B99a2D90C61)
+- Multicall: [0xa4Cb22b21fD3701797218324A3425d50e12E66Cd](https://sepolia.etherscan.io/address/0xa4Cb22b21fD3701797218324A3425d50e12E66Cd)
+
+### Holesky
+
+- Deployer: [0x8473C8A647f7EEE80dE978251DAEfD6EFa63ED7C](https://holesky.etherscan.io/address/0x8473C8A647f7EEE80dE978251DAEfD6EFa63ED7C)
+- Sender: [0x153919669Edc8A5D0c8D1E4507c9CE60435A1177](https://holesky.etherscan.io/address/0x153919669Edc8A5D0c8D1E4507c9CE60435A1177)
+- IBCHandler: [0xE3e97964d842623D2Da087978Fbe343523D810B2](https://holesky.etherscan.io/address/0xE3e97964d842623D2Da087978Fbe343523D810B2)
+- CometblsClient: [0xbFFc83e32Bd9428f00bE562e5608DB945c7fF475](https://holesky.etherscan.io/address/0xbFFc83e32Bd9428f00bE562e5608DB945c7fF475)
+- UCS00: [0xf81158aC87f2cdc8543E40aBD8Fe8Ad1efe50e5e](https://holesky.etherscan.io/address/0xf81158aC87f2cdc8543E40aBD8Fe8Ad1efe50e5e)
+- UCS01: [0x3188A9D9a3AdfaFf95074dfBF14ed3ab6C3C0B6E](https://holesky.etherscan.io/address/0x3188A9D9a3AdfaFf95074dfBF14ed3ab6C3C0B6E)
+- UCS02: [0xcd83BFe45F4bc25Db2A153D6Aba40B99a2D90C61](https://holesky.etherscan.io/address/0xcd83BFe45F4bc25Db2A153D6Aba40B99a2D90C61)
+- Multicall: [0xa4Cb22b21fD3701797218324A3425d50e12E66Cd](https://holesky.etherscan.io/address/0xa4Cb22b21fD3701797218324A3425d50e12E66Cd)
 
 ### Berachain
 

@@ -26,3 +26,6 @@ tracing-subscriber          = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

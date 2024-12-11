@@ -544,10 +544,10 @@ impl Module {
                             DecodedHeaderMeta {
                                 height: Height::new(match &header.consensus_update {
                                     LightClientUpdate::EpochChange(update) => {
-                                        update.update_data.finalized_header.beacon.slot
+                                        update.update_data.finalized_header.execution.block_number
                                     }
                                     LightClientUpdate::WithinEpoch(update) => {
-                                        update.update_data.finalized_header.beacon.slot
+                                        update.update_data.finalized_header.execution.block_number
                                     }
                                 }),
                             },

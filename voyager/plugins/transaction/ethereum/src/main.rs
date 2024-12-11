@@ -382,7 +382,7 @@ impl Module {
 
         info!("submitting evm tx");
 
-        match call.gas(30_000_000).send().await {
+        match call.gas(15_000_000).send().await {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {

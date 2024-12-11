@@ -317,6 +317,7 @@ impl FromStr for QueryHeight {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "latest" => Ok(Self::Latest),
+            "finalized" => Ok(Self::Finalized),
             _ => s.parse().map(Self::Specific),
         }
     }

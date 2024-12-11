@@ -198,8 +198,14 @@ _: {
           private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
         }
         {
-          network = "testnet";
+          network = "sepolia";
           rpc-url = "https://rpc-sepolia.rockx.com";
+          private-key = ''"$1"'';
+          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+        }
+        {
+          network = "holesky";
+          rpc-url = "https://holesky.drpc.org";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
