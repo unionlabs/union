@@ -110,6 +110,39 @@ export default defineConfig({
           attrs: { src: "/scripts/anchor-targets.js" }
         },
         {
+          tag: "script",
+          // attrs: { src: "https://cdn.jsdelivr.net/npm/@cookbookdev/docsbot/dist/standalone/index.cjs.js" }
+          content: `
+            function initAskCookbook() {
+      // It's a public API key, so it's safe to expose it here
+      const PUBLIC_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NzU4YzlkMDM4NTcxODU5MjU0MDUzYWMiLCJpYXQiOjE3MzM4NzIwODAsImV4cCI6MjA0OTQ0ODA4MH0.Tf38uyoqlG0uhJRHq4ACzJkydZJa92UECjsO4NVfP3I";
+
+      let cookbookContainer = document.getElementById("__cookbook");
+      if (!cookbookContainer) {
+        cookbookContainer = document.createElement("div");
+        cookbookContainer.id = "__cookbook";
+        cookbookContainer.dataset.apiKey = PUBLIC_API_KEY;
+        document.body.appendChild(cookbookContainer);
+      }
+
+      let cookbookScript = document.getElementById("__cookbook-script");
+      if (!cookbookScript) {
+        cookbookScript = document.createElement("script");
+        cookbookScript.id = "__cookbook-script";
+        cookbookScript.src = "https://cdn.jsdelivr.net/npm/@cookbookdev/docsbot/dist/standalone/index.cjs.js";
+        cookbookScript.async = true;
+        document.head.appendChild(cookbookScript);
+      }
+    }
+
+    // Check if the document is already loaded and if so, initialize the script, otherwise wait for the load event
+    if (document.readyState === "complete") {
+      initAskCookbook();
+    } else {
+      window.addEventListener("load", initAskCookbook);
+    }`
+        },
+        {
           tag: "link",
           attrs: {
             rel: "apple-touch-icon",

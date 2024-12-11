@@ -4,11 +4,13 @@ import "#/styles/fonts.css"
 import "#/styles/tailwind.css"
 import Terminal from "#/components/Terminal.astro"
 import { demoFiles } from "../content/docs/integrations/typescript/_data/demo-files.ts"
+import AskCookbook from '@components/AskCookbook.astro';
 
 interface Props {}
 ---
 
 <Terminal webcontainerFiles={JSON.stringify(demoFiles)} />
+<AskCookbook />
 
 <style lang="postcss" is:inline>
   html, body {

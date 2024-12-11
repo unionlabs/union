@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^5.3.0",
+    "@cookbookdev/docsbot": "^4.24.7",
     "@astrojs/react": "^3.6.3",
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/starlight": "^0.29.2",
