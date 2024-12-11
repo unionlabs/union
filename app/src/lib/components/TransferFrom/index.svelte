@@ -1,13 +1,9 @@
 <script lang="ts">
-  import {TRANSFER_DEBUG} from "$lib/components/TransferFrom/config.ts"
-  import {createTransferStore} from "$lib/components/TransferFrom/transfer"
-  import DebugBox from "$lib/components/TransferFrom/components/DebugBox.svelte"
+import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/config.ts"
+import { createTransferStore } from "$lib/components/TransferFrom/transfer"
+import DebugBox from "$lib/components/TransferFrom/components/DebugBox.svelte"
 
-  const {
-    intents,
-    validation,
-    context
-  } = createTransferStore()
+const { intents, context, validation } = createTransferStore()
 </script>
 
 <form

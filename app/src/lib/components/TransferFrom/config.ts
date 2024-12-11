@@ -1,4 +1,4 @@
-import type { RawTransferIntents } from "$lib/components/TransferFrom/transfer/intents.ts";
+import type { RawTransferIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
 
 export const TRANSFER_DEBUG = true
 

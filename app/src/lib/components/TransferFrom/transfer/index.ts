@@ -1,8 +1,11 @@
-import {createIntentStore, type IntentStore} from "./intents"
-import type {Readable} from "svelte/store";
-import type {Chain, UserAddresses} from "$lib/types.ts";
-import {type Balance, createContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
-import {createValidationStore, type ValidationStore} from "$lib/components/TransferFrom/transfer/validation.ts";
+import { createIntentStore, type IntentStore } from "./intents.ts"
+import type { Readable } from "svelte/store"
+import type { Chain, UserAddresses } from "$lib/types.ts"
+import { type Balance, createContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import {
+  createValidationStore,
+  type ValidationStore
+} from "$lib/components/TransferFrom/transfer/validation.ts"
 
 export interface TransferStore {
   intents: IntentStore

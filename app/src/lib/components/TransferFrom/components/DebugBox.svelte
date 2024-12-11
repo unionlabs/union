@@ -1,29 +1,21 @@
 <script lang="ts">
-  import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
-  import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
-  import type { IntentStore } from "../transfer/intents.ts"
-  import type { ValidationStore } from "../transfer/validation.ts"
-  import type { ContextStore } from "../transfer/context.ts"
+import CopyUrlButton from "$lib/components/TransferFrom/components/CopyUrlButton.svelte"
+import ResetButton from "$lib/components/TransferFrom/components/ResetButton.svelte"
+import type { IntentStore } from "../transfer/intents.ts"
+import type { ValidationStore } from "../transfer/validation.ts"
+import type { ContextStore } from "../transfer/context.ts"
 
-  interface DebugProps {
-    intents: IntentStore
-    validation: ValidationStore
-    context: ContextStore
-  }
+interface DebugProps {
+  intents: IntentStore
+  validation: ValidationStore
+  context: ContextStore
+}
 
-  export let intents: DebugProps["intents"]
-  export let validation: DebugProps["validation"]
-  export let context: DebugProps["context"]
+export let intents: DebugProps["intents"]
+export let validation: DebugProps["validation"]
+export let context: DebugProps["context"]
 
-  // Destructure the context for easier access to stores
-  const {
-    userAddress,
-    sourceChain,
-    destinationChain,
-    balances,
-    assetInfo,
-    chains
-  } = context
+const { userAddress, sourceChain, destinationChain, balances, assetInfo, chains } = context
 </script>
 
 <div class="p-4 w-full">

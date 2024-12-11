@@ -1,5 +1,5 @@
 import { derived, get, type Readable } from "svelte/store"
-import type { IntentStore } from "./intents"
+import type { IntentStore } from "./intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"

@@ -40,7 +40,7 @@ export const transferSchema = v.pipe(
       v.string(),
       v.trim(),
       v.title("Amount"),
-      v.description("Amount must be a valid number greater than 0 and not exceed balance"),
+      v.description("Amount must be a valid number greater than 0 and not exceed balance")
     ),
     balance: v.pipe(
       v.string(),
@@ -49,7 +49,6 @@ export const transferSchema = v.pipe(
       v.description("Current balance for the asset")
     )
   }),
-  // Check amount against balance
   v.forward(
     v.partialCheck(
       [["amount"], ["balance"]],
@@ -57,19 +56,16 @@ export const transferSchema = v.pipe(
         const amount = Number.parseFloat(input.amount)
         const balance = Number.parseFloat(input.balance)
 
-        // Check if values are valid numbers and amount is positive
         if (Number.isNaN(amount) || Number.isNaN(balance) || amount <= 0) {
           return false
         }
 
-        // Check if balance covers amount
         return amount <= balance
       },
       "Amount must be a valid number greater than 0 and not exceed available balance"
     ),
     ["amount"]
   ),
-  // Validate receiver address
   v.forward(
     v.partialCheck(
       [["destination"], ["receiver"]],
