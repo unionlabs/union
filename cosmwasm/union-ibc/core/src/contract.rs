@@ -35,7 +35,7 @@ use crate::{
     state::{
         CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
         CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, CONTRACT_CHANNELS, NEXT_CHANNEL_ID,
-        NEXT_CLIENT_ID, NEXT_CONNECTION_ID,
+        NEXT_CLIENT_ID, NEXT_CONNECTION_ID, QUERY_STORE,
     },
     ContractError,
 };
@@ -732,14 +732,17 @@ fn update_client(
     _relayer: Addr,
 ) -> Result<Response, ContractError> {
     let client_impl = client_impl(deps.as_ref(), client_id)?;
-    let update = deps.querier.query_wasm_smart::<VerifyClientMessageUpdate>(
-        &client_impl,
-        &LightClientQuery::VerifyClientMessage {
-            client_id,
-            message: client_message.into(),
-        },
-    )?;
-
+    let update = {
+        // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+        // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
+        QUERY_STORE.save(deps.storage, &client_message.into())?;
+        let update = deps.querier.query_wasm_smart::<VerifyClientMessageUpdate>(
+            &client_impl,
+            &LightClientQuery::VerifyClientMessage { client_id },
+        )?;
+        QUERY_STORE.remove(deps.storage);
+        update
+    };
     CLIENT_STATES.save(
         deps.storage,
         client_id,

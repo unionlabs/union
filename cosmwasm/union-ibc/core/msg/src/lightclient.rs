@@ -55,7 +55,6 @@ pub enum QueryMsg {
     },
     VerifyClientMessage {
         client_id: u32,
-        message: Bytes,
     },
     Misbehaviour {
         client_id: u32,

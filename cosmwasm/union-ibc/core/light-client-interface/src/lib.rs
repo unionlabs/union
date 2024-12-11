@@ -6,7 +6,7 @@ use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
     Response, StdError,
 };
-use cw_storage_plus::Map;
+use cw_storage_plus::{Item, Map};
 use msg::InstantiateMsg;
 use state::IBC_HOST;
 use union_ibc_msg::lightclient::{
@@ -25,6 +25,7 @@ pub mod state;
 // These are only used for `key` calculation. We don't want this crate to depend on `union-ibc`.
 const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
 const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
+const QUERY_STORE: Item<Binary> = Item::new("query_store");
 
 // TODO: Add #[source] to all variants
 #[derive(macros::Debug, thiserror::Error)]
@@ -273,10 +274,11 @@ pub fn query<T: IbcClient>(
 
             to_json_binary(&()).map_err(Into::into)
         }
-        QueryMsg::VerifyClientMessage { client_id, message } => {
+        QueryMsg::VerifyClientMessage { client_id } => {
+            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let message = QUERY_STORE.query(&deps.querier, ibc_host.clone())?;
             let header =
                 T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
-            let ibc_host = IBC_HOST.load(deps.storage)?;
 
             let (height, client_state, consensus_state) =
                 T::verify_header(IbcClientCtx::new(client_id, ibc_host, deps, env), header)?;

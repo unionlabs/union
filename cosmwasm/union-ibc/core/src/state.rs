@@ -4,6 +4,8 @@ use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::{Item, Map};
 use ibc_solidity::{Channel, Connection};
 
+pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
+
 pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
 
 pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
