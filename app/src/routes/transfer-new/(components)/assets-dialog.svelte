@@ -1,9 +1,9 @@
 <script lang="ts">
 import { formatUnits } from "viem"
+import type { Chain } from "$lib/types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
-import type { Chain } from "$lib/types.ts"
 import Precise from "$lib/components/precise.svelte"
 import { showUnsupported } from "$lib/stores/user.ts"
 import { Button } from "$lib/components/ui/button/index.ts"

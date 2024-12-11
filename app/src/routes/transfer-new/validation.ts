@@ -41,9 +41,6 @@ export const transferSchema = v.pipe(
       v.trim(),
       v.title("Amount"),
       v.description("Amount must be a valid number")
-      // v.transform(input => {
-      //   const gas = ''
-      // })
     )
   }),
   v.forward(

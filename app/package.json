@@ -38,7 +38,7 @@
     "svelte-sonner": "^0.3.27",
     "temporal-polyfill": "^0.2.5",
     "three": "0.170.0",
-    "valibot": "0.42.1",
+    "valibot": "1.0.0-beta.9",
     "vaul-svelte": "^0.3.2",
     "viem": "2.21.52"
   },

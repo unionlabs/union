@@ -50,8 +50,7 @@ import { aptosStore, userAddressAptos, getAptosWallet } from "$lib/wallet/aptos"
 import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
-
-type SearchParams = { [key: string]: string }
+import { data } from "autoprefixer"
 
 const querClient = useQueryClient()
 
@@ -65,6 +64,12 @@ function queryData<T extends Array<unknown>>(
 
 let chains = queryData<Array<Chain>>(["chains"], chain => chain.enabled_staging)
 
+/**
+ * it's not useful to strongly type this becuse it refers to the raw state of the URL
+ * because at this point we haven't yet parsed the URL or validated it, so it's just a string
+ */
+type SearchParams = { [key: string]: string }
+
 let transferQueryOptions = queryOptions<SearchParams>({
   enabled: query => false,
   placeholderData: keepPreviousData,
@@ -73,7 +78,7 @@ let transferQueryOptions = queryOptions<SearchParams>({
   queryFn: ({ queryKey, signal, meta }) => Object.fromEntries($page.url.searchParams)
 })
 
-let state = createQuery(transferQueryOptions)
+$: transferState = createQuery(transferQueryOptions)
 
 const observer = new QueryObserver<SearchParams>(querClient, {
   enabled: query => false,
@@ -85,14 +90,10 @@ let userAddress = derived(
   ([$cosmos, $evm, $aptos]) => ({ evm: $evm, aptos: $aptos, cosmos: $cosmos })
 )
 
-$: asset = $page.url.searchParams.get("asset") || $state.data?.asset
-$: amount = $page.url.searchParams.get("amount") || $state.data?.amount
-$: receiver = $page.url.searchParams.get("receiver") || $state.data?.receiver
-$: source = $page.url.searchParams.get("source") || $state.data?.source
-$: destination = $page.url.searchParams.get("destination") || $state.data?.destination
-
-$: sourceChain = writable(chains.find(chain => chain.chain_id === source))
-$: destinationChain = writable(chains.find(chain => chain.chain_id === destination))
+$: sourceChain = writable(chains.find(chain => chain.chain_id === $transferState.data?.source))
+$: destinationChain = writable(
+  chains.find(chain => chain.chain_id === $transferState.data?.destination)
+)
 
 $: rawBalances = userBalancesQuery({
   chains,
@@ -102,14 +103,11 @@ $: rawBalances = userBalancesQuery({
 
 $: balances = derived([rawBalances, sourceChain], ([$rawBalances, $sourceChain]) => {
   if (!($sourceChain && $rawBalances)) return []
-  return $rawBalances.data[source] ?? []
+  return $rawBalances.data[$sourceChain.chain_id] ?? []
 })
 
 // @ts-ignore
-$: assetInfo = $balances.find(x => x?.address === asset)
-$: {
-  console.log(asset, assetInfo)
-}
+$: assetInfo = $balances.find(x => x?.address === $transferState.data?.asset)
 
 /**
  * observer observs the transfer state and updates the url accordingly
@@ -126,7 +124,7 @@ const unsubscribe = observer.subscribe(result => {
     replaceState: true
   })
 
-  $state.refetch()
+  $transferState.refetch()
 })
 
 const updateParams = (kv: SearchParams) => {
@@ -134,17 +132,17 @@ const updateParams = (kv: SearchParams) => {
 }
 
 function swapChainsClick(_event: MouseEvent) {
-  if (!(source && destination)) return
-  updateParams({ source: destination, destination: source, asset: "" })
+  if (!($transferState.data?.source && $transferState.data?.destination)) return
+  updateParams({
+    source: $transferState.data?.destination,
+    destination: $transferState.data?.source,
+    asset: ""
+  })
 }
 
 let [dialogOpenFromChain, dialogOpenToChain, dialogOpenAsset] = [false, false, false]
 
 let errors = writable([])
-
-onMount(() => {
-  // console.info($balances)
-})
 
 onDestroy(() => unsubscribe())
 </script>
@@ -152,15 +150,15 @@ onDestroy(() => unsubscribe())
 <ChainDialog
   {chains}
   kind="from"
-  selectedChain={source}
   dialogOpen={dialogOpenFromChain}
   onChainSelect={value => updateParams({ source: value })}
+  selectedChain={$page.url.searchParams.get('source') || $transferState.data?.source}
 />
 
 <ChainDialog
   {chains}
   kind="to"
-  selectedChain={destination}
+  selectedChain={$page.url.searchParams.get('destination') || $transferState.data?.destination}
   dialogOpen={dialogOpenToChain}
   onChainSelect={value => {
     // set receiver to self initially
@@ -199,11 +197,11 @@ onDestroy(() => unsubscribe())
     event.preventDefault()
     event.stopPropagation()
     const final = v.safeParse(transferSchema, {
-      asset,
-      amount,
-      source,
-      receiver,
-      destination,
+      asset: $transferState.data?.asset,
+      amount: $transferState.data?.amount,
+      source: $transferState.data?.source,
+      receiver: $transferState.data?.receiver,
+      destination: $transferState.data?.destination,
     })
     console.info(final)
     if (!final.success) {
@@ -290,7 +288,7 @@ onDestroy(() => unsubscribe())
         id="transfer-button"
         data-form-action="transfer"
         on:click={async event => {
-          // console.info('submit')
+          void 0
         }}
       >
         SUBMIT
