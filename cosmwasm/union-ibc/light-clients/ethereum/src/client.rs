@@ -12,7 +12,7 @@ use ethereum_sync_protocol::{
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
-use union_ibc_light_client::IbcClientCtx;
+use union_ibc_light_client::{IbcClientCtx, IbcClientError};
 use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     encoding::Bincode, ensure, ethereum::ibc_commitment_key, hash::H256,
@@ -46,7 +46,7 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(verify_membership(
             key,
@@ -61,7 +61,7 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(verify_non_membership(
             key,
@@ -89,23 +89,24 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         Ok(())
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Header,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
-        if client_state.chain_spec == PresetBaseKind::Minimal {
-            verify_header::<Minimal>(&ctx, client_state, consensus_state, header)
-        } else {
-            verify_header::<Mainnet>(&ctx, client_state, consensus_state, header)
+
+        match client_state.chain_spec {
+            PresetBaseKind::Minimal => {
+                verify_header::<Minimal>(&ctx, client_state, consensus_state, header)
+            }
+            PresetBaseKind::Mainnet => {
+                verify_header::<Mainnet>(&ctx, client_state, consensus_state, header)
+            }
         }
         .map_err(Into::into)
     }
@@ -113,17 +114,20 @@ impl union_ibc_light_client::IbcClient for EthereumLightClient {
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         let consensus_state =
             ctx.read_self_consensus_state(misbehaviour.trusted_height.height())?;
 
         let mut client_state = ctx.read_self_client_state()?;
 
-        if client_state.chain_spec == PresetBaseKind::Minimal {
-            verify_misbehaviour::<Minimal>(&ctx, &client_state, consensus_state, misbehaviour)?
-        } else {
-            verify_misbehaviour::<Mainnet>(&ctx, &client_state, consensus_state, misbehaviour)?
-        };
+        match client_state.chain_spec {
+            PresetBaseKind::Minimal => {
+                verify_misbehaviour::<Minimal>(&ctx, &client_state, consensus_state, misbehaviour)?
+            }
+            PresetBaseKind::Mainnet => {
+                verify_misbehaviour::<Mainnet>(&ctx, &client_state, consensus_state, misbehaviour)?
+            }
+        }
 
         client_state.frozen_height = Height::new(1);
 
@@ -185,7 +189,6 @@ pub fn verify_non_membership(
 pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
     let expected_commitment_key = ibc_commitment_key(path);
 
-    // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
         Err(Error::InvalidCommitmentKey {
             expected: expected_commitment_key,
