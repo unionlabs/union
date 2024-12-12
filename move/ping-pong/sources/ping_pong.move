@@ -252,42 +252,42 @@ module ping_pong::ibc_app {
         let value: copyable_any::Any = dispatcher::get_data(new_ping_pong_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
+        if (type_name_output == std::type_info::type_name<helpers::RecvPacketParams>()) {
             let (pack) =
                 helpers::on_recv_packet_deconstruct(
-                    copyable_any::unpack<ibc::RecvPacketParams>(value)
+                    copyable_any::unpack<helpers::RecvPacketParams>(value)
                 );
             on_recv_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::RecvIntentPacketParams>()) {
+            == std::type_info::type_name<helpers::RecvIntentPacketParams>()) {
             let (pack) =
                 helpers::on_recv_intent_packet_deconstruct(
-                    copyable_any::unpack<ibc::RecvIntentPacketParams>(value)
+                    copyable_any::unpack<helpers::RecvIntentPacketParams>(value)
                 );
             on_recv_intent_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::AcknowledgePacketParams>()) {
+            == std::type_info::type_name<helpers::AcknowledgePacketParams>()) {
             let (pack, acknowledgement) =
                 helpers::on_acknowledge_packet_deconstruct(
-                    copyable_any::unpack<ibc::AcknowledgePacketParams>(value)
+                    copyable_any::unpack<helpers::AcknowledgePacketParams>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::TimeoutPacketParams>()) {
+            == std::type_info::type_name<helpers::TimeoutPacketParams>()) {
             let (pack) =
                 helpers::on_timeout_packet_deconstruct(
-                    copyable_any::unpack<ibc::TimeoutPacketParams>(value)
+                    copyable_any::unpack<helpers::TimeoutPacketParams>(value)
                 );
             on_timeout_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<dispatcher::ChannelOpenInitParams>()) {
+            == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
             let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<dispatcher::ChannelOpenInitParams>(value)
+                    copyable_any::unpack<helpers::ChannelOpenInitParams>(value)
                 );
             on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
+            == std::type_info::type_name<helpers::ChannelOpenTryParams>()) {
             let (
                 connection_id,
                 channel_id,
@@ -296,7 +296,7 @@ module ping_pong::ibc_app {
                 counterparty_version
             ) =
                 helpers::on_channel_open_try_deconstruct(
-                    copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
+                    copyable_any::unpack<helpers::ChannelOpenTryParams>(value)
                 );
             on_channel_open_try(
                 connection_id,
@@ -306,33 +306,33 @@ module ping_pong::ibc_app {
                 counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelOpenAckParams>()) {
+            == std::type_info::type_name<helpers::ChannelOpenAckParams>()) {
             let (channel_id, counterparty_channel_id, counterparty_version) =
                 helpers::on_channel_open_ack_deconstruct(
-                    copyable_any::unpack<ibc::ChannelOpenAckParams>(value)
+                    copyable_any::unpack<helpers::ChannelOpenAckParams>(value)
                 );
             on_channel_open_ack(
                 channel_id, counterparty_channel_id, counterparty_version
             );
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelOpenConfirmParams>()) {
+            == std::type_info::type_name<helpers::ChannelOpenConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_open_confirm_deconstruct(
-                    copyable_any::unpack<ibc::ChannelOpenConfirmParams>(value)
+                    copyable_any::unpack<helpers::ChannelOpenConfirmParams>(value)
                 );
             on_channel_open_confirm(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelCloseInitParams>()) {
+            == std::type_info::type_name<helpers::ChannelCloseInitParams>()) {
             let channel_id =
                 helpers::on_channel_close_init_deconstruct(
-                    copyable_any::unpack<ibc::ChannelCloseInitParams>(value)
+                    copyable_any::unpack<helpers::ChannelCloseInitParams>(value)
                 );
             on_channel_close_init(channel_id);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelCloseConfirmParams>()) {
+            == std::type_info::type_name<helpers::ChannelCloseConfirmParams>()) {
             let channel_id =
                 helpers::on_channel_close_confirm_deconstruct(
-                    copyable_any::unpack<ibc::ChannelCloseConfirmParams>(value)
+                    copyable_any::unpack<helpers::ChannelCloseConfirmParams>(value)
                 );
             on_channel_close_confirm(channel_id);
         } else {

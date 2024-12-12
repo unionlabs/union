@@ -7,6 +7,7 @@ module ibc::ibc {
     use std::from_bcs;
     use std::event;
     use std::bcs;
+    use ibc::helpers;
     use std::object;
     use std::string::{Self, String, utf8};
     use std::hash;
@@ -776,10 +777,7 @@ module ibc::ibc {
 
         commit_channel(channel_id, channel);
 
-        let param =
-            copyable_any::pack<dispatcher::ChannelOpenInitParams>(
-                dispatcher::new_channel_open_init_params(connection_id, channel_id, version)
-            );
+        let param = helpers::pack_channel_open_init_params(connection_id, channel_id, version);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();
@@ -880,16 +878,7 @@ module ibc::ibc {
 
         commit_channel(channel_id, channel);
 
-        let param =
-            copyable_any::pack<ChannelOpenTryParams>(
-                ChannelOpenTryParams {
-                    connection_id: connection_id,
-                    channel_id: channel_id,
-                    counterparty_channel_id: counterparty_channel_id,
-                    version: version,
-                    counterparty_version: counterparty_version
-                }
-            );
+        let param = helpers::pack_channel_open_init_params(connection_id, channel_id, version);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();
@@ -973,12 +962,10 @@ module ibc::ibc {
         commit_channel(channel_id, chan);
 
         let param =
-            copyable_any::pack<ChannelOpenAckParams>(
-                ChannelOpenAckParams {
-                    channel_id,
-                    counterparty_channel_id,
-                    counterparty_version
-                }
+            helpers::pack_channel_open_ack_params(
+                channel_id,
+                counterparty_channel_id,
+                counterparty_version
             );
         engine::dispatch<T>(param);
 
@@ -1047,8 +1034,8 @@ module ibc::ibc {
         commit_channel(channel_id, chan);
 
         let param =
-            copyable_any::pack<ChannelOpenConfirmParams>(
-                ChannelOpenConfirmParams { channel_id: channel_id }
+            helpers::pack_channel_open_confirm_params(
+                channel_id,
             );
         engine::dispatch<T>(param);
 
@@ -1178,8 +1165,8 @@ module ibc::ibc {
                 let acknowledgement = vector::empty();
                 if (intent) {
                     let param =
-                        copyable_any::pack<RecvIntentPacketParams>(
-                            RecvIntentPacketParams { packet: packet }
+                        helpers::pack_recv_intent_packet_params(
+                            packet
                         );
                     engine::dispatch<T>(param);
 
@@ -1189,8 +1176,8 @@ module ibc::ibc {
                     event::emit(RecvIntentPacket { packet: packet });
                 } else {
                     let param =
-                        copyable_any::pack<RecvPacketParams>(
-                            RecvPacketParams { packet: packet }
+                        helpers::pack_recv_packet_params(
+                            packet
                         );
                     engine::dispatch<T>(param);
 
@@ -1361,11 +1348,9 @@ module ibc::ibc {
             // onAcknowledgementPacket(...)
 
             let param =
-                copyable_any::pack<AcknowledgePacketParams>(
-                    AcknowledgePacketParams {
-                        packet: packet,
-                        acknowledgement: acknowledgement
-                    }
+                helpers::pack_acknowledge_packet_params(
+                    packet,
+                    acknowledgement
                 );
             engine::dispatch<T>(param);
 
@@ -1440,8 +1425,7 @@ module ibc::ibc {
             commitment_key
         );
 
-        let param =
-            copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet: packet });
+        let param = helpers::pack_timeout_packet_params(packet);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();

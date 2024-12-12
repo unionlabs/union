@@ -21,45 +21,6 @@ module ibc::dispatcher {
         obj_ref: ExtendRef
     }
 
-    struct ChannelOpenInitParams has copy, drop, store {
-        connection_id: u32,
-        channel_id: u32,
-        version: String
-    }
-
-    // Getters for ChannelOpenInitParams
-    public fun get_connection_id_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): u32 {
-        param.connection_id
-    }
-
-    public fun get_channel_id_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): u32 {
-        param.channel_id
-    }
-
-    public fun get_version_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): &String {
-        &param.version
-    }
-
-
-    public fun new_channel_open_init_params(
-        connection_id: u32,
-        channel_id: u32,
-        version: String
-    ):  ChannelOpenInitParams {
-        ChannelOpenInitParams {
-            connection_id,
-            channel_id,
-            version
-        }
-    }
-
-
     /// Store the data to dispatch here.
     struct Storage<phantom P> has drop, key {
         data: copyable_any::Any,
