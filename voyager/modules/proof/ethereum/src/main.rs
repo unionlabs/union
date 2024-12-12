@@ -13,13 +13,14 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::instrument;
+use tracing::{debug, instrument};
 use unionlabs::{
     ethereum::ibc_commitment_key, hash::H160, ibc::core::client::height::Height, uint::U256,
     ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
+    into_value,
     module::{ProofModuleInfo, ProofModuleServer},
     ProofModule,
 };
@@ -78,7 +79,7 @@ impl Module {
 
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, ?path))]
     async fn query_ibc_proof(
         &self,
         _: &Extensions,
@@ -86,6 +87,11 @@ impl ProofModuleServer<IbcUnion> for Module {
         path: StorePath,
     ) -> RpcResult<Value> {
         let location = ibc_commitment_key(path.key());
+
+        debug!(
+            "querying proof for slot {location} for IBC handler contract {}",
+            self.ibc_handler_address
+        );
 
         let execution_height = at.height();
 
@@ -122,6 +128,6 @@ impl ProofModuleServer<IbcUnion> for Module {
                 .collect(),
         };
 
-        Ok(serde_json::to_value(proof).expect("serialization is infallible; qed;"))
+        Ok(into_value(proof))
     }
 }
