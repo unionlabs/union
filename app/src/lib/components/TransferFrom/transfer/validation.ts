@@ -1,14 +1,19 @@
-import type {Readable} from "svelte/store"
-import {derived} from "svelte/store"
-import type {IntentStore, FormFields, RawTransferIntents} from "./intents.ts"
-import type {Chain} from "$lib/types"
-import type {Balance, ContextStore} from "$lib/components/TransferFrom/transfer/context"
-import {transferSchema} from "./schema.ts"
-import {safeParse} from "valibot"
+import type { Readable } from "svelte/store"
+import { derived } from "svelte/store"
+import type { IntentStore, FormFields, RawTransferIntents } from "./intents.ts"
+import type { Chain } from "$lib/types"
+import type { Balance, ContextStore } from "$lib/components/TransferFrom/transfer/context"
+import { transferSchema } from "./schema.ts"
+import { safeParse } from "valibot"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
-export interface ValidationStore extends Readable<FieldErrors> {
+export interface ValidationStore {
+  errors: FieldErrors
+  isValid: boolean
+}
+
+export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
   validate: () => Promise<boolean>
 }
 
@@ -22,21 +27,12 @@ interface ValidationContext {
 
 export function createValidationStore(
   intents: IntentStore,
-  context: ContextStore
-): ValidationStore {
-  const errors = derived<
-    [
-      Readable<RawTransferIntents>,
-      Readable<Array<Balance>>,
-      Readable<Chain | undefined>,
-      Readable<Chain | undefined>,
-      Readable<Balance | undefined>
-    ],
-    FieldErrors
-  >(
-    [intents, context.balances, context.sourceChain, context.destinationChain, context.assetInfo],
-    ([$intents, $balances, $sourceChain, $destinationChain, $assetInfo]) => {
-      return validateAll({
+  context: Readable<ContextStore>
+): ValidationStoreAndMethods {
+  const store = derived(
+    [intents, context],
+    ([$intents, $context]) => {
+      const errors = validateAll({
         formFields: {
           source: $intents.source,
           destination: $intents.destination,
@@ -44,12 +40,17 @@ export function createValidationStore(
           receiver: $intents.receiver,
           amount: $intents.amount
         },
-        balances: $balances,
-        sourceChain: $sourceChain,
-        destinationChain: $destinationChain,
-        assetInfo: $assetInfo,
-        chains: context.chains
+        balances: $context.balances,
+        sourceChain: $context.sourceChain,
+        destinationChain: $context.destinationChain,
+        assetInfo: $context.assetInfo,
+        chains: $context.chains
       })
+
+      return {
+        errors,
+        isValid: Object.keys(errors).length === 0
+      }
     }
   )
 
@@ -104,37 +105,12 @@ export function createValidationStore(
     })
   }
 
-  function validateSchema(params: FormFields): FieldErrors {
-    if (Object.values(params).every(value => !value)) {
-      return {}
-    }
-
-    const result = safeParse(transferSchema, params)
-
-    if (!result.success) {
-      return result.issues.reduce((acc, issue) => {
-        const fieldName = issue.path?.[0]?.key as keyof FormFields
-
-        if (fieldName && !params[fieldName]) {
-          return acc
-        }
-
-        if (fieldName) {
-          acc[fieldName] = issue.message
-        }
-        return acc
-      }, {} as FieldErrors)
-    }
-
-    return {}
-  }
-
   function validateBusinessRules(formFields: FormFields, context: ValidationContext): FieldErrors {
     if (Object.values(formFields).every(value => !value)) {
       return {}
     }
     const errors: FieldErrors = {}
-    
+
     if (formFields.source && formFields.destination && formFields.source === formFields.destination) {
       errors.destination = "Source and destination chains must be different"
     }
@@ -143,15 +119,14 @@ export function createValidationStore(
   }
 
   return {
-    subscribe: errors.subscribe,
+    subscribe: store.subscribe,
     validate: () => {
       return new Promise(resolve => {
-        let currentErrors: FieldErrors = {}
-        const unsubscribe = errors.subscribe(value => {
-          currentErrors = value
+        let currentState: ValidationStore
+        const unsubscribe = store.subscribe(value => {
+          currentState = value
         })
-
-        const isValid = Object.keys(currentErrors).length === 0
+        const isValid = currentState!.isValid
         unsubscribe()
         resolve(isValid)
       })

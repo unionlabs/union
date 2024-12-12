@@ -1,9 +1,9 @@
 <script lang="ts">
-import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/config.ts"
-import { createTransferStore } from "$lib/components/TransferFrom/transfer"
-import DebugBox from "$lib/components/TransferFrom/components/DebugBox.svelte"
+  import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/config.ts"
+  import { createTransferStore } from "$lib/components/TransferFrom/transfer"
+  import DebugBox from "$lib/components/TransferFrom/components/DebugBox.svelte"
 
-const { intents, context, validation } = createTransferStore()
+  const { intents, context, validation } = createTransferStore()
 </script>
 
 <form
@@ -21,12 +21,12 @@ const { intents, context, validation } = createTransferStore()
               id="source"
               name="source"
               placeholder="Enter source chain"
-              class="w-[300px] p-1 {$validation.source ? 'border-red-500' : ''}"
+              class="w-[300px] p-1 {$validation.errors.source ? 'border-red-500' : ''}"
               value={$intents.source}
               on:input={event => intents.updateField('source', event)}
       />
-      {#if $validation.source}
-        <span class="text-red-500 text-sm">{$validation.source}</span>
+      {#if $validation.errors.source}
+        <span class="text-red-500 text-sm">{$validation.errors.source}</span>
       {/if}
     </div>
 
@@ -37,12 +37,12 @@ const { intents, context, validation } = createTransferStore()
               id="destination"
               name="destination"
               placeholder="Enter destination chain"
-              class="w-[300px] p-1 {$validation.destination ? 'border-red-500' : ''}"
+              class="w-[300px] p-1 {$validation.errors.destination ? 'border-red-500' : ''}"
               value={$intents.destination}
               on:input={event => intents.updateField('destination', event)}
       />
-      {#if $validation.destination}
-        <span class="text-red-500 text-sm">{$validation.destination}</span>
+      {#if $validation.errors.destination}
+        <span class="text-red-500 text-sm">{$validation.errors.destination}</span>
       {/if}
     </div>
 
@@ -53,12 +53,12 @@ const { intents, context, validation } = createTransferStore()
               id="asset"
               name="asset"
               placeholder="Enter asset"
-              class="w-[300px] p-1 {$validation.asset ? 'border-red-500' : ''}"
+              class="w-[300px] p-1 {$validation.errors.asset ? 'border-red-500' : ''}"
               value={$intents.asset}
               on:input={event => intents.updateField('asset', event)}
       />
-      {#if $validation.asset}
-        <span class="text-red-500 text-sm">{$validation.asset}</span>
+      {#if $validation.errors.asset}
+        <span class="text-red-500 text-sm">{$validation.errors.asset}</span>
       {/if}
     </div>
 
@@ -80,12 +80,12 @@ const { intents, context, validation } = createTransferStore()
               data-field="amount"
               autocapitalize="none"
               pattern="^[0-9]*[.,]?[0-9]*$"
-              class="w-[300px] p-1 {$validation.amount ? 'border-red-500' : ''}"
+              class="w-[300px] p-1 {$validation.errors.amount ? 'border-red-500' : ''}"
               value={$intents.amount}
               on:input={event => intents.updateField('amount', event)}
       />
-      {#if $validation.amount}
-        <span class="text-red-500 text-sm">{$validation.amount}</span>
+      {#if $validation.errors.amount}
+        <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
       {/if}
     </div>
 
@@ -101,13 +101,13 @@ const { intents, context, validation } = createTransferStore()
               spellcheck="false"
               autocomplete="off"
               data-field="receiver"
-              class="w-[300px] p-1 disabled:bg-black/30 {$validation.receiver ? 'border-red-500' : ''}"
+              class="w-[300px] p-1 disabled:bg-black/30 {$validation.errors.receiver ? 'border-red-500' : ''}"
               placeholder="Enter destination address"
               value={$intents.receiver}
               on:input={event => intents.updateField('receiver', event)}
       />
-      {#if $validation.receiver}
-        <span class="text-red-500 text-sm">{$validation.receiver}</span>
+      {#if $validation.errors.receiver}
+        <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
       {/if}
     </div>
   </div>
