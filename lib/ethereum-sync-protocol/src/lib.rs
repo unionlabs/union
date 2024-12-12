@@ -73,11 +73,9 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 ) -> Result<(), Error> {
     // verify that the sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
-    let set_bits = sync_aggregate
-        .sync_committee_bits
-        .iter()
-        .map(|i| *i as usize)
-        .sum::<usize>();
+    let set_bits = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
+        .filter(|included| *included)
+        .count();
     ensure(
         set_bits >= C::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
         Error::InsufficientSyncCommitteeParticipants(set_bits),
@@ -166,11 +164,10 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     // to match the finalized checkpoint root saved in the state of `attested_header`.
     // NOTE(aeryz): We always expect to get `finalized_header` and it's embedded into the type definition.
     is_valid_light_client_header::<C>(fork_parameters, &update.finalized_header)?;
-    let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
     // This confirms that the `finalized_header` is really finalized.
     validate_merkle_branch(
-        &finalized_root.into(),
+        &update.finalized_header.beacon.tree_hash_root().into(),
         &update.finality_branch,
         floorlog2(FINALIZED_ROOT_INDEX),
         get_subtree_index(FINALIZED_ROOT_INDEX),
@@ -213,7 +210,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
     // public keys of the ones who participated.
-    let participant_pubkeys = BytesBitIterator::new(&&*update.sync_aggregate.sync_committee_bits)
+    let participant_pubkeys = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
         .zip(sync_committee.pubkeys.iter())
         .filter_map(|(included, pubkey)| if included { Some(pubkey) } else { None })
         .collect::<Vec<_>>();
