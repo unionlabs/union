@@ -1,10 +1,10 @@
-import type { Readable } from "svelte/store"
-import { derived } from "svelte/store"
-import type { IntentStore, FormFields, RawTransferIntents } from "./intents.ts"
-import type { Chain } from "$lib/types"
-import type { Balance, ContextStore } from "$lib/components/TransferFrom/transfer/context"
-import { transferSchema } from "./schema.ts"
-import { safeParse } from "valibot"
+import type {Readable} from "svelte/store"
+import {derived} from "svelte/store"
+import type {IntentStore, FormFields, RawTransferIntents} from "./intents.ts"
+import type {Chain} from "$lib/types"
+import type {Balance, ContextStore} from "$lib/components/TransferFrom/transfer/context"
+import {transferSchema} from "./schema.ts"
+import {safeParse} from "valibot"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
@@ -54,13 +54,13 @@ export function createValidationStore(
   )
 
   function validateAll({
-    formFields,
-    balances,
-    sourceChain,
-    destinationChain,
-    assetInfo,
-    chains
-  }: {
+                         formFields,
+                         balances,
+                         sourceChain,
+                         destinationChain,
+                         assetInfo,
+                         chains
+                       }: {
     formFields: FormFields
     balances: Array<Balance>
     sourceChain: Chain | undefined
@@ -68,22 +68,47 @@ export function createValidationStore(
     assetInfo: Balance | undefined
     chains: Array<Chain>
   }): FieldErrors {
-    const schemaErrors = validateSchema(formFields)
-    const businessErrors = validateBusinessRules(formFields, {
+    if (Object.values(formFields).every(value => !value)) {
+      return {}
+    }
+
+    // First, try to parse with the schema including balance if available
+    const parseInput = {
+      ...formFields,
+      balance: assetInfo && "balance" in assetInfo ? assetInfo.balance.toString() : undefined
+    }
+
+    const schemaResult = safeParse(transferSchema, parseInput)
+
+    // If schema validation fails, return those errors immediately
+    if (!schemaResult.success) {
+      return schemaResult.issues.reduce((acc, issue) => {
+        const fieldName = issue.path?.[0]?.key as keyof FormFields
+        if (fieldName && !formFields[fieldName]) {
+          return acc
+        }
+        if (fieldName) {
+          acc[fieldName] = issue.message
+        }
+        return acc
+      }, {} as FieldErrors)
+    }
+
+    // Only proceed with business rules if schema validation passes
+    return validateBusinessRules(formFields, {
       balances,
       sourceChain,
       destinationChain,
       assetInfo,
       chains
     })
-
-    return {
-      ...schemaErrors,
-      ...businessErrors
-    }
   }
 
   function validateSchema(params: FormFields): FieldErrors {
+    if (Object.values(params).every(value => !value)) {
+      return {}
+    }
+
     const result = safeParse(transferSchema, params)
 
     if (!result.success) {
@@ -105,31 +130,14 @@ export function createValidationStore(
   }
 
   function validateBusinessRules(formFields: FormFields, context: ValidationContext): FieldErrors {
+    if (Object.values(formFields).every(value => !value)) {
+      return {}
+    }
     const errors: FieldErrors = {}
-
-    // Validate chains
-    if (formFields.source === formFields.destination) {
+    
+    if (formFields.source && formFields.destination && formFields.source === formFields.destination) {
       errors.destination = "Source and destination chains must be different"
     }
-
-    // Validate chain existence
-    if (!context.sourceChain) {
-      errors.source = "Invalid source chain"
-    }
-    if (!context.destinationChain) {
-      errors.destination = "Invalid destination chain"
-    }
-
-    // Validate amount against balance
-    if (formFields.amount && context.assetInfo && "balance" in context.assetInfo) {
-      const amount = Number.parseFloat(formFields.amount)
-      const balance = Number(context.assetInfo.balance)
-      if (amount > balance) {
-        errors.amount = "Insufficient balance"
-      }
-    }
-
-    // Add any other cross-field or context-dependent validations
 
     return errors
   }

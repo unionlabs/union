@@ -4,8 +4,8 @@ export const TRANSFER_DEBUG = true
 
 export const defaultParams: RawTransferIntents = {
   source: "union-testnet-8",
-  destination: "11155111",
-  asset: "",
+  destination: "",
+  asset: "muno",
   receiver: "",
   amount: "",
   isValid: false
