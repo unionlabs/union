@@ -225,7 +225,7 @@ impl Module {
             .provider()
             .call(&TransactionRequest {
                 from: None,
-                to: Some(address!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into()),
+                to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
                     Ibc::channelsCall { _0: channel_id }.abi_encode().into(),
                 ),
