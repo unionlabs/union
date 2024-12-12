@@ -1,5 +1,6 @@
 module ibc::helpers {
     use ibc::ibc;
+    use ibc::dispatcher;
     use ibc::packet::Packet;
     use std::vector;
     use std::string::String;
@@ -35,12 +36,12 @@ module ibc::helpers {
     }
 
     public fun on_channel_open_init_deconstruct(
-        init_param: ibc::ChannelOpenInitParams
+        init_param: dispatcher::ChannelOpenInitParams
     ): (u32, u32, String) {
         let connection_id =
-            ibc::get_connection_id_from_channel_open_init_param(&init_param);
-        let channel_id = ibc::get_channel_id_from_channel_open_init_param(&init_param);
-        let version = ibc::get_version_from_channel_open_init_param(&init_param);
+            dispatcher::get_connection_id_from_channel_open_init_param(&init_param);
+        let channel_id = dispatcher::get_channel_id_from_channel_open_init_param(&init_param);
+        let version = dispatcher::get_version_from_channel_open_init_param(&init_param);
         (connection_id, channel_id, *version)
     }
 

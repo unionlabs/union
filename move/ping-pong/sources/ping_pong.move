@@ -280,10 +280,10 @@ module ping_pong::ibc_app {
                 );
             on_timeout_packet(pack);
         } else if (type_name_output
-            == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
+            == std::type_info::type_name<dispatcher::ChannelOpenInitParams>()) {
             let (connection_id, channel_id, version) =
                 helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
+                    copyable_any::unpack<dispatcher::ChannelOpenInitParams>(value)
                 );
             on_channel_open_init(connection_id, channel_id, version);
         } else if (type_name_output

@@ -402,47 +402,47 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     self.plugin_name(),
                     ModuleCall::from(FetchTransactions { height }),
                 )),
-                {
-                    let latest_height = self
-                        .aptos_client
-                        .get_index()
-                        .await
-                        .unwrap()
-                        .into_inner()
-                        .block_height
-                        .0;
-                    match height.cmp(&latest_height) {
-                        Ordering::Less => {
-                            let next_height = (latest_height - height).clamp(1, 10) + height;
-                            conc(
-                                ((height + 1)..next_height)
-                                    .map(|height| {
-                                        call(PluginMessage::new(
-                                            self.plugin_name(),
-                                            ModuleCall::from(FetchTransactions { height }),
-                                        ))
-                                    })
-                                    .chain([call(PluginMessage::new(
-                                        self.plugin_name(),
-                                        ModuleCall::from(FetchBlocks {
-                                            height: next_height,
-                                        }),
-                                    ))]),
-                            )
-                        }
-                        Ordering::Equal | Ordering::Greater => seq([
-                            call(WaitForHeight {
-                                chain_id: self.chain_id.clone(),
-                                height: Height::new(height + 1),
-                                finalized: true,
-                            }),
-                            call(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(FetchBlocks { height: height + 1 }),
-                            )),
-                        ]),
-                    }
-                },
+                // {
+                //     let latest_height = self
+                //         .aptos_client
+                //         .get_index()
+                //         .await
+                //         .unwrap()
+                //         .into_inner()
+                //         .block_height
+                //         .0;
+                //     match height.cmp(&latest_height) {
+                //         Ordering::Less => {
+                //             let next_height = (latest_height - height).clamp(1, 10) + height;
+                //             conc(
+                //                 ((height + 1)..next_height)
+                //                     .map(|height| {
+                //                         call(PluginMessage::new(
+                //                             self.plugin_name(),
+                //                             ModuleCall::from(FetchTransactions { height }),
+                //                         ))
+                //                     })
+                //                     .chain([call(PluginMessage::new(
+                //                         self.plugin_name(),
+                //                         ModuleCall::from(FetchBlocks {
+                //                             height: next_height,
+                //                         }),
+                //                     ))]),
+                //             )
+                //         }
+                //         Ordering::Equal | Ordering::Greater => seq([
+                //             call(WaitForHeight {
+                //                 chain_id: self.chain_id.clone(),
+                //                 height: Height::new(height + 1),
+                //                 finalized: true,
+                //             }),
+                //             call(PluginMessage::new(
+                //                 self.plugin_name(),
+                //                 ModuleCall::from(FetchBlocks { height: height + 1 }),
+                //             )),
+                //         ]),
+                //     }
+                // },
             ])),
             ModuleCall::MakeFullEvent(MakeFullEvent {
                 event,

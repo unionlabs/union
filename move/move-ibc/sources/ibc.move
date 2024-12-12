@@ -232,12 +232,6 @@ module ibc::ibc {
         packet: Packet
     }
 
-    struct ChannelOpenInitParams has copy, drop, store {
-        connection_id: u32,
-        channel_id: u32,
-        version: String
-    }
-
     struct ChannelOpenTryParams has copy, drop, store {
         connection_id: u32,
         channel_id: u32,
@@ -290,25 +284,6 @@ module ibc::ibc {
     // Getter for TimeoutPacketParams
     public fun get_packet_from_timeout_param(param: &TimeoutPacketParams): &Packet {
         &param.packet
-    }
-
-    // Getters for ChannelOpenInitParams
-    public fun get_connection_id_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): u32 {
-        param.connection_id
-    }
-
-    public fun get_channel_id_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): u32 {
-        param.channel_id
-    }
-
-    public fun get_version_from_channel_open_init_param(
-        param: &ChannelOpenInitParams
-    ): &String {
-        &param.version
     }
 
     // Getters for ChannelOpenTryParams
@@ -802,12 +777,8 @@ module ibc::ibc {
         commit_channel(channel_id, channel);
 
         let param =
-            copyable_any::pack<ChannelOpenInitParams>(
-                ChannelOpenInitParams {
-                    connection_id: connection_id,
-                    channel_id: channel_id,
-                    version: version
-                }
+            copyable_any::pack<dispatcher::ChannelOpenInitParams>(
+                dispatcher::new_channel_open_init_params(connection_id, channel_id, version)
             );
         engine::dispatch<T>(param);
 

@@ -370,59 +370,73 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 ]))
             }
             ModuleCall::FetchProveRequest(FetchProveRequest { request }) => {
-                debug!("submitting prove request");
+                // debug!("submitting prove request");
 
-                let prover_endpoint = &self.prover_endpoints[usize::try_from(
-                    request.untrusted_header.height.inner(),
-                )
-                .expect("never going to happen bro")
-                    % self.prover_endpoints.len()];
+                // let prover_endpoint = &self.prover_endpoints[usize::try_from(
+                //     request.untrusted_header.height.inner(),
+                // )
+                // .expect("never going to happen bro")
+                //     % self.prover_endpoints.len()];
 
-                let response =
-                    union_prover_api_client::UnionProverApiClient::connect(prover_endpoint.clone())
-                        .await
-                        .unwrap()
-                        .poll(protos::union::galois::api::v3::PollRequest::from(
-                            PollRequest {
-                                request: request.clone(),
+                // let response =
+                //     union_prover_api_client::UnionProverApiClient::connect(prover_endpoint.clone())
+                //         .await
+                //         .unwrap()
+                //         .poll(protos::union::galois::api::v3::PollRequest::from(
+                //             PollRequest {
+                //                 request: request.clone(),
+                //             },
+                //         ))
+                //         .await
+                //         .map(|x| x.into_inner().try_into().unwrap());
+
+                // debug!("submitted prove request");
+
+                // let retry = || {
+                //     debug!("proof pending");
+
+                //     seq([
+                //         // REVIEW: How long should we wait between polls?
+                //         defer(now() + 1),
+                //         call(PluginMessage::new(
+                //             self.plugin_name(),
+                //             ModuleCall::from(FetchProveRequest { request }),
+                //         )),
+                //     ])
+                // };
+                // match response {
+                //     Ok(PollResponse::Pending) => Ok(retry()),
+                //     Err(status) if status.message() == "busy_building" => Ok(retry()),
+                //     Err(err) => panic!("prove request failed: {:?}", err),
+                //     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
+                //         error!(%message, "prove request failed");
+                //         panic!()
+                //     }
+                //     Ok(PollResponse::Done(ProveRequestDone { response })) => {
+                //         info!(prover = %prover_endpoint, "proof generated");
+
+                //         Ok(data(PluginMessage::new(
+                //             self.plugin_name(),
+                //             ModuleData::from(ProveResponse {
+                //                 prove_response: response,
+                //             }),
+                //         )))
+                //     }
+                // }
+                Ok(data(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleData::from(ProveResponse {
+                        prove_response: galois_rpc::prove_response::ProveResponse {
+                            proof: galois_rpc::zero_knowledge_proof::ZeroKnowledgeProof {
+                                content: vec![],
+                                compressed_content: vec![],
+                                evm_proof: vec![],
+                                public_inputs: vec![],
                             },
-                        ))
-                        .await
-                        .map(|x| x.into_inner().try_into().unwrap());
-
-                debug!("submitted prove request");
-
-                let retry = || {
-                    debug!("proof pending");
-
-                    seq([
-                        // REVIEW: How long should we wait between polls?
-                        defer(now() + 1),
-                        call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchProveRequest { request }),
-                        )),
-                    ])
-                };
-                match response {
-                    Ok(PollResponse::Pending) => Ok(retry()),
-                    Err(status) if status.message() == "busy_building" => Ok(retry()),
-                    Err(err) => panic!("prove request failed: {:?}", err),
-                    Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
-                        error!(%message, "prove request failed");
-                        panic!()
-                    }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => {
-                        info!(prover = %prover_endpoint, "proof generated");
-
-                        Ok(data(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleData::from(ProveResponse {
-                                prove_response: response,
-                            }),
-                        )))
-                    }
-                }
+                            trusted_validator_set_root: unionlabs::hash::H256::default(),
+                        },
+                    }),
+                )))
             }
         }
     }

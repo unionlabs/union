@@ -336,14 +336,14 @@ impl ClientModuleServer for Module {
             .map(|mut header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
                 SupportedIbcInterface::IbcMoveAptos => {
-                    header.zero_knowledge_proof =
-                        reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                format!("unable to decode zkp: {}", e),
-                                None::<()>,
-                            )
-                        })?;
+                    // header.zero_knowledge_proof =
+                    //     reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
+                    //         ErrorObject::owned(
+                    //             FATAL_JSONRPC_ERROR_CODE,
+                    //             format!("unable to decode zkp: {}", e),
+                    //             None::<()>,
+                    //         )
+                    //     })?;
                     Ok(header.encode_as::<Bcs>())
                 }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {

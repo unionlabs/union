@@ -42,13 +42,13 @@
         "enabled": true,
         "path": "./target/debug/voyager-state-module-movement",
         "info": {
-          "chain_id": "27",
+          "chain_id": "165",
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "rpc_url": "http://localhost:30731",
+          "rpc_url": "https://api.devnet.aptoslabs.com/v1/",
           "movement_rpc_url": "http://localhost:30832",
-          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
+          "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec"
         }
       }
     ],
@@ -82,13 +82,13 @@
         "enabled": true,
         "path": "./target/debug/voyager-proof-module-movement",
         "info": {
-          "chain_id": "27",
+          "chain_id": "165",
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "rpc_url": "http://localhost:30731",
+          "rpc_url": "https://api.devnet.aptoslabs.com/v1/",
           "movement_rpc_url": "http://localhost:30832",
-          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
+          "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec"
         }
       }
     ],
@@ -124,14 +124,14 @@
         "enabled": true,
         "path": "./target/debug/voyager-consensus-module-movement",
         "info": {
-          "chain_id": "27",
+          "chain_id": "165",
           "consensus_type": "movement"
         },
         "config": {
-          "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
+          "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec",
           "l1_settlement_address": "0x0000000000000000000000000000000000000000",
           "l1_client_id": 0,
-          "aptos_rest_api": "http://localhost:30731",
+          "aptos_rest_api": "https://api.devnet.aptoslabs.com/v1/",
           "movement_rest_url": "http://localhost:30832"
         }
       }
@@ -197,10 +197,10 @@
       "enabled": true,
       "path": "./target/debug/voyager-event-source-plugin-movement",
       "config": {
-        "chain_id": "27",
-        "rpc_url": "http://localhost:30731",
+        "chain_id": "165",
+        "rpc_url": "https://api.devnet.aptoslabs.com/v1/",
         "movement_rpc_url": "http://localhost:30832",
-        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0"
+        "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec"
       }
     },
     {
@@ -292,9 +292,9 @@
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-aptos",
       "config": {
-        "chain_id": "27",
-        "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
+        "chain_id": "165",
+        "rpc_url": "https://api.devnet.aptoslabs.com/v1/",
+        "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec",
         "keyring": {
           "name": "aptos-devnet",
           "keys": [
@@ -341,7 +341,7 @@
       "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
-        "chain_id": "27",
+        "chain_id": "165",
         "client_configs": {
           "min_batch_size": 1,
           "max_batch_size": 5,
@@ -377,11 +377,11 @@
       "enabled": true,
       "path": "./target/debug/voyager-client-update-plugin-movement",
       "config": {
-        "chain_id": "27",
-        "ibc_handler_address": "6ef7f94f57484a0b090cd8e538332d98e70c677f7712fae715d6c7cc2a0043a0",
+        "chain_id": "165",
+        "ibc_handler_address": "b88b54af9ca8e1e18443887e528f295f4eecb0b59df332ccb532cece927910ec",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": 0,
-        "aptos_rest_api": "http://localhost:30731",
+        "aptos_rest_api": "https://api.devnet.aptoslabs.com/v1/",
         "movement_rest_url": "http://localhost:30832"
       }
     }
