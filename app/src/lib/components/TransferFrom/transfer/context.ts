@@ -13,7 +13,6 @@ export type AddressBalance = {
   gasToken: boolean
   address: Address
   symbol: string
-  chain_id: string
 }
 
 export type NamedBalance = {
@@ -22,12 +21,9 @@ export type NamedBalance = {
   name: string | null
   symbol: string
   gasToken: boolean
-  chain_id: string
 }
 
-export type EmptyBalance = {
-  chain_id: string
-}
+export type EmptyBalance = {}
 
 export type Balance = AddressBalance | NamedBalance | EmptyBalance
 
@@ -75,18 +71,22 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
       userAddress,
       userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })
     ],
-    ([_intentsValue, _userAddressValue, rawBalances]) => {
-      return rawBalances.flatMap((balanceResult, index) => {
-        const chain = chains[index]
-        if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
-          return []
-        }
-        return balanceResult.data.map(balance => ({
-          ...balance,
-          balance: BigInt(balance.balance),
-          chain_id: chain.chain_id // Add chain_id to each balance
-        }))
-      })
+    ([intentsValue, _userAddressValue, rawBalances]) => {
+      const sourceChain = chains.find(chain => chain.chain_id === intentsValue.source)
+      if (!sourceChain) return []
+
+      const chainIndex = chains.findIndex(c => c.chain_id === sourceChain.chain_id)
+      const balanceResult = rawBalances[chainIndex]
+
+      if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
+        console.log("No balances fetched yet for selected chain")
+        return []
+      }
+
+      return balanceResult.data.map(balance => ({
+        ...balance,
+        balance: BigInt(balance.balance)
+      }))
     }
   )
 

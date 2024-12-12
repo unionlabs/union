@@ -117,6 +117,6 @@
   <DebugBox
           {intents}
           {validation}
-          context={context}
+          {context}
   />
 {/if}
