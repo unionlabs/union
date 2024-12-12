@@ -57,7 +57,7 @@ impl<'a> BytesBitIterator<'a> {
         // debug_assert_eq!(self.hash_bytes.len(), Hash::LENGTH); // invariant
         // debug_assert_lt!(index, Hash::LENGTH_IN_BITS); // assumed precondition
         let pos = index / 8;
-        let bit = 7 - index % 8;
+        let bit = index % 8;
         (self.bz[pos] >> bit) & 1 != 0
     }
 }
