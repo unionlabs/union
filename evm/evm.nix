@@ -153,9 +153,6 @@ _: {
 
         [profile.script]
         src = "scripts"
-        bytecode_hash = "none"
-        cbor_metadata = false
-        sparse_mode = false
 
         [profile.test]
         test = "tests/src"
@@ -207,7 +204,7 @@ _: {
           network = "holesky";
           rpc-url = "https://holesky.drpc.org";
           private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          extra-args = ''--verify --verifier sourcify --verifier-url https://sourcify.dev/server'';
         }
         {
           network = "scroll-testnet";
