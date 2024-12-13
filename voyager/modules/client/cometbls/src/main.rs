@@ -106,7 +106,7 @@ impl Module {
                 })
             }
             SupportedIbcInterface::IbcMoveAptos => {
-                ConsensusState::decode_as::<Bcs>(consensus_state).map_err(|err| {
+                ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -294,8 +294,9 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcSolidity | SupportedIbcInterface::IbcMoveAptos => {
+                    cs.encode_as::<EthAbi>()
+                }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
                     Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
                 }
