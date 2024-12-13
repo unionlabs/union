@@ -62,10 +62,10 @@ module ibc::groth16_verifier {
             proof: Proof {
                 a: zero(),
                 b: zero(),
-                c: zero(),
+                c: zero()
             },
             proof_commitment: zero(),
-            proof_commitment_pok: zero(),
+            proof_commitment_pok: zero()
         }
     }
 

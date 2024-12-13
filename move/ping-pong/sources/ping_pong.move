@@ -243,17 +243,19 @@ module ping_pong::ibc_app {
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
         helpers::on_packet(
-            new_ping_pong_proof(), 
+            new_ping_pong_proof(),
             |conn, chan, ver| on_channel_open_init(conn, chan, ver),
-            |conn, chan, count_chan, ver, count_ver| on_channel_open_try(conn, chan, count_chan, ver, count_ver),
+            |conn, chan, count_chan, ver, count_ver| on_channel_open_try(
+                conn, chan, count_chan, ver, count_ver
+            ),
             |chan, count, ver| on_channel_open_ack(chan, count, ver),
             |chan| on_channel_open_confirm(chan),
-            |p| on_recv_packet(p), 
-            |p| on_recv_intent_packet(p), 
+            |p| on_recv_packet(p),
+            |p| on_recv_intent_packet(p),
             |p, d| on_acknowledge_packet(p, d),
             |p| on_timeout_packet(p),
             |chan| on_channel_close_init(chan),
-            |chan| on_channel_close_confirm(chan),
+            |chan| on_channel_close_confirm(chan)
         )
     }
 

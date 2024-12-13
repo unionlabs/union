@@ -53,7 +53,7 @@ module ibc::helpers {
     }
 
     public inline fun on_packet<W: drop>(
-        witness: W, 
+        witness: W,
         on_channel_open_init: |u32, u32, String|,
         on_channel_open_try: |u32, u32, u32, String, String|,
         on_channel_open_ack: |u32, u32, String|,
@@ -63,7 +63,7 @@ module ibc::helpers {
         on_acknowledge_packet: |Packet, vector<u8>|,
         on_timeout_packet: |Packet|,
         on_channel_close_init: |u32|,
-        on_channel_close_confirm: |u32|,
+        on_channel_close_confirm: |u32|
     ): u64 {
         let value: copyable_any::Any = ibc::dispatcher::get_data(witness);
         let type_name_output = *copyable_any::type_name(&value);
@@ -88,8 +88,7 @@ module ibc::helpers {
                     copyable_any::unpack<AcknowledgePacketParams>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement);
-        } else if (type_name_output
-            == std::type_info::type_name<TimeoutPacketParams>()) {
+        } else if (type_name_output == std::type_info::type_name<TimeoutPacketParams>()) {
             let (pack) =
                 on_timeout_packet_deconstruct(
                     copyable_any::unpack<TimeoutPacketParams>(value)
@@ -160,18 +159,11 @@ module ibc::helpers {
         0
     }
 
-
     public fun pack_channel_open_init_params(
-        connection_id: u32,
-        channel_id: u32,
-        version: String
+        connection_id: u32, channel_id: u32, version: String
     ): copyable_any::Any {
-        copyable_any::pack<ChannelOpenInitParams>( 
-            ChannelOpenInitParams {
-                connection_id,
-                channel_id,
-                version
-            }
+        copyable_any::pack<ChannelOpenInitParams>(
+            ChannelOpenInitParams { connection_id, channel_id, version }
         )
     }
 
@@ -194,9 +186,7 @@ module ibc::helpers {
     }
 
     public fun pack_channel_open_ack_params(
-        channel_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_version: String
+        channel_id: u32, counterparty_channel_id: u32, counterparty_version: String
     ): copyable_any::Any {
         copyable_any::pack<ChannelOpenAckParams>(
             ChannelOpenAckParams {
@@ -207,39 +197,27 @@ module ibc::helpers {
         )
     }
 
-    public fun pack_channel_open_confirm_params(
-        channel_id: u32
-    ): copyable_any::Any {
+    public fun pack_channel_open_confirm_params(channel_id: u32): copyable_any::Any {
         copyable_any::pack<ChannelOpenConfirmParams>(
             ChannelOpenConfirmParams { channel_id }
         )
     }
 
-    public fun pack_channel_close_init_params(
-        channel_id: u32
-    ): copyable_any::Any {
-        copyable_any::pack<ChannelCloseInitParams>(
-            ChannelCloseInitParams { channel_id }
-        )
+    public fun pack_channel_close_init_params(channel_id: u32): copyable_any::Any {
+        copyable_any::pack<ChannelCloseInitParams>(ChannelCloseInitParams { channel_id })
     }
 
-    public fun pack_channel_close_confirm_params(
-        channel_id: u32
-    ): copyable_any::Any {
+    public fun pack_channel_close_confirm_params(channel_id: u32): copyable_any::Any {
         copyable_any::pack<ChannelCloseConfirmParams>(
             ChannelCloseConfirmParams { channel_id }
         )
     }
 
     public fun pack_acknowledge_packet_params(
-        packet: Packet,
-        acknowledgement: vector<u8>
+        packet: Packet, acknowledgement: vector<u8>
     ): copyable_any::Any {
         copyable_any::pack<AcknowledgePacketParams>(
-            AcknowledgePacketParams {
-                packet,
-                acknowledgement
-            }
+            AcknowledgePacketParams { packet, acknowledgement }
         )
     }
 
@@ -255,10 +233,8 @@ module ibc::helpers {
         copyable_any::pack<RecvIntentPacketParams>(RecvIntentPacketParams { packet })
     }
 
-    public fun new_channel_open_confirm_params(
-        channel_id: u32
-    ): ChannelOpenConfirmParams {
-        ChannelOpenConfirmParams { channel_id }    
+    public fun new_channel_open_confirm_params(channel_id: u32): ChannelOpenConfirmParams {
+        ChannelOpenConfirmParams { channel_id }
     }
 
     // Getter for RecvPacketParams
@@ -356,7 +332,7 @@ module ibc::helpers {
         param: &ChannelOpenAckParams
     ): &String {
         &param.counterparty_version
-    } 
+    }
 
     // Getter for ChannelOpenConfirmParams
     public fun get_channel_id_from_channel_open_confirm_param(
@@ -379,10 +355,7 @@ module ibc::helpers {
         param.channel_id
     }
 
-
-    public fun on_recv_packet_deconstruct(
-        recv_param: RecvPacketParams
-    ): Packet {
+    public fun on_recv_packet_deconstruct(recv_param: RecvPacketParams): Packet {
         let pack = get_packet_from_recv_param(&recv_param);
         *pack
     }
@@ -412,8 +385,7 @@ module ibc::helpers {
     public fun on_channel_open_init_deconstruct(
         init_param: ChannelOpenInitParams
     ): (u32, u32, String) {
-        let connection_id =
-            get_connection_id_from_channel_open_init_param(&init_param);
+        let connection_id = get_connection_id_from_channel_open_init_param(&init_param);
         let channel_id = get_channel_id_from_channel_open_init_param(&init_param);
         let version = get_version_from_channel_open_init_param(&init_param);
         (connection_id, channel_id, *version)
@@ -422,8 +394,7 @@ module ibc::helpers {
     public fun on_channel_open_try_deconstruct(
         try_param: ChannelOpenTryParams
     ): (u32, u32, u32, String, String) {
-        let connection_id =
-            get_connection_id_from_channel_open_try_param(&try_param);
+        let connection_id = get_connection_id_from_channel_open_try_param(&try_param);
         let channel_id = get_channel_id_from_channel_open_try_param(&try_param);
         let counterparty_channel_id =
             get_counterparty_channel_id_from_channel_open_try_param(&try_param);
@@ -453,16 +424,14 @@ module ibc::helpers {
     public fun on_channel_open_confirm_deconstruct(
         confirm_param: ChannelOpenConfirmParams
     ): u32 {
-        let channel_id =
-            get_channel_id_from_channel_open_confirm_param(&confirm_param);
+        let channel_id = get_channel_id_from_channel_open_confirm_param(&confirm_param);
         channel_id
     }
 
     public fun on_channel_close_init_deconstruct(
         close_init_param: ChannelCloseInitParams
     ): u32 {
-        let channel_id =
-            get_channel_id_from_channel_close_init_param(&close_init_param);
+        let channel_id = get_channel_id_from_channel_close_init_param(&close_init_param);
         channel_id
     }
 

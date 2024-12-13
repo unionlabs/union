@@ -13,8 +13,8 @@ thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [features]
-serde   = ["dep:serde", "ethereum-light-client-types/serde"]
 ethabi = ["unionlabs/ethabi", "dep:alloy"]
+serde  = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -651,18 +651,15 @@ module ibc::ibc {
 
         let port_id = address_to_string(port_id);
 
-        let channel = channel::new(
-            CHAN_STATE_INIT,
-            connection_id,
-            0,
-            counterparty_port_id,
-            version,
-        );
-        smart_table::upsert(
-            &mut store.channels,
-            channel_id,
-            channel
-        );
+        let channel =
+            channel::new(
+                CHAN_STATE_INIT,
+                connection_id,
+                0,
+                counterparty_port_id,
+                version
+            );
+        smart_table::upsert(&mut store.channels, channel_id, channel);
 
         table::upsert(
             &mut store.commitments,
@@ -684,7 +681,8 @@ module ibc::ibc {
 
         commit_channel(channel_id, channel);
 
-        let param = helpers::pack_channel_open_init_params(connection_id, channel_id, version);
+        let param =
+            helpers::pack_channel_open_init_params(connection_id, channel_id, version);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();
@@ -784,7 +782,8 @@ module ibc::ibc {
 
         commit_channel(channel_id, channel);
 
-        let param = helpers::pack_channel_open_init_params(connection_id, channel_id, version);
+        let param =
+            helpers::pack_channel_open_init_params(connection_id, channel_id, version);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();
@@ -938,10 +937,7 @@ module ibc::ibc {
         );
         commit_channel(channel_id, chan);
 
-        let param =
-            helpers::pack_channel_open_confirm_params(
-                channel_id,
-            );
+        let param = helpers::pack_channel_open_confirm_params(channel_id);
         engine::dispatch<T>(param);
 
         dispatcher::delete_storage<T>();
@@ -1068,31 +1064,25 @@ module ibc::ibc {
 
             if (!set_packet_receive(commitment_key)) {
                 let acknowledgement =
-                if (intent) {
-                    let param =
-                        helpers::pack_recv_intent_packet_params(
-                            packet
-                        );
-                    engine::dispatch<T>(param);
+                    if (intent) {
+                        let param = helpers::pack_recv_intent_packet_params(packet);
+                        engine::dispatch<T>(param);
 
-                    let ack = dispatcher::get_return_value<T>();
+                        let ack = dispatcher::get_return_value<T>();
 
-                    dispatcher::delete_storage<T>();
-                    event::emit(RecvIntentPacket { packet: packet });
-                    ack
-                } else {
-                    let param =
-                        helpers::pack_recv_packet_params(
-                            packet
-                        );
-                    engine::dispatch<T>(param);
+                        dispatcher::delete_storage<T>();
+                        event::emit(RecvIntentPacket { packet: packet });
+                        ack
+                    } else {
+                        let param = helpers::pack_recv_packet_params(packet);
+                        engine::dispatch<T>(param);
 
-                    let ack = dispatcher::get_return_value<T>();
+                        let ack = dispatcher::get_return_value<T>();
 
-                    dispatcher::delete_storage<T>();
-                    event::emit(RecvPacket { packet: packet });
-                    ack
-                };
+                        dispatcher::delete_storage<T>();
+                        event::emit(RecvPacket { packet: packet });
+                        ack
+                    };
                 if (vector::length(&acknowledgement) > 0) {
                     inner_write_acknowledgement(commitment_key, acknowledgement);
                     event::emit(WriteAcknowledgement { packet, acknowledgement });
@@ -1254,11 +1244,7 @@ module ibc::ibc {
             let acknowledgement = *vector::borrow(&acknowledgements, i);
             // onAcknowledgementPacket(...)
 
-            let param =
-                helpers::pack_acknowledge_packet_params(
-                    packet,
-                    acknowledgement
-                );
+            let param = helpers::pack_acknowledge_packet_params(packet, acknowledgement);
             engine::dispatch<T>(param);
 
             dispatcher::delete_storage<T>();
@@ -1712,9 +1698,13 @@ module ibc::ibc {
 
     #[test(alice = @ibc)]
     fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
-        init_module(alice);        
+        init_module(alice);
 
-        create_client(std::string::utf8(b"cometbls"), x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b", x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d");
+        create_client(
+            std::string::utf8(b"cometbls"),
+            x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b",
+            x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
+        );
     }
 
     // #[test(alice = @ibc)]

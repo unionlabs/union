@@ -58,7 +58,7 @@ module ibc::light_client {
         max_clock_drift: u64,
         frozen_height: Height,
         latest_height: Height,
-        contract_address: vector<u8>,
+        contract_address: vector<u8>
     }
 
     struct MerkleRoot has copy, drop, store {
@@ -82,7 +82,8 @@ module ibc::light_client {
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
         assert!(
-            !height::is_zero(&client_state.latest_height) && consensus_state.timestamp != 0,
+            !height::is_zero(&client_state.latest_height)
+                && consensus_state.timestamp != 0,
             E_INVALID_CLIENT_STATE
         );
 
@@ -90,7 +91,9 @@ module ibc::light_client {
 
         let consensus_states = smart_table::new<u64, ConsensusState>();
         smart_table::upsert(
-            &mut consensus_states, height::get_revision_height(&client_state.latest_height), consensus_state
+            &mut consensus_states,
+            height::get_revision_height(&client_state.latest_height),
+            consensus_state
         );
 
         let state = State { client_state: client_state, consensus_states: consensus_states };
@@ -173,7 +176,8 @@ module ibc::light_client {
 
         let consensus_state =
             smart_table::borrow<u64, ConsensusState>(
-                &state.consensus_states, height::get_revision_height(&header.trusted_height)
+                &state.consensus_states,
+                height::get_revision_height(&header.trusted_height)
             );
 
         verify_header(&header, state, consensus_state);
@@ -183,7 +187,8 @@ module ibc::light_client {
             header.signed_header.time.seconds * 1_000_000_000
                 + (header.signed_header.time.nanos as u64);
 
-        if (untrusted_height_number > height::get_revision_height(&state.client_state.latest_height)) {
+        if (untrusted_height_number
+            > height::get_revision_height(&state.client_state.latest_height)) {
             state.client_state.latest_height = height::new(0, untrusted_height_number);
         };
 
@@ -195,9 +200,7 @@ module ibc::light_client {
             next_validators_hash: header.signed_header.next_validators_hash
         };
 
-        smart_table::upsert(
-            &mut state.consensus_states, new_height, new_consensus_state
-        );
+        smart_table::upsert(&mut state.consensus_states, new_height, new_consensus_state);
 
         (
             encode_client_state(&state.client_state),
@@ -220,9 +223,15 @@ module ibc::light_client {
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let consensus_state_a =
-            smart_table::borrow(&state.consensus_states, height::get_revision_height(&header_a.trusted_height));
+            smart_table::borrow(
+                &state.consensus_states,
+                height::get_revision_height(&header_a.trusted_height)
+            );
         let consensus_state_b =
-            smart_table::borrow(&state.consensus_states, height::get_revision_height(&header_b.trusted_height));
+            smart_table::borrow(
+                &state.consensus_states,
+                height::get_revision_height(&header_b.trusted_height)
+            );
 
         // verify both updates would have been accepted by the light client
         verify_header(&header_a, state, consensus_state_a);
@@ -251,13 +260,8 @@ module ibc::light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 acquires State {
-        let state = 
-                borrow_global<State>(get_client_address(client_id));
-        let consensus_state =
-            smart_table::borrow(
-                &state.consensus_states,
-                height
-            );
+        let state = borrow_global<State>(get_client_address(client_id));
+        let consensus_state = smart_table::borrow(&state.consensus_states, height);
 
         let path = vector<u8>[0x03];
         vector::append(&mut path, state.client_state.contract_address);
@@ -300,7 +304,7 @@ module ibc::light_client {
         max_clock_drift: u64,
         frozen_height: Height,
         latest_height: Height,
-        contract_address: vector<u8>,
+        contract_address: vector<u8>
     ): ClientState {
         ClientState {
             chain_id,
@@ -308,7 +312,7 @@ module ibc::light_client {
             max_clock_drift,
             frozen_height,
             latest_height,
-            contract_address,
+            contract_address
         }
     }
 
@@ -350,7 +354,7 @@ module ibc::light_client {
             max_clock_drift: 0,
             frozen_height: height::default(),
             latest_height: height::new(0, 1000),
-            contract_address: vector::empty(),
+            contract_address: vector::empty()
         };
 
         let consensus_state = ConsensusState {
@@ -366,7 +370,9 @@ module ibc::light_client {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(_client_id: u32, _header: vector<u8>): bool {
+    public fun check_for_misbehaviour(
+        _client_id: u32, _header: vector<u8>
+    ): bool {
         // let state = borrow_global_mut<State>(get_client_address(client_id));
 
         // let header = decode_header(header);
@@ -409,7 +415,7 @@ module ibc::light_client {
             max_clock_drift,
             frozen_height,
             latest_height,
-            contract_address,
+            contract_address
         }
     }
 
@@ -428,7 +434,8 @@ module ibc::light_client {
 
     #[test]
     fun test_decode_consensus() {
-        let buf = x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
+        let buf =
+            x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
         let consensus = decode_consensus_state(buf);
     }
 
@@ -448,7 +455,7 @@ module ibc::light_client {
         trusting_period: u64,
         max_clock_drift: u64,
         frozen_height: Height,
-        latest_height: Height,
+        latest_height: Height
     }
 
     fun encode_client_state(cs: &ClientState): vector<u8> {
@@ -459,7 +466,7 @@ module ibc::light_client {
             trusting_period: cs.trusting_period,
             max_clock_drift: cs.max_clock_drift,
             frozen_height: cs.frozen_height,
-            latest_height: cs.latest_height,
+            latest_height: cs.latest_height
         };
 
         vector::append(&mut buf, bcs::to_bytes(&partial));
@@ -544,12 +551,11 @@ module ibc::light_client {
 
     #[test]
     fun parse_consensus_state_new() {
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000051615000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c";
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000051615000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c";
         let consensus_state = ConsensusState {
             timestamp: 333333,
-            app_hash: MerkleRoot {
-                hash: b"helloo"
-            },
+            app_hash: MerkleRoot { hash: b"helloo" },
             next_validators_hash: b"helll"
         };
 
@@ -591,7 +597,8 @@ module ibc::light_client {
 
     #[test]
     fun decode_consensus_state_bcs() {
-        let encoded = x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
+        let encoded =
+            x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
 
         let cs = decode_consensus_state(encoded);
         std::debug::print(&cs);
@@ -621,7 +628,7 @@ module ibc::light_client {
             max_clock_drift: 0,
             frozen_height: height::default(),
             latest_height: height::new(0, 1000),
-            contract_address: vector::empty(),
+            contract_address: vector::empty()
         };
 
         let consensus_state = ConsensusState {
@@ -650,7 +657,8 @@ module ibc::light_client {
 
         assert!(
             smart_table::borrow(
-                &saved_state.consensus_states, height::get_revision_height(&client_state.latest_height)
+                &saved_state.consensus_states,
+                height::get_revision_height(&client_state.latest_height)
             ) == &consensus_state,
             0
         );
@@ -680,7 +688,8 @@ module ibc::light_client {
 
         assert!(
             smart_table::borrow(
-                &saved_state.consensus_states, height::get_revision_height(&client_state.latest_height)
+                &saved_state.consensus_states,
+                height::get_revision_height(&client_state.latest_height)
             ) != &consensus_state,
             0
         );
@@ -690,7 +699,8 @@ module ibc::light_client {
 
         assert!(
             smart_table::borrow<u64, ConsensusState>(
-                &saved_state.consensus_states, height::get_revision_height(&client_state.latest_height)
+                &saved_state.consensus_states,
+                height::get_revision_height(&client_state.latest_height)
             ) == &consensus_state,
             0
         );
@@ -743,8 +753,12 @@ module ibc::light_client {
 
     #[test]
     fun see_proof() {
-        let client_state = decode_client_state(x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000580f000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b");
-        let proof = x"4103ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a7202a952c4d0b798ec0de2a4f9ffbd7aa3b235518b01fee732288096f9ffda2f80d040002ca3d07260204ca3d20adedf132c9cb77bb904388a64fa0fc1b54938ae672604ce9336aa3421347039e2000260406ca3d2059afec8947be61dc17607388c182dae393f33034af7326e70a6b5f0fff312641200026060eca3d20b8722feb939d1e679cf98a8502aac872fc432a2fa768176d4c148ff4f114df782000050a1eca3d202120f877e465d7a5540812ba9a0e61cd191793464aa00866684aa8f4e82b4592a57e260c4aca3d201caa81c27aa4b33f8ff2965a354af7d27ace46dce1848a0e50f93dafb619c5e22000050e64ca3d202120ea740f79511dd9416b7d9cda5f898a14d92004d6d8ca2e60b6b11b377b42b3892710a201ca3d202af9228506f9f6fd89ef79e404f830a92e0b92d5722bc532bc27d8e1b35c42412000047761736d2001b43353b2931d22228e157ed588bf40e87d0cbfcf6dc7c31a4c0618c19c83890100022101e3fff914e010fc236318926fc50bbd8b72dd31fcb8af7e74c1c2024ffbd559930021012cf0c2aa4e971f5ea8ad3b77d421d1bf7d1d466bafb3f171252fa2da1ee1a58f00";
+        let client_state =
+            decode_client_state(
+                x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000580f000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b"
+            );
+        let proof =
+            x"4103ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a7202a952c4d0b798ec0de2a4f9ffbd7aa3b235518b01fee732288096f9ffda2f80d040002ca3d07260204ca3d20adedf132c9cb77bb904388a64fa0fc1b54938ae672604ce9336aa3421347039e2000260406ca3d2059afec8947be61dc17607388c182dae393f33034af7326e70a6b5f0fff312641200026060eca3d20b8722feb939d1e679cf98a8502aac872fc432a2fa768176d4c148ff4f114df782000050a1eca3d202120f877e465d7a5540812ba9a0e61cd191793464aa00866684aa8f4e82b4592a57e260c4aca3d201caa81c27aa4b33f8ff2965a354af7d27ace46dce1848a0e50f93dafb619c5e22000050e64ca3d202120ea740f79511dd9416b7d9cda5f898a14d92004d6d8ca2e60b6b11b377b42b3892710a201ca3d202af9228506f9f6fd89ef79e404f830a92e0b92d5722bc532bc27d8e1b35c42412000047761736d2001b43353b2931d22228e157ed588bf40e87d0cbfcf6dc7c31a4c0618c19c83890100022101e3fff914e010fc236318926fc50bbd8b72dd31fcb8af7e74c1c2024ffbd559930021012cf0c2aa4e971f5ea8ad3b77d421d1bf7d1d466bafb3f171252fa2da1ee1a58f00";
 
         let proof = ics23::decode_membership_proof(proof);
 
@@ -760,5 +774,4 @@ module ibc::light_client {
         std::debug::print(&path);
 
     }
-
 }
