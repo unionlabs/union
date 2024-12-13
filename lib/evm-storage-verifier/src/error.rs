@@ -1,4 +1,5 @@
 use trie_db::TrieError;
+use unionlabs::hash::H256;
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -11,14 +12,14 @@ pub enum Error {
     #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
     ValueMissing { value: Vec<u8> },
     #[error("trie error ({0:?})")]
-    Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
+    Trie(Box<TrieError<H256, rlp::DecoderError>>),
     #[error("rlp decoding failed: {0:?}")]
     RlpDecode(#[from] rlp::DecoderError),
 }
 
-// NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement core::error::Error
-impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
-    fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
+// NOTE: Implemented here instead of via #[from] since Box<TrieError<H256, rlp::DecoderError>> doesn't implement core::error::Error
+impl From<Box<TrieError<H256, rlp::DecoderError>>> for Error {
+    fn from(e: Box<TrieError<H256, rlp::DecoderError>>) -> Self {
         Error::Trie(e)
     }
 }
