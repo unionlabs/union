@@ -10,10 +10,10 @@ use aptos_rest_client::{
     Transaction,
 };
 use ibc_union_spec::{
-    AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-    ChannelOpenTry, ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
-    ConnectionOpenInit, ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion,
-    PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
+    ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+    ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+    ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion, PacketAck,
+    PacketMetadata, PacketRecv, PacketSend, UpdateClient, WriteAck,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -653,7 +653,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = destination_channel.connection.client_id.clone();
 
                         (
-                            WriteAcknowledgement {
+                            WriteAck {
                                 packet_data: event.packet.data.into(),
                                 acknowledgement: event.acknowledgement.into(),
                                 packet: PacketMetadata {
@@ -684,7 +684,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = destination_channel.connection.client_id.clone();
 
                         (
-                            RecvPacket {
+                            PacketRecv {
                                 packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
@@ -715,7 +715,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = source_channel.connection.client_id.clone();
 
                         (
-                            SendPacket {
+                            PacketSend {
                                 packet_data: event.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
@@ -745,7 +745,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = source_channel.connection.client_id.clone();
 
                         (
-                            AcknowledgePacket {
+                            PacketAck {
                                 packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,

@@ -153,9 +153,6 @@ _: {
 
         [profile.script]
         src = "scripts"
-        bytecode_hash = "none"
-        cbor_metadata = false
-        sparse_mode = false
 
         [profile.test]
         test = "tests/src"
@@ -207,7 +204,7 @@ _: {
           network = "holesky";
           rpc-url = "https://holesky.drpc.org";
           private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          extra-args = ''--verify --verifier sourcify --verifier-url https://sourcify.dev/server'';
         }
         {
           network = "scroll-testnet";
@@ -523,7 +520,7 @@ _: {
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
-              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvvv --match-path evm/tests/src/02-client/CosmosInCosmosClient.t.sol --gas-report "$@"
+              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
             '';
           };
 

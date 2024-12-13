@@ -63,11 +63,11 @@ pub mod events {
         pub const CLOSE_CONFIRM: &str = "channel_close_confirm";
     }
     pub mod packet {
-        pub const SEND: &str = "send_packet";
-        pub const RECV: &str = "recv_packet";
-        pub const INTENT_RECV: &str = "intent_recv_packet";
-        pub const ACK: &str = "ack_packet";
-        pub const TIMEOUT: &str = "timeout_packet";
+        pub const SEND: &str = "packet_send";
+        pub const RECV: &str = "packet_recv";
+        pub const INTENT_RECV: &str = "intent_packet_recv";
+        pub const ACK: &str = "packet_ack";
+        pub const TIMEOUT: &str = "packet_timeout";
         pub const BATCH_SEND: &str = "batch_send";
         pub const BATCH_ACKS: &str = "batch_acks";
     }
