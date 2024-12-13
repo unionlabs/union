@@ -21,7 +21,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{error, info, info_span, instrument, warn, Instrument};
+use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     hash::{H160, H256},
     ErrorReporter,
@@ -182,6 +182,8 @@ impl Module {
 pub enum TxSubmitError {
     #[error(transparent)]
     Error(#[from] Error),
+    #[error("error estimating gas")]
+    Estimate(#[source] Error),
     #[error("error waiting for transaction")]
     PendingTransactionError(#[from] PendingTransactionError),
     #[error("out of gas")]
@@ -382,7 +384,19 @@ impl Module {
 
         info!("submitting evm tx");
 
-        match call.send().await {
+        let gas_estimate = call.estimate_gas().await.map_err(TxSubmitError::Estimate)?;
+        //     .map_err(|e| {
+        //     ErrorObject::owned(
+        //         -1,
+        //         format!("error estimating gas: {}", ErrorReporter(e), None::<()>),
+        //     )
+        // })?;
+
+        let gas_to_use = gas_estimate + (gas_estimate / 2);
+
+        info!(gas_estimate, gas_to_use, "gas estimatation successful");
+
+        match call.gas(gas_to_use).send().await {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
@@ -496,7 +510,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
     msgs: Vec<Datagram>,
     relayer: H160,
 ) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P>)>> {
-    dbg!(&msgs);
+    trace!(?msgs);
 
     msgs.clone()
         .into_iter()

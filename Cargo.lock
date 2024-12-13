@@ -6377,6 +6377,7 @@ dependencies = [
  "schemars",
  "serde",
  "sha3 0.10.8",
+ "tracing",
  "unionlabs",
  "voyager-core",
 ]

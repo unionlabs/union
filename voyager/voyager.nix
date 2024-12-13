@@ -90,18 +90,6 @@
           default = self.packages.${pkgs.system}.voyager;
         };
         modules = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
-          # type = types.submodule {
-          #   options = {
-          #     enabled = mkOption {
-          #       type = types.bool;
-          #       default = true;
-          #     };
-          #     path = mkOption { type = types.path; };
-          #     config = mkOption { type = types.attrs; };
-          #   };
-          # };
           type = types.attrs;
         };
         plugins = mkOption {
