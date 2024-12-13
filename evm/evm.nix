@@ -503,11 +503,7 @@ _: {
                   cd $out
 
                   jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/IBCClient.sol/IBCClient.json \
-                    ${contracts}/out/IBCPacket.sol/IBCPacket.json \
-                    ${contracts}/out/IBCConnection.sol/IBCConnection.json \
-                    ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-                    ${contracts}/out/IBCChannel.sol/IBCChannelHandshake.json > ibc-handler.json
+                    ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > ibc-handler.json
 
                   jq --compact-output --slurp 'map(.abi) | add' \
                     ${contracts}/out/Relay.sol/IRelay.json \
