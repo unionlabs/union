@@ -1,5 +1,4 @@
 module ibc::channel {
-    use std::option::{Self, Option};
     use std::vector;
     use std::string::{Self, String};
     use ibc::ethabi;

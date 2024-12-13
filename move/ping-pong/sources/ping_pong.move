@@ -249,98 +249,19 @@ module ping_pong::ibc_app {
     }
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires PingPong, SignerRef {
-        let value: copyable_any::Any = dispatcher::get_data(new_ping_pong_proof());
-        let type_name_output = *copyable_any::type_name(&value);
-
-        if (type_name_output == std::type_info::type_name<helpers::RecvPacketParams>()) {
-            let (pack) =
-                helpers::on_recv_packet_deconstruct(
-                    copyable_any::unpack<helpers::RecvPacketParams>(value)
-                );
-            on_recv_packet(pack);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::RecvIntentPacketParams>()) {
-            let (pack) =
-                helpers::on_recv_intent_packet_deconstruct(
-                    copyable_any::unpack<helpers::RecvIntentPacketParams>(value)
-                );
-            on_recv_intent_packet(pack);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::AcknowledgePacketParams>()) {
-            let (pack, acknowledgement) =
-                helpers::on_acknowledge_packet_deconstruct(
-                    copyable_any::unpack<helpers::AcknowledgePacketParams>(value)
-                );
-            on_acknowledge_packet(pack, acknowledgement);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::TimeoutPacketParams>()) {
-            let (pack) =
-                helpers::on_timeout_packet_deconstruct(
-                    copyable_any::unpack<helpers::TimeoutPacketParams>(value)
-                );
-            on_timeout_packet(pack);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
-            let (connection_id, channel_id, version) =
-                helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenInitParams>(value)
-                );
-            on_channel_open_init(connection_id, channel_id, version);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenTryParams>()) {
-            let (
-                connection_id,
-                channel_id,
-                counterparty_channel_id,
-                version,
-                counterparty_version
-            ) =
-                helpers::on_channel_open_try_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenTryParams>(value)
-                );
-            on_channel_open_try(
-                connection_id,
-                channel_id,
-                counterparty_channel_id,
-                version,
-                counterparty_version
-            );
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenAckParams>()) {
-            let (channel_id, counterparty_channel_id, counterparty_version) =
-                helpers::on_channel_open_ack_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenAckParams>(value)
-                );
-            on_channel_open_ack(
-                channel_id, counterparty_channel_id, counterparty_version
-            );
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenConfirmParams>()) {
-            let channel_id =
-                helpers::on_channel_open_confirm_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenConfirmParams>(value)
-                );
-            on_channel_open_confirm(channel_id);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelCloseInitParams>()) {
-            let channel_id =
-                helpers::on_channel_close_init_deconstruct(
-                    copyable_any::unpack<helpers::ChannelCloseInitParams>(value)
-                );
-            on_channel_close_init(channel_id);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelCloseConfirmParams>()) {
-            let channel_id =
-                helpers::on_channel_close_confirm_deconstruct(
-                    copyable_any::unpack<helpers::ChannelCloseConfirmParams>(value)
-                );
-            on_channel_close_confirm(channel_id);
-        } else {
-            std::debug::print(
-                &string::utf8(b"Invalid function type detected in on_packet function!")
-            );
-        };
-        0
+        helpers::on_packet(
+            new_ping_pong_proof(), 
+            |conn, chan, ver| on_channel_open_init(conn, chan, ver),
+            |conn, chan, count_chan, ver, count_ver| on_channel_open_try(conn, chan, count_chan, ver, count_ver),
+            |chan, count, ver| on_channel_open_ack(chan, count, ver),
+            |chan| on_channel_open_confirm(chan),
+            |conn, chan, ver| on_channel_open_init(conn, chan, ver),
+            |p| on_recv_packet(p), 
+            |p| on_recv_intent_packet(p), 
+            |p| on_timeout_packet(p),
+            |chan| on_channel_close_init(chan),
+            |chan| on_channel_close_confirm(chan),
+        )
     }
 
     #[test(deployer = @ping_pong)]

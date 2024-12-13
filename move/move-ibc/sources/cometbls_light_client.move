@@ -111,7 +111,7 @@ module ibc::light_client {
     }
 
     public fun verify_header(
-        header: &Header, state: &State, consensus_state: &ConsensusState
+        _header: &Header, _state: &State, _consensus_state: &ConsensusState
     ) {
         // assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
 
@@ -245,11 +245,11 @@ module ibc::light_client {
     }
 
     public fun verify_membership(
-        client_id: u32,
-        height: u64,
-        proof: vector<u8>,
-        path: vector<u8>,
-        value: vector<u8>
+        _client_id: u32,
+        _height: u64,
+        _proof: vector<u8>,
+        _path: vector<u8>,
+        _value: vector<u8>
     ): u64 {
         // let consensus_state =
         //     smart_table::borrow(
@@ -360,7 +360,7 @@ module ibc::light_client {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool {
+    public fun check_for_misbehaviour(_client_id: u32, _header: vector<u8>): bool {
         // let state = borrow_global_mut<State>(get_client_address(client_id));
 
         // let header = decode_header(header);
@@ -408,23 +408,10 @@ module ibc::light_client {
     }
 
     fun decode_consensus_state(buf: vector<u8>): ConsensusState {
-        let index = 0x20;
+        let index = 0;
         let timestamp = ethabi::decode_uint(&buf, &mut index);
-        index = index + 0x20 * 3;
-        let app_hash = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
-        let next_validators_hash = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
+        let app_hash = vector::slice(&buf, 32, 64);
+        let next_validators_hash = vector::slice(&buf, 64, 96);
 
         ConsensusState {
             timestamp: (timestamp as u64),
@@ -433,37 +420,19 @@ module ibc::light_client {
         }
     }
 
+    #[test]
+    fun test_decode_consensus() {
+        let buf = x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
+        let consensus = decode_consensus_state(buf);
+    }
+
     fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
         let buf = vector::empty();
 
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u64>(&mut buf, cs.timestamp);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
-        
 
-        // Here we will add 0xa0 as a base (it is where next_validator_hash will start)
-        // in case of app_hash.hash is 0, after each variable app_hash have we will add
-        // 0x20 more
-
-        let version_offset = 0x20 * 5;
-        ethabi::encode_uint<u32>(&mut buf, version_offset +  ((vector::length(&cs.app_hash.hash) * 0x20) as u32));
-        // let version_offset = ((vector::length(&cs.app_hash.hash) / 0x20) as u32);
-        // ethabi::encode_uint<u32>(&mut buf, (7 + version_offset) * 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_vector<u8>(
-            &mut buf,
-            &cs.app_hash.hash,
-            |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
-        ethabi::encode_vector<u8>(
-            &mut buf,
-            &cs.next_validators_hash,
-            |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
+        vector::append(&mut buf, cs.app_hash.hash);
+        vector::append(&mut buf, cs.next_validators_hash);
 
         buf
     }

@@ -9,12 +9,10 @@ module ibc::ibc {
     use std::bcs;
     use ibc::helpers;
     use std::object;
-    use std::string::{Self, String, utf8};
+    use std::string::{Self, String};
     use std::hash;
     use std::timestamp;
     use std::option::{Self, Option};
-    use aptos_std::any;
-    use aptos_std::copyable_any;
     use std::string_utils;
     use ibc::commitment;
     use ibc::light_client;
@@ -207,11 +205,10 @@ module ibc::ibc {
         client_type: String
     }
 
-    struct Port<T: key + store + drop> has key, copy, drop, store {
+    struct Port<phantom T: key + store + drop> has key, copy, drop, store {
         port_id: address
     }
 
-    use aptos_framework::function_info;
     use aptos_framework::function_info::FunctionInfo;
     use ibc::dispatcher;
     use ibc::engine;
@@ -257,105 +254,6 @@ module ibc::ibc {
 
     struct ChannelCloseConfirmParams has copy, drop, store {
         channel_id: u32
-    }
-
-    // Getter for RecvPacketParams
-    public fun get_packet_from_recv_param(param: &RecvPacketParams): &Packet {
-        &param.packet
-    }
-
-    // Getter for RecvPacketParams
-    public fun get_packet_from_recv_intent_param(
-        param: &RecvIntentPacketParams
-    ): &Packet {
-        &param.packet
-    }
-
-    // Getters for AcknowledgePacketParams
-    public fun get_packet_from_ack_param(param: &AcknowledgePacketParams): &Packet {
-        &param.packet
-    }
-
-    public fun get_acknowledgement_from_ack_param(
-        param: &AcknowledgePacketParams
-    ): &vector<u8> {
-        &param.acknowledgement
-    }
-
-    // Getter for TimeoutPacketParams
-    public fun get_packet_from_timeout_param(param: &TimeoutPacketParams): &Packet {
-        &param.packet
-    }
-
-    // Getters for ChannelOpenTryParams
-    public fun get_connection_id_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): u32 {
-        param.connection_id
-    }
-
-    public fun get_channel_id_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): u32 {
-        param.channel_id
-    }
-
-    public fun get_counterparty_channel_id_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): u32 {
-        param.counterparty_channel_id
-    }
-
-    public fun get_version_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): &String {
-        &param.version
-    }
-
-    public fun get_counterparty_version_from_channel_open_try_param(
-        param: &ChannelOpenTryParams
-    ): &String {
-        &param.counterparty_version
-    }
-
-    // Getters for ChannelOpenAckParams
-    public fun get_channel_id_from_channel_open_ack_param(
-        param: &ChannelOpenAckParams
-    ): u32 {
-        param.channel_id
-    }
-
-    public fun get_counterparty_channel_id_from_channel_open_ack_param(
-        param: &ChannelOpenAckParams
-    ): u32 {
-        param.counterparty_channel_id
-    }
-
-    public fun get_counterparty_version_from_channel_open_ack_param(
-        param: &ChannelOpenAckParams
-    ): &String {
-        &param.counterparty_version
-    }
-
-    // Getter for ChannelOpenConfirmParams
-    public fun get_channel_id_from_channel_open_confirm_param(
-        param: &ChannelOpenConfirmParams
-    ): u32 {
-        param.channel_id
-    }
-
-    // Getter for ChannelCloseInitParams
-    public fun get_channel_id_from_channel_close_init_param(
-        param: &ChannelCloseInitParams
-    ): u32 {
-        param.channel_id
-    }
-
-    // Getter for ChannelCloseConfirmParams
-    public fun get_channel_id_from_channel_close_confirm_param(
-        param: &ChannelCloseConfirmParams
-    ): u32 {
-        param.channel_id
     }
 
     public fun register_application<T: key + store + drop>(
@@ -752,11 +650,18 @@ module ibc::ibc {
 
         let port_id = address_to_string(port_id);
 
-        let channel = channel::default();
-        channel::set_state(&mut channel, CHAN_STATE_INIT);
-        channel::set_connection_id(&mut channel, connection_id);
-        channel::set_version(&mut channel, version);
-        smart_table::upsert(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_id, channel);
+        let channel = channel::new(
+            CHAN_STATE_INIT,
+            connection_id,
+            0,
+            counterparty_port_id,
+            version,
+        );
+        smart_table::upsert(
+            &mut store.channels,
+            channel_id,
+            channel
+        );
 
         table::upsert(
             &mut store.commitments,
@@ -796,7 +701,6 @@ module ibc::ibc {
 
     public entry fun channel_open_try<T: key + store + drop>(
         port_id: address,
-        channel_state: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -850,7 +754,7 @@ module ibc::ibc {
 
         let channel =
             channel::new(
-                channel_state,
+                CHAN_STATE_INIT,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
@@ -1162,7 +1066,7 @@ module ibc::ibc {
                 );
 
             if (!set_packet_receive(commitment_key)) {
-                let acknowledgement = vector::empty();
+                let acknowledgement =
                 if (intent) {
                     let param =
                         helpers::pack_recv_intent_packet_params(
@@ -1170,10 +1074,11 @@ module ibc::ibc {
                         );
                     engine::dispatch<T>(param);
 
-                    acknowledgement = dispatcher::get_return_value<T>();
+                    let ack = dispatcher::get_return_value<T>();
 
                     dispatcher::delete_storage<T>();
                     event::emit(RecvIntentPacket { packet: packet });
+                    ack
                 } else {
                     let param =
                         helpers::pack_recv_packet_params(
@@ -1181,10 +1086,11 @@ module ibc::ibc {
                         );
                     engine::dispatch<T>(param);
 
-                    acknowledgement = dispatcher::get_return_value<T>();
+                    let ack = dispatcher::get_return_value<T>();
 
                     dispatcher::delete_storage<T>();
                     event::emit(RecvPacket { packet: packet });
+                    ack
                 };
                 if (vector::length(&acknowledgement) > 0) {
                     inner_write_acknowledgement(commitment_key, acknowledgement);
@@ -1371,7 +1277,7 @@ module ibc::ibc {
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
-        next_sequence_recv: u64
+        _next_sequence_recv: u64
     ) acquires IBCStore, Port {
 
         let port = borrow_global<Port<T>>(get_vault_addr());
@@ -1769,19 +1675,6 @@ module ibc::ibc {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
-    #[test]
-    fun test_copyable_any() {
-        let channel_id = 35;
-        let channel_open_ = ChannelOpenConfirmParams { channel_id };
-        let any_packed = copyable_any::pack<ChannelOpenConfirmParams>(channel_open_);
-
-        let type_name_output = copyable_any::type_name(&any_packed);
-        assert!(
-            *type_name_output == std::type_info::type_name<ChannelOpenConfirmParams>(),
-            0
-        )
-    }
-
     // #[test(ibc_signer = @ibc)]
     // fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
     //     init_module(ibc_signer);
@@ -1820,7 +1713,7 @@ module ibc::ibc {
     fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
         init_module(alice);        
 
-        create_client(utf8(b"cometbls"), x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b", x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d");
+        create_client(std::string::utf8(b"cometbls"), x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b", x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d");
     }
 
     // #[test(alice = @ibc)]

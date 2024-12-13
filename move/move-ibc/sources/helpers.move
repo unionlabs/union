@@ -1,8 +1,6 @@
 module ibc::helpers {
-    use ibc::ibc;
     use ibc::packet::Packet;
-    use std::vector;
-    use std::string::String;
+    use std::string::{Self, String};
     use std::copyable_any;
 
     struct RecvPacketParams has copy, drop, store {
@@ -52,6 +50,114 @@ module ibc::helpers {
 
     struct ChannelCloseConfirmParams has copy, drop, store {
         channel_id: u32
+    }
+
+    public inline fun on_packet<W: drop>(
+        witness: W, 
+        on_channel_open_init: |u32, u32, String|,
+        on_channel_open_try: |u32, u32, u32, String, String|,
+        on_channel_open_ack: |u32, u32, String|,
+        on_channel_open_confirm: |u32|,
+        on_recv_packet: |Packet|,
+        on_recv_intent_packet: |Packet|,
+        on_acknowledge_packet: |Packet, vector<u8>|,
+        on_timeout_packet: |Packet|,
+        on_channel_close_init: |u32|,
+        on_channel_close_confirm: |u32|,
+    ): u64 {
+        let value: copyable_any::Any = ibc::dispatcher::get_data(witness);
+        let type_name_output = *copyable_any::type_name(&value);
+
+        if (type_name_output == std::type_info::type_name<RecvPacketParams>()) {
+            let (pack) =
+                on_recv_packet_deconstruct(
+                    copyable_any::unpack<RecvPacketParams>(value)
+                );
+            on_recv_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<RecvIntentPacketParams>()) {
+            let (pack) =
+                on_recv_intent_packet_deconstruct(
+                    copyable_any::unpack<RecvIntentPacketParams>(value)
+                );
+            on_recv_intent_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<AcknowledgePacketParams>()) {
+            let (pack, acknowledgement) =
+                on_acknowledge_packet_deconstruct(
+                    copyable_any::unpack<AcknowledgePacketParams>(value)
+                );
+            on_acknowledge_packet(pack, acknowledgement);
+        } else if (type_name_output
+            == std::type_info::type_name<TimeoutPacketParams>()) {
+            let (pack) =
+                on_timeout_packet_deconstruct(
+                    copyable_any::unpack<TimeoutPacketParams>(value)
+                );
+            on_timeout_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelOpenInitParams>()) {
+            let (connection_id, channel_id, version) =
+                on_channel_open_init_deconstruct(
+                    copyable_any::unpack<ChannelOpenInitParams>(value)
+                );
+            on_channel_open_init(connection_id, channel_id, version);
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelOpenTryParams>()) {
+            let (
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            ) =
+                on_channel_open_try_deconstruct(
+                    copyable_any::unpack<ChannelOpenTryParams>(value)
+                );
+            on_channel_open_try(
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelOpenAckParams>()) {
+            let (channel_id, counterparty_channel_id, counterparty_version) =
+                on_channel_open_ack_deconstruct(
+                    copyable_any::unpack<ChannelOpenAckParams>(value)
+                );
+            on_channel_open_ack(
+                channel_id, counterparty_channel_id, counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelOpenConfirmParams>()) {
+            let channel_id =
+                on_channel_open_confirm_deconstruct(
+                    copyable_any::unpack<ChannelOpenConfirmParams>(value)
+                );
+            on_channel_open_confirm(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelCloseInitParams>()) {
+            let channel_id =
+                on_channel_close_init_deconstruct(
+                    copyable_any::unpack<ChannelCloseInitParams>(value)
+                );
+            on_channel_close_init(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<ChannelCloseConfirmParams>()) {
+            let channel_id =
+                on_channel_close_confirm_deconstruct(
+                    copyable_any::unpack<ChannelCloseConfirmParams>(value)
+                );
+            on_channel_close_confirm(channel_id);
+        } else {
+            std::debug::print(
+                &string::utf8(b"Invalid function type detected in on_packet function!")
+            );
+        };
+
+        0
     }
 
 
