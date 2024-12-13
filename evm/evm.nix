@@ -520,7 +520,7 @@ _: {
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
-              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvvv --match-path evm/tests/src/02-client/CosmosInCosmosClient.t.sol --gas-report "$@"
+              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
             '';
           };
 
