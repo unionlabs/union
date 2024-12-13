@@ -20,7 +20,7 @@ contract IBCClientTests is Test {
         vm.pauseGasMetering();
         vm.assume(impl != address(0));
         vm.expectEmit();
-        emit IBCClientLib.ClientRegistered(typ, impl);
+        emit IBCClientLib.RegisterClient(typ, impl);
         vm.resumeGasMetering();
         handler.registerClient(typ, ILightClient(impl));
     }
@@ -31,7 +31,7 @@ contract IBCClientTests is Test {
     ) public {
         vm.assume(impl != address(0));
         vm.expectEmit();
-        emit IBCClientLib.ClientRegistered(typ, impl);
+        emit IBCClientLib.RegisterClient(typ, impl);
         handler.registerClient(typ, ILightClient(impl));
         vm.expectRevert(IBCErrors.ErrClientTypeAlreadyExists.selector);
         handler.registerClient(typ, ILightClient(impl));
@@ -43,7 +43,7 @@ contract IBCClientTests is Test {
         vm.pauseGasMetering();
         handler.registerClient(msg_.clientType, lightClient);
         vm.expectEmit();
-        emit IBCClientLib.ClientCreated(msg_.clientType, 0);
+        emit IBCClientLib.CreateClient(msg_.clientType, 0);
         vm.resumeGasMetering();
         handler.createClient(msg_);
     }
@@ -87,7 +87,7 @@ contract IBCClientTests is Test {
         handler.registerClient(msg_.clientType, lightClient);
         uint32 clientId = handler.createClient(msg_);
         vm.expectEmit();
-        emit IBCClientLib.ClientUpdated(0, 1);
+        emit IBCClientLib.UpdateClient(0, 1);
         vm.resumeGasMetering();
         handler.updateClient(
             IBCMsgs.MsgUpdateClient({

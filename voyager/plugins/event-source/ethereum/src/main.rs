@@ -11,10 +11,10 @@ use alloy::{
 use beacon_api::client::BeaconApiClient;
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
-    AcknowledgePacket, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-    ChannelOpenTry, ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
-    ConnectionOpenInit, ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion,
-    PacketMetadata, RecvPacket, SendPacket, TimeoutPacket, UpdateClient, WriteAcknowledgement,
+    ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+    ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+    ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion, PacketAck,
+    PacketMetadata, PacketRecv, PacketSend, PacketTimeout, UpdateClient, WriteAck,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -267,7 +267,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 match event {
-                    IbcEvents::ClientCreated(raw_event) => {
+                    IbcEvents::CreateClient(raw_event) => {
                         let client_info = voyager_client
                             .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
@@ -296,12 +296,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvents::ClientRegistered(raw_event) => {
-                        info!(?raw_event, "observed ClientRegistered event");
+                    IbcEvents::RegisterClient(raw_event) => {
+                        info!(?raw_event, "observed RegisterClient event");
 
                         Ok(noop())
                     }
-                    IbcEvents::ClientUpdated(raw_event) => {
+                    IbcEvents::UpdateClient(raw_event) => {
                         let client_info = voyager_client
                             .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
@@ -692,7 +692,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
 
                     // packet origin is this chain
-                    IbcEvents::SendPacket(event) => {
+                    IbcEvents::PacketSend(event) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -714,7 +714,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<FullEvent>(
-                                SendPacket {
+                                PacketSend {
                                     packet_data: event.packet.data.to_vec().into(),
                                     packet: PacketMetadata {
                                         source_channel,
@@ -727,7 +727,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvents::TimeoutPacket(event) => {
+                    IbcEvents::PacketTimeout(event) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -749,7 +749,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<FullEvent>(
-                                TimeoutPacket {
+                                PacketTimeout {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
@@ -762,7 +762,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvents::AcknowledgePacket(event) => {
+                    IbcEvents::PacketAck(event) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -784,7 +784,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<FullEvent>(
-                                AcknowledgePacket {
+                                PacketAck {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
@@ -799,7 +799,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is the counterparty chain
-                    IbcEvents::WriteAcknowledgement(event) => {
+                    IbcEvents::WriteAck(event) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -821,7 +821,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<FullEvent>(
-                                WriteAcknowledgement {
+                                WriteAck {
                                     packet_data: event.packet.data.to_vec().into(),
                                     acknowledgement: event.acknowledgement.to_vec().into(),
                                     packet: PacketMetadata {
@@ -835,7 +835,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvents::RecvPacket(event) => {
+                    IbcEvents::PacketRecv(event) => {
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -857,7 +857,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<FullEvent>(
-                                RecvPacket {
+                                PacketRecv {
                                     packet_data: event.packet.data.to_vec().into(),
                                     packet: PacketMetadata {
                                         source_channel,
@@ -871,7 +871,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvents::RecvIntentPacket(_event) => {
+                    IbcEvents::IntentPacketRecv(_event) => {
                         todo!()
                     }
                 }
@@ -950,14 +950,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     block_number,
                                     tx_hash,
                                     event: match event.data {
-                                        Ibc::IbcEvents::ClientRegistered(client_registered) => {
-                                            IbcEvents::ClientRegistered(client_registered)
+                                        Ibc::IbcEvents::RegisterClient(client_registered) => {
+                                            IbcEvents::RegisterClient(client_registered)
                                         }
-                                        Ibc::IbcEvents::ClientCreated(client_created) => {
-                                            IbcEvents::ClientCreated(client_created)
+                                        Ibc::IbcEvents::CreateClient(client_created) => {
+                                            IbcEvents::CreateClient(client_created)
                                         }
-                                        Ibc::IbcEvents::ClientUpdated(client_updated) => {
-                                            IbcEvents::ClientUpdated(client_updated)
+                                        Ibc::IbcEvents::UpdateClient(client_updated) => {
+                                            IbcEvents::UpdateClient(client_updated)
                                         }
                                         Ibc::IbcEvents::ConnectionOpenInit(
                                             connection_open_init,
@@ -991,23 +991,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         Ibc::IbcEvents::ChannelCloseConfirm(
                                             channel_close_confirm,
                                         ) => IbcEvents::ChannelCloseConfirm(channel_close_confirm),
-                                        Ibc::IbcEvents::SendPacket(send_packet) => {
-                                            IbcEvents::SendPacket(send_packet)
+                                        Ibc::IbcEvents::PacketSend(send_packet) => {
+                                            IbcEvents::PacketSend(send_packet)
                                         }
-                                        Ibc::IbcEvents::RecvPacket(recv_packet) => {
-                                            IbcEvents::RecvPacket(recv_packet)
+                                        Ibc::IbcEvents::PacketRecv(recv_packet) => {
+                                            IbcEvents::PacketRecv(recv_packet)
                                         }
-                                        Ibc::IbcEvents::RecvIntentPacket(recv_intent_packet) => {
-                                            IbcEvents::RecvIntentPacket(recv_intent_packet)
+                                        Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet) => {
+                                            IbcEvents::IntentPacketRecv(recv_intent_packet)
                                         }
-                                        Ibc::IbcEvents::WriteAcknowledgement(
-                                            write_acknowledgement,
-                                        ) => IbcEvents::WriteAcknowledgement(write_acknowledgement),
-                                        Ibc::IbcEvents::AcknowledgePacket(acknowledge_packet) => {
-                                            IbcEvents::AcknowledgePacket(acknowledge_packet)
+                                        Ibc::IbcEvents::WriteAck(write_acknowledgement) => {
+                                            IbcEvents::WriteAck(write_acknowledgement)
                                         }
-                                        Ibc::IbcEvents::TimeoutPacket(timeout_packet) => {
-                                            IbcEvents::TimeoutPacket(timeout_packet)
+                                        Ibc::IbcEvents::PacketAck(acknowledge_packet) => {
+                                            IbcEvents::PacketAck(acknowledge_packet)
+                                        }
+                                        Ibc::IbcEvents::PacketTimeout(timeout_packet) => {
+                                            IbcEvents::PacketTimeout(timeout_packet)
                                         }
                                     },
                                 }),

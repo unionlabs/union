@@ -158,8 +158,8 @@ impl IbcSpecExt for IbcUnion {
             EventUnion::ChannelOpenInit(_) => "channel_open_init",
             EventUnion::ChannelOpenTry(_) => "channel_open_try",
             EventUnion::ChannelOpenAck(_) => "channel_open_ack",
-            EventUnion::SendPacket(_) => "send_packet",
-            EventUnion::WriteAcknowledgement(_) => "write_acknowledgement",
+            EventUnion::PacketSend(_) => "packet_send",
+            EventUnion::WriteAck(_) => "write_ack",
         }
     }
 }
@@ -275,10 +275,10 @@ if ."@type" == "data" then
             $event_type == "channel_open_ack"
             and ($event_data.connection.counterparty_client_id as $client_id | {clients_filter})
         ) or (
-            $event_type == "send_packet"
+            $event_type == "packet_send"
             and ($event_data.packet.destination_channel.connection.client_id as $client_id | {clients_filter})
         ) or (
-            $event_type == "write_acknowledgement"
+            $event_type == "write_ack"
             and ($event_data.packet.source_channel.connection.client_id as $client_id | {clients_filter})
         ) or ($data."@type" == "plugin"
             and $data."@value".plugin == "{plugin_name}"
@@ -739,7 +739,7 @@ async fn do_make_msg_union(
             )))
         }
 
-        EventUnion::SendPacket(event) => {
+        EventUnion::PacketSend(event) => {
             let packet = Packet {
                 source_channel: event.packet.source_channel.channel_id,
                 destination_channel: event.packet.destination_channel.channel_id,
@@ -783,7 +783,7 @@ async fn do_make_msg_union(
             )))
         }
 
-        EventUnion::WriteAcknowledgement(event) => {
+        EventUnion::WriteAck(event) => {
             let packet = Packet {
                 source_channel: event.packet.source_channel.channel_id,
                 destination_channel: event.packet.destination_channel.channel_id,
