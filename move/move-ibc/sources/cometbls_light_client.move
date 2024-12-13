@@ -111,45 +111,45 @@ module ibc::light_client {
     }
 
     public fun verify_header(
-        _header: &Header, _state: &State, _consensus_state: &ConsensusState
+        header: &Header, state: &State, consensus_state: &ConsensusState
     ) {
-        // assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
+        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
 
-        // let untrusted_height_number = header.signed_header.height;
-        // let trusted_height_number = header.trusted_height;
+        let untrusted_height_number = header.signed_header.height;
+        let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
-        // assert!(
-        //     untrusted_height_number > trusted_height_number,
-        //     E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
-        // );
+        assert!(
+            untrusted_height_number > trusted_height_number,
+            E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
+        );
 
-        // let trusted_timestamp = consensus_state.timestamp;
-        // let untrusted_timestamp =
-        //     header.signed_header.time.seconds * 1_000_000_000
-        //         + (header.signed_header.time.nanos as u64);
-        // assert!(
-        //     untrusted_timestamp > trusted_timestamp,
-        //     E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
-        // );
+        let trusted_timestamp = consensus_state.timestamp;
+        let untrusted_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
+        assert!(
+            untrusted_timestamp > trusted_timestamp,
+            E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
+        );
 
-        // let current_time = timestamp::now_seconds() * 1_000_000_000;
-        // assert!(
-        //     untrusted_timestamp < current_time + state.client_state.trusting_period,
-        //     E_HEADER_EXCEEDED_TRUSTING_PERIOD
-        // );
+        let current_time = timestamp::now_seconds() * 1_000_000_000;
+        assert!(
+            untrusted_timestamp < current_time + state.client_state.trusting_period,
+            E_HEADER_EXCEEDED_TRUSTING_PERIOD
+        );
 
-        // assert!(
-        //     untrusted_timestamp < current_time + state.client_state.max_clock_drift,
-        //     E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
-        // );
+        assert!(
+            untrusted_timestamp < current_time + state.client_state.max_clock_drift,
+            E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
+        );
 
-        // if (untrusted_height_number == trusted_height_number + 1) {
-        //     assert!(
-        //         header.signed_header.validators_hash
-        //             == consensus_state.next_validators_hash,
-        //         E_VALIDATORS_HASH_MISMATCH
-        //     );
-        // };
+        if (untrusted_height_number == trusted_height_number + 1) {
+            assert!(
+                header.signed_header.validators_hash
+                    == consensus_state.next_validators_hash,
+                E_VALIDATORS_HASH_MISMATCH
+            );
+        };
 
         // assert!(
         //     groth16_verifier::verify_zkp(
@@ -245,25 +245,31 @@ module ibc::light_client {
     }
 
     public fun verify_membership(
-        _client_id: u32,
-        _height: u64,
-        _proof: vector<u8>,
-        _path: vector<u8>,
-        _value: vector<u8>
-    ): u64 {
-        // let consensus_state =
-        //     smart_table::borrow(
-        //         &borrow_global<State>(get_client_address(client_id)).consensus_states,
-        //         height
-        //     );
+        client_id: u32,
+        height: u64,
+        proof: vector<u8>,
+        key: vector<u8>,
+        value: vector<u8>
+    ): u64 acquires State {
+        let state = 
+                borrow_global<State>(get_client_address(client_id));
+        let consensus_state =
+            smart_table::borrow(
+                &state.consensus_states,
+                height
+            );
 
-        // ics23::verify_membership(
-        //     ics23::decode_membership_proof(proof),
-        //     consensus_state.app_hash.hash,
-        //     b"ibc", // HARDCODED PREFIX
-        //     path,
-        //     value
-        // );
+        let path = vector<u8>[0x03];
+        vector::append(&mut path, state.client_state.contract_address);
+        vector::append(&mut path, key);
+
+        ics23::verify_membership(
+            ics23::decode_membership_proof(proof),
+            consensus_state.app_hash.hash,
+            b"wasm", // HARDCODED PREFIX
+            path,
+            value
+        );
 
         0
     }
@@ -485,8 +491,9 @@ module ibc::light_client {
 
         let trusted_height = height::decode_bcs(buf);
 
-        let proof_bz = bcs_utils::peel_bytes(buf);
-        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
+        // let proof_bz = bcs_utils::peel_bytes(buf);
+        // let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
+        let zero_knowledge_proof = groth16_verifier::default();
 
         Header { signed_header, trusted_height, zero_knowledge_proof }
     }
@@ -732,6 +739,26 @@ module ibc::light_client {
             x"e101000000000000ab5ded6600000000717e872e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d087872d0ad8da9d06cd7b97611bea8ca42741eb9440dbf823cdea268ecf4a3bc0100000000000000a800000000000000800306327cd8c426a4cba21185a8ff6c3c22432721cfa61499c65725bc9a1b4ca3eb1e47f9109ebc99820a989b324b2961613b9ad2c5f9362da38116b55b98cd170b141370751c54ba39bfedfacf83ca9182592c5ca9e24b273cfca5301c9ddebb66043822c12d446cf9d9ad288b593242c50796040fcba95ae1af1724d42be7662f0558864213a4e938f1a26cd889b4466f7b8dfc6ed2f0545ac4f067f77e0a81761263311f8bcdbecf6d0f1cea52011dd1182a36d16de8aabe9ee1664834273c56235b2195ebf4f9ba72347b9fab04734d762e7ba2529c8330b2c26dd47d8f90ef0348b6b26ab3ec6de09327616b78c3e1e3da91b379254f26d06513bad4bafbc0295369bae4c078b7c7b47a2e61267af50a318bac36d82a86d129ce5f8f27956f218903e09626a5a32c96b7ce51bc05b7c5f21278e4aaa566519aa4c71a2b601e11c718e76a7bf579d5a216e8426943b5232c1159280fa8e5210a5b3df23d25c91308e01c7c1e0f5c778fb6cfef463730f888df7cc26ab5950b067771930d9dea";
 
         let _header = decode_header(update);
+    }
+
+    #[test]
+    fun see_proof() {
+        let client_state = decode_client_state(x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000580f000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b");
+        let proof = x"4103ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a7202a952c4d0b798ec0de2a4f9ffbd7aa3b235518b01fee732288096f9ffda2f80d040002ca3d07260204ca3d20adedf132c9cb77bb904388a64fa0fc1b54938ae672604ce9336aa3421347039e2000260406ca3d2059afec8947be61dc17607388c182dae393f33034af7326e70a6b5f0fff312641200026060eca3d20b8722feb939d1e679cf98a8502aac872fc432a2fa768176d4c148ff4f114df782000050a1eca3d202120f877e465d7a5540812ba9a0e61cd191793464aa00866684aa8f4e82b4592a57e260c4aca3d201caa81c27aa4b33f8ff2965a354af7d27ace46dce1848a0e50f93dafb619c5e22000050e64ca3d202120ea740f79511dd9416b7d9cda5f898a14d92004d6d8ca2e60b6b11b377b42b3892710a201ca3d202af9228506f9f6fd89ef79e404f830a92e0b92d5722bc532bc27d8e1b35c42412000047761736d2001b43353b2931d22228e157ed588bf40e87d0cbfcf6dc7c31a4c0618c19c83890100022101e3fff914e010fc236318926fc50bbd8b72dd31fcb8af7e74c1c2024ffbd559930021012cf0c2aa4e971f5ea8ad3b77d421d1bf7d1d466bafb3f171252fa2da1ee1a58f00";
+
+        let proof = ics23::decode_membership_proof(proof);
+
+        std::debug::print(&proof);
+        std::debug::print(&client_state);
+
+        let key = ibc::commitment::connection_commitment_key(4);
+        std::debug::print(&key);
+
+        let path = vector<u8>[0x03];
+        vector::append(&mut path, client_state.contract_address);
+        vector::append(&mut path, key);
+        std::debug::print(&path);
+
     }
 
 }

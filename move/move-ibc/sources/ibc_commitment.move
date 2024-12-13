@@ -2,7 +2,7 @@ module ibc::commitment {
 
     use aptos_std::string::{Self, String};
     use std::vector;
-    use aptos_std::hash;
+    use aptos_std::aptos_hash::keccak256;
     use std::bcs;
     use ibc::packet::{Self, Packet};
     use ibc::ethabi;
@@ -18,12 +18,6 @@ module ibc::commitment {
     const NEXT_SEQ_SEND: u256 = 0x06;
     const NEXT_SEQ_RECV: u256 = 0x07;
     const NEXT_SEQ_ACK: u256 = 0x08;
-
-    // Function to convert a String to vector<u8>
-    public inline fun keccak256(s: String): vector<u8> {
-        let vec_val = *string::bytes(&s);
-        hash::sha2_256(vec_val)
-    }
 
     // Generate the path for client state
     public fun client_state_path(client_id: u32): vector<u8> {
@@ -194,39 +188,39 @@ module ibc::commitment {
     }
 
     public fun connection_commitment_key(channel_id: u32): vector<u8> {
-        connection_path(channel_id)
+        keccak256(connection_path(channel_id))
     }
 
     public fun channel_commitment_key(channel_id: u32): vector<u8> {
-        channel_path(channel_id)
+        keccak256(channel_path(channel_id))
     }
 
     public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
-        packet_commitment_path(channel_id, sequence)
+        keccak256(packet_commitment_path(channel_id, sequence))
     }
 
     public fun batch_packets_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
-        batch_packets_commitment_path(channel_id, batch_hash)
+        keccak256(batch_packets_commitment_path(channel_id, batch_hash))
     }
 
     public fun batch_receipts_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
-        batch_receipts_commitment_path(channel_id, batch_hash)
+        keccak256(batch_receipts_commitment_path(channel_id, batch_hash))
     }
 
     public fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_send_commitment_path(channel_id)
+        keccak256(next_sequence_send_commitment_path(channel_id))
     }
 
     public fun next_sequence_recv_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_recv_commitment_path(channel_id)
+        keccak256(next_sequence_recv_commitment_path(channel_id))
     }
 
     public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_ack_commitment_path(channel_id)
+        keccak256(next_sequence_ack_commitment_path(channel_id))
     }
 
     public fun commit_packet(packet: &Packet): vector<u8> {
@@ -266,7 +260,7 @@ module ibc::commitment {
     }
 
     public fun commit_ack(ack: vector<u8>): vector<u8> {
-        merge_ack(hash::sha2_256(ack))
+        merge_ack(keccak256(ack))
     }
 
     // #[test]

@@ -3,6 +3,7 @@ module ibc::ibc {
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::table::{Self, Table};
+    use aptos_std::aptos_hash;
     use std::block;
     use std::from_bcs;
     use std::event;
@@ -1527,7 +1528,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::connection_commitment_key(connection_id),
-            connection_end::encode(&counterparty_connection)
+            aptos_hash::keccak256(connection_end::encode(&counterparty_connection))
         )
     }
 

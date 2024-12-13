@@ -447,10 +447,7 @@ pub mod ibc {
                         &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_1),
                     )
                     .unwrap(),
-                    ::move_bindgen::bcs::to_bytes(
-                        &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_2),
-                    )
-                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_2).unwrap(),
                 ],
             )
         }
@@ -509,10 +506,7 @@ pub mod ibc {
                         &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_3),
                     )
                     .unwrap(),
-                    ::move_bindgen::bcs::to_bytes(
-                        &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_4),
-                    )
-                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_4).unwrap(),
                 ],
             )
         }

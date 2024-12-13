@@ -6374,6 +6374,7 @@ dependencies = [
  "enumorph",
  "ibc-solidity",
  "macros",
+ "schemars",
  "serde",
  "sha3 0.10.8",
  "unionlabs",

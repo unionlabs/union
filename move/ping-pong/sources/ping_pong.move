@@ -1,20 +1,13 @@
 module ping_pong::ibc_app {
     use aptos_framework::object::{Self, Object};
-    use std::option;
     use ibc::helpers;
     use ibc::dispatcher;
     use std::event;
-    use std::timestamp;
     use std::signer;
-    use std::string::{Self, String, utf8};
+    use std::string::{Self, String};
     use ibc::ibc;
     use std::vector;
-    use std::bcs;
     use aptos_framework::function_info;
-    use std::from_bcs;
-    use ibc::height;
-    use ibc::channel;
-    use aptos_std::copyable_any;
     use ibc::packet::{Self, Packet};
 
     struct IbcAppWitness has drop, store, key {}
@@ -174,7 +167,7 @@ module ping_pong::ibc_app {
         vault.self_address
     }
 
-    public fun on_recv_intent_packet(packet: Packet): vector<u8> {
+    public fun on_recv_intent_packet(_packet: Packet) {
         std::debug::print(&string::utf8(b"NOT IMPLEMENTED"));
         abort 0
     }
@@ -198,7 +191,7 @@ module ping_pong::ibc_app {
     }
 
     public fun on_acknowledge_packet(
-        packet: Packet, acknowledgement: vector<u8>
+        _packet: Packet, acknowledgement: vector<u8>
     ) {
         if (acknowledgement != ACK_SUCCESS) {
             abort ERR_INVALID_ACK
@@ -240,11 +233,11 @@ module ping_pong::ibc_app {
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
 
-    public fun on_channel_close_init(channel_id: u32) {
+    public fun on_channel_close_init(_channel_id: u32) {
         abort ERR_INFINITE_GAME
     }
 
-    public fun on_channel_close_confirm(channel_id: u32) {
+    public fun on_channel_close_confirm(_channel_id: u32) {
         abort ERR_INFINITE_GAME
     }
 
@@ -255,9 +248,9 @@ module ping_pong::ibc_app {
             |conn, chan, count_chan, ver, count_ver| on_channel_open_try(conn, chan, count_chan, ver, count_ver),
             |chan, count, ver| on_channel_open_ack(chan, count, ver),
             |chan| on_channel_open_confirm(chan),
-            |conn, chan, ver| on_channel_open_init(conn, chan, ver),
             |p| on_recv_packet(p), 
             |p| on_recv_intent_packet(p), 
+            |p, d| on_acknowledge_packet(p, d),
             |p| on_timeout_packet(p),
             |chan| on_channel_close_init(chan),
             |chan| on_channel_close_confirm(chan),

@@ -57,6 +57,18 @@ module ibc::groth16_verifier {
         proof_commitment_pok: Element<G1>
     }
 
+    public fun default(): ZKP {
+        ZKP {
+            proof: Proof {
+                a: zero(),
+                b: zero(),
+                c: zero(),
+            },
+            proof_commitment: zero(),
+            proof_commitment_pok: zero(),
+        }
+    }
+
     public fun verify_zkp(
         chain_id: &String,
         trusted_validators_hash: &vector<u8>,
