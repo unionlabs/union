@@ -6,6 +6,7 @@ module ibc::light_client {
     use std::object;
     use std::timestamp;
     use ibc::ics23;
+    use ibc::ethabi;
     use ibc::bcs_utils;
     use ibc::groth16_verifier::{Self, ZKP};
     use ibc::height::{Self, Height};
@@ -407,21 +408,62 @@ module ibc::light_client {
     }
 
     fun decode_consensus_state(buf: vector<u8>): ConsensusState {
-        let buf = bcs_utils::new(buf);
+        let index = 0x20;
+        let timestamp = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20 * 3;
+        let app_hash = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+        let next_validators_hash = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
 
         ConsensusState {
-            timestamp: bcs_utils::peel_u64(&mut buf),
-            app_hash: MerkleRoot { hash: bcs_utils::peel_fixed_bytes(&mut buf, 32) },
-            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32)
+            timestamp: (timestamp as u64),
+            app_hash: MerkleRoot { hash: app_hash },
+            next_validators_hash: next_validators_hash
         }
     }
 
     fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
         let buf = vector::empty();
 
-        vector::append(&mut buf, bcs::to_bytes(&cs.timestamp));
-        vector::append(&mut buf, cs.app_hash.hash);
-        vector::append(&mut buf, cs.next_validators_hash);
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_uint<u64>(&mut buf, cs.timestamp);
+        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        
+
+        // Here we will add 0xa0 as a base (it is where next_validator_hash will start)
+        // in case of app_hash.hash is 0, after each variable app_hash have we will add
+        // 0x20 more
+
+        let version_offset = 0x20 * 5;
+        ethabi::encode_uint<u32>(&mut buf, version_offset +  ((vector::length(&cs.app_hash.hash) * 0x20) as u32));
+        // let version_offset = ((vector::length(&cs.app_hash.hash) / 0x20) as u32);
+        // ethabi::encode_uint<u32>(&mut buf, (7 + version_offset) * 0x20);
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &cs.app_hash.hash,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &cs.next_validators_hash,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
 
         buf
     }
@@ -523,6 +565,27 @@ module ibc::light_client {
     //     let cs = decode_client_state(bcs::to_bytes(&client_state));
     //     std::debug::print(&cs);
     // }
+
+    #[test]
+    fun parse_consensus_state_new {
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000051615000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c";
+        let consensus_state = ConsensusState {
+            timestamp: 333333,
+            app_hash: MerkleRoot {
+                hash: b"helloo"
+            },
+            next_validators_hash: b"helll"
+        };
+
+        let cs_bytes = encode_consensus_state(&consensus_state);
+
+        assert!(cs_bytes == output, 0);
+
+        let cs = decode_consensus_state(cs_bytes);
+        assert!(cs.timestamp == consensus_state.timestamp, 0);
+        assert!(cs.app_hash.hash == consensus_state.app_hash.hash, 0);
+        assert!(cs.next_validators_hash == consensus_state.next_validators_hash, 0);
+    }
 
     #[test]
     fun parse_consensus_state() {
