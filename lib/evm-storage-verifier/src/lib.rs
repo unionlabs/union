@@ -112,7 +112,6 @@ fn get_node(
         db.insert(hash_db::EMPTY_PREFIX, n.as_ref());
     });
 
-    let root: primitive_types::H256 = root.into();
     let trie = TrieDBBuilder::<EthLayout>::new(&db, &root).build();
     Ok(trie.get(&keccak_256(key.as_ref()))?)
 }
