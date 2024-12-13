@@ -146,17 +146,17 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event ClientRegistered(string clientType, address clientAddress);
+            event RegisterClient(string clientType, address clientAddress);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event ClientCreated(string clientType, uint32 client_id);
+            event CreateClient(string clientType, uint32 client_id);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event ClientUpdated(uint32 client_id, uint64 height);
+            event UpdateClient(uint32 client_id, uint64 height);
 
             error ErrClientTypeAlreadyExists();
             error ErrClientTypeNotFound();
@@ -278,36 +278,36 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event SendPacket(Packet packet);
+            event PacketSend(Packet packet);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event RecvPacket(Packet packet, address relayer, bytes relayer_msg);
+            event PacketRecv(Packet packet, address relayer, bytes relayer_msg);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event RecvIntentPacket(
+            event IntentPacketRecv(
                 Packet packet, address market_maker, bytes market_maker_msg
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event WriteAcknowledgement(Packet packet, bytes acknowledgement);
+            event WriteAck(Packet packet, bytes acknowledgement);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event AcknowledgePacket(
+            event PacketAck(
                 Packet packet, bytes acknowledgement, address relayer
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event TimeoutPacket(Packet packet, address relayer);
+            event PacketTimeout(Packet packet, address relayer);
 
             error ErrUnauthorized();
             error ErrLatestTimestampNotFound();
@@ -615,14 +615,14 @@ maybe_sol_attr! {
 impl Clone for Ibc::IbcEvents {
     fn clone(&self) -> Self {
         match self {
-            Ibc::IbcEvents::ClientRegistered(client_registered) => {
-                Ibc::IbcEvents::ClientRegistered(client_registered.clone())
+            Ibc::IbcEvents::RegisterClient(client_registered) => {
+                Ibc::IbcEvents::RegisterClient(client_registered.clone())
             }
-            Ibc::IbcEvents::ClientCreated(client_created) => {
-                Ibc::IbcEvents::ClientCreated(client_created.clone())
+            Ibc::IbcEvents::CreateClient(client_created) => {
+                Ibc::IbcEvents::CreateClient(client_created.clone())
             }
-            Ibc::IbcEvents::ClientUpdated(client_updated) => {
-                Ibc::IbcEvents::ClientUpdated(client_updated.clone())
+            Ibc::IbcEvents::UpdateClient(client_updated) => {
+                Ibc::IbcEvents::UpdateClient(client_updated.clone())
             }
             Ibc::IbcEvents::ConnectionOpenInit(connection_open_init) => {
                 Ibc::IbcEvents::ConnectionOpenInit(connection_open_init.clone())
@@ -654,23 +654,23 @@ impl Clone for Ibc::IbcEvents {
             Ibc::IbcEvents::ChannelCloseConfirm(channel_close_confirm) => {
                 Ibc::IbcEvents::ChannelCloseConfirm(channel_close_confirm.clone())
             }
-            Ibc::IbcEvents::SendPacket(send_packet) => {
-                Ibc::IbcEvents::SendPacket(send_packet.clone())
+            Ibc::IbcEvents::PacketSend(send_packet) => {
+                Ibc::IbcEvents::PacketSend(send_packet.clone())
             }
-            Ibc::IbcEvents::RecvPacket(recv_packet) => {
-                Ibc::IbcEvents::RecvPacket(recv_packet.clone())
+            Ibc::IbcEvents::PacketRecv(recv_packet) => {
+                Ibc::IbcEvents::PacketRecv(recv_packet.clone())
             }
-            Ibc::IbcEvents::RecvIntentPacket(recv_intent_packet) => {
-                Ibc::IbcEvents::RecvIntentPacket(recv_intent_packet.clone())
+            Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet) => {
+                Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet.clone())
             }
-            Ibc::IbcEvents::WriteAcknowledgement(write_acknowledgement) => {
-                Ibc::IbcEvents::WriteAcknowledgement(write_acknowledgement.clone())
+            Ibc::IbcEvents::WriteAck(write_acknowledgement) => {
+                Ibc::IbcEvents::WriteAck(write_acknowledgement.clone())
             }
-            Ibc::IbcEvents::AcknowledgePacket(acknowledge_packet) => {
-                Ibc::IbcEvents::AcknowledgePacket(acknowledge_packet.clone())
+            Ibc::IbcEvents::PacketAck(acknowledge_packet) => {
+                Ibc::IbcEvents::PacketAck(acknowledge_packet.clone())
             }
-            Ibc::IbcEvents::TimeoutPacket(timeout_packet) => {
-                Ibc::IbcEvents::TimeoutPacket(timeout_packet.clone())
+            Ibc::IbcEvents::PacketTimeout(timeout_packet) => {
+                Ibc::IbcEvents::PacketTimeout(timeout_packet.clone())
             }
         }
     }

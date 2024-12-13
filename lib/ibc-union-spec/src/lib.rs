@@ -423,12 +423,12 @@ pub enum FullEvent {
     ChannelCloseInit(ChannelCloseInit),
     ChannelCloseConfirm(ChannelCloseConfirm),
 
-    SendPacket(SendPacket),
-    RecvPacket(RecvPacket),
-    RecvIntentPacket(RecvIntentPacket),
-    WriteAcknowledgement(WriteAcknowledgement),
-    AcknowledgePacket(AcknowledgePacket),
-    TimeoutPacket(TimeoutPacket),
+    PacketSend(PacketSend),
+    PacketRecv(PacketRecv),
+    IntentPacketRecv(IntentPacketRecv),
+    WriteAck(WriteAck),
+    PacketAck(PacketAck),
+    PacketTimeout(PacketTimeout),
 }
 
 impl FullEvent {
@@ -446,16 +446,12 @@ impl FullEvent {
             FullEvent::ChannelOpenConfirm(event) => Some(event.connection.counterparty_client_id),
             FullEvent::ChannelCloseInit(_) => todo!(),
             FullEvent::ChannelCloseConfirm(_) => todo!(),
-            Self::SendPacket(event) => Some(event.packet.destination_channel.connection.client_id),
-            Self::RecvPacket(event) => Some(event.packet.source_channel.connection.client_id),
-            Self::RecvIntentPacket(event) => Some(event.packet.source_channel.connection.client_id),
-            Self::WriteAcknowledgement(event) => {
-                Some(event.packet.source_channel.connection.client_id)
-            }
-            Self::AcknowledgePacket(event) => {
-                Some(event.packet.destination_channel.connection.client_id)
-            }
-            Self::TimeoutPacket(event) => {
+            Self::PacketSend(event) => Some(event.packet.destination_channel.connection.client_id),
+            Self::PacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
+            Self::IntentPacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
+            Self::WriteAck(event) => Some(event.packet.source_channel.connection.client_id),
+            Self::PacketAck(event) => Some(event.packet.destination_channel.connection.client_id),
+            Self::PacketTimeout(event) => {
                 Some(event.packet.destination_channel.connection.client_id)
             }
         }
@@ -562,14 +558,14 @@ pub struct ChannelCloseConfirm {}
 // TODO: Inline packet_data into PacketMetadata
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SendPacket {
+pub struct PacketSend {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RecvPacket {
+pub struct PacketRecv {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
@@ -578,7 +574,7 @@ pub struct RecvPacket {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RecvIntentPacket {
+pub struct IntentPacketRecv {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
@@ -587,7 +583,7 @@ pub struct RecvIntentPacket {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WriteAcknowledgement {
+pub struct WriteAck {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
@@ -596,7 +592,7 @@ pub struct WriteAcknowledgement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AcknowledgePacket {
+pub struct PacketAck {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
@@ -605,7 +601,7 @@ pub struct AcknowledgePacket {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TimeoutPacket {
+pub struct PacketTimeout {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,

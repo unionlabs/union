@@ -7,9 +7,9 @@ import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
-    event ClientRegistered(string clientType, address clientAddress);
-    event ClientCreated(string clientType, uint32 clientId);
-    event ClientUpdated(uint32 clientId, uint64 height);
+    event RegisterClient(string clientType, address clientAddress);
+    event CreateClient(string clientType, uint32 clientId);
+    event UpdateClient(uint32 clientId, uint64 height);
     event Misbehaviour(uint32 clientId);
 }
 
@@ -28,7 +28,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             revert IBCErrors.ErrClientTypeAlreadyExists();
         }
         clientRegistry[clientType] = address(client);
-        emit IBCClientLib.ClientRegistered(clientType, address(client));
+        emit IBCClientLib.RegisterClient(clientType, address(client));
     }
 
     /**
@@ -51,7 +51,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         commitments[IBCCommitment.consensusStateCommitmentKey(
             clientId, update.height
         )] = update.consensusStateCommitment;
-        emit IBCClientLib.ClientCreated(msg_.clientType, clientId);
+        emit IBCClientLib.CreateClient(msg_.clientType, clientId);
         return clientId;
     }
 
@@ -68,7 +68,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         commitments[IBCCommitment.consensusStateCommitmentKey(
             msg_.clientId, update.height
         )] = update.consensusStateCommitment;
-        emit IBCClientLib.ClientUpdated(msg_.clientId, update.height);
+        emit IBCClientLib.UpdateClient(msg_.clientId, update.height);
     }
 
     /**

@@ -1411,7 +1411,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
                             event: into_value::<ibc_union_spec::FullEvent>(
-                                ibc_union_spec::SendPacket {
+                                ibc_union_spec::PacketSend {
                                     packet_data: packet.data.into(),
                                     packet: ibc_union_spec::PacketMetadata {
                                         source_channel: ibc_union_spec::ChannelMetadata {

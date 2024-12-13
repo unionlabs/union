@@ -13,14 +13,12 @@ library IBCPacketLib {
         0x0100000000000000000000000000000000000000000000000000000000000000;
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
-    event SendPacket(IBCPacket packet);
-    event RecvPacket(IBCPacket packets, address maker, bytes makerMsg);
-    event RecvIntentPacket(IBCPacket packet, address maker, bytes makerMsg);
-    event WriteAcknowledgement(IBCPacket packet, bytes acknowledgement);
-    event AcknowledgePacket(
-        IBCPacket packet, bytes acknowledgement, address maker
-    );
-    event TimeoutPacket(IBCPacket packet, address maker);
+    event PacketSend(IBCPacket packet);
+    event PacketRecv(IBCPacket packet, address maker, bytes makerMsg);
+    event IntentPacketRecv(IBCPacket packet, address maker, bytes makerMsg);
+    event WriteAck(IBCPacket packet, bytes acknowledgement);
+    event PacketAck(IBCPacket packet, bytes acknowledgement, address maker);
+    event PacketTimeout(IBCPacket packet, address maker);
 
     function commitAcksMemory(
         bytes[] memory acks
@@ -171,7 +169,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
 
-        emit IBCPacketLib.SendPacket(packet);
+        emit IBCPacketLib.PacketSend(packet);
 
         return packet;
     }
@@ -256,17 +254,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 if (intent) {
                     acknowledgement =
                         module.onRecvIntentPacket(packet, maker, makerMsg);
-                    emit IBCPacketLib.RecvIntentPacket(packet, maker, makerMsg);
+                    emit IBCPacketLib.IntentPacketRecv(packet, maker, makerMsg);
                 } else {
                     acknowledgement =
                         module.onRecvPacket(packet, maker, makerMsg);
-                    emit IBCPacketLib.RecvPacket(packet, maker, makerMsg);
+                    emit IBCPacketLib.PacketRecv(packet, maker, makerMsg);
                 }
                 if (acknowledgement.length > 0) {
                     _writeAcknowledgement(commitmentKey, acknowledgement);
-                    emit IBCPacketLib.WriteAcknowledgement(
-                        packet, acknowledgement
-                    );
+                    emit IBCPacketLib.WriteAck(packet, acknowledgement);
                 }
             }
         }
@@ -328,7 +324,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             packet.destinationChannel, IBCPacketLib.commitPacket(packet)
         );
         _writeAcknowledgement(commitmentKey, acknowledgement);
-        emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
+        emit IBCPacketLib.WriteAck(packet, acknowledgement);
     }
 
     function acknowledgePacket(
@@ -374,9 +370,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             module.onAcknowledgementPacket(
                 packet, acknowledgement, msg_.relayer
             );
-            emit IBCPacketLib.AcknowledgePacket(
-                packet, acknowledgement, msg_.relayer
-            );
+            emit IBCPacketLib.PacketAck(packet, acknowledgement, msg_.relayer);
         }
     }
 
@@ -420,7 +414,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrTimeoutHeightNotReached();
         }
         module.onTimeoutPacket(packet, msg_.relayer);
-        emit IBCPacketLib.TimeoutPacket(packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(packet, msg_.relayer);
     }
 
     function verifyCommitment(

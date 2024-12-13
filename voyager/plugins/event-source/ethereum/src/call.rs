@@ -34,9 +34,9 @@ pub struct MakeFullEvent {
 
 #[model]
 pub enum IbcEvents {
-    ClientRegistered(Ibc::ClientRegistered),
-    ClientCreated(Ibc::ClientCreated),
-    ClientUpdated(Ibc::ClientUpdated),
+    RegisterClient(Ibc::RegisterClient),
+    CreateClient(Ibc::CreateClient),
+    UpdateClient(Ibc::UpdateClient),
     ConnectionOpenInit(Ibc::ConnectionOpenInit),
     ConnectionOpenTry(Ibc::ConnectionOpenTry),
     ConnectionOpenAck(Ibc::ConnectionOpenAck),
@@ -47,10 +47,10 @@ pub enum IbcEvents {
     ChannelOpenConfirm(Ibc::ChannelOpenConfirm),
     ChannelCloseInit(Ibc::ChannelCloseInit),
     ChannelCloseConfirm(Ibc::ChannelCloseConfirm),
-    SendPacket(Ibc::SendPacket),
-    RecvPacket(Ibc::RecvPacket),
-    RecvIntentPacket(Ibc::RecvIntentPacket),
-    WriteAcknowledgement(Ibc::WriteAcknowledgement),
-    AcknowledgePacket(Ibc::AcknowledgePacket),
-    TimeoutPacket(Ibc::TimeoutPacket),
+    PacketSend(Ibc::PacketSend),
+    PacketRecv(Ibc::PacketRecv),
+    IntentPacketRecv(Ibc::IntentPacketRecv),
+    WriteAck(Ibc::WriteAck),
+    PacketAck(Ibc::PacketAck),
+    PacketTimeout(Ibc::PacketTimeout),
 }
