@@ -429,7 +429,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     client.channel_open_ack(
                         ibc_handler_address,
                         (
-                            port_id,
+                            port_id.into(),
                             data.channel_id,
                             data.counterparty_version,
                             data.counterparty_channel_id,

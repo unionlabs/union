@@ -22,6 +22,7 @@ use jsonrpsee::{
 };
 use move_bindgen::MoveOutputType;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{debug, info, instrument};
 use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
@@ -316,72 +317,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
-                            "ClientCreatedEvent" => {
-                                let raw_created_event =
-                                    serde_json::from_value::<ibc::RawClientCreatedEvent>(data)
-                                        .unwrap();
-                                ibc::ClientCreatedEvent::from_raw(raw_created_event).into()
-                            }
-                            "ClientUpdated" => {
-                                let raw_updated_event =
-                                    serde_json::from_value::<ibc::RawClientUpdated>(data).unwrap();
-                                ibc::ClientUpdated::from_raw(raw_updated_event).into()
-                            }
-                            "ConnectionOpenInit" => {
-                                serde_json::from_value::<ibc::ConnectionOpenInit>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ConnectionOpenTry" => {
-                                serde_json::from_value::<ibc::ConnectionOpenTry>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ConnectionOpenAck" => {
-                                serde_json::from_value::<ibc::ConnectionOpenAck>(data)
-                                    .unwrap()
-                                    .into()
-                            }
+                            "ClientCreatedEvent" => from_raw_event::<ibc::ClientCreatedEvent>(data),
+                            "ClientUpdated" => from_raw_event::<ibc::ClientUpdated>(data),
+                            "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
+                            "ConnectionOpenTry" => from_raw_event::<ibc::ConnectionOpenTry>(data),
+                            "ConnectionOpenAck" => from_raw_event::<ibc::ConnectionOpenAck>(data),
                             "ConnectionOpenConfirm" => {
-                                serde_json::from_value::<ibc::ConnectionOpenConfirm>(data)
-                                    .unwrap()
-                                    .into()
+                                from_raw_event::<ibc::ConnectionOpenConfirm>(data)
                             }
-                            "ChannelOpenInit" => {
-                                serde_json::from_value::<ibc::ChannelOpenInit>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ChannelOpenTry" => serde_json::from_value::<ibc::ChannelOpenTry>(data)
-                                .unwrap()
-                                .into(),
-                            "ChannelOpenAck" => serde_json::from_value::<ibc::ChannelOpenAck>(data)
-                                .unwrap()
-                                .into(),
-                            "ChannelOpenConfirm" => {
-                                serde_json::from_value::<ibc::ChannelOpenConfirm>(data)
-                                    .unwrap()
-                                    .into()
-                            }
+                            "ChannelOpenInit" => from_raw_event::<ibc::ChannelOpenInit>(data),
+                            "ChannelOpenTry" => from_raw_event::<ibc::ChannelOpenTry>(data),
+                            "ChannelOpenAck" => from_raw_event::<ibc::ChannelOpenAck>(data),
+                            "ChannelOpenConfirm" => from_raw_event::<ibc::ChannelOpenConfirm>(data),
                             "WriteAcknowledgement" => {
-                                serde_json::from_value::<ibc::WriteAcknowledgement>(data)
-                                    .unwrap()
-                                    .into()
+                                from_raw_event::<ibc::WriteAcknowledgement>(data)
                             }
-                            "RecvPacket" => serde_json::from_value::<ibc::RecvPacket>(data)
-                                .unwrap()
-                                .into(),
-                            "SendPacket" => serde_json::from_value::<ibc::SendPacket>(data)
-                                .unwrap()
-                                .into(),
-                            "AcknowledgePacket" => {
-                                serde_json::from_value::<ibc::AcknowledgePacket>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "TimeoutPacket" => serde_json::from_value::<ibc::TimeoutPacket>(data)
-                                .unwrap()
-                                .into(),
+                            "RecvPacket" => from_raw_event::<ibc::RecvPacket>(data),
+                            "SendPacket" => from_raw_event::<ibc::SendPacket>(data),
+                            "AcknowledgePacket" => from_raw_event::<ibc::AcknowledgePacket>(data),
+                            "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
                         // TODO: Check the type before deserializing
@@ -402,47 +356,47 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     self.plugin_name(),
                     ModuleCall::from(FetchTransactions { height }),
                 )),
-                // {
-                //     let latest_height = self
-                //         .aptos_client
-                //         .get_index()
-                //         .await
-                //         .unwrap()
-                //         .into_inner()
-                //         .block_height
-                //         .0;
-                //     match height.cmp(&latest_height) {
-                //         Ordering::Less => {
-                //             let next_height = (latest_height - height).clamp(1, 10) + height;
-                //             conc(
-                //                 ((height + 1)..next_height)
-                //                     .map(|height| {
-                //                         call(PluginMessage::new(
-                //                             self.plugin_name(),
-                //                             ModuleCall::from(FetchTransactions { height }),
-                //                         ))
-                //                     })
-                //                     .chain([call(PluginMessage::new(
-                //                         self.plugin_name(),
-                //                         ModuleCall::from(FetchBlocks {
-                //                             height: next_height,
-                //                         }),
-                //                     ))]),
-                //             )
-                //         }
-                //         Ordering::Equal | Ordering::Greater => seq([
-                //             call(WaitForHeight {
-                //                 chain_id: self.chain_id.clone(),
-                //                 height: Height::new(height + 1),
-                //                 finalized: true,
-                //             }),
-                //             call(PluginMessage::new(
-                //                 self.plugin_name(),
-                //                 ModuleCall::from(FetchBlocks { height: height + 1 }),
-                //             )),
-                //         ]),
-                //     }
-                // },
+                {
+                    let latest_height = self
+                        .aptos_client
+                        .get_index()
+                        .await
+                        .unwrap()
+                        .into_inner()
+                        .block_height
+                        .0;
+                    match height.cmp(&latest_height) {
+                        Ordering::Less => {
+                            let next_height = (latest_height - height).clamp(1, 10) + height;
+                            conc(
+                                ((height + 1)..next_height)
+                                    .map(|height| {
+                                        call(PluginMessage::new(
+                                            self.plugin_name(),
+                                            ModuleCall::from(FetchTransactions { height }),
+                                        ))
+                                    })
+                                    .chain([call(PluginMessage::new(
+                                        self.plugin_name(),
+                                        ModuleCall::from(FetchBlocks {
+                                            height: next_height,
+                                        }),
+                                    ))]),
+                            )
+                        }
+                        Ordering::Equal | Ordering::Greater => seq([
+                            call(WaitForHeight {
+                                chain_id: self.chain_id.clone(),
+                                height: Height::new(height + 1),
+                                finalized: true,
+                            }),
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchBlocks { height: height + 1 }),
+                            )),
+                        ]),
+                    }
+                },
             ])),
             ModuleCall::MakeFullEvent(MakeFullEvent {
                 event,
@@ -816,4 +770,9 @@ fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
         counterparty_client_id: connection.counterparty_client_id,
         counterparty_connection_id: connection.counterparty_connection_id,
     }
+}
+
+fn from_raw_event<T: MoveOutputType + Into<events::IbcEvent>>(data: Value) -> events::IbcEvent {
+    let raw_event = serde_json::from_value::<T::Raw>(data).unwrap();
+    T::from_raw(raw_event).into()
 }

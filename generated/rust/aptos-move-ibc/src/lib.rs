@@ -179,7 +179,7 @@ pub mod ibc {
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
             (_0, _1, _2, _3, _4, _5): (
-                ::move_bindgen::aptos_rest_client::aptos_api_types::Address,
+                ::move_bindgen::aptos_types::account_address::AccountAddress,
                 u32,
                 String,
                 u32,
@@ -197,19 +197,28 @@ pub mod ibc {
                 stringify!(channel_open_ack).parse().unwrap(),
                 vec![t0.into().into()],
                 vec![
-                    ::move_bindgen::bcs::to_bytes(& <
-                    ::move_bindgen::aptos_rest_client::aptos_api_types::Address as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < String as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_4)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u64 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_5)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_0).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_1),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<String as ::move_bindgen::MoveOutputType>::into_raw(_2),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_3),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_4),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &_5,
+                        // &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_5),
+                    )
+                    .unwrap(),
                 ],
             )
         }
@@ -233,15 +242,16 @@ pub mod ibc {
                 stringify!(channel_open_confirm).parse().unwrap(),
                 vec![t0.into().into()],
                 vec![
-                    ::move_bindgen::bcs::to_bytes(& <
-                    ::move_bindgen::aptos_rest_client::aptos_api_types::Address as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u64 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_0).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_1),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_2),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_3).unwrap(),
                 ],
             )
         }
@@ -306,25 +316,39 @@ pub mod ibc {
                 stringify!(channel_open_try).parse().unwrap(),
                 vec![t0.into().into()],
                 vec![
-                    ::move_bindgen::bcs::to_bytes(& <
-                    ::move_bindgen::aptos_rest_client::aptos_api_types::Address as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u8 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_2)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u32 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_3)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_4)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < String as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_5)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < String as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_6)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < Vec < u8 > as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_7)).unwrap(),
-                    ::move_bindgen::bcs::to_bytes(& < u64 as
-                    ::move_bindgen::MoveOutputType > ::into_raw(_8)).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_0).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u8 as ::move_bindgen::MoveOutputType>::into_raw(_1),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_2),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u32 as ::move_bindgen::MoveOutputType>::into_raw(_3),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_4),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<String as ::move_bindgen::MoveOutputType>::into_raw(_5),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<String as ::move_bindgen::MoveOutputType>::into_raw(_6),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_7),
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &<u64 as ::move_bindgen::MoveOutputType>::into_raw(_8),
+                    )
+                    .unwrap(),
                 ],
             )
         }

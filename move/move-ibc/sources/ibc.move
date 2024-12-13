@@ -756,6 +756,7 @@ module ibc::ibc {
         channel::set_state(&mut channel, CHAN_STATE_INIT);
         channel::set_connection_id(&mut channel, connection_id);
         channel::set_version(&mut channel, version);
+        smart_table::upsert(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_id, channel);
 
         table::upsert(
             &mut store.commitments,
@@ -939,15 +940,14 @@ module ibc::ibc {
             );
         assert!(err == 0, err);
 
-        // TODO: Not sure if this upsert is required or not?
+        channel::set_state(&mut chan, CHAN_STATE_OPEN);
+        channel::set_version(&mut chan, counterparty_version);
+        channel::set_counterparty_channel_id(&mut chan, counterparty_channel_id);
         smart_table::upsert(
             &mut borrow_global_mut<IBCStore>(get_vault_addr()).channels,
             channel_id,
             chan
         );
-        channel::set_state(&mut chan, CHAN_STATE_OPEN);
-        channel::set_version(&mut chan, counterparty_version);
-        channel::set_counterparty_channel_id(&mut chan, counterparty_channel_id);
 
         event::emit(
             ChannelOpenAck {
