@@ -14,7 +14,7 @@ library IBCPacketLib {
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
     event SendPacket(IBCPacket packet);
-    event RecvPacket(IBCPacket packets, address maker, bytes makerMsg);
+    event RecvPacket(IBCPacket packet, address maker, bytes makerMsg);
     event RecvIntentPacket(IBCPacket packet, address maker, bytes makerMsg);
     event WriteAcknowledgement(IBCPacket packet, bytes acknowledgement);
     event AcknowledgePacket(
