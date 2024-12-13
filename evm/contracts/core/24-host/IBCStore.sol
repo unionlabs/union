@@ -28,12 +28,10 @@ abstract contract IBCStore {
     mapping(uint32 => address) public channelOwner;
 
     // Sequences for identifier
-    bytes32 public constant nextClientSequencePath =
-        keccak256("nextClientSequence");
-    bytes32 public constant nextConnectionSequencePath =
+    bytes32 constant nextClientSequencePath = keccak256("nextClientSequence");
+    bytes32 constant nextConnectionSequencePath =
         keccak256("nextConnectionSequence");
-    bytes32 public constant nextChannelSequencePath =
-        keccak256("nextChannelSequence");
+    bytes32 constant nextChannelSequencePath = keccak256("nextChannelSequence");
 
     function getClient(
         uint32 clientId
