@@ -3,12 +3,14 @@ module ucs03::zkgm_relay {
     use ibc::helpers;
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
+    use ucs03::dispatcher_zkgm;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
     use aptos_std::copyable_any;
     use std::event;
     use aptos_framework::function_info;
     use ibc::commitment;
+    use aptos_framework::function_info::FunctionInfo;
 
     use std::string::{Self, String};
     use std::from_bcs;
@@ -78,7 +80,7 @@ module ucs03::zkgm_relay {
     }
 
     struct MultiplexPacket has copy, drop, store {
-        sender: vector<u8>,
+        sender: address,
         eureka: bool,
         contract_address: vector<u8>,
         contract_calldata: vector<u8>,
@@ -86,6 +88,11 @@ module ucs03::zkgm_relay {
 
     struct BatchPacket has copy, drop, store {
         syscall_packets: vector<vector<u8>>,
+    }
+
+    struct OnZkgmParams has copy, drop, store {
+        sender: address,
+        contract_calldata: vector<u8>,
     }
 
     struct FungibleAssetTransferPacket has copy, drop, store {
@@ -129,6 +136,10 @@ module ucs03::zkgm_relay {
         in_flight_packet: SmartTable<vector<u8>, Packet>,
         channel_balance: SmartTable<ChannelBalancePair, u256>,
         token_origin: SmartTable<address, u256>
+    }
+
+    struct Port<T: key + store + drop> has key, copy, drop, store {
+        port_id: address
     }
 
 
@@ -218,6 +229,16 @@ module ucs03::zkgm_relay {
         // ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
     }
 
+    public fun register_application<T: key + store + drop>(
+        zkgm_app: &signer, cb: FunctionInfo, type: T
+    ) acquires SignerRef {
+        dispatcher_zkgm::register<T>(cb, type, bcs::to_bytes(&signer::address_of(zkgm_app)));
+        move_to(
+            &get_signer(),
+            Port<T> { port_id: signer::address_of(zkgm_app) }
+        );
+    }
+
     public fun decode_ack(_buf: vector<u8>): Acknowledgement {
         // TODO: Implement this
         Acknowledgement {
@@ -277,7 +298,7 @@ module ucs03::zkgm_relay {
     public fun decode_multiplex(_buf: vector<u8>): MultiplexPacket {
         // TODO Implement this
         MultiplexPacket {
-            sender: vector::empty(),
+            sender: @0x0,
             eureka: false,
             contract_address: vector::empty(),
             contract_calldata: vector::empty()
@@ -488,7 +509,7 @@ module ucs03::zkgm_relay {
     public fun on_channel_close_confirm(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
-    public fun on_recv_packet(
+    public fun on_recv_packet<T: key + store + drop>(
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>
@@ -496,7 +517,7 @@ module ucs03::zkgm_relay {
         // We can call execute_internal directly
         let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
         let zkgm_packet = decode_packet(*raw_zkgm_packet);
-        execute_internal(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
+        execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
     }
 
     public fun on_acknowledge_packet(
@@ -795,7 +816,7 @@ module ucs03::zkgm_relay {
     }
 
 
-    public entry fun execute(
+    public entry fun execute<T: key + store + drop>(
         //ibc_packet: Packet,
         source_channel: u32,
         destination_channel: u32,
@@ -818,10 +839,10 @@ module ucs03::zkgm_relay {
         );
 
         let zkgm_packet = decode_packet(raw_zkgm_packet);
-        execute_internal(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
+        execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
     }
 
-    fun execute_internal(
+    fun execute_internal<T: key + store + drop>(
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -842,7 +863,7 @@ module ucs03::zkgm_relay {
                 decode_fungible_asset_transfer(syscall_packet.packet)
             )
         } else if (syscall_packet.index == SYSCALL_BATCH) {
-            execute_batch(
+            execute_batch<T>(
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -859,7 +880,7 @@ module ucs03::zkgm_relay {
                 decode_forward(syscall_packet.packet)
             )
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
-            execute_multiplex(
+            execute_multiplex<T>(
                 ibc_packet,
                 relayer_msg,
                 salt,
@@ -961,7 +982,7 @@ module ucs03::zkgm_relay {
         )
     }
 
-    fun execute_batch(
+    fun execute_batch<T: key + store + drop>(
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -976,7 +997,7 @@ module ucs03::zkgm_relay {
             let syscall_packet = decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i));
             vector::push_back(
                 &mut acks,
-                execute_internal(
+                execute_internal<T>(
                     ibc_packet,
                     relayer,
                     relayer_msg,
@@ -1020,7 +1041,7 @@ module ucs03::zkgm_relay {
         ACK_EMPTY
     }
 
-    fun execute_multiplex(
+    fun execute_multiplex<T: key + store + drop>(
         ibc_packet: Packet,
         _relayer_msg: vector<u8>,
         _salt: vector<u8>,
@@ -1028,12 +1049,14 @@ module ucs03::zkgm_relay {
     ): (vector<u8>) {
         let _contract_address = from_bcs::to_address(multiplex_packet.contract_address);
         if (multiplex_packet.eureka) {
-            // TODO: No idea how to do this?
-            /*
-                IEurekaModule(contractAddress).onZkgm(
-                    multiplexPacket.sender, multiplexPacket.contractCalldata
-                );
-            */
+            let param = copyable_any::pack<OnZkgmParams>(
+                OnZkgmParams{
+                    sender: multiplex_packet.sender,
+                    contract_calldata: multiplex_packet.contract_calldata
+                }
+            );
+            dispatcher_zkgm::dispatch<T>(param);
+            
             return bcs::to_bytes(&ACK_SUCCESS)
         };
         let _multiplex_ibc_packet = ibc::packet::new(
@@ -1186,104 +1209,103 @@ module ucs03::zkgm_relay {
         _multiplex_packet: MultiplexPacket
     ) { }
 
-    public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        let my_signer = get_signer(); // just to require SignerRef and RelayStore for testing
+    // public fun on_packet<T: key, P: key + store + drop>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     let my_signer = get_signer(); // just to require SignerRef and RelayStore for testing
 
-        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
-        let type_name_output = *copyable_any::type_name(&value);
-        std::debug::print(&type_name_output);
-        0
-    }
-
-
-    // public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
     //     let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
     //     let type_name_output = *copyable_any::type_name(&value);
-
-    //     if (type_name_output == std::type_info::type_name<ibc::RecvPacketParams>()) {
-    //         let (pack) =
-    //             helpers::on_recv_packet_deconstruct(
-    //                 copyable_any::unpack<ibc::RecvPacketParams>(value)
-    //             );
-    //         on_recv_packet(pack);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::AcknowledgePacketParams>()) {
-    //         let (pack, acknowledgement) =
-    //             helpers::on_acknowledge_packet_deconstruct(
-    //                 copyable_any::unpack<ibc::AcknowledgePacketParams>(value)
-    //             );
-    //         on_acknowledge_packet(pack, acknowledgement);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::TimeoutPacketParams>()) {
-    //         let (pack) =
-    //             helpers::on_timeout_packet_deconstruct(
-    //                 copyable_any::unpack<ibc::TimeoutPacketParams>(value)
-    //             );
-    //         on_timeout_packet(pack);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelOpenInitParams>()) {
-    //         let (connection_id, channel_id, version) =
-    //             helpers::on_channel_open_init_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelOpenInitParams>(value)
-    //             );
-    //         on_channel_open_init(connection_id, channel_id, version);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelOpenTryParams>()) {
-    //         let (
-    //             connection_id,
-    //             channel_id,
-    //             counterparty_channel_id,
-    //             version,
-    //             counterparty_version
-    //         ) =
-    //             helpers::on_channel_open_try_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelOpenTryParams>(value)
-    //             );
-    //         on_channel_open_try(
-    //             connection_id,
-    //             channel_id,
-    //             counterparty_channel_id,
-    //             version,
-    //             counterparty_version
-    //         );
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelOpenAckParams>()) {
-    //         let (channel_id, counterparty_channel_id, counterparty_version) =
-    //             helpers::on_channel_open_ack_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelOpenAckParams>(value)
-    //             );
-    //         on_channel_open_ack(
-    //             channel_id, counterparty_channel_id, counterparty_version
-    //         );
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelOpenConfirmParams>()) {
-    //         let channel_id =
-    //             helpers::on_channel_open_confirm_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelOpenConfirmParams>(value)
-    //             );
-    //         on_channel_open_confirm(channel_id);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelCloseInitParams>()) {
-    //         let channel_id =
-    //             helpers::on_channel_close_init_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelCloseInitParams>(value)
-    //             );
-    //         on_channel_close_init(channel_id);
-    //     } else if (type_name_output
-    //         == std::type_info::type_name<ibc::ChannelCloseConfirmParams>()) {
-    //         let channel_id =
-    //             helpers::on_channel_close_confirm_deconstruct(
-    //                 copyable_any::unpack<ibc::ChannelCloseConfirmParams>(value)
-    //             );
-    //         on_channel_close_confirm(channel_id);
-    //     } else {
-    //         std::debug::print(
-    //             &string::utf8(b"Invalid function type detected in on_packet function!")
-    //         );
-    //     };
+    //     std::debug::print(&type_name_output);
     //     0
     // }
+
+    public fun on_packet<T: key, P: key + store + drop>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
+        let type_name_output = *copyable_any::type_name(&value);
+
+        if (type_name_output == std::type_info::type_name<helpers::RecvPacketParamsZKGM>()) {
+            let (pack, relayer, relayer_msg) =
+                helpers::on_recv_packet_zkgm_deconstruct(
+                    copyable_any::unpack<helpers::RecvPacketParamsZKGM>(value)
+                );
+            on_recv_packet<P>(pack, relayer, relayer_msg);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::AcknowledgePacketParams>()) {
+            let (pack, acknowledgement) =
+                helpers::on_acknowledge_packet_deconstruct(
+                    copyable_any::unpack<helpers::AcknowledgePacketParams>(value)
+                );
+            on_acknowledge_packet(pack, acknowledgement);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::TimeoutPacketParams>()) {
+            let (pack) =
+                helpers::on_timeout_packet_deconstruct(
+                    copyable_any::unpack<helpers::TimeoutPacketParams>(value)
+                );
+            on_timeout_packet(pack);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
+            let (connection_id, channel_id, version) =
+                helpers::on_channel_open_init_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenInitParams>(value)
+                );
+            on_channel_open_init(connection_id, channel_id, version);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenTryParams>()) {
+            let (
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            ) =
+                helpers::on_channel_open_try_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenTryParams>(value)
+                );
+            on_channel_open_try(
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenAckParams>()) {
+            let (channel_id, counterparty_channel_id, counterparty_version) =
+                helpers::on_channel_open_ack_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenAckParams>(value)
+                );
+            on_channel_open_ack(
+                channel_id, counterparty_channel_id, counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_open_confirm_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenConfirmParams>(value)
+                );
+            on_channel_open_confirm(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelCloseInitParams>()) {
+            let channel_id =
+                helpers::on_channel_close_init_deconstruct(
+                    copyable_any::unpack<helpers::ChannelCloseInitParams>(value)
+                );
+            on_channel_close_init(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelCloseConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_close_confirm_deconstruct(
+                    copyable_any::unpack<helpers::ChannelCloseConfirmParams>(value)
+                );
+            on_channel_close_confirm(channel_id);
+        } else {
+            std::debug::print(
+                &string::utf8(b"Invalid function type detected in on_packet function!")
+            );
+        };
+        0
+    }
 
     #[test(admin = @ucs03, ibc = @ibc)]
     public fun test_predict_token(admin: &signer, ibc: &signer) acquires SignerRef {

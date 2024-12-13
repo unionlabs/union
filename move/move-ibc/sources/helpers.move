@@ -7,6 +7,12 @@ module ibc::helpers {
         packet: Packet
     }
 
+    struct RecvPacketParamsZKGM has copy, drop, store {
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>
+    }
+
     struct RecvIntentPacketParams has copy, drop, store {
         packet: Packet
     }
@@ -242,6 +248,20 @@ module ibc::helpers {
         &param.packet
     }
 
+
+    // Getter for RecvPacketParams
+    public fun get_packet_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): &Packet {
+        &param.packet
+    }
+
+    public fun get_relayer_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): address {
+        param.relayer
+    }
+
+    public fun get_relayer_msg_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): &vector<u8> {
+        &param.relayer_msg
+    }
+
     // Getter for RecvPacketParams
     public fun get_packet_from_recv_intent_param(
         param: &RecvIntentPacketParams
@@ -358,6 +378,15 @@ module ibc::helpers {
     public fun on_recv_packet_deconstruct(recv_param: RecvPacketParams): Packet {
         let pack = get_packet_from_recv_param(&recv_param);
         *pack
+    }
+
+    public fun on_recv_packet_zkgm_deconstruct(
+        recv_param: RecvPacketParamsZKGM
+    ): (Packet, address, vector<u8>) {
+        let pack = get_packet_from_recv_param_zkgm(&recv_param);
+        let relayer = get_relayer_from_recv_param_zkgm(&recv_param);
+        let relayer_msg = get_relayer_msg_from_recv_param_zkgm(&recv_param);
+        (*pack, relayer, *relayer_msg)
     }
 
     public fun on_recv_intent_packet_deconstruct(
