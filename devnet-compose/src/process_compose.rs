@@ -5,7 +5,6 @@ use serde_with::skip_serializing_none;
 
 use crate::LOGS_BASE_PATH;
 
-/// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/project.go#L11-L12
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct Project {
@@ -16,56 +15,38 @@ pub struct Project {
     pub log_configuration: Option<LogConfiguration>,
     pub log_format: String,
     pub processes: HashMap<String, Process>,
-    // pub environment: Environment,
     pub is_strict: bool,
-    // pub vars: Vars,
     pub file_names: Option<Vec<String>>,
 }
 
 impl Project {
     pub fn add_process(&mut self, process: Process) {
-        let name = process.name.clone();
-        self.processes.insert(name, process);
+        self.processes
+            .entry(process.name.clone())
+            .or_insert(process);
     }
 }
 
 impl Default for Project {
     fn default() -> Self {
-        Project {
-            version: "0.5".into(),
-            log_location: LOGS_BASE_PATH.into(),
+        Self {
+            version: "0.5".to_string(),
+            log_location: LOGS_BASE_PATH.to_string(),
             log_level: None,
             log_length: None,
-            log_format: "plain".into(),
+            log_format: "plain".to_string(),
             is_strict: true,
             file_names: None,
-            log_configuration: Some(LogConfiguration {
-                rotation: Some(LogRotationConfig {
-                    directory: Some(LOGS_BASE_PATH.into()),
-                    filename: None,
-                    max_size_mb: None,
-                    max_backups: None,
-                    max_age_days: None,
-                    compress: Some(false),
-                }),
-                disable_json: Some(true),
-                add_timestamp: Some(false),
-                timestamp_format: None,
-                no_color: Some(false),
-                flush_each_line: Some(false),
-                no_metadata: Some(true),
-            }),
+            log_configuration: Some(LogConfiguration::default()),
             processes: HashMap::new(),
         }
     }
 }
 
-// /// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct LogConfiguration {
     pub rotation: Option<LogRotationConfig>,
-    // fields_order: Vec<String>,
     pub disable_json: Option<bool>,
     pub timestamp_format: Option<String>,
     pub no_color: Option<bool>,
@@ -76,8 +57,8 @@ pub struct LogConfiguration {
 
 impl Default for LogConfiguration {
     fn default() -> Self {
-        LogConfiguration {
-            rotation: None,
+        Self {
+            rotation: Some(LogRotationConfig::default()),
             disable_json: Some(true),
             timestamp_format: None,
             no_color: None,
@@ -88,9 +69,8 @@ impl Default for LogConfiguration {
     }
 }
 
-// /// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct LogRotationConfig {
     pub directory: Option<String>,
     pub filename: Option<String>,
@@ -100,7 +80,6 @@ pub struct LogRotationConfig {
     pub compress: Option<bool>,
 }
 
-/// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/process.go#L15
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct Process {
@@ -110,39 +89,33 @@ pub struct Process {
     pub command: String,
     pub log_configuration: LogConfiguration,
     pub log_location: String,
-    // entrypoint: Option<Vec<String>>,
     pub availability: Option<RestartPolicy>,
     pub depends_on: Option<HashMap<String, ProcessDependency>>,
     pub liveliness_probe: Option<Probe>,
     pub readiness_probe: Option<Probe>,
     pub shutdown: ShutdownConfig,
-    // disable_ansi_colors: bool,
-    // working_dir: String,
-    // namespace: String,
-    // replicas: usize,
-    // description: String,
-    // vars: Vars,
-    // is_foreground: bool,
-    // is_tty: bool,
-    // replica_num: usize,
-    // replica_name: string,
-    // executable: string,
-    // args: Vec<string>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct RestartPolicy {
-    pub restart: String,
+    pub restart: RestartType,
     pub backoff_seconds: usize,
     pub max_restarts: Option<usize>,
     pub exit_on_end: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum RestartType {
+    Always,
+    OnFailure,
+}
+
 impl RestartPolicy {
     pub fn always(backoff_seconds: usize) -> Self {
-        RestartPolicy {
-            restart: "always".into(),
+        assert!(backoff_seconds > 0, "backoff_seconds must be positive");
+        Self {
+            restart: RestartType::Always,
             backoff_seconds,
             max_restarts: None,
             exit_on_end: None,
@@ -150,8 +123,9 @@ impl RestartPolicy {
     }
 
     pub fn on_failure(backoff_seconds: usize) -> Self {
-        RestartPolicy {
-            restart: "on_failure".into(),
+        assert!(backoff_seconds > 0, "backoff_seconds must be positive");
+        Self {
+            restart: RestartType::OnFailure,
             backoff_seconds,
             max_restarts: None,
             exit_on_end: None,
@@ -170,7 +144,7 @@ pub struct ShutdownConfig {
 
 impl Default for ShutdownConfig {
     fn default() -> Self {
-        ShutdownConfig {
+        Self {
             command: None,
             timeout_seconds: None,
             signal: Some(2),
@@ -188,13 +162,13 @@ pub struct ProcessDependency {
 impl ProcessDependency {
     pub fn completed_successfully() -> Self {
         Self {
-            condition: "process_completed_successfully".into(),
+            condition: "process_completed_successfully".to_string(),
         }
     }
 
     pub fn healthy() -> Self {
         Self {
-            condition: "process_healthy".into(),
+            condition: "process_healthy".to_string(),
         }
     }
 }
@@ -212,10 +186,10 @@ pub struct Probe {
 }
 
 impl Probe {
-    pub fn exec(command: &str) -> Probe {
-        Probe {
+    pub fn exec(command: &str) -> Self {
+        Self {
             exec: Some(ExecProbe {
-                command: command.into(),
+                command: command.to_string(),
                 working_dir: None,
             }),
             http_get: None,
@@ -227,13 +201,13 @@ impl Probe {
         }
     }
 
-    pub fn http_get(port: usize, path: &str) -> Probe {
-        Probe {
+    pub fn http_get(port: usize, path: &str) -> Self {
+        Self {
             exec: None,
             http_get: Some(HttpProbe {
-                host: "127.0.0.1".into(),
-                path: path.into(),
-                scheme: "http".into(),
+                host: "127.0.0.1".to_string(),
+                path: path.to_string(),
+                scheme: "http".to_string(),
                 port,
             }),
             initial_delay_seconds: 10,
