@@ -1,0 +1,33 @@
+{
+  "logging": {
+    "level": "info",
+    "file": "./logs/voyager.log"
+  }
+  "network": {
+    "host": "localhost",
+    "port": 8080
+  }
+  "service": {
+    "retryPolicy": {
+      "maxRetries": 3,
+      "delay": 5000
+    },
+    "timeout": 30000
+  }
+"connections": [
+    {
+      "from": "osmosis",
+      "to": "stargaze",
+      "type": "ibc"
+    },
+    {
+      "from": "union",
+      "to": "osmosis",
+      "type": "ibc"
+    }
+  ]
+"advanced": {
+    "enableExperimentalFeatures": true,
+    "customOption": "value"
+  }
+}
