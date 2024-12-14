@@ -5,18 +5,23 @@ pub struct UnionTheme;
 
 impl Theme for UnionTheme {
     fn bar_color(&self, state: &ThemeState) -> Style {
-        match state {
-            ThemeState::Active => Style::new().cyan(),
-            ThemeState::Error(_) => Style::new().red(),
-            _ => Style::new().cyan().dim(),
+        let mut style = Style::new().cyan();
+        if !matches!(state, ThemeState::Active) {
+            style = style.dim();
         }
+        if let ThemeState::Error(_) = state {
+            style = Style::new().red();
+        }
+        style
     }
 
     fn state_symbol_color(&self, _state: &ThemeState) -> Style {
-        Style::new().cyan()
+        static CYAN_STYLE: Style = Style::new().cyan();
+        CYAN_STYLE
     }
 
     fn info_symbol(&self) -> String {
-        "⚙".into()
+        const INFO_SYMBOL: &str = "⚙";
+        INFO_SYMBOL.to_string()
     }
 }
