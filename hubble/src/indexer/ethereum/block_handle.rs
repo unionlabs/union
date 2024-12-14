@@ -5,7 +5,7 @@ use futures::{stream::FuturesOrdered, Stream};
 use serde::{Deserialize, Serialize};
 use sqlx::Postgres;
 use time::OffsetDateTime;
-use tracing::debug;
+use tracing::{debug, error, warn};
 
 use crate::{
     indexer::{
@@ -59,15 +59,53 @@ pub struct EthBlockHandle {
 }
 
 impl EthBlockHandle {
-    async fn get_block_insert(&self) -> Result<Option<BlockInsert>, Report> {
-        Ok(match self.details.clone() {
-            BlockDetails::Eager(block_insert) => block_insert,
+    async fn fetch_block_insert(&self) -> Result<Option<BlockInsert>, IndexerError> {
+        match &self.details {
+            BlockDetails::Eager(block_insert) => Ok(block_insert.clone()),
             BlockDetails::Lazy(block) => {
                 self.eth_client
-                    .fetch_details(&block, self.provider_id)
-                    .await?
+                    .fetch_details(block, self.provider_id)
+                    .await
+                    .map_err(|e| {
+                        error!(error = ?e, "Failed to fetch block details");
+                        IndexerError::FetchError
+                    })
             }
-        })
+        }
+    }
+
+    async fn process_block(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        insert_mode: InsertMode,
+    ) -> Result<(), IndexerError> {
+        let reference = self.reference();
+        let block_to_insert = self.fetch_block_insert().await?;
+
+        match block_to_insert {
+            Some(block) => {
+                debug!(
+                    block_height = reference.height,
+                    transaction_count = block.transactions.len(),
+                    "Processing block with transactions"
+                );
+
+                insert_batch_logs(tx, vec![block.into()], insert_mode)
+                    .await
+                    .map_err(|e| {
+                        error!(error = ?e, "Failed to insert batch logs");
+                        IndexerError::InsertError
+                    })?;
+            }
+            None => {
+                debug!(
+                    block_height = reference.height,
+                    "Block has no transactions, skipping"
+                );
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -82,66 +120,46 @@ impl BlockHandle for EthBlockHandle {
         block_range: BlockRange,
         fetch_mode: FetchMode,
     ) -> Result<impl Stream<Item = Result<Self, IndexerError>>, IndexerError> {
-        debug!("{}: fetching", block_range);
+        debug!(block_range = ?block_range, "Fetching block range");
 
-        Ok(FuturesOrdered::from_iter(
-            block_range.clone().into_iter().map(|height| async move {
-                self.eth_client
-                    .fetch_single_with_provider(
-                        BlockSelection::Height(height),
-                        fetch_mode,
-                        Some(self.provider_id),
-                    )
-                    .await
-            }),
-        ))
+        let stream = block_range.clone().into_iter().map(|height| async move {
+            self.eth_client
+                .fetch_single_with_provider(
+                    BlockSelection::Height(height),
+                    fetch_mode,
+                    Some(self.provider_id),
+                )
+                .await
+        });
+
+        Ok(FuturesOrdered::from_iter(stream))
     }
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
-        let reference = self.reference();
-        debug!("{}: inserting", reference);
-
-        let block_to_insert = self.get_block_insert().await?;
-
-        match block_to_insert {
-            Some(block_to_insert) => {
-                debug!(
-                    "{}: block with transactions ({}) => insert",
-                    reference,
-                    block_to_insert.transactions.len()
-                );
-
-                insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Insert).await?;
-            }
-            None => {
-                debug!("{}: block without transactions => ignore", reference);
-            }
-        }
-
-        debug!("{}: done", reference);
-
-        Ok(())
+        debug!(block_reference = ?self.reference(), "Inserting block");
+        self.process_block(tx, InsertMode::Insert).await
     }
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
-        let reference = self.reference();
-        debug!("{}: updating", reference);
+        debug!(block_reference = ?self.reference(), "Updating block");
 
-        let block_to_insert = self.get_block_insert().await?;
+        let block_to_insert = self.fetch_block_insert().await?;
 
-        if let Some(block_to_insert) = block_to_insert {
+        if let Some(block) = block_to_insert {
             debug!(
-                "{}: block with transactions ({}) => upsert",
-                reference,
-                block_to_insert.transactions.len()
+                block_height = self.reference().height,
+                transaction_count = block.transactions.len(),
+                "Upserting block with transactions"
             );
-            insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Upsert).await?;
+            insert_batch_logs(tx, vec![block.into()], InsertMode::Upsert).await?;
         } else {
-            debug!("{}: block without transactions => delete", reference);
-            delete_eth_log(tx, self.eth_client.chain_id.db, reference.height).await?;
+            debug!(
+                block_height = self.reference().height,
+                "Block has no transactions, deleting logs"
+            );
+            delete_eth_log(tx, self.eth_client.chain_id.db, self.reference().height).await?;
         }
 
-        debug!("{}: done", reference);
         Ok(())
     }
 }
