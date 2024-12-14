@@ -3,7 +3,7 @@ use std::{
     result::Result,
 };
 
-use color_eyre::eyre::Report;
+use color_eyre::eyre::{eyre, Report};
 use cometbft_rpc::{
     rpc_types::{
         BlockResponse, BlockResultsResponse, BlockchainResponse, Order, StatusResponse,
@@ -17,7 +17,7 @@ use protos::ibc::{
     lightclients::wasm::v1::{QueryCodeRequest, QueryCodeResponse},
 };
 use tonic::Response;
-use unionlabs::aptos::block_info::BlockHeight;
+use tracing::{debug, error};
 use url::Url;
 
 use crate::{
@@ -27,8 +27,8 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-    pub rpc_client: RaceClient<Client>,
-    pub grpc_client: RaceClient<GrpcClient>,
+    rpc_client: RaceClient<Client>,
+    grpc_client: RaceClient<GrpcClient>,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -97,136 +97,98 @@ impl<T> From<RaceClientResponse<T>> for GrpcResult<T> {
 
 impl Provider {
     pub async fn new(rpc_urls: Vec<Url>, grpc_urls: Vec<Url>) -> Result<Self, IndexerError> {
+        let rpc_clients = future::join_all(
+            rpc_urls
+                .into_iter()
+                .map(|url| Client::new(url.as_str().to_owned())),
+        )
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+
         Ok(Self {
-            rpc_client: {
-                RaceClient::new(
-                    future::join_all(
-                        rpc_urls
-                            .into_iter()
-                            .map(|rpc_url| Client::new(rpc_url.as_str().to_owned())),
-                    )
-                    .await
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?,
-                )
-            },
+            rpc_client: RaceClient::new(rpc_clients),
             grpc_client: RaceClient::new(grpc_urls.into_iter().map(GrpcClient::new).collect()),
         })
     }
 
-    // RPC
+    /// Fetches status information from the RPC client.
     pub async fn status(
         &self,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<StatusResponse>, JsonRpcError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| c.status())
-            .await
-            .map(Into::into)
+        self.execute_rpc(provider_id, |c| c.status(), "status").await
     }
 
+    /// Fetches blockchain data within a block range.
     pub async fn blockchain(
         &self,
         min_inclusive: BlockHeight,
         max_inclusive: BlockHeight,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<BlockchainResponse>, JsonRpcError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.blockchain(
-                    NonZeroU64::try_from(min_inclusive).expect("non-zero min"),
-                    NonZeroU64::try_from(max_inclusive).expect("non-zero max"),
-                )
-            })
-            .await
-            .map(Into::into)
+        self.execute_rpc(provider_id, |c| {
+            c.blockchain(
+                NonZeroU64::try_from(min_inclusive).map_err(IndexerError::from)?,
+                NonZeroU64::try_from(max_inclusive).map_err(IndexerError::from)?,
+            )
+        }, "blockchain").await
     }
 
+    /// Fetches the latest block.
     pub async fn latest_block(
         &self,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<BlockResponse>, JsonRpcError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| c.block(None))
-            .await
-            .map(Into::into)
+        self.execute_rpc(provider_id, |c| c.block(None), "latest_block").await
     }
 
+    /// Fetches a specific block by height.
     pub async fn block(
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<BlockResponse>, JsonRpcError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.block(Some(NonZeroU64::try_from(height).expect("non-zero height")))
-            })
-            .await
-            .map(Into::into)
+        self.execute_rpc(provider_id, |c| {
+            c.block(Some(NonZeroU64::try_from(height).map_err(IndexerError::from)?))
+        }, "block").await
     }
 
+    /// Fetches results for a specific block.
     pub async fn block_results(
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<BlockResultsResponse>, JsonRpcError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.block_results(Some(NonZeroU64::try_from(height).expect("non-zero height")))
-            })
-            .await
-            .map(Into::into)
+        self.execute_rpc(provider_id, |c| {
+            c.block_results(Some(NonZeroU64::try_from(height).map_err(IndexerError::from)?))
+        }, "block_results").await
     }
 
-    pub async fn tx_search(
+    /// Generic helper for executing RPC calls.
+    async fn execute_rpc<F, T>(
         &self,
-        height: BlockHeight,
-        prove: bool,
-        page: u32,
-        per_page: u8,
-        order: Order,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<TxSearchResponse>, JsonRpcError> {
+        action: F,
+        action_name: &str,
+    ) -> Result<RpcResult<T>, JsonRpcError>
+    where
+        F: FnOnce(&Client) -> T + Send,
+        T: std::future::Future<Output = Result<T::Output, JsonRpcError>> + Send,
+        T::Output: Send,
+    {
         self.rpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.tx_search(
-                    format!("tx.height={}", height),
-                    prove,
-                    NonZeroU32::try_from(page).expect("non-zero page"),
-                    NonZeroU8::try_from(per_page).expect("non-zero per-page"),
-                    order.clone(),
-                )
+            .race(provider_id.map(Into::into), action)
+            .await
+            .map(Into::into)
+            .map_err(|err| {
+                error!(action = action_name, error = ?err, "RPC call failed");
+                err
             })
-            .await
-            .map(Into::into)
-    }
-
-    // GRPC
-    pub async fn client_state(
-        &self,
-        request: QueryClientStateRequest,
-        provider_id: Option<GrpcProviderId>,
-    ) -> Result<GrpcResult<Response<QueryClientStateResponse>>, IndexerError> {
-        self.grpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.client_state(request.clone())
-            })
-            .await
-            .map(Into::into)
-    }
-
-    pub async fn code(
-        &self,
-        request: QueryCodeRequest,
-        provider_id: Option<GrpcProviderId>,
-    ) -> Result<GrpcResult<Response<QueryCodeResponse>>, IndexerError> {
-        self.grpc_client
-            .race(provider_id.map(Into::into), |c| c.code(request.clone()))
-            .await
-            .map(Into::into)
     }
 }
 
+/// gRPC client for Tendermint-compatible networks.
 #[derive(Clone, Debug)]
 pub struct GrpcClient {
     pub url: Url,
@@ -241,13 +203,12 @@ impl GrpcClient {
         &self,
         request: QueryClientStateRequest,
     ) -> Result<Response<QueryClientStateResponse>, IndexerError> {
-        let mut query_client = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.url.to_string().clone(),
-        )
-        .await?;
+        let mut query_client =
+            protos::ibc::core::client::v1::query_client::QueryClient::connect(self.url.to_string())
+                .await?;
 
         query_client
-            .client_state(request.clone())
+            .client_state(request)
             .await
             .map_err(IndexerError::from)
     }
@@ -258,25 +219,10 @@ impl GrpcClient {
     ) -> Result<Response<QueryCodeResponse>, IndexerError> {
         let mut query_client =
             protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-                self.url.to_string().clone(),
+                self.url.to_string(),
             )
             .await?;
 
-        query_client
-            .code(request.clone())
-            .await
-            .map_err(IndexerError::from)
-    }
-}
-
-impl From<tonic::Status> for IndexerError {
-    fn from(error: tonic::Status) -> Self {
-        Self::ProviderError(Report::from(error))
-    }
-}
-
-impl From<tonic::transport::Error> for IndexerError {
-    fn from(error: tonic::transport::Error) -> Self {
-        Self::ProviderError(Report::from(error))
+        query_client.code(request).await.map_err(IndexerError::from)
     }
 }
