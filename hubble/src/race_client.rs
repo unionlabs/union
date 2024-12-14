@@ -20,7 +20,7 @@ pub struct RaceClientResponse<T> {
 
 impl<T> RaceClientResponse<T> {
     fn new(index: usize, response: T) -> Self {
-        RaceClientResponse {
+        Self {
             race_client_id: RaceClientId { index },
             response,
         }
@@ -29,8 +29,9 @@ impl<T> RaceClientResponse<T> {
 
 impl<C: Clone> Clone for RaceClient<C> {
     fn clone(&self) -> Self {
-        let clients = self.clients.clone();
-        Self { clients }
+        Self {
+            clients: self.clients.clone(),
+        }
     }
 }
 
@@ -39,96 +40,88 @@ impl<C> RaceClient<C> {
         Self { clients }
     }
 
-    /// Run the provided closure over the clients, returning the first encountered Ok, or if all error, the first
-    /// encountered Err.
-    pub async fn race<
-        'a,
-        T,
+    /// A helper to filter and map client futures for racing.
+    fn map_clients<'a, T, E, FUT, F>(
+        &'a self,
+        specific_client_id: Option<RaceClientId>,
+        f: F,
+    ) -> FuturesUnordered<impl Future<Output = (usize, Result<T, E>)> + 'a>
+    where
         E: Debug,
         FUT: Future<Output = Result<T, E>> + 'a,
         F: Fn(&'a C) -> FUT,
-    >(
-        &'a self,
-        race_client_id: Option<RaceClientId>,
-        f: F,
-    ) -> Result<RaceClientResponse<T>, E> {
-        let mut futures: FuturesUnordered<_> = self
-            .clients
+    {
+        self.clients
             .iter()
             .enumerate()
-            .filter(|(i, _)| race_client_id.as_ref().is_none_or(|id| &id.index == i))
-            .map(|(i, c)| {
-                let f = f(c);
+            .filter(|(i, _)| specific_client_id.map_or(true, |id| id.index == *i))
+            .map(|(i, client)| {
+                let future = f(client);
                 async move {
-                    let res = f.await;
-                    (i, res)
+                    let result = future.await;
+                    (i, result)
                 }
             })
-            .collect();
-        let mut error = None;
+            .collect()
+    }
 
-        loop {
-            match futures.next().await {
-                Some((i, Ok(res))) => {
-                    return Ok(RaceClientResponse::new(i, res));
-                }
-                Some((_, Err(err))) => {
-                    debug!("error racing client requests: {:?}", err);
-                    if error.is_none() {
-                        error = Some(err)
+    /// Runs the provided closure over the clients, returning the first encountered `Ok` result.
+    pub async fn race<'a, T, E, FUT, F>(
+        &'a self,
+        specific_client_id: Option<RaceClientId>,
+        f: F,
+    ) -> Result<RaceClientResponse<T>, E>
+    where
+        E: Debug,
+        FUT: Future<Output = Result<T, E>> + 'a,
+        F: Fn(&'a C) -> FUT,
+    {
+        let mut selected_clients = self.map_clients(specific_client_id, f);
+        let mut first_error: Option<E> = None;
+
+        while let Some((index, result)) = selected_clients.next().await {
+            match result {
+                Ok(response) => return Ok(RaceClientResponse::new(index, response)),
+                Err(err) => {
+                    debug!(client_index = index, ?err, "Error racing client request");
+                    if first_error.is_none() {
+                        first_error = Some(err);
                     }
                 }
-                None => break,
             }
         }
 
-        Err(error.unwrap())
+        Err(first_error.expect("No clients were available to race"))
     }
 
-    /// Run the provided closure over the clients, returning the first encountered Ok, or if all error, the first
-    /// encountered Err.
-    pub async fn race_some<
-        'a,
-        T,
+    /// Runs the provided closure over the clients, returning the first encountered `Ok(Some)` result.
+    pub async fn race_some<'a, T, E, FUT, F>(
+        &'a self,
+        specific_client_id: Option<RaceClientId>,
+        f: F,
+    ) -> Result<Option<RaceClientResponse<T>>, E>
+    where
         E: Debug,
         FUT: Future<Output = Result<Option<T>, E>> + 'a,
         F: Fn(&'a C) -> FUT,
-    >(
-        &'a self,
-        race_client_id: Option<RaceClientId>,
-        f: F,
-    ) -> Result<Option<RaceClientResponse<T>>, E> {
-        let mut futures: FuturesUnordered<_> = self
-            .clients
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| race_client_id.as_ref().is_none_or(|id| &id.index == i))
-            .map(|(i, c)| {
-                let f = f(c);
-                async move {
-                    let res = f.await;
-                    (i, res)
-                }
-            })
-            .collect();
-        let mut error = None;
+    {
+        let mut selected_clients = self.map_clients(specific_client_id, f);
+        let mut first_error: Option<E> = None;
 
-        loop {
-            match futures.next().await {
-                Some((i, Ok(Some(res)))) => {
-                    return Ok(Some(RaceClientResponse::new(i, res)));
-                }
-                Some((_, Ok(None))) => continue,
-                Some((_, Err(err))) => {
-                    debug!("error racing client requests: {:?}", err);
-                    if error.is_none() {
-                        error = Some(err)
+        while let Some((index, result)) = selected_clients.next().await {
+            match result {
+                Ok(Some(response)) => return Ok(Some(RaceClientResponse::new(index, response))),
+                Ok(None) => continue, // Skip None results.
+                Err(err) => {
+                    debug!(client_index = index, ?err, "Error racing client request");
+                    if first_error.is_none() {
+                        first_error = Some(err);
                     }
                 }
-                None => break,
             }
         }
-        if let Some(err) = error {
+
+        if let Some(err) = first_error {
             return Err(err);
         }
         Ok(None)
