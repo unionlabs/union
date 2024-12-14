@@ -1,100 +1,104 @@
+use std::collections::{HashSet, HashMap};
+
 use color_eyre::Result;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::cli::TokensUrls;
 
 pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
     info!("Starting token update process.");
-    if let Some(token_list) = get_tokens(urls).await? {
-        let mut token_inserts = Vec::new();
 
-        for token_value in token_list {
-            for token in token_value.tokens {
-                let token_insert: TokenInsert = token.into();
-                token_inserts.push((
-                    token_insert.chain_id,
-                    token_insert.denom.clone(),
-                    token_insert.display_symbol.clone(),
-                    token_insert.decimals,
-                    token_insert.logo_uri.clone(),
-                    token_insert.display_name.clone(),
-                ));
+    if let Some(token_lists) = fetch_token_lists(urls).await? {
+        let mut token_inserts: HashSet<TokenInsert> = HashSet::new();
+
+        for token_list in token_lists {
+            for token in token_list.tokens {
+                token_inserts.insert(token.into());
             }
         }
 
-        // Check for duplicate tokens
-        let with_duplicates = token_inserts.len();
-        let mut seen = std::collections::HashSet::new();
-        token_inserts.retain(|token| seen.insert((token.0, token.1.clone())));
-        info!(
-            "Total number of tokens removed during filtering: {}",
-            with_duplicates - token_inserts.len()
-        );
+        info!("Fetched {} tokens before deduplication.", token_inserts.len());
 
-        if !token_inserts.is_empty() {
-            let chain_ids_and_ids = crate::postgres::get_chain_ids_and_ids(&db).await?;
-            // Filter tokens based on valid chain_id
-            let filtered_tokens: Vec<(i64, String, String, i64, Option<String>, String)> =
-                token_inserts
-                    .iter()
-                    .filter_map(|token| {
-                        chain_ids_and_ids.get(&token.0.to_string()).map(|id| {
-                            (
-                                (*id).into(),
-                                token.1.clone(),
-                                token.2.clone(),
-                                token.3,
-                                token.4.clone(),
-                                token.5.clone(),
-                            )
-                        })
-                    })
-                    .collect();
+        // Retrieve valid chain IDs and filter tokens
+        let chain_ids_and_ids = crate::postgres::get_chain_ids_and_ids(&db).await?;
+        let filtered_tokens: Vec<_> = token_inserts
+            .into_iter()
+            .filter_map(|token| map_valid_token(&chain_ids_and_ids, token))
+            .collect();
 
-            info!("Number of filtered tokens: {}", filtered_tokens.len());
-            if filtered_tokens.is_empty() {
-                return Ok(());
-            }
+        info!("Number of filtered tokens: {}", filtered_tokens.len());
 
-            // Insert or update the filtered tokens
-            crate::postgres::insert_or_update_tokens(&db, &filtered_tokens).await?;
+        if filtered_tokens.is_empty() {
+            info!("No tokens to update. Process completed.");
+            return Ok(());
         }
+
+        // Insert or update tokens in the database
+        crate::postgres::insert_or_update_tokens(&db, &filtered_tokens).await?;
+        info!("Successfully updated tokens in the database.");
     }
 
     Ok(())
 }
 
-pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
+/// Fetch and parse token lists from URLs concurrently.
+async fn fetch_token_lists(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
     let client = reqwest::Client::new();
 
-    let requests = urls.into_iter().map(|url| {
+    let tokens: Vec<_> = futures::stream::iter(urls.into_iter().map(|url| {
         let client = client.clone();
-        info!("Requesting token list from: {}", url);
         async move {
-            let val: serde_json::Value = client.get(url.clone()).send().await?.json().await?;
-
-            if val.get("statusCode").is_none() {
-                debug!("Token list successfully retrieved from: {}", url);
-                Ok(Some(serde_json::from_value(val).unwrap()))
-            } else {
-                debug!("No valid token list found at: {}", url);
-                Ok(None)
+            match client.get(&url).send().await {
+                Ok(response) => match response.json::<serde_json::Value>().await {
+                    Ok(val) if val.get("statusCode").is_none() => {
+                        debug!("Successfully retrieved token list from: {}", url);
+                        serde_json::from_value::<TokenList>(val).map(Some).map_err(Into::into)
+                    }
+                    Ok(_) => {
+                        debug!("Invalid token list format at: {}", url);
+                        Ok(None)
+                    }
+                    Err(err) => {
+                        error!("Error parsing token list from {}: {}", url, err);
+                        Err(err.into())
+                    }
+                },
+                Err(err) => {
+                    error!("Failed to fetch token list from {}: {}", url, err);
+                    Err(err.into())
+                }
             }
         }
-    });
-
-    // Execute all requests simultaneously and collect the results
-    let results: Vec<Result<Option<TokenList>>> = futures::future::join_all(requests).await;
-
-    let tokens = results.into_iter().flatten().flatten().collect::<Vec<_>>();
+    }))
+    .buffer_unordered(10) // Adjust concurrency level as needed
+    .filter_map(|res| async { res.transpose() })
+    .collect()
+    .await;
 
     if tokens.is_empty() {
-        info!("No valid token lists found");
+        info!("No valid token lists found.");
         Ok(None)
     } else {
-        Ok(Some(tokens))
+        Ok(Some(tokens.into_iter().flatten().collect()))
     }
+}
+
+/// Maps a token to the required database schema if it has a valid chain ID.
+fn map_valid_token(
+    chain_ids_and_ids: &HashMap<String, i64>,
+    token: TokenInsert,
+) -> Option<(i64, String, String, i64, Option<String>, String)> {
+    chain_ids_and_ids.get(&token.chain_id.to_string()).map(|id| {
+        (
+            *id,
+            token.denom,
+            token.display_symbol,
+            token.decimals,
+            token.logo_uri,
+            token.display_name,
+        )
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -128,7 +132,7 @@ pub struct Token {
     pub logo_uri: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct TokenInsert {
     pub chain_id: i64,
     pub denom: String,
