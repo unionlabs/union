@@ -19,13 +19,13 @@
 use std::{borrow::Borrow, marker::PhantomData, ops::Range};
 
 use hash_db::Hasher;
-use primitive_types::H256;
 use rlp::{DecoderError, Prototype, Rlp, RlpStream};
 use sha3::{Digest, Keccak256};
 use trie_db::{
     node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
     ChildReference, NodeCodec, TrieLayout,
 };
+use unionlabs::hash::H256;
 
 #[derive(Default, Clone)]
 pub struct EthLayout;
@@ -72,7 +72,7 @@ const HASHED_NULL_NODE_BYTES: [u8; 32] = [
     0x56, 0xe8, 0x1f, 0x17, 0x1b, 0xcc, 0x55, 0xa6, 0xff, 0x83, 0x45, 0xe6, 0x92, 0xc0, 0xf8, 0x6e,
     0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0, 0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21,
 ];
-const HASHED_NULL_NODE: H256 = H256(HASHED_NULL_NODE_BYTES);
+const HASHED_NULL_NODE: H256 = H256::new(HASHED_NULL_NODE_BYTES);
 
 /// Encode a partial value with an iterator as input.
 fn encode_partial_from_iterator_iter<'a>(

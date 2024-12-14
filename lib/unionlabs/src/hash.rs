@@ -252,6 +252,12 @@ pub mod hash_v2 {
         }
     }
 
+    impl<const BYTES: usize, E: Encoding> AsMut<[u8]> for Hash<BYTES, E> {
+        fn as_mut(&mut self) -> &mut [u8] {
+            self.get_mut()
+        }
+    }
+
     impl<const BYTES: usize, E: Encoding> Clone for Hash<BYTES, E> {
         fn clone(&self) -> Self {
             *self

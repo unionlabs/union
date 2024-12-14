@@ -97,6 +97,7 @@ _: {
 
         src = builtins.fetchGit {
           url = "https://github.com/movebit/movefmt";
+          ref = "develop";
           rev = version;
         };
 
