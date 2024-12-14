@@ -7,7 +7,7 @@ use cometbft_rpc::{
 use futures::Stream;
 use sqlx::Postgres;
 use time::OffsetDateTime;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::indexer::{
     api::{
@@ -56,37 +56,37 @@ impl From<CommitResponse> for BlockHeader {
     }
 }
 
+/// Generic implementation for block reference creation.
+fn block_reference_from_parts(
+    height: i64,
+    hash: Option<String>,
+    timestamp_nanos: u64,
+) -> Result<BlockReference, Report> {
+    Ok(BlockReference {
+        height: height.try_into()?,
+        hash: hash.ok_or_else(|| IndexerError::ProviderError(eyre!("Expected hash")))?,
+        timestamp: OffsetDateTime::from_unix_timestamp_nanos(timestamp_nanos.into())
+            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+    })
+}
+
 impl BlockReferenceProvider for BlockHeader {
     fn block_reference(&self) -> Result<BlockReference, Report> {
-        Ok(BlockReference {
-            height: self.header.height.inner().try_into().unwrap(),
-            hash: self
-                .block_id
-                .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
-                .to_string(),
-            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
-                self.header.time.as_unix_nanos().into(),
-            )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
-        })
+        block_reference_from_parts(
+            self.header.height.inner(),
+            self.block_id.hash.map(|hash| hash.to_string()),
+            self.header.time.as_unix_nanos(),
+        )
     }
 }
 
 impl BlockReferenceProvider for BlockMeta {
     fn block_reference(&self) -> Result<BlockReference, Report> {
-        Ok(BlockReference {
-            height: self.header.height.inner().try_into().unwrap(),
-            hash: self
-                .block_id
-                .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
-                .to_string(),
-            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
-                self.header.time.as_unix_nanos().into(),
-            )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
-        })
+        block_reference_from_parts(
+            self.header.height.inner(),
+            self.block_id.hash.map(|hash| hash.to_string()),
+            self.header.time.as_unix_nanos(),
+        )
     }
 }
 
@@ -105,17 +105,32 @@ pub struct TmBlockHandle {
 }
 
 impl TmBlockHandle {
+    /// Fetches block insert details.
     async fn get_block_insert(
         &self,
     ) -> Result<(PgBlock, Vec<PgTransaction>, Vec<PgEvent>), Report> {
-        Ok(match self.details.clone() {
-            BlockDetails::Eager(block, transactions, events) => (block, transactions, events),
+        match self.details.clone() {
+            BlockDetails::Eager(block, transactions, events) => Ok((block, transactions, events)),
             BlockDetails::Lazy(block_header) => {
                 self.tm_client
                     .fetch_details(&block_header, self.provider_id)
-                    .await?
+                    .await
             }
-        })
+        }
+    }
+
+    /// Inserts block, transactions, and events into the database.
+    async fn insert_block_data(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        block: PgBlock,
+        transactions: Vec<PgTransaction>,
+        events: Vec<PgEvent>,
+    ) -> Result<(), IndexerError> {
+        insert_batch_blocks(tx, vec![block]).await?;
+        insert_batch_transactions(tx, transactions).await?;
+        insert_batch_events(tx, events).await?;
+        Ok(())
     }
 }
 
@@ -130,35 +145,37 @@ impl BlockHandle for TmBlockHandle {
         block_range: BlockRange,
         fetch_mode: FetchMode,
     ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send, IndexerError> {
-        debug!("{}: fetching", block_range);
+        debug!(block_range = ?block_range, "Fetching block range");
 
         self.tm_client
             .fetch_range_with_provider(block_range, fetch_mode, Some(self.provider_id))
     }
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
-        let reference = self.reference();
-        debug!("{}: inserting", reference);
+        debug!(block_reference = ?self.reference, "Inserting block");
 
-        let (block, transactions, events) = self.get_block_insert().await?;
+        let (block, transactions, events) = self
+            .get_block_insert()
+            .await
+            .map_err(|err| {
+                error!(error = ?err, block_reference = ?self.reference, "Failed to fetch block details");
+                IndexerError::ProviderError(err)
+            })?;
 
-        insert_batch_blocks(tx, vec![block]).await?;
-        insert_batch_transactions(tx, transactions).await?;
-        insert_batch_events(tx, events).await?;
+        self.insert_block_data(tx, block, transactions, events).await?;
 
-        debug!("{}: done", reference);
+        debug!(block_reference = ?self.reference, "Insertion complete");
         Ok(())
     }
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
-        let reference = self.reference();
-        debug!("{}: updating", reference);
+        debug!(block_reference = ?self.reference, "Updating block");
 
         delete_tm_block_transactions_events(tx, self.tm_client.chain_id.db, self.reference.height)
             .await?;
         self.insert(tx).await?;
 
-        debug!("{}: done", reference);
+        debug!(block_reference = ?self.reference, "Update complete");
         Ok(())
     }
 }
