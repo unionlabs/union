@@ -7,7 +7,6 @@ module ucs03::zkgm_relay {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
     use aptos_std::copyable_any;
-    use std::event;
     use aptos_framework::function_info;
     use ibc::commitment;
     use ucs03::ethabi;
@@ -139,7 +138,7 @@ module ucs03::zkgm_relay {
         token_origin: SmartTable<address, u256>
     }
 
-    struct Port<T: key + store + drop> has key, copy, drop, store {
+    struct Port<phantom T: key + store + drop> has key, copy, drop, store {
         port_id: address
     }
 
@@ -354,14 +353,13 @@ module ucs03::zkgm_relay {
                         ethabi::encode_uint<u8>(some_variable, *data);
                     }
                 );
-                return buf;
+                return buf
             };
-            return buf;
+            return buf
         };
 
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let idx = 1;
-        let prev_idx = 0;
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
@@ -432,7 +430,6 @@ module ucs03::zkgm_relay {
 
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let idx = 1;
-        let prev_idx = 0;
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
@@ -1621,7 +1618,7 @@ module ucs03::zkgm_relay {
         let path = 1;
         let destination_channel = 1;
         let token = b"never_deployed_salt";
-        let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
+        let (wrapped_address, _salt) = predict_wrapped_token(path, destination_channel, token);
 
         assert!(!is_deployed(wrapped_address), 102);
     }

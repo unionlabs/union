@@ -1,17 +1,15 @@
 module ucs03::dispatcher_zkgm {
     use std::option;
-    use std::string::{Self, String};
+    use std::string::{Self};
     use aptos_std::copyable_any;
     use aptos_std::table::{Self, Table};
     use aptos_std::type_info::{Self, TypeInfo};
-    use aptos_framework::primary_fungible_store;
     use std::vector;
 
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::function_info::FunctionInfo;
     use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::object::{Self, ExtendRef, Object};
-    use std::signer;
 
     const DISPATCHER_APP_SEED: vector<u8> = b"union-zkgm-dispatcher-v1";
 
@@ -56,7 +54,6 @@ module ucs03::dispatcher_zkgm {
         );
 
         let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
-        let type_info = type_info::type_of<T>();
         table::add(&mut dispatcher.dispatcher, type_info::type_of<T>(), metadata);
     }
 
