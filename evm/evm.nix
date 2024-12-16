@@ -545,13 +545,11 @@ _: {
           #         FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
           #         lcov --remove ./lcov.info -o ./lcov.info.pruned \
           #           'contracts/Multicall.sol' \
-          #           'contracts/clients/Verifier.sol' \
           #           'contracts/apps/ucs/00-pingpong/*' \
           #           'contracts/lib/*' \
           #           'contracts/core/OwnableIBCHandler.sol' \
           #           'contracts/core/24-host/IBCCommitment.sol' \
           #           'contracts/core/25-handler/IBCHandler.sol' \
-          #           'contracts/clients/ICS23MembershipVerifier.sol' \
           #           'tests/*'
           #         genhtml lcov.info.pruned -o $out --branch-coverage
           #       mv lcov.info.pruned $out/lcov.info

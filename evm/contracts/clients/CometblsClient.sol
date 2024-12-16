@@ -5,14 +5,13 @@ import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
 
-import "./ICS23MembershipVerifier.sol";
-import "./Verifier.sol";
-
 import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/Common.sol";
 import "../lib/ICS23.sol";
+import "../lib/CometblsZKVerifier.sol";
+import "../lib/ICS23Verifier.sol";
 
 struct SignedHeader {
     uint64 height;
@@ -392,7 +391,7 @@ contract CometblsClient is
         }
         bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
-        return ICS23MembershipVerifier.verifyMembership(
+        return ICS23Verifier.verifyMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
@@ -414,7 +413,7 @@ contract CometblsClient is
         }
         bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
-        return ICS23MembershipVerifier.verifyNonMembership(
+        return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
@@ -540,7 +539,7 @@ contract CometblsClient is
             commitmentHash
         ];
 
-        return Verifier.verifyProof(
+        return CometblsZKVerifier.verifyProof(
             zkp.proof, zkp.proofCommitment, zkp.proofCommitmentPOK, publicInputs
         );
     }

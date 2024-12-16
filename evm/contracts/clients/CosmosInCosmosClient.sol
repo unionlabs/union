@@ -11,8 +11,7 @@ import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
 import "../lib/Common.sol";
-
-import "./ICS23MembershipVerifier.sol";
+import "../lib/ICS23Verifier.sol";
 
 struct TendermintConsensusState {
     uint64 timestamp;
@@ -216,7 +215,7 @@ contract CosmosInCosmosClient is
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
-        return ICS23MembershipVerifier.verifyMembership(
+        return ICS23Verifier.verifyMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
@@ -235,7 +234,7 @@ contract CosmosInCosmosClient is
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
-        return ICS23MembershipVerifier.verifyNonMembership(
+        return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),

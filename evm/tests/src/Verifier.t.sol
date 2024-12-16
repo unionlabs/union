@@ -2,7 +2,7 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "../../contracts/clients/Verifier.sol";
+import "../../contracts/lib/CometblsZKVerifier.sol";
 import {
     CometblsClient,
     SignedHeader
