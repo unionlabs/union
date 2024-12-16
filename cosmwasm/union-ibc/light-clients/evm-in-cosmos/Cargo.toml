@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbls-light-client-types = { workspace = true, features = ["proto"] }
-cosmwasm-std                = { workspace = true, features = ["abort"] }
+cosmwasm-std                = { version = "2.1.4", features = ["abort"] }
 # ethereum-light-client       = { workspace = true, features = ["mainnet", "library"] }
 ics008-wasm-client = { workspace = true }
 ics23              = { workspace = true }

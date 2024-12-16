@@ -13000,8 +13000,8 @@ version = "1.0.0"
 dependencies = [
  "alloy",
  "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
  "ibc-solidity",
@@ -13047,8 +13047,8 @@ name = "union-ibc-ucs00-pingpong"
 version = "1.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
  "serde",
