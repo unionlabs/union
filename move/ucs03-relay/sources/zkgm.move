@@ -10,6 +10,7 @@ module ucs03::zkgm_relay {
     use std::event;
     use aptos_framework::function_info;
     use ibc::commitment;
+    use ucs03::ethabi;
     use aptos_framework::function_info::FunctionInfo;
 
     use std::string::{Self, String};
@@ -239,49 +240,169 @@ module ucs03::zkgm_relay {
         );
     }
 
-    public fun decode_ack(_buf: vector<u8>): Acknowledgement {
-        // TODO: Implement this
+    public fun decode_ack(buf: vector<u8>): Acknowledgement {
+        let index = 0x20;
+        let tag = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20;
+        let inner_ack = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+    
         Acknowledgement {
-            tag: 0,
-            inner_ack: vector::empty()
-        }
-    }
-    public fun decode_asset_transfer_ack(_buf: vector<u8>): AssetTransferAcknowledgement {
-        // TODO: implement this
-        AssetTransferAcknowledgement {
-            fill_type: 0,
-            market_maker: vector::empty()
-        }
-    }
-    public fun decode_batch_ack(_buf: vector<u8>): BatchAcknowledgement {
-        // TODO: implement this
-        BatchAcknowledgement {
-            acknowledgements: vector::empty()
+            tag: tag,
+            inner_ack: inner_ack
         }
     }
 
-    public fun encode_batch_ack(_ack: &BatchAcknowledgement): vector<u8> {
-        // TODO: implement this
+    public fun encode_ack(packet: &Acknowledgement): vector<u8> {
         let buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_uint<u256>(&mut buf, packet.tag);
+
+        let version_offset = 0x40;
+        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &packet.inner_ack,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+
         buf
     }
 
+    public fun encode_asset_transfer_ack(ack: &AssetTransferAcknowledgement): vector<u8> {
+        let buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
 
-    public fun decode_packet(_buf: vector<u8>): ZkgmPacket {
-        // TODO: Implement this
-        ZkgmPacket {
-            salt: vector::empty(),
-            path: 0,
-            syscall: vector::empty()
+        let version_offset = 0x40;
+        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &ack.market_maker,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+
+        buf
+    }
+
+    public fun decode_asset_transfer_ack(buf: vector<u8>): AssetTransferAcknowledgement {
+        let index = 0x20;
+        let fill_type = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20;
+        let market_maker = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+
+        AssetTransferAcknowledgement {
+            fill_type: fill_type,
+            market_maker: market_maker
         }
     }
 
-    public fun decode_syscall(_buf: vector<u8>): SyscallPacket {
-        // TODO: Implement this
+    public fun decode_batch_ack(buf: vector<u8>): BatchAcknowledgement {
+        let index = 0x40;
+        let main_arr_length = ethabi::decode_uint(&buf, &mut index);
+        index = index + (0x20 * main_arr_length as u64);
+
+        let idx = 0;
+        let acknowledgements = vector::empty();
+        while (idx < main_arr_length) {
+            let inner_vec = ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
+            vector::push_back(&mut acknowledgements, inner_vec);
+            idx = idx+1;
+        };
+
+        BatchAcknowledgement {
+            acknowledgements: acknowledgements
+        }
+    }
+
+    public fun encode_batch_ack(ack: &BatchAcknowledgement): vector<u8> {
+        let buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        let ack_arr_len = vector::length(&ack.acknowledgements);
+        ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
+        if (ack_arr_len < 2){
+            if (ack_arr_len == 1){
+                ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+                ethabi::encode_vector<u8>(
+                    &mut buf,
+                    vector::borrow(&ack.acknowledgements, 0),
+                    |some_variable, data| {
+                        ethabi::encode_uint<u8>(some_variable, *data);
+                    }
+                );
+                return buf;
+            };
+            return buf;
+        };
+
+        let initial_stage = 0x20 * (ack_arr_len as u32);
+        let idx = 1;
+        let prev_idx = 0;
+        let prev_val = initial_stage;
+        ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+        while (idx < ack_arr_len) {
+            let prev_length = vector::length(vector::borrow(&ack.acknowledgements, idx-1));
+            ethabi::encode_uint<u32>(&mut buf, prev_val + 0x20 * (prev_length+1 as u32));
+            prev_val = prev_val + 0x20 * (prev_length+1 as u32);
+            idx = idx + 1;
+        };
+        idx = 0;
+        while (idx < ack_arr_len) {
+            ethabi::encode_vector<u8>(
+                &mut buf,
+                vector::borrow(&ack.acknowledgements, idx),
+                |some_variable, data| {
+                    ethabi::encode_uint<u8>(some_variable, *data);
+                }
+            );
+            idx = idx + 1;
+        };
+
+        buf
+    }
+
+    public fun decode_syscall(buf: vector<u8>): SyscallPacket {
+        let index = 0x20;
+        let version = ethabi::decode_uint(&buf, &mut index);
+        let index_syscall = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20;
+
+        let packet = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+
         SyscallPacket {
-            version: 0,
-            index: 0,
-            packet: vector::empty()
+            version: (version as u8),
+            index: (index_syscall as u8),
+            packet: packet
         }
     }
 
@@ -328,17 +449,62 @@ module ucs03::zkgm_relay {
         }
     }
 
-    public fun encode_packet(_packet: &ZkgmPacket): vector<u8> {
+    public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
         // TODO Implement this
         let buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        ethabi::encode_uint<u256>(&mut buf, packet.path);
+
+
+        let version_offset = 0x20 * 4;
+        ethabi::encode_uint<u32>(&mut buf, version_offset +  ((vector::length(&packet.salt) * 0x20) as u32));
+        
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &packet.salt,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+
+        ethabi::encode_vector<u8>(
+            &mut buf,
+            &packet.syscall,
+            |some_variable, data| {
+                ethabi::encode_uint<u8>(some_variable, *data);
+            }
+        );
+
         buf
     }
 
-    public fun encode_asset_transfer_ack(_ack: &AssetTransferAcknowledgement): vector<u8> {
-        // TODO Implement this
-        let buf = vector::empty<u8>();
-        buf
+    public fun decode_packet(buf: vector<u8>): ZkgmPacket {
+        let index = 0x40;
+        let packet_path = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20;
+        let salt = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+        let syscall = ethabi::decode_vector<u8>(
+            &buf,
+            &mut index,
+            |buf, index| {
+                (ethabi::decode_uint(buf, index) as u8)
+            }
+        );
+
+        ZkgmPacket {
+            salt: salt,
+            path: packet_path,
+            syscall: syscall
+        }
     }
+
 
     public fun predict_wrapped_token(
         path: u256,
@@ -518,6 +684,10 @@ module ucs03::zkgm_relay {
         let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
         let zkgm_packet = decode_packet(*raw_zkgm_packet);
         execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
+    
+        // TODO: we'll return something
+        //in case of success or failure from execute_internal
+
     }
 
     public fun on_acknowledge_packet(
@@ -1367,4 +1537,184 @@ module ucs03::zkgm_relay {
         assert!(update_channel_path(12414123,111) == 476753783979, 1);
         assert!(update_channel_path(44, 22) == 94489280556, 1);
     }
+
+    #[test]
+    fun test_zkgm_encode_decode() {
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let zkgm_data = ZkgmPacket {
+            salt: b"helloo",
+            path: 3333334,
+            syscall: b"hellloo"
+        };
+
+        let zkgm_bytes = encode_packet(&zkgm_data);
+        assert!(zkgm_bytes == output, 0);
+
+        let zkgm_data_decoded = decode_packet(zkgm_bytes);
+        assert!(zkgm_data_decoded.salt == b"helloo", 1);
+        assert!(zkgm_data_decoded.path == 3333334, 2);
+        assert!(zkgm_data_decoded.syscall == b"hellloo", 3);
+    }
+
+
+    #[test]
+    fun test_decode_syscall(){
+        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007100000000000000000000000000000000000000000000000000000000000000f40000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        
+        let syscall_data_decoded = decode_syscall(output);
+        assert!(syscall_data_decoded.version == 113, 1);
+        assert!(syscall_data_decoded.index == 244, 2);
+        assert!(syscall_data_decoded.packet == b"hellloo", 3);
+    }
+
+    #[test]
+    fun test_encode_decode_ack() {
+        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let ack_data = Acknowledgement {
+            tag: 7788909223344,
+            inner_ack: b"hellloo"
+        };
+
+        let ack_bytes = encode_ack(&ack_data);
+        assert!(ack_bytes == output, 0);
+
+        let ack_data_decoded = decode_ack(ack_bytes);
+        assert!(ack_data_decoded.tag == 7788909223344, 1);
+        assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
+    }
+
+    #[test]
+    fun test_encode_decode_asset_transfer_ack() {
+        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let ack_data = AssetTransferAcknowledgement {
+            fill_type: 7788909223344,
+            market_maker: b"hellloo"
+        };
+
+        let ack_bytes = encode_asset_transfer_ack(&ack_data);
+        assert!(ack_bytes == output, 0);
+
+        let ack_data_decoded = decode_asset_transfer_ack(ack_bytes);
+        assert!(ack_data_decoded.fill_type == 7788909223344, 1);
+        assert!(ack_data_decoded.market_maker == b"hellloo", 3);
+    }    
+    
+    #[test]
+    fun test_encode_decode_batch_ack() {
+        // ---------------- TEST 1 ----------------
+        let output = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
+        let outer_arr = vector::empty();
+        vector::push_back(
+            &mut outer_arr,
+            b"hello"
+        );
+        vector::push_back(
+            &mut outer_arr,
+            b"hi"
+        );
+        vector::push_back(
+            &mut outer_arr,
+            b"hehe"
+        );
+        let ack_data = BatchAcknowledgement {
+            acknowledgements: outer_arr  
+        };
+        let ack_bytes = encode_batch_ack(&ack_data);
+        assert!(ack_bytes == output, 0);
+        let ack_data_decoded = decode_batch_ack(ack_bytes);
+        assert!(vector::length(&ack_data_decoded.acknowledgements) == 3, 1);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"hello", 2);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"hi", 3);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 2) == b"hehe", 4);
+
+
+        // ---------------- TEST 2 ----------------
+        let output2 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
+        let outer_arr = vector::empty();
+        vector::push_back(
+            &mut outer_arr,
+            b"hello"
+        );
+        vector::push_back(
+            &mut outer_arr,
+            b"hi"
+        );
+        let ack_data2 = BatchAcknowledgement {
+            acknowledgements: outer_arr  
+        };
+        let ack_bytes2 = encode_batch_ack(&ack_data2);
+        assert!(ack_bytes2 == output2, 0);
+        let ack_data_decoded = decode_batch_ack(ack_bytes2);
+        assert!(vector::length(&ack_data_decoded.acknowledgements) == 2, 1);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"hello", 2);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"hi", 3);
+
+
+
+        // ---------------- TEST 3 ----------------
+        let output3 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let outer_arr = vector::empty();
+        let idx = 0;
+        vector::push_back(
+            &mut outer_arr,
+            b"xdddd"
+        );
+        vector::push_back(
+            &mut outer_arr,
+            b"test"
+        );
+        while (idx <10){
+            vector::push_back(
+                &mut outer_arr,
+                b""
+            );
+            idx = idx + 1;
+        };
+
+        let ack_data3 = BatchAcknowledgement {
+            acknowledgements: outer_arr  
+        };
+        let ack_bytes3 = encode_batch_ack(&ack_data3);
+        assert!(ack_bytes3 == output3, 0);
+        let ack_data_decoded = decode_batch_ack(ack_bytes3);
+        assert!(vector::length(&ack_data_decoded.acknowledgements) == 12, 1);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"xdddd", 2);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"test", 3);
+
+
+
+        // ---------------- TEST 4 ----------------
+        let output4 = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
+        let outer_arr = vector::empty();
+        vector::push_back(
+            &mut outer_arr,
+            b"xdddd"
+        );
+        
+        let ack_data4 = BatchAcknowledgement {
+            acknowledgements: outer_arr  
+        };
+        let ack_bytes4 = encode_batch_ack(&ack_data4);
+        assert!(ack_bytes4 == output4, 0);
+        let ack_data_decoded = decode_batch_ack(ack_bytes4);
+        assert!(vector::length(&ack_data_decoded.acknowledgements) == 1, 1);
+        assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"xdddd", 2);
+
+        // ---------------- TEST 5 ----------------
+        let output5 = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+        let outer_arr = vector::empty();
+        
+        let ack_data5 = BatchAcknowledgement {
+            acknowledgements: outer_arr  
+        };
+        let ack_bytes5 = encode_batch_ack(&ack_data5);
+        assert!(ack_bytes5 == output5, 0);
+        let ack_data_decoded = decode_batch_ack(ack_bytes5);
+        assert!(vector::length(&ack_data_decoded.acknowledgements) == 0, 1);
+
+    }
+
+    
 }
+
+//Test result: FAILED. Total tests: 22; passed: 20; failed: 2

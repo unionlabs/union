@@ -105,18 +105,18 @@ module ucs03::ethabi {
             i = i + 1;
         };
 
-        // Calculate padding to align to 32 bytes
-        let padding_len = (32 - (len % 32)) % 32;
-        if (padding_len > 0) {
-            let padding = vector::empty<u8>();
-            let j = 0;
-            while (j < padding_len) {
-                vector::push_back(&mut padding, 0);
-                j = j + 1;
-            };
-            // Append the padding
-            vector::append(buf, padding);
-        }
+        // // Calculate padding to align to 32 bytes
+        // let padding_len = (32 - (len % 32)) % 32;
+        // if (padding_len > 0) {
+        //     let padding = vector::empty<u8>();
+        //     let j = 0;
+        //     while (j < padding_len) {
+        //         vector::push_back(&mut padding, 0);
+        //         j = j + 1;
+        //     };
+        //     // Append the padding
+        //     vector::append(buf, padding);
+        // }
     }
 
     /// encode array of dynamic-sized data (string[], SomeDynStruct[])
@@ -155,9 +155,9 @@ module ucs03::ethabi {
             i = i + 1;
         };
 
-        // Calculate padding length and adjust the index to skip padding bytes
-        let padding_len = (32 - (vec_len % 32)) % 32;
-        *index = *index + padding_len; // Skip the padding bytes
+        // // Calculate padding length and adjust the index to skip padding bytes
+        // let padding_len = (32 - (vec_len % 32)) % 32;
+        // *index = *index + padding_len; // Skip the padding bytes
         result
     }
 
