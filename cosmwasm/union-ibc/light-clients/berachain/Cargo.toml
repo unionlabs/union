@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 beacon-api-types      = { workspace = true, features = ["ssz"] }
 bytes                 = { workspace = true }
-cosmwasm-std          = { version = "2.1.4", features = ["abort", "cosmwasm_2_1"] }
+cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client = { workspace = true, features = ["library"] }
 hex                   = { workspace = true }
 schemars              = { workspace = true }

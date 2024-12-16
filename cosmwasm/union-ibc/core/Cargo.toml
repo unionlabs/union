@@ -18,8 +18,8 @@ library = []
 [dependencies]
 alloy                    = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema          = { workspace = true }
-cosmwasm-std             = { version = "2.1.4", features = ["abort"] }
-cw-storage-plus          = { version = "2.0.0" }
+cosmwasm-std             = { workspace = true, features = ["abort"] }
+cw-storage-plus          = { workspace = true }
 ethabi                   = { workspace = true }
 hex                      = { workspace = true }
 ibc-solidity             = { workspace = true, features = ["serde"] }
