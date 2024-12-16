@@ -81,7 +81,8 @@ module ibc::channel {
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
         ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
 
-        let version_offset = ((vector::length(&channel.counterparty_port_id) / 0x20) as u32);
+        let version_offset =
+            (((vector::length(&channel.counterparty_port_id) - 1) / 0x20) as u32);
         ethabi::encode_uint<u32>(&mut buf, (7 + version_offset) * 0x20);
         ethabi::encode_bytes(&mut buf, &channel.counterparty_port_id);
 
@@ -129,8 +130,6 @@ module ibc::channel {
         let channel = new(2, 1, 2, b"AAAA", string::utf8(b"ucs01-relay"));
 
         let encoded = encode(&channel);
-
-        std::debug::print(&encoded);
 
         assert!(buf == encoded, 1);
     }

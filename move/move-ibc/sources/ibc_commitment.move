@@ -1,9 +1,10 @@
 module ibc::commitment {
 
-    use aptos_std::string::{Self, String};
-    use std::vector;
     use aptos_std::aptos_hash::keccak256;
+
+    use std::vector;
     use std::bcs;
+
     use ibc::packet::{Self, Packet};
     use ibc::ethabi;
 
@@ -224,7 +225,7 @@ module ibc::commitment {
     }
 
     public fun commit_packet(packet: &Packet): vector<u8> {
-        packet::encode(packet)
+        keccak256(packet::encode(packet))
     }
 
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {

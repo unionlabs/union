@@ -34,7 +34,7 @@ use voyager_message::{
     rpc::missing_state,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, defer, now, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall},
@@ -115,6 +115,12 @@ pub struct Config {
 }
 
 impl aptos_move_ibc::ibc::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
+impl aptos_move_ibc::recv_packet::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
     }

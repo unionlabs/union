@@ -272,13 +272,8 @@ async fn main() -> Result<(), Bde> {
                                     name: stringify!(#mod_name).parse().unwrap(),
                                 }.into(),
                                 stringify!(#ident).parse().unwrap(),
-                                // TODO: We don't use this currently but this should be fixed somehow(?)
                                 vec![#(#generic_type_params.into().into()),*],
-                                vec![#(::move_bindgen::bcs::to_bytes(
-                                    &<#param_types as ::move_bindgen::MoveOutputType>::into_raw(
-                                        #idents
-                                    )
-                                ).unwrap(),)*],
+                                vec![#(::move_bindgen::bcs::to_bytes(&#idents).unwrap(),)*],
                             )
                         }
                     }
@@ -564,7 +559,7 @@ fn move_type_to_param_type(typ: &MoveType) -> Type {
         MoveType::U64 => parse_quote!(u64),
         MoveType::U128 => parse_quote!(u128),
         MoveType::Address => {
-            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::Address)
+            parse_quote!(::move_bindgen::aptos_types::account_address::AccountAddress)
         }
         MoveType::Vector { items } => {
             let param = move_type_to_param_type(items);

@@ -136,6 +136,24 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
     }
 }
 
+impl aptos_move_ibc::recv_packet::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
+impl aptos_move_ibc::acknowledge_packet::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
+impl aptos_move_ibc::channel_handshake::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
 fn plugin_name(chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -256,7 +274,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         let mut txs = vec![];
 
-                        for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
+                        for (i, (_, entry_fn)) in msgs.into_iter().enumerate() {
                             let raw = RawTransaction::new_entry_function(
                                 sender,
                                 account.sequence_number + i as u64,
@@ -316,7 +334,12 @@ fn ibc_app_witness(module: AccountAddress) -> TypeTag {
 }
 
 #[allow(clippy::type_complexity)]
-async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
+async fn process_msgs<
+    T: aptos_move_ibc::ibc::ClientExt
+        + aptos_move_ibc::recv_packet::ClientExt
+        + aptos_move_ibc::acknowledge_packet::ClientExt
+        + aptos_move_ibc::channel_handshake::ClientExt,
+>(
     ibc_handler_address: AccountAddress,
     client: &T,
     msgs: Vec<Datagram>,
@@ -404,10 +427,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.channel_open_try(
                     ibc_handler_address,
                     (
-                        AccountAddress::try_from(data.port_id.as_ref())
-                            .unwrap()
-                            .into(),
-                        data.channel.state as u8,
+                        AccountAddress::try_from(data.port_id.as_ref()).unwrap(),
                         data.channel.connection_id,
                         data.channel.counterparty_channel_id,
                         data.channel.counterparty_port_id.to_vec(),
@@ -450,7 +470,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     client.channel_open_confirm(
                         ibc_handler_address,
                         (
-                            port_id,
+                            port_id.into(),
                             data.channel_id,
                             data.proof_ack.into_vec(),
                             data.proof_height,
@@ -478,7 +498,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     .unzip();
 
                 let port_id = client
-                    .get_module(ibc_handler_address, None, (source_channels[0],))
+                    .get_module(ibc_handler_address, None, (destination_channels[0],))
                     .await
                     .unwrap();
 
@@ -487,7 +507,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     client.recv_packet(
                         ibc_handler_address,
                         (
-                            port_id,
+                            port_id.into(),
                             source_channels,
                             destination_channels,
                             packet_data,
@@ -517,7 +537,7 @@ async fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     client.acknowledge_packet(
                         ibc_handler_address,
                         (
-                            port_id,
+                            port_id.into(),
                             source_channels,
                             destination_channels,
                             vec![],
