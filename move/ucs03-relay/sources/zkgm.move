@@ -1,6 +1,7 @@
 module ucs03::zkgm_relay {
     use ibc::ibc;
     use ibc::helpers;
+    use ucs03::zkgm_helpers;
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
     use aptos_framework::primary_fungible_store;
@@ -1132,8 +1133,7 @@ module ucs03::zkgm_relay {
 
     fun timeout_forward(
         _ibc_packet: Packet, _salt: vector<u8>, _forward_packet: ForwardPacket
-    ) {
-    }
+    ) {}
 
     fun timeout_multiplex(
         ibc_packet: Packet,
@@ -1461,9 +1461,7 @@ module ucs03::zkgm_relay {
             channel_id,
             timeout_height,
             timeout_timestamp,
-            encode_packet(
-                &ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall }
-            )
+            encode_packet(&ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall })
         );
     }
 
@@ -1610,24 +1608,24 @@ module ucs03::zkgm_relay {
         let type_name_output = *copyable_any::type_name(&value);
 
         if (type_name_output
-            == std::type_info::type_name<helpers::RecvPacketParamsZKGM>()) {
+            == std::type_info::type_name<zkgm_helpers::RecvPacketParamsZKGM>()) {
             let (pack, relayer, relayer_msg) =
-                helpers::on_recv_packet_zkgm_deconstruct(
-                    copyable_any::unpack<helpers::RecvPacketParamsZKGM>(value)
+                zkgm_helpers::on_recv_packet_zkgm_deconstruct(
+                    copyable_any::unpack<zkgm_helpers::RecvPacketParamsZKGM>(value)
                 );
             on_recv_packet<P>(pack, relayer, relayer_msg);
         } else if (type_name_output
-            == std::type_info::type_name<helpers::AcknowledgePacketParamsZKGM>()) {
+            == std::type_info::type_name<zkgm_helpers::AcknowledgePacketParamsZKGM>()) {
             let (pack, acknowledgement, relayer) =
-                helpers::on_acknowledge_packet_deconstruct_zkgm(
-                    copyable_any::unpack<helpers::AcknowledgePacketParamsZKGM>(value)
+                zkgm_helpers::on_acknowledge_packet_deconstruct_zkgm(
+                    copyable_any::unpack<zkgm_helpers::AcknowledgePacketParamsZKGM>(value)
                 );
             on_acknowledge_packet(pack, acknowledgement, relayer);
         } else if (type_name_output
-            == std::type_info::type_name<helpers::TimeoutPacketParamsZKGM>()) {
+            == std::type_info::type_name<zkgm_helpers::TimeoutPacketParamsZKGM>()) {
             let (pack, relayer) =
-                helpers::on_timeout_packet_deconstruct_zkgm(
-                    copyable_any::unpack<helpers::TimeoutPacketParamsZKGM>(value)
+                zkgm_helpers::on_timeout_packet_deconstruct_zkgm(
+                    copyable_any::unpack<zkgm_helpers::TimeoutPacketParamsZKGM>(value)
                 );
             on_timeout_packet(pack, relayer);
         } else if (type_name_output
