@@ -458,9 +458,9 @@ impl FullEvent {
     }
 }
 
-type ClientId = u32;
-type ConnectionId = u32;
-type ChannelId = u32;
+pub type ClientId = u32;
+pub type ConnectionId = u32;
+pub type ChannelId = u32;
 
 // type ClientId = NonZeroU32;
 // type ConnectionId = NonZeroU32;
