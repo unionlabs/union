@@ -43,7 +43,7 @@ pub fn execute(
                 },
             )?;
             for (denom, amount) in expected_funds.into_iter() {
-                if !has_coins(&info.funds, &Coin::new(amount.into(), denom)) {
+                if !has_coins(&info.funds, &Coin::new(amount, denom)) {
                     return Err(ContractError::FundsMismatch);
                 }
             }
