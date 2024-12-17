@@ -138,23 +138,3 @@ pub mod ethabi {
         ChainId(#[from] FromUtf8Error),
     }
 }
-
-#[test]
-fn encode_client() {
-    let client_state = ClientState {
-        chain_id: ChainId::from_string("cometbls-0").unwrap(),
-        trusting_period: 100,
-        max_clock_drift: 200,
-        frozen_height: Height::new(0),
-        latest_height: Height::new(10),
-        contract_address: H256::new([
-            0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4,
-            5, 6, 7,
-        ]),
-    };
-
-    let mut buf = Vec::new();
-
-    bcs::serialize_into(&mut buf, &client_state).unwrap();
-    panic!("fuck {:?}", hex::encode(buf));
-}

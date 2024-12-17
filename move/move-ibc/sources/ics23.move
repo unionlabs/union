@@ -3,7 +3,6 @@ module ibc::ics23 {
     use std::option::Option;
     use std::hash;
     use ibc::bcs_utils::{Self, BcsBuf};
-    use ibc::proto_utils;
 
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;
     const E_EMPTY_LEAF_KEY: u64 = 35201;
@@ -150,10 +149,10 @@ module ibc::ics23 {
 
         assert!(!vector::is_empty(value), E_EMPTY_INNER_VALUE);
 
-        let encoded_key = proto_utils::encode_varint(vector::length(key));
+        let encoded_key = encode_varint(vector::length(key));
 
         let hashed_value = hash::sha2_256(*value);
-        let encoded_value = proto_utils::encode_varint(32);
+        let encoded_value = encode_varint(32);
 
         let hash_data: vector<u8> = vector::empty();
         vector::append(&mut hash_data, *prefix);
@@ -201,6 +200,22 @@ module ibc::ics23 {
                 }
             )
         }
+    }
+
+    public fun encode_varint(value: u64): vector<u8> {
+        let buf: vector<u8> = vector::empty();
+        let i = 0;
+        while (i < 10) {
+            if (value < 0x80) {
+                vector::push_back(&mut buf, (value as u8));
+                break
+            } else {
+                vector::push_back(&mut buf, (((value & 0x7F) | 0x80) as u8));
+                value = value >> 7;
+            };
+            i = i + 1;
+        };
+        buf
     }
 
     #[test]
