@@ -229,6 +229,42 @@ impl ClientT for Client {
     }
 }
 
+#[async_trait]
+impl ClientT for &Client {
+    async fn notification<Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> Result<(), jsonrpsee::core::client::Error>
+    where
+        Params: ToRpcParams + Send,
+    {
+        <Client as ClientT>::notification(*self, method, params).await
+    }
+
+    async fn request<R, Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> Result<R, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        <Client as ClientT>::request(*self, method, params).await
+    }
+
+    async fn batch_request<'a, R>(
+        &self,
+        batch: BatchRequestBuilder<'a>,
+    ) -> Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned + fmt::Debug + 'a,
+    {
+        <Client as ClientT>::batch_request(*self, batch).await
+    }
+}
+
 #[instrument(name = "reconnect", skip_all)]
 async fn reconnect<
     B: (Fn() -> Fut) + Send + 'static,

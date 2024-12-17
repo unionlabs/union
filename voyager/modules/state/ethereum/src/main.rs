@@ -1,7 +1,6 @@
 // #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
 
 use alloy::{
-    primitives::address,
     providers::{Provider, ProviderBuilder, RootProvider},
     rpc::types::{TransactionInput, TransactionRequest},
     sol_types::{SolCall, SolValue},

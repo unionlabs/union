@@ -5,7 +5,7 @@ use tokio::time::sleep;
 use tracing::error;
 use unionlabs::ErrorReporter;
 
-use crate::{defer, now, seq, BoxDynError, Captures, Queue, QueueError, QueueMessage};
+use crate::{defer, now, seq, BoxDynError, Captures, Context, Queue, QueueError, QueueMessage};
 
 pub struct Engine<'a, T: QueueMessage, Q: Queue<T>> {
     store: &'a T::Context,
@@ -40,21 +40,23 @@ impl<'a, T: QueueMessage, Q: Queue<T>> Engine<'a, T, Q> {
         // yield back to the runtime and throttle a bit, prevents 100% cpu usage while still allowing for a fast spin-loop
         sleep(Duration::from_millis(10)).then(|()| {
             self.queue
-                .process::<_, _, Option<T::Data>>(self.optimizer, |op| {
-                    op.clone().process(self.store, 0).map(|res| match res {
-                        Ok(op) => (None, Ok(op.into_iter().collect())),
-                        Err(QueueError::Fatal(fatal)) => {
-                            let full_err = ErrorReporter(&*fatal);
-                            error!(error = %full_err, "fatal error");
-                            (None, Err(full_err.to_string()))
-                        }
-                        Err(QueueError::Retry(retry)) => {
-                            // TODO: Add some backoff logic here based on `full_err`?
-                            let full_err = ErrorReporter(&*retry);
-                            error!(error = %full_err, "retryable error");
-                            (None, Ok(vec![seq([defer(now() + 3), op])]))
-                        }
-                    })
+                .process::<_, _, Option<T::Data>>(self.optimizer, |op, id| {
+                    op.clone()
+                        .process(Context::new(id, self.store), 0)
+                        .map(|res| match res {
+                            Ok(op) => (None, Ok(op.into_iter().collect())),
+                            Err(QueueError::Fatal(fatal)) => {
+                                let full_err = ErrorReporter(&*fatal);
+                                error!(error = %full_err, "fatal error");
+                                (None, Err(full_err.to_string()))
+                            }
+                            Err(QueueError::Retry(retry)) => {
+                                // TODO: Add some backoff logic here based on `full_err`?
+                                let full_err = ErrorReporter(&*retry);
+                                error!(error = %full_err, "retryable error");
+                                (None, Ok(vec![seq([defer(now() + 3), op])]))
+                            }
+                        })
                 })
                 .map(|data| match data {
                     Ok(data) => Ok(Some(data.flatten())),

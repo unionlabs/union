@@ -14,7 +14,7 @@ use tracing::{debug, info_span, warn, Instrument};
 use crate::{
     filter::{FilterResult, InterestFilter},
     pass::Pass,
-    Captures, Op, Queue, QueueMessage,
+    Captures, ItemId, Op, Queue, QueueMessage,
 };
 
 #[derive(DebugNoBound, CloneNoBound)]
@@ -90,7 +90,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         f: F,
     ) -> Result<Option<R>, Self::Error>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
+        F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
@@ -112,7 +112,12 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                     .expect("mutex is poisoned")
                     .insert(id, item.clone());
 
-                let (r, res) = f(item.op.clone()).instrument(span).await;
+                let (r, res) = f(
+                    item.op.clone(),
+                    ItemId::new(i64::from(id)).expect("infallible"),
+                )
+                .instrument(span)
+                .await;
                 match res {
                     Ok(ops) => {
                         let mut optimizer_queue =

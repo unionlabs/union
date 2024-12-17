@@ -5,11 +5,13 @@ use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use macros::model;
 use serde::de::DeserializeOwned;
+use tracing::instrument;
 use unionlabs::traits::Member;
 use voyager_core::{ClientInfo, IbcSpecId};
 use voyager_vm::{CallbackT, Op, QueueError};
 
 use crate::{
+    context::WithId,
     core::ChainId,
     data::{ClientUpdate, Data, OrderedClientUpdates, OrderedHeaders},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
@@ -38,9 +40,10 @@ impl Callback {
 }
 
 impl CallbackT<VoyagerMessage> for Callback {
+    #[instrument(skip_all, fields(id = ctx.id().raw()))]
     async fn process(
         self,
-        ctx: &Context,
+        ctx: voyager_vm::Context<&Context>,
         data: VecDeque<Data>,
     ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
@@ -76,6 +79,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                     ..
                 } = ctx
                     .rpc_server
+                    .with_id(Some(ctx.id()))
                     .client_info(&chain_id, &ibc_spec_id, counterparty_client_id.clone())
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -84,7 +88,8 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .rpc_server
                     .modules()
                     .map_err(error_object_to_queue_error)?
-                    .client_module(&client_type, &ibc_interface, &ibc_spec_id)?;
+                    .client_module(&client_type, &ibc_interface, &ibc_spec_id)?
+                    .with_id(Some(ctx.id()));
 
                 Ok(voyager_vm::data(OrderedClientUpdates {
                     // REVIEW: Use FuturesOrdered here?

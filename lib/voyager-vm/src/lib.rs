@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt::Debug,
     future::Future,
+    ops::Deref,
     pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -18,7 +19,10 @@ use itertools::Itertools;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use tracing::{debug, error, info, trace, warn};
-use unionlabs::never::Never;
+use unionlabs::{
+    bounded::{BoundedI64, BoundedIntError},
+    never::Never,
+};
 
 use crate::{filter::InterestFilter, pass::Pass};
 
@@ -41,23 +45,23 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
 
     /// Enqueue an item into the queue, running a pure optimization pass on the item before enqueueing it.
     ///
-    /// All items will be enqueued to be optimized, unless marked as ready by `O`.
+    /// All items will be enqueued to be optimized, unless marked as ready by `filter`.
     fn enqueue<'a>(
         &'a self,
         item: Op<T>,
         filter: &'a T::Filter,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
 
-    /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `O` before being reenqueued.
+    /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `filter` before being reenqueued.
     ///
-    /// All items will be enqueued to be optimized, unless marked as ready by `O`.
+    /// All items will be enqueued to be optimized, unless marked as ready by `filter`.
     fn process<'a, F, Fut, R>(
         &'a self,
         filter: &'a T::Filter,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
+        F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static;
 
@@ -66,6 +70,27 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         tag: &'a str,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
+}
+
+/// The ID of an item in the queue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ItemId(BoundedI64<0, { i64::MAX }>);
+
+impl ItemId {
+    /// Create a new [`ItemId`].
+    ///
+    /// # Errors
+    ///
+    /// This will error if `id` is negative.
+    pub fn new(id: i64) -> Result<Self, BoundedIntError<i64>> {
+        Ok(Self(id.try_into()?))
+    }
+
+    #[must_use]
+    pub fn raw(&self) -> i64 {
+        self.0.inner()
+    }
 }
 
 #[derive(
@@ -177,12 +202,35 @@ pub trait QueueMessage: Sized + 'static {
 
     type Filter: InterestFilter<Self>;
 
-    type Context: Context;
+    type Context: ContextT;
 }
 
-pub trait Context: Send + Sync {}
+pub trait ContextT: Send + Sync {}
 
-impl Context for () {}
+impl ContextT for () {}
+
+pub struct Context<T> {
+    id: ItemId,
+    inner: T,
+}
+
+impl<T> Deref for Context<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> Context<T> {
+    pub fn new(id: ItemId, inner: T) -> Self {
+        Self { id, inner }
+    }
+
+    pub fn id(&self) -> ItemId {
+        self.id
+    }
+}
 
 pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
@@ -191,7 +239,7 @@ impl<T: QueueMessage> Op<T> {
     #[allow(clippy::type_complexity)]
     pub fn process<'a>(
         self,
-        store: &'a T::Context,
+        store: Context<&'a T::Context>,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<Op<T>>, QueueError>> + Send + 'a>> {
         trace!(%depth, "handling message");
@@ -413,19 +461,22 @@ impl QueueError {
 }
 
 pub trait CallT<T: QueueMessage> {
-    fn process(self, store: &T::Context) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
+    fn process(
+        self,
+        store: Context<&T::Context>,
+    ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
 pub trait CallbackT<T: QueueMessage> {
     fn process(
         self,
-        ctx: &T::Context,
+        ctx: Context<&T::Context>,
         data: VecDeque<T::Data>,
     ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
 impl<T: QueueMessage> CallT<T> for Never {
-    async fn process(self, _: &T::Context) -> Result<Op<T>, QueueError> {
+    async fn process(self, _: Context<&T::Context>) -> Result<Op<T>, QueueError> {
         match self {}
     }
 }

@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
     path::{Path, PathBuf},
     process::Stdio,
@@ -10,30 +11,36 @@ use anyhow::anyhow;
 use futures::{
     future,
     stream::{self, FuturesUnordered},
-    Future, StreamExt, TryStreamExt,
+    Future, FutureExt, StreamExt, TryStreamExt,
 };
-use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
+use jsonrpsee::{
+    core::client::ClientT,
+    server::middleware::rpc::RpcServiceT,
+    types::{ErrorObject, ErrorObjectOwned},
+};
 use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
+use tracing::{
+    debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace, warn,
+    Instrument,
+};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
 use voyager_core::{ConsensusType, IbcSpecId};
-use voyager_vm::QueueError;
+use voyager_vm::{ItemId, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface, IbcSpec},
     into_value,
     module::{
-        ClientModuleClient, ClientModuleInfo, ConsensusModuleClient, ConsensusModuleInfo,
-        PluginClient, PluginInfo, ProofModuleInfo, RawProofModuleClient, RawStateModuleClient,
+        ClientModuleInfo, ConsensusModuleInfo, PluginClient, PluginInfo, ProofModuleInfo,
         StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    IdThreadClient, ParamsWithItemId, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -48,7 +55,6 @@ pub struct Context {
     interest_filters: HashMap<String, String>,
 
     pub cancellation_token: CancellationToken,
-    // module_servers: Vec<ModuleRpcServer>,
 }
 
 #[derive(macros::Debug)]
@@ -105,7 +111,7 @@ impl IbcSpecHandler {
     }
 }
 
-impl voyager_vm::Context for Context {}
+impl voyager_vm::ContextT for Context {}
 
 #[derive(macros::Debug, Clone)]
 pub struct ModuleRpcClient {
@@ -157,14 +163,37 @@ impl ModuleRpcClient {
         )
     }
 
-    pub fn client(&self) -> &impl jsonrpsee::core::client::ClientT {
+    // pub fn client(&self) -> &impl jsonrpsee::core::client::ClientT {
+    //     &self.client
+    // }
+
+    pub fn client(&self) -> &reconnecting_jsonrpc_ws_client::Client {
         &self.client
     }
 }
 
+pub(crate) trait WithId: Sized + ClientT + Send + Sync
+where
+    for<'a> &'a Self: ClientT,
+{
+    fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
+        IdThreadClient {
+            client: self,
+            item_id,
+        }
+    }
+}
+
+impl<T: ClientT + Send + Sync> WithId for T where for<'a> &'a Self: ClientT {}
+
 async fn module_rpc_server(name: &str, server: Server) -> anyhow::Result<impl Future<Output = ()>> {
     let socket = make_module_rpc_server_socket_path(name);
-    let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
+    let rpc_server = reth_ipc::server::Builder::default()
+        .set_rpc_middleware(
+            reth_ipc::server::RpcServiceBuilder::new()
+                .layer_fn(|service| ExtractItemId { service }),
+        )
+        .build(socket.clone());
 
     debug!(%socket, "starting rpc server");
 
@@ -173,6 +202,40 @@ async fn module_rpc_server(name: &str, server: Server) -> anyhow::Result<impl Fu
     Ok(server
         .stopped()
         .instrument(debug_span!("module_rpc_server", %name)))
+}
+
+pub struct ExtractItemId<S> {
+    service: S,
+}
+
+impl<'a, S: RpcServiceT<'a>> RpcServiceT<'a> for ExtractItemId<S> {
+    type Future = futures::future::Either<Instrumented<S::Future>, S::Future>;
+
+    fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
+        if let Some(params) = request.params.take() {
+            match serde_json::from_str(params.get()) {
+                Ok(ParamsWithItemId { item_id, params }) => {
+                    let mut request = jsonrpsee::types::Request {
+                        params: params.map(|rv| Cow::Owned(rv.into_owned())),
+                        ..request
+                    };
+
+                    request.extensions.insert(item_id);
+
+                    return self
+                        .service
+                        .call(request)
+                        .instrument(info_span!("item_id", item_id = item_id.raw()))
+                        .left_future();
+                }
+                Err(_) => {
+                    request.params = Some(params);
+                }
+            }
+        };
+
+        self.service.call(request).right_future()
+    }
 }
 
 fn make_module_rpc_server_socket_path(name: &str) -> String {
@@ -622,7 +685,8 @@ impl Modules {
         &'a self,
         chain_id: &ChainId,
         ibc_spec_id: &IbcSpecId,
-    ) -> Result<&'a (impl RawStateModuleClient + 'a), StateModuleNotFound> {
+        // ) -> Result<&'a (impl RawStateModuleClient + 'a), StateModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, StateModuleNotFound> {
         Ok(self
             .state_modules
             .get(&(chain_id.clone(), ibc_spec_id.clone()))
@@ -637,7 +701,8 @@ impl Modules {
         &'a self,
         chain_id: &ChainId,
         ibc_spec_id: &IbcSpecId,
-    ) -> Result<&'a (impl RawProofModuleClient + 'a), ProofModuleNotFound> {
+        // ) -> Result<&'a (impl RawProofModuleClient + 'a), ProofModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ProofModuleNotFound> {
         Ok(self
             .proof_modules
             .get(&(chain_id.clone(), ibc_spec_id.clone()))
@@ -651,7 +716,8 @@ impl Modules {
     pub fn consensus_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
-    ) -> Result<&'a (impl ConsensusModuleClient + 'a), ConsensusModuleNotFound> {
+        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), ConsensusModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
             .get(chain_id)
@@ -664,7 +730,8 @@ impl Modules {
         client_type: &ClientType,
         ibc_interface: &IbcInterface,
         ibc_spec_id: &IbcSpecId,
-    ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
+        // ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ClientModuleNotFound> {
         match self.client_modules.get(&(
             client_type.clone(),
             ibc_interface.clone(),

@@ -26,7 +26,7 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::cosmos_sdk_error::{CosmosSdkError, SdkError},
+    cosmos_sdk::cosmos_sdk_error::CosmosSdkError,
     keyring::{ConcurrentKeyring, SignerBalance},
 };
 

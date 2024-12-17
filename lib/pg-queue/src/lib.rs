@@ -13,7 +13,7 @@ use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 use voyager_vm::{
     filter::{FilterResult, InterestFilter},
     pass::{Pass, PassResult},
-    Captures, Op, QueueMessage,
+    Captures, ItemId, Op, QueueMessage,
 };
 
 use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
@@ -287,7 +287,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         f: F,
     ) -> Result<Option<R>, Self::Error>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
+        F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
@@ -331,7 +331,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 let op = de(&row.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
                 let timer = ITEM_PROCESSING_DURATION.start_timer();
-                let (r, res) = f(op).instrument(span).await;
+                let (r, res) = f(op, ItemId::new(row.id).unwrap()).instrument(span).await;
                 let _ = timer.stop_and_record();
 
                 match res {
