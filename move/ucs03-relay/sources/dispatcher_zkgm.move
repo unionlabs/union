@@ -19,9 +19,8 @@ module ucs03::dispatcher_zkgm {
 
     #[event]
     struct LOG has copy, drop, store {
-        incoming_addr: address,
+        incoming_addr: address
     }
-
 
     struct Dispatcher has key {
         /// Tracks the input type to the dispatch handler.
@@ -68,9 +67,7 @@ module ucs03::dispatcher_zkgm {
 
         let type_info_addr = type_info::account_address(&type_info::type_of<T>());
 
-        event::emit(
-            LOG { incoming_addr: type_info_addr }
-        );
+        event::emit(LOG { incoming_addr: type_info_addr });
         smart_table::upsert(&mut dispatcher.dispatcher, type_info_addr, metadata);
     }
 
@@ -99,7 +96,11 @@ module ucs03::dispatcher_zkgm {
     // Getter for `data`
     public fun get_data<P: drop>(_proof: P): copyable_any::Any acquires Dispatcher {
         let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
-        let storage_val = smart_table::borrow(&dispatcher.storage, type_info::account_address(&type_info::type_of<P>()));
+        let storage_val =
+            smart_table::borrow(
+                &dispatcher.storage,
+                type_info::account_address(&type_info::type_of<P>())
+            );
         storage_val.data
     }
 

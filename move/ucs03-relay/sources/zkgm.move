@@ -55,7 +55,7 @@ module ucs03::zkgm_relay {
     const E_INVALID_FILL_TYPE: u64 = 12;
     const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
-    const E_ONLY_MAKER: u64 = 15; 
+    const E_ONLY_MAKER: u64 = 15;
 
     struct ZKGMProof has drop, store, key {}
 
@@ -66,36 +66,36 @@ module ucs03::zkgm_relay {
     struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,
-        syscall: vector<u8>,
+        syscall: vector<u8>
     }
 
     struct SyscallPacket has copy, drop, store {
         version: u8,
         index: u8,
-        packet: vector<u8>,
+        packet: vector<u8>
     }
 
     struct ForwardPacket has copy, drop, store {
         channel_id: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
-        syscall_packet: vector<u8>,
+        syscall_packet: vector<u8>
     }
 
     struct MultiplexPacket has copy, drop, store {
         sender: vector<u8>,
         eureka: bool,
         contract_address: vector<u8>,
-        contract_calldata: vector<u8>,
+        contract_calldata: vector<u8>
     }
 
     struct BatchPacket has copy, drop, store {
-        syscall_packets: vector<vector<u8>>,
+        syscall_packets: vector<vector<u8>>
     }
 
     struct OnZkgmParams has copy, drop, store {
         sender: vector<u8>,
-        contract_calldata: vector<u8>,
+        contract_calldata: vector<u8>
     }
 
     struct IIBCModuleOnRecvPacketParams has copy, drop, store {
@@ -107,12 +107,12 @@ module ucs03::zkgm_relay {
     struct IIBCModuleOnAcknowledgementPacketParams has copy, drop, store {
         packet: Packet,
         acknowledgement: vector<u8>,
-        relayer: address,
+        relayer: address
     }
 
     struct IIBCModuleOnTimeoutPacketParams has copy, drop, store {
         packet: Packet,
-        relayer: address,
+        relayer: address
     }
 
     struct FungibleAssetTransferPacket has copy, drop, store {
@@ -125,21 +125,21 @@ module ucs03::zkgm_relay {
         sent_amount: u64,
         ask_token: vector<u8>,
         ask_amount: u64,
-        only_maker: bool,
+        only_maker: bool
     }
 
     struct Acknowledgement has copy, drop, store {
         tag: u256,
-        inner_ack: vector<u8>,
+        inner_ack: vector<u8>
     }
 
     struct BatchAcknowledgement has copy, drop, store {
-        acknowledgements: vector<vector<u8>>,
+        acknowledgements: vector<vector<u8>>
     }
 
     struct AssetTransferAcknowledgement has copy, drop, store {
         fill_type: u256,
-        market_maker: vector<u8>,
+        market_maker: vector<u8>
     }
 
     struct SignerRef has key {
@@ -161,7 +161,6 @@ module ucs03::zkgm_relay {
     struct Port<phantom T: key + store + drop> has key, copy, drop, store {
         port_id: address
     }
-
 
     public fun get_metadata(asset_addr: address): Object<Metadata> {
         object::address_to_object<Metadata>(asset_addr)
@@ -245,14 +244,20 @@ module ucs03::zkgm_relay {
                 string::utf8(b"on_packet")
             );
 
-        dispatcher::register<ZKGMProof>(cb, new_ucs_relay_proof(), bcs::to_bytes(&signer::address_of(account)));
+        dispatcher::register<ZKGMProof>(
+            cb,
+            new_ucs_relay_proof(),
+            bcs::to_bytes(&signer::address_of(account))
+        );
         // ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
     }
 
     public fun register_application<T: key + store + drop>(
         zkgm_app: &signer, cb: FunctionInfo, type: T
     ) acquires SignerRef {
-        dispatcher_zkgm::register<T>(cb, type, bcs::to_bytes(&signer::address_of(zkgm_app)));
+        dispatcher_zkgm::register<T>(
+            cb, type, bcs::to_bytes(&signer::address_of(zkgm_app))
+        );
         move_to(
             &get_signer(),
             Port<T> { port_id: signer::address_of(zkgm_app) }
@@ -263,18 +268,16 @@ module ucs03::zkgm_relay {
         let index = 0x20;
         let tag = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let inner_ack = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
-    
-        Acknowledgement {
-            tag: tag,
-            inner_ack: inner_ack
-        }
+        let inner_ack =
+            ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
+
+        Acknowledgement { tag: tag, inner_ack: inner_ack }
     }
 
     public fun encode_ack(packet: &Acknowledgement): vector<u8> {
@@ -284,7 +287,7 @@ module ucs03::zkgm_relay {
 
         let version_offset = 0x40;
         ethabi::encode_uint<u32>(&mut buf, version_offset);
-        
+
         ethabi::encode_vector<u8>(
             &mut buf,
             &packet.inner_ack,
@@ -296,14 +299,16 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun encode_asset_transfer_ack(ack: &AssetTransferAcknowledgement): vector<u8> {
+    public fun encode_asset_transfer_ack(
+        ack: &AssetTransferAcknowledgement
+    ): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
 
         let version_offset = 0x40;
         ethabi::encode_uint<u32>(&mut buf, version_offset);
-        
+
         ethabi::encode_vector<u8>(
             &mut buf,
             &ack.market_maker,
@@ -319,18 +324,16 @@ module ucs03::zkgm_relay {
         let index = 0x20;
         let fill_type = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let market_maker = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
+        let market_maker =
+            ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
 
-        AssetTransferAcknowledgement {
-            fill_type: fill_type,
-            market_maker: market_maker
-        }
+        AssetTransferAcknowledgement { fill_type: fill_type, market_maker: market_maker }
     }
 
     public fun decode_batch_ack(buf: vector<u8>): BatchAcknowledgement {
@@ -341,20 +344,19 @@ module ucs03::zkgm_relay {
         let idx = 0;
         let acknowledgements = vector::empty();
         while (idx < main_arr_length) {
-            let inner_vec = ethabi::decode_vector<u8>(
-                &buf,
-                &mut index,
-                |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
-                }
-            );
+            let inner_vec =
+                ethabi::decode_vector<u8>(
+                    &buf,
+                    &mut index,
+                    |buf, index| {
+                        (ethabi::decode_uint(buf, index) as u8)
+                    }
+                );
             vector::push_back(&mut acknowledgements, inner_vec);
-            idx = idx+1;
+            idx = idx + 1;
         };
 
-        BatchAcknowledgement {
-            acknowledgements: acknowledgements
-        }
+        BatchAcknowledgement { acknowledgements: acknowledgements }
     }
 
     public fun encode_batch_ack(ack: &BatchAcknowledgement): vector<u8> {
@@ -363,8 +365,8 @@ module ucs03::zkgm_relay {
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         let ack_arr_len = vector::length(&ack.acknowledgements);
         ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
-        if (ack_arr_len < 2){
-            if (ack_arr_len == 1){
+        if (ack_arr_len < 2) {
+            if (ack_arr_len == 1) {
                 ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
                 ethabi::encode_vector<u8>(
                     &mut buf,
@@ -383,9 +385,12 @@ module ucs03::zkgm_relay {
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
-            let prev_length = vector::length(vector::borrow(&ack.acknowledgements, idx-1));
-            ethabi::encode_uint<u32>(&mut buf, prev_val + 0x20 * (prev_length+1 as u32));
-            prev_val = prev_val + 0x20 * (prev_length+1 as u32);
+            let prev_length = vector::length(
+                vector::borrow(&ack.acknowledgements, idx - 1)
+            );
+            ethabi::encode_uint<u32>(&mut buf, prev_val
+                + 0x20 * (prev_length + 1 as u32));
+            prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
             idx = idx + 1;
         };
         idx = 0;
@@ -411,20 +416,19 @@ module ucs03::zkgm_relay {
         let idx = 0;
         let syscall_packets = vector::empty();
         while (idx < main_arr_length) {
-            let inner_vec = ethabi::decode_vector<u8>(
-                &buf,
-                &mut index,
-                |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
-                }
-            );
+            let inner_vec =
+                ethabi::decode_vector<u8>(
+                    &buf,
+                    &mut index,
+                    |buf, index| {
+                        (ethabi::decode_uint(buf, index) as u8)
+                    }
+                );
             vector::push_back(&mut syscall_packets, inner_vec);
-            idx = idx+1;
+            idx = idx + 1;
         };
 
-        BatchPacket {
-            syscall_packets: syscall_packets
-        }
+        BatchPacket { syscall_packets: syscall_packets }
     }
 
     public fun encode_batch_packet(ack: &BatchPacket): vector<u8> {
@@ -433,8 +437,8 @@ module ucs03::zkgm_relay {
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         let ack_arr_len = vector::length(&ack.syscall_packets);
         ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
-        if (ack_arr_len < 2){
-            if (ack_arr_len == 1){
+        if (ack_arr_len < 2) {
+            if (ack_arr_len == 1) {
                 ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
                 ethabi::encode_vector<u8>(
                     &mut buf,
@@ -453,9 +457,12 @@ module ucs03::zkgm_relay {
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
-            let prev_length = vector::length(vector::borrow(&ack.syscall_packets, idx-1));
-            ethabi::encode_uint<u32>(&mut buf, prev_val + 0x20 * (prev_length+1 as u32));
-            prev_val = prev_val + 0x20 * (prev_length+1 as u32);
+            let prev_length = vector::length(
+                vector::borrow(&ack.syscall_packets, idx - 1)
+            );
+            ethabi::encode_uint<u32>(&mut buf, prev_val
+                + 0x20 * (prev_length + 1 as u32));
+            prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
             idx = idx + 1;
         };
         idx = 0;
@@ -479,13 +486,14 @@ module ucs03::zkgm_relay {
         let index_syscall = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
 
-        let packet = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
+        let packet =
+            ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
 
         SyscallPacket {
             version: (version as u8),
@@ -494,7 +502,7 @@ module ucs03::zkgm_relay {
         }
     }
 
-    public fun encode_forward(packet: &ForwardPacket): vector<u8>{
+    public fun encode_forward(packet: &ForwardPacket): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u32>(&mut buf, packet.channel_id);
@@ -524,7 +532,7 @@ module ucs03::zkgm_relay {
     public fun decode_multiplex(buf: vector<u8>): MultiplexPacket {
         let index = 0x40;
         let eureka = ethabi::decode_uint(&buf, &mut index) == 1;
-        index = index + 0x20*2;
+        index = index + 0x20 * 2;
         let sender = ethabi::decode_bytes(&buf, &mut index);
         let contract_address = ethabi::decode_bytes(&buf, &mut index);
         let contract_calldata = ethabi::decode_bytes(&buf, &mut index);
@@ -538,19 +546,17 @@ module ucs03::zkgm_relay {
     }
 
     public fun encode_multiplex_sender_and_calldata(
-        sender: vector<u8>,
-        contract_calldata: vector<u8>
+        sender: vector<u8>, contract_calldata: vector<u8>
     ): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u8>(&mut buf, 0x40);
         let length_of_first = vector::length(&sender);
-        ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32)  * 0x20) + 0x80) ;
+        ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32) * 0x20) + 0x80);
         ethabi::encode_bytes(&mut buf, &sender);
         ethabi::encode_bytes(&mut buf, &contract_calldata);
         buf
     }
-
 
     public fun decode_fungible_asset_transfer(buf: vector<u8>): FungibleAssetTransferPacket {
         let index = 0x80;
@@ -587,10 +593,12 @@ module ucs03::zkgm_relay {
         ethabi::encode_uint<u8>(&mut buf, 0x60);
         ethabi::encode_uint<u256>(&mut buf, packet.path);
 
-
         let version_offset = 0x20 * 4;
-        ethabi::encode_uint<u32>(&mut buf, version_offset +  ((vector::length(&packet.salt) * 0x20) as u32));
-        
+        ethabi::encode_uint<u32>(
+            &mut buf,
+            version_offset + ((vector::length(&packet.salt) * 0x20) as u32)
+        );
+
         ethabi::encode_vector<u8>(
             &mut buf,
             &packet.salt,
@@ -614,33 +622,28 @@ module ucs03::zkgm_relay {
         let index = 0x40;
         let packet_path = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let salt = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
-        let syscall = ethabi::decode_vector<u8>(
-            &buf,
-            &mut index,
-            |buf, index| {
-                (ethabi::decode_uint(buf, index) as u8)
-            }
-        );
+        let salt =
+            ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
+        let syscall =
+            ethabi::decode_vector<u8>(
+                &buf,
+                &mut index,
+                |buf, index| {
+                    (ethabi::decode_uint(buf, index) as u8)
+                }
+            );
 
-        ZkgmPacket {
-            salt: salt,
-            path: packet_path,
-            syscall: syscall
-        }
+        ZkgmPacket { salt: salt, path: packet_path, syscall: syscall }
     }
 
-
     public fun predict_wrapped_token(
-        path: u256,
-        destination_channel: u32,
-        token: vector<u8>
+        path: u256, destination_channel: u32, token: vector<u8>
     ): (address, vector<u8>) {
         let salt = hash::sha3_256(serialize_salt(path, destination_channel, token));
 
@@ -648,9 +651,7 @@ module ucs03::zkgm_relay {
         (wrapped_address, salt)
     }
 
-    public fun deploy_token(
-        salt: vector<u8>
-    ): address acquires SignerRef {
+    public fun deploy_token(salt: vector<u8>): address acquires SignerRef {
         ucs03::fa_coin::initialize(
             &get_signer(),
             string::utf8(b""),
@@ -660,15 +661,11 @@ module ucs03::zkgm_relay {
             string::utf8(b""),
             salt
         );
-        ucs03::fa_coin::get_metadata_address(
-            salt
-        )
+        ucs03::fa_coin::get_metadata_address(salt)
     }
 
     fun serialize_salt(
-        path: u256,
-        destination_channel: u32,
-        token: vector<u8>
+        path: u256, destination_channel: u32, token: vector<u8>
     ): vector<u8> {
         let data = vector::empty<u8>();
         vector::append(&mut data, bcs::to_bytes(&path));
@@ -742,7 +739,7 @@ module ucs03::zkgm_relay {
     }
 
     public fun last_channel_from_path(path: u256): u32 {
-        if (path == 0){
+        if (path == 0) {
             return 0
         };
         let current_hop_index = ((fls(path) / 32) as u8);
@@ -751,15 +748,16 @@ module ucs03::zkgm_relay {
     }
 
     public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
-        if (path == 0){
+        if (path == 0) {
             return (next_channel_id as u256)
         };
         let next_hop_index = ((fls(path) / 32) as u8) + 1;
-        if (next_hop_index > 7){
+        if (next_hop_index > 7) {
             abort E_INVALID_HOPS
         };
 
-        let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256) | path;
+        let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
+            | path;
         (next_channel as u256)
     }
 
@@ -767,11 +765,8 @@ module ucs03::zkgm_relay {
         version_bytes == string::utf8(VERSION)
     }
 
-
     public fun on_channel_open_init(
-        _connection_id: u32,
-        _channel_id: u32,
-        version: String
+        _connection_id: u32, _channel_id: u32, version: String
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_IBC_VERSION
@@ -795,7 +790,7 @@ module ucs03::zkgm_relay {
 
     public fun on_channel_open_ack(
         _channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
-    ) { }
+    ) {}
 
     public fun on_channel_open_confirm(_channel_id: u32) {}
 
@@ -806,27 +801,36 @@ module ucs03::zkgm_relay {
     public fun on_channel_close_confirm(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
+
     public fun on_recv_packet<T: key + store + drop>(
-        ibc_packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>
+        ibc_packet: Packet, relayer: address, relayer_msg: vector<u8>
     ) acquires RelayStore, SignerRef {
         // We can call execute_internal directly
         let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
         let zkgm_packet = decode_packet(*raw_zkgm_packet);
-        
-        let acknowledgement = execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
-        
+
+        let acknowledgement =
+            execute_internal<T>(
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                zkgm_packet.salt,
+                zkgm_packet.path,
+                decode_syscall(zkgm_packet.syscall)
+            );
+
         if (vector::length(&acknowledgement) == 0) {
             abort E_ACK_EMPTY
-        } else if(acknowledgement == ACK_ERR_ONLYMAKER) {
+        } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
             abort E_ONLY_MAKER
         } else {
-            let return_value = encode_ack(&Acknowledgement {
-                tag: ACK_SUCCESS,
-                inner_ack: acknowledgement
-            });
-            dispatcher_zkgm::set_return_value<ZKGMProof>(new_ucs_relay_proof(), return_value);
+            let return_value =
+                encode_ack(
+                    &Acknowledgement { tag: ACK_SUCCESS, inner_ack: acknowledgement }
+                );
+            dispatcher_zkgm::set_return_value<ZKGMProof>(
+                new_ucs_relay_proof(), return_value
+            );
         }
     }
 
@@ -836,14 +840,18 @@ module ucs03::zkgm_relay {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
         let packet_hash = commitment::commit_packet(&ibc_packet);
-        let parent = smart_table::borrow_mut_with_default(
-                        &mut store.in_flight_packet,
-                        packet_hash,
-                        packet::default()
-                    );
-        if (packet::timeout_timestamp(parent) != 0 || packet::timeout_height(parent) != 0) {
+        let parent =
+            smart_table::borrow_mut_with_default(
+                &mut store.in_flight_packet,
+                packet_hash,
+                packet::default()
+            );
+        if (packet::timeout_timestamp(parent) != 0
+            || packet::timeout_height(parent) != 0) {
             ibc::ibc::write_acknowledgement(*parent, acknowledgement);
-            smart_table::upsert(&mut store.in_flight_packet, packet_hash, packet::default());
+            smart_table::upsert(
+                &mut store.in_flight_packet, packet_hash, packet::default()
+            );
         } else {
             let zkgm_packet = decode_packet(*ibc::packet::data(&ibc_packet));
             let zkgm_ack = decode_ack(acknowledgement);
@@ -918,13 +926,14 @@ module ucs03::zkgm_relay {
     ) acquires SignerRef {
         if (success) {
             let asset_transfer_ack = decode_asset_transfer_ack(inner_ack);
-            if (asset_transfer_ack.fill_type == FILL_TYPE_PROTOCOL ){
+            if (asset_transfer_ack.fill_type == FILL_TYPE_PROTOCOL) {
                 // The protocol is filled, fee was paid to relayer.
             } else if (asset_transfer_ack.fill_type == FILL_TYPE_MARKETMAKER) {
                 let market_maker = from_bcs::to_address(asset_transfer_ack.market_maker);
                 let sent_token = from_bcs::to_address(transfer_packet.sent_token);
                 let asset = get_metadata(sent_token);
-                if (last_channel_from_path(transfer_packet.sent_token_prefix) == ibc::packet::source_channel(&ibc_packet)){
+                if (last_channel_from_path(transfer_packet.sent_token_prefix)
+                    == ibc::packet::source_channel(&ibc_packet)) {
                     ucs03::fa_coin::mint_with_metadata(
                         &get_signer(),
                         market_maker,
@@ -942,7 +951,7 @@ module ucs03::zkgm_relay {
             } else {
                 abort E_INVALID_FILL_TYPE
             }
-        } else{
+        } else {
             refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
         };
     }
@@ -958,9 +967,9 @@ module ucs03::zkgm_relay {
         let l = vector::length(&batch_packet.syscall_packets);
         let batch_ack = decode_batch_ack(inner_ack);
         let i = 0;
-        while (i < l){
+        while (i < l) {
             let syscall_ack = inner_ack;
-            if (success){
+            if (success) {
                 syscall_ack = *vector::borrow(&batch_ack.acknowledgements, i);
             };
             acknowledge_internal(
@@ -980,7 +989,7 @@ module ucs03::zkgm_relay {
         _forward_packet: ForwardPacket,
         _success: bool,
         _inner_ack: vector<u8>
-    ) {    }
+    ) {}
 
     fun acknowledge_multiplex(
         ibc_packet: Packet,
@@ -991,27 +1000,30 @@ module ucs03::zkgm_relay {
         ack: vector<u8>
     ) {
         if (success && !multiplex_packet.eureka) {
-            let multiplex_ibc_packet = ibc::packet::new(
-                ibc::packet::source_channel(&ibc_packet),
-                ibc::packet::destination_channel(&ibc_packet),
-                encode_multiplex_sender_and_calldata(multiplex_packet.contract_address, multiplex_packet.contract_calldata),
-                ibc::packet::timeout_height(&ibc_packet),
-                ibc::packet::timeout_timestamp(&ibc_packet)
-            );
-            let param = copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
-                IIBCModuleOnAcknowledgementPacketParams{
-                    packet: multiplex_ibc_packet,
-                    acknowledgement: ack,
-                    relayer: relayer
-                }
-            );
+            let multiplex_ibc_packet =
+                ibc::packet::new(
+                    ibc::packet::source_channel(&ibc_packet),
+                    ibc::packet::destination_channel(&ibc_packet),
+                    encode_multiplex_sender_and_calldata(
+                        multiplex_packet.contract_address,
+                        multiplex_packet.contract_calldata
+                    ),
+                    ibc::packet::timeout_height(&ibc_packet),
+                    ibc::packet::timeout_timestamp(&ibc_packet)
+                );
+            let param =
+                copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
+                    IIBCModuleOnAcknowledgementPacketParams {
+                        packet: multiplex_ibc_packet,
+                        acknowledgement: ack,
+                        relayer: relayer
+                    }
+                );
             let contract_address = from_bcs::to_address(multiplex_packet.sender);
 
             engine_zkgm::dispatch(param, contract_address);
         }
     }
-
-
 
     public fun on_timeout_packet(ibc_packet: Packet, relayer: address) acquires SignerRef {
         // Decode the packet data
@@ -1063,31 +1075,32 @@ module ucs03::zkgm_relay {
                 salt,
                 decode_multiplex(syscall_packet.packet)
             );
-        }  else {
+        } else {
             abort E_UNKNOWN_SYSCALL
         }
     }
 
     fun timeout_fungible_asset_transfer(
-        ibc_packet: Packet,
-        _salt: vector<u8>,
-        transfer_packet: FungibleAssetTransferPacket
+        ibc_packet: Packet, _salt: vector<u8>, transfer_packet: FungibleAssetTransferPacket
     ) acquires SignerRef {
         refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
     }
 
     fun refund(
-        source_channel: u32,
-        asset_transfer_packet: FungibleAssetTransferPacket
+        source_channel: u32, asset_transfer_packet: FungibleAssetTransferPacket
     ) acquires SignerRef {
         let sender = from_bcs::to_address(asset_transfer_packet.sender);
         let sent_token = from_bcs::to_address(asset_transfer_packet.sender);
 
         let asset = get_metadata(sent_token);
 
-        if (last_channel_from_path(asset_transfer_packet.sent_token_prefix) == source_channel){
+        if (last_channel_from_path(asset_transfer_packet.sent_token_prefix)
+            == source_channel) {
             ucs03::fa_coin::mint_with_metadata(
-                &get_signer(), sender, asset_transfer_packet.sent_amount, asset
+                &get_signer(),
+                sender,
+                asset_transfer_packet.sent_amount,
+                asset
             );
         } else {
             primary_fungible_store::transfer(
@@ -1107,7 +1120,7 @@ module ucs03::zkgm_relay {
     ) acquires SignerRef {
         let l = vector::length(&batch_packet.syscall_packets);
         let i = 0;
-        while (i < l){
+        while (i < l) {
             timeout_internal(
                 ibc_packet,
                 relayer,
@@ -1118,11 +1131,8 @@ module ucs03::zkgm_relay {
     }
 
     fun timeout_forward(
-        _ibc_packet: Packet,
-        _salt: vector<u8>,
-        _forward_packet: ForwardPacket
+        _ibc_packet: Packet, _salt: vector<u8>, _forward_packet: ForwardPacket
     ) {
-
     }
 
     fun timeout_multiplex(
@@ -1132,25 +1142,29 @@ module ucs03::zkgm_relay {
         multiplex_packet: MultiplexPacket
     ) {
         if (!multiplex_packet.eureka) {
-            let multiplex_ibc_packet = ibc::packet::new(
-                ibc::packet::source_channel(&ibc_packet),
-                ibc::packet::destination_channel(&ibc_packet),
-                encode_multiplex_sender_and_calldata(multiplex_packet.contract_address, multiplex_packet.contract_calldata),
-                ibc::packet::timeout_height(&ibc_packet),
-                ibc::packet::timeout_timestamp(&ibc_packet)
-            );
-            let param = copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
-                IIBCModuleOnTimeoutPacketParams{
-                    packet: multiplex_ibc_packet,
-                    relayer: relayer
-                }
-            );
+            let multiplex_ibc_packet =
+                ibc::packet::new(
+                    ibc::packet::source_channel(&ibc_packet),
+                    ibc::packet::destination_channel(&ibc_packet),
+                    encode_multiplex_sender_and_calldata(
+                        multiplex_packet.contract_address,
+                        multiplex_packet.contract_calldata
+                    ),
+                    ibc::packet::timeout_height(&ibc_packet),
+                    ibc::packet::timeout_timestamp(&ibc_packet)
+                );
+            let param =
+                copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
+                    IIBCModuleOnTimeoutPacketParams {
+                        packet: multiplex_ibc_packet,
+                        relayer: relayer
+                    }
+                );
             let contract_address = from_bcs::to_address(multiplex_packet.sender);
 
             engine_zkgm::dispatch(param, contract_address);
         }
     }
-
 
     public entry fun execute<T: key + store + drop>(
         //ibc_packet: Packet,
@@ -1159,23 +1173,30 @@ module ucs03::zkgm_relay {
         data: vector<u8>,
         timeout_height: u64,
         timeout_timestamp: u64,
-
         relayer: address,
         relayer_msg: vector<u8>,
         raw_zkgm_packet: vector<u8>
     ) acquires RelayStore, SignerRef {
         // no need to check msg.sender since its not public entry function
         // sender will be address(this) anyway
-        let ibc_packet = ibc::packet::new(
-            source_channel,
-            destination_channel,
-            data,
-            timeout_height,
-            timeout_timestamp
-        );
+        let ibc_packet =
+            ibc::packet::new(
+                source_channel,
+                destination_channel,
+                data,
+                timeout_height,
+                timeout_timestamp
+            );
 
         let zkgm_packet = decode_packet(raw_zkgm_packet);
-        execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
+        execute_internal<T>(
+            ibc_packet,
+            relayer,
+            relayer_msg,
+            zkgm_packet.salt,
+            zkgm_packet.path,
+            decode_syscall(zkgm_packet.syscall)
+        );
     }
 
     fun execute_internal<T: key + store + drop>(
@@ -1243,23 +1264,25 @@ module ucs03::zkgm_relay {
         if (transfer_packet.ask_amount > transfer_packet.sent_amount) {
             abort E_INVALID_AMOUNT
         };
-        let (wrapped_address, salt) = predict_wrapped_token(
-                                        path,
-                                        ibc::packet::destination_channel(&ibc_packet),
-                                        transfer_packet.sent_token
-                                    );
+        let (wrapped_address, salt) =
+            predict_wrapped_token(
+                path,
+                ibc::packet::destination_channel(&ibc_packet),
+                transfer_packet.sent_token
+            );
         let ask_token = from_bcs::to_address(transfer_packet.ask_token);
-        let receiver  = from_bcs::to_address(transfer_packet.receiver);
+        let receiver = from_bcs::to_address(transfer_packet.receiver);
         let fee = transfer_packet.sent_amount - transfer_packet.ask_amount;
         // ------------------------------------------------------------------
         // TODO: no idea if the code below will work lol, it looks promising though
         // ------------------------------------------------------------------
         if (ask_token == wrapped_address) {
             if (!is_deployed(wrapped_address)) {
-                deploy_token(
-                    salt
-                );
-                let value = update_channel_path(path, ibc::packet::destination_channel(&ibc_packet));
+                deploy_token(salt);
+                let value =
+                    update_channel_path(
+                        path, ibc::packet::destination_channel(&ibc_packet)
+                    );
                 smart_table::upsert(&mut store.token_origin, wrapped_address, value);
             };
             ucs03::fa_coin::mint_with_metadata(
@@ -1277,16 +1300,15 @@ module ucs03::zkgm_relay {
                 );
             }
         } else {
-            if (transfer_packet.sent_token_prefix == (ibc::packet::source_channel(&ibc_packet) as u256)) {
+            if (transfer_packet.sent_token_prefix
+                == (ibc::packet::source_channel(&ibc_packet) as u256)) {
                 let balance_key = ChannelBalancePair {
                     channel: ibc::packet::destination_channel(&ibc_packet),
                     token: ask_token
                 };
 
-                let curr_balance = *smart_table::borrow(
-                    &store.channel_balance,
-                    balance_key
-                );
+                let curr_balance =
+                    *smart_table::borrow(&store.channel_balance, balance_key);
 
                 smart_table::upsert(
                     &mut store.channel_balance,
@@ -1301,13 +1323,8 @@ module ucs03::zkgm_relay {
                     receiver,
                     transfer_packet.ask_amount
                 );
-                if (fee > 0){
-                    primary_fungible_store::transfer(
-                        &get_signer(),
-                        asset,
-                        relayer,
-                        fee
-                    );
+                if (fee > 0) {
+                    primary_fungible_store::transfer(&get_signer(), asset, relayer, fee);
                 }
             };
         };
@@ -1330,8 +1347,9 @@ module ucs03::zkgm_relay {
         let l = vector::length(&batch_packet.syscall_packets);
         let acks = vector::empty();
         let i = 0;
-        while (i < l){
-            let syscall_packet = decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i));
+        while (i < l) {
+            let syscall_packet =
+                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i));
             vector::push_back(
                 &mut acks,
                 execute_internal<T>(
@@ -1343,7 +1361,7 @@ module ucs03::zkgm_relay {
                     syscall_packet
                 )
             );
-            if (vector::length(vector::borrow(&acks, i)) == 0){
+            if (vector::length(vector::borrow(&acks, i)) == 0) {
                 abort E_BATCH_MUST_BE_SYNC
             };
         };
@@ -1357,19 +1375,23 @@ module ucs03::zkgm_relay {
         path: u256,
         forward_packet: ForwardPacket
     ): (vector<u8>) acquires RelayStore, SignerRef {
-        let sent_packet = ibc::ibc::send_packet(
-            &get_signer(),
-            get_self_address(),
-            forward_packet.channel_id,
-            forward_packet.timeout_height,
-            forward_packet.timeout_timestamp,
-            encode_packet(
-                &ZkgmPacket {
-                    salt: salt,
-                    path: update_channel_path(path, ibc::packet::destination_channel(&ibc_packet)),
-                    syscall: forward_packet.syscall_packet
-                })
-        );
+        let sent_packet =
+            ibc::ibc::send_packet(
+                &get_signer(),
+                get_self_address(),
+                forward_packet.channel_id,
+                forward_packet.timeout_height,
+                forward_packet.timeout_timestamp,
+                encode_packet(
+                    &ZkgmPacket {
+                        salt: salt,
+                        path: update_channel_path(
+                            path, ibc::packet::destination_channel(&ibc_packet)
+                        ),
+                        syscall: forward_packet.syscall_packet
+                    }
+                )
+            );
         let packet_hash = commitment::commit_packet(&sent_packet);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         smart_table::upsert(&mut store.in_flight_packet, packet_hash, ibc_packet);
@@ -1385,40 +1407,44 @@ module ucs03::zkgm_relay {
     ): (vector<u8>) {
         let contract_address = from_bcs::to_address(multiplex_packet.contract_address);
         if (multiplex_packet.eureka) {
-            let param = copyable_any::pack<OnZkgmParams>(
-                OnZkgmParams{
-                    sender: multiplex_packet.sender,
-                    contract_calldata: multiplex_packet.contract_calldata
-                }
-            );
+            let param =
+                copyable_any::pack<OnZkgmParams>(
+                    OnZkgmParams {
+                        sender: multiplex_packet.sender,
+                        contract_calldata: multiplex_packet.contract_calldata
+                    }
+                );
             engine_zkgm::dispatch(param, contract_address);
             return bcs::to_bytes(&ACK_SUCCESS)
         };
-        let multiplex_ibc_packet = ibc::packet::new(
-            ibc::packet::source_channel(&ibc_packet),
-            ibc::packet::destination_channel(&ibc_packet),
-            encode_multiplex_sender_and_calldata(multiplex_packet.sender, multiplex_packet.contract_calldata),
-            ibc::packet::timeout_height(&ibc_packet),
-            ibc::packet::timeout_timestamp(&ibc_packet)
-        );
-        let param = copyable_any::pack<IIBCModuleOnRecvPacketParams>(
-            IIBCModuleOnRecvPacketParams{
-                packet: multiplex_ibc_packet,
-                relayer: relayer,
-                relayer_msg: relayer_msg
-            }
-        );
+        let multiplex_ibc_packet =
+            ibc::packet::new(
+                ibc::packet::source_channel(&ibc_packet),
+                ibc::packet::destination_channel(&ibc_packet),
+                encode_multiplex_sender_and_calldata(
+                    multiplex_packet.sender, multiplex_packet.contract_calldata
+                ),
+                ibc::packet::timeout_height(&ibc_packet),
+                ibc::packet::timeout_timestamp(&ibc_packet)
+            );
+        let param =
+            copyable_any::pack<IIBCModuleOnRecvPacketParams>(
+                IIBCModuleOnRecvPacketParams {
+                    packet: multiplex_ibc_packet,
+                    relayer: relayer,
+                    relayer_msg: relayer_msg
+                }
+            );
 
         engine_zkgm::dispatch(param, contract_address);
 
         let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
 
-        if (vector::length(&acknowledgement) == 0){
+        if (vector::length(&acknowledgement) == 0) {
             abort E_UNIMPLEMENTED
         };
         acknowledgement
     }
-
 
     public entry fun send(
         sender: &signer,
@@ -1436,11 +1462,7 @@ module ucs03::zkgm_relay {
             timeout_height,
             timeout_timestamp,
             encode_packet(
-                &ZkgmPacket {
-                    salt: salt,
-                    path: 0,
-                    syscall: raw_syscall
-                }
+                &ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall }
             )
         );
     }
@@ -1456,13 +1478,33 @@ module ucs03::zkgm_relay {
             abort E_UNSUPPORTED_VERSION
         };
         if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
-            verify_fungible_asset_transfer(sender, channel_id, path, decode_fungible_asset_transfer(syscall_packet.packet))
+            verify_fungible_asset_transfer(
+                sender,
+                channel_id,
+                path,
+                decode_fungible_asset_transfer(syscall_packet.packet)
+            )
         } else if (syscall_packet.index == SYSCALL_BATCH) {
-            verify_batch(sender, channel_id, path, decode_batch_packet(syscall_packet.packet))
+            verify_batch(
+                sender,
+                channel_id,
+                path,
+                decode_batch_packet(syscall_packet.packet)
+            )
         } else if (syscall_packet.index == SYSCALL_FORWARD) {
-            verify_forward(sender, channel_id, path, decode_forward(syscall_packet.packet))
+            verify_forward(
+                sender,
+                channel_id,
+                path,
+                decode_forward(syscall_packet.packet)
+            )
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
-            verify_multiplex(sender, channel_id, path, decode_multiplex(syscall_packet.packet))
+            verify_multiplex(
+                sender,
+                channel_id,
+                path,
+                decode_multiplex(syscall_packet.packet)
+            )
         } else {
             abort E_UNKNOWN_SYSCALL
         }
@@ -1482,10 +1524,10 @@ module ucs03::zkgm_relay {
         let name = ucs03::fa_coin::name_with_metadata(asset);
         let symbol = ucs03::fa_coin::symbol_with_metadata(asset);
 
-        if (transfer_packet.sent_name != name){
+        if (transfer_packet.sent_name != name) {
             abort E_INVALID_ASSET_NAME
         };
-        if (transfer_packet.sent_symbol != symbol){
+        if (transfer_packet.sent_symbol != symbol) {
             abort E_INVALID_ASSET_SYMBOL
         };
         let origin = *smart_table::borrow_with_default(
@@ -1520,7 +1562,7 @@ module ucs03::zkgm_relay {
     ) acquires RelayStore, SignerRef {
         let l = vector::length(&batch_packet.syscall_packets);
         let i = 0;
-        while (i < l){
+        while (i < l) {
             verify_internal(
                 sender,
                 channel_id,
@@ -1549,7 +1591,7 @@ module ucs03::zkgm_relay {
         _channel_id: u32,
         _path: u256,
         _multiplex_packet: MultiplexPacket
-    ) { }
+    ) {}
 
     // public fun on_packet<T: key, P: key + store + drop>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
     //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
@@ -1561,11 +1603,14 @@ module ucs03::zkgm_relay {
     //     0
     // }
 
-    public fun on_packet<T: key, P: key + store + drop>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+    public fun on_packet<T: key, P: key + store + drop>(
+        _store: Object<T>
+    ): u64 acquires RelayStore, SignerRef {
         let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
         let type_name_output = *copyable_any::type_name(&value);
 
-        if (type_name_output == std::type_info::type_name<helpers::RecvPacketParamsZKGM>()) {
+        if (type_name_output
+            == std::type_info::type_name<helpers::RecvPacketParamsZKGM>()) {
             let (pack, relayer, relayer_msg) =
                 helpers::on_recv_packet_zkgm_deconstruct(
                     copyable_any::unpack<helpers::RecvPacketParamsZKGM>(value)
@@ -1658,7 +1703,8 @@ module ucs03::zkgm_relay {
         let path = 1;
         let destination_channel = 1;
         let token = b"test_token";
-        let (wrapped_address, salt) = predict_wrapped_token(path, destination_channel, token);
+        let (wrapped_address, salt) =
+            predict_wrapped_token(path, destination_channel, token);
         let deployed_token_addr = deploy_token(salt);
 
         std::debug::print(&string::utf8(b"wrapped address is: "));
@@ -1675,11 +1721,11 @@ module ucs03::zkgm_relay {
         dispatcher::init_module_for_testing(ibc);
         init_module_for_testing(admin);
 
-
         let path = 1;
         let destination_channel = 1;
         let token = b"never_deployed_salt";
-        let (wrapped_address, _salt) = predict_wrapped_token(path, destination_channel, token);
+        let (wrapped_address, _salt) =
+            predict_wrapped_token(path, destination_channel, token);
 
         assert!(!is_deployed(wrapped_address), 102);
     }
@@ -1699,25 +1745,27 @@ module ucs03::zkgm_relay {
         assert!(last_channel_from_path(0) == 0, 1);
         assert!(last_channel_from_path(244) == 244, 1);
         assert!(last_channel_from_path(9294967296) == 2, 1);
-        assert!(last_channel_from_path(115792089237316195423570985008687907853269984665640564039457584007913129639935) == 4294967295, 1);
+        assert!(
+            last_channel_from_path(
+                115792089237316195423570985008687907853269984665640564039457584007913129639935
+            ) == 4294967295,
+            1
+        );
     }
 
     #[test]
     public fun test_update_Channel_path() {
-        assert!(update_channel_path(0,0) == 0, 1);
-        assert!(update_channel_path(0,34) == 34, 1);
-        assert!(update_channel_path(12414123,111) == 476753783979, 1);
+        assert!(update_channel_path(0, 0) == 0, 1);
+        assert!(update_channel_path(0, 34) == 34, 1);
+        assert!(update_channel_path(12414123, 111) == 476753783979, 1);
         assert!(update_channel_path(44, 22) == 94489280556, 1);
     }
 
     #[test]
     fun test_zkgm_encode_decode() {
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let zkgm_data = ZkgmPacket {
-            salt: b"helloo",
-            path: 3333334,
-            syscall: b"hellloo"
-        };
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let zkgm_data = ZkgmPacket { salt: b"helloo", path: 3333334, syscall: b"hellloo" };
 
         let zkgm_bytes = encode_packet(&zkgm_data);
         assert!(zkgm_bytes == output, 0);
@@ -1728,11 +1776,11 @@ module ucs03::zkgm_relay {
         assert!(zkgm_data_decoded.syscall == b"hellloo", 3);
     }
 
-
     #[test]
-    fun test_decode_syscall(){
-        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007100000000000000000000000000000000000000000000000000000000000000f40000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        
+    fun test_decode_syscall() {
+        let output =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007100000000000000000000000000000000000000000000000000000000000000f40000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+
         let syscall_data_decoded = decode_syscall(output);
         assert!(syscall_data_decoded.version == 113, 1);
         assert!(syscall_data_decoded.index == 244, 2);
@@ -1741,11 +1789,9 @@ module ucs03::zkgm_relay {
 
     #[test]
     fun test_encode_decode_ack() {
-        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let ack_data = Acknowledgement {
-            tag: 7788909223344,
-            inner_ack: b"hellloo"
-        };
+        let output =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
 
         let ack_bytes = encode_ack(&ack_data);
         assert!(ack_bytes == output, 0);
@@ -1757,7 +1803,8 @@ module ucs03::zkgm_relay {
 
     #[test]
     fun test_encode_decode_asset_transfer_ack() {
-        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+        let output =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
         let ack_data = AssetTransferAcknowledgement {
             fill_type: 7788909223344,
             market_maker: b"hellloo"
@@ -1769,28 +1816,18 @@ module ucs03::zkgm_relay {
         let ack_data_decoded = decode_asset_transfer_ack(ack_bytes);
         assert!(ack_data_decoded.fill_type == 7788909223344, 1);
         assert!(ack_data_decoded.market_maker == b"hellloo", 3);
-    }    
-    
+    }
+
     #[test]
     fun test_encode_decode_batch_ack() {
         // ---------------- TEST 1 ----------------
-        let output = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
+        let output =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"hello"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hi"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hehe"
-        );
-        let ack_data = BatchAcknowledgement {
-            acknowledgements: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"hello");
+        vector::push_back(&mut outer_arr, b"hi");
+        vector::push_back(&mut outer_arr, b"hehe");
+        let ack_data = BatchAcknowledgement { acknowledgements: outer_arr };
         let ack_bytes = encode_batch_ack(&ack_data);
         assert!(ack_bytes == output, 0);
         let ack_data_decoded = decode_batch_ack(ack_bytes);
@@ -1799,21 +1836,13 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"hi", 3);
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 2) == b"hehe", 4);
 
-
         // ---------------- TEST 2 ----------------
-        let output2 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
+        let output2 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"hello"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hi"
-        );
-        let ack_data2 = BatchAcknowledgement {
-            acknowledgements: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"hello");
+        vector::push_back(&mut outer_arr, b"hi");
+        let ack_data2 = BatchAcknowledgement { acknowledgements: outer_arr };
         let ack_bytes2 = encode_batch_ack(&ack_data2);
         assert!(ack_bytes2 == output2, 0);
         let ack_data_decoded = decode_batch_ack(ack_bytes2);
@@ -1821,31 +1850,19 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"hello", 2);
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"hi", 3);
 
-
-
         // ---------------- TEST 3 ----------------
-        let output3 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let output3 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
         let idx = 0;
-        vector::push_back(
-            &mut outer_arr,
-            b"xdddd"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"test"
-        );
-        while (idx <10){
-            vector::push_back(
-                &mut outer_arr,
-                b""
-            );
+        vector::push_back(&mut outer_arr, b"xdddd");
+        vector::push_back(&mut outer_arr, b"test");
+        while (idx < 10) {
+            vector::push_back(&mut outer_arr, b"");
             idx = idx + 1;
         };
 
-        let ack_data3 = BatchAcknowledgement {
-            acknowledgements: outer_arr  
-        };
+        let ack_data3 = BatchAcknowledgement { acknowledgements: outer_arr };
         let ack_bytes3 = encode_batch_ack(&ack_data3);
         assert!(ack_bytes3 == output3, 0);
         let ack_data_decoded = decode_batch_ack(ack_bytes3);
@@ -1853,19 +1870,13 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"xdddd", 2);
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 1) == b"test", 3);
 
-
-
         // ---------------- TEST 4 ----------------
-        let output4 = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
+        let output4 =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"xdddd"
-        );
-        
-        let ack_data4 = BatchAcknowledgement {
-            acknowledgements: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"xdddd");
+
+        let ack_data4 = BatchAcknowledgement { acknowledgements: outer_arr };
         let ack_bytes4 = encode_batch_ack(&ack_data4);
         assert!(ack_bytes4 == output4, 0);
         let ack_data_decoded = decode_batch_ack(ack_bytes4);
@@ -1873,12 +1884,11 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.acknowledgements, 0) == b"xdddd", 2);
 
         // ---------------- TEST 5 ----------------
-        let output5 = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+        let output5 =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
-        
-        let ack_data5 = BatchAcknowledgement {
-            acknowledgements: outer_arr  
-        };
+
+        let ack_data5 = BatchAcknowledgement { acknowledgements: outer_arr };
         let ack_bytes5 = encode_batch_ack(&ack_data5);
         assert!(ack_bytes5 == output5, 0);
         let ack_data_decoded = decode_batch_ack(ack_bytes5);
@@ -1889,23 +1899,13 @@ module ucs03::zkgm_relay {
     #[test]
     fun test_encode_decode_batch_packet() {
         // ---------------- TEST 1 ----------------
-        let output = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
+        let output =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"hello"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hi"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hehe"
-        );
-        let ack_data = BatchPacket {
-            syscall_packets: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"hello");
+        vector::push_back(&mut outer_arr, b"hi");
+        vector::push_back(&mut outer_arr, b"hehe");
+        let ack_data = BatchPacket { syscall_packets: outer_arr };
         let ack_bytes = encode_batch_packet(&ack_data);
         assert!(ack_bytes == output, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes);
@@ -1914,21 +1914,13 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 2) == b"hehe", 4);
 
-
         // ---------------- TEST 2 ----------------
-        let output2 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
+        let output2 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"hello"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"hi"
-        );
-        let ack_data2 = BatchPacket {
-            syscall_packets: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"hello");
+        vector::push_back(&mut outer_arr, b"hi");
+        let ack_data2 = BatchPacket { syscall_packets: outer_arr };
         let ack_bytes2 = encode_batch_packet(&ack_data2);
         assert!(ack_bytes2 == output2, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes2);
@@ -1936,31 +1928,19 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"hello", 2);
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
 
-
-
         // ---------------- TEST 3 ----------------
-        let output3 = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let output3 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
         let idx = 0;
-        vector::push_back(
-            &mut outer_arr,
-            b"xdddd"
-        );
-        vector::push_back(
-            &mut outer_arr,
-            b"test"
-        );
-        while (idx <10){
-            vector::push_back(
-                &mut outer_arr,
-                b""
-            );
+        vector::push_back(&mut outer_arr, b"xdddd");
+        vector::push_back(&mut outer_arr, b"test");
+        while (idx < 10) {
+            vector::push_back(&mut outer_arr, b"");
             idx = idx + 1;
         };
 
-        let ack_data3 = BatchPacket {
-            syscall_packets: outer_arr  
-        };
+        let ack_data3 = BatchPacket { syscall_packets: outer_arr };
         let ack_bytes3 = encode_batch_packet(&ack_data3);
         assert!(ack_bytes3 == output3, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes3);
@@ -1968,19 +1948,13 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"test", 3);
 
-
-
         // ---------------- TEST 4 ----------------
-        let output4 = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
+        let output4 =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
         let outer_arr = vector::empty();
-        vector::push_back(
-            &mut outer_arr,
-            b"xdddd"
-        );
-        
-        let ack_data4 = BatchPacket {
-            syscall_packets: outer_arr  
-        };
+        vector::push_back(&mut outer_arr, b"xdddd");
+
+        let ack_data4 = BatchPacket { syscall_packets: outer_arr };
         let ack_bytes4 = encode_batch_packet(&ack_data4);
         assert!(ack_bytes4 == output4, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes4);
@@ -1988,12 +1962,11 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
 
         // ---------------- TEST 5 ----------------
-        let output5 = x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+        let output5 =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
-        
-        let ack_data5 = BatchPacket {
-            syscall_packets: outer_arr  
-        };
+
+        let ack_data5 = BatchPacket { syscall_packets: outer_arr };
         let ack_bytes5 = encode_batch_packet(&ack_data5);
         assert!(ack_bytes5 == output5, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes5);
@@ -2003,7 +1976,8 @@ module ucs03::zkgm_relay {
 
     #[test]
     fun test_encode_decode_forward_packet() {
-        let output = x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000005161500000000000000000000000000000000000000000000000000000000000056ce0000000000000000000000000000000000000000000000000000000000002b670000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
+        let output =
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000005161500000000000000000000000000000000000000000000000000000000000056ce0000000000000000000000000000000000000000000000000000000000002b670000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
         let forward_data = ForwardPacket {
             channel_id: 333333,
             timeout_height: 22222,
@@ -2017,14 +1991,17 @@ module ucs03::zkgm_relay {
         let forward_data_decoded = decode_forward(ack_bytes);
         assert!(forward_data_decoded.channel_id == forward_data.channel_id, 0);
         assert!(forward_data_decoded.timeout_height == forward_data.timeout_height, 1);
-        assert!(forward_data_decoded.timeout_timestamp == forward_data.timeout_timestamp, 2);
+        assert!(
+            forward_data_decoded.timeout_timestamp == forward_data.timeout_timestamp, 2
+        );
         assert!(forward_data_decoded.syscall_packet == forward_data.syscall_packet, 3);
-    }  
+    }
 
     #[test]
     fun test_decode_multiplex() {
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000002a3078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000617468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c626200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
-        let multiplex_pack = MultiplexPacket{
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000002a3078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000617468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c626200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
+        let multiplex_pack = MultiplexPacket {
             sender: b"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
             eureka: true,
             contract_address: b"thisismyaddresszlulthisismyaddresszlulthisismyaddresszlulthisismyaddresszlulthisismyaddresszlulbb",
@@ -2035,13 +2012,16 @@ module ucs03::zkgm_relay {
         assert!(multiplex_decoded.sender == multiplex_pack.sender, 0);
         assert!(multiplex_decoded.eureka == multiplex_pack.eureka, 1);
         assert!(multiplex_decoded.contract_address == multiplex_pack.contract_address, 2);
-        assert!(multiplex_decoded.contract_calldata == multiplex_pack.contract_calldata, 3);
-    }  
+        assert!(
+            multiplex_decoded.contract_calldata == multiplex_pack.contract_calldata, 3
+        );
+    }
 
     #[test]
     fun test_decode_fungible_asset_transfer_pack() {
-        
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000007c37bdc730000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f307853656e646572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001130785265636569766572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012307853656e74546f6b656e4164647265737300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014535353535353535353535353535353594d424f4c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000155454545454545454545454546f6b656e204e616d6500000000000000000000000000000000000000000000000000000000000000000000000000000000000011307841736b546f6b656e41646472657373000000000000000000000000000000";
+
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000007c37bdc730000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f307853656e646572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001130785265636569766572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012307853656e74546f6b656e4164647265737300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014535353535353535353535353535353594d424f4c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000155454545454545454545454546f6b656e204e616d6500000000000000000000000000000000000000000000000000000000000000000000000000000000000011307841736b546f6b656e41646472657373000000000000000000000000000000";
         let fatp = FungibleAssetTransferPacket {
             sender: b"0xSenderAddress",
             receiver: b"0xReceiverAddress",
@@ -2066,16 +2046,18 @@ module ucs03::zkgm_relay {
         assert!(fatp.ask_token == fatp_decoded.ask_token, 0);
         assert!(fatp.ask_amount == fatp_decoded.ask_amount, 0);
         assert!(fatp.only_maker == fatp_decoded.only_maker, 0);
-    }  
-    
+    }
 
     #[test]
     fun test_encode_multiplex_sender_and_calldata() {
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000d23078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010e4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000000000000000000000000000";
-        
-        let ack_bytes = encode_multiplex_sender_and_calldata(b"0x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
-                                                            b"ExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallData");
-        assert!(ack_bytes == output, 0);
-    }  
-}
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000d23078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010e4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000000000000000000000000000";
 
+        let ack_bytes =
+            encode_multiplex_sender_and_calldata(
+                b"0x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+                b"ExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallData"
+            );
+        assert!(ack_bytes == output, 0);
+    }
+}

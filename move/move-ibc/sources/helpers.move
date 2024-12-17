@@ -35,7 +35,7 @@ module ibc::helpers {
     struct TimeoutPacketParamsZKGM has copy, drop, store {
         packet: Packet,
         relayer: address
-    } 
+    }
 
     struct ChannelOpenInitParams has copy, drop, store {
         connection_id: u32,
@@ -246,16 +246,18 @@ module ibc::helpers {
         )
     }
 
-
     public fun pack_timeout_packet_params(packet: Packet): copyable_any::Any {
         copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet })
     }
 
-    public fun pack_timeout_packet_params_zkgm(packet: Packet, relayer: address): copyable_any::Any {
-        copyable_any::pack<TimeoutPacketParamsZKGM>(TimeoutPacketParamsZKGM { packet, relayer })
+    public fun pack_timeout_packet_params_zkgm(
+        packet: Packet, relayer: address
+    ): copyable_any::Any {
+        copyable_any::pack<TimeoutPacketParamsZKGM>(
+            TimeoutPacketParamsZKGM { packet, relayer }
+        )
     }
 
- 
     public fun pack_recv_packet_params(packet: Packet): copyable_any::Any {
         copyable_any::pack<RecvPacketParams>(RecvPacketParams { packet })
     }
@@ -273,17 +275,22 @@ module ibc::helpers {
         &param.packet
     }
 
-
     // Getter for RecvPacketParams
-    public fun get_packet_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): &Packet {
+    public fun get_packet_from_recv_param_zkgm(
+        param: &RecvPacketParamsZKGM
+    ): &Packet {
         &param.packet
     }
 
-    public fun get_relayer_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): address {
+    public fun get_relayer_from_recv_param_zkgm(
+        param: &RecvPacketParamsZKGM
+    ): address {
         param.relayer
     }
 
-    public fun get_relayer_msg_from_recv_param_zkgm(param: &RecvPacketParamsZKGM): &vector<u8> {
+    public fun get_relayer_msg_from_recv_param_zkgm(
+        param: &RecvPacketParamsZKGM
+    ): &vector<u8> {
         &param.relayer_msg
     }
 
@@ -305,9 +312,10 @@ module ibc::helpers {
         &param.acknowledgement
     }
 
-
     // Getters for AcknowledgePacketParams
-    public fun get_packet_from_ack_param_zkgm(param: &AcknowledgePacketParamsZKGM): &Packet {
+    public fun get_packet_from_ack_param_zkgm(
+        param: &AcknowledgePacketParamsZKGM
+    ): &Packet {
         &param.packet
     }
 
@@ -317,13 +325,11 @@ module ibc::helpers {
         &param.acknowledgement
     }
 
-
     public fun get_relayer_from_ack_param_zkgm(
         param: &AcknowledgePacketParamsZKGM
     ): address {
         param.relayer
     }
-
 
     // Getter for TimeoutPacketParams
     public fun get_packet_from_timeout_param(param: &TimeoutPacketParams): &Packet {
@@ -331,12 +337,17 @@ module ibc::helpers {
     }
 
     // Getter for TimeoutPacketParams
-    public fun get_packet_from_timeout_param_zkgm(param: &TimeoutPacketParamsZKGM): &Packet {
+    public fun get_packet_from_timeout_param_zkgm(
+        param: &TimeoutPacketParamsZKGM
+    ): &Packet {
         &param.packet
     }
-    public fun get_relayer_from_timeout_param_zkgm(param: &TimeoutPacketParamsZKGM): address {
+
+    public fun get_relayer_from_timeout_param_zkgm(
+        param: &TimeoutPacketParamsZKGM
+    ): address {
         param.relayer
-    } 
+    }
 
     // Getters for ChannelOpenInitParams
     public fun get_connection_id_from_channel_open_init_param(

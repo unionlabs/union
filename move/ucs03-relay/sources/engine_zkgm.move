@@ -4,7 +4,7 @@ module ucs03::engine_zkgm {
     use ucs03::dispatcher_zkgm;
     use aptos_std::copyable_any;
     use std::vector;
-    
+
     /// The dispatch call knows both storage and indirectly the callback, thus the separate module.
     public fun dispatch(data: copyable_any::Any, type_info_addr: address) {
         let ret_value = vector::empty<u8>();

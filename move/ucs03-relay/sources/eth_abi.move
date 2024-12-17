@@ -52,7 +52,7 @@ module ucs03::ethabi {
     public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         string::utf8(decode_bytes(buf, index))
     }
-    
+
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
         vector::append(buf, sender_bytes);
@@ -101,7 +101,6 @@ module ucs03::ethabi {
 
         result
     }
-
 
     public fun decode_u8(buf: &vector<u8>, index: &mut u64): u8 {
         let padded_bytes = vector::slice(buf, *index, *index + 1);

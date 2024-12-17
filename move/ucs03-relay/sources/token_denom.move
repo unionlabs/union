@@ -120,7 +120,6 @@ module ucs03::fa_coin {
         fungible_asset::symbol<Metadata>(asset)
     }
 
-
     /// Deposit function override to ensure that the account is not denylisted and the FA coin is not paused.
     /// OPTIONAL
     public fun deposit<T: key>(
