@@ -1,23 +1,34 @@
 module ucs03::dispatcher_zkgm {
     use std::option;
-    use std::string::{Self};
+    use std::string;
     use aptos_std::copyable_any;
-    use aptos_std::table::{Self, Table};
-    use aptos_std::type_info::{Self, TypeInfo};
-    use std::vector;
+    use aptos_std::type_info::{Self};
+    use aptos_std::smart_table::{Self, SmartTable};
 
+    use std::event;
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::function_info::FunctionInfo;
     use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::object::{Self, ExtendRef, Object};
-
     const DISPATCHER_APP_SEED: vector<u8> = b"union-zkgm-dispatcher-v1";
+
+    struct StorageWithoutT has drop, key, store {
+        data: copyable_any::Any,
+        return_value: vector<u8>
+    }
+
+    #[event]
+    struct LOG has copy, drop, store {
+        incoming_addr: address,
+    }
+
 
     struct Dispatcher has key {
         /// Tracks the input type to the dispatch handler.
-        dispatcher: Table<TypeInfo, Object<Metadata>>,
+        dispatcher: SmartTable<address, Object<Metadata>>,
         /// Used to store temporary data for dispatching.
-        obj_ref: ExtendRef
+        obj_ref: ExtendRef,
+        storage: SmartTable<address, StorageWithoutT>
     }
 
     /// Store the data to dispatch here.
@@ -54,51 +65,58 @@ module ucs03::dispatcher_zkgm {
         );
 
         let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
-        table::add(&mut dispatcher.dispatcher, type_info::type_of<T>(), metadata);
+
+        let type_info_addr = type_info::account_address(&type_info::type_of<T>());
+
+        event::emit(
+            LOG { incoming_addr: type_info_addr }
+        );
+        smart_table::upsert(&mut dispatcher.dispatcher, type_info_addr, metadata);
     }
 
     /// Insert into this module as the callback needs to retrieve and avoid a cyclical dependency:
     /// engine -> storage and then engine -> callback -> storage
-    public fun insert<P: store>(
-        data: copyable_any::Any, return_value: vector<u8>
+    public fun insert(
+        data: copyable_any::Any, return_value: vector<u8>, type_info_addr: address
     ): Object<Metadata> acquires Dispatcher {
-        move_to(
-            &storage_signer(),
-            Storage<P> { data, return_value }
-        );
+        // move_to(
+        //     &storage_signer(),
+        //     Storage<P> { data, return_value }
+        // );
+        let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
 
-        let typeinfo = type_info::type_of<P>();
-        let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
-        let type_info = *table::borrow(&dispatcher.dispatcher, typeinfo);
+        let storage_val = StorageWithoutT { data, return_value };
+        smart_table::upsert(&mut dispatcher.storage, type_info_addr, storage_val);
+        let type_info = *smart_table::borrow(&dispatcher.dispatcher, type_info_addr);
 
         type_info
     }
 
-    public fun delete_storage<P: store>() acquires Dispatcher, Storage {
-        move_from<Storage<P>>(storage_address());
-    }
-
-    public fun retrieve<P: drop>(
-        _proof: P
-    ): (copyable_any::Any, vector<u8>) acquires Dispatcher, Storage {
-        // let type_info = type_info::type_of<P>();
-        let my_storage = move_from<Storage<P>>(storage_address()); //.data
-        (my_storage.data, my_storage.return_value)
-    }
+    // public fun delete_storage<P: store>() acquires Dispatcher, Storage {
+    //     move_from<Storage<P>>(storage_address());
+    // }
 
     // Getter for `data`
-    public fun get_data<P: drop>(_proof: P): copyable_any::Any acquires Dispatcher, Storage {
-        borrow_global<Storage<P>>(storage_address()).data
+    public fun get_data<P: drop>(_proof: P): copyable_any::Any acquires Dispatcher {
+        let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
+        let storage_val = smart_table::borrow(&dispatcher.storage, type_info::account_address(&type_info::type_of<P>()));
+        storage_val.data
     }
 
     // Getter for `return_value`
-    public fun get_return_value<P: drop>(): vector<u8> acquires Dispatcher, Storage {
-        borrow_global<Storage<P>>(storage_address()).return_value
+    public fun get_return_value(type_info_addr: address): vector<u8> acquires Dispatcher {
+        let dispatcher = borrow_global<Dispatcher>(get_vault_addr());
+        let storage_val = smart_table::borrow(&dispatcher.storage, type_info_addr);
+        storage_val.return_value
     }
 
     // Setter for `return_value`
-    public fun set_return_value<P: drop>(_proof: P, new_value: vector<u8>) acquires Dispatcher, Storage {
-        borrow_global_mut<Storage<P>>(storage_address()).return_value = new_value;
+    public fun set_return_value<P: drop>(_proof: P, new_value: vector<u8>) acquires Dispatcher {
+        let type_info_addr = type_info::account_address(&type_info::type_of<P>());
+        let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
+        smart_table::borrow_mut(&mut dispatcher.storage, type_info_addr).return_value = new_value;
+
+        // borrow_global_mut<Storage<P>>(storage_address()).return_value = new_value;
     }
 
     /// Prepares the dispatch table.
@@ -111,8 +129,9 @@ module ucs03::dispatcher_zkgm {
         move_to(
             vault_signer,
             Dispatcher {
-                dispatcher: table::new(),
-                obj_ref: object::generate_extend_ref(constructor_ref)
+                dispatcher: smart_table::new(),
+                obj_ref: object::generate_extend_ref(constructor_ref),
+                storage: smart_table::new()
             }
         );
     }
@@ -137,12 +156,4 @@ module ucs03::dispatcher_zkgm {
     public fun init_module_for_testing(publisher: &signer) {
         init_module(publisher);
     }
-
-    /// The dispatch call knows both storage and indirectly the callback, thus the separate module.
-    public fun dispatch<T: store>(data: copyable_any::Any) acquires Dispatcher {
-        let ret_value = vector::empty<u8>();
-        let metadata = insert<T>(data, ret_value);
-        dispatchable_fungible_asset::derived_balance(metadata);
-    }
-
 }

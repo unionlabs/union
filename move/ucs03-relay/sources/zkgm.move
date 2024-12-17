@@ -3,13 +3,14 @@ module ucs03::zkgm_relay {
     use ibc::helpers;
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
-    use ucs03::dispatcher_zkgm;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
     use aptos_std::copyable_any;
     use aptos_framework::function_info;
     use ibc::commitment;
     use ucs03::ethabi;
+    use ucs03::dispatcher_zkgm;
+    use ucs03::engine_zkgm;
     use aptos_framework::function_info::FunctionInfo;
 
     use std::string::{Self, String};
@@ -53,6 +54,8 @@ module ucs03::zkgm_relay {
     const E_BATCH_MUST_BE_SYNC: u64 = 11;
     const E_INVALID_FILL_TYPE: u64 = 12;
     const E_UNIMPLEMENTED: u64 = 13;
+    const E_ACK_EMPTY: u64 = 14;
+    const E_ONLY_MAKER: u64 = 15; 
 
     struct ZKGMProof has drop, store, key {}
 
@@ -93,6 +96,23 @@ module ucs03::zkgm_relay {
     struct OnZkgmParams has copy, drop, store {
         sender: vector<u8>,
         contract_calldata: vector<u8>,
+    }
+
+    struct IIBCModuleOnRecvPacketParams has copy, drop, store {
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>
+    }
+
+    struct IIBCModuleOnAcknowledgementPacketParams has copy, drop, store {
+        packet: Packet,
+        acknowledgement: vector<u8>,
+        relayer: address,
+    }
+
+    struct IIBCModuleOnTimeoutPacketParams has copy, drop, store {
+        packet: Packet,
+        relayer: address,
     }
 
     struct FungibleAssetTransferPacket has copy, drop, store {
@@ -794,15 +814,24 @@ module ucs03::zkgm_relay {
         // We can call execute_internal directly
         let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
         let zkgm_packet = decode_packet(*raw_zkgm_packet);
-        execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
-    
-        // TODO: we'll return something
-        //in case of success or failure from execute_internal
-
+        
+        let acknowledgement = execute_internal<T>(ibc_packet, relayer, relayer_msg, zkgm_packet.salt, zkgm_packet.path, decode_syscall(zkgm_packet.syscall));
+        
+        if (vector::length(&acknowledgement) == 0) {
+            abort E_ACK_EMPTY
+        } else if(acknowledgement == ACK_ERR_ONLYMAKER) {
+            abort E_ONLY_MAKER
+        } else {
+            let return_value = encode_ack(&Acknowledgement {
+                tag: ACK_SUCCESS,
+                inner_ack: acknowledgement
+            });
+            dispatcher_zkgm::set_return_value<ZKGMProof>(new_ucs_relay_proof(), return_value);
+        }
     }
 
     public fun on_acknowledge_packet(
-        ibc_packet: Packet, acknowledgement: vector<u8>
+        ibc_packet: Packet, acknowledgement: vector<u8>, relayer: address
     ) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
@@ -820,6 +849,7 @@ module ucs03::zkgm_relay {
             let zkgm_ack = decode_ack(acknowledgement);
             acknowledge_internal(
                 ibc_packet,
+                relayer,
                 zkgm_packet.salt,
                 decode_syscall(zkgm_packet.syscall),
                 zkgm_ack.tag == ACK_SUCCESS,
@@ -830,6 +860,7 @@ module ucs03::zkgm_relay {
 
     fun acknowledge_internal(
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         syscall_packet: SyscallPacket,
         success: bool,
@@ -850,6 +881,7 @@ module ucs03::zkgm_relay {
         } else if (syscall_packet.index == SYSCALL_BATCH) {
             acknowledge_batch(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_batch_packet(syscall_packet.packet),
                 success,
@@ -866,6 +898,7 @@ module ucs03::zkgm_relay {
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
             acknowledge_multiplex(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_multiplex(syscall_packet.packet),
                 success,
@@ -916,6 +949,7 @@ module ucs03::zkgm_relay {
 
     fun acknowledge_batch(
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         batch_packet: BatchPacket,
         success: bool,
@@ -931,6 +965,7 @@ module ucs03::zkgm_relay {
             };
             acknowledge_internal(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i)),
                 success,
@@ -949,28 +984,36 @@ module ucs03::zkgm_relay {
 
     fun acknowledge_multiplex(
         ibc_packet: Packet,
+        relayer: address,
         _salt: vector<u8>,
         multiplex_packet: MultiplexPacket,
         success: bool,
-        _inner_ack: vector<u8>
+        ack: vector<u8>
     ) {
-        if (success && !multiplex_packet.eureka) {ibc::packet::new(
+        if (success && !multiplex_packet.eureka) {
+            let multiplex_ibc_packet = ibc::packet::new(
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
                 encode_multiplex_sender_and_calldata(multiplex_packet.contract_address, multiplex_packet.contract_calldata),
                 ibc::packet::timeout_height(&ibc_packet),
                 ibc::packet::timeout_timestamp(&ibc_packet)
             );
-            // TODO: Call
-            // IIBCModule(address(bytes20(multiplexPacket.sender)))
-            //  .onAcknowledgementPacket(multiplexIbcPacket, ack, relayer);
-            // not sure how?
+            let param = copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
+                IIBCModuleOnAcknowledgementPacketParams{
+                    packet: multiplex_ibc_packet,
+                    acknowledgement: ack,
+                    relayer: relayer
+                }
+            );
+            let contract_address = from_bcs::to_address(multiplex_packet.sender);
+
+            engine_zkgm::dispatch(param, contract_address);
         }
     }
 
 
 
-    public fun on_timeout_packet(ibc_packet: Packet) acquires SignerRef {
+    public fun on_timeout_packet(ibc_packet: Packet, relayer: address) acquires SignerRef {
         // Decode the packet data
         let packet_data = ibc::packet::data(&ibc_packet);
 
@@ -978,6 +1021,7 @@ module ucs03::zkgm_relay {
 
         timeout_internal(
             ibc_packet,
+            relayer,
             zkgm_packet.salt,
             decode_syscall(zkgm_packet.syscall)
         );
@@ -985,6 +1029,7 @@ module ucs03::zkgm_relay {
 
     fun timeout_internal(
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         syscall_packet: SyscallPacket
     ) acquires SignerRef {
@@ -1001,6 +1046,7 @@ module ucs03::zkgm_relay {
         } else if (syscall_packet.index == SYSCALL_BATCH) {
             timeout_batch(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_batch_packet(syscall_packet.packet)
             );
@@ -1013,6 +1059,7 @@ module ucs03::zkgm_relay {
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
             timeout_multiplex(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_multiplex(syscall_packet.packet)
             );
@@ -1054,6 +1101,7 @@ module ucs03::zkgm_relay {
 
     fun timeout_batch(
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         batch_packet: BatchPacket
     ) acquires SignerRef {
@@ -1062,6 +1110,7 @@ module ucs03::zkgm_relay {
         while (i < l){
             timeout_internal(
                 ibc_packet,
+                relayer,
                 salt,
                 decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i))
             );
@@ -1078,21 +1127,27 @@ module ucs03::zkgm_relay {
 
     fun timeout_multiplex(
         ibc_packet: Packet,
+        relayer: address,
         _salt: vector<u8>,
         multiplex_packet: MultiplexPacket
     ) {
         if (!multiplex_packet.eureka) {
-            let _multiplex_ibc_packet = ibc::packet::new(
+            let multiplex_ibc_packet = ibc::packet::new(
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
                 encode_multiplex_sender_and_calldata(multiplex_packet.contract_address, multiplex_packet.contract_calldata),
                 ibc::packet::timeout_height(&ibc_packet),
                 ibc::packet::timeout_timestamp(&ibc_packet)
             );
-            // TODO: Call
-            // IIBCModule(address(bytes20(multiplexPacket.sender)))
-            //  .onTimeoutPacket(multiplexIbcPacket, relayer);
-            // not sure how?
+            let param = copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
+                IIBCModuleOnTimeoutPacketParams{
+                    packet: multiplex_ibc_packet,
+                    relayer: relayer
+                }
+            );
+            let contract_address = from_bcs::to_address(multiplex_packet.sender);
+
+            engine_zkgm::dispatch(param, contract_address);
         }
     }
 
@@ -1161,8 +1216,9 @@ module ucs03::zkgm_relay {
                 decode_forward(syscall_packet.packet)
             )
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
-            execute_multiplex<T>(
+            execute_multiplex(
                 ibc_packet,
+                relayer,
                 relayer_msg,
                 salt,
                 decode_multiplex(syscall_packet.packet)
@@ -1301,7 +1357,7 @@ module ucs03::zkgm_relay {
         path: u256,
         forward_packet: ForwardPacket
     ): (vector<u8>) acquires RelayStore, SignerRef {
-        let _sent_packet = ibc::ibc::send_packet(
+        let sent_packet = ibc::ibc::send_packet(
             &get_signer(),
             get_self_address(),
             forward_packet.channel_id,
@@ -1314,21 +1370,20 @@ module ucs03::zkgm_relay {
                     syscall: forward_packet.syscall_packet
                 })
         );
-        let packet_hash = commitment::commit_packet(&ibc_packet);
-        // TODO: send_packet returns packet now instead of u64
-        // Fix it later `commitment::commit_packet(&ibc_packet);`  is completely wrong
+        let packet_hash = commitment::commit_packet(&sent_packet);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         smart_table::upsert(&mut store.in_flight_packet, packet_hash, ibc_packet);
         ACK_EMPTY
     }
 
-    fun execute_multiplex<T: key + store + drop>(
+    fun execute_multiplex(
         ibc_packet: Packet,
-        _relayer_msg: vector<u8>,
+        relayer: address,
+        relayer_msg: vector<u8>,
         _salt: vector<u8>,
         multiplex_packet: MultiplexPacket
     ): (vector<u8>) {
-        let _contract_address = from_bcs::to_address(multiplex_packet.contract_address);
+        let contract_address = from_bcs::to_address(multiplex_packet.contract_address);
         if (multiplex_packet.eureka) {
             let param = copyable_any::pack<OnZkgmParams>(
                 OnZkgmParams{
@@ -1336,22 +1391,28 @@ module ucs03::zkgm_relay {
                     contract_calldata: multiplex_packet.contract_calldata
                 }
             );
-            dispatcher_zkgm::dispatch<T>(param);
-            
+            engine_zkgm::dispatch(param, contract_address);
             return bcs::to_bytes(&ACK_SUCCESS)
         };
-        let _multiplex_ibc_packet = ibc::packet::new(
+        let multiplex_ibc_packet = ibc::packet::new(
             ibc::packet::source_channel(&ibc_packet),
             ibc::packet::destination_channel(&ibc_packet),
             encode_multiplex_sender_and_calldata(multiplex_packet.sender, multiplex_packet.contract_calldata),
             ibc::packet::timeout_height(&ibc_packet),
             ibc::packet::timeout_timestamp(&ibc_packet)
         );
-        // TODO: Call
-        // bytes memory acknowledgement = IIBCModule(contractAddress)
-        //  .onRecvPacket(multiplexIbcPacket, relayer, relayerMsg);
-        // not sure how?
-        let acknowledgement = vector::empty();
+        let param = copyable_any::pack<IIBCModuleOnRecvPacketParams>(
+            IIBCModuleOnRecvPacketParams{
+                packet: multiplex_ibc_packet,
+                relayer: relayer,
+                relayer_msg: relayer_msg
+            }
+        );
+
+        engine_zkgm::dispatch(param, contract_address);
+
+        let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
+
         if (vector::length(&acknowledgement) == 0){
             abort E_UNIMPLEMENTED
         };
@@ -1511,19 +1572,19 @@ module ucs03::zkgm_relay {
                 );
             on_recv_packet<P>(pack, relayer, relayer_msg);
         } else if (type_name_output
-            == std::type_info::type_name<helpers::AcknowledgePacketParams>()) {
-            let (pack, acknowledgement) =
-                helpers::on_acknowledge_packet_deconstruct(
-                    copyable_any::unpack<helpers::AcknowledgePacketParams>(value)
+            == std::type_info::type_name<helpers::AcknowledgePacketParamsZKGM>()) {
+            let (pack, acknowledgement, relayer) =
+                helpers::on_acknowledge_packet_deconstruct_zkgm(
+                    copyable_any::unpack<helpers::AcknowledgePacketParamsZKGM>(value)
                 );
-            on_acknowledge_packet(pack, acknowledgement);
+            on_acknowledge_packet(pack, acknowledgement, relayer);
         } else if (type_name_output
-            == std::type_info::type_name<helpers::TimeoutPacketParams>()) {
-            let (pack) =
-                helpers::on_timeout_packet_deconstruct(
-                    copyable_any::unpack<helpers::TimeoutPacketParams>(value)
+            == std::type_info::type_name<helpers::TimeoutPacketParamsZKGM>()) {
+            let (pack, relayer) =
+                helpers::on_timeout_packet_deconstruct_zkgm(
+                    copyable_any::unpack<helpers::TimeoutPacketParamsZKGM>(value)
                 );
-            on_timeout_packet(pack);
+            on_timeout_packet(pack, relayer);
         } else if (type_name_output
             == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
             let (connection_id, channel_id, version) =
