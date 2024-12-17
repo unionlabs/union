@@ -20,11 +20,13 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
+use move_bindgen::MoveOutputType;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{debug, info, instrument};
 use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    call::Call,
+    call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     data::{ChainEvent, Data},
     into_value,
@@ -32,7 +34,7 @@ use voyager_message::{
     rpc::missing_state,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, defer, now, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall},
@@ -113,6 +115,12 @@ pub struct Config {
 }
 
 impl aptos_move_ibc::ibc::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
+impl aptos_move_ibc::recv_packet::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
     }
@@ -315,69 +323,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
-                            "ClientCreatedEvent" => {
-                                serde_json::from_value::<ibc::ClientCreatedEvent>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ClientUpdated" => serde_json::from_value::<ibc::ClientUpdated>(data)
-                                .unwrap()
-                                .into(),
-                            "ConnectionOpenInit" => {
-                                serde_json::from_value::<ibc::ConnectionOpenInit>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ConnectionOpenTry" => {
-                                serde_json::from_value::<ibc::ConnectionOpenTry>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ConnectionOpenAck" => {
-                                serde_json::from_value::<ibc::ConnectionOpenAck>(data)
-                                    .unwrap()
-                                    .into()
-                            }
+                            "ClientCreatedEvent" => from_raw_event::<ibc::ClientCreatedEvent>(data),
+                            "ClientUpdated" => from_raw_event::<ibc::ClientUpdated>(data),
+                            "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
+                            "ConnectionOpenTry" => from_raw_event::<ibc::ConnectionOpenTry>(data),
+                            "ConnectionOpenAck" => from_raw_event::<ibc::ConnectionOpenAck>(data),
                             "ConnectionOpenConfirm" => {
-                                serde_json::from_value::<ibc::ConnectionOpenConfirm>(data)
-                                    .unwrap()
-                                    .into()
+                                from_raw_event::<ibc::ConnectionOpenConfirm>(data)
                             }
-                            "ChannelOpenInit" => {
-                                serde_json::from_value::<ibc::ChannelOpenInit>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "ChannelOpenTry" => serde_json::from_value::<ibc::ChannelOpenTry>(data)
-                                .unwrap()
-                                .into(),
-                            "ChannelOpenAck" => serde_json::from_value::<ibc::ChannelOpenAck>(data)
-                                .unwrap()
-                                .into(),
-                            "ChannelOpenConfirm" => {
-                                serde_json::from_value::<ibc::ChannelOpenConfirm>(data)
-                                    .unwrap()
-                                    .into()
-                            }
+                            "ChannelOpenInit" => from_raw_event::<ibc::ChannelOpenInit>(data),
+                            "ChannelOpenTry" => from_raw_event::<ibc::ChannelOpenTry>(data),
+                            "ChannelOpenAck" => from_raw_event::<ibc::ChannelOpenAck>(data),
+                            "ChannelOpenConfirm" => from_raw_event::<ibc::ChannelOpenConfirm>(data),
                             "WriteAcknowledgement" => {
-                                serde_json::from_value::<ibc::WriteAcknowledgement>(data)
-                                    .unwrap()
-                                    .into()
+                                from_raw_event::<ibc::WriteAcknowledgement>(data)
                             }
-                            "RecvPacket" => serde_json::from_value::<ibc::RecvPacket>(data)
-                                .unwrap()
-                                .into(),
-                            "SendPacket" => serde_json::from_value::<ibc::SendPacket>(data)
-                                .unwrap()
-                                .into(),
-                            "AcknowledgePacket" => {
-                                serde_json::from_value::<ibc::AcknowledgePacket>(data)
-                                    .unwrap()
-                                    .into()
-                            }
-                            "TimeoutPacket" => serde_json::from_value::<ibc::TimeoutPacket>(data)
-                                .unwrap()
-                                .into(),
+                            "RecvPacket" => from_raw_event::<ibc::RecvPacket>(data),
+                            "SendPacket" => from_raw_event::<ibc::SendPacket>(data),
+                            "AcknowledgePacket" => from_raw_event::<ibc::AcknowledgePacket>(data),
+                            "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
                         // TODO: Check the type before deserializing
@@ -427,7 +391,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                         }
                         Ordering::Equal | Ordering::Greater => seq([
-                            defer(now() + 1),
+                            call(WaitForHeight {
+                                chain_id: self.chain_id.clone(),
+                                height: Height::new(height + 1),
+                                finalized: true,
+                            }),
                             call(PluginMessage::new(
                                 self.plugin_name(),
                                 ModuleCall::from(FetchBlocks { height: height + 1 }),
@@ -808,4 +776,9 @@ fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
         counterparty_client_id: connection.counterparty_client_id,
         counterparty_connection_id: connection.counterparty_connection_id,
     }
+}
+
+fn from_raw_event<T: MoveOutputType + Into<events::IbcEvent>>(data: Value) -> events::IbcEvent {
+    let raw_event = serde_json::from_value::<T::Raw>(data).unwrap();
+    T::from_raw(raw_event).into()
 }

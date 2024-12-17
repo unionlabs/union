@@ -24,4 +24,6 @@ proto   = ["dep:protos", "unionlabs/proto"]
 serde   = ["dep:serde"]
 
 [dev-dependencies]
+bcs         = { workspace = true }
+hex         = { workspace = true }
 hex-literal = { workspace = true }

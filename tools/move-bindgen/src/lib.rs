@@ -11,13 +11,13 @@ pub use move_bindgen_derive::MoveOutputType;
 pub use move_core_types;
 use move_core_types::account_address::AccountAddress;
 pub use serde;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 pub use serde_json;
 pub use tracing;
 
 /// Types that can either be returned from #[view] functions or read from storage.
 pub trait MoveOutputType {
-    type Raw;
+    type Raw: DeserializeOwned;
 
     fn from_raw(raw: Self::Raw) -> Self;
 
@@ -77,7 +77,7 @@ impl_param_and_output!(
 //     }
 // }
 
-impl<T: MoveOutputType> MoveOutputType for Vec<T> {
+impl<T: MoveOutputType + 'static> MoveOutputType for Vec<T> {
     type Raw = RawVec<T::Raw>;
 
     fn from_raw(raw: Self::Raw) -> Self {
@@ -99,9 +99,13 @@ impl<T: Serialize + 'static> Serialize for RawVec<T> {
     {
         match (&self.0 as &dyn Any).downcast_ref::<Vec<u8>>() {
             Some(vec_u8) => {
-                // TODO: Figure out a way to not clone here
-                aptos_rest_client::aptos_api_types::HexEncodedBytes(vec_u8.to_vec())
-                    .serialize(serializer)
+                if serializer.is_human_readable() {
+                    // TODO: Figure out a way to not clone here
+                    aptos_rest_client::aptos_api_types::HexEncodedBytes(vec_u8.to_vec())
+                        .serialize(serializer)
+                } else {
+                    self.0.serialize(serializer)
+                }
             }
             None => self.0.serialize(serializer),
         }

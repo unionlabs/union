@@ -15,7 +15,7 @@ ethereum-light-client-types = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 hex                         = { workspace = true, features = ["alloc"] }
 hex-literal                 = { workspace = true }
-movement-light-client-types = { workspace = true, features = ["proto"] }
+movement-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 protos                      = { workspace = true }
 rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }

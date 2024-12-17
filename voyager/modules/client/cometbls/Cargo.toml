@@ -31,4 +31,6 @@ voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
 
 [dev-dependencies]
-hex.workspace = true
+bcs.workspace         = true
+hex-literal.workspace = true
+hex.workspace         = true

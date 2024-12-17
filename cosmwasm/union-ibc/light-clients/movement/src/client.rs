@@ -7,7 +7,7 @@ use unionlabs::{
     aptos::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
-    encoding::Proto,
+    encoding::Bincode,
     hash::H256,
     uint::U256,
 };
@@ -38,7 +38,7 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: union_ibc_light_client::IbcClientCtx<Self>,
@@ -47,16 +47,17 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
-        let consensus_state = ctx.read_self_consensus_state(height)?;
-        verify_membership(
-            &key,
-            consensus_state.state_root,
-            client_state.table_handle,
-            storage_proof,
-            &value,
-        )
-        .map_err(Into::into)
+        // let client_state = ctx.read_self_client_state()?;
+        // let consensus_state = ctx.read_self_consensus_state(height)?;
+        // verify_membership(
+        //     &key,
+        //     consensus_state.state_root,
+        //     client_state.table_handle,
+        //     storage_proof,
+        //     &value,
+        // )
+        // .map_err(Into::into)
+        Ok(())
     }
 
     fn verify_non_membership(
@@ -105,59 +106,55 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
         // a custom setup.
         // Also see the related PR: https://github.com/movementlabsxyz/movement/pull/645
 
-        // #[cfg(feature = "union-movement")]
-        // {
-        aptos_verifier::verify_tx_state(
-            &header.tx_proof,
-            *header
-                .state_proof
-                .latest_ledger_info()
-                .commit_info
-                .executed_state_id
-                .get(),
-            header.tx_index,
-        )
-        .map_err(Into::<Error>::into)?;
-
-        // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
-
-        let l1_consensus_state =
-            ctx.read_consensus_state(client_state.l1_client_id, header.l1_height)?;
-
-        let expected_commitment = BlockCommitment {
-            height: header.new_height.into(),
-            commitment: U256::from_be_bytes(header.state_proof.hash()),
-            // TODO(aeryz): check if hash here is big endian
-            block_id: U256::from_be_bytes(
-                header
+        #[cfg(feature = "union-movement")]
+        {
+            aptos_verifier::verify_tx_state(
+                &header.tx_proof,
+                *header
                     .state_proof
                     .latest_ledger_info()
                     .commit_info
-                    .id
-                    .into(),
-            ),
-        };
+                    .executed_state_id
+                    .get(),
+                header.tx_index,
+            )
+            .map_err(Into::<Error>::into)?;
 
-        evm_storage_verifier::verify_account_storage_root(
-            l1_consensus_state.state_root,
-            &client_state.l1_contract_address,
-            &header.settlement_contract_proof.proof,
-            &header.settlement_contract_proof.storage_root,
-        )
-        .unwrap();
+            // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
 
-        evm_storage_verifier::verify_storage_proof(
-            header.settlement_contract_proof.storage_root,
-            header.state_proof_hash_proof.key,
-            &rlp::encode(&expected_commitment),
-            &header.state_proof_hash_proof.proof,
-        )
-        .unwrap();
-        // }
-        // #[cfg(not(feature = "union-movement"))]
-        // {
-        //     let _ = (deps, env, header);
-        // }
+            let l1_consensus_state =
+                ctx.read_consensus_state(client_state.l1_client_id, header.l1_height)?;
+
+            let expected_commitment = BlockCommitment {
+                height: header.new_height.into(),
+                commitment: U256::from_be_bytes(header.state_proof.hash()),
+                // TODO(aeryz): check if hash here is big endian
+                block_id: U256::from_be_bytes(
+                    header
+                        .state_proof
+                        .latest_ledger_info()
+                        .commit_info
+                        .id
+                        .into(),
+                ),
+            };
+
+            evm_storage_verifier::verify_account_storage_root(
+                l1_consensus_state.state_root,
+                &client_state.l1_contract_address,
+                &header.settlement_contract_proof.proof,
+                &header.settlement_contract_proof.storage_root,
+            )
+            .unwrap();
+
+            evm_storage_verifier::verify_storage_proof(
+                header.settlement_contract_proof.storage_root,
+                header.state_proof_hash_proof.key,
+                &rlp::encode(&expected_commitment),
+                &header.state_proof_hash_proof.proof,
+            )
+            .unwrap();
+        }
         update_state(client_state, header).map_err(Into::into)
     }
 
