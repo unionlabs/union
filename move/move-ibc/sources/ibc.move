@@ -604,7 +604,7 @@ module ibc::ibc {
     ///
     /// * `client_id`: The light client which will verify and act upon the misbehaviour.
     /// * `misbehaviour`: Light client defined misbehaviour data. It's the responsibility of the caller to gather and encode
-    ///   the correct data. The light client MUST detect any invalid misbehaviours and ignore those.
+    ///   the correct data. The light client MUST detect any invalid misbehaviors and ignore those.
     public entry fun submit_misbehaviour(
         client_id: u32, misbehaviour: vector<u8>
     ) acquires IBCStore {

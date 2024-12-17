@@ -104,7 +104,7 @@ module ibc::ethabi {
             i = i + 1;
         };
 
-        // TODO: why do we hae this padding? It looks incorrect
+        // TODO: why do we have this padding? It looks incorrect
 
         // // Calculate padding to align to 32 bytes
         // let padding_len = (32 - (len % 32)) % 32;

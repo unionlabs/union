@@ -337,14 +337,14 @@ impl ClientModuleServer for Module {
             .map(|mut header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
                 SupportedIbcInterface::IbcMoveAptos => {
-                    // header.zero_knowledge_proof =
-                    //     reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
-                    //         ErrorObject::owned(
-                    //             FATAL_JSONRPC_ERROR_CODE,
-                    //             format!("unable to decode zkp: {}", e),
-                    //             None::<()>,
-                    //         )
-                    //     })?;
+                    header.zero_knowledge_proof =
+                        reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("unable to decode zkp: {}", e),
+                                None::<()>,
+                            )
+                        })?;
                     Ok(header.encode_as::<Bcs>())
                 }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
@@ -527,16 +527,4 @@ fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<
         ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
     }
     .encode_as::<Bcs>()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn bcs_stuff() {
-        let client_state = hex_literal::hex!("0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b");
-        let client_state = hex_literal::hex!("0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e62700000000000020ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b");
-        let client_state: ClientState = bcs::from_bytes(&client_state).unwrap();
-    }
 }
