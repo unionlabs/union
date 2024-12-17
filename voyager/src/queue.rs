@@ -18,7 +18,7 @@ use voyager_message::{
     pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
 };
 use voyager_vm::{
-    engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, Op, Queue,
+    engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, ItemId, Op, Queue,
 };
 
 use crate::{api, config::Config};
@@ -102,7 +102,7 @@ impl Queue<VoyagerMessage> for QueueImpl {
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
-        F: (FnOnce(Op<VoyagerMessage>) -> Fut) + Send + Captures<'a>,
+        F: (FnOnce(Op<VoyagerMessage>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<VoyagerMessage>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {

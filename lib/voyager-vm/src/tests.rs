@@ -3,7 +3,7 @@ use macros::model;
 use crate::{
     call, conc, data, defer, noop, now, promise, seq,
     tests::utils::{BuildPrintAbc, DataA, DataB, DataC, FetchA, FetchB, PrintAbc, SimpleMessage},
-    CallT, CallbackT, Op, QueueError, QueueMessage, VecDeque,
+    CallT, CallbackT, Context, Op, QueueError, QueueMessage, VecDeque,
 };
 
 pub mod utils;
@@ -21,13 +21,17 @@ impl QueueMessage for UnitMessage {
 }
 
 impl CallT<UnitMessage> for () {
-    async fn process(self, (): &()) -> Result<Op<UnitMessage>, QueueError> {
+    async fn process(self, _: Context<&()>) -> Result<Op<UnitMessage>, QueueError> {
         Ok(noop())
     }
 }
 
 impl CallbackT<UnitMessage> for () {
-    async fn process(self, (): &(), _: VecDeque<()>) -> Result<Op<UnitMessage>, QueueError> {
+    async fn process(
+        self,
+        _: Context<&()>,
+        _: VecDeque<()>,
+    ) -> Result<Op<UnitMessage>, QueueError> {
         Ok(noop())
     }
 }

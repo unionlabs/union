@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{IbcSpecId, QueryHeight};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
@@ -113,16 +113,12 @@ pub struct WaitForTrustedHeight {
 }
 
 impl CallT<VoyagerMessage> for Call {
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn process(self, ctx: &Context) -> Result<Op<VoyagerMessage>, QueueError> {
+    #[instrument(skip_all, fields(id = ctx.id().raw()))]
+    async fn process(
+        self,
+        ctx: voyager_vm::Context<&Context>,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
-            // Call::Version(VersionMessage {
-            //     ibc_spec_id,
-            //     data,
-            // }) => {
-            //     (ctx.ibc_spec_handlers.get(&ibc_spec_id).unwrap().call)(&ctx.rpc_server, data)
-            //         .await
-            // }
             Call::FetchBlocks(FetchBlocks {
                 start_height,
                 chain_id,
@@ -154,26 +150,6 @@ impl CallT<VoyagerMessage> for Call {
                 Err(QueueError::Fatal(message.into()))
             }
 
-            // Call::MakeMsgCreateClient(MakeMsgCreateClient {
-            //     chain_id,
-            //     height,
-            //     metadata,
-            //     counterparty_chain_id,
-            //     client_type,
-            //     ibc_interface,
-            // }) => {
-            //     make_msg_create_client(
-            //         ctx,
-            //         counterparty_chain_id,
-            //         height,
-            //         chain_id,
-            //         client_type,
-            //         ibc_interface,
-            //         metadata,
-            //     )
-            //     .await
-            // }
-
             // TODO: Replace this with an aggregation
             Call::WaitForHeight(WaitForHeight {
                 chain_id,
@@ -182,6 +158,7 @@ impl CallT<VoyagerMessage> for Call {
             }) => {
                 let chain_height = ctx
                     .rpc_server
+                    .with_id(Some(ctx.id()))
                     .query_latest_height(&chain_id, finalized)
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -219,6 +196,7 @@ impl CallT<VoyagerMessage> for Call {
             }) => {
                 let chain_timestamp = ctx
                     .rpc_server
+                    .with_id(Some(ctx.id()))
                     .query_latest_timestamp(&chain_id, finalized)
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -249,6 +227,7 @@ impl CallT<VoyagerMessage> for Call {
             }) => {
                 let trusted_client_state_meta = ctx
                     .rpc_server
+                    .with_id(Some(ctx.id()))
                     .client_meta(
                         &chain_id,
                         &ibc_spec_id,

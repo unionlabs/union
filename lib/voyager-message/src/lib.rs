@@ -1,11 +1,18 @@
 #![feature(trait_alias)]
 
-use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
+use std::{borrow::Cow, env::VarError, fmt::Debug, future::Future, time::Duration};
 
 use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
+use futures::FutureExt;
 use jsonrpsee::{
-    core::RpcResult,
+    core::{
+        async_trait,
+        client::{BatchResponse, ClientT},
+        params::BatchRequestBuilder,
+        traits::ToRpcParams,
+        RpcResult,
+    },
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE, PARSE_ERROR_CODE},
@@ -16,14 +23,17 @@ use jsonrpsee::{
 use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::{json, Value};
-use tracing::{debug, debug_span, error, info, instrument, trace, Instrument};
+use serde_json::{json, value::RawValue, Value};
+use tracing::{
+    debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace,
+    Instrument,
+};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcStorePathKey,
     QueryHeight,
 };
-use voyager_vm::{QueueError, QueueMessage};
+use voyager_vm::{ItemId, QueueError, QueueMessage};
 
 use crate::{
     call::Call,
@@ -435,24 +445,85 @@ pub trait ClientModule: ClientModuleServer + Sized {
 }
 
 #[derive(Debug, Clone)]
-pub struct VoyagerClient(pub(crate) reconnecting_jsonrpc_ws_client::Client);
+pub struct IdThreadClient<Inner: ClientT + Send + Sync> {
+    pub(crate) client: Inner,
+    item_id: Option<ItemId>,
+}
 
-impl VoyagerClient {
-    pub fn new(name: String, socket: String) -> Self {
-        let client = reconnecting_jsonrpc_ws_client::Client::new({
-            let voyager_socket: &'static str = socket.leak();
-            let name = name.clone();
-            move || {
-                async move {
-                    trace!("connecting to socket at {voyager_socket}");
-                    IpcClientBuilder::default().build(voyager_socket).await
-                }
-                .instrument(debug_span!("voyager_ipc_client", %name))
+fn new_voyager_client(name: String, socket: String) -> reconnecting_jsonrpc_ws_client::Client {
+    let client = reconnecting_jsonrpc_ws_client::Client::new({
+        let voyager_socket: &'static str = socket.leak();
+        let name = name.clone();
+        move || {
+            async move {
+                trace!("connecting to socket at {voyager_socket}");
+                IpcClientBuilder::default().build(voyager_socket).await
             }
-        });
-        Self(client)
+            .instrument(debug_span!("voyager_ipc_client", %name))
+        }
+    });
+
+    client
+}
+
+#[derive(Debug, Clone)]
+pub struct VoyagerClient(IdThreadClient<reconnecting_jsonrpc_ws_client::Client>);
+
+#[async_trait]
+impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
+    async fn notification<Params>(
+        &self,
+        _method: &str,
+        _params: Params,
+    ) -> Result<(), jsonrpsee::core::client::Error>
+    where
+        Params: ToRpcParams + Send,
+    {
+        Err(jsonrpsee::core::client::Error::Custom(
+            "notifications are not supported".to_owned(),
+        ))
     }
 
+    #[instrument(skip_all)]
+    async fn request<R, Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> Result<R, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        match self.item_id {
+            Some(item_id) => {
+                self.client
+                    .request(
+                        method,
+                        ParamsWithItemId {
+                            item_id,
+                            params: params.to_rpc_params()?.map(Cow::Owned),
+                        },
+                    )
+                    .await
+            }
+            None => self.client.request(method, params).await,
+        }
+    }
+
+    async fn batch_request<'a, R>(
+        &self,
+        _batch: BatchRequestBuilder<'a>,
+    ) -> Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned + Debug + 'a,
+    {
+        Err(jsonrpsee::core::client::Error::Custom(
+            "batch requests are not supported".to_owned(),
+        ))
+    }
+}
+
+impl VoyagerClient {
     pub async fn query_latest_height(
         &self,
         chain_id: ChainId,
@@ -641,9 +712,8 @@ async fn run_server<
     new: NewF,
     into_rpc: IntoRpcF,
 ) {
-    let voyager_client = VoyagerClient::new(id.clone(), voyager_socket);
+    let voyager_client = new_voyager_client(id.clone(), voyager_socket);
     if let Err(err) = voyager_client
-        .0
         .wait_until_connected(Duration::from_millis(500))
         .await
     {
@@ -687,16 +757,65 @@ async fn run_server<
 }
 
 struct InjectClient<S> {
-    client: VoyagerClient,
+    client: reconnecting_jsonrpc_ws_client::Client,
     service: S,
 }
 
 impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
-    type Future = S::Future;
+    type Future = futures::future::Either<Instrumented<S::Future>, S::Future>;
 
     fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
-        request.extensions.insert(self.client.clone());
-        self.service.call(request)
+        if let Some(params) = request.params.take() {
+            match serde_json::from_str(params.get()) {
+                Ok(ParamsWithItemId { item_id, params }) => {
+                    let mut request = jsonrpsee::types::Request {
+                        params: params.map(|rv| Cow::Owned(rv.into_owned())),
+                        ..request
+                    };
+
+                    request.extensions.insert(item_id);
+
+                    request.extensions.insert(VoyagerClient(IdThreadClient {
+                        client: self.client.clone(),
+                        item_id: Some(item_id),
+                    }));
+
+                    return self
+                        .service
+                        .call(request)
+                        .instrument(info_span!("item_id", item_id = item_id.raw()))
+                        .left_future();
+                }
+                Err(_) => {
+                    request.params = Some(params);
+                }
+            }
+        };
+
+        request.extensions.insert(VoyagerClient(IdThreadClient {
+            client: self.client.clone(),
+            item_id: None,
+        }));
+
+        self.service.call(request).right_future()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ParamsWithItemId<'a> {
+    item_id: ItemId,
+    #[serde(borrow)]
+    params: Option<Cow<'a, RawValue>>,
+}
+
+impl ToRpcParams for ParamsWithItemId<'_> {
+    fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, serde_json::Error> {
+        info!("to_rpc_params");
+
+        Ok(Some(
+            RawValue::from_string(serde_json::to_string(&self)?).unwrap(),
+        ))
     }
 }
 

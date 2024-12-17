@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 
-use crate::{call, data, noop, CallT, CallbackT, Op, QueueError, QueueMessage};
+use crate::{call, data, noop, CallT, CallbackT, Context, Op, QueueError, QueueMessage};
 
 pub enum SimpleMessage {}
 
@@ -19,7 +19,7 @@ impl QueueMessage for SimpleMessage {
 }
 
 impl CallT<SimpleMessage> for SimpleCall {
-    async fn process(self, (): &()) -> Result<Op<SimpleMessage>, QueueError> {
+    async fn process(self, _: Context<&()>) -> Result<Op<SimpleMessage>, QueueError> {
         Ok(match self {
             SimpleCall::A(FetchA {}) => data(DataA {}),
             SimpleCall::B(FetchB {}) => data(DataB {}),
@@ -37,7 +37,7 @@ impl CallT<SimpleMessage> for SimpleCall {
 impl CallbackT<SimpleMessage> for SimpleAggregate {
     async fn process(
         self,
-        (): &(),
+        _: Context<&()>,
         data: VecDeque<SimpleData>,
     ) -> Result<Op<SimpleMessage>, QueueError> {
         Ok(match self {
