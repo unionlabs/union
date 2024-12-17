@@ -1,10 +1,14 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Vm.sol";
+import "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
 
+import "solady/utils/CREATE3.sol";
+import "solady/utils/LibString.sol";
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/proxy/ERC1967/ERC1967Utils.sol";
 import "@openzeppelin/access/Ownable.sol";
 
 import "../contracts/Multicall.sol";
@@ -17,24 +21,7 @@ import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/lib/Hex.sol";
 
-import "solady/utils/CREATE3.sol";
-import "solady/utils/LibString.sol";
-
-contract Deployer {
-    using LibString for *;
-
-    function deploy(
-        string memory salt,
-        bytes calldata creationCode,
-        uint256 value
-    ) public returns (address) {
-        return CREATE3.deployDeterministic(
-            value,
-            creationCode,
-            keccak256(abi.encodePacked(msg.sender.toHexString(), "/", salt))
-        );
-    }
-}
+import "./Deployer.sol";
 
 library LIB {
     string constant NAMESPACE = "lib";
@@ -314,6 +301,7 @@ contract DeployDeployerAndIBC is UnionScript {
 
 contract GetDeployed is Script {
     using LibString for *;
+    using stdJson for string;
 
     address immutable deployer;
     address immutable sender;
@@ -332,10 +320,18 @@ contract GetDeployed is Script {
         );
     }
 
-    function run() public view {
+    function implOf(
+        address x
+    ) internal returns (address) {
+        return
+            address(bytes20(vm.load(x, ERC1967Utils.IMPLEMENTATION_SLOT) << 96));
+    }
+
+    function run() public {
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
+        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
 
@@ -349,8 +345,30 @@ contract GetDeployed is Script {
                 )
             )
         );
+        console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
         console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
         console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
+
+        string memory json = "";
+        json.serialize(
+            "contracts/core/OwnableIBCHandler.sol:OwnableIBCHandler",
+            implOf(handler)
+        );
+        json.serialize(
+            "contracts/clients/CometblsClient.sol:CometblsClient",
+            implOf(cometblsClient)
+        );
+        json.serialize(
+            "contracts/apps/ucs/00-pingpong/PingPong.sol:PingPong",
+            implOf(ucs00)
+        );
+        json.serialize(
+            "contracts/apps/ucs/01-relay/Relay.sol:UCS01Relay", implOf(ucs01)
+        );
+        json = json.serialize(
+            "contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT", implOf(ucs02)
+        );
+        json.write(vm.envString("OUTPUT"));
     }
 }
 

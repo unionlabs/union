@@ -143,7 +143,7 @@ _: {
         yul = true
 
         [profile.default]
-        fs_permissions = [{ access = "read", path = "./"}]
+        fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
@@ -170,6 +170,17 @@ _: {
         postBuild = ''
           wrapProgram $out/bin/forge \
             --append-flags "--offline --no-auto-detect" \
+            --set HOME ${compilers} \
+            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
+            --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
+        '';
+      };
+      wrappedForgeOnline = pkgs.symlinkJoin {
+        name = "forge";
+        paths = [ pkgs.foundry-bin ];
+        buildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/forge \
             --set HOME ${compilers} \
             --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
             --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
@@ -204,7 +215,7 @@ _: {
           network = "holesky";
           rpc-url = "https://holesky.drpc.org";
           private-key = ''"$1"'';
-          extra-args = ''--verify --verifier sourcify --verifier-url https://sourcify.dev/server'';
+          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
         {
           network = "scroll-testnet";
@@ -223,6 +234,38 @@ _: {
           private-key = ''"$1"'';
         }
       ];
+
+      eth-deploy =
+        {
+          rpc-url,
+          private-key,
+          extra-args ? "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-deploy-full";
+            runtimeInputs = [ self'.packages.forge ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              PRIVATE_KEY=${private-key} \
+              DEPLOYER="$3" \
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:DeployIBC \
+                -vvvv \
+                --rpc-url ${rpc-url} \
+                --broadcast ${extra-args}
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
 
       eth-deploy-full =
         {
@@ -248,6 +291,41 @@ _: {
                 -vvvv \
                 --rpc-url ${rpc-url} \
                 --broadcast ${extra-args}
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
+      eth-verify =
+        {
+          rpc-url,
+          private-key,
+          extra-args ? "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-verify";
+            runtimeInputs = [ wrappedForgeOnline ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
+
+              PROJECT_ROOT=$(pwd)
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              jq -r 'to_entries | map([.key, .value]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
+                while IFS=$'\t' read -r contract address; do
+                  PRIVATE_KEY=${private-key} \
+                  FOUNDRY_PROFILE="script" \
+                    forge verify-contract --force --watch "$address" "$contract" --api-key "$3" \
+                      --rpc-url ${rpc-url}
+                done
 
               popd
               rm -rf "$OUT"
@@ -538,10 +616,15 @@ _: {
                 cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
                 cp --no-preserve=mode -r ${evmSources}/* .
 
-                DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
+                DEPLOYER="$1" \
+                  SENDER="$2" \
+                  OUTPUT="contracts.json" \
+                  FOUNDRY_PROFILE="script" \
+                  forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
 
-                rm -rf "$OUT"
                 popd
+                cp "$OUT"/contracts.json contracts.json
+                rm -rf "$OUT"
               '';
             }
           );
@@ -584,8 +667,20 @@ _: {
         }
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-verify-${args.network}";
+            value = eth-verify args;
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-full";
             value = eth-deploy-full args;
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-deploy-${args.network}";
+            value = eth-deploy args;
           }) networks
         )
         // builtins.listToAttrs (
