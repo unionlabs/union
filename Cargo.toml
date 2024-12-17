@@ -138,7 +138,7 @@ members = [
 
   "drip",
 
-  # "lib/aptos-verifier",
+  "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/voyager-core",
