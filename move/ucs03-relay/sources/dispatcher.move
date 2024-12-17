@@ -12,7 +12,7 @@ module ucs03::dispatcher_zkgm {
     use aptos_framework::object::{Self, ExtendRef, Object};
     const DISPATCHER_APP_SEED: vector<u8> = b"union-zkgm-dispatcher-v1";
 
-    struct StorageWithoutT has drop, key, store {
+    struct Storage has drop, key, store {
         data: copyable_any::Any,
         return_value: vector<u8>
     }
@@ -27,13 +27,7 @@ module ucs03::dispatcher_zkgm {
         dispatcher: SmartTable<address, Object<Metadata>>,
         /// Used to store temporary data for dispatching.
         obj_ref: ExtendRef,
-        storage: SmartTable<address, StorageWithoutT>
-    }
-
-    /// Store the data to dispatch here.
-    struct Storage<phantom P> has drop, key {
-        data: copyable_any::Any,
-        return_value: vector<u8>
+        storage: SmartTable<address, Storage>
     }
 
     /// Register a `T` to callback. Providing an instance of `T` guarantees that only the
@@ -82,7 +76,7 @@ module ucs03::dispatcher_zkgm {
         // );
         let dispatcher = borrow_global_mut<Dispatcher>(get_vault_addr());
 
-        let storage_val = StorageWithoutT { data, return_value };
+        let storage_val = Storage { data, return_value };
         smart_table::upsert(&mut dispatcher.storage, type_info_addr, storage_val);
         let type_info = *smart_table::borrow(&dispatcher.dispatcher, type_info_addr);
 
