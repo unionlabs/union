@@ -16,7 +16,7 @@ bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
-cosmwasm-std             = { workspace = true, optional = true }
+cosmwasm-std             = { workspace = true, optional = true,features = ["std"] }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 enumorph                 = { workspace = true }

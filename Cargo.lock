@@ -6371,7 +6371,7 @@ dependencies = [
 name = "ics008-wasm-client"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-std 1.5.8",
+ "cosmwasm-std 2.1.4",
  "frame-support-procedural",
  "macros",
  "prost 0.12.6",
@@ -8016,8 +8016,8 @@ dependencies = [
 name = "multicall"
 version = "1.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
  "hex",
  "serde",
  "serde_json",
@@ -12819,9 +12819,9 @@ checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 name = "ucs00-pingpong"
 version = "1.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
  "serde",
@@ -12884,9 +12884,9 @@ dependencies = [
 name = "ucs02-nft"
 version = "1.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "ethabi",
  "ics721",
  "ics721-base",
@@ -12999,7 +12999,7 @@ name = "union-ibc"
 version = "1.0.0"
 dependencies = [
  "alloy",
- "cosmwasm-schema 1.5.8",
+ "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
  "ethabi",
@@ -13046,7 +13046,7 @@ dependencies = [
 name = "union-ibc-ucs00-pingpong"
 version = "1.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
+ "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
  "ethabi",
@@ -13071,7 +13071,7 @@ dependencies = [
  "bs58 0.4.0",
  "chrono",
  "clap 4.5.4",
- "cosmwasm-std 1.5.8",
+ "cosmwasm-std 2.1.4",
  "derive_more 0.99.17",
  "either",
  "enumorph",
