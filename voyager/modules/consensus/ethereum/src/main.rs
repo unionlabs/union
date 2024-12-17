@@ -158,41 +158,33 @@ impl ConsensusModuleServer for Module {
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
-    async fn query_latest_timestamp(
-        &self,
-        _: &Extensions,
-        finalized: bool,
-    ) -> RpcResult<Timestamp> {
-        if finalized {
-            Ok(Timestamp::from_nanos(
-                self.beacon_api_client
-                    .finality_update()
-                    .await
-                    .map_err(|err| {
-                        ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-                    })?
-                    .data
-                    .finalized_header
-                    .execution
-                    .timestamp,
-            )
-            .try_into()
-            .unwrap())
+    async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
+        let latest_timestamp: i64 = if finalized {
+            self.beacon_api_client
+                .finality_update()
+                .await
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+                .data
+                .finalized_header
+                .execution
+                .timestamp
+                .try_into()
+                .unwrap()
         } else {
-            Ok(Timestamp::from_nanos(
-                self.provider
-                    .get_block(
-                        BlockNumberOrTag::Latest.into(),
-                        BlockTransactionsKind::Hashes,
-                    )
-                    .await
-                    .unwrap()
-                    .unwrap()
-                    .header
-                    .timestamp
-                    .try_into()
-                    .unwrap(),
-            ))
-        }
+            self.provider
+                .get_block(
+                    BlockNumberOrTag::Latest.into(),
+                    BlockTransactionsKind::Hashes,
+                )
+                .await
+                .unwrap()
+                .unwrap()
+                .header
+                .timestamp
+                .try_into()
+                .unwrap()
+        };
+        // Normalize to nanos in order to be compliant with cosmos
+        Ok(latest_timestamp * 1_000_000_000)
     }
 }

@@ -17,6 +17,6 @@ macros                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }

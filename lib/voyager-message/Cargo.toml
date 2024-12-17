@@ -32,7 +32,7 @@ thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["time", "process", "fs"] }
 tokio-util                     = "0.7.11"
 tracing                        = { workspace = true }
-tracing-subscriber             = { workspace = true, features = ["json"] }
+tracing-subscriber             = { workspace = true, features = ["json", "env-filter"] }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 voyager-core                   = { workspace = true, features = ["schemars"] }
 voyager-vm                     = { workspace = true }
