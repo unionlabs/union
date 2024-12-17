@@ -82,12 +82,10 @@ pub fn ibc_packet_receive(
     let packet = msg.packet;
     let ping_packet = UCS00PingPong::decode(packet.data)?;
     do_ibc_packet_receive(deps, env, packet.dest.channel_id, ping_packet).or_else(|err| {
-        Ok(IbcReceiveResponse::new()
-            .set_ack(ack_fail())
-            .add_attributes(vec![
-                attr("success", "false"),
-                attr("error", err.to_string()),
-            ]))
+        Ok(IbcReceiveResponse::new(ack_fail()).add_attributes(vec![
+            attr("success", "false"),
+            attr("error", err.to_string()),
+        ]))
     })
 }
 
@@ -99,8 +97,7 @@ fn do_ibc_packet_receive(
 ) -> Result<IbcReceiveResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let ibc_packet = packet.reverse(&config, env.block.time.nanos(), dest_channel_id);
-    let res = IbcReceiveResponse::new()
-        .set_ack(ack_success())
+    let res = IbcReceiveResponse::new(ack_success())
         .add_message(ibc_packet)
         .add_attribute("action", if packet.ping { "ping" } else { "pong" })
         .add_attribute("success", "true");

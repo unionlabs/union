@@ -8,7 +8,7 @@ workspace = true
 
 [dependencies]
 cosmwasm-schema   = { workspace = true }
-cosmwasm-std      = { workspace = true, features = ["stargate"] }
+cosmwasm-std      = { workspace = true, features = ["stargate", "std"] }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
 prost             = { workspace = true }
