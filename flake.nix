@@ -69,18 +69,6 @@
     };
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
     get-flake.url = "github:ursi/get-flake";
-    wasmvm = {
-      url = "github:CosmWasm/wasmvm/v1.5.4";
-      flake = false;
-    };
-    wasmvm-2_1_2 = {
-      url = "github:CosmWasm/wasmvm/v2.1.2";
-      flake = false;
-    };
-    wasmvm-2_1_3 = {
-      url = "github:CosmWasm/wasmvm/v2.1.3";
-      flake = false;
-    };
     stargaze = {
       url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
       flake = false;

@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ ... }:
 {
   perSystem =
     {
@@ -118,10 +118,28 @@
             cargoArtifacts = craneLib.buildDepsOnly attrs;
           }
         );
+      wasmvm-1_5_2 = pkgs.fetchFromGitHub {
+        owner = "CosmWasm";
+        repo = "wasmvm";
+        rev = "v1.5.2";
+        hash = "sha256-3KJq5jFllFSqlm85/iRWYMhu99iuokvR3Ib9Gq3gIjc=";
+      };
+      wasmvm-2_1_2 = pkgs.fetchFromGitHub {
+        owner = "CosmWasm";
+        repo = "wasmvm";
+        rev = "v2.1.2";
+        hash = "sha256-Y3BVRR2T5MLOtXdPK38W8MX8etIuqGcTjvxkaEOyvVM=";
+      };
+      wasmvm-2_1_3 = pkgs.fetchFromGitHub {
+        owner = "CosmWasm";
+        repo = "wasmvm";
+        rev = "v2.1.3";
+        hash = "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=";
+      };
     in
     {
-      packages.libwasmvm = mkLibwasmvm_v1 inputs.wasmvm;
-      packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 inputs.wasmvm-2_1_2;
-      packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 inputs.wasmvm-2_1_3;
+      packages.libwasmvm-1_5_2 = mkLibwasmvm_v1 wasmvm-1_5_2;
+      packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 wasmvm-2_1_2;
+      packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 wasmvm-2_1_3;
     };
 }
