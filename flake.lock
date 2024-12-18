@@ -581,10 +581,7 @@
         "v0_23_0": "v0_23_0",
         "v0_24_0": "v0_24_0",
         "v0_25_0": "v0_25_0",
-        "wasmd": "wasmd",
-        "wasmvm": "wasmvm",
-        "wasmvm-2_1_2": "wasmvm-2_1_2",
-        "wasmvm-2_1_3": "wasmvm-2_1_3"
+        "wasmd": "wasmd"
       }
     },
     "rust-overlay": {
@@ -792,57 +789,6 @@
         "owner": "unionlabs",
         "repo": "wasmd",
         "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
-        "type": "github"
-      }
-    },
-    "wasmvm": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1723135235,
-        "narHash": "sha256-DGQHC20eMa1CDIx9fWYTTBxdFDCPoS/SsEDJnWJ+7bA=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "9f85c0f44fb8a5573be8e461cad12f784c544c4b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v1.5.4",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
-    "wasmvm-2_1_2": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1723135029,
-        "narHash": "sha256-Y3BVRR2T5MLOtXdPK38W8MX8etIuqGcTjvxkaEOyvVM=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "d8f06b73e4d49f8246e1569f032962122427882b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v2.1.2",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
-    "wasmvm-2_1_3": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1727089467,
-        "narHash": "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "2a104d140a5b2974dab7c15044da652769018cbe",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v2.1.3",
-        "repo": "wasmvm",
         "type": "github"
       }
     }

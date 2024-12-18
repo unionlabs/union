@@ -16,9 +16,9 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["stargate"] }
-cw-storage-plus = { workspace = true }
+cosmwasm-schema = { version = "1.5" }
+cosmwasm-std    = { version = "1.5.4", features = ["stargate"] }
+cw-storage-plus = { version = "1.2" }
 ethabi          = { workspace = true }
 ics721          = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "dd5b7add6fdc81e633084031f8512e5e909dd42a" }
 ics721-base     = { git = "https://github.com/hussein-aitlahcen/cw-ics721", rev = "dd5b7add6fdc81e633084031f8512e5e909dd42a", features = ["library"] }

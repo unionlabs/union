@@ -28,18 +28,18 @@
           }
           // (
             let
-              inherit (self'.packages) libwasmvm;
+              inherit (self'.packages) libwasmvm-1_5_2;
             in
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
                   pkgs.musl
-                  libwasmvm
+                  libwasmvm-1_5_2
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-1_5_2}/lib'"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

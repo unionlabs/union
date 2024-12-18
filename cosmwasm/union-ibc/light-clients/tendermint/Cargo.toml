@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bytes           = { workspace = true }
-cosmwasm-std    = { version = "2.1.4", features = ["abort", "cosmwasm_2_1"] }
+cosmwasm-std    = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterator"] }
 hex             = { workspace = true }
 prost           = { workspace = true }
 protos          = { workspace = true, features = ["proto_full", "std"] }

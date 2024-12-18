@@ -6,9 +6,9 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-cosmwasm-schema                    = { version = "2.1.4", package = "cosmwasm-schema" }
-cosmwasm-std                       = { version = "2.1.4", package = "cosmwasm-std" }
-cw-storage-plus                    = { version = "2.0.0", package = "cw-storage-plus" }
+cosmwasm-schema                    = { workspace = true, package = "cosmwasm-schema" }
+cosmwasm-std                       = { workspace = true, package = "cosmwasm-std" }
+cw-storage-plus                    = { workspace = true, package = "cw-storage-plus" }
 frame-support-procedural.workspace = true
 macros.workspace                   = true
 schemars                           = { workspace = true }

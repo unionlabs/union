@@ -19,7 +19,7 @@ crate-type = ["cdylib", "rlib"]
 bytes                       = { workspace = true }
 cometbls-groth16-verifier   = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-cosmwasm-std                = { version = "2.1.4", features = ["abort", "iterator", "cosmwasm_2_1"] }
+cosmwasm-std                = { workspace = true, features = ["abort", "iterator", "cosmwasm_2_1"] }
 hex                         = { workspace = true }
 ics23                       = { workspace = true }
 schemars                    = { workspace = true }
