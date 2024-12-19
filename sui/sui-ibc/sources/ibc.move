@@ -814,7 +814,7 @@ module ibc::ibc {
 
         // Create a new channel and set its properties
         let mut channel = channel::new(
-                CHAN_STATE_TRYOPEN, // TODO: ask this?
+                CHAN_STATE_TRYOPEN,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
@@ -1015,20 +1015,7 @@ module ibc::ibc {
         assert!(
             timeout_height > 0 || timeout_timestamp > 0,
             E_TIMEOUT_MUST_BE_SET
-        );
-
-
-        // TODO: why are we doing those? makes no sense, check later
-        // // Fetch the next sequence number for sending packets
-        // let next_sequence_key = commitment::next_sequence_send_commitment_key(source_channel);
-        // let mut next_sequence_bytes = ibc_store.commitments.borrow(next_sequence_key);
-        // let sequence = bcs::new(*next_sequence_bytes).peel_u64();
-        // add_or_update_table<vector<u8>, vector<u8>>(
-        //     &mut ibc_store.commitments,
-        //     next_sequence_key,
-        //     bcs::to_bytes<u64>(&(sequence + 1))
-        // );
-        
+        );        
 
         // Prepare packet for commitment
         let packet =
@@ -1175,8 +1162,18 @@ module ibc::ibc {
                     commitment::commit_packet(&packet)
                 );
 
-            // TODO: check here later
-
+            // TODO: verify if its all good
+            if(!set_packet_receive(ibc_store, commitment_key)) {
+                if (intent) {
+                    event::emit(RecvIntentPacket { packet: packet });
+                } else {
+                    event::emit(RecvPacket { packet: packet });
+                };
+                if (vector::length(&acknowledgement) > 0) {
+                    inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
+                    event::emit(WriteAcknowledgement { packet, acknowledgement });
+                };
+            };
             // let mut already_received = false;
 
             // if (ordering == CHAN_ORDERING_UNORDERED) {
@@ -1402,7 +1399,7 @@ module ibc::ibc {
 
             let acknowledgement = *vector::borrow(&acknowledgements, i);
 
-            // TODO: Do we need here? Check later
+            // TODO: verify if its all good
             // onAcknowledgementPacket(...)
             // if (ordering == CHAN_ORDERING_ORDERED) {
             //     let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel);
@@ -1917,16 +1914,6 @@ module ibc::ibc {
             timeout_timestamp,
             data
         );
-        // TODO: this part is related with the part that i couldn't understand under the send_packet
-        // it is also commented, verify it later.
-
-        // // Verify next sequence number increment
-        // let next_sequence_key = commitment::next_sequence_send_commitment_key(channel_id);
-        // let sequence_bytes = ibc_store.commitments.borrow(next_sequence_key);
-        // let sequence = bcs::new(*sequence_bytes).peel_u64();
-        
-        // assert!(sequence == 2, 0); // Expect the sequence to be incremented to 2
-
         // Verify packet commitment
         let commitment_key = commitment::batch_packets_commitment_key(
             channel_id,
@@ -1990,11 +1977,6 @@ module ibc::ibc {
                     commitment::commit_packet(&packet)
                 );
                 
-        add_or_update_table<vector<u8>, vector<u8>>(
-            &mut ibc_store.commitments,
-            commitment_key,
-            COMMITMENT_NULL
-        );
         let mut clock = clock::create_for_testing(&mut ctx);
         clock.set_for_testing(99);
 
@@ -2008,7 +1990,6 @@ module ibc::ibc {
             acknowledgement
         );
 
-        // TODO: This test case is also related with the commented part under process_receive function, verify it later.
         assert!(ibc_store.commitments.contains(commitment_key), E_PACKET_NOT_RECEIVED);
         let commitment = ibc_store.commitments.borrow(commitment_key);
         assert!(commitment == COMMITMENT_MAGIC, 0);
