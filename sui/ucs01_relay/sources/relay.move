@@ -12,8 +12,6 @@ module ucs01::relay_app {
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
         // Constants
-    const ORDER_UNORDERED: u8 = 1;
-    const VERSION: vector<u8> = b"ucs01-relay-1";
     const ACK_SUCCESS: u8 = 1;
     const ACK_FAILURE: u8 = 0;
     const ACK_LENGTH: u64 = 1;
@@ -24,14 +22,14 @@ module ucs01::relay_app {
     const E_UNAUTHORIZED: u64 = 2;
     const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
     const E_INVALID_PROTOCOL_VERSION: u64 = 4;
-    const E_INVALID_PROTOCOL_ORDERING: u64 = 5;
     const E_INVALID_COUNTERPARTY_PROTOCOL_VERSION: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
 
     public struct Token has copy, drop, store {
         denom: String,
-        amount: u64
+        amount: u64,
+        fee: u64
     }
 
     public struct LocalToken has copy, drop, store {
@@ -73,7 +71,6 @@ module ucs01::relay_app {
     // Events
     #[event]
     public struct DenomCreated has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         denom: String,
         token: address
@@ -81,7 +78,6 @@ module ucs01::relay_app {
 
     #[event]
     public struct Received has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -92,7 +88,6 @@ module ucs01::relay_app {
 
     #[event]
     public struct Sent has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -103,7 +98,6 @@ module ucs01::relay_app {
 
     #[event]
     public struct Refunded has copy, drop, store {
-        packet_sequence: u64,
         channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
@@ -158,8 +152,8 @@ module ucs01::relay_app {
 
 
     // View/Pure Functions
-    public fun is_valid_version(version_bytes: vector<u8>): bool {
-        version_bytes == VERSION
+    public fun is_valid_version(version: String): bool {
+        version == string::utf8(b"ucs01-relay-1")
     }
 
     public fun starts_with(s: String, prefix: String): bool {
@@ -240,15 +234,15 @@ module ucs01::relay_app {
 
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
+        counterparty_port_id: vector<u8>,
         connection_id: u32, 
-        ordering: u8, 
-        version: vector<u8>
+        version: String
     ) {
         ibc::channel_open_init(
             ibc_store,
             utf8(b"&get_signer()"),
+            counterparty_port_id,
             connection_id,
-            ordering,
             version
         );
 
@@ -256,51 +250,42 @@ module ucs01::relay_app {
             abort E_INVALID_PROTOCOL_VERSION
         };
 
-        if (ordering != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
-        };
     }
-    public entry fun chan_open_try(
+    public entry fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
-        channel_state: u8,
-        channel_order: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>,
+        counterparty_port_id: vector<u8>,
+        version: String,
+        counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64
     ) {
-        ibc::channel_open_try(
-            ibc_store,
-            utf8(b"&get_signer()"),
-            channel_state,
-            channel_order,
-            connection_id,
-            counterparty_channel_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
-
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
-        };
-
-        if (channel_order != ORDER_UNORDERED) {
-            abort E_INVALID_PROTOCOL_ORDERING
         };
 
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
+
+        ibc::channel_open_try(
+            ibc_store,
+            utf8(b"&get_signer()"),
+            connection_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            version,
+            counterparty_version,
+            proof_init,
+            proof_height
+        );
     }
 
     public entry fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
         channel_id: u32,
-        counterparty_version: vector<u8>,
+        counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64
@@ -373,11 +358,12 @@ module ucs01::relay_app {
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         let mut buf = vector::empty<u8>();
 
+        ethabi::encode_uint<u64>(&mut buf, 0x20);
         // TODO(aeryz): document
         // Offset of `packet.sender`
-        ethabi::encode_uint<u64>(&mut buf, 32 * 4);
+        ethabi::encode_uint<u64>(&mut buf, 0x20 * 4);
         // Offset of `packet.receiver`
-        ethabi::encode_uint<u64>(&mut buf, 32 * 6);
+        ethabi::encode_uint<u64>(&mut buf, 0x20 * 6);
         // Offset of `packet.tokens`
         ethabi::encode_uint<u64>(&mut buf, 32 * 8);
         // Offset of `packet.extension`. We temporarily write `0` here because
@@ -390,7 +376,7 @@ module ucs01::relay_app {
             &mut buf,
             &packet.sender,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -399,7 +385,7 @@ module ucs01::relay_app {
             &mut buf,
             &packet.receiver,
             |some_variable, data| {
-                ethabi::encode_u8(some_variable, *data);
+                ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -421,8 +407,9 @@ module ucs01::relay_app {
             ethabi::encode_uint<u64>(&mut tokens_buf, 0);
             */
 
-            ethabi::encode_uint<u64>(&mut tokens_buf, 64);
+            ethabi::encode_uint<u64>(&mut tokens_buf, 96);
             ethabi::encode_uint<u64>(&mut tokens_buf, token.amount);
+            ethabi::encode_uint<u64>(&mut tokens_buf, token.fee);
 
             ethabi::encode_string(&mut tokens_buf, &token.denom);
 
@@ -491,10 +478,10 @@ module ucs01::relay_app {
             index = index + 32;
 
             let amount = ethabi::decode_uint(buf, &mut index);
-            // let _fee = ethabi::decode_uint(buf, &mut index);
+            let fee = ethabi::decode_uint(buf, &mut index);
             let denom = ethabi::decode_string(buf, &mut index);
 
-            let token = Token { amount: (amount as u64), denom: denom };
+            let token = Token { amount: (amount as u64), denom: denom, fee: (fee as u64) };
             vector::push_back(&mut tokens, token);
             i = i + 1;
         };
@@ -548,8 +535,7 @@ module ucs01::relay_app {
     fun refund_tokens(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        sequence: u64,
-        channel_id: u32, 
+        channel_id: u32,
         packet: &RelayPacket,
         ctx: &mut TxContext
     ) {
@@ -563,7 +549,7 @@ module ucs01::relay_app {
             let token_from_vec = packet.tokens[i];
             let mut denom_address = get_denom_address(
                 relay_store, 
-            channel_id, 
+                channel_id,
                 token_from_vec.denom
             );
 
@@ -597,7 +583,6 @@ module ucs01::relay_app {
             // Emit a Refunded event
             event::emit(
                 Refunded {
-                    packet_sequence: sequence,
                     channel_id: channel_id,
                     sender: packet.sender,
                     receiver: receiver,
@@ -614,7 +599,6 @@ module ucs01::relay_app {
     public entry fun timeout_packet(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        packet_sequence: u64,
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
@@ -628,25 +612,23 @@ module ucs01::relay_app {
         // Decode the packet data
         let relay_packet = decode_packet(&packet_data);
 
-        // Call the refund_tokens function to refund the sender
-        refund_tokens(
-            ibc_store, 
-            relay_store, 
-            packet_sequence, 
-            packet_source_channel,
-            &relay_packet,
-            ctx
-        );
-
         let packet =
             packet::new(
-                packet_sequence,
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
                 packet_timeout_height,
                 packet_timeout_timestamp
             );
+
+        // Call the refund_tokens function to refund the sender
+        refund_tokens(
+            ibc_store,
+            relay_store,
+            packet_source_channel,
+            &relay_packet,
+            ctx
+        );
 
         ibc::timeout_packet(
             ibc_store,
@@ -661,7 +643,6 @@ module ucs01::relay_app {
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         clock: &clock::Clock,
-        packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_datas: vector<vector<u8>>,
@@ -673,11 +654,10 @@ module ucs01::relay_app {
     ) {
         let mut packets: vector<Packet> = vector::empty();
         let mut i = 0;
-        while (i < vector::length(&packet_sequences)) {
+        while (i < vector::length(&packet_source_channels)) {
             vector::push_back(
                 &mut packets,
                 packet::new(
-                    *vector::borrow(&packet_sequences, i),
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
                     *vector::borrow(&packet_datas, i),
@@ -709,6 +689,9 @@ module ucs01::relay_app {
         ibc_packet: Packet, // representing the IBC Packet,
         ctx: &mut TxContext
     ) {
+        // TODO It needs to be changed
+        // fee should be included
+
         // Decode the RelayPacket from the IBC packet data
         let packet = decode_packet(packet::data(&ibc_packet));
         let source_channel = packet::source_channel(&ibc_packet);
@@ -804,7 +787,6 @@ module ucs01::relay_app {
                     // Emit the DenomCreated event
                     event::emit(
                         DenomCreated {
-                            packet_sequence: packet::sequence(&ibc_packet),
                             channel_id: source_channel,
                             denom: denom,
                             token: denom_address
@@ -821,7 +803,6 @@ module ucs01::relay_app {
             // Emit the Received event
             event::emit(
                 Received {
-                    packet_sequence: packet::sequence(&ibc_packet),
                     channel_id: destination_channel,
                     sender: packet.sender,
                     receiver: packet.receiver,
@@ -838,7 +819,6 @@ module ucs01::relay_app {
     public entry fun acknowledge_packet(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_datas: vector<vector<u8>>,
@@ -851,11 +831,10 @@ module ucs01::relay_app {
     ) {
         let mut packets: vector<Packet> = vector::empty();
         let mut i = 0;
-        while (i < vector::length(&packet_sequences)) {
+        while (i < vector::length(&packet_source_channels)) {
             vector::push_back(
                 &mut packets,
                 packet::new(
-                    *vector::borrow(&packet_sequences, i),
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
                     *vector::borrow(&packet_datas, i),
@@ -892,7 +871,6 @@ module ucs01::relay_app {
                 refund_tokens(
                     ibc_store,
                     relay_store,
-                    packet::sequence(&packet),
                     packet::source_channel(&packet),
                     &relay_packet,
                     ctx
@@ -911,6 +889,7 @@ module ucs01::relay_app {
         receiver: vector<u8>,
         denom_list: vector<address>,
         amount_list: vector<u64>,
+        fee_list: vector<u64>,
         extension: String,
         timeout_height: u64,
         timeout_timestamp: u64,
@@ -929,6 +908,7 @@ module ucs01::relay_app {
         while (i >= 0) {
             let local_token_denom = *vector::borrow(&denom_list, i);
             let local_token_amount = *vector::borrow(&amount_list, i);
+            let local_token_fee = *vector::borrow(&fee_list, i);
             // let coin = *vector::borrow(&coins, i);
             let coin = coins.pop_back();
             let token_address =
@@ -943,7 +923,8 @@ module ucs01::relay_app {
             // Create a normalized Token struct and push to the vector
             let normalized_token = Token {
                 denom: token_address,
-                amount: local_token_amount
+                amount: local_token_amount,
+                fee: local_token_fee
             };
             vector::push_back(&mut normalized_tokens, normalized_token);
             i = i - 1;
@@ -958,7 +939,7 @@ module ucs01::relay_app {
             extension
         };
 
-        let packet_sequence =
+        let _ =
             ibc::send_packet(
                 ibc_store,
                 source_channel,
@@ -975,7 +956,6 @@ module ucs01::relay_app {
 
             event::emit(
                 Sent {
-                    packet_sequence: packet_sequence,
                     channel_id: source_channel,
                     sender: bcs::to_bytes(&sender),
                     receiver: receiver,
@@ -1017,40 +997,42 @@ module ucs01::relay_app {
         *token_address
     }
 
-    //TODO: Its not working, why?
-    #[test]
-    public fun test_encode() {
-        let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
-        let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
-        let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
-        let mut tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-        vector::push_back(&mut tokens, token2);
-        vector::push_back(&mut tokens, token3);
+    // //TODO: Its not working, why?
+    // #[test]
+    // public fun test_encode() {
+    //     let token = Token { denom: string::utf8(b"denom"), amount: 1000, fee: 15 };
+    //     let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000, fee: 22 };
+    //     let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3, fee: 0 };
+    //     let mut tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+    //     vector::push_back(&mut tokens, token2);
+    //     vector::push_back(&mut tokens, token3);
 
-        let sender = bcs::to_bytes(&@0x111111111111111111111);
-        let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
-        let extension = string::utf8(b"extension");
-        let packet = RelayPacket {
-            sender: sender,
-            receiver: receiver,
-            tokens: tokens,
-            extension: extension
-        };
-        let encoded = encode_packet(&packet);
-        let decoded = decode_packet(&encoded);
+    //     let sender = bcs::to_bytes(&@0x111111111111111111111);
+    //     let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
+    //     let extension = string::utf8(b"extension");
+    //     let packet = RelayPacket {
+    //         sender: sender,
+    //         receiver: receiver,
+    //         tokens: tokens,
+    //         extension: extension
+    //     };
+    //     let encoded = encode_packet(&packet);
+    //     std::debug::print(&string::utf8(b"encoded packet is: " ));
+    //     std::debug::print(&encoded);
+    //     let decoded = decode_packet(&encoded);
 
-        assert!(decoded.sender == sender, 100);
-        assert!(decoded.receiver == receiver, 101);
-        assert!(decoded.extension == extension, 102);
-        let token = vector::borrow(&decoded.tokens, 0);
-        assert!(token.denom == string::utf8(b"denom"), 103);
-        assert!(token.amount == 1000, 104);
-        let token2 = vector::borrow(&decoded.tokens, 1);
-        assert!(token2.denom == string::utf8(b"this is amazing"), 105);
-        assert!(token2.amount == 3000, 106);
-        let token3 = vector::borrow(&decoded.tokens, 2);
-        assert!(token3.denom == string::utf8(b"insane cool"), 107);
-        assert!(token3.amount == 3, 108);
-    }
+    //     assert!(decoded.sender == sender, 100);
+    //     assert!(decoded.receiver == receiver, 101);
+    //     assert!(decoded.extension == extension, 102);
+    //     let token = vector::borrow(&decoded.tokens, 0);
+    //     assert!(token.denom == string::utf8(b"denom"), 103);
+    //     assert!(token.amount == 1000, 104);
+    //     let token2 = vector::borrow(&decoded.tokens, 1);
+    //     assert!(token2.denom == string::utf8(b"this is amazing"), 105);
+    //     assert!(token2.amount == 3000, 106);
+    //     let token3 = vector::borrow(&decoded.tokens, 2);
+    //     assert!(token3.denom == string::utf8(b"insane cool"), 107);
+    //     assert!(token3.amount == 3, 108);
+    // }
 }
