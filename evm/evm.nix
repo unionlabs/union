@@ -319,11 +319,11 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              jq -r 'to_entries | map([.key, .value]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
-                while IFS=$'\t' read -r contract address; do
+              jq -r 'to_entries | map([.key, .value.args, .value.contract]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
+                while IFS=$'\t' read -r address args contract; do
                   PRIVATE_KEY=${private-key} \
                   FOUNDRY_PROFILE="script" \
-                    forge verify-contract --force --watch "$address" "$contract" --api-key "$3" \
+                    forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
                       --rpc-url ${rpc-url}
                 done
 
