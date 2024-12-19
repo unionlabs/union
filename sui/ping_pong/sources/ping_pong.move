@@ -119,7 +119,6 @@ module ping_pong::ibc {
         ibc_store: &mut ibc::IBCStore,
         pp_store: &mut PingPong,
         clock: &clock::Clock,
-        packet_sequence: u64,
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
@@ -139,7 +138,6 @@ module ping_pong::ibc {
 
         let packet =
             packet::new(
-                packet_sequence,
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
@@ -159,7 +157,6 @@ module ping_pong::ibc {
 
     public entry fun acknowledge_packet(
         ibc_store: &mut ibc::IBCStore,
-        packet_sequences: vector<u64>,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_datas: vector<vector<u8>>,
@@ -171,11 +168,10 @@ module ping_pong::ibc {
     ) {
         let mut packets: vector<Packet> = vector::empty();
         let mut i = 0;
-        while (i < vector::length(&packet_sequences)) {
+        while (i < vector::length(&packet_source_channels)) {
             vector::push_back(
                 &mut packets,
                 packet::new(
-                    *vector::borrow(&packet_sequences, i),
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
                     *vector::borrow(&packet_datas, i),
@@ -202,14 +198,16 @@ module ping_pong::ibc {
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
         pp_store: &mut PingPong,
-        connection_id: u32, ordering: u8, version: vector<u8>
+        counterparty_port_id: vector<u8>,
+        connection_id: u32,
+        version: String
     ) {
         // TODO(aeryz): save the channel here
         ibc::channel_open_init(
             ibc_store,
             utf8(b"@ping_pong"), // TODO: Do we need this port_id?
+            counterparty_port_id,
             connection_id,
-            ordering,
             version
         );
         if (pp_store.channel_id != 0) {
@@ -220,12 +218,11 @@ module ping_pong::ibc {
     public entry fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
         pp_store: &mut PingPong,
-        channel_state: u8,
-        channel_order: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>,
-        counterparty_version: vector<u8>,
+        counterparty_port_id: vector<u8>,
+        version: String,
+        counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64
     ) {
@@ -233,10 +230,9 @@ module ping_pong::ibc {
         ibc::channel_open_try(
             ibc_store,
             utf8(b"@ping_pong"), // TODO: Do we need this port_id?
-            channel_state,
-            channel_order,
             connection_id,
             counterparty_channel_id,
+            counterparty_port_id,
             version,
             counterparty_version,
             proof_init,
@@ -252,7 +248,7 @@ module ping_pong::ibc {
         ibc_store: &mut ibc::IBCStore,
         pp_store: &mut PingPong,
         channel_id: u32,
-        counterparty_version: vector<u8>,
+        counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64
