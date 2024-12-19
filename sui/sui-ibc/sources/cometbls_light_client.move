@@ -70,7 +70,7 @@ module ibc::light_client {
         client: &Client,
         height: u64,
         proof: vector<u8>,
-        path: vector<u8>,
+        key: vector<u8>,
         value: vector<u8>
     ): u64 {
         0

@@ -1,5 +1,6 @@
 module ibc::channel {
     use std::option::{Self, Option};
+    use std::string::{Self, String};
     use std::vector;
     use ibc::ethabi;
 
@@ -13,12 +14,14 @@ module ibc::channel {
     const CHAN_ORDERING_UNORDERED: u8 = 1;
     const CHAN_ORDERING_ORDERED: u8 = 2;
 
+    const E_PACKET_VERSION_LENGTH_EXCEEDS_MAX: u64 = 1;
+
     public struct Channel has copy, store, drop {
         state: u8,
-        ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>
+        counterparty_port_id: vector<u8>,
+        version: String
     }
 
     // Getters
@@ -26,19 +29,19 @@ module ibc::channel {
         channel.state
     }
 
-    public fun ordering(channel: &Channel): u8 {
-        channel.ordering
-    }
-
     public fun connection_id(channel: &Channel): u32 {
         channel.connection_id
+    }
+
+    public fun counterparty_port_id(channel: &Channel): &vector<u8> {
+        &channel.counterparty_port_id
     }
 
     public fun counterparty_channel_id(channel: &Channel): u32 {
         channel.counterparty_channel_id
     }
 
-    public fun version(channel: &Channel): &vector<u8> {
+    public fun version(channel: &Channel): &String {
         &channel.version
     }
 
@@ -47,8 +50,8 @@ module ibc::channel {
         channel.state = new_state;
     }
 
-    public fun set_ordering(channel: &mut Channel, new_ordering: u8) {
-        channel.ordering = new_ordering;
+    public fun set_counterparty_port_id(channel: &mut Channel, new_counterparty_port_id: vector<u8>) {
+        channel.counterparty_port_id = new_counterparty_port_id;
     }
 
     public fun set_connection_id(
@@ -63,21 +66,31 @@ module ibc::channel {
         channel.counterparty_channel_id = new_id;
     }
 
-    public fun set_version(channel: &mut Channel, new_version: vector<u8>) {
+    public fun set_version(channel: &mut Channel, new_version: String) {
         channel.version = new_version;
     }
 
     // Encode and decode functions
     public fun encode(channel: &Channel): vector<u8> {
+        // TODO: test this
         let mut buf = vector::empty<u8>();
 
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u8>(&mut buf, channel.state);
-        ethabi::encode_uint<u8>(&mut buf, channel.ordering);
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
+        ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
 
-        let mut i = 32 - vector::length(&channel.version);
-        vector::append(&mut buf, channel.version);
+        let version_offset =
+            (((vector::length(&channel.counterparty_port_id) - 1) / 0x20) as u32);
+        ethabi::encode_uint<u32>(&mut buf, (7 + version_offset) * 0x20);
+        ethabi::encode_bytes(&mut buf, &channel.counterparty_port_id);
+
+        let version_length = string::length(&channel.version);
+        ethabi::encode_uint<u64>(&mut buf, version_length);
+
+        let mut i = 32 - version_length;
+        vector::append(&mut buf, *string::bytes(&channel.version));
         while (i > 0) {
             vector::push_back(&mut buf, 0);
             i = i - 1;
@@ -86,61 +99,70 @@ module ibc::channel {
         buf
     }
 
-    public fun decode(buf: vector<u8>): Option<Channel> {
-        let mut index = 0;
+    // TODO: Do we need this?
+    // public fun decode(buf: vector<u8>): Option<Channel> {
+    //     let mut index = 0;
 
-        let state = (ethabi::decode_uint(&buf, &mut index) as u8);
-        let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
-        let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
-        let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
+    //     let state = (ethabi::decode_uint(&buf, &mut index) as u8);
+    //     let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
+    //     let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
+    //     let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
 
-        let mut i = index;
-        while (i < index + 32) {
-            let char = *vector::borrow(&buf, i);
+    //     let mut i = index;
+    //     while (i < index + 32) {
+    //         let char = *vector::borrow(&buf, i);
 
-            if (char == 0) { break };
+    //         if (char == 0) { break };
 
-            i = i + 1;
-        };
+    //         i = i + 1;
+    //     };
 
-        let version = ethabi::vector_slice(&buf, index, i);
+    //     let version = ethabi::vector_slice(&buf, index, i);
 
-        option::some(
-            new(
-                state,
-                ordering,
-                connection_id,
-                counterparty_connection_id,
-                version
-            )
-        )
-    }
+    //     option::some(
+    //         new(
+    //             state,
+    //             ordering,
+    //             connection_id,
+    //             counterparty_connection_id,
+    //             version
+    //         )
+    //     )
+    // }
 
     // Constructor
     public fun new(
         state: u8,
-        ordering: u8,
         connection_id: u32,
         counterparty_channel_id: u32,
-        version: vector<u8>
+        counterparty_port_id: vector<u8>,
+        version: String
     ): Channel {
-        Channel { state, ordering, connection_id, counterparty_channel_id, version }
+        assert!(string::length(&version) <= 32, E_PACKET_VERSION_LENGTH_EXCEEDS_MAX);
+
+        Channel {
+            state,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            version
+        }
     }
 
     // Default function
     public fun default(): Channel {
-        new(0, 0, 0, 0, vector::empty())
+        new(0, 0, 0, vector::empty(), string::utf8(b""))
     }
 
     #[test]
-    public fun test_encode_decode_channel() {
+    public fun test_encode_channel() {
         let buf =
-            x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c868656c6c6f000000000000000000000000000000000000000000000000000000";
-        let channel = new(1, 1, 100, 200, b"hello");
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000044141414100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b75637330312d72656c6179000000000000000000000000000000000000000000";
+
+        let channel = new(2, 1, 2, b"AAAA", string::utf8(b"ucs01-relay"));
 
         let encoded = encode(&channel);
 
         assert!(buf == encoded, 1);
-        assert!(decode(encoded) == option::some(channel), 1);
     }
 }
