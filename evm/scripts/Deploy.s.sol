@@ -163,7 +163,7 @@ abstract contract UnionScript is UnionBase {
                 Protocols.make(Protocols.UCS02),
                 abi.encode(
                     address(new UCS02NFT()),
-                    abi.encodeCall(UCS01Relay.initialize, (handler, owner))
+                    abi.encodeCall(UCS02NFT.initialize, (handler, owner))
                 )
             )
         );
@@ -328,6 +328,7 @@ contract GetDeployed is Script {
     }
 
     function run() public {
+        address multicall = getDeployed(LIB.make(LIB.MULTICALL));
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
@@ -335,6 +336,9 @@ contract GetDeployed is Script {
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
 
+        console.log(
+            string(abi.encodePacked("Multicall: ", multicall.toHexString()))
+        );
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
@@ -349,26 +353,141 @@ contract GetDeployed is Script {
         console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
         console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
 
-        string memory json = "";
-        json.serialize(
-            "contracts/core/OwnableIBCHandler.sol:OwnableIBCHandler",
-            implOf(handler)
+        string memory impls = "base";
+
+        string memory proxyHandler = "proxyHandler";
+        proxyHandler.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
         );
-        json.serialize(
-            "contracts/clients/CometblsClient.sol:CometblsClient",
-            implOf(cometblsClient)
+        proxyHandler = proxyHandler.serialize(
+            "args",
+            abi.encode(
+                implOf(handler), abi.encodeCall(IBCHandler.initialize, sender)
+            )
         );
-        json.serialize(
-            "contracts/apps/ucs/00-pingpong/PingPong.sol:PingPong",
-            implOf(ucs00)
+        impls.serialize(handler.toHexString(), proxyHandler);
+
+        string memory proxyComet = "proxyComet";
+        proxyComet.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
         );
-        json.serialize(
-            "contracts/apps/ucs/01-relay/Relay.sol:UCS01Relay", implOf(ucs01)
+        proxyComet = proxyComet.serialize(
+            "args",
+            abi.encode(
+                implOf(cometblsClient),
+                abi.encodeCall(CometblsClient.initialize, (handler, sender))
+            )
         );
-        json = json.serialize(
-            "contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT", implOf(ucs02)
+        impls.serialize(cometblsClient.toHexString(), proxyComet);
+
+        string memory proxyUCS00 = "proxyUCS00";
+        proxyUCS00.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
         );
-        json.write(vm.envString("OUTPUT"));
+        proxyUCS00 = proxyUCS00.serialize(
+            "args",
+            abi.encode(
+                implOf(ucs00),
+                abi.encodeCall(
+                    PingPong.initialize,
+                    (IIBCPacket(handler), sender, 100000000000000)
+                )
+            )
+        );
+        impls.serialize(ucs00.toHexString(), proxyUCS00);
+
+        string memory proxyUCS01 = "proxyUCS01";
+        proxyUCS01.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyUCS01 = proxyUCS01.serialize(
+            "args",
+            abi.encode(
+                implOf(ucs01),
+                abi.encodeCall(
+                    UCS01Relay.initialize, (IIBCPacket(handler), sender)
+                )
+            )
+        );
+        impls.serialize(ucs01.toHexString(), proxyUCS01);
+
+        string memory proxyUCS02 = "proxyUCS02";
+        proxyUCS02.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyUCS02 = proxyUCS02.serialize(
+            "args",
+            abi.encode(
+                implOf(ucs02),
+                abi.encodeCall(
+                    UCS02NFT.initialize, (IIBCPacket(handler), sender)
+                )
+            )
+        );
+        impls.serialize(ucs02.toHexString(), proxyUCS02);
+
+        string memory implMulticall = "implMulticall";
+        implMulticall.serialize(
+            "contract", string("contracts/Multicall.sol:Multicall")
+        );
+        implMulticall = implMulticall.serialize("args", bytes(hex""));
+        impls.serialize(multicall.toHexString(), implMulticall);
+
+        string memory implHandler = "implHandler";
+        implHandler.serialize(
+            "contract",
+            string("contracts/core/OwnableIBCHandler.sol:OwnableIBCHandler")
+        );
+        implHandler = implHandler.serialize("args", bytes(hex""));
+        impls.serialize(implOf(handler).toHexString(), implHandler);
+
+        string memory implComet = "implComet";
+        implComet.serialize(
+            "contract",
+            string("contracts/clients/CometblsClient.sol:CometblsClient")
+        );
+        implComet = implComet.serialize("args", bytes(hex""));
+        impls.serialize(implOf(cometblsClient).toHexString(), implComet);
+
+        string memory implUCS00 = "implUCS00";
+        implUCS00.serialize(
+            "contract",
+            string("contracts/apps/ucs/00-pingpong/PingPong.sol:PingPong")
+        );
+        implUCS00 = implUCS00.serialize("args", bytes(hex""));
+        impls.serialize(implOf(ucs00).toHexString(), implUCS00);
+
+        string memory implUCS01 = "implUCS01";
+        implUCS01.serialize(
+            "contract",
+            string("contracts/apps/ucs/01-relay/Relay.sol:UCS01Relay")
+        );
+        implUCS01 = implUCS01.serialize("args", bytes(hex""));
+        impls.serialize(implOf(ucs01).toHexString(), implUCS01);
+
+        string memory implUCS02 = "implUCS02";
+        implUCS02.serialize(
+            "contract", string("contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT")
+        );
+        implUCS02 = implUCS02.serialize("args", bytes(hex""));
+        impls = impls.serialize(implOf(ucs01).toHexString(), implUCS02);
+
+        impls.write(vm.envString("OUTPUT"));
     }
 }
 
