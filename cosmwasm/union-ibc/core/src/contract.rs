@@ -44,9 +44,9 @@ type ContractResult = Result<Response, ContractError>;
 
 pub mod events {
     pub mod client {
-        pub const REGISTER: &str = "client_register";
-        pub const CREATE: &str = "client_create";
-        pub const UPDATE: &str = "client_update";
+        pub const REGISTER: &str = "register_client";
+        pub const CREATE: &str = "create_client";
+        pub const UPDATE: &str = "update_client";
     }
     pub mod connection {
         pub const OPEN_INIT: &str = "connection_open_init";
@@ -76,7 +76,7 @@ pub mod events {
         pub const CONNECTION_ID: &str = "connection_id";
         pub const CHANNEL_ID: &str = "channel_id";
         pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
-        pub const HEIGHT: &str = "height";
+        pub const COUNTERPARTY_HEIGHT: &str = "counterparty_height";
         pub const PACKET: &str = "packet";
         pub const PACKETS: &str = "packets";
         pub const ACKS: &str = "acks";
@@ -771,7 +771,10 @@ fn update_client(
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
             (events::attribute::CLIENT_ID, client_id.to_string()),
-            (events::attribute::HEIGHT, update.height.to_string()),
+            (
+                events::attribute::COUNTERPARTY_HEIGHT,
+                update.height.to_string(),
+            ),
         ])),
     )
 }

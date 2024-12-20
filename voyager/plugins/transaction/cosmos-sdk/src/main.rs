@@ -16,7 +16,7 @@ use jsonrpsee::{
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
@@ -175,7 +175,7 @@ impl Module {
             .with(|signer| {
                 let msgs = msgs.clone();
 
-                dbg!(&msgs);
+                trace!(?msgs);
 
                 async move {
                     // TODO: Figure out a way to thread this value through
@@ -355,8 +355,6 @@ impl Module {
 
         auth_info.fee = self.gas_config.mk_fee(simulation_gas_info.gas_used);
 
-        // dbg!(&auth_info.fee);
-
         info!(
             fee = %auth_info.fee.amount[0].amount,
             gas_multiplier = %self.gas_config.gas_multiplier,
@@ -474,10 +472,11 @@ impl Module {
                             "cosmos transaction failed"
                         );
 
-                        if let Some(union_ibc_error) = tx.tx_result.log.split(": ").find_map(|x| {
-                            // dbg!(x);
-                            union_ibc::ContractErrorKind::parse_from_error_message(x)
-                        }) {
+                        if let Some(union_ibc_error) =
+                            tx.tx_result.log.split(": ").find_map(|x| {
+                                union_ibc::ContractErrorKind::parse_from_error_message(x)
+                            })
+                        {
                             break Err(BroadcastTxCommitError::UnionIbcError(union_ibc_error));
                         } else {
                             break Err(BroadcastTxCommitError::Tx(error));
@@ -1004,10 +1003,26 @@ fn process_msgs(
                         .unwrap(),
                         funds: vec![],
                     }),
-                    ibc_union_spec::Datagram::ChannelOpenInit(_msg_channel_open_init) => todo!(),
-                    ibc_union_spec::Datagram::ChannelOpenTry(msg_channel_open_try) => {
-                        dbg!(&msg_channel_open_try);
+                    ibc_union_spec::Datagram::ChannelOpenInit(msg_channel_open_init) => {
+                        let channel_open_init = union_ibc_msg::msg::ExecuteMsg::ChannelOpenInit(
+                            union_ibc_msg::msg::MsgChannelOpenInit {
+                                port_id: String::from_utf8(msg_channel_open_init.port_id.to_vec())
+                                    .unwrap(),
+                                relayer: signer.to_string(),
+                                counterparty_port_id: msg_channel_open_init.counterparty_port_id,
+                                connection_id: msg_channel_open_init.connection_id,
+                                version: msg_channel_open_init.version,
+                            },
+                        );
 
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&channel_open_init).unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union_spec::Datagram::ChannelOpenTry(msg_channel_open_try) => {
                         let channel_open_try = union_ibc_msg::msg::ExecuteMsg::ChannelOpenTry(
                             union_ibc_msg::msg::MsgChannelOpenTry {
                                 port_id: String::from_utf8(msg_channel_open_try.port_id.to_vec())
@@ -1020,8 +1035,6 @@ fn process_msgs(
                             },
                         );
 
-                        dbg!(&channel_open_try);
-
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
@@ -1029,10 +1042,27 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union_spec::Datagram::ChannelOpenAck(_msg_channel_open_ack) => todo!(),
-                    ibc_union_spec::Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => {
-                        dbg!(&msg_channel_open_confirm);
+                    ibc_union_spec::Datagram::ChannelOpenAck(msg_channel_open_ack) => {
+                        let channel_open_ack = union_ibc_msg::msg::ExecuteMsg::ChannelOpenAck(
+                            union_ibc_msg::msg::MsgChannelOpenAck {
+                                channel_id: msg_channel_open_ack.channel_id,
+                                counterparty_version: msg_channel_open_ack.counterparty_version,
+                                counterparty_channel_id: msg_channel_open_ack
+                                    .counterparty_channel_id,
+                                proof_try: msg_channel_open_ack.proof_try,
+                                proof_height: msg_channel_open_ack.proof_height,
+                                relayer: signer.to_string(),
+                            },
+                        );
 
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&channel_open_ack).unwrap(),
+                            funds: vec![],
+                        })
+                    }
+                    ibc_union_spec::Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => {
                         let channel_open_confirm =
                             union_ibc_msg::msg::ExecuteMsg::ChannelOpenConfirm(
                                 union_ibc_msg::msg::MsgChannelOpenConfirm {
@@ -1042,8 +1072,6 @@ fn process_msgs(
                                     relayer: signer.to_string(),
                                 },
                             );
-
-                        dbg!(&channel_open_confirm);
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
@@ -1057,8 +1085,6 @@ fn process_msgs(
                         todo!()
                     }
                     ibc_union_spec::Datagram::PacketRecv(msg_packet_recv) => {
-                        dbg!(&msg_packet_recv);
-
                         let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketRecv(
                             union_ibc_msg::msg::MsgPacketRecv {
                                 packets: msg_packet_recv.packets,
@@ -1069,8 +1095,6 @@ fn process_msgs(
                             },
                         );
 
-                        dbg!(&packet_recv);
-
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
@@ -1079,8 +1103,6 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::Datagram::PacketAcknowledgement(msg_packet_acknowledgement) => {
-                        dbg!(&msg_packet_acknowledgement);
-
                         let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketAck(
                             union_ibc_msg::msg::MsgPacketAcknowledgement {
                                 packets: msg_packet_acknowledgement.packets,
@@ -1090,8 +1112,6 @@ fn process_msgs(
                                 relayer: signer.to_string(),
                             },
                         );
-
-                        dbg!(&packet_recv);
 
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),

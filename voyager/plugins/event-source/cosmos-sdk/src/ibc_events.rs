@@ -266,7 +266,7 @@ event! {
 
         // events for the union IBC specification, emitted by the cosmwasm contract implementation.
 
-        #[event(tag = "wasm-client_create")]
+        #[event(tag = "wasm-create_client")]
         UnionCreateClient {
             #[parse(u32::from_str)]
             client_id: u32,
@@ -276,12 +276,12 @@ event! {
             // height: u64,
         },
 
-        #[event(tag = "wasm-client_update")]
+        #[event(tag = "wasm-update_client")]
         UnionUpdateClient {
             #[parse(u32::from_str)]
             client_id: u32,
             #[parse(u64::from_str)]
-            height: u64,
+            counterparty_height: u64,
         },
 
         #[event(tag = "wasm-connection_open_init")]
@@ -385,7 +385,7 @@ event! {
             connection_id: u32,
         },
 
-        #[event(tag = "wasm-send_packet")]
+        #[event(tag = "wasm-packet_send")]
         UnionSendPacket {
             #[parse(serde_json::from_str)]
             packet: ibc_solidity::Packet,

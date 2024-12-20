@@ -280,6 +280,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = CreateClient {
+                            client_id: raw_event.client_id,
+                            client_type: client_info.client_type.clone(),
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info: client_info.clone(),
@@ -287,13 +295,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                CreateClient {
-                                    client_id: raw_event.client_id,
-                                    client_type: client_info.client_type,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::RegisterClient(raw_event) => {
@@ -314,6 +316,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = UpdateClient {
+                            client_type: client_info.client_type.clone(),
+                            client_id: raw_event.client_id,
+                            height: raw_event.height,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info: client_info.clone(),
@@ -321,14 +332,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                UpdateClient {
-                                    client_type: client_info.client_type,
-                                    client_id: raw_event.client_id,
-                                    height: raw_event.height,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
 
@@ -345,6 +349,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = ConnectionOpenInit {
+                            client_id: raw_event.client_id,
+                            connection_id: raw_event.connection_id,
+                            counterparty_client_id: raw_event.counterparty_client_id,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -352,14 +365,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             ibc_spec_id: IbcUnion::ID,
                             provable_height,
-                            event: into_value::<FullEvent>(
-                                ConnectionOpenInit {
-                                    client_id: raw_event.client_id,
-                                    connection_id: raw_event.connection_id,
-                                    counterparty_client_id: raw_event.counterparty_client_id,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ConnectionOpenTry(raw_event) => {
@@ -375,6 +381,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = ConnectionOpenTry {
+                            client_id: raw_event.client_id,
+                            connection_id: raw_event.connection_id,
+                            counterparty_client_id: raw_event.counterparty_client_id,
+                            counterparty_connection_id: raw_event.counterparty_connection_id,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -382,16 +398,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ConnectionOpenTry {
-                                    client_id: raw_event.client_id,
-                                    connection_id: raw_event.connection_id,
-                                    counterparty_client_id: raw_event.counterparty_client_id,
-                                    counterparty_connection_id: raw_event
-                                        .counterparty_connection_id,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ConnectionOpenAck(raw_event) => {
@@ -407,6 +414,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = ConnectionOpenAck {
+                            client_id: raw_event.client_id,
+                            connection_id: raw_event.connection_id,
+                            counterparty_client_id: raw_event.counterparty_client_id,
+                            counterparty_connection_id: raw_event.counterparty_connection_id,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -414,16 +431,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ConnectionOpenAck {
-                                    client_id: raw_event.client_id,
-                                    connection_id: raw_event.connection_id,
-                                    counterparty_client_id: raw_event.counterparty_client_id,
-                                    counterparty_connection_id: raw_event
-                                        .counterparty_connection_id,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ConnectionOpenConfirm(raw_event) => {
@@ -439,6 +447,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = ConnectionOpenConfirm {
+                            client_id: raw_event.client_id,
+                            connection_id: raw_event.connection_id,
+                            counterparty_client_id: raw_event.counterparty_client_id,
+                            counterparty_connection_id: raw_event.counterparty_client_id,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -446,15 +464,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ConnectionOpenConfirm {
-                                    client_id: raw_event.client_id,
-                                    connection_id: raw_event.connection_id,
-                                    counterparty_client_id: raw_event.counterparty_client_id,
-                                    counterparty_connection_id: raw_event.counterparty_client_id,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ChannelOpenInit(raw_event) => {
@@ -494,6 +504,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .ok_or_else(missing_state("connection must exist", None))?;
 
+                        let event = ChannelOpenInit {
+                            port_id: raw_event.port_id.into(),
+                            channel_id,
+                            counterparty_port_id: raw_event.counterparty_port_id.into(),
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -501,16 +522,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ChannelOpenInit {
-                                    port_id: raw_event.port_id.into(),
-                                    channel_id,
-                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
-                                    connection,
-                                    version: channel.version,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ChannelOpenTry(raw_event) => {
@@ -550,6 +562,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
+                        let event = ChannelOpenTry {
+                            port_id: raw_event.port_id.into(),
+                            channel_id,
+                            counterparty_port_id: raw_event.counterparty_port_id.into(),
+                            counterparty_channel_id: raw_event.counterparty_channel_id,
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -557,17 +581,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ChannelOpenTry {
-                                    port_id: raw_event.port_id.into(),
-                                    channel_id,
-                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
-                                    counterparty_channel_id: raw_event.counterparty_channel_id,
-                                    connection,
-                                    version: channel.version,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ChannelOpenAck(raw_event) => {
@@ -607,6 +621,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
+                        let event = ChannelOpenAck {
+                            port_id: raw_event.port_id.into(),
+                            channel_id,
+                            counterparty_port_id: raw_event.counterparty_port_id.into(),
+                            counterparty_channel_id: raw_event.counterparty_channel_id,
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -614,17 +640,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ChannelOpenAck {
-                                    port_id: raw_event.port_id.into(),
-                                    channel_id,
-                                    counterparty_port_id: raw_event.counterparty_port_id.into(),
-                                    counterparty_channel_id: raw_event.counterparty_channel_id,
-                                    connection,
-                                    version: channel.version,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::ChannelOpenConfirm(raw_event) => {
@@ -664,6 +680,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
+                        let event = ChannelOpenConfirm {
+                            port_id: raw_event.port_id.into(),
+                            channel_id,
+                            counterparty_port_id: channel.counterparty_port_id.into(),
+                            counterparty_channel_id: channel.counterparty_channel_id,
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -671,17 +699,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                ChannelOpenConfirm {
-                                    port_id: raw_event.port_id.into(),
-                                    channel_id,
-                                    counterparty_port_id: channel.counterparty_port_id.into(),
-                                    counterparty_channel_id: channel.counterparty_channel_id,
-                                    connection,
-                                    version: channel.version,
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
 
@@ -706,6 +724,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = PacketSend {
+                            packet_data: event.packet.data.to_vec().into(),
+                            packet: PacketMetadata {
+                                source_channel,
+                                destination_channel,
+                                timeout_height: event.packet.timeout_height,
+                                timeout_timestamp: event.packet.timeout_timestamp,
+                            },
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -713,18 +744,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                PacketSend {
-                                    packet_data: event.packet.data.to_vec().into(),
-                                    packet: PacketMetadata {
-                                        source_channel,
-                                        destination_channel,
-                                        timeout_height: event.packet.timeout_height,
-                                        timeout_timestamp: event.packet.timeout_timestamp,
-                                    },
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::PacketTimeout(event) => {
@@ -741,6 +761,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = PacketTimeout {
+                            packet: PacketMetadata {
+                                source_channel,
+                                destination_channel,
+                                timeout_height: event.packet.timeout_height,
+                                timeout_timestamp: event.packet.timeout_timestamp,
+                            },
+                            packet_data: event.packet.data.into(),
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -748,18 +781,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                PacketTimeout {
-                                    packet: PacketMetadata {
-                                        source_channel,
-                                        destination_channel,
-                                        timeout_height: event.packet.timeout_height,
-                                        timeout_timestamp: event.packet.timeout_timestamp,
-                                    },
-                                    packet_data: event.packet.data.into(),
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::PacketAck(event) => {
@@ -776,6 +798,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = PacketAck {
+                            packet: PacketMetadata {
+                                source_channel,
+                                destination_channel,
+                                timeout_height: event.packet.timeout_height,
+                                timeout_timestamp: event.packet.timeout_timestamp,
+                            },
+                            packet_data: event.packet.data.into(),
+                            acknowledgement: event.acknowledgement.into(),
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -783,19 +819,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                PacketAck {
-                                    packet: PacketMetadata {
-                                        source_channel,
-                                        destination_channel,
-                                        timeout_height: event.packet.timeout_height,
-                                        timeout_timestamp: event.packet.timeout_timestamp,
-                                    },
-                                    packet_data: event.packet.data.into(),
-                                    acknowledgement: event.acknowledgement.into(),
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     // packet origin is the counterparty chain
@@ -813,6 +837,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = WriteAck {
+                            packet_data: event.packet.data.to_vec().into(),
+                            acknowledgement: event.acknowledgement.to_vec().into(),
+                            packet: PacketMetadata {
+                                source_channel,
+                                destination_channel,
+                                timeout_height: event.packet.timeout_height,
+                                timeout_timestamp: event.packet.timeout_timestamp,
+                            },
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -820,19 +858,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                WriteAck {
-                                    packet_data: event.packet.data.to_vec().into(),
-                                    acknowledgement: event.acknowledgement.to_vec().into(),
-                                    packet: PacketMetadata {
-                                        source_channel,
-                                        destination_channel,
-                                        timeout_height: event.packet.timeout_height,
-                                        timeout_timestamp: event.packet.timeout_timestamp,
-                                    },
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::PacketRecv(event) => {
@@ -849,6 +875,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
+                        let event = PacketRecv {
+                            packet_data: event.packet.data.to_vec().into(),
+                            packet: PacketMetadata {
+                                source_channel,
+                                destination_channel,
+                                timeout_height: event.packet.timeout_height,
+                                timeout_timestamp: event.packet.timeout_timestamp,
+                            },
+                            relayer_msg: event.relayer_msg.into(),
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
@@ -856,19 +896,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<FullEvent>(
-                                PacketRecv {
-                                    packet_data: event.packet.data.to_vec().into(),
-                                    packet: PacketMetadata {
-                                        source_channel,
-                                        destination_channel,
-                                        timeout_height: event.packet.timeout_height,
-                                        timeout_timestamp: event.packet.timeout_timestamp,
-                                    },
-                                    relayer_msg: event.relayer_msg.into(),
-                                }
-                                .into(),
-                            ),
+                            event: into_value::<FullEvent>(event),
                         }))
                     }
                     IbcEvents::IntentPacketRecv(_event) => {
@@ -991,14 +1019,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         Ibc::IbcEvents::ChannelCloseConfirm(
                                             channel_close_confirm,
                                         ) => IbcEvents::ChannelCloseConfirm(channel_close_confirm),
-                                        Ibc::IbcEvents::PacketSend(send_packet) => {
-                                            IbcEvents::PacketSend(send_packet)
+                                        Ibc::IbcEvents::PacketSend(packet_send) => {
+                                            IbcEvents::PacketSend(packet_send)
                                         }
-                                        Ibc::IbcEvents::PacketRecv(recv_packet) => {
-                                            IbcEvents::PacketRecv(recv_packet)
+                                        Ibc::IbcEvents::PacketRecv(packet_recv) => {
+                                            IbcEvents::PacketRecv(packet_recv)
                                         }
-                                        Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet) => {
-                                            IbcEvents::IntentPacketRecv(recv_intent_packet)
+                                        Ibc::IbcEvents::IntentPacketRecv(intent_packet_recv) => {
+                                            IbcEvents::IntentPacketRecv(intent_packet_recv)
                                         }
                                         Ibc::IbcEvents::WriteAck(write_acknowledgement) => {
                                             IbcEvents::WriteAck(write_acknowledgement)

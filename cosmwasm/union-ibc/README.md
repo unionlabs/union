@@ -1,3 +1,3 @@
 - `union-ibc`: [union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme](https://explorer.testnet-9.union.build/union/cosmwasm/0/transactions?contract=union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme)
 - `etheruem-light-client`: [union198amaja0zfw53czzfph55xlhwf736qkrcvppx6y3a5rkqmxaj9fshqmczk](https://explorer.testnet-9.union.build/union/cosmwasm/0/transactions?contract=union198amaja0zfw53czzfph55xlhwf736qkrcvppx6y3a5rkqmxaj9fshqmczk)
-- `union-ibc-ucs00-pingpong`: [union194e3rchcaqyynwcj6qr6647ge7lheymrgkhq9tdknw35050ufhuqzqz2he](https://explorer.testnet-9.union.build/union/cosmwasm/0/transactions?contract=union194e3rchcaqyynwcj6qr6647ge7lheymrgkhq9tdknw35050ufhuqzqz2he)
+- `union-ibc-ucs00-pingpong`: [union1aj2z8mf6ppg4pjsj787t69phxy3mx8p7ce8ncem05lls5j29haxsumypzd](https://explorer.testnet-9.union.build/union/cosmwasm/0/transactions?contract=union194e3rchcaqyynwcj6qr6647ge7lheymrgkhq9tdknw35050ufhuqzqz2he)

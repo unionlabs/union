@@ -12,8 +12,12 @@ macros       = { workspace = true }
 schemars     = { workspace = true, features = ["derive"] }
 serde        = { workspace = true, features = ["derive"] }
 sha3         = { workspace = true }
+tracing      = { workspace = true, optional = true }
 unionlabs    = { workspace = true }
 voyager-core = { workspace = true }
 
 [lints]
 workspace = true
+
+[features]
+tracing = ["dep:tracing"]

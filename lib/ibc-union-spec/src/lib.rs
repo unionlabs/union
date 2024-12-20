@@ -254,14 +254,14 @@ impl Datagram {
             Self::ConnectionOpenTry(msg) => Some(Height::new(msg.proof_height)),
             Self::ConnectionOpenAck(msg) => Some(Height::new(msg.proof_height)),
             Self::ConnectionOpenConfirm(msg) => Some(Height::new(msg.proof_height)),
-            Self::ChannelOpenInit(_msg) => todo!(),
-            Self::ChannelOpenTry(_msg) => todo!(),
-            Self::ChannelOpenAck(_msg) => todo!(),
-            Self::ChannelOpenConfirm(_msg) => todo!(),
+            Self::ChannelOpenInit(msg) => None,
+            Self::ChannelOpenTry(msg) => Some(Height::new(msg.proof_height)),
+            Self::ChannelOpenAck(msg) => Some(Height::new(msg.proof_height)),
+            Self::ChannelOpenConfirm(msg) => Some(Height::new(msg.proof_height)),
             Self::ChannelCloseInit(_msg) => todo!(),
             Self::ChannelCloseConfirm(_msg) => todo!(),
-            Self::PacketRecv(_msg) => todo!(),
-            Self::PacketAcknowledgement(_msg) => todo!(),
+            Self::PacketRecv(msg) => Some(Height::new(msg.proof_height)),
+            Self::PacketAcknowledgement(msg) => Some(Height::new(msg.proof_height)),
             Self::PacketTimeout(_msg) => todo!(),
             Self::IntentPacketRecv(_msg) => todo!(),
             Self::BatchSend(_msg) => todo!(),
@@ -434,18 +434,18 @@ pub enum FullEvent {
 impl FullEvent {
     pub fn counterparty_client_id(&self) -> Option<ClientId> {
         match self {
-            FullEvent::CreateClient(_) => None,
-            FullEvent::UpdateClient(_) => None,
-            FullEvent::ConnectionOpenInit(event) => Some(event.counterparty_client_id),
-            FullEvent::ConnectionOpenTry(event) => Some(event.counterparty_client_id),
-            FullEvent::ConnectionOpenAck(event) => Some(event.counterparty_client_id),
-            FullEvent::ConnectionOpenConfirm(event) => Some(event.counterparty_client_id),
-            FullEvent::ChannelOpenInit(event) => Some(event.connection.counterparty_client_id),
-            FullEvent::ChannelOpenTry(event) => Some(event.connection.counterparty_client_id),
-            FullEvent::ChannelOpenAck(event) => Some(event.connection.counterparty_client_id),
-            FullEvent::ChannelOpenConfirm(event) => Some(event.connection.counterparty_client_id),
-            FullEvent::ChannelCloseInit(_) => todo!(),
-            FullEvent::ChannelCloseConfirm(_) => todo!(),
+            Self::CreateClient(_) => None,
+            Self::UpdateClient(_) => None,
+            Self::ConnectionOpenInit(event) => Some(event.counterparty_client_id),
+            Self::ConnectionOpenTry(event) => Some(event.counterparty_client_id),
+            Self::ConnectionOpenAck(event) => Some(event.counterparty_client_id),
+            Self::ConnectionOpenConfirm(event) => Some(event.counterparty_client_id),
+            Self::ChannelOpenInit(event) => Some(event.connection.counterparty_client_id),
+            Self::ChannelOpenTry(event) => Some(event.connection.counterparty_client_id),
+            Self::ChannelOpenAck(event) => Some(event.connection.counterparty_client_id),
+            Self::ChannelOpenConfirm(event) => Some(event.connection.counterparty_client_id),
+            Self::ChannelCloseInit(_) => todo!(),
+            Self::ChannelCloseConfirm(_) => todo!(),
             Self::PacketSend(event) => Some(event.packet.destination_channel.connection.client_id),
             Self::PacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
             Self::IntentPacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
@@ -454,6 +454,29 @@ impl FullEvent {
             Self::PacketTimeout(event) => {
                 Some(event.packet.destination_channel.connection.client_id)
             }
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::CreateClient(_) => "create_client",
+            Self::UpdateClient(_) => "update_client",
+            Self::ConnectionOpenInit(_) => "connection_open_init",
+            Self::ConnectionOpenTry(_) => "connection_open_try",
+            Self::ConnectionOpenAck(_) => "connection_open_ack",
+            Self::ConnectionOpenConfirm(_) => "connection_open_confirm",
+            Self::ChannelOpenInit(_) => "channel_open_init",
+            Self::ChannelOpenTry(_) => "channel_open_try",
+            Self::ChannelOpenAck(_) => "channel_open_ack",
+            Self::ChannelOpenConfirm(_) => "channel_open_confirm",
+            Self::ChannelCloseInit(_) => "channel_close_init",
+            Self::ChannelCloseConfirm(_) => "channel_close_confirm",
+            Self::PacketSend(_) => "packet_send",
+            Self::PacketRecv(_) => "packet_recv",
+            Self::IntentPacketRecv(_) => "intent_packet_recv",
+            Self::WriteAck(_) => "write_ack",
+            Self::PacketAck(_) => "packet_ack",
+            Self::PacketTimeout(_) => "packet_timeout",
         }
     }
 }
@@ -633,4 +656,239 @@ pub struct ChannelMetadata {
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
+}
+
+#[cfg(feature = "tracing")]
+pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
+    use tracing::info;
+
+    let event = e.name();
+
+    match e {
+        FullEvent::CreateClient(e) => info!(
+            event,
+            %chain_id,
+            data.client_id = %e.client_id,
+            data.client_type = %e.client_type,
+            "event"
+        ),
+        FullEvent::UpdateClient(e) => info!(
+            event,
+            %chain_id,
+            data.client_id = %e.client_id,
+            data.client_type = %e.client_type,
+            data.height = e.height,
+            "event"
+        ),
+        FullEvent::ConnectionOpenInit(e) => info!(
+            event,
+            %chain_id,
+            data.connection_id = %e.connection_id,
+            data.client_id = %e.client_id,
+            data.counterparty_client_id = %e.counterparty_client_id,
+            "event"
+        ),
+        FullEvent::ConnectionOpenTry(e) => info!(
+            event,
+            %chain_id,
+            data.connection_id = %e.connection_id,
+            data.client_id = %e.client_id,
+            data.counterparty_client_id = %e.counterparty_client_id,
+            data.counterparty_connection_id = %e.counterparty_connection_id,
+            "event"
+        ),
+        FullEvent::ConnectionOpenAck(e) => info!(
+            event,
+            %chain_id,
+            data.connection_id = %e.connection_id,
+            data.client_id = %e.client_id,
+            data.counterparty_client_id = %e.counterparty_client_id,
+            data.counterparty_connection_id = %e.counterparty_connection_id,
+            "event"
+        ),
+        FullEvent::ConnectionOpenConfirm(e) => info!(
+            event,
+            %chain_id,
+            data.connection_id = %e.connection_id,
+            data.client_id = %e.client_id,
+            data.counterparty_client_id = %e.counterparty_client_id,
+            data.counterparty_connection_id = %e.counterparty_connection_id,
+            "event"
+        ),
+        FullEvent::ChannelOpenInit(e) => info!(
+            event,
+            %chain_id,
+            data.port_id = %e.port_id,
+            data.channel_id = %e.channel_id,
+            data.counterparty_port_id = %e.counterparty_port_id,
+            data.connection.state = ?e.connection.state,
+            data.connection.client_id = %e.connection.client_id,
+            data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
+            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.version = %e.version,
+            "event"
+        ),
+        FullEvent::ChannelOpenTry(e) => info!(
+            event,
+            %chain_id,
+            data.port_id = %e.port_id,
+            data.channel_id = %e.channel_id,
+            data.counterparty_port_id = %e.counterparty_port_id,
+            data.counterparty_channel_id = %e.counterparty_channel_id,
+            data.connection.state = ?e.connection.state,
+            data.connection.client_id = %e.connection.client_id,
+            data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
+            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.version = %e.version,
+            "event"
+        ),
+        FullEvent::ChannelOpenAck(e) => info!(
+            event,
+            %chain_id,
+            data.port_id = %e.port_id,
+            data.channel_id = %e.channel_id,
+            data.counterparty_port_id = %e.counterparty_port_id,
+            data.counterparty_channel_id = %e.counterparty_channel_id,
+            data.connection.state = ?e.connection.state,
+            data.connection.client_id = %e.connection.client_id,
+            data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
+            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.version = %e.version,
+            "event"
+        ),
+        FullEvent::ChannelOpenConfirm(e) => info!(
+            event,
+            %chain_id,
+            data.port_id = %e.port_id,
+            data.channel_id = %e.channel_id,
+            data.counterparty_port_id = %e.counterparty_port_id,
+            data.counterparty_channel_id = %e.counterparty_channel_id,
+            data.connection.state = ?e.connection.state,
+            data.connection.client_id = %e.connection.client_id,
+            data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
+            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.version = %e.version,
+            "event"
+        ),
+        FullEvent::ChannelCloseInit(e) => info!(event, "event"),
+        FullEvent::ChannelCloseConfirm(e) => info!(event, "event"),
+        FullEvent::PacketSend(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+        FullEvent::PacketRecv(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+            data.relayer_msg = %e.relayer_msg,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+        FullEvent::IntentPacketRecv(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+            data.market_maker_msg = %e.market_maker_msg,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+        FullEvent::WriteAck(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+            data.acknowledgement = %e.acknowledgement,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+        FullEvent::PacketAck(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+            data.acknowledgement = %e.acknowledgement,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+        FullEvent::PacketTimeout(e) => info!(
+            event,
+            %chain_id,
+            data.packet_data = %e.packet_data,
+
+            data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
+            data.packet.source_channel.version = %e.packet.source_channel.version,
+            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+
+            data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
+            data.packet.destination_channel.version = %e.packet.destination_channel.version,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+
+            data.packet.timeout_height = %e.packet.timeout_height,
+            data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
+            "event"
+        ),
+    }
 }
