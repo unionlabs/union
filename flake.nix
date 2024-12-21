@@ -414,6 +414,7 @@
 
           packages = {
             default = mkCi false self'.packages.uniond;
+            inherit (pkgs) solc;
           };
 
           checks = {
