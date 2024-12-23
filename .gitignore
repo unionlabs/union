@@ -84,3 +84,4 @@ dev-dist
 rustc-ice*
 .docs
 profiles/
+contracts.json
