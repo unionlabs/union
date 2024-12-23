@@ -8,12 +8,12 @@ use serde::de::DeserializeOwned;
 use tracing::instrument;
 use unionlabs::traits::Member;
 use voyager_core::{ClientInfo, IbcSpecId};
-use voyager_vm::{CallbackT, Op, QueueError};
+use voyager_vm::{BoxDynError, CallbackT, Op, QueueError};
 
 use crate::{
     context::WithId,
     core::ChainId,
-    data::{ClientUpdate, Data, OrderedClientUpdates, OrderedHeaders},
+    data::{Data, IbcDatagram, OrderedHeaders, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, PluginClient},
     Context, PluginMessage, RawClientId, VoyagerMessage,
@@ -51,7 +51,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                 AggregateMsgUpdateClientsFromOrderedHeaders {
                     ibc_spec_id,
                     chain_id,
-                    counterparty_client_id,
+                    client_id,
                 },
             ) => {
                 let OrderedHeaders { headers } = data
@@ -80,7 +80,7 @@ impl CallbackT<VoyagerMessage> for Callback {
                 } = ctx
                     .rpc_server
                     .with_id(Some(ctx.id()))
-                    .client_info(&chain_id, &ibc_spec_id, counterparty_client_id.clone())
+                    .client_info(&chain_id, &ibc_spec_id, client_id.clone())
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -91,23 +91,39 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .client_module(&client_type, &ibc_interface, &ibc_spec_id)?
                     .with_id(Some(ctx.id()));
 
-                Ok(voyager_vm::data(OrderedClientUpdates {
+                let ibc_spec_handler = ctx
+                    .rpc_server
+                    .modules()
+                    .map_err(error_object_to_queue_error)?
+                    .ibc_spec_handlers
+                    .get(&ibc_spec_id)
+                    .map_err(error_object_to_queue_error)?;
+
+                Ok(voyager_vm::data(WithChainId {
+                    chain_id,
                     // REVIEW: Use FuturesOrdered here?
-                    updates: stream::iter(headers.into_iter())
-                        .then(|(meta, header)| {
+                    message: stream::iter(headers.into_iter())
+                        .then(|(_, header)| {
                             client_module
                                 .encode_header(header)
-                                .map_ok(|encoded_header| {
-                                    (
-                                        meta,
-                                        ClientUpdate {
-                                            client_id: counterparty_client_id.clone(),
-                                            ibc_spec_id: ibc_spec_id.clone(),
-                                            client_message: encoded_header,
-                                        },
+                                .map_err(json_rpc_error_to_queue_error)
+                                .and_then(|encoded_header| {
+                                    futures::future::ready(
+                                        (ibc_spec_handler.msg_update_client)(
+                                            client_id.clone(),
+                                            encoded_header,
+                                        )
+                                        .map_err(|e| {
+                                            QueueError::Fatal(<BoxDynError>::from(format!("{e:#}")))
+                                        })
+                                        .map(|datagram| {
+                                            IbcDatagram {
+                                                ibc_spec_id: ibc_spec_id.clone(),
+                                                datagram,
+                                            }
+                                        }),
                                     )
                                 })
-                                .map_err(json_rpc_error_to_queue_error)
                         })
                         .try_collect::<Vec<_>>()
                         .await?,
@@ -127,5 +143,5 @@ impl CallbackT<VoyagerMessage> for Callback {
 pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
     pub ibc_spec_id: IbcSpecId,
     pub chain_id: ChainId,
-    pub counterparty_client_id: RawClientId,
+    pub client_id: RawClientId,
 }

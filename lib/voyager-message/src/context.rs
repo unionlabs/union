@@ -14,7 +14,7 @@ use futures::{
     Future, FutureExt, StreamExt, TryStreamExt,
 };
 use jsonrpsee::{
-    core::client::ClientT,
+    core::{client::ClientT, RpcResult},
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, ErrorObjectOwned},
 };
@@ -28,7 +28,9 @@ use tracing::{
     debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace, warn,
     Instrument,
 };
-use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
+use unionlabs::{
+    bytes::Bytes, ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter,
+};
 use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 
@@ -82,8 +84,25 @@ pub struct IbcSpecHandlers {
 }
 
 impl IbcSpecHandlers {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            handlers: HashMap::default(),
+        }
+    }
+
     pub fn register<S: IbcSpec>(&mut self) {
         self.handlers.insert(S::ID, IbcSpecHandler::new::<S>());
+    }
+
+    pub fn get(&self, ibc_spec_id: &IbcSpecId) -> RpcResult<&IbcSpecHandler> {
+        self.handlers.get(ibc_spec_id).ok_or_else(|| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("unknown IBC spec `{ibc_spec_id}`"),
+                None::<()>,
+            )
+        })
     }
 }
 
@@ -91,6 +110,7 @@ impl IbcSpecHandlers {
 pub struct IbcSpecHandler {
     pub client_state_path: fn(RawClientId) -> anyhow::Result<Value>,
     pub consensus_state_path: fn(RawClientId, String) -> anyhow::Result<Value>,
+    pub msg_update_client: fn(RawClientId, Bytes) -> anyhow::Result<Value>,
 }
 
 impl IbcSpecHandler {
@@ -105,6 +125,12 @@ impl IbcSpecHandler {
                 Ok(into_value(T::consensus_state_path(
                     serde_json::from_value(client_id.0)?,
                     height.parse()?,
+                )))
+            },
+            msg_update_client: |client_id, client_message| {
+                Ok(into_value(T::update_client_datagram(
+                    serde_json::from_value(client_id.0)?,
+                    client_message,
                 )))
             },
         }
