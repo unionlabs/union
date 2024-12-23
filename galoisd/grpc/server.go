@@ -23,12 +23,14 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	backend_opts "github.com/consensys/gnark/backend"
+
+	// "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	// "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	// backend_opts "github.com/consensys/gnark/backend"
 	backend "github.com/consensys/gnark/backend/groth16"
-	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
+	backend_bls12381 "github.com/consensys/gnark/backend/groth16/bls12-381"
 	"github.com/consensys/gnark/constraint"
-	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
+	cs_bls12381 "github.com/consensys/gnark/constraint/bls12-381"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
@@ -38,40 +40,40 @@ import (
 
 type proverServer struct {
 	grpc.UnimplementedUnionProverAPIServer
-	cs      cs_bn254.R1CS
-	pk      backend_bn254.ProvingKey
-	vk      backend_bn254.VerifyingKey
+	cs      cs_bls12381.R1CS
+	pk      backend_bls12381.ProvingKey
+	vk      backend_bls12381.VerifyingKey
 	maxJobs uint32
 	nbJobs  atomic.Uint32
 	results sync.Map
 }
 
-type cometblsHashToField struct {
-	data []byte
-}
+// type cometblsHashToField struct {
+// 	data []byte
+// }
 
-func (c *cometblsHashToField) Write(p []byte) (n int, err error) {
-	c.data = append(c.data, p...)
-	return len(p), nil
-}
+// func (c *cometblsHashToField) Write(p []byte) (n int, err error) {
+// 	c.data = append(c.data, p...)
+// 	return len(p), nil
+// }
 
-func (c *cometblsHashToField) Sum(b []byte) []byte {
-	e := cometbn254.HashToField(c.data)
-	eB := e.Bytes()
-	return append(b, eB[:]...)
-}
+// func (c *cometblsHashToField) Sum(b []byte) []byte {
+// 	e := cometbn254.HashToField(c.data)
+// 	eB := e.Bytes()
+// 	return append(b, eB[:]...)
+// }
 
-func (c *cometblsHashToField) Reset() {
-	c.data = []byte{}
-}
+// func (c *cometblsHashToField) Reset() {
+// 	c.data = []byte{}
+// }
 
-func (c *cometblsHashToField) Size() int {
-	return fr.Bytes
-}
+// func (c *cometblsHashToField) Size() int {
+// 	return fr.Bytes
+// }
 
-func (c *cometblsHashToField) BlockSize() int {
-	return fr.Bytes
-}
+// func (c *cometblsHashToField) BlockSize() int {
+// 	return fr.Bytes
+// }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
 
@@ -100,11 +102,15 @@ func MarshalValidators(validators []*types.SimpleValidator) ([lightclient.MaxVal
 		if err != nil {
 			return lcValidators, nil, fmt.Errorf("Could not create merkle leaf %s", err)
 		}
-		lcValidators[i].HashableX = leaf.ShiftedX
-		lcValidators[i].HashableY = leaf.ShiftedY
+
+		lcValidators[i].HashableX = leaf.ShiftedX.BigInt(new(big.Int))
+		lcValidators[i].HashableY = leaf.ShiftedY.BigInt(new(big.Int))
+
 		lcValidators[i].HashableXMSB = leaf.MsbX
 		lcValidators[i].HashableYMSB = leaf.MsbY
 		lcValidators[i].Power = leaf.VotingPower
+
+		fmt.Print(lcValidators[i])
 
 		merkleTree[i], err = leaf.Hash()
 		if err != nil {
@@ -261,13 +267,13 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			InputsHash: inputsHash,
 		}
 
-		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+		privateWitness, err := frontend.NewWitness(&witness, ecc.BLS12_381.ScalarField())
 		if err != nil {
 			return nil, fmt.Errorf("Could not create witness %s", err)
 		}
 
 		log.Debug().Hex("request_hash", proveKey[:]).Msg("proving")
-		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness /*, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{})*/)
 		if err != nil {
 			return nil, fmt.Errorf("Prover failed with %s", err)
 		}
@@ -280,7 +286,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		var proofCommitment []byte
 		var commitmentPOK []byte
 		switch _proof := proof.(type) {
-		case *backend_bn254.Proof:
+		case *backend_bls12381.Proof:
 			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
 				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
 			}
@@ -406,7 +412,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*grpc.VerifyResponse, error) {
 	log.Debug().Msg("Verifying...")
 
-	var proof backend_bn254.Proof
+	var proof backend_bls12381.Proof
 	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
@@ -416,7 +422,7 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 		InputsHash: req.InputsHash,
 	}
 
-	publicWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField(), frontend.PublicOnly())
+	publicWitness, err := frontend.NewWitness(&witness, ecc.BLS12_381.ScalarField(), frontend.PublicOnly())
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create private witness: %w", err)
 	}
@@ -430,7 +436,9 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 		backend.Proof(&proof),
 		backend.VerifyingKey(&p.vk),
 		publicWitness,
-		backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
+		/*
+			backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
+		*/
 	)
 
 	if err != nil {
@@ -511,10 +519,10 @@ func (p *proverServer) Prove(ctx context.Context, req *grpc.ProveRequest) (*grpc
 	panic("impossible; qed;")
 }
 
-func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS, backend_bn254.ProvingKey, backend_bn254.VerifyingKey, error) {
-	cs := cs_bn254.R1CS{}
-	pk := backend_bn254.ProvingKey{}
-	vk := backend_bn254.VerifyingKey{}
+func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bls12381.R1CS, backend_bls12381.ProvingKey, backend_bls12381.VerifyingKey, error) {
+	cs := cs_bls12381.R1CS{}
+	pk := backend_bls12381.ProvingKey{}
+	vk := backend_bls12381.VerifyingKey{}
 
 	if _, err := os.Stat(r1csPath); err == nil {
 		if _, err = os.Stat(pkPath); err == nil {
@@ -564,15 +572,15 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 	var circuit lcgadget.Circuit
 
 	log.Info().Msg("Compiling circuit...")
-	r1csInstance, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithCompressThreshold(300))
+	r1csInstance, err := frontend.Compile(ecc.BLS12_381.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithCompressThreshold(300))
 	if err != nil {
 		return cs, pk, vk, err
 	}
 
-	cs = *r1csInstance.(*cs_bn254.R1CS)
+	cs = *r1csInstance.(*cs_bls12381.R1CS)
 
 	log.Debug().Msg("Setup PK/VK")
-	err = backend_bn254.Setup(&cs, &pk, &vk)
+	err = backend_bls12381.Setup(&cs, &pk, &vk)
 	if err != nil {
 		return cs, pk, vk, err
 	}
