@@ -4,7 +4,7 @@ module ibc::ibc {
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::table::{Self, Table};
-    use aptos_std::aptos_hash;
+    use aptos_std::aptos_hash::keccak256;
     use std::from_bcs;
     use std::event;
     use std::bcs;
@@ -1324,7 +1324,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::connection_commitment_key(connection_id),
-            aptos_hash::keccak256(connection_end::encode(&counterparty_connection))
+            keccak256(connection_end::encode(&counterparty_connection))
         )
     }
 
@@ -1410,28 +1410,18 @@ module ibc::ibc {
         connection_end::client_id(connection)
     }
 
-    fun encode_channel(channel: Channel): vector<u8> {
-        channel::encode(&channel)
-    }
-
-    fun encode_connection(connection: ConnectionEnd): vector<u8> {
-        connection_end::encode(&connection)
-    }
-
     fun commit_channel(channel_id: u32, channel: Channel) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::channel_commitment_key(channel_id);
 
-        let encoded = encode_channel(channel);
-        table::upsert(&mut store.commitments, key, encoded);
+        table::upsert(&mut store.commitments, key, keccak256(channel::encode(&channel)));
     }
 
     fun commit_connection(connection_id: u32, connection: ConnectionEnd) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = encode_connection(connection);
-        table::upsert(&mut store.commitments, key, encoded);
+        table::upsert(&mut store.commitments, key, keccak256(connection_end::encode(&connection)));
     }
 
     fun verify_channel_state(
@@ -1446,7 +1436,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::channel_commitment_key(channel_id),
-            aptos_hash::keccak256(channel::encode(&channel))
+            keccak256(channel::encode(&channel))
         )
     }
 

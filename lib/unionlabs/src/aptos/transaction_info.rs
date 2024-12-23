@@ -50,6 +50,13 @@ pub struct TransactionInfoV0 {
     pub state_cemetery_hash: Option<H256<HexUnprefixed>>,
 }
 
+impl TransactionInfo {
+    pub fn inner(&self) -> &TransactionInfoV0 {
+        let TransactionInfo::V0(tx_info) = self;
+        tx_info
+    }
+}
+
 // impl TransactionInfoV0 {
 //     pub fn hash(&self) -> H256<HexUnprefixed> {
 //         let mut state = Sha3_256::new();

@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 pub type H64<E = hash_v2::HexPrefixed> = hash_v2::Hash<8, E>;
 pub type H160<E = hash_v2::HexPrefixed> = hash_v2::Hash<20, E>;
 pub type H256<E = hash_v2::HexPrefixed> = hash_v2::Hash<32, E>;
@@ -38,17 +40,37 @@ impl From<primitive_types::H160> for H160 {
     }
 }
 
-#[must_use = "constructing an iterator has no effect"]
-pub struct BytesBitIterator<'a> {
-    bz: &'a [u8],
-    pos: core::ops::Range<usize>,
+pub trait Endianness {
+    fn get_bit(index: usize) -> usize;
 }
 
-impl<'a> BytesBitIterator<'a> {
+pub enum LittleEndian {}
+impl Endianness for LittleEndian {
+    fn get_bit(index: usize) -> usize {
+        7 - index % 8
+    }
+}
+
+pub enum BigEndian {}
+impl Endianness for BigEndian {
+    fn get_bit(index: usize) -> usize {
+        index % 8
+    }
+}
+
+#[must_use = "constructing an iterator has no effect"]
+pub struct BytesBitIterator<'a, E: Endianness = BigEndian> {
+    bz: &'a [u8],
+    pos: core::ops::Range<usize>,
+    _marker: PhantomData<E>,
+}
+
+impl<'a, E: Endianness> BytesBitIterator<'a, E> {
     pub fn new(bz: &'a impl AsRef<[u8]>) -> Self {
         BytesBitIterator {
             bz: bz.as_ref(),
             pos: (0..bz.as_ref().len() * 8),
+            _marker: PhantomData,
         }
     }
 
@@ -57,12 +79,12 @@ impl<'a> BytesBitIterator<'a> {
         // debug_assert_eq!(self.hash_bytes.len(), Hash::LENGTH); // invariant
         // debug_assert_lt!(index, Hash::LENGTH_IN_BITS); // assumed precondition
         let pos = index / 8;
-        let bit = index % 8;
+        let bit = E::get_bit(index);
         (self.bz[pos] >> bit) & 1 != 0
     }
 }
 
-impl core::iter::Iterator for BytesBitIterator<'_> {
+impl<E: Endianness> core::iter::Iterator for BytesBitIterator<'_, E> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -74,7 +96,7 @@ impl core::iter::Iterator for BytesBitIterator<'_> {
     }
 }
 
-impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
+impl<E: Endianness> core::iter::DoubleEndedIterator for BytesBitIterator<'_, E> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }

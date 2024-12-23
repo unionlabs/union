@@ -203,31 +203,31 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
                 // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
                 // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
-                // let header = get_lc_header(&self.movement_rest_url, from, to).await;
+                let header = get_lc_header(&self.movement_rest_url, from, to).await;
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
                             height: Height::new(to),
                         },
-                        serde_json::to_value(movement_light_client_types::Header {
-                            // dummy value for now, until movement settles on a public L1
-                            l1_height: 0,
-                            trusted_height: Height::new(from),
-                            state_proof: StateProof::default(),
-                            tx_index: 0,
-                            tx_proof: TransactionInfoWithProof::default(),
-                            state_proof_hash_proof: StorageProof {
-                                key: Default::default(),
-                                value: Default::default(),
-                                proof: Default::default(),
-                            },
-                            settlement_contract_proof: AccountProof {
-                                storage_root: Default::default(),
-                                proof: Default::default(),
-                            },
-                            new_height: to,
-                        })
-                        .unwrap(),
+                        serde_json::to_value(header).unwrap(), // serde_json::to_value(movement_light_client_types::Header {
+                                                               //     // dummy value for now, until movement settles on a public L1
+                                                               //     l1_height: 0,
+                                                               //     trusted_height: Height::new(from),
+                                                               //     state_proof: StateProof::default(),
+                                                               //     tx_index: 0,
+                                                               //     tx_proof: TransactionInfoWithProof::default(),
+                                                               //     state_proof_hash_proof: StorageProof {
+                                                               //         key: Default::default(),
+                                                               //         value: Default::default(),
+                                                               //         proof: Default::default(),
+                                                               //     },
+                                                               //     settlement_contract_proof: AccountProof {
+                                                               //         storage_root: Default::default(),
+                                                               //         proof: Default::default(),
+                                                               //     },
+                                                               //     new_height: to,
+                                                               // })
+                                                               // .unwrap(),
                     )],
                 }))
             }

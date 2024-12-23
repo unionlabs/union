@@ -116,7 +116,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         &self,
         _: &Extensions,
         at: Height,
-        _path: StorePath,
+        path: StorePath,
     ) -> RpcResult<Value> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
@@ -140,7 +140,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             .as_str()
             .unwrap()
             .to_owned();
-        let _address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
+        let address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
 
         // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
         // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
@@ -151,13 +151,21 @@ impl ProofModuleServer<IbcUnion> for Module {
         //     at.revision_height,
         // ).await;
 
-        Ok(into_value(StorageProof {
-            state_value: None,
-            proof: SparseMerkleProof {
-                leaf: None,
-                siblings: Vec::new(),
-            },
-        }))
+        let storage_proof = get_storage_proof(
+            &self.movement_rpc_url,
+            address,
+            hex::encode(bcs::to_bytes(&path.key().get().to_vec()).expect("won't fail")),
+            at.height(),
+        )
+        .await;
+        // Ok(into_value(StorageProof {
+        //     state_value: None,
+        //     proof: SparseMerkleProof {
+        //         leaf: None,
+        //         siblings: Vec::new(),
+        //     },
+        // }))
+        Ok(into_value(storage_proof))
     }
 }
 

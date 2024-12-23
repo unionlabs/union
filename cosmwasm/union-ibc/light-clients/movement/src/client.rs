@@ -3,19 +3,21 @@ use movement_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
 use union_ibc_msg::lightclient::Status;
+#[cfg(feature = "union-movement")]
+use unionlabs::uint::U256;
 use unionlabs::{
     aptos::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
     encoding::Bincode,
     hash::H256,
-    uint::U256,
 };
 
 use crate::error::Error;
 
 pub enum MovementLightClient {}
 
+#[cfg(feature = "union-movement")]
 #[derive(rlp::RlpEncodable)]
 struct BlockCommitment {
     pub height: U256,
@@ -47,17 +49,16 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        // let client_state = ctx.read_self_client_state()?;
-        // let consensus_state = ctx.read_self_consensus_state(height)?;
-        // verify_membership(
-        //     &key,
-        //     consensus_state.state_root,
-        //     client_state.table_handle,
-        //     storage_proof,
-        //     &value,
-        // )
-        // .map_err(Into::into)
-        Ok(())
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        verify_membership(
+            &key,
+            consensus_state.state_root,
+            client_state.table_handle,
+            storage_proof,
+            &value,
+        )
+        .map_err(Into::into)
     }
 
     fn verify_non_membership(
@@ -253,22 +254,4 @@ pub enum PersistedStateValueMetadata {
         bytes_deposit: u64,
         creation_time_usecs: u64,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use hex_literal::hex;
-    use unionlabs::{
-        encoding::{DecodeAs, Proto},
-        ibc::core::channel::channel::Channel,
-    };
-
-    #[test]
-    fn test_proto() {
-        let channel_end = hex!("6d080110011a470a457761736d2e756e696f6e3134686a32746176713866706573647778786375343472747933686839307668756a7276636d73746c347a723374786d6676773973336539666532220c636f6e6e656374696f6e2d302a1075637330302d70696e67706f6e672d31");
-        println!(
-            "end 1: {:?}",
-            Channel::decode_as::<Proto>(&channel_end).unwrap()
-        );
-    }
 }

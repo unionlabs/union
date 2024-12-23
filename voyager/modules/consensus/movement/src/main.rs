@@ -14,7 +14,7 @@ use unionlabs::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::{hash_v2::Hash, H160},
+    hash::{hash_v2::Hash, H160, H256},
     ibc::core::client::height::Height,
     uint::U256,
     ErrorReporter,
@@ -173,10 +173,37 @@ impl ConsensusModuleServer for Module {
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, _height: Height) -> RpcResult<Value> {
+    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+        let client = reqwest::Client::new();
+
+        let state_proof: StateProofResponse = client
+            .get(format!(
+                "{}/movement/v1/state-proof/{}",
+                self.movement_rest_url,
+                height.height()
+            ))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+
         Ok(serde_json::to_value(ConsensusState {
-            state_root: Default::default(),
-            timestamp: 1000,
+            state_root: H256::new(
+                *state_proof
+                    .tx_proof
+                    .transaction_info
+                    .inner()
+                    .state_checkpoint_hash
+                    .unwrap()
+                    .get(),
+            ),
+            timestamp: state_proof
+                .state_proof
+                .latest_ledger_info()
+                .commit_info
+                .timestamp_usecs,
             state_proof_hash: Default::default(),
         })
         .expect("infallible"))

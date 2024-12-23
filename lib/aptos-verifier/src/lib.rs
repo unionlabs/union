@@ -16,7 +16,7 @@ use unionlabs::{
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::{BytesBitIterator, H256},
+    hash::{BytesBitIterator, LittleEndian, H256},
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
@@ -124,16 +124,20 @@ pub fn verify_existence_proof(
     let current_hash = proof.leaf.map_or(SPARSE_MERKLE_PLACEHOLDER_HASH, |leaf| {
         hash_sparse_merkle_leaf_node(&leaf)
     });
+    println!("{element_key:?}");
+
+    println!("{}", proof.siblings.len());
     let actual_root_hash = proof
         .siblings
         .iter()
         .rev()
         .zip(
-            BytesBitIterator::new(&element_key)
+            BytesBitIterator::<LittleEndian>::new(&element_key)
                 .rev()
                 .skip(256 - proof.siblings.len()),
         )
         .fold(current_hash, |hash, (sibling_hash, bit)| {
+            println!("bit: {bit}");
             if bit {
                 SparseMerkleInternalNode::new(*sibling_hash.get(), hash).hash()
             } else {
@@ -232,5 +236,71 @@ impl SparseMerkleInternalNode {
         state.update(self.left_child.as_ref());
         state.update(self.right_child.as_ref());
         state.finalize().into()
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use hex_literal::hex;
+    use unionlabs::{
+        aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
+        hash::H256,
+    };
+
+    use crate::verify_existence_proof;
+
+    #[test]
+    fn verify_existence_passes() {
+        verify_existence_proof(
+            SparseMerkleProof {
+                leaf: Some(SparseMerkleLeafNode {
+                    key: H256::new(hex!(
+                        "f2d067d8ef7e97deb231d46f40f9f30200e6f1dad495d33e2a7911825a97ad14"
+                    )),
+                    value_hash: H256::new(hex!(
+                        "40414333f8109f8cb971c67c9eca3c0049e21e6c5e28551f1a4975c96ab15212"
+                    )),
+                }),
+                siblings: vec![
+                    H256::new(hex!(
+                        "fafdceaec25fd64517ce3745992467dfac306a5ce59e63255da5b9f58d1417ea"
+                    )),
+                    H256::new(hex!(
+                        "4480c449082954642653a4570c7cb2ea2114d79b61621b94f095f25d640b6e27"
+                    )),
+                    H256::new(hex!(
+                        "0fc055434d70262945d428a5eda3d8396aa960c65ee8c4e79bd20638a95e7a31"
+                    )),
+                    H256::new(hex!(
+                        "731e28eb6655e01b8714aa72f76a0f468c330b46eb9c21816a88e56840896f24"
+                    )),
+                    H256::new(hex!(
+                        "b120265e60289e6e44216efd4f3fba86a8de645d3eb7912ff09812024c639b2f"
+                    )),
+                    H256::new(hex!(
+                        "d90e0a63c7c3cf7ed000841a85f981d8c6bec4c23353822204c7c9e9c5dee4db"
+                    )),
+                    H256::new(hex!(
+                        "30b21a8a3bf202b5fe18e415c299fd3b9985462a6292fffdabd5b32fbc27ba30"
+                    )),
+                    H256::new(hex!(
+                        "5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000"
+                    )),
+                    H256::new(hex!(
+                        "5b9096922002407577b4e46e6466aadb15cbb9521fd0e9847d474398ea3736e2"
+                    )),
+                    H256::new(hex!(
+                        "5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000"
+                    )),
+                    H256::new(hex!(
+                        "884f8b72a832aa718c6590d0bfeb1ec85b546611b6c07f8df563827974ad8134"
+                    )),
+                ],
+            },
+            hex!("02388da3aee85236d64e272fec0b1a6fcd4962986327971faef9ee2951a4ad6a"),
+            hex!("f2d067d8ef7e97deb231d46f40f9f30200e6f1dad495d33e2a7911825a97ad14"),
+            hex!("40414333f8109f8cb971c67c9eca3c0049e21e6c5e28551f1a4975c96ab15212"),
+        )
+        .unwrap();
     }
 }
