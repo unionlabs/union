@@ -24,11 +24,20 @@
       union-ibc = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/union-ibc/core";
       };
+      multicall = crane.buildWasmContract {
+        crateDirFromRoot = "cosmwasm/multicall";
+      };
     in
     {
-      packages = {
-        inherit cw721-base;
-      } // ucs02-nft.packages // ucs01-relay.packages // ucs00-pingpong.packages // union-ibc.packages;
+      packages =
+        {
+          inherit cw721-base;
+        }
+        // ucs02-nft.packages
+        // ucs01-relay.packages
+        // ucs00-pingpong.packages
+        // union-ibc.packages
+        // multicall.packages;
       checks = ucs02-nft.checks // ucs01-relay.checks // ucs01-relay-api.checks // ucs00-pingpong.checks;
     };
 }

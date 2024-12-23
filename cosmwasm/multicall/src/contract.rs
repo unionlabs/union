@@ -5,6 +5,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     has_coins, Coin, DepsMut, Env, MessageInfo, Reply, Response, SubMsg, Uint128, WasmMsg,
 };
+use unionlabs::never::Never;
 
 use crate::{
     msg::{ExecuteMsg, InitMsg},
@@ -19,7 +20,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     _msg: InitMsg,
-) -> Result<Response, !> {
+) -> Result<Response, Never> {
     Ok(Response::default())
 }
 
@@ -65,6 +66,6 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_deps: DepsMut, _env: Env, _reply: Reply) -> Result<Response, !> {
+pub fn reply(_deps: DepsMut, _env: Env, _reply: Reply) -> Result<Response, Never> {
     Ok(Response::default())
 }

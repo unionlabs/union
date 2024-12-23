@@ -229,6 +229,8 @@ poseidon-rs                    = { path = "lib/poseidon-rs", default-features = 
 protos                         = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
 
+multicall = { path = "cosmwasm/multicall", default-features = false }
+
 ibc-classic-spec = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-union-spec   = { path = "lib/ibc-union-spec", default-features = false }
 

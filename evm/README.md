@@ -64,6 +64,17 @@ Production contracts will get solely upgraded through the proxy and have the sam
 - UCS02: [0x8c5BB6EE0C679D605Fda89341148b9921C0d119c](https://eth-holesky.blockscout.com/address/address/0x8c5BB6EE0C679D605Fda89341148b9921C0d119c)
 - Multicall: [0x64A764A734648fA636525C7e4b3cE38Ca256b647](https://eth-holesky.blockscout.com/address/address/0x64A764A734648fA636525C7e4b3cE38Ca256b647)
 
+### Sepolia
+
+- Deployer: [0xac6dBD360ABCfe0578e998D359d4F43a5A117219](https://eth-sepolia.blockscout.com/address/0xac6dBD360ABCfe0578e998D359d4F43a5A117219)
+- Sender: [0x153919669Edc8A5D0c8D1E4507c9CE60435A1177](https://eth-sepolia.blockscout.com/address/0x153919669Edc8A5D0c8D1E4507c9CE60435A1177)
+- IBCHandler: [0xbad69711Da45A0FF61e2c50b8c9B1F3314742d2b](https://eth-sepolia.blockscout.com/address/0xbad69711Da45A0FF61e2c50b8c9B1F3314742d2b)
+- CometblsClient: [0x0A343260a06576a1f938C18F70FaA7eF2a3a7d4F](https://eth-sepolia.blockscout.com/address/0x0A343260a06576a1f938C18F70FaA7eF2a3a7d4F)
+- UCS00: [0x271126f4F9B36CE16d9e2eF75691485ddCE11dB6](https://eth-sepolia.blockscout.com/address/0x271126f4F9B36CE16d9e2eF75691485ddCE11dB6)
+- UCS01: [0xCFb741465F8e0AE9C62A548Fa85D312E6E5615Ba](https://eth-sepolia.blockscout.com/address/0xCFb741465F8e0AE9C62A548Fa85D312E6E5615Ba)
+- UCS02: [0x12650fCccE6dB9E99CEE482490A5fAF248A62B22](https://eth-sepolia.blockscout.com/address/0x12650fCccE6dB9E99CEE482490A5fAF248A62B22)
+- Multicall: [0x6FD4bf9438fAC8C535218E79191594A879E47E96](https://eth-sepolia.blockscout.com/address/0x6FD4bf9438fAC8C535218E79191594A879E47E96)
+
 ## Other networks
 
 Assuming you create the deployer from a fresh account `<SOURCE>` (0 nonce), the `<DEPLOYER>` address can be precomputed with `cast compute-address --nonce 0 <SOURCE>`

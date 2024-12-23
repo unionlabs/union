@@ -1,5 +1,3 @@
-#![feature(never_type)]
-
 use cosmwasm_std::OverflowError;
 
 pub mod contract;
