@@ -16,7 +16,7 @@
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
+            vendorHash = "sha256-+x5v/ZuKOT0uBXB+D+LPsxU/dEp9t8eoiPi3Xn/fRwM=";
             meta = {
               mainProgram = "galoisd";
             };

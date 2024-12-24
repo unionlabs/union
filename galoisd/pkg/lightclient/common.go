@@ -85,6 +85,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		bitmapMask := lc.input.NbOfVal
 		for i, signed := range bitmap {
 			validator := lc.input.Validators[i]
+
 			h, err := mimc.NewMiMC(lc.api)
 			if err != nil {
 				return fmt.Errorf("new mimc: %w", err)

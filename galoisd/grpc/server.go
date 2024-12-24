@@ -103,8 +103,8 @@ func MarshalValidators(validators []*types.SimpleValidator) ([lightclient.MaxVal
 			return lcValidators, nil, fmt.Errorf("Could not create merkle leaf %s", err)
 		}
 
-		lcValidators[i].HashableX = leaf.ShiftedX.BigInt(new(big.Int))
-		lcValidators[i].HashableY = leaf.ShiftedY.BigInt(new(big.Int))
+		lcValidators[i].HashableX = leaf.ShiftedX.Marshal()
+		lcValidators[i].HashableY = leaf.ShiftedY.Marshal()
 
 		lcValidators[i].HashableXMSB = leaf.MsbX
 		lcValidators[i].HashableYMSB = leaf.MsbY
