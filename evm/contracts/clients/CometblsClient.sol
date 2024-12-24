@@ -216,11 +216,6 @@ contract CometblsClient is
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.latestHeight] = consensusState;
-        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
-        processedMoments[clientId][clientState.latestHeight] = ProcessedMoment({
-            timestamp: block.timestamp * 1e9,
-            height: block.number
-        });
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
@@ -377,11 +372,6 @@ contract CometblsClient is
         consensusState.appHash = header.signedHeader.appHash;
         consensusState.nextValidatorsHash =
             header.signedHeader.nextValidatorsHash;
-
-        ProcessedMoment storage processed =
-            processedMoments[clientId][header.trustedHeight];
-        processed.timestamp = block.timestamp * 1e9;
-        processed.height = block.number;
 
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
