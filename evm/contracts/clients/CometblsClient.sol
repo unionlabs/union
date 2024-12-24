@@ -68,7 +68,7 @@ library CometblsClientLib {
         uint64 trustingPeriod,
         uint64 currentTime
     ) internal pure returns (bool) {
-        return currentTime > (headerTime + trustingPeriod);
+        return uint256(currentTime) > (uint256(headerTime) + uint256(trustingPeriod));
     }
 
     function encodeMemory(
