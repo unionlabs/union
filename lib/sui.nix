@@ -3,14 +3,11 @@ _: {
     {
       self',
       lib,
-      unstablePkgs,
       pkgs,
       system,
-      config,
       rust,
       crane,
-      stdenv,
-      dbg,
+      config,
       ...
     }:
     let
@@ -37,60 +34,45 @@ _: {
 
       sui = craneLib.buildPackage rec {
         pname = "sui";
-        version = "7839b9501066108cb2322ba9039120a41781a1b0";
+        version = "testnet-v1.38.0";
 
         buildInputs = [
           pkgs.pkg-config
           pkgs.openssl
-          pkgs.systemd
+          pkgs.libarchive
           config.treefmt.build.programs.rustfmt
-          pkgs.elfutils
-          pkgs.lld
-          pkgs.mold
         ] ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
 
-        nativeBuildInputs = [
-          pkgs.clang
-        ];
+        nativeBuildInputs = [ pkgs.clang ];
+
+        src = builtins.fetchGit {
+          url = "https://github.com/MystenLabs/sui";
+          ref = "refs/tags/testnet-v1.38.0";
+          rev = "120cb4e60fdf79272621cd018e256909733f7823";
+        };
+
+        doCheck = false;
 
         cargoExtraArgs = "--release";
 
         LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
 
-        src = builtins.fetchGit {
-          url = "https://github.com/MystenLabs/sui";
-          ref = "framework/testnet";
-          rev = version;
-        };
-
-        doCheck = false;
-
-        # Forcing static linking if necessary
         CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+
       };
 
-      suiNode = pkgs.writeShellApplication {
+      suiApp = pkgs.writeShellApplication {
         name = "sui";
-        runtimeInputs = [
-          pkgs.systemd
-          sui
-        ];
+        runtimeInputs = [ sui ];
         text = ''
-          export LD_LIBRARY_PATH="${
-            pkgs.lib.makeLibraryPath [
-              pkgs.openssl
-              pkgs.systemd
-              pkgs.gcc13Stdenv.cc.cc
-            ]
-          }:$LD_LIBRARY_PATH"
-          exec ${sui}/bin/sui "$@"
+          export PATH=${sui}/bin:$PATH
+          exec "$@"
         '';
       };
-
     in
     {
       packages = {
-        inherit suiNode;
+        inherit sui suiApp;
       };
     };
 }

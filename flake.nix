@@ -189,7 +189,7 @@
         ./hubble/hubble.nix
         ./lib/aptos.nix
         ./lib/sui.nix
-        ./lib/ethereum-verifier/ethereum-verifier.nix
+        # ./lib/ethereum-verifier/ethereum-verifier.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix
         ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix

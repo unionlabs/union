@@ -1,6 +1,6 @@
 [package]
-name = "ucs01_relay"
-edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+edition = "2024.beta"   # edition = "legacy" to use legacy (pre-2024) Move
+name    = "ucs01_relay"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
@@ -19,8 +19,8 @@ ibc = { local = "../sui-ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
+ibc   = "_"
 ucs01 = "_"
-ibc = "_"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -32,9 +32,8 @@ ibc = "_"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
-ucs01 = "0x4444444444444"
 ibc   = "0x22222"
+ucs01 = "0x4444444444444"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"
-
