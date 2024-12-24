@@ -386,7 +386,7 @@ contract CometblsClient is
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
-            height: header.trustedHeight
+            height: untrustedHeightNumber
         });
     }
 
