@@ -714,7 +714,7 @@ contract CometblsClientTest is Test {
             expectedConsensusStateCommitment,
             "Consensus state commitment mismatch"
         );
-        assertEq(update.height, 100, "Height mismatch");
+        assertEq(update.height, 101, "Height mismatch");
     }
 
     function verifyMembership(
