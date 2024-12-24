@@ -311,7 +311,6 @@ contract CometblsClient is
         }
 
         uint64 maxClockDrift = currentTime + clientState.maxClockDrift;
-
         if (untrustedTimestamp >= maxClockDrift) {
             revert CometblsClientLib.ErrMaxClockDriftExceeded();
         }
