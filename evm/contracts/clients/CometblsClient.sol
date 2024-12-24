@@ -68,7 +68,8 @@ library CometblsClientLib {
         uint64 trustingPeriod,
         uint64 currentTime
     ) internal pure returns (bool) {
-        return currentTime > (headerTime + trustingPeriod);
+        return uint256(currentTime)
+            > (uint256(headerTime) + uint256(trustingPeriod));
     }
 
     function encodeMemory(
@@ -216,11 +217,6 @@ contract CometblsClient is
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.latestHeight] = consensusState;
-        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
-        processedMoments[clientId][clientState.latestHeight] = ProcessedMoment({
-            timestamp: block.timestamp * 1e9,
-            height: block.number
-        });
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
@@ -316,7 +312,6 @@ contract CometblsClient is
         }
 
         uint64 maxClockDrift = currentTime + clientState.maxClockDrift;
-
         if (untrustedTimestamp >= maxClockDrift) {
             revert CometblsClientLib.ErrMaxClockDriftExceeded();
         }
@@ -378,15 +373,10 @@ contract CometblsClient is
         consensusState.nextValidatorsHash =
             header.signedHeader.nextValidatorsHash;
 
-        ProcessedMoment storage processed =
-            processedMoments[clientId][header.trustedHeight];
-        processed.timestamp = block.timestamp * 1e9;
-        processed.height = block.number;
-
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
-            height: header.trustedHeight
+            height: untrustedHeightNumber
         });
     }
 
