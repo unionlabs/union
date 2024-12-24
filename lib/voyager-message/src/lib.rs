@@ -30,8 +30,8 @@ use tracing::{
 };
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
-    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcStorePathKey,
-    QueryHeight,
+    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
+    IbcStorePathKey, QueryHeight,
 };
 use voyager_vm::{ItemId, QueueError, QueueMessage};
 
@@ -632,6 +632,19 @@ impl VoyagerClient {
     ) -> RpcResult<ClientStateMeta> {
         self.0
             .client_meta(chain_id, V::ID, at, RawClientId::new(client_id))
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub async fn client_meta_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+    ) -> RpcResult<ClientStateMeta> {
+        self.0
+            .client_meta(chain_id, ibc_spec_id, at, client_id)
             .await
             .map_err(json_rpc_error_to_error_object)
     }

@@ -125,7 +125,7 @@ where
                     AggregateMsgUpdateClientsFromOrderedHeaders {
                         chain_id: module.chain_id.clone(),
                         ibc_spec_id: V::ID,
-                        counterparty_client_id: RawClientId::new(self.client_id.clone()),
+                        client_id: RawClientId::new(self.client_id.clone()),
                     },
                 )],
                 [],

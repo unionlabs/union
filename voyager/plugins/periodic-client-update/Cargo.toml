@@ -1,19 +1,20 @@
 [package]
 edition = "2021"
-name    = "voyager-plugin-packet-filter"
+name    = "voyager-periodic-client-update-plugin"
 version = "0.1.0"
 
 [dependencies]
+clap               = { workspace = true, features = ["derive"] }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true }
+itertools          = "0.13.0"
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
-regex              = "1.10.6"
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
-serde_with         = { workspace = true }
+subset-of          = { workspace = true }
 thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }

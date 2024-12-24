@@ -13822,6 +13822,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-periodic-client-update-plugin"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "enumorph",
+ "futures",
+ "ibc-classic-spec",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-plugin-packet-filter"
 version = "0.1.0"
 dependencies = [
