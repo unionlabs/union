@@ -206,6 +206,9 @@ impl ConsensusModuleServer for Module {
         let unbonding_period =
             u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
 
+        // Avoid low unbonding period preventing relayer from submitting slightly old headers
+        let unbonding_period = unbonding_period.max(3 * 24 * 3600 * 1_000_000_000);
+
         Ok(serde_json::to_value(ClientState {
             chain_id: cometbls_light_client_types::ChainId::from_string(self.chain_id.to_string())
                 .unwrap(),
