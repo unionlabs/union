@@ -522,40 +522,6 @@ contract DryUpgradeUCS01 is Script {
     }
 }
 
-contract UpgradeUCS00 is Script {
-    using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
-
-        console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new PingPong());
-        PingPong(ucs00).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
-    }
-}
-
 contract UpgradeUCS01 is Script {
     using LibString for *;
 
@@ -653,6 +619,87 @@ contract UpgradeIBCHandler is Script {
         vm.startBroadcast(privateKey);
         address newImplementation = address(new OwnableIBCHandler());
         IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
+contract DryUpgradeCometblsClient is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    address immutable owner;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        owner = vm.envAddress("OWNER");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address cometblsClient =
+            getDeployed(LightClients.make(LightClients.COMETBLS));
+        console.log(
+            string(
+                abi.encodePacked(
+                    "CometblsClient: ", cometblsClient.toHexString()
+                )
+            )
+        );
+        address newImplementation = address(new CometblsClient());
+        vm.prank(owner);
+        CometblsClient(cometblsClient).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
+    }
+}
+
+contract UpgradeCometblsClient is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address cometblsClient =
+            getDeployed(LightClients.make(LightClients.COMETBLS));
+        console.log(
+            string(
+                abi.encodePacked(
+                    "CometblsClient: ", cometblsClient.toHexString()
+                )
+            )
+        );
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new CometblsClient());
+        CometblsClient(cometblsClient).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
         vm.stopBroadcast();
     }
 }
