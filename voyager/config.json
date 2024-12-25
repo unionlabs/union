@@ -9,8 +9,8 @@
           "ibc_spec_id": "1.0.0"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090"
+          "ws_url": "http://localhost:26757",
+          "grpc_url": "http://localhost:9190"
         }
       },
       {
@@ -21,13 +21,13 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
+          "ws_url": "http://localhost:26757",
+          "grpc_url": "http://localhost:9190",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
       },
       {
-        "enabled": true,
+        "enabled": false,
         "path": "./target/debug/voyager-state-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -36,6 +36,19 @@
         "config": {
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
           "eth_rpc_api": "http://localhost:8545"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-state-module-movement",
+        "info": {
+          "chain_id": "250",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "https://aptos.testnet.bardock.movementlabs.xyz",
+          "movement_rpc_url": "http://localhost:30832",
+          "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7"
         }
       }
     ],
@@ -48,13 +61,13 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
+          "ws_url": "http://localhost:26757",
+          "grpc_url": "http://localhost:9190",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
       },
       {
-        "enabled": true,
+        "enabled": false,
         "path": "./target/debug/voyager-proof-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -63,6 +76,19 @@
         "config": {
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
           "eth_rpc_api": "http://localhost:8545"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-proof-module-movement",
+        "info": {
+          "chain_id": "250",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "https://aptos.testnet.bardock.movementlabs.xyz",
+          "movement_rpc_url": "http://localhost:30832",
+          "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7"
         }
       }
     ],
@@ -75,13 +101,13 @@
           "consensus_type": "cometbls"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
+          "ws_url": "http://localhost:26757",
+          "grpc_url": "http://localhost:9190",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
       },
       {
-        "enabled": true,
+        "enabled": false,
         "path": "./target/debug/voyager-consensus-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -92,6 +118,21 @@
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
           "eth_rpc_api": "http://localhost:8545",
           "eth_beacon_rpc_api": "http://localhost:9596"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-consensus-module-movement",
+        "info": {
+          "chain_id": "250",
+          "consensus_type": "movement"
+        },
+        "config": {
+          "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7",
+          "l1_settlement_address": "0x0000000000000000000000000000000000000000",
+          "l1_client_id": 0,
+          "aptos_rest_api": "https://aptos.testnet.bardock.movementlabs.xyz",
+          "movement_rest_url": "http://localhost:30832"
         }
       }
     ],
@@ -138,21 +179,41 @@
         "config": {
           "chain_spec": "minimal"
         }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-movement",
+        "info": {
+          "client_type": "movement",
+          "consensus_type": "movement",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
       }
     ]
   },
   "plugins": [
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "path": "./target/debug/voyager-event-source-plugin-movement",
       "config": {
-        "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090"
+        "chain_id": "250",
+        "rpc_url": "https://aptos.testnet.bardock.movementlabs.xyz",
+        "movement_rpc_url": "http://localhost:30832",
+        "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7"
       }
     },
     {
       "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26757",
+        "grpc_url": "http://localhost:9190"
+      }
+    },
+    {
+      "enabled": false,
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -183,12 +244,12 @@
           "gas_multiplier": "1.1",
           "max_gas": 10000000
         },
-        "ws_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090"
+        "ws_url": "http://localhost:26757",
+        "grpc_url": "http://localhost:9190"
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -229,6 +290,25 @@
     },
     {
       "enabled": true,
+      "path": "./target/debug/voyager-transaction-plugin-aptos",
+      "config": {
+        "chain_id": "250",
+        "rpc_url": "https://aptos.testnet.bardock.movementlabs.xyz",
+        "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7",
+        "keyring": {
+          "name": "aptos-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "dev-key0",
+              "key": "0xbd84d9e61094ce511c72d5942ae59af556023e3fce4fd74ab5ef5167c4314e5b"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-devnet-1",
@@ -259,16 +339,31 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-cometbls",
+      "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
-        "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090",
-        "prover_endpoints": ["http://localhost:9999"]
+        "chain_id": "250",
+        "client_configs": {
+          "min_batch_size": 1,
+          "max_batch_size": 5,
+          "max_wait_time": {
+            "secs": 1,
+            "nanos": 0
+          }
+        }
       }
     },
     {
       "enabled": true,
+      "path": "./target/debug/voyager-client-update-plugin-cometbls",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26757",
+        "grpc_url": "http://localhost:9190",
+        "prover_endpoints": ["http://localhost:9999"]
+      }
+    },
+    {
+      "enabled": false,
       "path": "./target/debug/voyager-client-update-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -276,6 +371,18 @@
         "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
         "eth_rpc_api": "http://localhost:8545",
         "eth_beacon_rpc_api": "http://localhost:9596"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-client-update-plugin-movement",
+      "config": {
+        "chain_id": "250",
+        "ibc_handler_address": "96d21871288b6f74f15f863ddafaf428f6627a8a577ec9d2e9c48d007ba40ae7",
+        "l1_settlement_address": "0x0000000000000000000000000000000000000000",
+        "l1_client_id": 0,
+        "aptos_rest_api": "https://aptos.testnet.bardock.movementlabs.xyz",
+        "movement_rest_url": "http://localhost:30832"
       }
     }
   ],

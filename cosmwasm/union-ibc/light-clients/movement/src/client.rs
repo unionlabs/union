@@ -45,20 +45,28 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     fn verify_membership(
         ctx: union_ibc_light_client::IbcClientCtx<Self>,
         height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
-        value: Vec<u8>,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+        _value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
-        let consensus_state = ctx.read_self_consensus_state(height)?;
+        let _client_state = ctx.read_self_client_state()?;
+        let _consensus_state = ctx.read_self_consensus_state(height)?;
+        // NOTE(aeryz): FOR AUDITORS and NERDS:
+        // Movement's current REST API's don't provide state and transaction proofs. We added those to our custom
+        // Movement node which we also work on getting them to be upstreamed. Hence, we use the following feature-flag with
+        // a custom setup.
+        // Also see the related PR: https://github.com/movementlabsxyz/movement/pull/645
+        #[cfg(feature = "union-movement")]
         verify_membership(
-            &key,
-            consensus_state.state_root,
-            client_state.table_handle,
-            storage_proof,
-            &value,
+            &_key,
+            _consensus_state.state_root,
+            _client_state.table_handle,
+            _storage_proof,
+            &_value,
         )
-        .map_err(Into::into)
+        .map_err(Into::into)?;
+
+        Ok(())
     }
 
     fn verify_non_membership(
@@ -106,7 +114,6 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
         // Movement node which we also work on getting them to be upstreamed. Hence, we use the following feature-flag with
         // a custom setup.
         // Also see the related PR: https://github.com/movementlabsxyz/movement/pull/645
-
         #[cfg(feature = "union-movement")]
         {
             aptos_verifier::verify_tx_state(

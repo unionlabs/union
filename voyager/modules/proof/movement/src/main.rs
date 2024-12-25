@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use aptos_move_ibc::ibc::ClientExt as _;
+// use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use ibc_union_spec::{IbcUnion, StorePath};
@@ -20,7 +20,7 @@ use unionlabs::{
     hash::H256,
     ibc::core::client::height::Height,
     uint::U256,
-    ErrorReporter,
+    // ErrorReporter,
 };
 use voyager_message::{
     core::ChainId,
@@ -115,57 +115,49 @@ impl ProofModuleServer<IbcUnion> for Module {
     async fn query_ibc_proof(
         &self,
         _: &Extensions,
-        at: Height,
-        path: StorePath,
+        _at: Height,
+        _path: StorePath,
     ) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(at.height()).await;
+        // let ledger_version = self.ledger_version_of_height(at.height()).await;
 
-        let vault_addr = self
-            .get_vault_addr(self.ibc_handler_address.into(), Some(ledger_version))
-            .await
-            .unwrap();
+        // let vault_addr = self
+        //     .get_vault_addr(self.ibc_handler_address.into(), Some(ledger_version))
+        //     .await
+        //     .unwrap();
 
-        let _address_str = self
-            .aptos_client
-            .get_account_resource(
-                vault_addr.into(),
-                &format!("{}::ibc::IBCStore", self.ibc_handler_address),
-            )
-            .await
-            .unwrap()
-            .into_inner()
-            .unwrap()
-            .data["commitments"]["handle"]
-            .clone()
-            .as_str()
-            .unwrap()
-            .to_owned();
-        let address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
-
+        // let address_str = self
+        //     .aptos_client
+        //     .get_account_resource(
+        //         vault_addr.into(),
+        //         &format!("{}::ibc::IBCStore", self.ibc_handler_address),
+        //     )
+        //     .await
+        //     .unwrap()
+        //     .into_inner()
+        //     .unwrap()
+        //     .data["commitments"]["handle"]
+        //     .clone()
+        //     .as_str()
+        //     .unwrap()
+        //     .to_owned();
+        // let address = <H256>::new(U256::from_be_hex(address_str).unwrap().to_be_bytes());
         // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
         // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
         // let storage_proof = get_storage_proof(
-        //     &self.ctx.movement_rpc_url,
+        //     &self.movement_rpc_url,
         //     address,
-        //     hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
-        //     at.revision_height,
-        // ).await;
-
-        let storage_proof = get_storage_proof(
-            &self.movement_rpc_url,
-            address,
-            hex::encode(bcs::to_bytes(&path.key().get().to_vec()).expect("won't fail")),
-            at.height(),
-        )
-        .await;
-        // Ok(into_value(StorageProof {
-        //     state_value: None,
-        //     proof: SparseMerkleProof {
-        //         leaf: None,
-        //         siblings: Vec::new(),
-        //     },
-        // }))
-        Ok(into_value(storage_proof))
+        //     hex::encode(bcs::to_bytes(&path.key().get().to_vec()).expect("won't fail")),
+        //     at.height(),
+        // )
+        // .await;
+        // Ok(into_value(storage_proof))
+        Ok(into_value(StorageProof {
+            state_value: None,
+            proof: SparseMerkleProof {
+                leaf: None,
+                siblings: Vec::new(),
+            },
+        }))
     }
 }
 

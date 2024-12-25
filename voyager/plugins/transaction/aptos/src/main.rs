@@ -272,7 +272,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let msgs =
                             process_msgs(self.ibc_handler_address.into(), self, msgs.clone()).await;
 
-                        let mut txs = vec![];
+                        // let mut txs = vec![];
 
                         for (i, (_, entry_fn)) in msgs.into_iter().enumerate() {
                             let raw = RawTransaction::new_entry_function(
@@ -289,14 +289,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                             dbg!(&signed_tx);
 
-                            txs.push(signed_tx.into_inner());
+                            // txs.push(signed_tx.into_inner());
+                            let res = self
+                                .aptos_client
+                                .submit(&signed_tx.into_inner())
+                                .await
+                                .unwrap();
+
+                            dbg!(&res);
                         }
-
-                        dbg!(&txs);
-
-                        let res = self.aptos_client.submit_batch(&txs).await.unwrap();
-
-                        dbg!(&res);
 
                         // res.into_inner().transaction_failures
 
