@@ -29,9 +29,9 @@ func (c *MerkleRoot) Define(api frontend.API) error {
 	merkle := NewMerkleTreeAPI(api)
 	leavesHash := make([]*emulated.Element[sw_bn254.ScalarField], MaxLeaves)
 	for i := 0; i < MaxLeaves; i++ {
-		leavesHash[i] = merkle.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{field.NewElement(c.LeavesData[i])})
+		leavesHash[i] = merkle.LeafHash(field, []*emulated.Element[sw_bn254.ScalarField]{field.NewElement(c.LeavesData[i])})
 	}
-	field.AssertIsEqual(field.NewElement(c.Root), merkle.RootHash(leavesHash, c.NbOfLeaves))
+	field.AssertIsEqual(field.NewElement(c.Root), merkle.RootHash(field, leavesHash, c.NbOfLeaves))
 	return nil
 }
 

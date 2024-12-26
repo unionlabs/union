@@ -56,6 +56,26 @@ func Unpack(api frontend.API, packed frontend.Variable, sizeOfInput int, sizeOfE
 	}
 }
 
+// Given a variable of size N and limbs of size M, split the variable in N/M limbs.
+func UnpackEmulated[T emulated.FieldParams](field *emulated.Field[T], api frontend.API, packed *emulated.Element[T], sizeOfInput int, sizeOfElem int) []*emulated.Element[T] {
+	nbOfElems := sizeOfInput / sizeOfElem
+	if sizeOfElem == 1 {
+		binary := field.ToBits(field.Reduce(packed))
+		elems := make([]*emulated.Element[T], nbOfElems)
+		for i := 0; i < nbOfElems; i++ {
+			elems[i] = field.Select(api.IsZero(binary[i]), field.Zero(), field.One())
+		}
+		return elems
+	} else {
+		unpacked := field.ToBits(field.Reduce(packed))[:sizeOfInput]
+		elems := make([]*emulated.Element[T], nbOfElems)
+		for i := 0; i < nbOfElems; i++ {
+			elems[i] = field.FromBits(unpacked[i*sizeOfElem : (i+1)*sizeOfElem]...)
+		}
+		return elems
+	}
+}
+
 // Reconstruct a value from it's limbs.
 func Repack(api frontend.API, unpacked []frontend.Variable, sizeOfInput int, sizeOfElem int) []frontend.Variable {
 	nbOfElems := sizeOfInput / sizeOfElem
@@ -98,7 +118,12 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			}
 			// Union whitepaper: (11) H_pre
 			//
-			h.Write(field.NewElement(validator.HashableX), field.NewElement(validator.HashableY), field.NewElement(validator.HashableXMSB), field.NewElement(validator.HashableYMSB), field.NewElement(validator.Power))
+			h.Write(
+				field.FromBits(lc.api.ToBinary(validator.HashableX, 256)...),
+				field.FromBits(lc.api.ToBinary(validator.HashableY, 256)...),
+				field.FromBits(lc.api.ToBinary(validator.HashableXMSB, 256)...),
+				field.FromBits(lc.api.ToBinary(validator.HashableYMSB, 256)...),
+				field.FromBits(lc.api.ToBinary(validator.Power, 256)...))
 			leaf := h.Sum()
 
 			// Reconstruct the public key from the merkle leaf
@@ -150,7 +175,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(actuallySigned, power, 0))
 				// Optionally aggregated public key if validator at index signed
 				aggregate(actuallySigned, publicKey)
-				leafHashes[i] = field.Select(cannotSign, field.Zero(), merkle.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaf}))
+				leafHashes[i] = field.Select(cannotSign, field.Zero(), merkle.LeafHash(field, []*emulated.Element[sw_bn254.ScalarField]{leaf}))
 				return nil
 			}); err != nil {
 				return err
@@ -170,8 +195,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	lc.api.AssertIsLessOrEqual(votingPowerNeeded, currentVotingPowerScaled)
 
 	// Verify that the merkle root is equal to the given root (public input)
-	rootHash := merkle.RootHash(leafHashes, lc.input.NbOfVal)
-	field.AssertIsEqual(field.NewElement(expectedValRoot), rootHash)
+	rootHash := merkle.RootHash(field, leafHashes, lc.input.NbOfVal)
+	field.AssertIsEqual(field.FromBits(lc.api.ToBinary(expectedValRoot, 256)...), rootHash)
 
 	return bls.VerifySignature(aggregatedPublicKey, message, &lc.input.Sig)
 }

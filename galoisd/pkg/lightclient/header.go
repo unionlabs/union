@@ -92,6 +92,12 @@ func (b *BlockHeaderAPI) unpack(x frontend.Variable) []uints.U8 {
 	return bytes
 }
 
+func (b *BlockHeaderAPI) unpackEmulated(field *emulated.Field[sw_bn254.ScalarField], x *emulated.Element[sw_bn254.ScalarField]) []*emulated.Element[sw_bn254.ScalarField] {
+	split := UnpackEmulated[sw_bn254.ScalarField](field, b.api, x, 256, 8)
+	slices.Reverse(split)
+	return split
+}
+
 func (b *BlockHeaderAPI) unpackHead(x frontend.Variable) uints.U8 {
 	split := Unpack(b.api, x, 8, 8)
 	return uints.U8{
@@ -159,28 +165,28 @@ func (b *BlockHeaderAPI) BlockHash() *emulated.Element[sw_bn254.ScalarField] {
 	}
 	uncons := func(x *UnconsHash) *emulated.Element[sw_bn254.ScalarField] {
 		leaves := []*emulated.Element[sw_bn254.ScalarField]{
-			field.NewElement(x.Head),
-			field.NewElement(x.Tail),
+			field.FromBits(b.api.ToBinary(x.Head, 256)...),
+			field.FromBits(b.api.ToBinary(x.Tail, 256)...),
 		}
 		for i := 0; i < len(leaves); i++ {
-			leaves[i] = m.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
+			leaves[i] = m.LeafHash(field, []*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
 		}
-		return m.RootHash(leaves, len(leaves))
+		return m.RootHash(field, leaves, len(leaves))
 	}
 	leaves := []*emulated.Element[sw_bn254.ScalarField]{
-		field.NewElement(b.header.VersionBlock),
-		field.NewElement(b.header.VersionApp),
-		field.NewElement(b.header.ChainID),
-		field.NewElement(b.header.Height),
-		field.NewElement(b.header.TimeSecs),
-		field.NewElement(b.header.TimeNanos),
-		field.NewElement(b.header.LastBlockHash),
-		field.NewElement(b.header.LastBlockPartSetHeaderTotal),
+		field.FromBits(b.api.ToBinary(b.header.VersionBlock, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.VersionApp, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.ChainID, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.Height, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.TimeSecs, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.TimeNanos, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.LastBlockHash, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.LastBlockPartSetHeaderTotal, 256)...),
 		uncons(&b.header.LastBlockPartSetHeaderHash),
 		uncons(&b.header.LastCommitHash),
 		uncons(&b.header.DataHash),
-		field.NewElement(b.header.ValidatorsHash),
-		field.NewElement(b.header.NextValidatorsHash),
+		field.FromBits(b.api.ToBinary(b.header.ValidatorsHash, 256)...),
+		field.FromBits(b.api.ToBinary(b.header.NextValidatorsHash, 256)...),
 		uncons(&b.header.ConsensusHash),
 		uncons(&b.header.AppHash),
 		uncons(&b.header.LastResultsHash),
@@ -188,9 +194,9 @@ func (b *BlockHeaderAPI) BlockHash() *emulated.Element[sw_bn254.ScalarField] {
 		uncons(&b.header.ProposerAddress),
 	}
 	for i := 0; i < len(leaves); i++ {
-		leaves[i] = m.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
+		leaves[i] = m.LeafHash(field, []*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
 	}
-	return m.RootHash(leaves, len(leaves))
+	return m.RootHash(field, leaves, len(leaves))
 }
 
 func (b *BlockHeaderAPI) VoteSignBytes() (*emulated.Element[sw_bn254.ScalarField], error) {
@@ -204,13 +210,13 @@ func (b *BlockHeaderAPI) VoteSignBytes() (*emulated.Element[sw_bn254.ScalarField
 	}
 	// Vote structure
 	h.Write(field.NewElement(int64(types.PrecommitType)))
-	h.Write(field.NewElement(b.header.Height))
-	h.Write(field.NewElement(b.vote.Round))
+	h.Write(field.FromBits(b.api.ToBinary(b.header.Height, 256)...))
+	h.Write(field.FromBits(b.api.ToBinary(b.vote.Round, 256)...))
 	h.Write(b.BlockHash())
-	h.Write(field.NewElement(b.vote.BlockPartSetHeaderTotal))
-	h.Write(field.NewElement(b.vote.BlockPartSetHeaderHash.Head))
-	h.Write(field.NewElement(b.vote.BlockPartSetHeaderHash.Tail))
-	h.Write(field.NewElement(b.header.ChainID))
+	h.Write(field.FromBits(b.api.ToBinary(b.vote.BlockPartSetHeaderTotal, 256)...))
+	h.Write(field.FromBits(b.api.ToBinary(b.vote.BlockPartSetHeaderHash.Head, 256)...))
+	h.Write(field.FromBits(b.api.ToBinary(b.vote.BlockPartSetHeaderHash.Tail, 256)...))
+	h.Write(field.FromBits(b.api.ToBinary(b.header.ChainID, 256)...))
 	return h.Sum(), nil
 }
 

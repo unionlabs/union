@@ -532,11 +532,7 @@ func (e *EmulatedAPI) HashToField(message *emulated.Element[sw_bn254.ScalarField
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
 func (e *EmulatedAPI) ExpandMsgXmd(message *emulated.Element[sw_bn254.ScalarField], dst frontend.Variable) ([]frontend.Variable, error) {
-	field, err := emulated.NewField[sw_bn254.ScalarField](e.api)
-	if err != nil {
-		return nil, err
-	}
-	h, err := mimc.NewMiMC[sw_bn254.ScalarField](field)
+	h, err := mimc.NewMiMC[sw_bn254.ScalarField](e.fieldR)
 	if err != nil {
 		return nil, err
 	}
@@ -558,14 +554,14 @@ func (e *EmulatedAPI) ExpandMsgXmd(message *emulated.Element[sw_bn254.ScalarFiel
 			repeat(0, MiMCBlockSize-len(block)%MiMCBlockSize)
 		}
 		for i := 0; i < len(block); i += MiMCBlockSize {
-			h.Write(field.NewElement(e.api.FromBinary(block[i : i+MiMCBlockSize]...)))
+			h.Write(e.fieldR.FromBits(block[i : i+MiMCBlockSize]...))
 		}
 		block = []frontend.Variable{}
 		s := h.Sum()
 		h.Reset()
 
 		// return e.api.ToBinary(s, 256)
-		return field.ToBits(field.Reduce(s))[:256]
+		return e.fieldR.ToBits(e.fieldR.Reduce(s))[:256]
 	}
 
 	writeU8 := func(x frontend.Variable) {
@@ -574,7 +570,7 @@ func (e *EmulatedAPI) ExpandMsgXmd(message *emulated.Element[sw_bn254.ScalarFiel
 
 	write_message := func() {
 		// write(e.api.ToBinary(message, 256)...)
-		write(field.ToBits(field.Reduce(message))[:256]...)
+		write(e.fieldR.ToBits(e.fieldR.Reduce(message))[:256]...)
 	}
 
 	// Z_pad = I2OSP(0, r_in_bytes)
