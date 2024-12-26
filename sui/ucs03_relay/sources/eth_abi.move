@@ -31,6 +31,22 @@ module ucs03::ethabi {
         // Append the padding
         vector::append(buf, padding);
     }
+    public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        // Decode the length of the bytes array
+        let mut len_bytes = vector_slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
+        vector::reverse(&mut len_bytes); // Convert to big-endian format
+        let len: u64 = bcs::new(len_bytes).peel_u64(); // Convert the length bytes to u64
+        *index = *index + 32; // Move the index forward after reading the length
+        // Decode the actual bytes
+        let byte_data = vector_slice(buf, *index, *index + len); // Extract the bytes of the given length
+        *index = *index + len; // Move the index forward after reading the byte data
+
+        // Skip padding to align to 32-byte boundary
+        let padding_len = (32 - (len % 32)) % 32;
+        *index = *index + padding_len; // Adjust the index to skip the padding
+
+        byte_data // Return the decoded bytes
+    }
 
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
@@ -121,17 +137,17 @@ module ucs03::ethabi {
             i = i + 1;
         };
 
-        // Padding for 32-byte alignment
-        let padding_len = (32 - (len % 32)) % 32;
-        if (padding_len > 0) {
-            let mut padding = vector::empty<u8>();
-            let mut j = 0;
-            while (j < padding_len) {
-                vector::push_back(&mut padding, 0);
-                j = j + 1;
-            };
-            vector::append($buf, padding);
-        }
+        // // Padding for 32-byte alignment
+        // let padding_len = (32 - (len % 32)) % 32;
+        // if (padding_len > 0) {
+        //     let mut padding = vector::empty<u8>();
+        //     let mut j = 0;
+        //     while (j < padding_len) {
+        //         vector::push_back(&mut padding, 0);
+        //         j = j + 1;
+        //     };
+        //     vector::append($buf, padding);
+        // }
     }
 
     public macro fun decode_vector<$T>(
@@ -149,9 +165,9 @@ module ucs03::ethabi {
             i = i + 1;
         };
 
-        // Calculate padding length and adjust the index to skip padding bytes
-        let padding_len = (32 - (vec_len % 32)) % 32;
-        *$index = *$index + padding_len; // Skip the padding bytes
+        // // Calculate padding length and adjust the index to skip padding bytes
+        // let padding_len = (32 - (vec_len % 32)) % 32;
+        // *$index = *$index + padding_len; // Skip the padding bytes
         result
     }
 
