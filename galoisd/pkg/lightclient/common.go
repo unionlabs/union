@@ -5,10 +5,11 @@ import (
 	"galois/pkg/bls"
 	"galois/pkg/merkle"
 
+	mimc "galois/pkg/emulatedmimc"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
-	"github.com/consensys/gnark/std/hash/mimc"
 	"github.com/consensys/gnark/std/math/emulated"
 )
 
@@ -76,23 +77,28 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	// We would need to split the bitmap into multiple public inputs if we wanted to push this limit
 	bitmap := lc.api.ToBinary(lc.input.Bitmap, MaxVal)
 
+	field, err := emulated.NewField[sw_bn254.ScalarField](lc.api)
+	if err != nil {
+		return err
+	}
+
 	// Facility to iterate over the validators in the lc, this function will
 	// do the necessary decoding/marshalling for the caller.
 	//
 	// This function will reconstruct each validator from the secret inputs by:
 	// - re-composing the public key from its shifted/msb values
-	forEachVal := func(f func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error) error {
+	forEachVal := func(f func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf *emulated.Element[sw_bn254.ScalarField]) error) error {
 		bitmapMask := lc.input.NbOfVal
 		for i, signed := range bitmap {
 			validator := lc.input.Validators[i]
 
-			h, err := mimc.NewMiMC(lc.api)
+			h, err := mimc.NewMiMC[sw_bn254.ScalarField](field)
 			if err != nil {
 				return fmt.Errorf("new mimc: %w", err)
 			}
 			// Union whitepaper: (11) H_pre
 			//
-			h.Write(validator.HashableX, validator.HashableY, validator.HashableXMSB, validator.HashableYMSB, validator.Power)
+			h.Write(field.NewElement(validator.HashableX), field.NewElement(validator.HashableY), field.NewElement(validator.HashableXMSB), field.NewElement(validator.HashableYMSB), field.NewElement(validator.Power))
 			leaf := h.Sum()
 
 			// Reconstruct the public key from the merkle leaf
@@ -125,7 +131,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	totalVotingPower := frontend.Variable(0)
 	currentVotingPower := frontend.Variable(0)
 
-	leafHashes := make([]frontend.Variable, MaxVal)
+	leafHashes := make([]*emulated.Element[sw_bn254.ScalarField], MaxVal)
 
 	merkle := merkle.NewMerkleTreeAPI(lc.api)
 
@@ -136,7 +142,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	aggregatedPublicKey, nbOfKeys, err := bls.WithAggregation(
 		func(aggregate func(selector frontend.Variable, publicKey *sw_emulated.AffinePoint[emulated.BN254Fp])) error {
-			if err := forEachVal(func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
+			if err := forEachVal(func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf *emulated.Element[sw_bn254.ScalarField]) error {
 				actuallySigned := lc.api.Select(cannotSign, 0, signed)
 				// totalVotingPower = totalVotingPower + power
 				totalVotingPower = lc.api.Add(totalVotingPower, lc.api.Select(cannotSign, 0, power))
@@ -144,7 +150,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(actuallySigned, power, 0))
 				// Optionally aggregated public key if validator at index signed
 				aggregate(actuallySigned, publicKey)
-				leafHashes[i] = lc.api.Select(cannotSign, 0, merkle.LeafHash([]frontend.Variable{leaf}))
+				leafHashes[i] = field.Select(cannotSign, field.Zero(), merkle.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaf}))
 				return nil
 			}); err != nil {
 				return err
@@ -165,7 +171,7 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	// Verify that the merkle root is equal to the given root (public input)
 	rootHash := merkle.RootHash(leafHashes, lc.input.NbOfVal)
-	lc.api.AssertIsEqual(expectedValRoot, rootHash)
+	field.AssertIsEqual(field.NewElement(expectedValRoot), rootHash)
 
 	return bls.VerifySignature(aggregatedPublicKey, message, &lc.input.Sig)
 }

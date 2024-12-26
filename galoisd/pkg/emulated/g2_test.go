@@ -6,14 +6,14 @@ import (
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+	bn254fr "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
+	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/consensys/gnark/test"
 	"github.com/stretchr/testify/assert"
-
-	bn254fr "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
 type MapToCurve struct {
@@ -55,11 +55,15 @@ type ExpandMsgXmd struct {
 }
 
 func (c *ExpandMsgXmd) Define(api frontend.API) error {
-	emulated, err := NewEmulatedAPI(api)
+	eapi, err := NewEmulatedAPI(api)
 	if err != nil {
 		return err
 	}
-	image, err := emulated.ExpandMsgXmd(c.Preimage, c.Domain)
+	field, err := emulated.NewField[sw_bn254.ScalarField](api)
+	if err != nil {
+		return err
+	}
+	image, err := eapi.ExpandMsgXmd(field.NewElement(c.Preimage), c.Domain)
 	if err != nil {
 		return err
 	}
@@ -114,7 +118,11 @@ func (c *HashToFieldC) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	elements, err := e.HashToField(c.Preimage, c.Domain)
+	field, err := emulated.NewField[sw_bn254.ScalarField](api)
+	if err != nil {
+		return err
+	}
+	elements, err := e.HashToField(field.NewElement(c.Preimage), c.Domain)
 	if err != nil {
 		return err
 	}
@@ -161,15 +169,19 @@ type HashToG2 struct {
 }
 
 func (c *HashToG2) Define(api frontend.API) error {
-	emulated, err := NewEmulatedAPI(api)
+	e, err := NewEmulatedAPI(api)
 	if err != nil {
 		return err
 	}
-	image, err := emulated.HashToG2(c.Preimage, c.Domain)
+	field, err := emulated.NewField[sw_bn254.ScalarField](api)
 	if err != nil {
 		return err
 	}
-	emulated.AssertIsEqual(image, &c.Image)
+	image, err := e.HashToG2(field.NewElement(c.Preimage), c.Domain)
+	if err != nil {
+		return err
+	}
+	e.AssertIsEqual(image, &c.Image)
 	return nil
 }
 

@@ -8,8 +8,11 @@ import (
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
+	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/consensys/gnark/std/hash/mimc"
+	// realmimc "github.com/consensys/gnark/std/hash/mimc"
+
+	mimc "galois/pkg/emulatedmimc"
 	"github.com/consensys/gnark/std/math/emulated"
 )
 
@@ -477,7 +480,7 @@ func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
 // https://datatracker.ietf.org/doc/html/rfc9380#name-encoding-byte-strings-to-el
 
 // WARNING: this function calls a partial MapToCurve, read it's documentation before using it.
-func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable) (*gadget.G2Affine, error) {
+func (e *EmulatedAPI) HashToG2(message *emulated.Element[sw_bn254.ScalarField], dst frontend.Variable) (*gadget.G2Affine, error) {
 	u, err := e.HashToField(message, dst)
 	if err != nil {
 		return nil, err
@@ -500,7 +503,7 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 // WARNING: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
 // WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
 // WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
-func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
+func (e *EmulatedAPI) HashToField(message *emulated.Element[sw_bn254.ScalarField], dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {
 		return nil, err
@@ -528,8 +531,12 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
-func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Variable) ([]frontend.Variable, error) {
-	h, err := mimc.NewMiMC(e.api)
+func (e *EmulatedAPI) ExpandMsgXmd(message *emulated.Element[sw_bn254.ScalarField], dst frontend.Variable) ([]frontend.Variable, error) {
+	field, err := emulated.NewField[sw_bn254.ScalarField](e.api)
+	if err != nil {
+		return nil, err
+	}
+	h, err := mimc.NewMiMC[sw_bn254.ScalarField](field)
 	if err != nil {
 		return nil, err
 	}
@@ -551,12 +558,14 @@ func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Varia
 			repeat(0, MiMCBlockSize-len(block)%MiMCBlockSize)
 		}
 		for i := 0; i < len(block); i += MiMCBlockSize {
-			h.Write(e.api.FromBinary(block[i : i+MiMCBlockSize]...))
+			h.Write(field.NewElement(e.api.FromBinary(block[i : i+MiMCBlockSize]...)))
 		}
 		block = []frontend.Variable{}
 		s := h.Sum()
 		h.Reset()
-		return e.api.ToBinary(s, 256)
+
+		// return e.api.ToBinary(s, 256)
+		return field.ToBits(field.Reduce(s))[:256]
 	}
 
 	writeU8 := func(x frontend.Variable) {
@@ -564,7 +573,8 @@ func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Varia
 	}
 
 	write_message := func() {
-		write(e.api.ToBinary(message, 256)...)
+		// write(e.api.ToBinary(message, 256)...)
+		write(field.ToBits(field.Reduce(message))[:256]...)
 	}
 
 	// Z_pad = I2OSP(0, r_in_bytes)

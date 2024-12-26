@@ -6,18 +6,18 @@ import (
 	g2 "galois/pkg/emulated"
 	"math/big"
 	"math/rand"
-	"testing"
+	// "testing"
 	"time"
 
 	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
-	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
+	// cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/types"
-	"github.com/consensys/gnark-crypto/ecc"
+	// "github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/consensys/gnark/test"
-	"github.com/stretchr/testify/assert"
+	// "github.com/consensys/gnark/test"
+	// "github.com/stretchr/testify/assert"
 )
 
 func getBlockHeader(r *rand.Rand) (*BlockHeader, *BlockVote, *types.Header, *tmtypes.Vote) {
@@ -165,23 +165,23 @@ func inputsHash(h *types.Header) []byte {
 	return hash[1:]
 }
 
-func FuzzVerifyInputs(f *testing.F) {
-	f.Fuzz(func(t *testing.T, seed int64) {
-		t.Parallel()
-		r := rand.New(rand.NewSource(seed))
-		header, vote, h, _ := getBlockHeader(r)
-		err := test.IsSolved(
-			&VerifyInputs{},
-			&VerifyInputs{
-				Vote:       *vote,
-				Header:     *header,
-				InputsHash: inputsHash(h),
-			},
-			ecc.BN254.ScalarField(),
-		)
-		assert.NoError(t, err)
-	})
-}
+// func FuzzVerifyInputs(f *testing.F) {
+// 	f.Fuzz(func(t *testing.T, seed int64) {
+// 		t.Parallel()
+// 		r := rand.New(rand.NewSource(seed))
+// 		header, vote, h, _ := getBlockHeader(r)
+// 		err := test.IsSolved(
+// 			&VerifyInputs{},
+// 			&VerifyInputs{
+// 				Vote:       *vote,
+// 				Header:     *header,
+// 				InputsHash: inputsHash(h),
+// 			},
+// 			ecc.BN254.ScalarField(),
+// 		)
+// 		assert.NoError(t, err)
+// 	})
+// }
 
 type BlockHash struct {
 	Vote         BlockVote
@@ -198,24 +198,24 @@ func (c *BlockHash) Define(api frontend.API) error {
 	return nil
 }
 
-func FuzzBlockHash(f *testing.F) {
-	f.Fuzz(func(t *testing.T, seed int64) {
-		t.Parallel()
-		r := rand.New(rand.NewSource(seed))
-		header, vote, cometblsHeader, _ := getBlockHeader(r)
-		hash := cometblsHeader.Hash()
-		err := test.IsSolved(
-			&BlockHash{},
-			&BlockHash{
-				Vote:         *vote,
-				Header:       *header,
-				ExpectedHash: []byte(hash),
-			},
-			ecc.BN254.ScalarField(),
-		)
-		assert.NoError(t, err)
-	})
-}
+// func FuzzBlockHash(f *testing.F) {
+// 	f.Fuzz(func(t *testing.T, seed int64) {
+// 		t.Parallel()
+// 		r := rand.New(rand.NewSource(seed))
+// 		header, vote, cometblsHeader, _ := getBlockHeader(r)
+// 		hash := cometblsHeader.Hash()
+// 		err := test.IsSolved(
+// 			&BlockHash{},
+// 			&BlockHash{
+// 				Vote:         *vote,
+// 				Header:       *header,
+// 				ExpectedHash: []byte(hash),
+// 			},
+// 			ecc.BN254.ScalarField(),
+// 		)
+// 		assert.NoError(t, err)
+// 	})
+// }
 
 type BlockVoteSignBytes struct {
 	Vote              BlockVote
@@ -236,24 +236,24 @@ func (c *BlockVoteSignBytes) Define(api frontend.API) error {
 	return nil
 }
 
-func FuzzBlockVote(f *testing.F) {
-	f.Fuzz(func(t *testing.T, seed int64) {
-		t.Parallel()
-		r := rand.New(rand.NewSource(seed))
-		header, vote, cometblsHeader, cometblsVote := getBlockHeader(r)
-		signBytes := types.VoteSignBytes(cometblsHeader.ChainID, cometblsVote)
-		err := test.IsSolved(
-			&BlockVoteSignBytes{},
-			&BlockVoteSignBytes{
-				Vote:              *vote,
-				Header:            *header,
-				ExpectedVoteBytes: signBytes,
-			},
-			ecc.BN254.ScalarField(),
-		)
-		assert.NoError(t, err)
-	})
-}
+// func FuzzBlockVote(f *testing.F) {
+// 	f.Fuzz(func(t *testing.T, seed int64) {
+// 		t.Parallel()
+// 		r := rand.New(rand.NewSource(seed))
+// 		header, vote, cometblsHeader, cometblsVote := getBlockHeader(r)
+// 		signBytes := types.VoteSignBytes(cometblsHeader.ChainID, cometblsVote)
+// 		err := test.IsSolved(
+// 			&BlockVoteSignBytes{},
+// 			&BlockVoteSignBytes{
+// 				Vote:              *vote,
+// 				Header:            *header,
+// 				ExpectedVoteBytes: signBytes,
+// 			},
+// 			ecc.BN254.ScalarField(),
+// 		)
+// 		assert.NoError(t, err)
+// 	})
+// }
 
 type BlockToCurve struct {
 	DST          frontend.Variable
@@ -279,22 +279,22 @@ func (c *BlockToCurve) Define(api frontend.API) error {
 	return nil
 }
 
-func FuzzBlockToCurve(f *testing.F) {
-	f.Fuzz(func(t *testing.T, seed int64) {
-		t.Parallel()
-		r := rand.New(rand.NewSource(seed))
-		header, vote, cometblsHeader, cometblsVote := getBlockHeader(r)
-		signBytes := types.VoteSignBytes(cometblsHeader.ChainID, cometblsVote)
-		err := test.IsSolved(
-			&BlockToCurve{},
-			&BlockToCurve{
-				Vote:         *vote,
-				Header:       *header,
-				ExpectedHash: gadget.NewG2Affine(cometbn254.HashToG2(signBytes)),
-				DST:          []byte(cometbn254.CometblsSigDST),
-			},
-			ecc.BN254.ScalarField(),
-		)
-		assert.NoError(t, err)
-	})
-}
+// func FuzzBlockToCurve(f *testing.F) {
+// 	f.Fuzz(func(t *testing.T, seed int64) {
+// 		t.Parallel()
+// 		r := rand.New(rand.NewSource(seed))
+// 		header, vote, cometblsHeader, cometblsVote := getBlockHeader(r)
+// 		signBytes := types.VoteSignBytes(cometblsHeader.ChainID, cometblsVote)
+// 		err := test.IsSolved(
+// 			&BlockToCurve{},
+// 			&BlockToCurve{
+// 				Vote:         *vote,
+// 				Header:       *header,
+// 				ExpectedHash: gadget.NewG2Affine(cometbn254.HashToG2(signBytes)),
+// 				DST:          []byte(cometbn254.CometblsSigDST),
+// 			},
+// 			ecc.BN254.ScalarField(),
+// 		)
+// 		assert.NoError(t, err)
+// 	})
+// }

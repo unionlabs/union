@@ -8,11 +8,14 @@ import (
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/hash/sha2"
+	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/consensys/gnark/std/math/uints"
 
 	types "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-	"github.com/consensys/gnark/std/hash/mimc"
+
+	mimc "galois/pkg/emulatedmimc"
 )
 
 type UnconsHash struct {
@@ -148,32 +151,36 @@ func (b *BlockHeaderAPI) InputsHash(trustedValRoot frontend.Variable) ([]uints.U
 	return h.Sum(), nil
 }
 
-func (b *BlockHeaderAPI) BlockHash() frontend.Variable {
+func (b *BlockHeaderAPI) BlockHash() *emulated.Element[sw_bn254.ScalarField] {
 	m := merkle.NewMerkleTreeAPI(b.api)
-	uncons := func(x *UnconsHash) frontend.Variable {
-		leaves := []frontend.Variable{
-			x.Head,
-			x.Tail,
+	field, err := emulated.NewField[sw_bn254.ScalarField](b.api)
+	if err != nil {
+		panic("field creation")
+	}
+	uncons := func(x *UnconsHash) *emulated.Element[sw_bn254.ScalarField] {
+		leaves := []*emulated.Element[sw_bn254.ScalarField]{
+			field.NewElement(x.Head),
+			field.NewElement(x.Tail),
 		}
 		for i := 0; i < len(leaves); i++ {
-			leaves[i] = m.LeafHash([]frontend.Variable{leaves[i]})
+			leaves[i] = m.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
 		}
 		return m.RootHash(leaves, len(leaves))
 	}
-	leaves := []frontend.Variable{
-		b.header.VersionBlock,
-		b.header.VersionApp,
-		b.header.ChainID,
-		b.header.Height,
-		b.header.TimeSecs,
-		b.header.TimeNanos,
-		b.header.LastBlockHash,
-		b.header.LastBlockPartSetHeaderTotal,
+	leaves := []*emulated.Element[sw_bn254.ScalarField]{
+		field.NewElement(b.header.VersionBlock),
+		field.NewElement(b.header.VersionApp),
+		field.NewElement(b.header.ChainID),
+		field.NewElement(b.header.Height),
+		field.NewElement(b.header.TimeSecs),
+		field.NewElement(b.header.TimeNanos),
+		field.NewElement(b.header.LastBlockHash),
+		field.NewElement(b.header.LastBlockPartSetHeaderTotal),
 		uncons(&b.header.LastBlockPartSetHeaderHash),
 		uncons(&b.header.LastCommitHash),
 		uncons(&b.header.DataHash),
-		b.header.ValidatorsHash,
-		b.header.NextValidatorsHash,
+		field.NewElement(b.header.ValidatorsHash),
+		field.NewElement(b.header.NextValidatorsHash),
 		uncons(&b.header.ConsensusHash),
 		uncons(&b.header.AppHash),
 		uncons(&b.header.LastResultsHash),
@@ -181,25 +188,29 @@ func (b *BlockHeaderAPI) BlockHash() frontend.Variable {
 		uncons(&b.header.ProposerAddress),
 	}
 	for i := 0; i < len(leaves); i++ {
-		leaves[i] = m.LeafHash([]frontend.Variable{leaves[i]})
+		leaves[i] = m.LeafHash([]*emulated.Element[sw_bn254.ScalarField]{leaves[i]})
 	}
 	return m.RootHash(leaves, len(leaves))
 }
 
-func (b *BlockHeaderAPI) VoteSignBytes() (frontend.Variable, error) {
-	h, err := mimc.NewMiMC(b.api)
+func (b *BlockHeaderAPI) VoteSignBytes() (*emulated.Element[sw_bn254.ScalarField], error) {
+	field, err := emulated.NewField[sw_bn254.ScalarField](b.api)
+	if err != nil {
+		panic("field creation")
+	}
+	h, err := mimc.NewMiMC[sw_bn254.ScalarField](field)
 	if err != nil {
 		return nil, fmt.Errorf("new mimc: %w", err)
 	}
 	// Vote structure
-	h.Write(int64(types.PrecommitType))
-	h.Write(b.header.Height)
-	h.Write(b.vote.Round)
+	h.Write(field.NewElement(int64(types.PrecommitType)))
+	h.Write(field.NewElement(b.header.Height))
+	h.Write(field.NewElement(b.vote.Round))
 	h.Write(b.BlockHash())
-	h.Write(b.vote.BlockPartSetHeaderTotal)
-	h.Write(b.vote.BlockPartSetHeaderHash.Head)
-	h.Write(b.vote.BlockPartSetHeaderHash.Tail)
-	h.Write(b.header.ChainID)
+	h.Write(field.NewElement(b.vote.BlockPartSetHeaderTotal))
+	h.Write(field.NewElement(b.vote.BlockPartSetHeaderHash.Head))
+	h.Write(field.NewElement(b.vote.BlockPartSetHeaderHash.Tail))
+	h.Write(field.NewElement(b.header.ChainID))
 	return h.Sum(), nil
 }
 
