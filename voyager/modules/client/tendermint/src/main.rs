@@ -128,7 +128,7 @@ impl ClientModuleServer for Module {
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.chain_id),
-            height: cs.latest_height,
+            counterparty_height: cs.latest_height,
         })
     }
 

@@ -84,7 +84,7 @@ where
                     counterparty chain to progress to the next consensus checkpoint greater \
                     than the required target height {target_height}",
                     counterparty_chain_id = client_meta.chain_id,
-                    trusted_height = client_meta.height,
+                    trusted_height = client_meta.counterparty_height,
                     client_id = self.client_id,
                     self_chain_id = module.chain_id,
                 ),
@@ -94,11 +94,11 @@ where
             ));
         }
 
-        if client_meta.height >= target_height {
+        if client_meta.counterparty_height >= target_height {
             info!(
                 "client {client_id} has already been updated to a height \
                 >= the desired target height ({} >= {target_height})",
-                client_meta.height,
+                client_meta.counterparty_height,
                 client_id = self.client_id,
             );
 
@@ -108,7 +108,7 @@ where
                 self.batches,
                 None,
                 client_meta.clone(),
-                client_meta.height,
+                client_meta.counterparty_height,
             )
         } else {
             Ok(promise(
@@ -117,7 +117,7 @@ where
                         client_type: client_info.client_type,
                         counterparty_chain_id: module.chain_id.clone(),
                         chain_id: client_meta.chain_id,
-                        update_from: client_meta.height,
+                        update_from: client_meta.counterparty_height,
                         update_to: latest_height,
                     })],
                     [],

@@ -177,7 +177,7 @@ impl ClientModuleServer for Module {
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.chain_id.as_str().to_owned()),
-            height: cs.latest_height,
+            counterparty_height: cs.latest_height,
         })
     }
 

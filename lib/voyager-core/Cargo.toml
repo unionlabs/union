@@ -13,7 +13,7 @@ workspace = true
 enumorph   = { workspace = true }
 hex        = { workspace = true }
 macros     = { workspace = true }
-schemars   = { workspace = true }
+schemars   = { workspace = true, optional = true }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror  = { workspace = true }
@@ -24,4 +24,5 @@ unionlabs  = { workspace = true }
 hex-literal = { workspace = true }
 
 [features]
-default = []
+default  = []
+schemars = ["dep:schemars"]

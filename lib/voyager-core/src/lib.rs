@@ -85,7 +85,7 @@ impl ClientType {
     pub const TENDERMINT: &'static str = "07-tendermint";
 
     /// A client tracking the Ethereum beacon chain consensus verified through the
-    /// [Ethereum Proof-of-Stake Consensus Specifications](spec).
+    /// [Ethereum Proof-of-Stake Consensus Specifications][spec].
     ///
     /// [spec]: https://github.com/ethereum/consensus-specs
     pub const ETHEREUM: &'static str = "ethereum";
@@ -210,7 +210,7 @@ pub struct IbcSpecId;
 /// Well-known IBC spec identifiers, defined as constants for reusability and to allow
 /// for pattern matching.
 impl IbcSpecId {
-    /// IBC classic, as per the [ICS-003 connection semantics](ics3).
+    /// IBC classic, as per the [ICS-003 connection semantics][ics3].
     ///
     /// [ics3]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#versioning
     pub const CLASSIC: &'static str = "ibc-classic";
@@ -260,11 +260,13 @@ pub struct ClientInfo {
     pub metadata: Value,
 }
 
+/// Metadata about a client, as it exists at a specific height.
 #[model]
 pub struct ClientStateMeta {
     /// The counterparty height this client has been updated to. A consensus
     /// state will exist at this height.
-    pub height: Height,
+    #[doc(alias = "trusted_height")]
+    pub counterparty_height: Height,
 
     /// The chain id of the counterparty chain this client tracks.
     pub chain_id: ChainId,
@@ -323,7 +325,6 @@ impl FromStr for QueryHeight {
     }
 }
 
-#[macro_export]
 macro_rules! str_newtype {
     (
         $(#[doc = $doc:literal])+
@@ -338,8 +339,8 @@ macro_rules! str_newtype {
             Hash,
             ::serde::Serialize,
             ::serde::Deserialize,
-            ::schemars::JsonSchema
         )]
+        #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         // I tested this and apparently it's not required (newtype is automatically transparent?) but
         // keeping it here for clarity
         #[serde(transparent)]
@@ -389,3 +390,4 @@ macro_rules! str_newtype {
         }
     };
 }
+pub(crate) use str_newtype;

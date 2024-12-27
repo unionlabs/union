@@ -141,7 +141,7 @@ impl Module {
             .query_latest_height(client_meta.chain_id.clone(), true)
             .await?;
 
-        if client_meta.height.height() + max_age < latest_finalized_height.height() {
+        if client_meta.counterparty_height.height() + max_age < latest_finalized_height.height() {
             info!("client is older than threshold");
 
             Ok(conc([
@@ -150,7 +150,7 @@ impl Module {
                         client_type: client_info.client_type,
                         chain_id: client_meta.chain_id,
                         counterparty_chain_id: chain_id.clone(),
-                        update_from: client_meta.height,
+                        update_from: client_meta.counterparty_height,
                         update_to: latest_finalized_height,
                     })],
                     [],
@@ -166,8 +166,8 @@ impl Module {
                         ibc_spec_id: ibc_spec_id.clone(),
                         client_id: client_id.clone(),
                         height: Height::new_with_revision(
-                            client_meta.height.revision(),
-                            client_meta.height.height() + max_age,
+                            client_meta.counterparty_height.revision(),
+                            client_meta.counterparty_height.height() + max_age,
                         ),
                     }),
                     call(PluginMessage::new(
