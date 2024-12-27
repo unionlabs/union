@@ -1,30 +1,51 @@
 module ucs03::zkgm_relay {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
+    use ucs03::fungible_token::{Self, FUNGIBLE_TOKEN};
+    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
+
     use std::string::{Self, String, utf8};
     use sui::table::{Self, Table};
     use ucs03::ethabi;
+    use ibc::commitment;
     use sui::bcs;
     use sui::clock;
     use sui::address::{to_string};
     use sui::event;
-    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
-        // Constants
-    const ACK_SUCCESS: u8 = 1;
-    const ACK_FAILURE: u8 = 0;
-    const ACK_LENGTH: u64 = 1;
-
-    // Errors
+    // Constants
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
-    const E_INVALID_BYTES_ADDRESS: u64 = 1;
-    const E_UNAUTHORIZED: u64 = 2;
-    const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
-    const E_INVALID_PROTOCOL_VERSION: u64 = 4;
-    const E_INVALID_COUNTERPARTY_PROTOCOL_VERSION: u64 = 6;
-    const E_INVALID_AMOUNT: u64 = 7;
-    const E_UNSTOPPABLE: u64 = 8;
+    const ACK_SUCCESS: u256 = 1;
+    const ACK_FAILURE: u8 = 0;
+    const ACK_LENGTH: u64 = 1;
+    const ZKGM_VERSION_0: u8 = 0x00;
+    const SYSCALL_FORWARD: u8 = 0x00;
+    const SYSCALL_MULTIPLEX: u8 = 0x01;
+    const SYSCALL_BATCH: u8 = 0x02;
+    const SYSCALL_FUNGIBLE_ASSET_TRANSFER: u8 = 0x03;
+    const FILL_TYPE_PROTOCOL: u256 = 0xB0CAD0;
+    const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
+    const ACK_EMPTY: vector<u8> = x"";
+
+
+    // Errors
+    const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
+    const E_UNAUTHORIZED: u64 = 1;
+    const E_INVALID_HOPS: u64 = 2;
+    const E_INVALID_IBC_VERSION: u64 = 3;
+    const E_INFINITE_GAME: u64 = 4;
+    const E_UNSUPPORTED_VERSION: u64 = 5;
+    const E_UNKNOWN_SYSCALL: u64 = 6;
+    const E_INVALID_ASSET_NAME: u64 = 7;
+    const E_INVALID_ASSET_SYMBOL: u64 = 8;
+    const E_INVALID_ASSET_ORIGIN: u64 = 9;
+    const E_INVALID_AMOUNT: u64 = 10;
+    const E_BATCH_MUST_BE_SYNC: u64 = 11;
+    const E_INVALID_FILL_TYPE: u64 = 12;
+    const E_UNIMPLEMENTED: u64 = 13;
+    const E_ACK_EMPTY: u64 = 14;
+    const E_ONLY_MAKER: u64 = 15;
 
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
@@ -52,6 +73,13 @@ module ucs03::zkgm_relay {
         contract_calldata: vector<u8>
     }
 
+    #[event]
+    public struct OnZkgmCall has copy, drop, store {
+        sender: vector<u8>,
+        contract_calldata: vector<u8>,
+        contract_address: vector<u8>
+    }
+
     public struct BatchPacket has copy, drop, store {
         syscall_packets: vector<vector<u8>>
     }
@@ -67,15 +95,39 @@ module ucs03::zkgm_relay {
         relayer_msg: vector<u8>
     }
 
+    #[event]
+    public struct OnIIBCModuleOnRecvPacketCall has copy, drop, store {
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        contract_address: vector<u8>
+    }
+
     public struct IIBCModuleOnAcknowledgementPacketParams has copy, drop, store {
         packet: Packet,
         acknowledgement: vector<u8>,
         relayer: address
     }
 
+
+    #[event]
+    public struct OnIIBCModuleOnAcknowledgementPacketCall has copy, drop, store {
+        packet: Packet,
+        acknowledgement: vector<u8>,
+        relayer: address,
+        contract_address: vector<u8>
+    }
+
     public struct IIBCModuleOnTimeoutPacketParams has copy, drop, store {
         packet: Packet,
         relayer: address
+    }
+
+    #[event]
+    public struct OnIIBCModuleOnTimeoutPacketCall has copy, drop, store {
+        packet: Packet,
+        relayer: address,
+        contract_address: vector<u8>
     }
 
     public struct FungibleAssetTransferPacket has copy, drop, store {
@@ -114,7 +166,10 @@ module ucs03::zkgm_relay {
         id: UID,
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
-        token_origin: Table<address, u256>
+        token_origin: Table<address, u256>,
+        address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>,
+        address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
+
     }
 
     // Events
@@ -162,8 +217,28 @@ module ucs03::zkgm_relay {
             id: id,
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
-            token_origin: table::new(ctx)
+            token_origin: table::new(ctx),
+            address_to_treasurycap: table::new(ctx),
+            address_to_coin: table::new(ctx)
         });
+    }
+    fun get_treasury_cap_mut(relay_store: &mut RelayStore, denom_address: address): &mut TreasuryCap<FUNGIBLE_TOKEN> {
+        relay_store.address_to_treasurycap.borrow_mut(denom_address)
+    }
+
+    fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
+        relay_store.address_to_coin.borrow_mut(denom_address)
+    }
+
+
+    public entry fun insert_pair(
+        relay_store: &mut RelayStore,
+        denom_address: address,
+        treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
+        coin: Coin<FUNGIBLE_TOKEN>
+    ) {
+        relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
+        relay_store.address_to_coin.add(denom_address, coin);
     }
 
     public fun decode_ack(buf: vector<u8>): Acknowledgement {
@@ -547,6 +622,80 @@ module ucs03::zkgm_relay {
     public fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
     }
+    public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
+        if (path == 0) {
+            return (next_channel_id as u256)
+        };
+        let next_hop_index = ((fls(path) / 32) as u8) + 1;
+        if (next_hop_index > 7) {
+            abort E_INVALID_HOPS
+        };
+
+        let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
+            | path;
+        (next_channel as u256)
+    }
+
+
+        /// Find last set (most significant bit).
+    /// Returns the index of the most significant bit of `x`.
+    /// If `x` is zero, returns 256.
+    public fun fls(mut x: u256): u256 {
+        if (x == 0) {
+            return 256
+        };
+
+        let mut r: u256 = 0;
+
+        // Check higher 128 bits
+        if (x > 0xffffffffffffffffffffffffffffffff) {
+            r = 128;
+            x = x >> 128;
+        };
+
+        // Check higher 64 bits
+        if (x > 0xffffffffffffffff) {
+            r = r + 64;
+            x = x >> 64;
+        };
+
+        // Check higher 32 bits
+        if (x > 0xffffffff) {
+            r = r + 32;
+            x = x >> 32;
+        };
+
+        // Check higher 16 bits
+        if (x > 0xffff) {
+            r = r + 16;
+            x = x >> 16;
+        };
+
+        // Check higher 8 bits
+        if (x > 0xff) {
+            r = r + 8;
+            x = x >> 8;
+        };
+
+        // Check higher 4 bits
+        if (x > 0xf) {
+            r = r + 4;
+            x = x >> 4;
+        };
+
+        // Check higher 2 bits
+        if (x > 0x3) {
+            r = r + 2;
+            x = x >> 2;
+        };
+
+        // Check higher 1 bit
+        if (x > 0x1) {
+            r = r + 1;
+        };
+
+        r
+    }
 
 
     public fun starts_with(s: String, prefix: String): bool {
@@ -586,7 +735,7 @@ module ucs03::zkgm_relay {
         );
 
         if (!is_valid_version(version)) {
-            abort E_INVALID_PROTOCOL_VERSION
+            abort E_INVALID_IBC_VERSION
         };
 
     }
@@ -601,11 +750,11 @@ module ucs03::zkgm_relay {
         proof_height: u64
     ) {
         if (!is_valid_version(version)) {
-            abort E_INVALID_PROTOCOL_VERSION
+            abort E_INVALID_IBC_VERSION
         };
 
         if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
+            abort E_INVALID_IBC_VERSION
         };
 
         ibc::channel_open_try(
@@ -640,7 +789,7 @@ module ucs03::zkgm_relay {
             proof_height
         );
         if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
+            abort E_INVALID_IBC_VERSION
         };
     }
 
@@ -660,11 +809,11 @@ module ucs03::zkgm_relay {
     }
 
     public entry fun channel_close_init(_channel_id: u32) {
-        abort E_UNSTOPPABLE
+        abort E_INFINITE_GAME
     }
 
     public entry fun channel_close_confirm(_channel_id: u32) {
-        abort E_UNSTOPPABLE
+        abort E_INFINITE_GAME
     }
 
     /// Function to trim a prefix from the string if it starts with that prefix
@@ -695,7 +844,7 @@ module ucs03::zkgm_relay {
     }
 
 
-    public fun recv_packet(
+    public entry fun recv_packet(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         clock: &clock::Clock,
@@ -706,6 +855,8 @@ module ucs03::zkgm_relay {
         packet_timeout_timestamps: vector<u64>,
         proof: vector<u8>,
         proof_height: u64,
+        relayer: address,
+        relayer_msg: vector<u8>,
         ctx: &mut TxContext
     ) {
         let mut packets: vector<Packet> = vector::empty();
@@ -732,12 +883,900 @@ module ucs03::zkgm_relay {
             vector[1]
         );
         while (i < vector::length(&packets)) {
-            let packet = *vector::borrow(&packets, i);
+            let ibc_packet = *vector::borrow(&packets, i);
+            let raw_zkgm_packet = packet::data(&ibc_packet);
+            let zkgm_packet = decode_packet(*raw_zkgm_packet);
+            let acknowledgement =
+                execute_internal(
+                    ibc_store,
+                    relay_store,
+                    ibc_packet,
+                    relayer,
+                    relayer_msg,
+                    zkgm_packet.salt,
+                    zkgm_packet.path,
+                    decode_syscall(zkgm_packet.syscall),
+                    ctx
+                );
+
+            if (vector::length(&acknowledgement) == 0) {
+                abort E_ACK_EMPTY
+            } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
+                abort E_ONLY_MAKER
+            } else {
+                // TODO: what to do here?
+                let return_value =
+                    encode_ack(
+                        &Acknowledgement { tag: ACK_SUCCESS, inner_ack: acknowledgement }
+                    );
+                // dispatcher_zkgm::set_return_value<ZKGMProof>(
+                //     new_ucs_relay_proof(), return_value
+                // );
+            }
 
         };
     }
 
-        #[test]
+
+    fun execute_internal(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        syscall_packet: SyscallPacket,
+        ctx: &mut TxContext
+    ): (vector<u8>)  {
+        if (syscall_packet.version != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+
+        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            execute_fungible_asset_transfer(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                decode_fungible_asset_transfer(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_BATCH) {
+            execute_batch(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                decode_batch_packet(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+            execute_forward(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer_msg,
+                salt,
+                path,
+                decode_forward(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+            execute_multiplex(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                salt,
+                decode_multiplex(syscall_packet.packet),
+                ctx
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    // TODO: Voyager need to call this after token deployment
+    // with wrapped address & value
+    public entry fun update_token_origin(
+        relay_store: &mut RelayStore,
+        token: address,
+        channel_id: u256
+    ) {
+        add_or_update_table<address, u256>(&mut relay_store.token_origin, token, channel_id);
+    }
+
+    fun execute_fungible_asset_transfer(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        transfer_packet: FungibleAssetTransferPacket,
+        ctx: &mut TxContext
+    ): (vector<u8>) {
+        // TODO: this function will be a problem for us
+        // investigate it later.
+        vector::empty()
+    }
+
+    fun execute_batch(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        batch_packet: BatchPacket,
+        ctx: &mut TxContext
+    ): (vector<u8>) {
+        let l = vector::length(&batch_packet.syscall_packets);
+        let mut acks = vector::empty();
+        let mut i = 0;
+        while (i < l) {
+            let syscall_packet =
+                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i));
+            vector::push_back(
+                &mut acks,
+                execute_internal(
+                    ibc_store,
+                    relay_store,
+                    ibc_packet,
+                    relayer,
+                    relayer_msg,
+                    salt,
+                    path,
+                    syscall_packet,
+                    ctx
+                )
+            );
+            if (vector::length(vector::borrow(&acks, i)) == 0) {
+                abort E_BATCH_MUST_BE_SYNC
+            };
+        };
+        encode_batch_ack(&BatchAcknowledgement { acknowledgements: acks })
+
+    }
+
+    fun execute_forward(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        forward_packet: ForwardPacket,
+        ctx: &mut TxContext
+    ): (vector<u8>) {
+        let sent_packet =
+            ibc::send_packet(
+                ibc_store,
+                forward_packet.channel_id,
+                forward_packet.timeout_height,
+                forward_packet.timeout_timestamp,
+                encode_packet(
+                    &ZkgmPacket {
+                        salt: salt,
+                        path: update_channel_path(
+                            path, packet::destination_channel(&ibc_packet)
+                        ),
+                        syscall: forward_packet.syscall_packet
+                    }
+                )
+            );
+        let packet_hash = commitment::commit_packet(&sent_packet);
+        add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
+        ACK_EMPTY
+    }
+
+    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
+        if (table.contains(key)) {
+            let mut val = table.borrow_mut(key);
+            *val = value;
+        } else {
+            table.add(key, value);
+        }
+    }
+
+    fun execute_multiplex(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        multiplex_packet: MultiplexPacket,
+        ctx: &mut TxContext
+    ): (vector<u8>) {
+        if (multiplex_packet.eureka) {
+            // TODO: discuss this, is it ok to do?
+            event::emit(
+                OnZkgmCall {
+                    sender: multiplex_packet.sender,
+                    contract_calldata: multiplex_packet.contract_calldata,
+                    contract_address: multiplex_packet.contract_address
+                }
+            );
+            return bcs::to_bytes(&ACK_SUCCESS)
+        };
+        let multiplex_ibc_packet =
+            packet::new(
+                packet::source_channel(&ibc_packet),
+                packet::destination_channel(&ibc_packet),
+                encode_multiplex_sender_and_calldata(
+                    multiplex_packet.sender, multiplex_packet.contract_calldata
+                ),
+                packet::timeout_height(&ibc_packet),
+                packet::timeout_timestamp(&ibc_packet)
+            );
+
+        // TODO: How do we return something from this? investigate
+        event::emit(
+            OnIIBCModuleOnRecvPacketCall {
+                packet: multiplex_ibc_packet,
+                relayer: relayer,
+                relayer_msg: relayer_msg,
+                contract_address: multiplex_packet.contract_address
+            }
+        );
+        vector::empty() // TODO: investigate
+        // Here is the original implementation in aptos
+        // let param =
+        //     copyable_any::pack<IIBCModuleOnRecvPacketParams>(
+        //         IIBCModuleOnRecvPacketParams {
+        //             packet: multiplex_ibc_packet,
+        //             relayer: relayer,
+        //             relayer_msg: relayer_msg
+        //         }
+        //     );
+
+        // engine_zkgm::dispatch(param, contract_address);
+
+        // let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
+
+        // if (vector::length(&acknowledgement) == 0) {
+        //     abort E_UNIMPLEMENTED
+        // };
+        // acknowledgement
+    }
+
+    public entry fun send(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: vector<u8>,
+        raw_syscall: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
+        verify_internal(ibc_store, relay_store, sender, channel_id, 0, raw_syscall, ctx);
+        ibc::send_packet(
+            ibc_store,
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            encode_packet(&ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall })
+        );
+    }
+    fun verify_internal(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        raw_syscall: vector<u8>,
+        ctx: &mut TxContext
+    ){
+        let syscall_packet = decode_syscall(raw_syscall);
+        if (syscall_packet.version != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            verify_fungible_asset_transfer(
+                ibc_store,
+                relay_store,
+                sender,
+                channel_id,
+                path,
+                decode_fungible_asset_transfer(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_BATCH) {
+            verify_batch(
+                ibc_store,
+                relay_store,
+                sender,
+                channel_id,
+                path,
+                decode_batch_packet(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+            verify_forward(
+                ibc_store,
+                relay_store,
+                sender,
+                channel_id,
+                path,
+                decode_forward(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+            verify_multiplex(
+                ibc_store,
+                relay_store,
+                sender,
+                channel_id,
+                path,
+                decode_multiplex(syscall_packet.packet),
+                ctx
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun verify_fungible_asset_transfer(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        transfer_packet: FungibleAssetTransferPacket,
+        ctx: &mut TxContext
+    ){
+        // TODO: handle it later.
+    }
+
+    fun verify_batch(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        batch_packet: BatchPacket,
+        ctx: &mut TxContext
+    ){
+        let l = vector::length(&batch_packet.syscall_packets);
+        let mut i = 0;
+        while (i < l) {
+            verify_internal(
+                ibc_store,
+                relay_store,
+                sender,
+                channel_id,
+                path,
+                batch_packet.syscall_packets[i],
+                ctx
+            );
+            i = i + 1;
+        }
+
+    }
+
+    fun verify_forward(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        forward_packet: ForwardPacket,
+        ctx: &mut TxContext
+    ){
+        verify_internal(
+            ibc_store,
+            relay_store,
+            sender,
+            channel_id,
+            update_channel_path(path, forward_packet.channel_id),
+            forward_packet.syscall_packet,
+            ctx
+        );
+    }
+
+    fun verify_multiplex(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        multiplex_packet: MultiplexPacket,
+        ctx: &mut TxContext
+    ){
+
+    }
+
+    public entry fun acknowledge_packet(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_datas: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
+        acknowledgements: vector<vector<u8>>,
+        relayer: address,
+        proof: vector<u8>,
+        proof_height: u64,
+        ctx: &mut TxContext
+    ) {
+        let mut packets: vector<Packet> = vector::empty();
+        let mut i = 0;
+        while (i < vector::length(&packet_source_channels)) {
+            vector::push_back(
+                &mut packets,
+                packet::new(
+                    *vector::borrow(&packet_source_channels, i),
+                    *vector::borrow(&packet_destination_channels, i),
+                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_timeout_heights, i),
+                    *vector::borrow(&packet_timeout_timestamps, i)
+                )
+            );
+            i = i + 1;
+        };
+        ibc::acknowledge_packet(
+            ibc_store,
+            packets,
+            acknowledgements,
+            proof,
+            proof_height
+        );
+
+        let mut i = 0;
+        while (i < vector::length(&packet_source_channels)) {
+            let ibc_packet = *vector::borrow(&packets, i);
+            let acknowledgement = *vector::borrow(&acknowledgements, i);
+            let packet_hash = commitment::commit_packet(&ibc_packet);
+            let parent = relay_store.in_flight_packet.borrow(packet_hash);
+
+            if (packet::timeout_timestamp(parent) != 0 ||
+                packet::timeout_height(parent) != 0) {
+                    ibc::write_acknowledgement(
+                        ibc_store,
+                        *parent,
+                        acknowledgement
+                    );
+                    add_or_update_table<vector<u8>, Packet>(
+                        &mut relay_store.in_flight_packet,
+                        packet_hash,
+                        packet::default()
+                    );
+            } else {
+                let zkgm_packet = decode_packet(*packet::data(&ibc_packet));
+                let zkgm_ack = decode_ack(acknowledgement);
+                acknowledge_internal(
+                    ibc_store,
+                    relay_store,
+                    ibc_packet,
+                    relayer,
+                    zkgm_packet.salt,
+                    decode_syscall(zkgm_packet.syscall),
+                    zkgm_ack.tag == ACK_SUCCESS,
+                    zkgm_ack.inner_ack,
+                    ctx
+                )
+            };
+            i = i + 1;
+        };
+    }
+
+    fun acknowledge_internal(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        syscall_packet: SyscallPacket,
+        success: bool,
+        ack: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        if (syscall_packet.version != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            acknowledge_fungible_asset_transfer(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                salt,
+                decode_fungible_asset_transfer(syscall_packet.packet),
+                success,
+                ack,
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_BATCH) {
+            acknowledge_batch(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                salt,
+                decode_batch_packet(syscall_packet.packet),
+                success,
+                ack,
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+            acknowledge_forward(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                salt,
+                decode_forward(syscall_packet.packet),
+                success,
+                ack,
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+            acknowledge_multiplex(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                salt,
+                decode_multiplex(syscall_packet.packet),
+                success,
+                ack,
+                ctx
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun acknowledge_fungible_asset_transfer(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        transfer_packet: FungibleAssetTransferPacket,
+        success: bool,
+        ack: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        // TODO: fill it later
+    }
+
+    fun acknowledge_batch(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        batch_packet: BatchPacket,
+        success: bool,
+        ack: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let l = vector::length(&batch_packet.syscall_packets);
+        let batch_ack = decode_batch_ack(ack);
+        let mut i = 0;
+        while (i < l) {
+            let mut syscall_ack = ack;
+            if (success) {
+                syscall_ack = *vector::borrow(&batch_ack.acknowledgements, i);
+            };
+            acknowledge_internal(
+                ibc_store,
+                relay_store,
+                ibc_packet,
+                relayer,
+                salt,
+                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i)),
+                success,
+                syscall_ack,
+                ctx
+            );
+            i = i + 1;
+        }
+    }
+
+    fun acknowledge_forward(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        forward_packet: ForwardPacket,
+        success: bool,
+        ack: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+
+    }
+
+    fun acknowledge_multiplex(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        multiplex_packet: MultiplexPacket,
+        success: bool,
+        ack: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        if (success && !multiplex_packet.eureka) {
+            let multiplex_ibc_packet =
+                packet::new(
+                    packet::source_channel(&ibc_packet),
+                    packet::destination_channel(&ibc_packet),
+                    encode_multiplex_sender_and_calldata(
+                        multiplex_packet.contract_address,
+                        multiplex_packet.contract_calldata
+                    ),
+                    packet::timeout_height(&ibc_packet),
+                    packet::timeout_timestamp(&ibc_packet)
+                );
+            // TODO: verify this
+            event::emit(
+                OnIIBCModuleOnAcknowledgementPacketCall {
+                    packet: multiplex_ibc_packet,
+                    acknowledgement: ack,
+                    relayer: relayer,
+                    contract_address: multiplex_packet.sender
+                }
+            )
+            // let param =
+            //     copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
+            //         IIBCModuleOnAcknowledgementPacketParams {
+            //             packet: multiplex_ibc_packet,
+            //             acknowledgement: ack,
+            //             relayer: relayer
+            //         }
+            //     );
+            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
+
+            // engine_zkgm::dispatch(param, contract_address);
+        }
+    }
+    public entry fun timeout_packet(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet_source_channel: u32,
+        packet_destination_channel: u32,
+        packet_data: vector<u8>,
+        packet_timeout_height: u64,
+        packet_timeout_timestamp: u64,
+        proof: vector<u8>,
+        proof_height: u64,
+        next_sequence_receive: u64,
+        relayer: address,
+        ctx: &mut TxContext
+    ) {
+        let packet =
+            packet::new(
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
+
+        ibc::timeout_packet(
+            ibc_store,
+            packet,
+            proof,
+            proof_height,
+            next_sequence_receive
+        );
+
+        let zkgm_packet = decode_packet(packet_data);
+
+        timeout_internal(
+            ibc_store,
+            relay_store,
+            packet,
+            relayer,
+            decode_syscall(zkgm_packet.syscall),
+            ctx
+        )
+    }
+
+    fun timeout_internal(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet: Packet,
+        relayer: address,
+        syscall_packet: SyscallPacket,
+        ctx: &mut TxContext
+    ) {
+        if (syscall_packet.version != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+            timeout_fungible_asset_transfer(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                decode_fungible_asset_transfer(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_BATCH) {
+            timeout_batch(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                decode_batch_packet(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+            timeout_forward(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                decode_forward(syscall_packet.packet),
+                ctx
+            )
+        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+            timeout_multiplex(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                decode_multiplex(syscall_packet.packet),
+                ctx
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun timeout_fungible_asset_transfer(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet: Packet,
+        relayer: address,
+        transfer_packet: FungibleAssetTransferPacket,
+        ctx: &mut TxContext
+    ) {
+        refund(packet::source_channel(&packet), transfer_packet, ctx);
+    }
+
+    fun refund(
+        channel_id: u32,
+        transfer_packet: FungibleAssetTransferPacket,
+        ctx: &mut TxContext
+    ) {
+        // TOOD: Fill it later
+    }
+
+    fun timeout_batch(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet: Packet,
+        relayer: address,
+        batch_packet: BatchPacket,
+        ctx: &mut TxContext
+    ) {
+        let l = vector::length(&batch_packet.syscall_packets);
+        let mut i = 0;
+        while (i < l) {
+            timeout_internal(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i)),
+                ctx
+            );
+            i = i + 1;
+        }
+    }
+
+    fun timeout_forward(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        packet: Packet,
+        relayer: address,
+        forward_packet: ForwardPacket,
+        ctx: &mut TxContext
+    ) {
+
+    }
+
+    fun timeout_multiplex(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        multiplex_packet: MultiplexPacket,
+        ctx: &mut TxContext
+    ) {
+        if (!multiplex_packet.eureka) {
+            let multiplex_ibc_packet =
+                packet::new(
+                    packet::source_channel(&ibc_packet),
+                    packet::destination_channel(&ibc_packet),
+                    encode_multiplex_sender_and_calldata(
+                        multiplex_packet.contract_address,
+                        multiplex_packet.contract_calldata
+                    ),
+                    packet::timeout_height(&ibc_packet),
+                    packet::timeout_timestamp(&ibc_packet)
+                );
+            // TODO: verify this
+
+            event::emit(
+                OnIIBCModuleOnTimeoutPacketCall{
+                    packet: multiplex_ibc_packet,
+                    relayer: relayer,
+                    contract_address: multiplex_packet.sender
+                }
+            );
+            // let param =
+            //     copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
+            //         IIBCModuleOnTimeoutPacketParams {
+            //             packet: multiplex_ibc_packet,
+            //             relayer: relayer
+            //         }
+            //     );
+            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
+
+            // engine_zkgm::dispatch(param, contract_address);
+
+        }
+    }
+
+    public entry fun execute(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        source_channel: u32,
+        destination_channel: u32,
+        data: vector<u8>,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        raw_zkgm_packet: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let ibc_packet =
+            packet::new(
+                source_channel,
+                destination_channel,
+                data,
+                timeout_height,
+                timeout_timestamp
+            );
+
+        let zkgm_packet = decode_packet(raw_zkgm_packet);
+        execute_internal(
+            ibc_store,
+            relay_store,
+            ibc_packet,
+            relayer,
+            relayer_msg,
+            zkgm_packet.salt,
+            zkgm_packet.path,
+            decode_syscall(zkgm_packet.syscall),
+            ctx
+        );
+    }
+
+
+    #[test]
     fun test_zkgm_encode_decode() {
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
