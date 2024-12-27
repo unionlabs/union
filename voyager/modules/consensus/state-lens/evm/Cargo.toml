@@ -1,0 +1,28 @@
+[package]
+edition = "2021"
+name    = "voyager-consensus-module-state-lens-evm"
+version = "0.1.0"
+
+[dependencies]
+alloy                             = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+cometbft-rpc                      = { workspace = true }
+dashmap                           = { workspace = true }
+enumorph                          = { workspace = true }
+ethereum-light-client-types       = { workspace = true, features = ["serde"] }
+evm-state-lens-light-client-types = { workspace = true, features = ["proto", "serde"] }
+futures                           = { workspace = true }
+ics23                             = { workspace = true }
+jsonrpsee                         = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                            = { workspace = true }
+num-bigint                        = { workspace = true }
+prost                             = { workspace = true }
+protos                            = { workspace = true }
+serde                             = { workspace = true, features = ["derive"] }
+serde_json                        = { workspace = true }
+thiserror                         = { workspace = true }
+tokio                             = { workspace = true }
+tracing                           = { workspace = true }
+tracing-subscriber                = { workspace = true }
+unionlabs                         = { workspace = true }
+voyager-message                   = { workspace = true }
+voyager-vm                        = { workspace = true }

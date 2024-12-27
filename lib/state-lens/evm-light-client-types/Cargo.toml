@@ -1,0 +1,17 @@
+[package]
+edition = "2021"
+name    = "evm-state-lens-light-client-types"
+version = "0.1.0"
+
+[dependencies]
+alloy     = { workspace = true, features = ["sol-types"], optional = true }
+protos    = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
+serde     = { workspace = true, optional = true, features = ["derive"] }
+thiserror = { workspace = true }
+unionlabs = { workspace = true }
+
+[features]
+default = []
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+proto   = ["dep:protos"]
+serde   = ["dep:serde"]
