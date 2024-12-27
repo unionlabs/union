@@ -108,14 +108,14 @@ impl Module {
     }
 
     #[instrument(
-    skip_all,
-    fields(
-        %chain_id,
-        %ibc_spec_id,
-        client_id = %client_id.as_raw(),
-        max_age
-    )
-)]
+        skip_all,
+        fields(
+            %chain_id,
+            %ibc_spec_id,
+            client_id = %client_id.as_raw(),
+            max_age
+        )
+    )]
     async fn check_for_client_age(
         &self,
         voyager_client: &VoyagerClient,
@@ -133,6 +133,10 @@ impl Module {
             )
             .await?;
 
+        let client_info = voyager_client
+            .client_info_raw(chain_id.clone(), ibc_spec_id.clone(), client_id.clone())
+            .await?;
+
         let latest_finalized_height = voyager_client
             .query_latest_height(client_meta.chain_id.clone(), true)
             .await?;
@@ -143,6 +147,7 @@ impl Module {
             Ok(conc([
                 promise(
                     [call(FetchUpdateHeaders {
+                        client_type: client_info.client_type,
                         chain_id: client_meta.chain_id,
                         counterparty_chain_id: chain_id.clone(),
                         update_from: client_meta.height,

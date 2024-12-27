@@ -32,7 +32,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
-    core::ChainId,
+    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
@@ -178,7 +178,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: UpdateHook::filter(&config.chain_id),
+            interest_filter: UpdateHook::filter(
+                &config.chain_id,
+                &ClientType::new(ClientType::ETHEREUM),
+            ),
         }
     }
 
@@ -200,16 +203,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.chain_id, |fetch| {
-                        Call::Plugin(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchUpdate {
-                                from_height: fetch.update_from,
-                                to_height: fetch.update_to,
-                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
-                            }),
-                        ))
-                    })
+                    UpdateHook::new(
+                        &self.chain_id,
+                        &ClientType::new(ClientType::ETHEREUM),
+                        |fetch| {
+                            Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchUpdate {
+                                    from_height: fetch.update_from,
+                                    to_height: fetch.update_to,
+                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                }),
+                            ))
+                        },
+                    )
                     .visit_op(&mut op);
 
                     op
@@ -364,6 +371,7 @@ impl Module {
             return Ok(seq([
                 defer(now() + 1),
                 call(FetchUpdateHeaders {
+                    client_type: ClientType::new(ClientType::ETHEREUM),
                     chain_id: self.chain_id.clone(),
                     counterparty_chain_id,
                     update_from: update_from_block_number,

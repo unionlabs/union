@@ -11,7 +11,7 @@ use tracing::instrument;
 use unionlabs::hash::{hash_v2::HexUnprefixed, H160};
 use voyager_message::{
     call::Call,
-    core::ChainId,
+    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     module::{PluginInfo, PluginServer},
@@ -93,7 +93,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: UpdateHook::filter(&config.chain_id),
+            interest_filter: UpdateHook::filter(
+                &config.chain_id,
+                &ClientType::new(ClientType::TENDERMINT),
+            ),
         }
     }
 
@@ -135,15 +138,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.chain_id, |fetch| {
-                        Call::Plugin(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchUpdate {
-                                update_from: fetch.update_from,
-                                update_to: fetch.update_to,
-                            }),
-                        ))
-                    })
+                    UpdateHook::new(
+                        &self.chain_id,
+                        &ClientType::new(ClientType::TENDERMINT),
+                        |fetch| {
+                            Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchUpdate {
+                                    update_from: fetch.update_from,
+                                    update_to: fetch.update_to,
+                                }),
+                            ))
+                        },
+                    )
                     .visit_op(&mut op);
 
                     op

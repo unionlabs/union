@@ -624,6 +624,18 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)
     }
 
+    pub async fn client_info_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+    ) -> RpcResult<ClientInfo> {
+        self.0
+            .client_info(chain_id, ibc_spec_id, client_id)
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
     pub async fn client_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
