@@ -244,10 +244,10 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if trusted_client_state_meta.height.height() >= height.height() {
+                if trusted_client_state_meta.counterparty_height.height() >= height.height() {
                     debug!(
                         "client height reached ({} >= {})",
-                        trusted_client_state_meta.height, height
+                        trusted_client_state_meta.counterparty_height, height
                     );
 
                     Ok(noop())

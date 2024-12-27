@@ -101,7 +101,7 @@ where
         chain_id = %module_server.chain_id,
         %client_id,
         has_updates = updates.is_some(),
-        client_meta.height = %client_meta.height,
+        client_meta.height = %client_meta.counterparty_height,
         client_meta.chain_id = %client_meta.chain_id,
         %new_trusted_height
     )

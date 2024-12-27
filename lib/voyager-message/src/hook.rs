@@ -35,7 +35,9 @@ impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
 impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for UpdateHook<'_, F> {
     fn visit_call(&mut self, c: &mut Call) {
         match c {
-            Call::FetchUpdateHeaders(fetch) if fetch.chain_id == self.chain_id => {
+            Call::FetchUpdateHeaders(fetch)
+                if fetch.chain_id == self.chain_id && fetch.client_type == self.client_type =>
+            {
                 info!(
                     "hooking for update (`{}` on `{}`, {} to {})",
                     fetch.client_type,

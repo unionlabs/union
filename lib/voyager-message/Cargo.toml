@@ -40,7 +40,7 @@ tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json"] }
 typenum                        = { workspace = true }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
-voyager-core                   = { workspace = true }
+voyager-core                   = { workspace = true, features = ["schemars"] }
 voyager-vm                     = { workspace = true }
 
 [dev-dependencies]
