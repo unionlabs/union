@@ -19,7 +19,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    core::ChainId,
+    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     module::{PluginInfo, PluginServer, UnexpectedChainIdError},
@@ -95,7 +95,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: UpdateHook::filter(&config.chain_id),
+            interest_filter: UpdateHook::filter(
+                &config.chain_id,
+                &ClientType::new(ClientType::MOVEMENT),
+            ),
         }
     }
 
@@ -178,15 +181,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.chain_id, |fetch| {
-                        Call::Plugin(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchUpdate {
-                                from: fetch.update_from.height(),
-                                to: fetch.update_to.height(),
-                            }),
-                        ))
-                    })
+                    UpdateHook::new(
+                        &self.chain_id,
+                        &ClientType::new(ClientType::MOVEMENT),
+                        |fetch| {
+                            Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchUpdate {
+                                    from: fetch.update_from.height(),
+                                    to: fetch.update_to.height(),
+                                }),
+                            ))
+                        },
+                    )
                     .visit_op(&mut op);
 
                     op

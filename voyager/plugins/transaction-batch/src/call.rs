@@ -56,11 +56,9 @@ where
             )
             .await?;
 
-        // let client_info = self
-        //     .client
-        //     .client_info(self.chain_id.clone(), client_id.clone())
-        //     .await
-        //     .map_err(json_rpc_error_to_error_object)?;
+        let client_info = voyager_client
+            .client_info::<V>(module.chain_id.clone(), self.client_id.clone())
+            .await?;
 
         let latest_height = voyager_client
             .query_latest_height(client_meta.chain_id.clone(), false)
@@ -116,6 +114,7 @@ where
             Ok(promise(
                 [promise(
                     [call(FetchUpdateHeaders {
+                        client_type: client_info.client_type,
                         counterparty_chain_id: module.chain_id.clone(),
                         chain_id: client_meta.chain_id,
                         update_from: client_meta.height,

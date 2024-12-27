@@ -3,7 +3,7 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use tracing::{debug, error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
-use voyager_core::{IbcSpecId, QueryHeight};
+use voyager_core::{ClientType, IbcSpecId, QueryHeight};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
@@ -66,7 +66,7 @@ pub struct FetchBlocks {
     pub start_height: Height,
 }
 
-/// Generate a client update for this module's client type.
+/// Generate a client update for a chain, tracked by a client type.
 ///
 /// This represents a request for a client update and must be picked up
 /// by a plugin. If it is not handled by a plugin, this will return with
@@ -81,9 +81,15 @@ pub struct FetchBlocks {
 /// be used to build the actual [`MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {
+    /// The type of client that is tracking the consensus on `self.chain_id`.
+    pub client_type: ClientType,
+    /// The ID of the chain that is being tracked by a client on `self.counterparty_chain_id`.
     pub chain_id: ChainId,
+    /// The chain that the light client tracking `self.chain_id` is on.
     pub counterparty_chain_id: ChainId,
+    /// The currently trusted height of the client on `self.chain_id`.
     pub update_from: Height,
+    /// The *minimum* height to update the client to. This is assumed to be finalized. Note that the generated update may not be to this exact height, but it *must* be >= it.
     pub update_to: Height,
 }
 
@@ -134,15 +140,16 @@ impl CallT<VoyagerMessage> for Call {
             }
 
             Call::FetchUpdateHeaders(FetchUpdateHeaders {
+                client_type,
                 chain_id,
                 counterparty_chain_id,
                 update_from,
                 update_to,
             }) => {
                 let message = format!(
-                    "client update request received for a client on {counterparty_chain_id} \
-                    tracking {chain_id} from height {update_from} to {update_to} but it was \
-                    not picked up by a plugin"
+                    "client update request received for a {client_type} client on \
+                    {counterparty_chain_id} tracking {chain_id} from height {update_from}
+                    to {update_to} but it was not picked up by a plugin"
                 );
 
                 error!(%message);
