@@ -8,21 +8,13 @@ version      = "0.1.0"
 [dependencies]
 aptos-verifier              = { workspace = true }
 bcs                         = { workspace = true }
-cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
-cw-storage-plus             = { workspace = true }
-ethereum-light-client-types = { workspace = true }
 evm-storage-verifier        = { workspace = true }
-hex                         = { workspace = true, features = ["alloc"] }
 hex-literal                 = { workspace = true }
 movement-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
-protos                      = { workspace = true }
 rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-utils                 = { workspace = true }
-serde_json                  = { workspace = true }
-sha2                        = { workspace = true, features = ["std"] }
-sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 union-ibc-light-client      = { workspace = true }
 union-ibc-msg               = { workspace = true }

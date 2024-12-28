@@ -6,17 +6,16 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-cosmwasm-schema                    = { workspace = true, package = "cosmwasm-schema" }
-cosmwasm-std                       = { workspace = true, package = "cosmwasm-std" }
-cw-storage-plus                    = { workspace = true, package = "cw-storage-plus" }
-frame-support-procedural.workspace = true
-macros.workspace                   = true
-schemars                           = { workspace = true }
-serde                              = { workspace = true }
-serde-utils.workspace              = true
-thiserror.workspace                = true
-union-ibc-msg                      = { workspace = true }
-unionlabs.workspace                = true
+cosmwasm-schema       = { workspace = true, package = "cosmwasm-schema" }
+cosmwasm-std          = { workspace = true, package = "cosmwasm-std" }
+cw-storage-plus       = { workspace = true, package = "cw-storage-plus" }
+macros.workspace      = true
+schemars              = { workspace = true }
+serde                 = { workspace = true }
+serde-utils.workspace = true
+thiserror.workspace   = true
+union-ibc-msg         = { workspace = true }
+unionlabs.workspace   = true
 
 [lints]
 workspace = true

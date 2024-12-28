@@ -7,7 +7,6 @@ version = "0.1.0"
 alloy            = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types = { workspace = true }
 serde            = { workspace = true, optional = true, features = ["derive"] }
-serde-utils      = { workspace = true, optional = true }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true }
 
@@ -19,7 +18,6 @@ serde = [
   # "unionlabs/serde",
   "beacon-api-types/serde",
   "dep:serde",
-  "dep:serde-utils",
 ]
 
 [dev-dependencies]

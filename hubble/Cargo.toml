@@ -19,41 +19,25 @@ path = "src/main.rs"
 
 [dependencies]
 alloy                         = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
-aptos-crypto                  = { workspace = true }
-aptos-move-ibc                = { workspace = true }
 aptos-rest-client             = { workspace = true }
-aptos-types                   = { workspace = true }
-arbitrum-light-client-types   = { workspace = true, features = ["serde"] }
-async-trait                   = "0.1.82"
 axum                          = { workspace = true, features = ["macros", "tokio"] }
 backon                        = "0.4.4"
 base64                        = { workspace = true }
-beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
-berachain-light-client-types  = { workspace = true, features = ["serde"] }
-chain-utils                   = { workspace = true }
-chrono                        = { workspace = true, features = ["clock"] }
 clap                          = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre                    = { workspace = true, features = ["default"] }
 cometbft-rpc                  = { workspace = true }
 cometbls-light-client-types   = { workspace = true, features = ["proto", "ethabi", "serde"] }
-const-hex                     = "1.12.0"
-ethereum-light-client-types   = { workspace = true, features = ["serde"] }
 futures                       = { workspace = true, features = ["async-await"] }
 hex                           = { workspace = true }
 itertools                     = "0.13.0"
 jsonrpsee                     = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static                   = { workspace = true }
-movement-light-client-types   = { workspace = true, features = ["ethabi", "serde"] }
-num-traits                    = "0.2.19"
 prometheus                    = { version = "0.13.3", features = ["process"] }
 prost                         = { workspace = true }
 protos                        = { workspace = true, features = ["client"] }
 regex                         = "1.10.5"
 reqwest                       = { workspace = true, features = ["json", "blocking"] }
-scroll-api                    = { workspace = true }
-scroll-light-client-types     = { workspace = true, features = ["proto", "serde"] }
 serde                         = { workspace = true, features = ["derive"] }
-serde-aux                     = "4.5.0"
 serde_json                    = { workspace = true }
 sqlx                          = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
 tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }

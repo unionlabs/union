@@ -14,12 +14,7 @@ workspace = true
 [dependencies]
 arbitrum-light-client-types = { workspace = true }
 evm-storage-verifier        = { workspace = true }
-hex                         = { workspace = true }
-hex-literal                 = { workspace = true }
 rlp                         = { workspace = true }
-serde                       = { workspace = true }
-serde-utils                 = { workspace = true }
-serde_json                  = { workspace = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }

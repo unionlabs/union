@@ -16,13 +16,10 @@ test-include = ["cosmwasm/union-ibc/light-clients/cometbls/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bytes                       = { workspace = true }
 cometbls-groth16-verifier   = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 cosmwasm-std                = { workspace = true, features = ["abort", "iterator", "cosmwasm_2_1"] }
-hex                         = { workspace = true }
 ics23                       = { workspace = true }
-schemars                    = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 union-ibc-light-client      = { workspace = true }

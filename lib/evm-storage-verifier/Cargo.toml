@@ -9,11 +9,9 @@ version                = "0.1.0"
 hash-db            = { version = "0.16.0", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
 memory-db          = { version = "0.32.0", default-features = false }
-primitive-types    = { workspace = true, features = ["rlp"] }
 rlp                = { workspace = true, features = ["derive", "std"] }
 serde-utils        = { workspace = true, default-features = false }
 sha3               = { workspace = true }
-ssz                = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }
 unionlabs          = { workspace = true }

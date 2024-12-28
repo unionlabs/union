@@ -9,14 +9,12 @@ version      = "0.1.0"
 chain-utils        = { workspace = true }
 chrono             = { workspace = true, features = ["clock"] }
 clap               = { workspace = true, features = ["derive"] }
-dashmap            = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 tendermint-rpc     = { workspace = true }
 tokio              = { workspace = true, features = ["full"] }
-tonic              = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 unionlabs          = { workspace = true }

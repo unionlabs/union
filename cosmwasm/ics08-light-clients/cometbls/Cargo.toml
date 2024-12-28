@@ -16,19 +16,9 @@ test-include = ["cosmwasm/ics08-light-clients/cometbls/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bytes                     = { workspace = true }
 cometbls-groth16-verifier = { workspace = true }
 cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
-hex                       = { workspace = true }
-prost                     = { workspace = true }
 protos                    = { workspace = true, features = ["proto_full", "std"] }
-ripemd                    = { workspace = true }
-schemars                  = { workspace = true }
-serde                     = { workspace = true, features = ["derive"] }
-serde-json-wasm           = { workspace = true }
-serde-utils               = { workspace = true }
-sha2                      = { workspace = true }
-sha3                      = { workspace = true }
 thiserror                 = { workspace = true }
 
 cometbls-light-client-types = { workspace = true, features = ["proto"] }

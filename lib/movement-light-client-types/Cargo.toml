@@ -6,10 +6,7 @@ version = "0.1.0"
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"], optional = true }
 ethereum-light-client-types = { workspace = true }
-rlp                         = { workspace = true, features = ["derive"] }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
-sha3                        = { workspace = true }
-thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [features]

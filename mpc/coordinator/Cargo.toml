@@ -4,15 +4,10 @@ name    = "mpc-coordinator"
 version = "0.1.0"
 
 [dependencies]
-async-sqlite       = "0.2.2"
 clap               = { workspace = true, features = ["derive"] }
-futures.workspace  = true
 hex                = { workspace = true }
 mpc-shared         = { workspace = true }
 pgp                = "0.13"
-postgrest          = "1.0"
-reqwest            = { workspace = true, features = ["json"] }
-serde_json         = { workspace = true }
 thiserror          = { workspace = true }
 tokio              = { workspace = true, features = ["full"] }
 tracing            = { workspace = true }

@@ -10,19 +10,14 @@ workspace = true
 test-include = ["lib/ethereum-sync-protocol/src/test/"]
 
 [dependencies]
-beacon-api-types            = { workspace = true, features = ["ssz"] }
-bytes                       = { workspace = true }
-ethereum-light-client-types = { workspace = true }
-hex                         = { workspace = true, features = ["alloc"] }
-lazy_static                 = { workspace = true }
-milagro_bls                 = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-serde-utils                 = { workspace = true }
-sha2                        = { workspace = true }
-ssz                         = { workspace = true }
-thiserror                   = { workspace = true }
-typenum                     = { workspace = true, features = ["const-generics", "no_std"] }
-unionlabs                   = { workspace = true }
+beacon-api-types = { workspace = true, features = ["ssz"] }
+milagro_bls      = { workspace = true }
+serde-utils      = { workspace = true }
+sha2             = { workspace = true }
+ssz              = { workspace = true }
+thiserror        = { workspace = true }
+typenum          = { workspace = true, features = ["const-generics", "no_std"] }
+unionlabs        = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

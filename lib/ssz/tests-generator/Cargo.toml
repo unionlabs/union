@@ -13,7 +13,6 @@ workspace = true
 hex         = { workspace = true }
 serde       = { workspace = true, features = ["derive"] }
 serde-utils = { workspace = true }
-serde_json  = { workspace = true }
 serde_yaml  = "0.9.34"
 snap        = "1.1.1"
 ssz         = { workspace = true }

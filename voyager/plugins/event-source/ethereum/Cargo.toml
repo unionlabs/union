@@ -4,24 +4,17 @@ name    = "voyager-event-source-plugin-ethereum"
 version = "0.1.0"
 
 [dependencies]
-alloy              = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-beacon-api         = { workspace = true }
-chain-utils        = { workspace = true }
-enumorph           = { workspace = true }
-futures            = { workspace = true }
-ibc-solidity       = { workspace = true, features = ["serde", "rpc"] }
-ibc-union-spec     = { workspace = true, features = ["tracing"] }
-jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
-macros             = { workspace = true }
-serde              = { workspace = true, features = ["derive"] }
-serde-utils        = { workspace = true }
-serde_json         = { workspace = true }
-static_assertions  = { workspace = true }
-subset-of          = { workspace = true }
-thiserror          = { workspace = true }
-tokio              = { workspace = true }
-tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
-unionlabs          = { workspace = true }
-voyager-message    = { workspace = true }
-voyager-vm         = { workspace = true }
+alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+beacon-api      = { workspace = true }
+enumorph        = { workspace = true }
+ibc-solidity    = { workspace = true, features = ["serde", "rpc"] }
+ibc-union-spec  = { workspace = true, features = ["tracing"] }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+macros          = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+subset-of       = { workspace = true }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
+voyager-vm      = { workspace = true }

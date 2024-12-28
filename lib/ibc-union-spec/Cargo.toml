@@ -8,8 +8,6 @@ version      = "0.1.0"
 [dependencies]
 enumorph     = { workspace = true }
 ibc-solidity = { workspace = true, features = ["serde"] }
-macros       = { workspace = true }
-schemars     = { workspace = true, features = ["derive"] }
 serde        = { workspace = true, features = ["derive"] }
 sha3         = { workspace = true }
 tracing      = { workspace = true, optional = true }

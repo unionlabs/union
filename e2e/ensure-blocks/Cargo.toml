@@ -13,8 +13,6 @@ workspace = true
 alloy              = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 clap               = { workspace = true, features = ["default", "derive"] }
 futures.workspace  = true
-reqwest            = { workspace = true }
 tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }
 tokio              = { workspace = true, features = ["full"] }
-tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }

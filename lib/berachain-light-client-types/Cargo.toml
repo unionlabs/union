@@ -4,14 +4,12 @@ name    = "berachain-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy                         = { workspace = true, features = ["sol-types"], optional = true }
-beacon-api-types              = { workspace = true }
-ethereum-light-client-types   = { workspace = true }
-protos                        = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
-serde                         = { workspace = true, optional = true, features = ["derive"] }
-tendermint-light-client-types = { workspace = true }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true }
+alloy                       = { workspace = true, features = ["sol-types"], optional = true }
+beacon-api-types            = { workspace = true }
+ethereum-light-client-types = { workspace = true }
+protos                      = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
+serde                       = { workspace = true, optional = true, features = ["derive"] }
+unionlabs                   = { workspace = true }
 
 [features]
 default = []

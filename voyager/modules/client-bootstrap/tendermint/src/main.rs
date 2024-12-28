@@ -12,7 +12,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
-use tracing::{debug, error, instrument};
+use tracing::{error, instrument};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap, result_unwrap, ErrorReporter,
