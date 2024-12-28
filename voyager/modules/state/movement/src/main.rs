@@ -10,7 +10,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
@@ -159,7 +159,7 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, _client_id: u32) -> RpcResult<ClientInfo> {
         Ok(ClientInfo {
             client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),

@@ -17,7 +17,7 @@ use crate::error::Error;
 pub enum MovementLightClient {}
 
 #[derive(rlp::RlpEncodable)]
-struct BlockCommitment {
+pub struct BlockCommitment {
     pub height: U256,
     pub commitment: U256,
     pub block_id: U256,
@@ -41,11 +41,11 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: union_ibc_light_client::IbcClientCtx<Self>,
-        height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
-        value: Vec<u8>,
+        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+        _value: Vec<u8>,
     ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
         // let client_state = ctx.read_self_client_state()?;
         // let consensus_state = ctx.read_self_consensus_state(height)?;

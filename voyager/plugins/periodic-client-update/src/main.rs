@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
 
-use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::IbcUnion;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -12,7 +10,6 @@ use unionlabs::{ibc::core::client::height::Height, never::Never};
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
-    context::IbcSpecHandlers,
     core::{ChainId, IbcSpecId, QueryHeight},
     data::Data,
     into_value,
@@ -30,10 +27,7 @@ async fn main() {
     Module::run().await
 }
 
-// #[derive(Debug, Clone)]
-pub struct Module {
-    ibc_spec_handlers: IbcSpecHandlers,
-}
+pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -99,12 +93,7 @@ impl Module {
     }
 
     pub fn new(_: Config) -> Self {
-        let mut ibc_spec_handlers = IbcSpecHandlers::new();
-
-        ibc_spec_handlers.register::<IbcUnion>();
-        ibc_spec_handlers.register::<IbcClassic>();
-
-        Self { ibc_spec_handlers }
+        Self {}
     }
 
     #[instrument(

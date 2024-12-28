@@ -705,7 +705,6 @@ mod tests {
         hex,
         primitives::{fixed_bytes, LogData},
     };
-    use ibc_solidity::Ibc::CreateClient;
 
     use super::*;
 

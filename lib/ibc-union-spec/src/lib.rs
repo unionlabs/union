@@ -248,13 +248,13 @@ impl Datagram {
     /// (ConnectionOpenInit does not contain a proof, for example)
     pub fn proof_height(&self) -> Option<Height> {
         match self {
-            Self::CreateClient(_msg) => None,
-            Self::UpdateClient(_msg) => None,
-            Self::ConnectionOpenInit(_msg) => None,
+            Self::CreateClient(_) => None,
+            Self::UpdateClient(_) => None,
+            Self::ConnectionOpenInit(_) => None,
             Self::ConnectionOpenTry(msg) => Some(Height::new(msg.proof_height)),
             Self::ConnectionOpenAck(msg) => Some(Height::new(msg.proof_height)),
             Self::ConnectionOpenConfirm(msg) => Some(Height::new(msg.proof_height)),
-            Self::ChannelOpenInit(msg) => None,
+            Self::ChannelOpenInit(_) => None,
             Self::ChannelOpenTry(msg) => Some(Height::new(msg.proof_height)),
             Self::ChannelOpenAck(msg) => Some(Height::new(msg.proof_height)),
             Self::ChannelOpenConfirm(msg) => Some(Height::new(msg.proof_height)),
@@ -770,8 +770,8 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.version = %e.version,
             "event"
         ),
-        FullEvent::ChannelCloseInit(e) => info!(event, "event"),
-        FullEvent::ChannelCloseConfirm(e) => info!(event, "event"),
+        FullEvent::ChannelCloseInit(_e) => info!(event, "event"),
+        FullEvent::ChannelCloseConfirm(_e) => info!(event, "event"),
         FullEvent::PacketSend(e) => info!(
             event,
             %chain_id,

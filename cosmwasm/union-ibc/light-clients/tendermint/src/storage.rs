@@ -1,4 +1,4 @@
-use cosmwasm_std::{CustomQuery, Deps, DepsMut, Storage};
+use cosmwasm_std::{CustomQuery, Deps, DepsMut};
 use unionlabs::{google::protobuf::timestamp::Timestamp, ibc::core::client::height::Height};
 
 pub const CONSENSUS_STATE_ITER_KEY_PREFIX: &str = "iter_cons";

@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-#[cfg(feature = "serde")]
-use serde::de::{self, Visitor};
 use unionlabs::errors::{ExpectedLength, InvalidLength};
 #[cfg(feature = "ethabi")]
 use {alloy::core::primitives::FixedBytes, std::string::FromUtf8Error};
@@ -73,6 +71,6 @@ impl<'de> serde::Deserialize<'de> for ChainId {
     {
         let s = <String as serde::Deserialize>::deserialize(deserializer)?;
 
-        ChainId::from_string(s).map_err(|e| de::Error::custom(e))
+        ChainId::from_string(s).map_err(serde::de::Error::custom)
     }
 }

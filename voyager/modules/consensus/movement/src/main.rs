@@ -159,7 +159,7 @@ impl ConsensusModuleServer for Module {
 
         Ok(serde_json::to_value(ClientState {
             chain_id: self.chain_id.to_string(),
-            l1_client_id: self.l1_client_id.clone(),
+            l1_client_id: self.l1_client_id,
             l1_contract_address: self.l1_settlement_address,
             l2_contract_address: self.ibc_handler_address,
             table_handle: AccountAddress(Hash::new(
