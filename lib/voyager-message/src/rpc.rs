@@ -88,6 +88,7 @@ pub trait VoyagerRpc {
     async fn self_client_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState>;
 
@@ -95,6 +96,7 @@ pub trait VoyagerRpc {
     async fn self_consensus_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState>;
 

@@ -13344,6 +13344,115 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-cometbls"
+version = "0.1.0"
+dependencies = [
+ "cometbft-rpc",
+ "cometbls-light-client-types",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-ethereum"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "move-core-types",
+ "movement-light-client-types",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-tendermint"
+version = "0.1.0"
+dependencies = [
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [

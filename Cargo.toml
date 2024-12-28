@@ -115,6 +115,11 @@ members = [
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
 
+  "voyager/modules/client-bootstrap/cometbls",
+  "voyager/modules/client-bootstrap/ethereum",
+  "voyager/modules/client-bootstrap/movement",
+  "voyager/modules/client-bootstrap/tendermint",
+
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
