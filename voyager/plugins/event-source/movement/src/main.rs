@@ -192,17 +192,14 @@ impl Module {
             .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = voyager_rpc_client
-            .client_info::<IbcUnion>(
-                self.chain_id.clone(),
-                self_connection_state.client_id.clone(),
-            )
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.client_id)
             .await?;
 
         let client_meta = voyager_rpc_client
             .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_state.client_id.clone(),
+                self_connection_state.client_id,
             )
             .await?;
 
@@ -222,7 +219,7 @@ impl Module {
             .ok_or_else(missing_state("channel must exist", None))?;
 
         let source_channel = ChannelMetadata {
-            channel_id: self_channel_id.clone(),
+            channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection_state.client_id,
@@ -549,7 +546,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         let connection = convert_connection(connection);
 
-                        let client_id = connection.client_id.clone();
+                        let client_id = connection.client_id;
 
                         (
                             ChannelOpenAck {
@@ -618,7 +615,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let client_id = destination_channel.connection.client_id.clone();
+                        let client_id = destination_channel.connection.client_id;
 
                         (
                             WriteAck {
@@ -649,7 +646,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let client_id = destination_channel.connection.client_id.clone();
+                        let client_id = destination_channel.connection.client_id;
 
                         (
                             PacketRecv {
@@ -680,7 +677,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let client_id = source_channel.connection.client_id.clone();
+                        let client_id = source_channel.connection.client_id;
 
                         (
                             PacketSend {
@@ -710,7 +707,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let client_id = source_channel.connection.client_id.clone();
+                        let client_id = source_channel.connection.client_id;
 
                         (
                             PacketAck {
@@ -733,14 +730,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 let client_info = voyager_client
-                    .client_info::<IbcUnion>(self.chain_id.clone(), client_id.clone())
+                    .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
                 let client_meta = voyager_client
                     .client_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         self.make_height(height).into(),
-                        client_id.clone(),
+                        client_id,
                     )
                     .await?;
 

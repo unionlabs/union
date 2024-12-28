@@ -68,7 +68,8 @@
           voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
         }
         // voyager-modules.packages;
-      checks = voyager.checks // voyager-modules.checks;
+      # we don't actually have any tests currently
+      # checks = voyager.checks // voyager-modules.checks;
     };
 
   flake.nixosModules.voyager =

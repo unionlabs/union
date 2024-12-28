@@ -199,7 +199,7 @@ pub trait IbcStorePathKey:
     /// The [`IbcSpec`] that this store path key indexes into.
     type Spec: IbcSpec;
 
-    /// The value stored under this key.
+    /// The value stored under this key. Note that this is NOT the *commitment*, but rather the actual value.
     type Value: Member;
 }
 

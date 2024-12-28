@@ -44,7 +44,7 @@ async fn main() -> Result<(), Bde> {
 
     let mut already_found_structs = HashSet::new();
 
-    let mk_struct = |mod_name: &Ident, t: &MoveStruct| -> (ItemStruct, Vec<_>) {
+    let mk_struct = |_mod_name: &Ident, t: &MoveStruct| -> (ItemStruct, Vec<_>) {
         let ident = format_ident!("{}", t.name.to_string());
         println!("{ident}");
 
@@ -677,6 +677,7 @@ fn move_type_to_output_type(typ: &MoveType) -> (Type, Vec<(Ident, Ident)>) {
     }
 }
 
+#[allow(dead_code)]
 fn move_type_to_type_expression(typ: &MoveType) -> proc_macro2::TokenStream {
     match typ {
         MoveType::Bool => {
