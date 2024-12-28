@@ -33,10 +33,6 @@ let connectedWallets = derived(
   }
 )
 
-onMount(() => {
-  console.info($aptosStore)
-})
-
 $: if ($connectedWallets >= 1) {
   buttonText = $connectedWallets < 3 ? `Connected ${$connectedWallets}/3` : "Connected"
 } else {

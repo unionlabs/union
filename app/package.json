@@ -15,9 +15,6 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "temporal-polyfill": "^0.2.5",
-    "mode-watcher": "0.5.0",
-    "svelte-sonner": "^0.3.27",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
@@ -35,10 +32,13 @@
     "cmdk-sv": "^0.0.18",
     "gql.tada": "1.8.10",
     "graphql-request": "7.1.2",
+    "mode-watcher": "0.5.0",
     "svelte-persisted-store": "^0.11.0",
     "svelte-radix": "^1.1.1",
+    "svelte-sonner": "^0.3.27",
+    "temporal-polyfill": "^0.2.5",
     "three": "0.170.0",
-    "valibot": "0.42.1",
+    "valibot": "1.0.0-beta.9",
     "vaul-svelte": "^0.3.2",
     "viem": "2.21.52"
   },
@@ -48,7 +48,7 @@
     "@iconify-json/lucide": "^1.2.3",
     "@iconify-json/mdi": "^1.2.0",
     "@iconify-json/tabler": "1.2.8",
-    "@keplr-wallet/types": "0.12.157",
+    "@keplr-wallet/types": "^0.12.158",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.83.0",

@@ -21,6 +21,10 @@ interface AptosWindow {
 declare global {
   namespace App {}
 
+  interface EventTarget {
+    value?: string
+  }
+
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
     EventEmitter: typeof EventEmitter
   }
