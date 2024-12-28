@@ -8,9 +8,6 @@ workspace = true
 
 [dependencies]
 beacon-api-types = { workspace = true, features = ["serde"] }
-enumorph         = { workspace = true }
-hex              = { workspace = true, features = ["alloc"] }
-macros           = { workspace = true }
 reqwest          = { workspace = true, features = ["rustls-tls", "json"] }
 serde            = { workspace = true, features = ["derive"] }
 serde-utils      = { workspace = true }

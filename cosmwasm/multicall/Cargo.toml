@@ -16,11 +16,10 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["std", "stargate"] }
-serde           = { workspace = true, features = ["derive"] }
-thiserror       = { workspace = true }
-unionlabs       = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["std", "stargate"] }
+serde        = { workspace = true, features = ["derive"] }
+thiserror    = { workspace = true }
+unionlabs    = { workspace = true }
 
 [dev-dependencies]
 hex        = { workspace = true }

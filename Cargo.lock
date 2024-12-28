@@ -1360,16 +1360,9 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethereum-light-client-types",
- "evm-storage-verifier",
  "hex",
- "protos",
- "rlp",
- "schemars",
- "serde",
  "serde_json",
- "sha3 0.10.8",
  "thiserror",
- "tiny-keccak",
  "union-ibc-light-client",
  "union-ibc-msg",
  "unionlabs",
@@ -1385,7 +1378,6 @@ dependencies = [
  "rlp",
  "serde",
  "sha3 0.10.8",
- "thiserror",
  "unionlabs",
 ]
 
@@ -1396,12 +1388,7 @@ dependencies = [
  "arbitrum-light-client-types",
  "error_reporter",
  "evm-storage-verifier",
- "hex",
- "hex-literal",
  "rlp",
- "serde",
- "serde-utils",
- "serde_json",
  "sha3 0.10.8",
  "thiserror",
  "unionlabs",
@@ -1802,7 +1789,7 @@ checksum = "72e2e26a6b44bc61df3ca8546402cf9204c28e30c06084cc8e75cd5e34d4f150"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
- "darling 0.20.8",
+ "darling",
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
@@ -1833,17 +1820,6 @@ dependencies = [
  "indexmap 2.6.0",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "async-lock"
-version = "3.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d034b430882f8381900d3fe6f0aaa3ad94f2cb4ac519b429692a1bc2dda4ae7b"
-dependencies = [
- "event-listener 4.0.3",
- "event-listener-strategy",
- "pin-project-lite",
 ]
 
 [[package]]
@@ -1926,15 +1902,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f28d99ec8bfea296261ca1af174f24225171fea9664ba9003cbebee704810528"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "atomic"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d818003e740b63afc82337e3160717f4f63078720a810b7b903e70a5d1d2994"
-dependencies = [
- "bytemuck",
 ]
 
 [[package]]
@@ -2189,9 +2156,6 @@ name = "beacon-api"
 version = "0.1.0"
 dependencies = [
  "beacon-api-types",
- "enumorph",
- "hex",
- "macros",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",
@@ -2259,22 +2223,14 @@ dependencies = [
  "base64 0.21.7",
  "beacon-api-types",
  "berachain-light-client-types",
- "bytes",
- "cometbft-types",
  "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethereum-light-client-types",
  "evm-storage-verifier",
- "hex",
- "hex-literal",
  "ics23",
  "lazy_static",
- "schemars",
- "serde",
  "serde_json",
- "sha2 0.10.8",
  "tendermint-light-client",
- "tendermint-light-client-types",
  "tendermint-verifier",
  "thiserror",
  "union-ibc-light-client",
@@ -2291,8 +2247,6 @@ dependencies = [
  "ethereum-light-client-types",
  "protos",
  "serde",
- "tendermint-light-client-types",
- "thiserror",
  "unionlabs",
 ]
 
@@ -2871,7 +2825,6 @@ dependencies = [
  "beacon-api",
  "berachain-light-client-types",
  "bip32",
- "chrono",
  "cometbft-rpc",
  "crossbeam-queue",
  "dashmap 5.5.3",
@@ -2886,12 +2839,10 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",
- "reqwest 0.11.27",
  "scroll-api",
  "scroll-rpc",
  "serde",
  "serde-utils",
- "serde_json",
  "sha2 0.10.8",
  "tendermint-light-client-types",
  "tendermint-rpc",
@@ -2900,7 +2851,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
- "typenum",
  "unionlabs",
 ]
 
@@ -3144,15 +3094,12 @@ dependencies = [
  "hex-literal",
  "jsonrpsee",
  "macros",
- "protos",
  "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
 ]
 
@@ -3192,14 +3139,11 @@ name = "cometbls-light-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "bytes",
  "cometbls-groth16-verifier",
  "cometbls-light-client-types",
  "cosmwasm-std 2.1.4",
- "hex",
  "ics23",
  "lazy_static",
- "schemars",
  "serde",
  "serde_json",
  "thiserror",
@@ -3234,15 +3178,6 @@ dependencies = [
  "itoa",
  "ryu",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "concurrent-queue"
-version = "2.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d16048cd947b08fa32c24458a22f5dc5e835264f689f4f5653210c69fd107363"
-dependencies = [
- "crossbeam-utils",
 ]
 
 [[package]]
@@ -3404,11 +3339,7 @@ version = "0.1.0"
 dependencies = [
  "cometbft-types",
  "enumorph",
- "hex",
- "ibc-solidity",
  "serde",
- "serde-utils",
- "serde_json",
  "thiserror",
  "unionlabs",
 ]
@@ -4208,36 +4139,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
-dependencies = [
- "darling_core 0.13.4",
- "darling_macro 0.13.4",
-]
-
-[[package]]
-name = "darling"
 version = "0.20.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54e36fcd13ed84ffdfda6f5be89b31287cbb80c439841fe69e04841435464391"
 dependencies = [
- "darling_core 0.20.8",
- "darling_macro 0.20.8",
-]
-
-[[package]]
-name = "darling_core"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2",
- "quote",
- "strsim 0.10.0",
- "syn 1.0.109",
+ "darling_core",
+ "darling_macro",
 ]
 
 [[package]]
@@ -4256,22 +4163,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
-dependencies = [
- "darling_core 0.13.4",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "darling_macro"
 version = "0.20.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a668eda54683121533a393014d8692171709ff57a7d61f187b6e782719f8933f"
 dependencies = [
- "darling_core 0.20.8",
+ "darling_core",
  "quote",
  "syn 2.0.77",
 ]
@@ -4386,7 +4282,7 @@ version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7431fa049613920234f22c47fdc33e6cf3ee83067091ea4277a3f8c4587aae38"
 dependencies = [
- "darling 0.20.8",
+ "darling",
  "proc-macro2",
  "quote",
  "syn 2.0.77",
@@ -4559,7 +4455,6 @@ dependencies = [
  "chain-utils",
  "chrono",
  "clap 4.5.4",
- "dashmap 5.5.3",
  "prost 0.12.6",
  "protos",
  "recaptcha-verify",
@@ -4568,7 +4463,6 @@ dependencies = [
  "subtle-encoding",
  "tendermint-rpc",
  "tokio",
- "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
@@ -4784,10 +4678,8 @@ dependencies = [
  "alloy",
  "clap 4.5.4",
  "futures",
- "reqwest 0.11.27",
  "tendermint-rpc",
  "tokio",
- "tracing",
  "tracing-subscriber 0.3.18",
 ]
 
@@ -4903,7 +4795,6 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "beacon-api-types",
- "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "ethereum-light-client-types",
  "ethereum-sync-protocol",
@@ -4912,7 +4803,6 @@ dependencies = [
  "lazy_static",
  "protos",
  "rlp",
- "schemars",
  "serde",
  "serde-utils",
  "serde_json",
@@ -4930,7 +4820,6 @@ dependencies = [
  "beacon-api-types",
  "hex-literal",
  "serde",
- "serde-utils",
  "thiserror",
  "unionlabs",
 ]
@@ -4940,13 +4829,8 @@ name = "ethereum-sync-protocol"
 version = "0.1.0"
 dependencies = [
  "beacon-api-types",
- "bytes",
- "ethereum-light-client-types",
- "hex",
  "hex-literal",
- "lazy_static",
  "milagro_bls",
- "serde",
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
@@ -4980,49 +4864,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
-name = "event-listener"
-version = "4.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67b215c49b2b248c855fb73579eb1f4f26c38ffdc12973e20e07b91d78d5646e"
-dependencies = [
- "concurrent-queue",
- "parking",
- "pin-project-lite",
-]
-
-[[package]]
-name = "event-listener"
-version = "5.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6032be9bd27023a771701cc49f9f053c751055f71efb2e0ae5c15809093675ba"
-dependencies = [
- "concurrent-queue",
- "parking",
- "pin-project-lite",
-]
-
-[[package]]
-name = "event-listener-strategy"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "958e4d70b6d5e81971bebec42271ec641e7ff4e170a6fa605f2b8a8b65cb97d3"
-dependencies = [
- "event-listener 4.0.3",
- "pin-project-lite",
-]
-
-[[package]]
 name = "evm-storage-verifier"
 version = "0.1.0"
 dependencies = [
  "hash-db",
  "hash256-std-hasher",
  "memory-db",
- "primitive-types 0.12.2",
  "rlp",
  "serde-utils",
  "sha3 0.10.8",
- "ssz",
  "thiserror",
  "trie-db",
  "unionlabs",
@@ -5068,12 +4918,6 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
-
-[[package]]
-name = "fallible-iterator"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "fallible-iterator"
@@ -5175,20 +5019,6 @@ name = "fiat-crypto"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c007b1ae3abe1cb6f85a16305acd418b7ca6343b953633fee2b76d8f108b830f"
-
-[[package]]
-name = "figment"
-version = "0.10.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7270677e7067213e04f323b55084586195f18308cd7546cfac9f873344ccceb6"
-dependencies = [
- "atomic",
- "serde",
- "serde_json",
- "toml 0.8.12",
- "uncased",
- "version_check",
-]
 
 [[package]]
 name = "finl_unicode"
@@ -5694,7 +5524,6 @@ version = "0.1.0"
 dependencies = [
  "arith",
  "ark-ff 0.4.2",
- "base64 0.21.7",
  "hex",
  "substrate-bn",
  "thiserror",
@@ -5713,7 +5542,6 @@ dependencies = [
  "serde_json",
  "sha3 0.10.8",
  "thiserror",
- "tiny-keccak",
  "unionlabs",
 ]
 
@@ -6131,41 +5959,25 @@ name = "hubble"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "aptos-crypto",
- "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types",
- "arbitrum-light-client-types",
- "async-trait",
  "axum 0.6.20",
  "backon",
  "base64 0.21.7",
- "beacon-api-types",
- "berachain-light-client-types",
- "chain-utils",
- "chrono",
  "clap 4.5.4",
  "color-eyre",
  "cometbft-rpc",
  "cometbls-light-client-types",
- "const-hex",
- "ethereum-light-client-types",
  "futures",
  "hex",
  "itertools 0.13.0",
  "jsonrpsee",
  "lazy_static",
- "movement-light-client-types",
- "num-traits",
  "prometheus",
  "prost 0.12.6",
  "protos",
  "regex",
  "reqwest 0.11.27",
- "scroll-api",
- "scroll-light-client-types",
  "serde",
- "serde-aux",
  "serde_json",
  "sqlx",
  "tendermint-light-client-types",
@@ -6373,8 +6185,6 @@ version = "0.1.0"
 dependencies = [
  "enumorph",
  "ibc-solidity",
- "macros",
- "schemars",
  "serde",
  "sha3 0.10.8",
  "tracing",
@@ -7159,9 +6969,7 @@ version = "0.1.0"
 dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
- "protos",
  "serde",
- "thiserror",
  "unionlabs",
 ]
 
@@ -7171,16 +6979,9 @@ version = "0.1.0"
 dependencies = [
  "evm-storage-verifier",
  "gnark-mimc",
- "hex",
- "hex-literal",
  "linea-light-client-types",
  "linea-zktrie",
  "rlp",
- "scroll-codec",
- "serde",
- "serde-utils",
- "serde_json",
- "sha3 0.10.8",
  "thiserror",
  "unionlabs",
 ]
@@ -7193,7 +6994,6 @@ dependencies = [
  "hex",
  "hex-literal",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "unionlabs",
@@ -7446,30 +7246,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
 
 [[package]]
-name = "moka"
-version = "0.12.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32cf62eb4dd975d2dde76432fb1075c49e3ee2331cf36f1f8fd4b66550d32b6f"
-dependencies = [
- "async-lock",
- "async-trait",
- "crossbeam-channel",
- "crossbeam-epoch",
- "crossbeam-utils",
- "event-listener 5.3.1",
- "futures-util",
- "once_cell",
- "parking_lot",
- "quanta",
- "rustc_version 0.4.0",
- "smallvec",
- "tagptr",
- "thiserror",
- "triomphe",
- "uuid",
-]
-
-[[package]]
 name = "more-asserts"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7511,11 +7287,9 @@ dependencies = [
 name = "move-bindgen"
 version = "0.0.0"
 dependencies = [
- "aptos-crypto",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
- "futures",
  "move-bindgen-derive",
  "move-core-types",
  "prettyplease",
@@ -7942,10 +7716,7 @@ dependencies = [
  "alloy",
  "ethereum-light-client-types",
  "hex-literal",
- "rlp",
  "serde",
- "sha3 0.10.8",
- "thiserror",
  "unionlabs",
 ]
 
@@ -7955,7 +7726,6 @@ version = "0.1.0"
 dependencies = [
  "async-sqlite",
  "base64 0.21.7",
- "clap 4.5.4",
  "crossterm",
  "futures-util",
  "hex",
@@ -7965,8 +7735,6 @@ dependencies = [
  "hyper-util",
  "mpc-shared",
  "pgp",
- "postgrest",
- "rand 0.8.5",
  "ratatui",
  "reqwest 0.11.27",
  "serde",
@@ -7981,15 +7749,10 @@ dependencies = [
 name = "mpc-coordinator"
 version = "0.1.0"
 dependencies = [
- "async-sqlite",
  "clap 4.5.4",
- "futures",
  "hex",
  "mpc-shared",
  "pgp",
- "postgrest",
- "reqwest 0.11.27",
- "serde_json",
  "thiserror",
  "tokio",
  "tracing",
@@ -8031,7 +7794,6 @@ dependencies = [
 name = "multicall"
 version = "1.0.0"
 dependencies = [
- "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "hex",
  "serde",
@@ -8145,7 +7907,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee2fe3fc30068c5f20e89b0985d6104c5cc1c6742dbc6efbf352be4189b9bbf7"
 dependencies = [
  "Inflector",
- "darling 0.20.8",
+ "darling",
  "proc-macro2",
  "quote",
  "serde",
@@ -8641,12 +8403,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parking"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
-
-[[package]]
 name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8893,7 +8649,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "tokio-postgres",
  "tracing",
  "voyager-vm",
 ]
@@ -8970,24 +8725,6 @@ checksum = "e9567389417feee6ce15dd6527a8a1ecac205ef62c2932bcf3d9f6fc5b78b414"
 dependencies = [
  "futures",
  "rustc_version 0.4.0",
-]
-
-[[package]]
-name = "phf"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ade2d8b8f33c7333b51bcf0428d37e217e9f32192ae4772156f65063b8ce03dc"
-dependencies = [
- "phf_shared",
-]
-
-[[package]]
-name = "phf_shared"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90fcb95eef784c2ac79119d1dd819e162b5da872ce6f3c3abe1e8ca1c082f72b"
-dependencies = [
- "siphasher",
 ]
 
 [[package]]
@@ -9161,7 +8898,7 @@ name = "poem-openapi-derive"
 version = "5.0.2"
 source = "git+https://github.com/poem-web/poem.git?rev=809b2816d3504beeba140fef3fdfe9432d654c5b#809b2816d3504beeba140fef3fdfe9432d654c5b"
 dependencies = [
- "darling 0.20.8",
+ "darling",
  "http 1.1.0",
  "indexmap 2.6.0",
  "mime",
@@ -9210,37 +8947,6 @@ dependencies = [
  "ff_ce",
  "primitive-types 0.12.2",
  "rand 0.4.6",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "postgres-protocol"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49b6c5ef183cd3ab4ba005f1ca64c21e8bd97ce4699cfea9e8d9a2c4958ca520"
-dependencies = [
- "base64 0.21.7",
- "byteorder",
- "bytes",
- "fallible-iterator 0.2.0",
- "hmac 0.12.1",
- "md-5",
- "memchr",
- "rand 0.8.5",
- "sha2 0.10.8",
- "stringprep",
-]
-
-[[package]]
-name = "postgres-types"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d2234cdee9408b523530a9b6d2d6b373d1db34f6a8e51dc03ded1828d7fb67c"
-dependencies = [
- "bytes",
- "fallible-iterator 0.2.0",
- "postgres-protocol",
  "serde",
  "serde_json",
 ]
@@ -9608,21 +9314,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quanta"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e5167a477619228a0b284fac2674e3c388cba90631d7b7de620e6f1fcd08da5"
-dependencies = [
- "crossbeam-utils",
- "libc",
- "once_cell",
- "raw-cpuid",
- "wasi 0.11.0+wasi-snapshot-preview1",
- "web-sys",
- "winapi 0.3.9",
-]
-
-[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9858,15 +9549,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "raw-cpuid"
-version = "11.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb9ee317cfe3fbd54b36a511efc1edd42e216903c9cd575e686dd68a2ba90d8d"
-dependencies = [
- "bitflags 2.5.0",
-]
-
-[[package]]
 name = "rayon"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9911,13 +9593,11 @@ name = "reconnecting-jsonrpc-ws-client"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
- "futures",
  "jsonrpsee",
  "thiserror",
  "tokio",
  "tokio-util",
  "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -10213,15 +9893,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afab94fb28594581f62d981211a9a4d53cc8130bbcbbb89a0440d9b8e81a7746"
 
 [[package]]
-name = "rs_merkle"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b241d2e59b74ef9e98d94c78c47623d04c8392abaf82014dfd372a16041128f"
-dependencies = [
- "sha2 0.10.8",
-]
-
-[[package]]
 name = "rsa"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10278,7 +9949,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a78046161564f5e7cd9008aff3b2990b3850dc8e0349119b98e8f251e099f24d"
 dependencies = [
  "bitflags 2.5.0",
- "fallible-iterator 0.3.0",
+ "fallible-iterator",
  "fallible-streaming-iterator",
  "hashlink",
  "libsqlite3-sys",
@@ -10580,9 +10251,6 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "hex-literal",
- "serde",
- "serde-utils",
- "serde_json",
  "sha3 0.10.8",
  "thiserror",
  "unionlabs",
@@ -10594,12 +10262,7 @@ version = "0.1.0"
 dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
- "protos",
- "rlp",
  "serde",
- "serde-utils",
- "sha3 0.10.8",
- "thiserror",
  "unionlabs",
 ]
 
@@ -10622,15 +10285,9 @@ name = "scroll-verifier"
 version = "0.1.0"
 dependencies = [
  "evm-storage-verifier",
- "hex",
- "hex-literal",
  "rlp",
  "scroll-codec",
  "scroll-light-client-types",
- "serde",
- "serde-utils",
- "serde_json",
- "sha3 0.10.8",
  "thiserror",
  "unionlabs",
  "zktrie",
@@ -10730,17 +10387,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-aux"
-version = "4.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d2e8bfba469d06512e11e3311d4d051a4a387a5b42d010404fecf3200321c95"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -10970,7 +10616,7 @@ version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
 dependencies = [
- "darling 0.20.8",
+ "darling",
  "proc-macro2",
  "quote",
  "syn 2.0.77",
@@ -11309,7 +10955,7 @@ dependencies = [
  "crc",
  "crossbeam-queue",
  "either",
- "event-listener 2.5.3",
+ "event-listener",
  "futures-channel",
  "futures-core",
  "futures-intrusive",
@@ -11512,7 +11158,6 @@ dependencies = [
 name = "ssz-derive"
 version = "0.5.3"
 dependencies = [
- "darling 0.13.4",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -11525,7 +11170,6 @@ dependencies = [
  "hex",
  "serde",
  "serde-utils",
- "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "snap",
  "ssz",
@@ -11829,12 +11473,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tagptr"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b2093cf4c8eb1e67749a6762251bc9cd836b6fc171623bd0a9d324d37af2417"
-
-[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11897,21 +11535,12 @@ name = "tendermint-light-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "bytes",
  "cometbft-types",
  "cosmwasm-std 2.1.4",
- "hex",
  "ics23",
  "lazy_static",
- "prost 0.12.6",
- "protos",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "sha3 0.10.8",
  "tendermint-light-client-types",
  "tendermint-verifier",
  "thiserror",
@@ -12271,32 +11900,6 @@ checksum = "bbae76ab933c85776efabc971569dd6119c580d8f5d448769dec1764bf796ef2"
 dependencies = [
  "native-tls",
  "tokio",
-]
-
-[[package]]
-name = "tokio-postgres"
-version = "0.7.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d340244b32d920260ae7448cb72b6e238bddc3d4f7603394e7dd46ed8e48f5b8"
-dependencies = [
- "async-trait",
- "byteorder",
- "bytes",
- "fallible-iterator 0.2.0",
- "futures-channel",
- "futures-util",
- "log",
- "parking_lot",
- "percent-encoding",
- "phf",
- "pin-project-lite",
- "postgres-protocol",
- "postgres-types",
- "rand 0.8.5",
- "socket2",
- "tokio",
- "tokio-util",
- "whoami",
 ]
 
 [[package]]
@@ -12838,9 +12441,6 @@ dependencies = [
  "cosmwasm-std 1.5.8",
  "cw-storage-plus 1.2.0",
  "ethabi",
- "hex",
- "serde",
- "serde_json",
  "thiserror",
 ]
 
@@ -12855,22 +12455,15 @@ dependencies = [
  "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
- "ethabi",
- "go-parse-duration",
  "hex",
  "ibc-solidity",
  "prost 0.12.6",
  "protos",
- "schemars",
- "semver 1.0.22",
  "serde",
  "serde-json-wasm 1.0.1",
- "serde-utils",
  "sha2 0.10.8",
  "thiserror",
  "token-factory-api",
- "tracing",
- "tracing-subscriber 0.3.18",
  "ucs01-relay-api",
  "union-ibc-msg",
  "unionlabs",
@@ -12884,14 +12477,10 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethabi",
  "go-parse-duration",
- "prost 0.12.6",
- "protos",
  "serde",
  "serde-json-wasm 1.0.1",
  "serde-utils",
- "sha2 0.10.8",
  "thiserror",
- "token-factory-api",
  "unionlabs",
 ]
 
@@ -12905,7 +12494,6 @@ dependencies = [
  "ethabi",
  "ics721",
  "ics721-base",
- "serde",
  "serde_json",
  "thiserror",
  "unionlabs",
@@ -13014,17 +12602,13 @@ name = "union-ibc"
 version = "1.0.0"
 dependencies = [
  "alloy",
- "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
- "ethabi",
  "hex",
  "ibc-solidity",
  "ibc-union-spec",
  "serde",
  "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
  "strum 0.26.3",
  "thiserror",
  "union-ibc-msg",
@@ -13038,7 +12622,6 @@ dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
- "frame-support-procedural",
  "macros",
  "schemars",
  "serde",
@@ -13056,21 +12639,13 @@ dependencies = [
  "aptos-types",
  "aptos-verifier",
  "bcs 0.1.6",
- "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "ethereum-light-client-types",
  "evm-storage-verifier",
- "hex",
  "hex-literal",
  "movement-light-client-types",
- "protos",
  "rlp",
  "serde",
  "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
  "thiserror",
  "union-ibc-light-client",
  "union-ibc-msg",
@@ -13110,15 +12685,12 @@ dependencies = [
  "bcs 0.1.6",
  "bincode",
  "bip32",
- "bitvec 1.0.1",
  "borsh",
  "bs58 0.4.0",
  "chrono",
- "clap 4.5.4",
  "cosmwasm-std 2.1.4",
  "derive_more 0.99.17",
  "either",
- "enumorph",
  "frame-support-procedural",
  "generic-array 0.14.7",
  "hex",
@@ -13135,7 +12707,6 @@ dependencies = [
  "rand 0.8.5",
  "ripemd",
  "rlp",
- "rs_merkle",
  "schemars",
  "serde",
  "serde-utils",
@@ -13147,7 +12718,6 @@ dependencies = [
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subtle-encoding",
  "thiserror",
- "tracing",
  "typenum",
  "uint",
  "wasmparser",
@@ -13159,14 +12729,11 @@ version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
  "color-eyre",
- "figment",
  "fs_extra",
- "reqwest 0.11.27",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror",
- "toml 0.8.12",
  "tracing",
  "tracing-subscriber 0.3.18",
  "tracing-test",
@@ -13252,9 +12819,6 @@ name = "uuid"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
-dependencies = [
- "getrandom 0.2.12",
-]
 
 [[package]]
 name = "valuable"
@@ -13312,14 +12876,10 @@ dependencies = [
  "axum 0.6.20",
  "clap 4.5.4",
  "derive_more 0.99.17",
- "either",
- "enumorph",
  "frame-support-procedural",
  "futures",
  "ibc-classic-spec",
- "ibc-solidity",
  "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
  "pg-queue",
  "pin-utils",
@@ -13327,14 +12887,11 @@ dependencies = [
  "reqwest 0.11.27",
  "schemars",
  "serde",
- "serde-utils",
  "serde_json",
  "sqlx",
  "thiserror",
  "tikv-jemallocator",
  "tokio",
- "tokio-stream",
- "tokio-util",
  "tracing",
  "tracing-futures",
  "tracing-subscriber 0.3.18",
@@ -13349,20 +12906,13 @@ version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
  "cometbls-light-client-types",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13375,22 +12925,12 @@ dependencies = [
  "alloy",
  "beacon-api",
  "beacon-api-types",
- "bitvec 1.0.1",
- "chain-utils",
- "enumorph",
  "ethereum-light-client-types",
- "futures",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "serde",
  "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13402,28 +12942,16 @@ version = "0.1.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types",
- "bitvec 1.0.1",
  "chain-utils",
- "enumorph",
- "futures",
  "jsonrpsee",
- "macros",
- "move-core-types",
  "movement-light-client-types",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
- "voyager-vm",
 ]
 
 [[package]]
@@ -13431,14 +12959,8 @@ name = "voyager-client-bootstrap-module-tendermint"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
  "ics23",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",
@@ -13446,7 +12968,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13460,27 +12981,17 @@ dependencies = [
  "ark-bn254",
  "ark-serialize 0.4.2",
  "bcs 0.1.6",
- "clap 4.5.4",
- "cometbft-rpc",
  "cometbls-light-client-types",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
  "hex",
  "hex-literal",
- "ibc-solidity",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
- "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13491,20 +13002,12 @@ name = "voyager-client-module-ethereum"
 version = "0.1.0"
 dependencies = [
  "beacon-api-types",
- "chain-utils",
- "enumorph",
  "ethereum-light-client-types",
- "futures",
  "jsonrpsee",
- "macros",
- "prost 0.12.6",
  "serde",
- "serde-utils",
  "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13515,44 +13018,28 @@ name = "voyager-client-module-movement"
 version = "0.1.0"
 dependencies = [
  "chain-utils",
- "enumorph",
- "futures",
  "jsonrpsee",
- "macros",
  "movement-light-client-types",
- "prost 0.12.6",
- "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
- "voyager-vm",
 ]
 
 [[package]]
 name = "voyager-client-module-tendermint"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
- "cometbft-rpc",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
  "jsonrpsee",
  "macros",
  "serde",
- "serde-utils",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13565,15 +13052,12 @@ dependencies = [
  "cometbft-rpc",
  "cometbft-types",
  "cometbls-light-client-types",
- "dashmap 5.5.3",
  "enumorph",
- "futures",
  "galois-rpc",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",
@@ -13581,7 +13065,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13601,14 +13084,9 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
  "serde",
- "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13620,19 +13098,12 @@ version = "0.1.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types",
- "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
- "futures",
  "jsonrpsee",
  "macros",
- "move-core-types",
  "movement-light-client-types",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -13640,7 +13111,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13652,22 +13122,15 @@ version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
  "cometbft-types",
- "dashmap 5.5.3",
  "enumorph",
- "futures",
- "ics23",
  "jsonrpsee",
  "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "serde",
  "serde_json",
  "tendermint-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13678,21 +13141,11 @@ name = "voyager-consensus-module-cometbls"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
- "cometbls-light-client-types",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13705,22 +13158,10 @@ dependencies = [
  "alloy",
  "beacon-api",
  "beacon-api-types",
- "bitvec 1.0.1",
- "chain-utils",
- "enumorph",
- "ethereum-light-client-types",
- "futures",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "serde",
- "serde_json",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13732,28 +13173,14 @@ version = "0.1.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types",
- "bitvec 1.0.1",
  "chain-utils",
- "enumorph",
- "futures",
  "jsonrpsee",
- "macros",
- "move-core-types",
- "movement-light-client-types",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
- "voyager-vm",
 ]
 
 [[package]]
@@ -13761,22 +13188,11 @@ name = "voyager-consensus-module-tendermint"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
- "ics23",
  "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
  "serde",
- "serde_json",
- "tendermint-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13786,15 +13202,11 @@ dependencies = [
 name = "voyager-core"
 version = "0.1.0"
 dependencies = [
- "enumorph",
- "hex",
  "hex-literal",
  "macros",
  "schemars",
  "serde",
  "serde_json",
- "thiserror",
- "tracing",
  "unionlabs",
 ]
 
@@ -13807,7 +13219,6 @@ dependencies = [
  "cosmos-sdk-event",
  "dashmap 5.5.3",
  "enumorph",
- "futures",
  "ibc-classic-spec",
  "ibc-solidity",
  "ibc-union-spec",
@@ -13816,12 +13227,10 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13833,22 +13242,15 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "beacon-api",
- "chain-utils",
  "enumorph",
- "futures",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "serde",
- "serde-utils",
- "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subset-of",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13858,34 +13260,21 @@ dependencies = [
 name = "voyager-event-source-plugin-movement"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto",
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
  "clap 4.5.4",
  "enumorph",
- "futures",
- "hex",
- "hex-literal",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "move-bindgen",
- "move-core-types",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
  "serde",
- "serde-utils",
  "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13899,11 +13288,8 @@ dependencies = [
  "chain-utils",
  "clap 4.5.4",
  "enumorph",
- "frame-support-procedural",
  "futures",
- "hex",
  "hex-literal",
- "ibc-solidity",
  "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",
@@ -13911,12 +13297,10 @@ dependencies = [
  "jaq-syn",
  "jsonrpsee",
  "macros",
- "moka",
  "reconnecting-jsonrpc-ws-client",
  "reth-ipc",
  "schemars",
  "serde",
- "serde-utils",
  "serde_json",
  "subset-of",
  "thiserror",
@@ -13924,7 +13308,6 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber 0.3.18",
- "typenum",
  "unionlabs",
  "voyager-core",
  "voyager-vm",
@@ -13935,20 +13318,11 @@ name = "voyager-periodic-client-update-plugin"
 version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
- "enumorph",
- "futures",
- "ibc-classic-spec",
- "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "serde",
- "serde_json",
- "subset-of",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13958,20 +13332,13 @@ dependencies = [
 name = "voyager-plugin-packet-filter"
 version = "0.1.0"
 dependencies = [
- "enumorph",
- "futures",
  "ibc-classic-spec",
- "ibc-union-spec",
  "jsonrpsee",
- "macros",
  "regex",
  "serde",
- "serde_json",
  "serde_with",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13982,8 +13349,6 @@ name = "voyager-plugin-transaction-batch"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "cometbft-rpc",
- "dashmap 5.5.3",
  "either",
  "enumorph",
  "futures",
@@ -13993,16 +13358,11 @@ dependencies = [
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
- "prost 0.12.6",
- "protos",
- "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde_json",
  "subset-of",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14015,21 +13375,15 @@ dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
- "enumorph",
- "futures",
  "ibc-classic-spec",
- "itertools 0.13.0",
  "jsonrpsee",
- "macros",
  "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14041,24 +13395,15 @@ version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
- "ibc-solidity",
  "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
- "macros",
  "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
- "subtle-encoding",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14069,21 +13414,13 @@ name = "voyager-proof-module-ethereum"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "enumorph",
  "ethereum-light-client-types",
- "futures",
- "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
- "macros",
  "serde",
- "serde-utils",
  "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14093,34 +13430,17 @@ dependencies = [
 name = "voyager-proof-module-movement"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto",
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
- "bcs 0.1.6",
  "clap 4.5.4",
- "enumorph",
- "futures",
- "hex",
- "hex-literal",
  "ibc-union-spec",
  "jsonrpsee",
- "macros",
- "move-bindgen",
- "move-core-types",
- "movement-light-client-types",
- "prost 0.12.6",
- "protos",
  "reqwest 0.11.27",
  "serde",
- "serde-utils",
  "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14133,12 +13453,8 @@ dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
- "enumorph",
- "futures",
  "ibc-classic-spec",
- "itertools 0.13.0",
  "jsonrpsee",
- "macros",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -14147,7 +13463,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14160,23 +13475,16 @@ dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
- "enumorph",
- "futures",
  "ibc-solidity",
  "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
- "macros",
  "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
- "union-ibc",
  "union-ibc-msg",
  "unionlabs",
  "voyager-message",
@@ -14188,22 +13496,13 @@ name = "voyager-state-module-ethereum"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "beacon-api",
- "enumorph",
- "ethereum-light-client-types",
- "futures",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
- "macros",
  "serde",
- "serde-utils",
  "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14213,35 +13512,22 @@ dependencies = [
 name = "voyager-state-module-movement"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto",
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
  "clap 4.5.4",
  "enumorph",
- "futures",
- "hex",
- "hex-literal",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "move-bindgen",
- "move-core-types",
- "movement-light-client-types",
- "prost 0.12.6",
- "protos",
  "reqwest 0.11.27",
  "serde",
- "serde-utils",
  "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14255,24 +13541,16 @@ dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
- "bcs 0.1.6",
- "bip32",
  "chain-utils",
  "enumorph",
- "futures",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
- "move-bindgen",
  "move-core-types",
  "serde",
- "serde-utils",
- "serde_json",
  "sha3 0.10.8",
- "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14285,26 +13563,20 @@ dependencies = [
  "bip32",
  "chain-utils",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "enumorph",
- "futures",
- "hex",
  "ibc-classic-spec",
- "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
  "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "sha2 0.10.8",
  "thiserror",
  "tokio",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.18",
  "union-ibc",
  "union-ibc-msg",
  "unionlabs",
@@ -14317,23 +13589,18 @@ name = "voyager-transaction-plugin-ethereum"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "beacon-api",
  "bip32",
  "chain-utils",
  "enumorph",
- "futures",
  "ibc-solidity",
  "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14352,9 +13619,7 @@ dependencies = [
  "macros",
  "serde",
  "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subset-of",
- "subset-of-derive",
  "thiserror",
  "tokio",
  "tracing",

@@ -12,7 +12,6 @@ ark-ff        = { version = "0.4", default-features = false }
 num-bigint    = { workspace = true }
 sha3          = { workspace = true }
 thiserror     = { workspace = true }
-tiny-keccak   = { workspace = true, features = ["keccak"] }
 unionlabs     = { workspace = true }
 
 [dev-dependencies]

@@ -9,7 +9,6 @@ version = "0.5.3"
 proc-macro = true
 
 [dependencies]
-darling     = "0.13.0"
 proc-macro2 = "1.0.23"
 quote       = "1.0.7"
 syn         = "1.0.42"

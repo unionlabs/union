@@ -19,14 +19,10 @@ anyhow                     = "1.0.93"
 axum                       = { workspace = true, features = ["macros", "tokio", "json"] }
 clap                       = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 derive_more                = { workspace = true }
-either                     = { workspace = true, features = ["serde"] }
-enumorph                   = { workspace = true }
 frame-support-procedural   = { workspace = true }
 futures                    = { workspace = true }
 ibc-classic-spec.workspace = true
-ibc-solidity               = { workspace = true }
 ibc-union-spec.workspace   = true
-itertools                  = "0.13.0"
 jsonrpsee                  = { workspace = true, features = ["client", "full", "tracing"] }
 pg-queue                   = { workspace = true }
 pin-utils                  = "0.1.0"
@@ -34,14 +30,11 @@ prometheus                 = "0.13.4"
 reqwest                    = { workspace = true, features = ["tokio-rustls"] }
 schemars                   = { workspace = true }
 serde                      = { workspace = true, features = ["derive"] }
-serde-utils                = { workspace = true }
 serde_json                 = { workspace = true }
 sqlx                       = { workspace = true, features = ["postgres", "migrate", "tls-rustls"] }
 thiserror                  = { workspace = true }
 tikv-jemallocator          = "0.5"
 tokio                      = { workspace = true, features = ["macros"] }
-tokio-stream               = { workspace = true }
-tokio-util                 = "0.7.9"
 tracing                    = { workspace = true, features = ["max_level_trace"] }
 tracing-futures            = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber         = { workspace = true, features = ["env-filter", "json"] }

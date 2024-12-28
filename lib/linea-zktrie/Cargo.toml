@@ -10,7 +10,6 @@ gnark-mimc  = { workspace = true }
 hex         = { workspace = true }
 hex-literal = { workspace = true }
 serde       = { workspace = true }
-serde-utils = { workspace = true }
 serde_json  = { workspace = true }
 thiserror   = { workspace = true }
 unionlabs   = { workspace = true }

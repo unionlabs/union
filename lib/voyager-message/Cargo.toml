@@ -14,10 +14,7 @@ anyhow                         = "1.0.93"
 chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
-frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }
-hex                            = { workspace = true }
-ibc-solidity                   = { workspace = true, features = ["serde"] }
 itertools                      = "0.13.0"
 jaq-core                       = "1.5.1"
 jaq-interpret                  = "1.5.0"
@@ -25,12 +22,10 @@ jaq-std                        = "1.6.0"
 jaq-syn                        = "1.6.0"
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                         = { workspace = true }
-moka                           = { version = "0.12.8", features = ["future", "sync"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
 schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
-serde-utils                    = { workspace = true }
 serde_json                     = { workspace = true }
 subset-of                      = { workspace = true }
 thiserror                      = { workspace = true }
@@ -38,7 +33,6 @@ tokio                          = { workspace = true, features = ["time", "proces
 tokio-util                     = "0.7.11"
 tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json"] }
-typenum                        = { workspace = true }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 voyager-core                   = { workspace = true, features = ["schemars"] }
 voyager-vm                     = { workspace = true }

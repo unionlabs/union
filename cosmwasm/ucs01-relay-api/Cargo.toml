@@ -11,12 +11,8 @@ cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true, features = ["stargate", "std"] }
 ethabi            = { workspace = true }
 go-parse-duration = { workspace = true }
-prost             = { workspace = true }
-protos            = { workspace = true }
 serde             = { workspace = true }
 serde-json-wasm   = { workspace = true }
 serde-utils       = { workspace = true }
-sha2              = { workspace = true }
 thiserror         = { workspace = true }
-token-factory-api = { workspace = true }
 unionlabs         = { workspace = true }

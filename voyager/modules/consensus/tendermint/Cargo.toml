@@ -4,23 +4,12 @@ name    = "voyager-consensus-module-tendermint"
 version = "0.1.0"
 
 [dependencies]
-cometbft-rpc                  = { workspace = true }
-dashmap                       = { workspace = true }
-enumorph                      = { workspace = true }
-futures                       = { workspace = true }
-ics23                         = { workspace = true }
-jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                        = { workspace = true }
-num-bigint                    = { workspace = true }
-prost                         = { workspace = true }
-protos                        = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-serde_json                    = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }
-thiserror                     = { workspace = true }
-tokio                         = { workspace = true }
-tracing                       = { workspace = true }
-tracing-subscriber            = { workspace = true }
-unionlabs                     = { workspace = true }
-voyager-message               = { workspace = true }
-voyager-vm                    = { workspace = true }
+cometbft-rpc    = { workspace = true }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+serde           = { workspace = true, features = ["derive"] }
+thiserror       = { workspace = true }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
+voyager-vm      = { workspace = true }

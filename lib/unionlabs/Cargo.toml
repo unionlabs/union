@@ -13,13 +13,10 @@ workspace = true
 
 [dependencies]
 bip32                    = { workspace = true, features = ["secp256k1"] }
-bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
-clap                     = { workspace = true, features = ["derive"] }
 cosmwasm-std             = { workspace = true, optional = true, features = ["std"] }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
-enumorph                 = { workspace = true }
 frame-support-procedural = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
@@ -33,7 +30,6 @@ prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
 ripemd                   = { workspace = true }
 rlp                      = { workspace = true, features = ["derive"] }
-rs_merkle                = "1.4.1"
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
@@ -43,7 +39,6 @@ ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
-tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 uint                     = "0.9.0"
 wasmparser               = { version = "0.113" }
@@ -70,7 +65,7 @@ cosmwasm = ["dep:cosmwasm-std"]
 ethabi   = ["alloy"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
-std      = ["subtle-encoding/std"]
+std      = ["subtle-encoding/std", "sha2/std"]
 
 fuzzing    = []
 test_utils = []

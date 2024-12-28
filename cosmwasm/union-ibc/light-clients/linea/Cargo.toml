@@ -15,21 +15,13 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cosmwasm-std             = { workspace = true, features = ["abort"] }
 ethereum-light-client    = { workspace = true, features = ["mainnet", "library"] }
-evm-storage-verifier     = { workspace = true }
 gnark-mimc               = { workspace = true }
-hex                      = { workspace = true }
 ics008-wasm-client       = { workspace = true }
 linea-light-client-types = { workspace = true, features = ["proto"] }
 linea-verifier           = { workspace = true }
 linea-zktrie             = { workspace = true }
 protos                   = { workspace = true }
-rlp                      = { workspace = true }
-schemars                 = { workspace = true }
-serde                    = { workspace = true, features = ["derive"] }
-serde-json-wasm          = { workspace = true }
-sha3                     = { workspace = true }
 thiserror                = { workspace = true }
-tiny-keccak              = { workspace = true, features = ["keccak"] }
 unionlabs                = { workspace = true, features = ["ethabi", "stargate"] }
 
 [dev-dependencies]

@@ -16,18 +16,9 @@ test-include = ["cosmwasm/union-ibc/light-clients/tendermint/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bytes           = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterator"] }
-hex             = { workspace = true }
-prost           = { workspace = true }
-protos          = { workspace = true, features = ["proto_full", "std"] }
-schemars        = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-serde-json-wasm = { workspace = true }
-serde-utils     = { workspace = true }
-sha2            = { workspace = true }
-sha3            = { workspace = true }
-thiserror       = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterator"] }
+sha2         = { workspace = true }
+thiserror    = { workspace = true }
 
 cometbft-types                = { workspace = true, features = ["proto", "hash"] }
 ics23                         = { workspace = true }

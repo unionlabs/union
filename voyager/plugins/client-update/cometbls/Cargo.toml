@@ -7,15 +7,12 @@ version = "0.1.0"
 cometbft-rpc                = { workspace = true }
 cometbft-types              = { workspace = true }
 cometbls-light-client-types = { workspace = true }
-dashmap                     = { workspace = true }
 enumorph                    = { workspace = true }
-futures                     = { workspace = true }
 galois-rpc                  = { workspace = true }
 itertools                   = "0.13.0"
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
-prost                       = { workspace = true }
 protos                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
@@ -23,7 +20,6 @@ subset-of                   = { workspace = true }
 thiserror                   = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
-tracing-subscriber          = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }

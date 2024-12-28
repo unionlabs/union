@@ -18,15 +18,7 @@ arbitrum-verifier           = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
-evm-storage-verifier        = { workspace = true }
-hex                         = { workspace = true }
-protos                      = { workspace = true }
-rlp                         = { workspace = true }
-schemars                    = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
-tiny-keccak                 = { workspace = true, features = ["keccak"] }
 union-ibc-light-client      = { workspace = true }
 union-ibc-msg               = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }

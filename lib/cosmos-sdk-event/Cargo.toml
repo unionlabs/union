@@ -6,10 +6,6 @@ version = "0.1.0"
 [dependencies]
 cometbft-types = { workspace = true }
 enumorph       = { workspace = true }
-hex            = { workspace = true }
-ibc-solidity   = { workspace = true, features = ["serde"] }
 serde          = { workspace = true }
-serde-utils    = { workspace = true }
-serde_json     = { workspace = true }
 thiserror      = { workspace = true }
 unionlabs      = { workspace = true }

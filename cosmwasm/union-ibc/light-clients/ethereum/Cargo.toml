@@ -18,13 +18,11 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"] }
 beacon-api-types            = { workspace = true }
-cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 ethereum-sync-protocol      = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 rlp                         = { workspace = true }
-schemars                    = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 union-ibc-light-client      = { workspace = true }

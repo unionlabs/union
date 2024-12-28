@@ -4,20 +4,13 @@ name    = "voyager-plugin-packet-filter"
 version = "0.1.0"
 
 [dependencies]
-enumorph           = { workspace = true }
-futures            = { workspace = true }
-ibc-classic-spec   = { workspace = true }
-ibc-union-spec     = { workspace = true }
-jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
-macros             = { workspace = true }
-regex              = "1.10.6"
-serde              = { workspace = true, features = ["derive"] }
-serde_json         = { workspace = true }
-serde_with         = { workspace = true }
-thiserror          = { workspace = true }
-tokio              = { workspace = true }
-tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
-unionlabs          = { workspace = true }
-voyager-message    = { workspace = true }
-voyager-vm         = { workspace = true }
+ibc-classic-spec = { workspace = true }
+jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
+regex            = "1.10.6"
+serde            = { workspace = true, features = ["derive"] }
+serde_with       = { workspace = true }
+tokio            = { workspace = true }
+tracing          = { workspace = true }
+unionlabs        = { workspace = true }
+voyager-message  = { workspace = true }
+voyager-vm       = { workspace = true }

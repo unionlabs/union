@@ -17,27 +17,19 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 beacon-api-types      = { workspace = true, features = ["ssz"] }
-bytes                 = { workspace = true }
 cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client = { workspace = true, features = ["library"] }
-hex                   = { workspace = true }
-schemars              = { workspace = true }
-serde                 = { workspace = true, features = ["derive"] }
-sha2                  = { workspace = true }
 thiserror             = { workspace = true }
 
-berachain-light-client-types  = { workspace = true, features = ["serde", "ethabi"] }
-cometbft-types                = { workspace = true, features = ["hash"] }
-ethereum-light-client-types   = { workspace = true, features = ["serde", "ethabi"] }
-evm-storage-verifier          = { workspace = true }
-hex-literal                   = { workspace = true }
-ics23                         = { workspace = true }
-tendermint-light-client       = { workspace = true, features = ["library"] }
-tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-tendermint-verifier           = { workspace = true }
-union-ibc-light-client        = { workspace = true }
-union-ibc-msg                 = { workspace = true }
-unionlabs                     = { workspace = true }
+berachain-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+ethereum-light-client-types  = { workspace = true, features = ["serde", "ethabi"] }
+evm-storage-verifier         = { workspace = true }
+ics23                        = { workspace = true }
+tendermint-light-client      = { workspace = true, features = ["library"] }
+tendermint-verifier          = { workspace = true }
+union-ibc-light-client       = { workspace = true }
+union-ibc-msg                = { workspace = true }
+unionlabs                    = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }

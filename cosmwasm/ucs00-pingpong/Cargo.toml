@@ -20,9 +20,4 @@ cosmwasm-schema = { version = "1.5" }
 cosmwasm-std    = { version = "1.5.4", features = ["stargate"] }
 cw-storage-plus = { version = "1.2" }
 ethabi          = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
-
-[dev-dependencies]
-hex        = { workspace = true }
-serde_json = { workspace = true }

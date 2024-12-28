@@ -7,23 +7,16 @@ version = "0.1.0"
 clap                     = { workspace = true, features = ["derive"] }
 cometbft-rpc             = { workspace = true }
 dashmap                  = { workspace = true }
-enumorph                 = { workspace = true }
-futures                  = { workspace = true }
 ibc-solidity             = { workspace = true }
 ibc-union-spec.workspace = true
-itertools                = "0.13.0"
 jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                   = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
-serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
 thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
-tracing-subscriber       = { workspace = true }
-union-ibc                = { workspace = true, features = ["library"] }
 union-ibc-msg            = { workspace = true }
 unionlabs                = { workspace = true }
 voyager-message          = { workspace = true }
