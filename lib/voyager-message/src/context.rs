@@ -67,8 +67,9 @@ pub struct Modules {
     /// map of chain id to consensus module.
     consensus_modules: HashMap<ChainId, ModuleRpcClient>,
 
-    /// map of client type to ibc interface to client module.
     client_modules: HashMap<(ClientType, IbcInterface, IbcSpecId), ModuleRpcClient>,
+
+    client_bootstrap_modules: HashMap<(ChainId, ClientType), ModuleRpcClient>,
 
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
@@ -336,6 +337,7 @@ impl Context {
             state_modules: Default::default(),
             proof_modules: Default::default(),
             client_modules: Default::default(),
+            client_bootstrap_modules: Default::default(),
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
@@ -771,6 +773,22 @@ impl Modules {
             }),
         }
     }
+
+    pub fn client_bootstrap_module<'a, 'b, 'c: 'a>(
+        &'a self,
+        chain_id: &ChainId,
+        client_type: &ClientType,
+        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), ConsensusModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ClientBootstrapModuleNotFound> {
+        Ok(self
+            .client_bootstrap_modules
+            .get(&(chain_id.clone(), client_type.clone()))
+            .ok_or_else(|| ClientBootstrapModuleNotFound {
+                chain_id: chain_id.clone(),
+                client_type: client_type.clone(),
+            })?
+            .client())
+    }
 }
 
 #[model]
@@ -961,6 +979,15 @@ module_error!(ProofModuleNotFound);
 pub struct ConsensusModuleNotFound(pub ChainId);
 
 module_error!(ConsensusModuleNotFound);
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("no module loaded for client bootstrapping on chain `{chain_id}` for client type `{client_type}`")]
+pub struct ClientBootstrapModuleNotFound {
+    pub chain_id: ChainId,
+    pub client_type: ClientType,
+}
+
+module_error!(ClientBootstrapModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ClientModuleNotFound {

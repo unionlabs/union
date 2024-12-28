@@ -20,7 +20,8 @@ use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     into_value,
     module::{
-        ClientModuleClient, ConsensusModuleClient, RawProofModuleClient, RawStateModuleClient,
+        ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient,
+        RawProofModuleClient, RawStateModuleClient,
     },
     rpc::{
         json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
@@ -344,24 +345,25 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(skip_all, fields(%chain_id, %client_type, %height))]
     pub async fn self_client_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: Height,
     ) -> RpcResult<SelfClientState> {
         self.span()
             .in_scope(|| async {
                 trace!("querying self client state");
 
-                let chain_module = self
+                let client_bootstrap_module = self
                     .inner
                     .modules()?
-                    .consensus_module(&chain_id)
+                    .client_bootstrap_module(&chain_id, &client_type)
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
-                let state = chain_module
+                let state = client_bootstrap_module
                     .self_client_state(height)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -374,26 +376,27 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(skip_all, fields(%chain_id, %client_type, %height))]
     pub async fn self_consensus_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
         self.span()
             .in_scope(|| async {
                 trace!("querying self consensus state");
 
-                let chain_module = self
+                let client_bootstrap_module = self
                     .inner
                     .modules()?
-                    .consensus_module(&chain_id)
+                    .client_bootstrap_module(&chain_id, &client_type)
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
                 let height = self.query_height(&chain_id, height).await?;
 
-                let state = chain_module
+                let state = client_bootstrap_module
                     .self_consensus_state(height)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -624,19 +627,22 @@ impl VoyagerRpcServer for Server {
     async fn self_client_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState> {
         let height = self.query_height(&chain_id, height).await?;
 
-        self.self_client_state(chain_id, height).await
+        self.self_client_state(chain_id, client_type, height).await
     }
 
     async fn self_consensus_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
-        self.self_consensus_state(chain_id, height).await
+        self.self_consensus_state(chain_id, client_type, height)
+            .await
     }
 
     // TODO: Use valuable here

@@ -42,9 +42,9 @@ use crate::{
     data::Data,
     filter::JaqInterestFilter,
     module::{
-        ClientModuleInfo, ClientModuleServer, ConsensusModuleInfo, ConsensusModuleServer,
-        PluginInfo, PluginServer, ProofModuleInfo, ProofModuleServer, StateModuleInfo,
-        StateModuleServer,
+        ClientBootstrapModuleInfo, ClientBootstrapModuleServer, ClientModuleInfo,
+        ClientModuleServer, ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
+        ProofModuleInfo, ProofModuleServer, StateModuleInfo, StateModuleServer,
     },
     rpc::{json_rpc_error_to_error_object, IbcProof, IbcState, VoyagerRpcClient},
 };
@@ -438,6 +438,46 @@ pub trait ClientModule: ClientModuleServer + Sized {
                     Self::into_rpc,
                 )
                 .instrument(debug_span!("run_client_module_server", %name))
+                .await
+            }
+        }
+    }
+}
+
+#[allow(async_fn_in_trait)]
+pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
+    type Config: DeserializeOwned + Clone;
+
+    async fn new(
+        config: Self::Config,
+        info: ClientBootstrapModuleInfo,
+    ) -> Result<Self, BoxDynError>;
+
+    async fn run() {
+        init_log();
+
+        match <ModuleApp as clap::Parser>::parse() {
+            ModuleApp::Run {
+                socket,
+                voyager_socket,
+                config,
+                info,
+            } => {
+                let config = must_parse::<Self::Config>(&config);
+
+                let info = must_parse::<ClientBootstrapModuleInfo>(&info);
+
+                let name = info.id();
+
+                run_server(
+                    name.clone(),
+                    voyager_socket,
+                    (config, info),
+                    socket,
+                    |(config, info)| Self::new(config, info),
+                    Self::into_rpc,
+                )
+                .instrument(debug_span!("run_client_bootstrap_module_server", %name))
                 .await
             }
         }

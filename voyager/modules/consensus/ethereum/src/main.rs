@@ -1,5 +1,3 @@
-use std::ops::Div;
-
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -8,15 +6,13 @@ use alloy::{
 };
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::PresetBaseKind;
-use ethereum_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tracing::{debug, instrument, trace};
+use tracing::{instrument, trace};
 use unionlabs::{
     hash::{H160, H256},
     ibc::core::client::height::Height,
@@ -24,7 +20,6 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
-    into_value,
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     ConsensusModule,
 };
@@ -191,121 +186,5 @@ impl ConsensusModuleServer for Module {
                 .try_into()
                 .unwrap())
         }
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let genesis = self.beacon_api_client.genesis().await.unwrap().data;
-
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        Ok(serde_json::to_value(ClientState {
-            chain_id: self
-                .chain_id
-                .as_str()
-                .parse()
-                .expect("self.chain_id is a valid u256"),
-            chain_spec: spec.preset_base,
-            genesis_validators_root: genesis.genesis_validators_root,
-            genesis_time: genesis.genesis_time,
-            fork_parameters: spec.to_fork_parameters(),
-            latest_height: height.height(),
-            frozen_height: Height::new(0),
-            ibc_contract_address: self.ibc_handler_address,
-        })
-        .expect("infallible"))
-    }
-
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let beacon_slot = self
-            .beacon_slot_of_execution_block_number(height.height())
-            .await?;
-
-        let trusted_header = self
-            .beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(beacon_slot))
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon header: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .data;
-
-        let bootstrap = self
-            .beacon_api_client
-            .bootstrap(trusted_header.root)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .data;
-
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        assert_eq!(bootstrap.header.execution.block_number, height.height());
-
-        let light_client_update = {
-            let current_period = beacon_slot.div(spec.period());
-
-            debug!(%current_period);
-
-            let light_client_updates = self
-                .beacon_api_client
-                .light_client_updates(current_period, 1)
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching light client update: {}", ErrorReporter(e)),
-                        None::<()>,
-                    )
-                })?;
-
-            let [light_client_update] = &*light_client_updates.0 else {
-                return Err(ErrorObject::owned(
-                    -1,
-                    format!(
-                        "received invalid light client updates, expected \
-                        1 but received {light_client_updates:?}"
-                    ),
-                    None::<()>,
-                ));
-            };
-
-            light_client_update.data.clone()
-        };
-
-        // Normalize to nanos in order to be compliant with cosmos
-        let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
-
-        Ok(into_value(ConsensusState {
-            slot: bootstrap.header.beacon.slot,
-            state_root: bootstrap.header.execution.state_root,
-            storage_root: self
-                .provider
-                .get_proof(self.ibc_handler_address.into(), vec![])
-                .block_id(bootstrap.header.execution.block_number.into())
-                .await
-                .unwrap()
-                .storage_hash
-                .0
-                .into(),
-            timestamp,
-            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-            // TODO(aeryz): can this be None?
-            next_sync_committee: light_client_update
-                .next_sync_committee
-                .unwrap()
-                .aggregate_pubkey,
-        }))
     }
 }

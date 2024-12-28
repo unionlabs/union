@@ -1,22 +1,12 @@
-use std::{
-    fmt::Debug,
-    num::{NonZeroU64, ParseIntError},
-};
+use std::num::ParseIntError;
 
-use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::{debug, error, instrument};
-use unionlabs::{
-    bech32::Bech32,
-    hash::H256,
-    ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-    traits::Member,
-};
+use unionlabs::{bech32::Bech32, hash::H256, ibc::core::client::height::Height, traits::Member};
 use voyager_message::{
     core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
@@ -178,74 +168,5 @@ impl ConsensusModuleServer for Module {
             .as_unix_nanos()
             .try_into()
             .expect("should be fine"))
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .params
-        .unwrap();
-
-        let commit = self
-            .tm_client
-            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
-            .await
-            .unwrap();
-
-        let height = commit.signed_header.header.height;
-
-        // Expected to be nanos
-        let unbonding_period =
-            u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
-
-        // Avoid low unbonding period preventing relayer from submitting slightly old headers
-        let unbonding_period = unbonding_period.max(3 * 24 * 3600 * 1_000_000_000);
-
-        Ok(serde_json::to_value(ClientState {
-            chain_id: cometbls_light_client_types::ChainId::from_string(self.chain_id.to_string())
-                .unwrap(),
-            trusting_period: unbonding_period * 85 / 100,
-            max_clock_drift: (60 * 20) * 1_000_000_000,
-            frozen_height: Height::new(0),
-            latest_height: Height::new_with_revision(
-                self.chain_id
-                    .as_str()
-                    .split('-')
-                    .last()
-                    .unwrap()
-                    .parse()
-                    .unwrap(),
-                height.inner().try_into().expect("value is >= 0; qed;"),
-            ),
-            contract_address: self.ibc_host_contract_address,
-        })
-        .unwrap())
-    }
-
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let commit = self
-            .tm_client
-            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
-            .await
-            .unwrap();
-
-        Ok(serde_json::to_value(ConsensusState {
-            timestamp: commit.signed_header.header.time.as_unix_nanos(),
-            app_hash: MerkleRoot {
-                hash: commit.signed_header.header.app_hash.into_encoding(),
-            },
-            next_validators_hash: commit.signed_header.header.next_validators_hash,
-        })
-        .unwrap())
     }
 }

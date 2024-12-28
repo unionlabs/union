@@ -672,7 +672,7 @@ pub mod utils {
         context::Context,
         core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         data::{IbcDatagram, WithChainId},
-        module::{ClientModuleClient, ConsensusModuleClient},
+        module::{ClientBootstrapModuleClient, ClientModuleClient},
         VoyagerMessage,
     };
     use voyager_vm::{data, Op};
@@ -698,17 +698,17 @@ pub mod utils {
             .query_height(&counterparty_chain_id, height)
             .await?;
 
-        let counterparty_consensus_module = ctx
+        let counterparty_client_bootstrap_module = ctx
             .rpc_server
             .modules()?
-            .consensus_module(&counterparty_chain_id)?;
+            .client_bootstrap_module(&counterparty_chain_id, &client_type)?;
 
-        let self_client_state = counterparty_consensus_module
+        let self_client_state = counterparty_client_bootstrap_module
             .self_client_state(height)
             .await?;
         trace!(%self_client_state);
 
-        let self_consensus_state = counterparty_consensus_module
+        let self_consensus_state = counterparty_client_bootstrap_module
             .self_consensus_state(height)
             .await?;
         trace!(%self_consensus_state);

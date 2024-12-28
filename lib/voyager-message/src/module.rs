@@ -141,8 +141,8 @@ pub struct ClientModuleInfo {
 impl ClientModuleInfo {
     pub fn id(&self) -> String {
         format!(
-            "client/{}/{}/{}",
-            self.client_type, self.consensus_type, self.ibc_interface
+            "client/{}/{}/{}/{}",
+            self.client_type, self.consensus_type, self.ibc_interface, self.ibc_spec_id
         )
     }
 
@@ -196,6 +196,50 @@ impl ClientModuleInfo {
             Err(UnexpectedIbcVersionIdError {
                 expected: self.ibc_spec_id.clone(),
                 found: ibc_spec_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[model]
+#[derive(clap::Args, JsonSchema)]
+pub struct ClientBootstrapModuleInfo {
+    /// The client type that this client bootstrap module provides functionality for.
+    #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
+    pub client_type: ClientType,
+
+    /// The id of the chain that this client bootstrap module provides initial state for.
+    #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
+    pub chain_id: ChainId,
+}
+
+impl ClientBootstrapModuleInfo {
+    pub fn id(&self) -> String {
+        format!("client-bootstrap/{}/{}", self.client_type, self.chain_id)
+    }
+
+    pub fn ensure_client_type(
+        &self,
+        client_type: impl AsRef<str>,
+    ) -> Result<(), UnexpectedClientTypeError> {
+        if client_type.as_ref() != self.client_type.as_str() {
+            Err(UnexpectedClientTypeError {
+                expected: self.client_type.clone(),
+                found: client_type.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    // TODO: Add this for ibc_spec_id
+    pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
+        if chain_id.as_ref() != self.chain_id.as_str() {
+            Err(UnexpectedChainIdError {
+                expected: self.chain_id.clone(),
+                found: chain_id.as_ref().to_owned(),
             })
         } else {
             Ok(())
@@ -397,7 +441,11 @@ pub trait ConsensusModule {
     #[method(name = "queryLatestTimestamp", with_extensions)]
     // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<i64>;
+}
 
+/// Client bootstrap modules provide the initial client and consensus states for a client. This is notably separate from the [`ConsensusModule`], since it is possible for different client types (with different state types) to track the same consensus.
+#[rpc(client, server, namespace = "clientBootstrap")]
+pub trait ClientBootstrapModule {
     /// The client state of this chain at the specified [`Height`].
     ///
     /// Returns the client state value as JSON, which will then be encoded to
