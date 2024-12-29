@@ -132,6 +132,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     proof: vec![],
                     consensus: vec![],
                     client: vec![],
+                    client_bootstrap: vec![],
                 },
                 voyager: VoyagerConfig {
                     num_workers: 1,

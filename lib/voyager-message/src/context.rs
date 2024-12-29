@@ -38,8 +38,8 @@ use crate::{
     core::{ChainId, ClientType, IbcInterface, IbcSpec},
     into_value,
     module::{
-        ClientModuleInfo, ConsensusModuleInfo, PluginClient, PluginInfo, ProofModuleInfo,
-        StateModuleInfo,
+        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginClient, PluginInfo,
+        ProofModuleInfo, StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
     IdThreadClient, ParamsWithItemId, RawClientId, FATAL_JSONRPC_ERROR_CODE,
@@ -297,6 +297,7 @@ pub struct ModulesConfig {
     pub proof: Vec<ModuleConfig<ProofModuleInfo>>,
     pub consensus: Vec<ModuleConfig<ConsensusModuleInfo>>,
     pub client: Vec<ModuleConfig<ClientModuleInfo>>,
+    pub client_bootstrap: Vec<ModuleConfig<ClientBootstrapModuleInfo>>,
 }
 
 #[model]
@@ -557,6 +558,48 @@ impl Context {
         )
         .await?;
 
+        module_startup(
+            module_configs.client_bootstrap,
+            cancellation_token.clone(),
+            main_rpc_server.clone(),
+            |info| info.id(),
+            |ClientBootstrapModuleInfo {
+                 client_type,
+                 chain_id,
+             },
+             rpc_client| {
+                let prev = modules
+                    .client_bootstrap_modules
+                    .insert((chain_id.clone(), client_type.clone()), rpc_client.clone());
+
+                if prev.is_some() {
+                    return Err(anyhow!(
+                        "multiple client bootstrap modules configured for client \
+                        type `{client_type}` and chain id `{chain_id}`",
+                    ));
+                }
+
+                // TODO: Check consistency with client_consensus_types and chain_id?
+
+                // if let Some(previous_consensus_type) = modules
+                //     .client_consensus_types
+                //     .insert(client_type.clone(), consensus_type.clone())
+                // {
+                //     if previous_consensus_type != consensus_type {
+                //         return Err(anyhow!(
+                //             "inconsistency in client consensus types: \
+                //             client type `{client_type}` is registered \
+                //             as tracking both `{previous_consensus_type}` \
+                //             and `{consensus_type}`"
+                //         ));
+                //     }
+                // }
+
+                Ok(())
+            },
+        )
+        .await?;
+
         main_rpc_server.start(Arc::new(modules));
 
         info!("checking for plugin health...");
@@ -681,11 +724,21 @@ impl Modules {
             )
             .collect();
 
+        let client_bootstrap = self
+            .client_bootstrap_modules
+            .keys()
+            .map(|(chain_id, client_type)| ClientBootstrapModuleInfo {
+                client_type: client_type.clone(),
+                chain_id: chain_id.clone(),
+            })
+            .collect();
+
         LoadedModulesInfo {
             state,
             proof,
             consensus,
             client,
+            client_bootstrap,
         }
     }
 
@@ -797,6 +850,7 @@ pub struct LoadedModulesInfo {
     pub proof: Vec<ProofModuleInfo>,
     pub consensus: Vec<ConsensusModuleInfo>,
     pub client: Vec<ClientModuleInfo>,
+    pub client_bootstrap: Vec<ClientBootstrapModuleInfo>,
 }
 
 #[instrument(skip_all, fields(%name))]

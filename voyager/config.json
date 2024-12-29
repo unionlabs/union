@@ -139,7 +139,8 @@
           "chain_spec": "minimal"
         }
       }
-    ]
+    ],
+    "client_bootstrap": []
   },
   "plugins": [
     {
