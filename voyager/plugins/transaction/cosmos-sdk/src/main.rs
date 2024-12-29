@@ -361,6 +361,7 @@ impl Module {
                 .encode_as::<Proto>(),
             )
             .expect("signing failed")
+            .to_bytes()
             .to_vec();
 
         let tx_raw_bytes = TxRaw {
@@ -534,6 +535,7 @@ impl Module {
                 .encode_as::<Proto>(),
             )
             .expect("signing failed")
+            .to_bytes()
             .to_vec();
 
         let result = client
