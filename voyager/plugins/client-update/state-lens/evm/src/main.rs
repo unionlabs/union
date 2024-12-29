@@ -173,16 +173,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let l1_latest_height = voy_client
                     .query_latest_height(self.l1_chain_id.clone(), true)
                     .await?;
-                let l2_consensus_proof = voy_client
-                    .query_ibc_proof(
-                        self.l1_chain_id.clone(),
-                        QueryHeight::Specific(l1_latest_height),
-                        ConsensusStatePath {
-                            client_id: self.l1_client_id,
-                            height: update_to.height(),
-                        },
-                    )
-                    .await;
+                let l2_consensus_state_proof = serde_json::from_value::<MerkleProof>(
+                    voy_client
+                        .query_ibc_proof(
+                            self.l1_chain_id.clone(),
+                            QueryHeight::Specific(l1_latest_height),
+                            ConsensusStatePath {
+                                client_id: self.l1_client_id,
+                                height: update_to.height(),
+                            },
+                        )
+                        .await
+                        .expect("big trouble")
+                        .proof,
+                )
+                .expect("impossible");
+                let l2_merkle_proof = unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
+                    protos::ibc::core::commitment::v1::MerkleProof::from(l2_consensus_state_proof),
+                )
+                .expect("impossible");
                 let continuation = call(PluginMessage::new(
                     self.plugin_name(),
                     ModuleCall::from(FetchUpdateAfterL1Update {
@@ -192,9 +201,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }),
                 ));
                 // If the L2 consensus proof exists on the L1, we don't have to update the L2 on the L1.
-                match l2_consensus_proof {
-                    Ok(_) => Ok(continuation),
-                    Err(_) => Ok(conc([
+                match l2_merkle_proof {
+                    unionlabs::union::ics23::merkle_proof::MerkleProof::Membership(_, _) => {
+                        Ok(continuation)
+                    }
+                    _ => Ok(conc([
                         // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
@@ -239,15 +250,24 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         self.l0_client_id,
                     )
                     .await?;
+                let l2_consensus_state_path = ConsensusStatePath {
+                    client_id: self.l1_client_id,
+                    height: update_to.height(),
+                };
+                let l2_consensus_state = voy_client
+                    .query_ibc_state(
+                        self.l1_chain_id.clone(),
+                        QueryHeight::Specific(l1_latest_height),
+                        l2_consensus_state_path.clone(),
+                    )
+                    .await?
+                    .state;
                 let l2_consensus_state_proof = serde_json::from_value::<MerkleProof>(
                     voy_client
                         .query_ibc_proof(
                             self.l1_chain_id.clone(),
                             QueryHeight::Specific(l1_latest_height),
-                            ConsensusStatePath {
-                                client_id: self.l1_client_id,
-                                height: update_to.height(),
-                            },
+                            l2_consensus_state_path,
                         )
                         .await
                         .expect("big trouble")
@@ -285,6 +305,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     l1_height: l1_latest_height,
                                     l2_height: update_to,
                                     l2_consensus_state_proof,
+                                    l2_consensus_state,
                                 }),
                             )],
                         }),

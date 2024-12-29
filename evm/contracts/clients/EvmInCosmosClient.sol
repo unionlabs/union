@@ -20,6 +20,7 @@ struct Header {
 }
 
 struct ClientState {
+    string l2ChainId;
     uint32 l1ClientId;
     uint32 l2ClientId;
     uint64 l2LatestHeight;

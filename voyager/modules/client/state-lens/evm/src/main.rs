@@ -140,7 +140,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<Bincode>())
+            .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
     }
 
@@ -195,21 +195,20 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|header| header.encode_as::<Bincode>())
+            .map(|header| header.encode_as::<EthAbi>())
             .map(Into::into)
     }
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        serde_json::from_value::<StorageProof>(proof)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize proof: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
-            .map(|storage_proof| storage_proof.encode_as::<Bincode>())
-            .map(Into::into)
+        let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("unable to deserialize proof: {}", ErrorReporter(err)),
+                None::<()>,
+            )
+        })?;
+        // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
+        Ok(proof.proof.concat().into())
     }
 }

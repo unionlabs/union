@@ -9,7 +9,7 @@ cometbft-rpc                      = { workspace = true }
 cometbft-types.workspace          = true
 dashmap                           = { workspace = true }
 enumorph                          = { workspace = true }
-evm-state-lens-light-client-types = { workspace = true, features = ["proto", "serde"] }
+evm-state-lens-light-client-types = { workspace = true, features = ["serde"] }
 futures                           = { workspace = true }
 ibc-union-spec.workspace          = true
 ics23                             = { workspace = true }

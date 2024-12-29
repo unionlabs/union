@@ -333,7 +333,7 @@ _: {
           }
         );
 
-      eth-deploy-multicall =
+      eth-deploy-single =
         {
           rpc-url,
           kind,
@@ -342,7 +342,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplicationWithArgs {
-            name = "eth-deploy-multicall";
+            name = "eth-deploy-single-${kind}";
             runtimeInputs = [ self'.packages.forge ];
             arguments = [
               {
@@ -355,6 +355,16 @@ _: {
                 required = true;
                 help = "The contract owner private key.";
               }
+              {
+                arg = "sender_pk";
+                required = true;
+                help = "The sender address that created the contract through the deployer.";
+              }
+              {
+                arg = "etherscan_api_key";
+                required = true;
+                help = "The sender address that created the contract through the deployer.";
+              }
             ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -364,12 +374,13 @@ _: {
               cp --no-preserve=mode -r ${evmSources}/* .
 
               DEPLOYER="$argc_deployer_pk" \
+              SENDER="$argc_sender_pk" \
               PRIVATE_KEY="$argc_private_key" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${extra-args}
+                --broadcast
 
               popd
               rm -rf "$OUT"
@@ -683,8 +694,14 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-deploy-${args.network}-evm-lens";
+            value = eth-deploy-single ({ kind = "EvmLens"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-multicall";
-            value = eth-deploy-multicall ({ kind = "Multicall"; } // args);
+            value = eth-deploy-single ({ kind = "Multicall"; } // args);
           }) networks
         )
         // builtins.listToAttrs (
@@ -706,6 +723,18 @@ _: {
               {
                 dry = true;
                 protocol = "CometblsClient";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-evm-lens-client";
+            value = eth-upgrade (
+              {
+                dry = false;
+                protocol = "EvmInCosmosClient";
               }
               // args
             );

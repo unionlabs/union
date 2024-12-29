@@ -9,7 +9,7 @@ cometbft-rpc                      = { workspace = true }
 dashmap                           = { workspace = true }
 enumorph                          = { workspace = true }
 ethereum-light-client-types       = { workspace = true, features = ["serde"] }
-evm-state-lens-light-client-types = { workspace = true, features = ["proto", "serde"] }
+evm-state-lens-light-client-types = { workspace = true, features = ["serde"] }
 futures                           = { workspace = true }
 ics23                             = { workspace = true }
 jsonrpsee                         = { workspace = true, features = ["macros", "server", "tracing"] }
