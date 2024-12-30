@@ -238,6 +238,21 @@ pub enum MsgCmd {
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
     },
+    UpdateClient {
+        #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(long)]
+        client_id: RawClientId,
+        #[arg(long, value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
+        /// The height to update the client to. Defaults to the latest height of the chain being tracked.
+        #[arg(long)]
+        update_to: Option<Height>,
+
+        /// Automatically enqueue the op.
+        #[arg(long, short = 'e', default_value_t = false)]
+        enqueue: bool,
+    },
 }
 
 #[allow(
