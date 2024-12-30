@@ -17,6 +17,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface},
+    into_value,
     module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -104,7 +105,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_client_state(&client_state)?).unwrap())
+        Ok(into_value(Module::decode_client_state(&client_state)?))
     }
 
     #[instrument]
@@ -113,7 +114,9 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(into_value(Module::decode_consensus_state(
+            &consensus_state,
+        )?))
     }
 
     #[instrument]

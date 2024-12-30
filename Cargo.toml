@@ -160,9 +160,9 @@ members = [
   "lib/galois-rpc",
   "lib/beacon-api-types",
 
-  # "mpc/shared",
-  # "mpc/client",
-  # "mpc/coordinator",
+  "mpc/shared",
+  "mpc/client",
+  "mpc/coordinator",
 
   "lib/ibc-union-spec",
   "lib/ibc-classic-spec",
