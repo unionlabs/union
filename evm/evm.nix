@@ -360,11 +360,6 @@ _: {
                 required = true;
                 help = "The sender address that created the contract through the deployer.";
               }
-              {
-                arg = "etherscan_api_key";
-                required = true;
-                help = "The sender address that created the contract through the deployer.";
-              }
             ];
             text = ''
               ${ensureAtRepositoryRoot}

@@ -254,7 +254,7 @@ impl Server {
                         .unwrap(),
                     )
                     .await
-                    .map_err(fatal_error)?;
+                    .map_err(json_rpc_error_to_error_object)?;
 
                 trace!(%client_state);
 

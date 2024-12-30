@@ -11,7 +11,7 @@ use tracing::instrument;
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
+    encoding::{DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     ErrorReporter,
 };

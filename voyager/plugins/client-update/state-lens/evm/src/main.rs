@@ -12,12 +12,12 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
+use tracing::{debug, instrument};
 use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
-    core::{ChainId, ClientType, IbcSpec, IbcSpecId, QueryHeight},
+    core::{ChainId, ClientType, IbcSpec, QueryHeight},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
@@ -228,6 +228,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 ibc_spec_id: IbcUnion::ID,
                                 client_id: RawClientId::new(self.l1_client_id),
                                 height: update_to,
+                                finalized: true,
                             }),
                             continuation,
                         ]),
@@ -236,13 +237,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             }
             ModuleCall::FetchUpdateAfterL1Update(FetchUpdateAfterL1Update {
                 counterparty_chain_id,
-                update_to,
                 ..
             }) => {
                 let voy_client = ext.try_get::<VoyagerClient>()?;
                 let l1_latest_height = voy_client
-                    .query_latest_height(self.l1_chain_id.clone(), true)
+                    .query_latest_height(self.l1_chain_id.clone(), false)
                     .await?;
+                debug!("l1 latest height {}", l1_latest_height);
                 let l0_client_meta = voy_client
                     .client_meta::<IbcUnion>(
                         counterparty_chain_id.clone(),
@@ -250,6 +251,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         self.l0_client_id,
                     )
                     .await?;
+                let l1_client_meta = voy_client
+                    .client_meta::<IbcUnion>(
+                        self.l1_chain_id.clone(),
+                        QueryHeight::Specific(l1_latest_height),
+                        self.l1_client_id,
+                    )
+                    .await?;
+                // The client has been updated to at least update_to
+                let update_to = l1_client_meta.counterparty_height;
+                debug!("l0 client meta {:#?}", l0_client_meta);
                 let l2_consensus_state_path = ConsensusStatePath {
                     client_id: self.l1_client_id,
                     height: update_to.height(),
@@ -262,6 +273,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     )
                     .await?
                     .state;
+                debug!("l2 consensus state {:#?}", l2_consensus_state);
                 let l2_consensus_state_proof = serde_json::from_value::<MerkleProof>(
                     voy_client
                         .query_ibc_proof(
@@ -274,6 +286,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .proof,
                 )
                 .expect("impossible");
+                debug!("l2 consensus state proof {:#?}", l2_consensus_state_proof);
                 // Dispatch an update for the L1 on the destination, then dispatch the L2 update on the destination
                 Ok(conc([
                     promise(
@@ -297,6 +310,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ibc_spec_id: IbcUnion::ID,
                             client_id: RawClientId::new(self.l0_client_id),
                             height: l1_latest_height,
+                            finalized: false,
                         }),
                         data(OrderedHeaders {
                             headers: vec![(

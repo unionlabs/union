@@ -132,6 +132,7 @@ pub struct WaitForTrustedHeight {
     pub ibc_spec_id: IbcSpecId,
     pub client_id: RawClientId,
     pub height: Height,
+    pub finalized: bool,
 }
 
 impl CallT<VoyagerMessage> for Call {
@@ -258,6 +259,7 @@ impl CallT<VoyagerMessage> for Call {
                 ibc_spec_id,
                 client_id,
                 height,
+                finalized,
             }) => {
                 let trusted_client_state_meta = ctx
                     .rpc_server
@@ -265,7 +267,11 @@ impl CallT<VoyagerMessage> for Call {
                     .client_meta(
                         &chain_id,
                         &ibc_spec_id,
-                        QueryHeight::Latest,
+                        if finalized {
+                            QueryHeight::Finalized
+                        } else {
+                            QueryHeight::Latest
+                        },
                         client_id.clone(),
                     )
                     .await
@@ -288,6 +294,7 @@ impl CallT<VoyagerMessage> for Call {
                             ibc_spec_id,
                             client_id,
                             height,
+                            finalized,
                         }),
                     ]))
                 }
