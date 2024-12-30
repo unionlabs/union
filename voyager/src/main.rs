@@ -670,13 +670,14 @@ pub mod utils {
     use serde_json::Value;
     use tracing::trace;
     use voyager_message::{
+        call::SubmitTx,
         context::Context,
         core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
-        data::{IbcDatagram, WithChainId},
+        data::IbcDatagram,
         module::{ClientBootstrapModuleClient, ClientModuleClient},
         VoyagerMessage,
     };
-    use voyager_vm::{data, Op};
+    use voyager_vm::{call, Op};
 
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn make_msg_create_client(
@@ -739,9 +740,9 @@ pub mod utils {
                 .modules()?
                 .client_module(&client_type, &ibc_interface, &ibc_spec_id)?;
 
-        Ok(data(WithChainId {
+        Ok(call(SubmitTx {
             chain_id,
-            message: match ibc_spec_id.as_str() {
+            datagrams: vec![match ibc_spec_id.as_str() {
                 IbcSpecId::CLASSIC => IbcDatagram::new::<IbcClassic>(
                     ibc_classic_spec::Datagram::from(ibc_classic_spec::MsgCreateClientData {
                         msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
@@ -767,7 +768,7 @@ pub mod utils {
                     },
                 )),
                 _ => bail!("unknown IBC version id `{ibc_spec_id}`"),
-            },
+            }],
         }))
     }
 }
