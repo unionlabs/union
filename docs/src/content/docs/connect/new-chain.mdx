@@ -37,16 +37,29 @@ mkdir ./starsd-home
 ```
 
 
-```bash
-./starsd tx wasm store ./contracts/union_ibc.wasm --from cor-systems --home ./starsd-home --gas auto --gas-adjustment 1.4 --gas-prices 1ustars --node https://rpc.elgafar-1.stargaze.chain.kitchen --chain-id elgafar-1 -y
-```
+<Steps>
+1. Upload your contract:
 
-this will give you a tx hash
+   ```bash
+   ./starsd tx wasm store ./contracts/union_ibc.wasm --from cor-systems --home ./starsd-home --gas auto --gas-adjustment 1.4 --gas-prices 1ustars --node https://rpc.elgafar-1.stargaze.chain.kitchen --chain-id elgafar-1 -y
+   # => tx_hash: C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977
+   ```
+2. Query your contract's id:
+   ```bash
+   ./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 --node https://rpc.elgafar-1.stargaze.chain.kitchen
+   # => code_id: 5011
+   ```
+3. Instantiate union-ibc
+   ```bash
+   ./starsd tx wasm instantiate 5011 '{}' --node https://rpc.elgafar-1.stargaze.chain.kitchen --home ./starsd-home --from cor-systems --gas auto --gas-adjustment 1.4 --gas-prices 1ustars --label union-ibc-1 --admin stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4 --chain-id elgafar-1 -y
+   # => txhash: D3E0D991E3874C83B43E0828C693F8E0A1E2A8C8CB518DFFF2F5F87FB6E1A7BC
+   ```
+4. Query the union-ibc contract address:
 
-query your contract's id:
-```bash
-./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 --node https://rpc.elgafar-1.stargaze.chain.kitchen
+   ```bash
+   ./starsd query tx D3E0D991E3874C83B43E0828C693F8E0A1E2A8C8CB518DFFF2F5F87FB6E1A7BC --node https://rpc.elgafar-1.stargaze.chain.kitchen
+   # => contract_address: stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm
+   ```
+</Steps>
 
-# => 5011
-```
 
