@@ -20,8 +20,33 @@ You'll need to upload two contracts:
 - [union-ibc](https://github.com/unionlabs/union/tree/main/cosmwasm/union-ibc/core): Union's modular IBC stack.
 - [cometbls-light-client](https://github.com/unionlabs/union/tree/main/cosmwasm/union-ibc/light-clients/cometbls): Light-client tracking [CometBLS](/architecture/cometbls) consensus.
 
-### EVM
 
-https://github.com/unionlabs/union/tree/main/evm#other-networks
+### Cosmos
 
+To upload [CosmWasm](https://cosmwasm.com/) contracts to your Cosmos chain, you need your chain's binary. We'll use `starsd` in this example. 
+
+```bash
+nix build github:unionlabs/union#union-ibc -L
+```
+
+```bash
+mkdir ./starsd-home
+./starsd init --chain-id elgafar-1 --home ./starsd-home cor-systems
+./starsd keys add cor-systems --home ./starsd-home
+# this will give you your address: stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4
+```
+
+
+```bash
+./starsd tx wasm store ./contracts/union_ibc.wasm --from cor-systems --home ./starsd-home --gas auto --gas-adjustment 1.4 --gas-prices 1ustars --node https://rpc.elgafar-1.stargaze.chain.kitchen --chain-id elgafar-1 -y
+```
+
+this will give you a tx hash
+
+query your contract's id:
+```bash
+./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 --node https://rpc.elgafar-1.stargaze.chain.kitchen
+
+# => 5011
+```
 
