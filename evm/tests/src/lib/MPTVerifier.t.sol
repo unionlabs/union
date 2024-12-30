@@ -5,6 +5,34 @@ import "forge-std/Test.sol";
 import "../../../contracts/lib/MPTVerifier.sol";
 
 contract MPTVerifierTests is Test {
+    function test_verify_ok2() public {
+        vm.pauseGasMetering();
+        bytes[] memory proof = new bytes[](3);
+        proof[0] =
+            hex"f90211a0290ff9c2465abdc3e521b0e22d434ca9965d9294f984c4af27b62defa7aa0404a0681afeef44df0f0f3ff44a1fc6b6b1c1b5b3ddf1df4b8334184ac69e06d663cea0e7d87d908639d88cccb5e82139e6969ef7a60ef15f2c1b92a42721c00a684534a0cb0d69ffacac2472aba8113fabe43ae0fb1ec1adc0ba524b4d77a4ae1b9f1834a0d8c1a0faa0ee7b3d651997d9bed61cd1a38fdd1d5811d0f6f35135d505772271a055d3a97b39c767db94b3a1ec2cd527ecee17b2c48b05e478c846f74e8c4b0770a07f84fae77d495ad51e1754ca932a17967af94e0ab56da206569bf581b86ff1a3a0444fdf31592bedd27a9525245ce36aa23bb53767574d2ddf7db0c8ed649b7d08a02724a8992048374ba00a4381a1a0c44a10a3863647977f61e668de5532ae10eda0ceff06700cbb9dc8b2a95604aa18ec3863877f64b0101fdeba6fff45aa220e98a02a3280086775de99c51785b0281459bce312b7231bcd59a030dc3c277bb29854a03506c7687acc02c53b15bb4c15cea1cb1065b7a24a1a931200bd117d88dee84ea055759451409a66a368f9ee9bce914924080954448b54ee7e849fabdd7d5d4124a0fdfe38b6023fb6e7a4728a07872f191a0b173ca2b2f2c9dac4e46b1478594903a03bdaa97bd901df14cad52a8369a832f766f1da1877c72c26dff87e4f8eedf73fa02d69cf9241410b8bd737972cbf4675a8bfdce0f1ce923a7a5c8209579ba0b55180";
+        proof[1] =
+            hex"f901518080a0fe0849c9829308dfeebb656b80c84fd25cddad6195e55da1759fb534872d0565a0492b4ed07e3463e8a3f2280e664efe6dcd914e8b6f96dd457b2fb1514fa4dcf3a0136bc83176214e5c162c0d0ee80ec5c99bb74b612de9d31651547629a6d3bff680a0b03da2ced67fe1e95e2d166e4faeac40f4deb62242e768646e20302e989ab6eb80a06507648f5ee64cf12436e03298b41203bf3bb7344ef267853802bf97fd9b48cba093f776423813a1ca4b75baa37b23e49a02898a68961e357d9e8064663d5bb20380a0450922b2b63e417a5397d6f4346828778a5d58bdf292948e1c542a1ed0319ee480a0d76251a116716185de4f499c9934deb89fb9bfecbd85d4e6d8fa268958fd4eb8a0cc6759e97e0d6b2947385d706a65b69f15512add39d2163b3cbcfd427307df87a036cee042c4ab7e473bfb673d9a8f99eb6d86ad267803005fdeb57eb636121ad180";
+        proof[2] =
+            hex"f843a020d71926b1d4cc00b9747141c15cf96296e56262d843136a42daf00aca967037a1a0faadeddd9e83b87f941ff7ac6c1ff3a55a976f082f579d64ca49253295321ca6";
+        bytes memory proofChain = hex"";
+        for (uint256 i = 0; i < 3; i++) {
+            proofChain = abi.encodePacked(proofChain, proof[i]);
+        }
+        this.checkExistence(
+            0x64bec87c43e402ed2648ae3e10c9ba5d980ac30ae0dfcc4c90a47856380ce76a,
+            proofChain,
+            keccak256(
+                abi.encodePacked(
+                    hex"91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a7",
+                    uint256(0)
+                )
+            ),
+            RLP.encodeUint(
+                0xfaadeddd9e83b87f941ff7ac6c1ff3a55a976f082f579d64ca49253295321ca6
+            )
+        );
+    }
+
     /* Proof extracted from ethereum mainnet
      * {"method":"eth_getProof","params":["0xd1d2eb1b1e90b638588728b4130137d262c87cae",["0x0"], "0x14655B2"],"id":1,"jsonrpc":"2.0"}
      */
@@ -82,7 +110,7 @@ contract MPTVerifierTests is Test {
         bytes32 slot
     ) public {
         vm.resumeGasMetering();
-        (bool exists, bytes calldata value) = MPTVerifier.verifyTrieValue(
+        (bool exists, bytes calldata _value) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
         );
         assertEq(exists, false);

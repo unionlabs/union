@@ -216,14 +216,14 @@ contract EvmInCosmosClient is
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(
-                keccak256(abi.encodePacked(path)),
-                EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT
-            )
+            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
         );
-        (bool exists, bytes calldata provenValue) =
-            MPTVerifier.verifyTrieValue(proof, slot, storageRoot);
-        return exists && keccak256(value) == keccak256(provenValue);
+        (bool exists, bytes calldata provenValue) = MPTVerifier.verifyTrieValue(
+            proof, keccak256(abi.encodePacked(slot)), storageRoot
+        );
+        return exists
+            && keccak256(RLP.encodeUint(uint256(bytes32(value))))
+                == keccak256(provenValue);
     }
 
     function verifyNonMembership(
@@ -237,12 +237,11 @@ contract EvmInCosmosClient is
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(
-                keccak256(abi.encodePacked(path)),
-                EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT
-            )
+            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
         );
-        (bool exists,) = MPTVerifier.verifyTrieValue(proof, slot, storageRoot);
+        (bool exists,) = MPTVerifier.verifyTrieValue(
+            proof, keccak256(abi.encodePacked(slot)), storageRoot
+        );
         return !exists;
     }
 
