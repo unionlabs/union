@@ -28,11 +28,12 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, IbcSpec},
-    data::{Data, WithChainId},
+    data::Data,
+    hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, defer, now, pass::PassResult, seq, Op};
+use voyager_vm::{call, defer, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::ModuleCall,
@@ -208,68 +209,28 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .enumerate()
-                .map(|(idx, msg)| {
-                    Ok((
-                        vec![idx],
-                        match msg {
-                            Op::Data(Data::IdentifiedIbcDatagram(WithChainId {
-                                chain_id,
-                                message,
-                            })) => {
-                                assert_eq!(chain_id, self.chain_id);
+                .map(|(idx, mut op)| {
+                    SubmitTxHook::new(&self.chain_id, |submit_tx| {
+                        PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::SubmitMulticall(
+                                submit_tx
+                                    .datagrams
+                                    .clone()
+                                    .into_iter()
+                                    .map(|message| {
+                                        message.decode_datagram::<IbcUnion>().unwrap().unwrap()
+                                    })
+                                    .collect(),
+                            ),
+                        )
+                        .into()
+                    })
+                    .visit_op(&mut op);
 
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::SubmitMulticall(vec![message
-                                        .decode_datagram::<IbcUnion>()
-                                        .unwrap()
-                                        .map_err(|e| {
-                                            ErrorObject::owned(
-                                                FATAL_JSONRPC_ERROR_CODE,
-                                                format!(
-                                                    "unable to deserialize datagram: {}",
-                                                    ErrorReporter(e)
-                                                ),
-                                                None::<()>,
-                                            )
-                                        })?]),
-                                ))
-                            }
-                            Op::Data(Data::IdentifiedIbcDatagramBatch(WithChainId {
-                                chain_id,
-                                message,
-                            })) => {
-                                assert_eq!(chain_id, self.chain_id);
-
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::SubmitMulticall(
-                                        message
-                                            .into_iter()
-                                            .map(|message| {
-                                                message
-                                                    .decode_datagram::<IbcUnion>()
-                                                    .unwrap()
-                                                    .map_err(|e| {
-                                                        ErrorObject::owned(
-                                                            FATAL_JSONRPC_ERROR_CODE,
-                                                            format!(
-                                                            "unable to deserialize datagram: {}",
-                                                            ErrorReporter(e)
-                                                        ),
-                                                            None::<()>,
-                                                        )
-                                                    })
-                                            })
-                                            .collect::<Result<_, _>>()?,
-                                    ),
-                                ))
-                            }
-                            _ => panic!("unexpected message: {msg:?}"),
-                        },
-                    ))
+                    (vec![idx], op)
                 })
-                .collect::<RpcResult<_>>()?,
+                .collect(),
         })
     }
 

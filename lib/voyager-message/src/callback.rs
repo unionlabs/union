@@ -11,9 +11,10 @@ use voyager_core::{ClientInfo, IbcSpecId};
 use voyager_vm::{BoxDynError, CallbackT, Op, QueueError};
 
 use crate::{
+    call::SubmitTx,
     context::WithId,
     core::ChainId,
-    data::{Data, IbcDatagram, OrderedHeaders, WithChainId},
+    data::{Data, IbcDatagram, OrderedHeaders},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, PluginClient},
     Context, PluginMessage, RawClientId, VoyagerMessage,
@@ -99,10 +100,10 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .get(&ibc_spec_id)
                     .map_err(error_object_to_queue_error)?;
 
-                Ok(voyager_vm::data(WithChainId {
+                Ok(voyager_vm::call(SubmitTx {
                     chain_id,
                     // REVIEW: Use FuturesOrdered here?
-                    message: stream::iter(headers.into_iter())
+                    datagrams: stream::iter(headers.into_iter())
                         .then(|(_, header)| {
                             client_module
                                 .encode_header(header)

@@ -38,11 +38,12 @@ use unionlabs::{
 };
 use voyager_message::{
     core::ChainId,
-    data::{Data, WithChainId},
+    data::Data,
+    hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, noop, pass::PassResult, Op};
+use voyager_vm::{call, conc, noop, pass::PassResult, Op, Visit};
 
 use crate::{
     call::{IbcMessage, ModuleCall},
@@ -632,44 +633,27 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .enumerate()
-                .map(|(idx, msg)| {
-                    Ok((
-                        vec![idx],
-                        match msg {
-                            Op::Data(Data::IdentifiedIbcDatagram(WithChainId {
-                                chain_id,
-                                message,
-                            })) => {
-                                assert_eq!(chain_id, self.chain_id);
+                .map(|(idx, mut op)| {
+                    SubmitTxHook::new(&self.chain_id, |submit_tx| {
+                        PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::SubmitTransaction(
+                                submit_tx
+                                    .datagrams
+                                    .clone()
+                                    .into_iter()
+                                    .map(IbcMessage::from_raw_datagram)
+                                    .collect::<Result<_, _>>()
+                                    .unwrap(),
+                            ),
+                        )
+                        .into()
+                    })
+                    .visit_op(&mut op);
 
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(vec![
-                                        IbcMessage::from_raw_datagram(message)?,
-                                    ]),
-                                ))
-                            }
-                            Op::Data(Data::IdentifiedIbcDatagramBatch(WithChainId {
-                                chain_id,
-                                message,
-                            })) => {
-                                assert_eq!(chain_id, self.chain_id);
-
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::SubmitTransaction(
-                                        message
-                                            .into_iter()
-                                            .map(IbcMessage::from_raw_datagram)
-                                            .collect::<Result<_, _>>()?,
-                                    ),
-                                ))
-                            }
-                            _ => panic!("unexpected message: {msg:?}"),
-                        },
-                    ))
+                    (vec![idx], op)
                 })
-                .collect::<RpcResult<_>>()?,
+                .collect(),
         })
     }
 

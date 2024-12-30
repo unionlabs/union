@@ -195,26 +195,22 @@ cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-
 cometbls-light-client-types = { path = "lib/cometbls-light-client-types", default-features = false }
 
 scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
-scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 
 ethereum-light-client       = { path = "cosmwasm/union-ibc/light-clients/ethereum", default-features = false }
 ethereum-light-client-types = { path = "lib/ethereum-light-client-types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
-scroll-api   = { path = "lib/scroll-api", default-features = false }
-scroll-codec = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc   = { path = "lib/scroll-rpc", default-features = false }
-
-berachain-light-client       = { path = "cosmwasm/union-ibc/light-clients/light-clients/berachain-light-client", default-features = false }
 berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
+scroll-api                   = { path = "lib/scroll-api", default-features = false }
+scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
+scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/union-ibc/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
 linea-light-client-types = { path = "lib/linea-light-client-types", default-features = false }
-linea-verifier           = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
 ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
@@ -222,10 +218,8 @@ union-ibc              = { path = "cosmwasm/union-ibc/core", default-features = 
 union-ibc-light-client = { path = "cosmwasm/union-ibc/core/light-client-interface", default-features = false }
 union-ibc-msg          = { path = "cosmwasm/union-ibc/core/msg", default-features = false }
 
-gnark-key-parser = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc       = { path = "lib/gnark-mimc", default-features = false }
-# ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
-ics008-wasm-client             = { path = "cosmwasm/ics08-light-clients/interface", default-features = false }
+gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
 ics23                          = { path = "lib/ics23", default-features = false }
 macros                         = { path = "lib/macros", default-features = false }
 move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
@@ -235,8 +229,6 @@ pg-queue                       = { path = "lib/pg-queue", default-features = fal
 poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
 protos                         = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
-
-multicall = { path = "cosmwasm/multicall", default-features = false }
 
 ibc-classic-spec = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-union-spec   = { path = "lib/ibc-union-spec", default-features = false }
@@ -263,9 +255,7 @@ voyager-message = { path = "lib/voyager-message", default-features = false }
 voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 
 # external dependencies
-milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
-
-tendermint     = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
+milagro_bls    = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 alloy = { version = "0.6", default-features = false }
@@ -280,7 +270,6 @@ bcs                      = { version = "0.1.6", default-features = false }
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
-bytes                    = { version = "1.2.1", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
@@ -301,9 +290,7 @@ hex-literal              = { version = "0.4.1", default-features = false }
 jsonrpsee                = { version = "0.24.2", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
 move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
-near-contract-standards  = { version = "5.1.0", default-features = false }
 near-sdk                 = { version = "5.1.0", default-features = false }
-near-sdk-contract-tools  = { version = "3.0.2", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 primitive-types          = { version = "0.12.1", default-features = false }
 prost                    = { version = "0.12.3", default-features = false }
@@ -322,9 +309,7 @@ static_assertions        = { git = "https://github.com/nvzqz/static-assertions" 
 subtle-encoding          = { version = "0.5.1", default-features = false }
 thiserror                = { version = "1.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
-tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = { version = "1.33.0", default-features = false }
-tokio-stream             = { version = "0.1.14", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }
 tonic                    = { version = "0.10", default-features = false }
 tracing                  = { version = "0.1.40", default-features = false }

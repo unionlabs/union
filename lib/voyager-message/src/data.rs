@@ -18,9 +18,6 @@ pub enum Data {
     IbcEvent(ChainEvent),
     IbcDatagram(IbcDatagram),
 
-    IdentifiedIbcDatagram(WithChainId<IbcDatagram>),
-    IdentifiedIbcDatagramBatch(WithChainId<Vec<IbcDatagram>>),
-
     OrderedHeaders(OrderedHeaders),
     OrderedMsgUpdateClients(OrderedClientUpdates),
 
@@ -123,10 +120,4 @@ pub struct ClientUpdate {
     pub client_id: RawClientId,
     pub ibc_spec_id: IbcSpecId,
     pub client_message: Bytes,
-}
-
-#[model]
-pub struct WithChainId<T> {
-    pub chain_id: ChainId,
-    pub message: T,
 }

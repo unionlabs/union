@@ -7,7 +7,7 @@ use voyager_core::{ClientType, IbcSpecId, QueryHeight};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    core::ChainId, error_object_to_queue_error, json_rpc_error_to_queue_error,
+    core::ChainId, data::IbcDatagram, error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::PluginClient, Context, PluginMessage, RawClientId, VoyagerMessage,
 };
 
@@ -17,6 +17,8 @@ pub enum Call {
     FetchBlocks(FetchBlocks),
 
     FetchUpdateHeaders(FetchUpdateHeaders),
+
+    SubmitTx(SubmitTx),
 
     // MakeMsgCreateClient(MakeMsgCreateClient),
     WaitForHeight(WaitForHeight),
@@ -93,6 +95,21 @@ pub struct FetchUpdateHeaders {
     pub update_to: Height,
 }
 
+/// Submit a batch of transactions on the specified chain.
+///
+/// This represents a request for transaction submission and must be picked up by a plugin. If it is not handled by a plugin, this will return with a fatal error.
+///
+/// # Implementor's Note
+///
+/// The returned [`Op`] ***MUST*** resolve to a [`Op::Noop`].
+#[model]
+pub struct SubmitTx {
+    /// The chain to submit the messages on.
+    pub chain_id: ChainId,
+    // TODO: Ensure this is non-empty
+    pub datagrams: Vec<IbcDatagram>,
+}
+
 #[model]
 pub struct WaitForHeight {
     pub chain_id: ChainId,
@@ -150,6 +167,17 @@ impl CallT<VoyagerMessage> for Call {
                     "client update request received for a {client_type} client on \
                     {counterparty_chain_id} tracking {chain_id} from height {update_from}
                     to {update_to} but it was not picked up by a plugin"
+                );
+
+                error!(%message);
+
+                Err(QueueError::Fatal(message.into()))
+            }
+
+            Call::SubmitTx(SubmitTx { chain_id, .. }) => {
+                let message = format!(
+                    "transaction submission request received for chain {chain_id} but \
+                    it was not picked up by a plugin"
                 );
 
                 error!(%message);

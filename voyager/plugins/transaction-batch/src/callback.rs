@@ -9,12 +9,12 @@ use macros::model;
 use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    call::WaitForTrustedHeight,
+    call::{SubmitTx, WaitForTrustedHeight},
     core::{ChainId, ClientStateMeta, QueryHeight},
-    data::{Data, IbcDatagram, OrderedClientUpdates, WithChainId},
+    data::{Data, IbcDatagram, OrderedClientUpdates},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, noop, promise, seq, Op};
+use voyager_vm::{call, conc, noop, promise, seq, Op};
 
 use crate::{
     call::{MakeMsg, ModuleCall},
@@ -206,9 +206,9 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
         // });
 
         match self.updates {
-            Some(updates) => data(WithChainId {
+            Some(updates) => call(SubmitTx {
                 chain_id,
-                message: updates
+                datagrams: updates
                     .updates
                     .into_iter()
                     .map(|(_, msg)| {
@@ -239,9 +239,9 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                             ibc_spec_id: V::ID,
                             height: required_consensus_height,
                         }),
-                        data(WithChainId {
+                        call(SubmitTx {
                             chain_id,
-                            message: msgs.map(IbcDatagram::new::<V>).collect::<Vec<_>>(),
+                            datagrams: msgs.map(IbcDatagram::new::<V>).collect::<Vec<_>>(),
                         }),
                     ])
                 }
