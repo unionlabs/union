@@ -44,10 +44,10 @@ use crate::{
     utils::make_msg_create_client,
 };
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(windows)]
 compile_error!(
     "voyager interacts directly with subprocesses and has \
-    not been tested on non-linux operating systems."
+    not been tested on windows."
 );
 
 pub mod api;
