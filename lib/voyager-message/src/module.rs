@@ -5,7 +5,7 @@ use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member};
-use voyager_core::{ConsensusType, IbcSpecId};
+use voyager_core::{ConsensusType, IbcSpecId, Timestamp};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 use crate::{
@@ -440,7 +440,7 @@ pub trait ConsensusModule {
     /// Query the latest finalized timestamp of this chain.
     #[method(name = "queryLatestTimestamp", with_extensions)]
     // TODO: Make this return a better type than i64
-    async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<i64>;
+    async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<Timestamp>;
 }
 
 /// Client bootstrap modules provide the initial client and consensus states for a client. This is notably separate from the [`ConsensusModule`], since it is possible for different client types (with different state types) to track the same consensus.

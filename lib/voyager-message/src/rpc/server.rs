@@ -10,7 +10,7 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
-use voyager_core::IbcSpecId;
+use voyager_core::{IbcSpecId, Timestamp};
 use voyager_vm::ItemId;
 
 // use valuable::Valuable;
@@ -159,7 +159,7 @@ impl Server {
         &self,
         chain_id: &ChainId,
         finalized: bool,
-    ) -> RpcResult<i64> {
+    ) -> RpcResult<Timestamp> {
         self.span()
             .in_scope(|| async {
                 trace!("querying latest timestamp");
@@ -174,7 +174,10 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                trace!(latest_timestamp, "queried latest timestamp");
+                trace!(
+                    latest_timestamp = latest_timestamp.as_nanos(),
+                    "queried latest timestamp"
+                );
 
                 Ok(latest_timestamp)
             })
@@ -537,7 +540,11 @@ impl VoyagerRpcServer for Server {
         self.query_latest_height(&chain_id, finalized).await
     }
 
-    async fn query_latest_timestamp(&self, chain_id: ChainId, finalized: bool) -> RpcResult<i64> {
+    async fn query_latest_timestamp(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
         self.query_latest_timestamp(&chain_id, finalized).await
     }
 

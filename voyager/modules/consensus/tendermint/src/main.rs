@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, instrument};
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ConsensusType},
+    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     rpc::json_rpc_error_to_error_object,
     ConsensusModule,
@@ -122,7 +122,11 @@ impl ConsensusModuleServer for Module {
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
+    async fn query_latest_timestamp(
+        &self,
+        _: &Extensions,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
         let mut commit_response = self
             .tm_client
             .commit(None)
@@ -154,12 +158,10 @@ impl ConsensusModuleServer for Module {
             }
         }
 
-        Ok(commit_response
-            .signed_header
-            .header
-            .time
-            .as_unix_nanos()
-            .try_into()
-            .expect("should be fine"))
+        Ok(
+            Timestamp::from_nanos(commit_response.signed_header.header.time.as_unix_nanos())
+                .try_into()
+                .expect("should be fine"),
+        )
     }
 }

@@ -16,7 +16,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType},
+    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     ConsensusModule,
 };
@@ -145,7 +145,11 @@ impl ConsensusModuleServer for Module {
 
     /// Query the latest finalized timestamp of this chain.
     // TODO: Make this return a better type than i64
-    async fn query_latest_timestamp(&self, ext: &Extensions, finalized: bool) -> RpcResult<i64> {
+    async fn query_latest_timestamp(
+        &self,
+        ext: &Extensions,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
         let latest_height = self.query_latest_height(ext, finalized).await?;
 
         match self
@@ -158,7 +162,7 @@ impl ConsensusModuleServer for Module {
 
                 debug!(%timestamp, %latest_height, "latest timestamp");
 
-                Ok(timestamp.try_into().unwrap())
+                Ok(Timestamp::from_nanos(timestamp).try_into().unwrap())
             }
             Err(err) => Err(ErrorObject::owned(
                 -1,
