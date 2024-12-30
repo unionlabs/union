@@ -38,7 +38,6 @@ pub trait VoyagerRpc {
     async fn query_latest_height(&self, chain_id: ChainId, finalized: bool) -> RpcResult<Height>;
 
     #[method(name = "queryLatestTimestamp")]
-    // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(
         &self,
         chain_id: ChainId,

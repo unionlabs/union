@@ -144,7 +144,6 @@ impl ConsensusModuleServer for Module {
     }
 
     /// Query the latest finalized timestamp of this chain.
-    // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(
         &self,
         ext: &Extensions,

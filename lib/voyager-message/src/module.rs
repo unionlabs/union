@@ -439,7 +439,6 @@ pub trait ConsensusModule {
 
     /// Query the latest finalized timestamp of this chain.
     #[method(name = "queryLatestTimestamp", with_extensions)]
-    // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<Timestamp>;
 }
 
