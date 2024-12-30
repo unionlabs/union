@@ -98,20 +98,7 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: format!(
-                r#"
-if ."@type" == "data" then
-    ."@value" as $data |
-
-    # pull all transaction data messages
-    ($data."@type" == "identified_ibc_datagram_batch" or $data."@type" == "identified_ibc_datagram")
-        and $data."@value".chain_id == "{chain_id}"
-else
-    false
-end
-"#,
-                chain_id = config.chain_id,
-            ),
+            interest_filter: SubmitTxHook::filter(&config.chain_id),
         }
     }
 
