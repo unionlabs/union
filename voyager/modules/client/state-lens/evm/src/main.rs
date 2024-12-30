@@ -16,7 +16,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta},
+    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface},
     module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -38,6 +38,8 @@ impl ClientModule for Module {
 
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_EVM)?;
+        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
+        info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)?;
         Ok(Self {})
     }
 }
@@ -57,7 +59,7 @@ impl Module {
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
+        <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),
@@ -83,7 +85,7 @@ impl ClientModuleServer for Module {
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.l2_chain_id.to_string()),
-            height: Module::make_height(cs.l2_latest_height),
+            counterparty_height: Module::make_height(cs.l2_latest_height),
         })
     }
 
@@ -209,6 +211,7 @@ impl ClientModuleServer for Module {
             )
         })?;
         // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
+        // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
         Ok(proof.proof.concat().into())
     }
 }

@@ -281,7 +281,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_type: ClientType::new(ClientType::COMETBLS),
                             chain_id: self.l1_chain_id.clone(),
                             counterparty_chain_id: counterparty_chain_id.clone(),
-                            update_from: l0_client_meta.height,
+                            update_from: l0_client_meta.counterparty_height,
                             update_to: l1_latest_height,
                         })],
                         [],
@@ -294,7 +294,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     seq([
                         call(WaitForTrustedHeight {
                             chain_id: counterparty_chain_id,
-                            ibc_spec_id: IbcSpecId::new(IbcSpecId::UNION),
+                            ibc_spec_id: IbcUnion::ID,
                             client_id: RawClientId::new(self.l0_client_id),
                             height: l1_latest_height,
                         }),

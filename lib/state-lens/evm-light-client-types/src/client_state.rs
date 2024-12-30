@@ -22,8 +22,14 @@ pub struct ClientState {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
+    use core::str;
+    use std::string::FromUtf8Error;
+
     use alloy::sol_types::SolValue;
-    use unionlabs::encoding::{Encode, EthAbi};
+    use unionlabs::{
+        encoding::{Decode, Encode, EthAbi},
+        TryFromEthAbiBytesErrorAlloy,
+    };
 
     use crate::ClientState;
 
@@ -52,5 +58,30 @@ pub mod ethabi {
             }
             .abi_encode_params()
         }
+    }
+
+    impl Decode<EthAbi> for ClientState {
+        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
+
+        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+            let client_state = SolClientState::abi_decode(bytes, true)?;
+
+            Ok(Self {
+                l2_chain_id: String::from_utf8(client_state.l2ChainId.into_bytes())
+                    .map_err(|err| TryFromEthAbiBytesErrorAlloy::Convert(Error::ChainId(err)))?,
+                l1_client_id: client_state.l1ClientId,
+                l2_client_id: client_state.l2ClientId,
+                l2_latest_height: client_state.l2LatestHeight,
+                timestamp_offset: client_state.timestampOffset,
+                state_root_offset: client_state.stateRootOffset,
+                storage_root_offset: client_state.storageRootOffset,
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {
+        #[error("invalid chain_id")]
+        ChainId(#[from] FromUtf8Error),
     }
 }

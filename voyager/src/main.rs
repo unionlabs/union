@@ -767,25 +767,25 @@ pub mod utils {
             .await?;
         trace!(%self_consensus_state);
 
-        let consensus_type = ctx
-            .rpc_server
-            .modules()?
-            .chain_consensus_type(&counterparty_chain_id)?;
+        // let consensus_type = ctx
+        //     .rpc_server
+        //     .modules()?
+        //     .chain_consensus_type(&counterparty_chain_id)?;
 
-        let client_consensus_type = ctx
-            .rpc_server
-            .modules()?
-            .client_consensus_type(&client_type)?;
+        // let client_consensus_type = ctx
+        //     .rpc_server
+        //     .modules()?
+        //     .client_consensus_type(&client_type)?;
 
-        if client_consensus_type != consensus_type {
-            return Err(anyhow!(
-                "attempted to create a {client_type} client on \
-                {chain_id} tracking {counterparty_chain_id}, but \
-                the consensus of that chain ({consensus_type}) is \
-                not verifiable by a client of type {client_type} \
-                (which instead verifies {client_consensus_type})."
-            ));
-        }
+        // if client_consensus_type != consensus_type {
+        //     return Err(anyhow!(
+        //         "attempted to create a {client_type} client on \
+        //         {chain_id} tracking {counterparty_chain_id}, but \
+        //         the consensus of that chain ({consensus_type}) is \
+        //         not verifiable by a client of type {client_type} \
+        //         (which instead verifies {client_consensus_type})."
+        //     ));
+        // }
 
         let client_module =
             ctx.rpc_server

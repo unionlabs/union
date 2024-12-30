@@ -582,11 +582,12 @@ impl VoyagerClient {
     pub async fn self_client_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState> {
         let client_state = self
             .0
-            .self_client_state(chain_id, height)
+            .self_client_state(chain_id, client_type, height)
             .await
             .map_err(json_rpc_error_to_error_object)?;
         Ok(client_state)
@@ -595,11 +596,12 @@ impl VoyagerClient {
     pub async fn self_consensus_state(
         &self,
         chain_id: ChainId,
+        client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
         let consensus_state = self
             .0
-            .self_consensus_state(chain_id, height)
+            .self_consensus_state(chain_id, client_type, height)
             .await
             .map_err(json_rpc_error_to_error_object)?;
         Ok(consensus_state)
