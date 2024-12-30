@@ -24,14 +24,15 @@ use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use voyager_message::{
-    call::FetchBlocks,
+    call::{FetchBlocks, FetchUpdateHeaders},
+    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
     core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
     rpc::{IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, Op, Queue};
+use voyager_vm::{call, filter::FilterResult, promise, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -625,20 +626,71 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 )
                 .await?;
 
-                // let msg = call::<VoyagerMessage>(MakeMsgCreateClient {
-                //     chain_id: on,
-                //     height,
-                //     metadata,
-                //     counterparty_chain_id: tracking,
-                //     ibc_interface,
-                //     client_type,
-                // });
+                if enqueue {
+                    println!("enqueueing msg");
+                    send_enqueue(&voyager_config.voyager.rest_laddr, msg).await?;
+                } else {
+                    print_json(&msg);
+                }
+            }
+            MsgCmd::UpdateClient {
+                on,
+                client_id,
+                ibc_spec_id,
+                update_to,
+                enqueue,
+            } => {
+                let voyager_config = get_voyager_config()?;
+
+                let ctx = Context::new(voyager_config.plugins, voyager_config.modules, |h| {
+                    h.register::<IbcClassic>();
+                    h.register::<IbcUnion>();
+                })
+                .await?;
+
+                // weird race condition in Context::new that i don't feel like debugging right now
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+                let client_info = ctx
+                    .rpc_server
+                    .client_info(&on, &ibc_spec_id, client_id.clone())
+                    .await?;
+
+                let client_meta = ctx
+                    .rpc_server
+                    .client_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
+                    .await?;
+
+                let update_to = match update_to {
+                    Some(update_to) => update_to,
+                    None => {
+                        ctx.rpc_server
+                            .query_latest_height(&client_meta.chain_id, true)
+                            .await?
+                    }
+                };
+
+                let op = promise::<VoyagerMessage>(
+                    [call(FetchUpdateHeaders {
+                        client_type: client_info.client_type,
+                        chain_id: client_meta.chain_id,
+                        counterparty_chain_id: on.clone(),
+                        update_from: client_meta.counterparty_height,
+                        update_to,
+                    })],
+                    [],
+                    AggregateMsgUpdateClientsFromOrderedHeaders {
+                        ibc_spec_id: ibc_spec_id.clone(),
+                        chain_id: on.clone(),
+                        client_id: client_id.clone(),
+                    },
+                );
 
                 if enqueue {
                     println!("enqueueing msg");
-                    send_enqueue(&get_voyager_config()?.voyager.rest_laddr, msg).await?;
+                    send_enqueue(&voyager_config.voyager.rest_laddr, op).await?;
                 } else {
-                    print_json(&msg);
+                    print_json(&op);
                 }
             }
         },
