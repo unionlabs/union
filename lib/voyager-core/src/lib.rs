@@ -276,7 +276,7 @@ pub struct ClientStateMeta {
 pub struct ConsensusStateMeta {
     /// The timestamp of the counterparty at the height represented by this
     /// consensus state.
-    pub timestamp_nanos: u64,
+    pub timestamp_nanos: Timestamp,
 }
 
 #[model]
@@ -322,6 +322,32 @@ impl FromStr for QueryHeight {
             "finalized" => Ok(Self::Finalized),
             _ => s.parse().map(Self::Specific),
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Timestamp(u64);
+impl Timestamp {
+    pub fn from_nanos(nanos: u64) -> Self {
+        Timestamp(nanos)
+    }
+
+    pub fn from_secs(secs: u64) -> Self {
+        Timestamp(secs * 1_000_000_000)
+    }
+
+    pub fn as_nanos(&self) -> u64 {
+        self.0
+    }
+
+    pub fn as_secs(&self) -> u64 {
+        self.0 / 1_000_000_000
+    }
+}
+
+impl fmt::Display for Timestamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

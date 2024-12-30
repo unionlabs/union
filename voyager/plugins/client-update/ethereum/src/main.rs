@@ -32,7 +32,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
-    core::{ChainId, ClientType},
+    core::{ChainId, ClientType, Timestamp},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
@@ -536,12 +536,10 @@ impl Module {
             call(WaitForTimestamp {
                 chain_id: counterparty_chain_id.clone(),
                 // we wait for one more block just to be sure the counterparty's block time has caught up
-                timestamp: i64::try_from(
+                timestamp: Timestamp::from_secs(
                     (genesis.genesis_time + (last_update_signature_slot * spec.seconds_per_slot))
                         + spec.seconds_per_slot,
-                )
-                .expect("if this fails good luck")
-                    * NANOS_PER_SECOND as i64,
+                ),
                 finalized: false,
             }),
             voyager_vm::data(OrderedHeaders {

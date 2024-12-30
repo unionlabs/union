@@ -22,7 +22,7 @@ use unionlabs::{
 use voyager_message::{
     core::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
-        IbcGo08WasmClientMetadata, IbcInterface,
+        IbcGo08WasmClientMetadata, IbcInterface, Timestamp,
     },
     module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
@@ -190,7 +190,7 @@ impl ClientModuleServer for Module {
         let cs = self.decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: cs.timestamp,
+            timestamp_nanos: Timestamp::from_nanos(cs.timestamp),
         })
     }
 

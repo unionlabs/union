@@ -3,7 +3,7 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use tracing::{debug, error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
-use voyager_core::{ClientType, IbcSpecId, QueryHeight};
+use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
@@ -120,8 +120,7 @@ pub struct WaitForHeight {
 #[model]
 pub struct WaitForTimestamp {
     pub chain_id: ChainId,
-    /// THIS IS NANOSECONDS
-    pub timestamp: i64,
+    pub timestamp: Timestamp,
     pub finalized: bool,
 }
 
