@@ -23,7 +23,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
-    core::{ChainId, IbcSpecId},
+    core::{ChainId, ClientType, IbcSpecId},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
@@ -102,7 +102,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.l2_chain_id),
-            interest_filter: UpdateHook::filter(&config.l2_chain_id),
+            interest_filter: UpdateHook::filter(
+                &config.l2_chain_id,
+                &ClientType::new(ClientType::BEACON_KIT),
+            ),
         }
     }
 
@@ -169,16 +172,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.l2_chain_id, |fetch| {
-                        Call::Plugin(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchUpdate {
-                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
-                                update_from: fetch.update_from,
-                                update_to: fetch.update_to,
-                            }),
-                        ))
-                    })
+                    UpdateHook::new(
+                        &self.l2_chain_id,
+                        &ClientType::new(ClientType::BEACON_KIT),
+                        |fetch| {
+                            Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchUpdate {
+                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                    update_from: fetch.update_from,
+                                    update_to: fetch.update_to,
+                                }),
+                            ))
+                        },
+                    )
                     .visit_op(&mut op);
 
                     op
@@ -244,6 +251,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 // Recursively dispatch a L1 update before dispatching the L2 update.
                 Ok(conc([
                     call(FetchUpdateHeaders {
+                        client_type: ClientType::new(ClientType::BEACON_KIT),
                         counterparty_chain_id: counterparty_chain_id.clone(),
                         chain_id: self.l1_chain_id.clone(),
                         update_from,

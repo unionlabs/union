@@ -161,7 +161,7 @@ impl ConsensusModuleServer for Module {
 
                 debug!(%timestamp, %latest_height, "latest timestamp");
 
-                Ok(Timestamp::from_nanos(timestamp).try_into().unwrap())
+                Ok(Timestamp::from_nanos(timestamp))
             }
             Err(err) => Err(ErrorObject::owned(
                 -1,

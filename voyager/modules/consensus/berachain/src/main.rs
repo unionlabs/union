@@ -20,7 +20,7 @@ use unionlabs::{
     ibc::core::client::height::Height,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType},
+    core::{ChainId, ConsensusType, Timestamp},
     into_value,
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     ConsensusModule, ExtensionsExt, VoyagerClient,
@@ -122,7 +122,11 @@ impl ConsensusModuleServer for Module {
 
     /// Query the latest finalized timestamp of this chain.
     #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
-    async fn query_latest_timestamp(&self, ext: &Extensions, finalized: bool) -> RpcResult<i64> {
+    async fn query_latest_timestamp(
+        &self,
+        ext: &Extensions,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
         let latest_height = self.query_latest_height(ext, finalized).await?;
         let latest_block = self
             .eth_provider
@@ -133,54 +137,49 @@ impl ConsensusModuleServer for Module {
             .await
             .expect("big trouble")
             .expect("big trouble");
-        let latest_timestamp: i64 = latest_block
-            .header
-            .timestamp
-            .try_into()
-            .expect("big trouble");
         // Normalize to nanos in order to be compliant with cosmos
-        Ok(latest_timestamp * 1_000_000_000)
+        Ok(Timestamp::from_secs(latest_block.header.timestamp))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        Ok(into_value(ClientState {
-            l1_client_id: self.l1_client_id,
-            chain_id: self
-                .l2_chain_id
-                .as_str()
-                .parse()
-                .expect("self.chain_id is a valid u256"),
-            latest_height: height.height(),
-            ibc_contract_address: self.ibc_handler_address,
-        }))
-    }
+    // #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    // async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    //     Ok(into_value(ClientState {
+    //         l1_client_id: self.l1_client_id,
+    //         chain_id: self
+    //             .l2_chain_id
+    //             .as_str()
+    //             .parse()
+    //             .expect("self.chain_id is a valid u256"),
+    //         latest_height: height.height(),
+    //         ibc_contract_address: self.ibc_handler_address,
+    //     }))
+    // }
 
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let block = self
-            .eth_provider
-            .get_block_by_number(
-                height.height().into(),
-                alloy::rpc::types::BlockTransactionsKind::Hashes,
-            )
-            .await
-            .expect("big trouble")
-            .expect("big trouble");
-        Ok(into_value(&ConsensusState {
-            // Normalize to nanos in order to be compliant with cosmos
-            timestamp: block.header.timestamp * 1_000_000_000,
-            state_root: block.header.state_root.into(),
-            storage_root: self
-                .eth_provider
-                .get_proof(self.ibc_handler_address.into(), vec![])
-                .block_id(height.height().into())
-                .await
-                .unwrap()
-                .storage_hash
-                .0
-                .into(),
-        }))
-    }
+    // /// The consensus state on this chain at the specified `Height`.
+    // #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    // async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    //     let block = self
+    //         .eth_provider
+    //         .get_block_by_number(
+    //             height.height().into(),
+    //             alloy::rpc::types::BlockTransactionsKind::Hashes,
+    //         )
+    //         .await
+    //         .expect("big trouble")
+    //         .expect("big trouble");
+    //     Ok(into_value(&ConsensusState {
+    //         // Normalize to nanos in order to be compliant with cosmos
+    //         timestamp: block.header.timestamp * 1_000_000_000,
+    //         state_root: block.header.state_root.into(),
+    //         storage_root: self
+    //             .eth_provider
+    //             .get_proof(self.ibc_handler_address.into(), vec![])
+    //             .block_id(height.height().into())
+    //             .await
+    //             .unwrap()
+    //             .storage_hash
+    //             .0
+    //             .into(),
+    //     }))
+    // }
 }
