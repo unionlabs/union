@@ -158,8 +158,12 @@ impl ConsensusModuleServer for Module {
     /// Query the latest finalized timestamp of this chain.
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
-    async fn query_latest_timestamp(&self, _: &Extensions, finalized: bool) -> RpcResult<i64> {
-        let latest_timestamp: i64 = if finalized {
+    async fn query_latest_timestamp(
+        &self,
+        _: &Extensions,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
+        let latest_timestamp = if finalized {
             self.beacon_api_client
                 .finality_update()
                 .await
@@ -168,8 +172,6 @@ impl ConsensusModuleServer for Module {
                 .finalized_header
                 .execution
                 .timestamp
-                .try_into()
-                .unwrap()
         } else {
             self.provider
                 .get_block(
@@ -181,10 +183,8 @@ impl ConsensusModuleServer for Module {
                 .unwrap()
                 .header
                 .timestamp
-                .try_into()
-                .unwrap()
         };
         // Normalize to nanos in order to be compliant with cosmos
-        Ok(latest_timestamp * 1_000_000_000)
+        Ok(Timestamp::from_secs(latest_timestamp))
     }
 }

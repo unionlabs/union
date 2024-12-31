@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use bip32::secp256k1::ecdsa::signature::SignatureEncoding;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
