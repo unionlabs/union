@@ -163,36 +163,28 @@ impl ConsensusModuleServer for Module {
         _: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        if finalized {
-            Ok(Timestamp::from_nanos(
-                self.beacon_api_client
-                    .finality_update()
-                    .await
-                    .map_err(|err| {
-                        ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
-                    })?
-                    .data
-                    .finalized_header
-                    .execution
-                    .timestamp,
-            )
-            .try_into()
-            .unwrap())
+        let latest_timestamp = if finalized {
+            self.beacon_api_client
+                .finality_update()
+                .await
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+                .data
+                .finalized_header
+                .execution
+                .timestamp
         } else {
-            Ok(Timestamp::from_nanos(
-                self.provider
-                    .get_block(
-                        BlockNumberOrTag::Latest.into(),
-                        BlockTransactionsKind::Hashes,
-                    )
-                    .await
-                    .unwrap()
-                    .unwrap()
-                    .header
-                    .timestamp
-                    .try_into()
-                    .unwrap(),
-            ))
-        }
+            self.provider
+                .get_block(
+                    BlockNumberOrTag::Latest.into(),
+                    BlockTransactionsKind::Hashes,
+                )
+                .await
+                .unwrap()
+                .unwrap()
+                .header
+                .timestamp
+        };
+        // Normalize to nanos in order to be compliant with cosmos
+        Ok(Timestamp::from_secs(latest_timestamp))
     }
 }

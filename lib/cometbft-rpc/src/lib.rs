@@ -201,6 +201,12 @@ impl Client {
             .await
     }
 
+    pub async fn block_by_hash(&self, hash: H256) -> Result<BlockResponse, JsonRpcError> {
+        self.inner
+            .request("block_by_hash", (hash.to_string(),))
+            .await
+    }
+
     pub async fn blockchain(
         &self,
         min_height: NonZeroU64,

@@ -13046,6 +13046,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-berachain"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "berachain-light-client-types",
+ "cometbft-rpc",
+ "cometbft-types",
+ "dashmap 5.5.3",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "ssz",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-cometbls"
 version = "0.1.0"
 dependencies = [
@@ -13131,6 +13162,35 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-consensus-module-berachain"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "berachain-light-client-types",
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",

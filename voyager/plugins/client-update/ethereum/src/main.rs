@@ -25,7 +25,6 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    constants::metric::NANOS_PER_SECOND,
     hash::{H160, H256},
     ibc::core::client::height::Height,
     ErrorReporter,

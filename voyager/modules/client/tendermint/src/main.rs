@@ -11,7 +11,7 @@ use tracing::{debug, instrument};
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{DecodeAs, EncodeAs, Proto},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
     ErrorReporter,
 };
@@ -35,6 +35,7 @@ async fn main() {
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {
     IbcGoV8Native,
+    IbcCosmwasm,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -44,6 +45,7 @@ impl TryFrom<String> for SupportedIbcInterface {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match &*value {
             IbcInterface::IBC_GO_V8_NATIVE => Ok(SupportedIbcInterface::IbcGoV8Native),
+            IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -53,6 +55,7 @@ impl SupportedIbcInterface {
     fn as_str(&self) -> &'static str {
         match self {
             SupportedIbcInterface::IbcGoV8Native => IbcInterface::IBC_GO_V8_NATIVE,
+            SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
 }
@@ -99,6 +102,15 @@ impl Module {
                     })
                     .map(|any| any.0)
             }
+            SupportedIbcInterface::IbcCosmwasm => {
+                ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+            }
         }
     }
 
@@ -115,6 +127,14 @@ impl Module {
                     })
                     .map(|any| any.0)
             }
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
         }
     }
 }
@@ -190,6 +210,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
     }
 
@@ -212,6 +233,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
     }
 
@@ -247,6 +269,7 @@ impl ClientModuleServer for Module {
             })
             .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(header).encode_as::<Proto>().into(),
+                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>().into(),
             })
     }
 
@@ -264,6 +287,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => cs.encode_as::<Proto>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
     }
 }
