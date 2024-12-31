@@ -13,11 +13,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{instrument, trace};
-use unionlabs::{
-    hash::{H160, H256},
-    ibc::core::client::height::Height,
-    ErrorReporter,
-};
+use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
@@ -36,19 +32,14 @@ pub struct Module {
 
     pub chain_spec: PresetBaseKind,
 
-    /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: H160,
-
     pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_spec: PresetBaseKind,
-
-    /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
     pub eth_rpc_api: String,
@@ -132,7 +123,6 @@ impl ConsensusModule for Module {
         Ok(Self {
             chain_id,
             chain_spec: spec.preset_base,
-            ibc_handler_address: config.ibc_handler_address,
             provider,
             beacon_api_client,
         })
