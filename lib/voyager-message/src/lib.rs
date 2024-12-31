@@ -32,7 +32,7 @@ use tracing::{
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
-    IbcStorePathKey, QueryHeight,
+    IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_vm::{ItemId, QueueError, QueueMessage};
 
@@ -569,7 +569,7 @@ impl VoyagerClient {
         &self,
         chain_id: ChainId,
         finalized: bool,
-    ) -> RpcResult<i64> {
+    ) -> RpcResult<Timestamp> {
         let latest_timestamp = self
             .0
             .query_latest_timestamp(chain_id, finalized)

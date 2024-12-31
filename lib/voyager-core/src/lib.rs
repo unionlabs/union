@@ -113,10 +113,12 @@ impl ClientType {
     /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";
 
+    // TODO: Update this doc comment and rename the client type to be more accurate
     /// A client tracking the Ethereum beacon chain consensus verified through the
     /// [Ethereum Proof-of-Stake Consensus Specifications](spec). As an L2 extracted from [CometBLS].
     ///
     /// [spec]: https://github.com/ethereum/consensus-specs
+    /// [CometBLS]: https://github.com/unionlabs/cometbls
     pub const STATE_LENS_EVM: &'static str = "state-lens/evm";
 
     // lots more to come - near, linea, polygon - stay tuned

@@ -1,4 +1,3 @@
-use alloy::providers::{Provider, ProviderBuilder};
 use ethereum_light_client_types::ConsensusState as EthConsensusState;
 use evm_state_lens_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{

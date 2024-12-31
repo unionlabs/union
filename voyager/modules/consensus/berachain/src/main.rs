@@ -5,13 +5,11 @@ use alloy::{
     transports::BoxTransport,
 };
 use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
-use berachain_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::instrument;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
@@ -21,7 +19,6 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ConsensusType, Timestamp},
-    into_value,
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     ConsensusModule, ExtensionsExt, VoyagerClient,
 };

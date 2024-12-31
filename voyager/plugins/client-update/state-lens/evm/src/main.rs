@@ -219,7 +219,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             AggregateMsgUpdateClientsFromOrderedHeaders {
                                 ibc_spec_id: IbcUnion::ID,
                                 chain_id: self.l1_chain_id.clone(),
-                                client_id: RawClientId::new(self.l1_client_id.clone()),
+                                client_id: RawClientId::new(self.l1_client_id),
                             },
                         ),
                         seq([
@@ -301,7 +301,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         AggregateMsgUpdateClientsFromOrderedHeaders {
                             ibc_spec_id: IbcUnion::ID,
                             chain_id: counterparty_chain_id.clone(),
-                            client_id: RawClientId::new(self.l0_client_id.clone()),
+                            client_id: RawClientId::new(self.l0_client_id),
                         },
                     ),
                     seq([

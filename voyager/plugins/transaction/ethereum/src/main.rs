@@ -27,7 +27,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, IbcSpec},
+    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},

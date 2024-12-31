@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
+use jsonrpsee::core::RpcResult;
 use macros::model;
 use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
@@ -12,7 +12,7 @@ use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight},
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};
 

@@ -716,7 +716,7 @@ fn print_json<T: Serialize>(t: &T) {
 
 // TODO: Extract all logic here to a plugin
 pub mod utils {
-    use anyhow::{anyhow, bail};
+    use anyhow::bail;
     use ibc_classic_spec::IbcClassic;
     use ibc_union_spec::IbcUnion;
     use serde_json::Value;
