@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
+use jsonrpsee::core::RpcResult;
 use macros::model;
 use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
@@ -12,7 +12,7 @@ use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight},
     core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedClientUpdates},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};
 
@@ -49,7 +49,7 @@ where
         module_server: &Module,
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let updates @ OrderedClientUpdates { .. } = datas
+        let updates: Option<OrderedClientUpdates> = datas
             .into_iter()
             .exactly_one()
             .map_err(|found| serde_json::to_string(&found.collect::<Vec<_>>()).unwrap())
@@ -57,17 +57,7 @@ where
                 d.try_into()
                     .map_err(|found| serde_json::to_string(&found).unwrap())
             })
-            .map_err(|found| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "OrderedHeaders not present in data queue for \
-                        AggregateMsgUpdateClientsFromOrderedHeaders, \
-                        found {found}",
-                    ),
-                    None::<()>,
-                )
-            })?;
+            .ok();
 
         let client_meta = voyager_client
             .client_meta::<V>(
@@ -78,17 +68,22 @@ where
             .await?;
 
         let new_trusted_height = updates
-            .updates
-            .last()
-            .expect("must have at least one update")
-            .0
-            .height;
+            .as_ref()
+            .map(|updates| {
+                updates
+                    .updates
+                    .last()
+                    .expect("must have at least one update")
+                    .0
+                    .height
+            })
+            .unwrap_or(client_meta.counterparty_height);
 
         make_msgs(
             module_server,
             self.client_id,
             self.batches,
-            Some(updates),
+            updates,
             client_meta,
             new_trusted_height,
         )
@@ -238,6 +233,7 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                             client_id: RawClientId::new(self.client_id.clone()),
                             ibc_spec_id: V::ID,
                             height: required_consensus_height,
+                            finalized: false,
                         }),
                         call(SubmitTx {
                             chain_id,

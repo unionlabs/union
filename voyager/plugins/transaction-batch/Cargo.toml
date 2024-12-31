@@ -4,7 +4,7 @@ name    = "voyager-plugin-transaction-batch"
 version = "0.1.0"
 
 [dependencies]
-alloy                      = { workspace = true, features = ["sol-types"] }
+alloy                      = { workspace = true, features = ["sol-types", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 either                     = { workspace = true }
 enumorph                   = { workspace = true }
 futures                    = { workspace = true }

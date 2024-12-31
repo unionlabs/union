@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+#[allow(unused_imports, reason = "it is used???")]
 use bip32::secp256k1::ecdsa::signature::SignatureEncoding;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};

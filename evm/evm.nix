@@ -333,7 +333,7 @@ _: {
           }
         );
 
-      eth-deploy-multicall =
+      eth-deploy-single =
         {
           rpc-url,
           kind,
@@ -342,7 +342,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplicationWithArgs {
-            name = "eth-deploy-multicall";
+            name = "eth-deploy-single-${kind}";
             runtimeInputs = [ self'.packages.forge ];
             arguments = [
               {
@@ -355,6 +355,11 @@ _: {
                 required = true;
                 help = "The contract owner private key.";
               }
+              {
+                arg = "sender_pk";
+                required = true;
+                help = "The sender address that created the contract through the deployer.";
+              }
             ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -364,12 +369,13 @@ _: {
               cp --no-preserve=mode -r ${evmSources}/* .
 
               DEPLOYER="$argc_deployer_pk" \
+              SENDER="$argc_sender_pk" \
               PRIVATE_KEY="$argc_private_key" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${extra-args}
+                --broadcast
 
               popd
               rm -rf "$OUT"
@@ -530,39 +536,37 @@ _: {
             }
           );
 
-          # Stack too deep :)
+          # Stack too deep :), again
           #
-          solidity-coverage =
-            pkgs.runCommand "solidity-coverage"
-              {
-                buildInputs = [
-                  self'.packages.forge
-                  pkgs.lcov
-                ];
-              }
-              ''
-                  cp --no-preserve=mode -r ${evmSources}/* .
-                  FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-                  lcov --remove ./lcov.info -o ./lcov.info.pruned \
-                    'contracts/Multicall.sol' \
-                    'contracts/clients/Verifier.sol' \
-                    'contracts/apps/ucs/00-pingpong/*' \
-                    'contracts/lib/*' \
-                    'contracts/core/OwnableIBCHandler.sol' \
-                    'contracts/core/24-host/IBCCommitment.sol' \
-                    'contracts/core/25-handler/IBCHandler.sol' \
-                    'contracts/clients/ICS23MembershipVerifier.sol' \
-                    'tests/*'
-                  genhtml lcov.info.pruned -o $out --branch-coverage
-                mv lcov.info.pruned $out/lcov.info
-              '';
-          show-solidity-coverage = pkgs.writeShellApplication {
-            name = "show-solidity-coverage";
-            runtimeInputs = [ ];
-            text = ''
-              xdg-open ${self'.packages.solidity-coverage}/index.html
-            '';
-          };
+          # solidity-coverage =
+          #   pkgs.runCommand "solidity-coverage"
+          #     {
+          #       buildInputs = [
+          #         self'.packages.forge
+          #         pkgs.lcov
+          #       ];
+          #     }
+          #     ''
+          #         cp --no-preserve=mode -r ${evmSources}/* .
+          #         FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+          #         lcov --remove ./lcov.info -o ./lcov.info.pruned \
+          #           'contracts/Multicall.sol' \
+          #           'contracts/apps/ucs/00-pingpong/*' \
+          #           'contracts/lib/*' \
+          #           'contracts/core/OwnableIBCHandler.sol' \
+          #           'contracts/core/24-host/IBCCommitment.sol' \
+          #           'contracts/core/25-handler/IBCHandler.sol' \
+          #           'tests/*'
+          #         genhtml lcov.info.pruned -o $out --branch-coverage
+          #       mv lcov.info.pruned $out/lcov.info
+          #     '';
+          # show-solidity-coverage = pkgs.writeShellApplication {
+          #   name = "show-solidity-coverage";
+          #   runtimeInputs = [ ];
+          #   text = ''
+          #     xdg-open ${self'.packages.solidity-coverage}/index.html
+          #   '';
+          # };
 
           hubble-abis =
             let
@@ -685,8 +689,14 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-deploy-${args.network}-evm-lens";
+            value = eth-deploy-single ({ kind = "EvmLens"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-multicall";
-            value = eth-deploy-multicall ({ kind = "Multicall"; } // args);
+            value = eth-deploy-single ({ kind = "Multicall"; } // args);
           }) networks
         )
         // builtins.listToAttrs (
@@ -708,6 +718,18 @@ _: {
               {
                 dry = true;
                 protocol = "CometblsClient";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-evm-lens-client";
+            value = eth-upgrade (
+              {
+                dry = false;
+                protocol = "EvmInCosmosClient";
               }
               // args
             );

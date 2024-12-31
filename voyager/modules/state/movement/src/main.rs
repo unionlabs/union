@@ -130,7 +130,6 @@ impl Module {
     }
 
     /// Query the latest finalized timestamp of this chain.
-    // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     pub async fn query_latest_timestamp(&self, e: &Extensions) -> RpcResult<Timestamp> {
         let latest_height = self.query_latest_height(e).await?;
@@ -145,7 +144,7 @@ impl Module {
 
                 debug!(%timestamp, %latest_height, "latest timestamp");
 
-                Ok(Timestamp::from_nanos(timestamp).try_into().unwrap())
+                Ok(Timestamp::from_nanos(timestamp))
             }
             Err(err) => Err(ErrorObject::owned(
                 -1,

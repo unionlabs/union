@@ -158,6 +158,7 @@ impl Module {
                             client_meta.counterparty_height.revision(),
                             client_meta.counterparty_height.height() + max_age,
                         ),
+                        finalized: false,
                     }),
                     call(PluginMessage::new(
                         self.plugin_name(),

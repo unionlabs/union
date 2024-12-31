@@ -76,6 +76,7 @@ members = [
   "lib/tendermint-light-client-types",
   "lib/linea-light-client-types",
   "lib/movement-light-client-types",
+  "lib/state-lens/evm-light-client-types",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
@@ -114,11 +115,13 @@ members = [
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
+  "voyager/modules/client/state-lens/evm",
 
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
+  "voyager/modules/client-bootstrap/state-lens/evm",
 
   "voyager/modules/consensus/berachain",
   "voyager/modules/consensus/cometbls",
@@ -131,6 +134,7 @@ members = [
   "voyager/plugins/client-update/ethereum",
   "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
+  "voyager/plugins/client-update/state-lens/evm",
 
   "voyager/plugins/periodic-client-update",
 
@@ -207,6 +211,8 @@ berachain-light-client-types = { path = "lib/berachain-light-client-types", defa
 scroll-api                   = { path = "lib/scroll-api", default-features = false }
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
+
+evm-state-lens-light-client-types = { path = "lib/state-lens/evm-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/union-ibc/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }

@@ -11,7 +11,7 @@ dashmap                    = { workspace = true }
 enumorph                   = { workspace = true }
 ibc-classic-spec.workspace = true
 ibc-solidity               = { workspace = true, features = ["serde"] }
-ibc-union-spec.workspace   = true
+ibc-union-spec             = { workspace = true, features = ["tracing"] }
 jsonrpsee                  = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                     = { workspace = true }
 prost                      = { workspace = true }

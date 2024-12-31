@@ -22,6 +22,7 @@ use jsonrpsee::{
 };
 use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
+use rpc::{SelfClientState, SelfConsensusState};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, value::RawValue, Value};
 use tracing::{
@@ -31,7 +32,7 @@ use tracing::{
 use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
-    IbcStorePathKey, QueryHeight,
+    IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_vm::{ItemId, QueueError, QueueMessage};
 
@@ -564,6 +565,48 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
 }
 
 impl VoyagerClient {
+    pub async fn query_latest_timestamp(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
+        let latest_timestamp = self
+            .0
+            .query_latest_timestamp(chain_id, finalized)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(latest_timestamp)
+    }
+
+    pub async fn self_client_state(
+        &self,
+        chain_id: ChainId,
+        client_type: ClientType,
+        height: QueryHeight,
+    ) -> RpcResult<SelfClientState> {
+        let client_state = self
+            .0
+            .self_client_state(chain_id, client_type, height)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+        Ok(client_state)
+    }
+
+    pub async fn self_consensus_state(
+        &self,
+        chain_id: ChainId,
+        client_type: ClientType,
+        height: QueryHeight,
+    ) -> RpcResult<SelfConsensusState> {
+        let consensus_state = self
+            .0
+            .self_consensus_state(chain_id, client_type, height)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+        Ok(consensus_state)
+    }
+
     pub async fn query_latest_height(
         &self,
         chain_id: ChainId,

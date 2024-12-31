@@ -361,6 +361,7 @@ impl Module {
                 .encode_as::<Proto>(),
             )
             .expect("signing failed")
+            .to_bytes()
             .to_vec();
 
         let tx_raw_bytes = TxRaw {
@@ -534,6 +535,7 @@ impl Module {
                 .encode_as::<Proto>(),
             )
             .expect("signing failed")
+            .to_bytes()
             .to_vec();
 
         let result = client
@@ -651,7 +653,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::SubmitTransaction(msgs) => {
                 let mut out = vec![];
 
-                for msgs in msgs.chunks(5) {
+                for msgs in msgs.chunks(1) {
                     let res = self
                         .do_send_transaction(msgs.to_vec())
                         .await

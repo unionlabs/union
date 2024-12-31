@@ -156,7 +156,6 @@ impl ConsensusModuleServer for Module {
     }
 
     /// Query the latest finalized timestamp of this chain.
-    // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_timestamp(
         &self,

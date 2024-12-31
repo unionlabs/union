@@ -265,6 +265,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // `counterparty_chain_id`
                         client_id: RawClientId::new(self.l1_client_id),
                         height: update_to,
+                        finalized: true,
                     })]),
                     data(OrderedHeaders {
                         headers: vec![(

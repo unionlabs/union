@@ -157,10 +157,8 @@ impl ConsensusModuleServer for Module {
             }
         }
 
-        Ok(
-            Timestamp::from_nanos(commit_response.signed_header.header.time.as_unix_nanos())
-                .try_into()
-                .expect("should be fine"),
-        )
+        Ok(Timestamp::from_nanos(
+            commit_response.signed_header.header.time.as_unix_nanos(),
+        ))
     }
 }
