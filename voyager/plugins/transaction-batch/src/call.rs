@@ -61,7 +61,7 @@ where
             .await?;
 
         let latest_height = voyager_client
-            .query_latest_height(client_meta.chain_id.clone(), false)
+            .query_latest_height(client_meta.chain_id.clone(), true)
             .await?;
 
         let target_height = self
