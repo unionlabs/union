@@ -6,6 +6,10 @@ use cosmwasm_std::{
     Uint512, WasmMsg,
 };
 use ibc_solidity::{Channel, Packet};
+use ibc_union_msg::{
+    msg::{ExecuteMsg as IbcUnionHostMsg, MsgSendPacket, MsgWriteAcknowledgement},
+    query::QueryMsg as IbcUnionQuery,
+};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
@@ -19,10 +23,6 @@ use ucs01_relay_api::{
         Ics20Packet, JsonWasm, NormalizedTransferToken, TransferToken, Ucs01Ack,
         Ucs01TransferPacket,
     },
-};
-use union_ibc_msg::{
-    msg::{ExecuteMsg as UnionIbcHostMsg, MsgSendPacket, MsgWriteAcknowledgement},
-    query::QueryMsg as UnionIbcQuery,
 };
 use unionlabs::{encoding, ethereum::keccak256};
 
@@ -180,8 +180,8 @@ pub trait TransferProtocolExt<'a>:
                     ))
                 }
                 CosmosMsg::Wasm(WasmMsg::Execute { msg, .. }) => {
-                    match from_json::<UnionIbcHostMsg>(msg) {
-                        Ok(UnionIbcHostMsg::PacketSend(MsgSendPacket {
+                    match from_json::<IbcUnionHostMsg>(msg) {
+                        Ok(IbcUnionHostMsg::PacketSend(MsgSendPacket {
                             source_channel,
                             timeout_height,
                             timeout_timestamp,
@@ -191,7 +191,7 @@ pub trait TransferProtocolExt<'a>:
                                 CONFIG.load(self.common().deps.as_ref().storage)?.ibc_host;
                             let channel = self.common().deps.querier.query_wasm_smart::<Channel>(
                                 &ibc_host,
-                                &UnionIbcQuery::GetChannel {
+                                &IbcUnionQuery::GetChannel {
                                     channel_id: source_channel,
                                 },
                             )?;
@@ -993,7 +993,7 @@ impl TransferProtocol for Ucs01Protocol<'_> {
         let ibc_host = CONFIG.load(self.common.deps.storage)?.ibc_host;
         Ok(wasm_execute(
             ibc_host,
-            &UnionIbcHostMsg::PacketSend(MsgSendPacket {
+            &IbcUnionHostMsg::PacketSend(MsgSendPacket {
                 source_channel: self
                     .common
                     .channel
@@ -1027,7 +1027,7 @@ impl TransferProtocol for Ucs01Protocol<'_> {
         let ibc_host = CONFIG.load(self.common.deps.storage)?.ibc_host;
         Ok(wasm_execute(
             ibc_host,
-            &UnionIbcHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+            &IbcUnionHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
                 channel_id: self
                     .common
                     .channel

@@ -1,4 +1,4 @@
-# Move IBC
+# Move ibc-union
 
 Our Move-based implementation is designed to be permissionless, where any smart contract can plug in their
 implementation and start doing general message passing and asset transfers by using our IBC contract without
@@ -12,7 +12,7 @@ need to implement and understand how an IBC app can be implemented on Union.
 Please refer to [the Aptos documentation](https://aptos.dev/en/build/smart-contracts/third-party-dependencies) to learn more about
 how to integrate third-party dependencies.
 
-## Integrating an app with Union-IBC
+## Integrating an app with ibc-union
 
 Our relayer a.k.a [Voyager](https://github.com/unionlabs/union/tree/main/voyager) requires the IBC entry points
 to be defined under the module `ibc`. So to start with your implementation, make sure to define all the described
@@ -55,7 +55,7 @@ in the `init_module` with the correct seed. Here is an example setup in the app:
 ```move
 module my_app::ibc {
     // Make sure to use this exact seed
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
 
     fun init_module(deployer: &signer) {
         assert!(signer::address_of(deployer) == @my_app, 1);

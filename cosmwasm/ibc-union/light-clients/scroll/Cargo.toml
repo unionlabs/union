@@ -1,0 +1,33 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "scroll-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+ethereum-light-client       = { workspace = true, features = ["library"] }
+ethereum-light-client-types = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+scroll-codec                = { workspace = true }
+scroll-light-client-types   = { workspace = true, features = ["proto"] }
+scroll-verifier             = { workspace = true }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+base64     = { workspace = true }
+hex        = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+library = []

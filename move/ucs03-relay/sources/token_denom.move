@@ -19,7 +19,7 @@ module ucs03::fa_coin {
     const E_NOT_OWNER: u64 = 1;
 
     const ASSET_SYMBOL: vector<u8> = b"FA";
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// Hold refs to control the minting, transfer and burning of fungible assets.

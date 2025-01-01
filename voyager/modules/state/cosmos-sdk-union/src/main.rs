@@ -166,7 +166,7 @@ impl Module {
     async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
-                &union_ibc_msg::query::QueryMsg::GetClientState { client_id },
+                &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
                 Some(height),
             )
             .await?;
@@ -183,7 +183,7 @@ impl Module {
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
-                &union_ibc_msg::query::QueryMsg::GetConsensusState {
+                &ibc_union_msg::query::QueryMsg::GetConsensusState {
                     client_id,
                     height: trusted_height,
                 },
@@ -202,7 +202,7 @@ impl Module {
     ) -> RpcResult<Option<Connection>> {
         let client_state = self
             .query_smart::<_, Connection>(
-                &union_ibc_msg::query::QueryMsg::GetConnection { connection_id },
+                &ibc_union_msg::query::QueryMsg::GetConnection { connection_id },
                 Some(height),
             )
             .await?;
@@ -214,7 +214,7 @@ impl Module {
     async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
         let channel = self
             .query_smart::<_, Channel>(
-                &union_ibc_msg::query::QueryMsg::GetChannel { channel_id },
+                &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
                 Some(height),
             )
             .await?;
@@ -231,7 +231,7 @@ impl Module {
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &union_ibc_msg::query::QueryMsg::GetBatchPackets {
+                &ibc_union_msg::query::QueryMsg::GetBatchPackets {
                     channel_id,
                     batch_hash,
                 },
@@ -251,7 +251,7 @@ impl Module {
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &union_ibc_msg::query::QueryMsg::GetBatchReceipts {
+                &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
                     channel_id,
                     batch_hash,
                 },
@@ -277,7 +277,7 @@ impl StateModuleServer<IbcUnion> for Module {
     async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
         let client_type = self
             .query_smart::<_, String>(
-                &union_ibc_msg::query::QueryMsg::GetClientType { client_id },
+                &ibc_union_msg::query::QueryMsg::GetClientType { client_id },
                 None,
             )
             .await?

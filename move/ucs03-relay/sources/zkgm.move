@@ -40,7 +40,7 @@ module ucs03::zkgm_relay {
     const ACK_EMPTY: vector<u8> = x"";
 
     // Errors
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
     const E_UNAUTHORIZED: u64 = 1;
     const E_INVALID_HOPS: u64 = 2;

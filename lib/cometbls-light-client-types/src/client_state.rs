@@ -18,7 +18,7 @@ pub struct ClientState {
     /// Note that the above bounds are not enforced at the type level, which also matches the Tendermint specification.
     pub frozen_height: Height,
     pub latest_height: Height,
-    /// For clients that connect to the cosmwasm implementation of union IBC, the contract address of the IBC host is required in order to verify storage proofs. For clients connecting to IBC classic, this field is not required and can be ignored during client creation and migration.
+    /// For clients that connect to the cosmwasm implementation of ibc-union, the contract address of the IBC host is required in order to verify storage proofs. For clients connecting to IBC classic, this field is not required and can be ignored during client creation and migration.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "H256::is_zero")

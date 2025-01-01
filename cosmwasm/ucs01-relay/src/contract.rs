@@ -14,7 +14,7 @@ use unionlabs::hash::H256;
 
 use crate::{
     error::ContractError,
-    ibc::{enforce_order_and_version, execute_union_ibc},
+    ibc::{enforce_order_and_version, execute_ibc_union},
     msg::{
         ChannelBalances, ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, PortResponse,
         QueryMsg, TransferMsg,
@@ -65,7 +65,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match msg {
-        ExecuteMsg::UnionIbcMsg(msg) => execute_union_ibc(deps, env, info, msg),
+        ExecuteMsg::IbcUnionMsg(msg) => execute_ibc_union(deps, env, info, msg),
         ExecuteMsg::Transfer(msg) => execute_transfer(deps, env, info, msg),
         ExecuteMsg::UpdateAdmin { admin } => {
             let admin = deps.api.addr_validate(&admin)?;

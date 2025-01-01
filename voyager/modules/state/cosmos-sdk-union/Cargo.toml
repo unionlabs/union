@@ -8,6 +8,7 @@ clap                     = { workspace = true, features = ["derive"] }
 cometbft-rpc             = { workspace = true }
 dashmap                  = { workspace = true }
 ibc-solidity             = { workspace = true }
+ibc-union-msg            = { workspace = true }
 ibc-union-spec.workspace = true
 jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }
 prost                    = { workspace = true }
@@ -17,7 +18,6 @@ serde_json               = { workspace = true }
 thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
-union-ibc-msg            = { workspace = true }
 unionlabs                = { workspace = true }
 voyager-message          = { workspace = true }
 voyager-vm               = { workspace = true }

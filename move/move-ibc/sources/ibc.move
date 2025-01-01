@@ -25,7 +25,7 @@ module ibc::ibc {
     friend ibc::acknowledge_packet;
     friend ibc::timeout_packet;
 
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
 
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
