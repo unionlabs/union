@@ -2,7 +2,7 @@
 authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "union-ibc-msg"
+name         = "ibc-union-msg"
 repository   = "https://github.com/unionlabs/union"
 version      = "1.0.0"
 

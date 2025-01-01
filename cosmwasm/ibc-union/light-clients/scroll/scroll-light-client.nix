@@ -7,7 +7,7 @@ _: {
     }:
     let
       lc = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/union-ibc/light-clients/scroll";
+        crateDirFromRoot = "cosmwasm/ibc-union/light-clients/scroll";
       };
     in
     {

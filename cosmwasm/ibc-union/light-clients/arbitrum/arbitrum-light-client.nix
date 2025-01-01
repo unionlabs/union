@@ -7,7 +7,7 @@ _: {
     }:
     let
       workspace = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/union-ibc/light-clients/arbitrum";
+        crateDirFromRoot = "cosmwasm/ibc-union/light-clients/arbitrum";
       };
     in
     {

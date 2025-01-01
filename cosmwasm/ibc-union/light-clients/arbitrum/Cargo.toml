@@ -19,8 +19,8 @@ cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
 thiserror                   = { workspace = true }
-union-ibc-light-client      = { workspace = true }
-union-ibc-msg               = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

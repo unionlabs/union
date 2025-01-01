@@ -10,7 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-test-include = ["cosmwasm/union-ibc/light-clients/tendermint/src/test"]
+test-include = ["cosmwasm/ibc-union/light-clients/tendermint/src/test"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -24,8 +24,8 @@ cometbft-types                = { workspace = true, features = ["proto", "hash"]
 ics23                         = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 tendermint-verifier           = { workspace = true }
-union-ibc-light-client        = { workspace = true }
-union-ibc-msg                 = { workspace = true }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]

@@ -2,7 +2,7 @@
 authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "union-ibc"
+name         = "ibc-union"
 repository   = "https://github.com/unionlabs/union"
 version      = "1.0.0"
 
@@ -26,5 +26,5 @@ serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 strum                    = { version = "0.26.3", features = ["derive"] }
 thiserror                = { workspace = true }
-union-ibc-msg            = { workspace = true }
+ibc-union-msg            = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }

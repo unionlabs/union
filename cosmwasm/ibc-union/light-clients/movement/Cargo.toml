@@ -1,7 +1,7 @@
 [package]
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "union-ibc-movement-lc"
+name         = "ibc-union-movement-lc"
 repository   = { workspace = true }
 version      = "0.1.0"
 
@@ -16,8 +16,8 @@ rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
-union-ibc-light-client      = { workspace = true }
-union-ibc-msg               = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [dev-dependencies]
