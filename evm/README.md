@@ -2,7 +2,26 @@
 
 Deployment addresses have been moved [here](../docs/src/content/docs/protocol/deployments.mdx)
 
-### Deployment Process
+## Devnet explorer addresses
+
+### Devnet
+
+:::caution
+
+These links are only valid if you run a local ethereum devnet on an x86 machine. (Blockscout is currently unsupported on arm64).
+
+:::
+
+| Category           | Name              | Address                                                                                                             |
+|--------------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
+| core               | IBCHandler        | [`0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5`](http://localhost/address/0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5) |
+| light-clients      | CometblsClient    | [`0xc4f27a952faBa4174ce0Ee6D9d0c6F4c41524d49`](http://localhost/address/0xc4f27a952faBa4174ce0Ee6D9d0c6F4c41524d49) |
+| apps               | UCS00             | [`0x21bd17aec8CEb789D3145a606968Dcc428c1e4F4`](http://localhost/address/0x21bd17aec8CEb789D3145a606968Dcc428c1e4F4) |
+|                    | UCS01             | [`0xa9d03ba6E27B43c69a64C87F845485b73A8e5d46`](http://localhost/address/0xa9d03ba6E27B43c69a64C87F845485b73A8e5d46) |
+|                    | UCS02             | [`0x524D4d28fc90dc5A257162abE37081f52681C7D6`](http://localhost/address/0x524D4d28fc90dc5A257162abE37081f52681C7D6) |
+|  support           | Multicall         | [`0x9fd9D9528c8373D990a1380B9414bDE179007A35`](http://localhost/address/0x9fd9D9528c8373D990a1380B9414bDE179007A35) |
+
+## Deployment Process
 
 > \[!NOTE\]
 > The addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
