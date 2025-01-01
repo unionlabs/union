@@ -1,15 +1,12 @@
 ## Deployments
 
-Deployment addresses have been moved to ../docs/src/content/docs/protocol/deployments.mdx
+Deployment addresses have been moved [here](../docs/src/content/docs/protocol/deployments.mdx)
 
 ### Deployment Process
 
-:::note
-
-The addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
-Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
-
-:::
+> \[!NOTE\]
+> The addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
+> Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
 
 All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
 
