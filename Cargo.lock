@@ -1363,8 +1363,8 @@ dependencies = [
  "hex",
  "serde_json",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -2233,8 +2233,8 @@ dependencies = [
  "tendermint-light-client",
  "tendermint-verifier",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -3147,8 +3147,8 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -4807,8 +4807,8 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -11555,8 +11555,8 @@ dependencies = [
  "tendermint-light-client-types",
  "tendermint-verifier",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -12476,7 +12476,7 @@ dependencies = [
  "thiserror",
  "token-factory-api",
  "ucs01-relay-api",
- "union-ibc-msg",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
@@ -12609,7 +12609,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
-name = "union-ibc"
+name = "ibc-union"
 version = "1.0.0"
 dependencies = [
  "alloy",
@@ -12622,12 +12622,12 @@ dependencies = [
  "serde_json",
  "strum 0.26.3",
  "thiserror",
- "union-ibc-msg",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
 [[package]]
-name = "union-ibc-light-client"
+name = "ibc-union-light-client"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.1.4",
@@ -12638,12 +12638,12 @@ dependencies = [
  "serde",
  "serde-utils",
  "thiserror",
- "union-ibc-msg",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
 [[package]]
-name = "union-ibc-movement-lc"
+name = "ibc-union-movement-lc"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
@@ -12658,13 +12658,13 @@ dependencies = [
  "serde",
  "serde-utils",
  "thiserror",
- "union-ibc-light-client",
- "union-ibc-msg",
+ "ibc-union-light-client",
+ "ibc-union-msg",
  "unionlabs",
 ]
 
 [[package]]
-name = "union-ibc-msg"
+name = "ibc-union-msg"
 version = "1.0.0"
 dependencies = [
  "ibc-solidity",
@@ -12673,7 +12673,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "union-ibc-ucs00-pingpong"
+name = "ibc-union-ucs00-pingpong"
 version = "1.0.0"
 dependencies = [
  "cosmwasm-schema 2.1.4",
@@ -12684,7 +12684,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "union-ibc-msg",
+ "ibc-union-msg",
 ]
 
 [[package]]
@@ -13631,7 +13631,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "union-ibc-msg",
+ "ibc-union-msg",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13723,8 +13723,8 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
- "union-ibc",
- "union-ibc-msg",
+ "ibc-union",
+ "ibc-union-msg",
  "unionlabs",
  "voyager-message",
  "voyager-vm",

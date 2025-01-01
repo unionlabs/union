@@ -10,7 +10,7 @@ module ibc::dispatcher {
     use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::object::{Self, ExtendRef, Object};
 
-    const DISPATCHER_APP_SEED: vector<u8> = b"union-ibc-dispatcher-v1";
+    const DISPATCHER_APP_SEED: vector<u8> = b"ibc-union-dispatcher-v1";
 
     struct Dispatcher has key {
         /// Tracks the input type to the dispatch handler.

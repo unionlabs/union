@@ -32,7 +32,7 @@ module ping_pong::ibc_app {
     const ERR_NO_CHANNEL: u64 = 2003;
     const ERR_INFINITE_GAME: u64 = 2004;
 
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
 
     #[event]
     struct RingEvent has copy, drop, store {

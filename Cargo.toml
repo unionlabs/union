@@ -4,15 +4,15 @@ resolver = "2"
 members = [
   "cosmwasm/token-factory-api",
   "cosmwasm/ucs00-pingpong",
-  "cosmwasm/union-ibc/app/ucs00-pingpong",
+  "cosmwasm/ibc-union/app/ucs00-pingpong",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",
   "cosmwasm/multicall",
 
-  "cosmwasm/union-ibc/core",
-  "cosmwasm/union-ibc/core/msg",
-  "cosmwasm/union-ibc/core/light-client-interface",
+  "cosmwasm/ibc-union/core",
+  "cosmwasm/ibc-union/core/msg",
+  "cosmwasm/ibc-union/core/light-client-interface",
 
   "devnet-compose",
 
@@ -80,16 +80,16 @@ members = [
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
-  "cosmwasm/union-ibc/light-clients/ethereum",
-  "cosmwasm/union-ibc/light-clients/arbitrum",
-  "cosmwasm/union-ibc/light-clients/berachain",
-  "cosmwasm/union-ibc/light-clients/cometbls",
-  # "cosmwasm/union-ibc/light-clients/evm-in-cosmos",
-  # "cosmwasm/union-ibc/light-clients/scroll",
-  "cosmwasm/union-ibc/light-clients/tendermint",
-  # "cosmwasm/union-ibc/light-clients/linea",
+  "cosmwasm/ibc-union/light-clients/ethereum",
+  "cosmwasm/ibc-union/light-clients/arbitrum",
+  "cosmwasm/ibc-union/light-clients/berachain",
+  "cosmwasm/ibc-union/light-clients/cometbls",
+  # "cosmwasm/ibc-union/light-clients/evm-in-cosmos",
+  # "cosmwasm/ibc-union/light-clients/scroll",
+  "cosmwasm/ibc-union/light-clients/tendermint",
+  # "cosmwasm/ibc-union/light-clients/linea",
 
-  "cosmwasm/union-ibc/light-clients/movement",
+  "cosmwasm/ibc-union/light-clients/movement",
 
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
@@ -202,7 +202,7 @@ cometbls-light-client-types = { path = "lib/cometbls-light-client-types", defaul
 
 scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
 
-ethereum-light-client       = { path = "cosmwasm/union-ibc/light-clients/ethereum", default-features = false }
+ethereum-light-client       = { path = "cosmwasm/ibc-union/light-clients/ethereum", default-features = false }
 ethereum-light-client-types = { path = "lib/ethereum-light-client-types", default-features = false }
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
@@ -214,7 +214,7 @@ scroll-rpc                   = { path = "lib/scroll-rpc", default-features = fal
 
 evm-state-lens-light-client-types = { path = "lib/state-lens/evm-light-client-types", default-features = false }
 
-tendermint-light-client       = { path = "cosmwasm/union-ibc/light-clients/tendermint", default-features = false }
+tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
@@ -222,9 +222,9 @@ linea-light-client-types = { path = "lib/linea-light-client-types", default-feat
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
 ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
-union-ibc              = { path = "cosmwasm/union-ibc/core", default-features = false }
-union-ibc-light-client = { path = "cosmwasm/union-ibc/core/light-client-interface", default-features = false }
-union-ibc-msg          = { path = "cosmwasm/union-ibc/core/msg", default-features = false }
+ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = false }
+ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
+ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }

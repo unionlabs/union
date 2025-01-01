@@ -17,7 +17,7 @@ serde_json               = { workspace = true }
 thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
-union-ibc-msg            = { workspace = true }
+ibc-union-msg            = { workspace = true }
 unionlabs                = { workspace = true }
 voyager-message          = { workspace = true }
 voyager-vm               = { workspace = true }

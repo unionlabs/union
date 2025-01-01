@@ -21,8 +21,8 @@ thiserror                  = { workspace = true }
 tokio                      = { workspace = true }
 tonic                      = { workspace = true }
 tracing                    = { workspace = true }
-union-ibc                  = { workspace = true, features = ["library"] }
-union-ibc-msg              = { workspace = true }
+ibc-union                  = { workspace = true, features = ["library"] }
+ibc-union-msg              = { workspace = true }
 unionlabs                  = { workspace = true }
 voyager-message            = { workspace = true }
 voyager-vm                 = { workspace = true }

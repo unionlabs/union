@@ -55,7 +55,7 @@ in the `init_module` with the correct seed. Here is an example setup in the app:
 ```move
 module my_app::ibc {
     // Make sure to use this exact seed
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
 
     fun init_module(deployer: &signer) {
         assert!(signer::address_of(deployer) == @my_app, 1);

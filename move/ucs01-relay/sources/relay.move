@@ -28,7 +28,7 @@ module ibc::relay_app {
     use std::option;
 
     // Errors
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const E_INVALID_BYTES_ADDRESS: u64 = 1;
     const E_UNAUTHORIZED: u64 = 2;
     const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
