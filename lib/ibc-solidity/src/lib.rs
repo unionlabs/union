@@ -479,6 +479,7 @@ maybe_sol_attr! {
             serde(deny_unknown_fields)
         )]
         struct MsgChannelOpenTry {
+            address port_id;
             Channel channel;
             string counterparty_version;
             bytes proof_init;

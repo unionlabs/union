@@ -542,6 +542,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .channelOpenTry(ibc_solidity::MsgChannelOpenTry {
+                            port_id: data.port_id.try_into().unwrap(),
                             channel: data.channel,
                             counterparty_version: data.counterparty_version,
                             proof_init: data.proof_init.into(),
