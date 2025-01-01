@@ -599,6 +599,40 @@ contract GetDeployed is Script {
     }
 }
 
+contract UpgradeUCS00 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
+
+        console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new PingPong());
+        PingPong(ucs00).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract DryUpgradeUCS01 is Script {
     using LibString for *;
 
