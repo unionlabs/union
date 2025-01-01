@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbls-groth16-verifier   = { workspace = true }
-cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi", "proto"] }
 cosmwasm-std                = { workspace = true, features = ["abort", "iterator"] }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
@@ -30,6 +30,7 @@ unionlabs                   = { workspace = true, features = ["ethabi"] }
 base64      = { workspace = true }
 lazy_static = "1.4.0"
 serde_json  = { workspace = true }
+hex-literal = { workspace = true }
 
 
 [features]

@@ -11,7 +11,7 @@ use tracing::{debug, instrument};
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi, Json, Proto},
     google::protobuf::any::Any,
     ErrorReporter,
 };
@@ -127,7 +127,7 @@ impl Module {
                     })
                     .map(|any| any.0)
             }
-            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Proto>(client_state)
                 .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
@@ -210,7 +210,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
-                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Proto>().into(),
             })
     }
 
@@ -269,7 +269,7 @@ impl ClientModuleServer for Module {
             })
             .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(header).encode_as::<Proto>().into(),
-                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>().into(),
+                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Proto>().into(),
             })
     }
 
@@ -287,7 +287,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => cs.encode_as::<Proto>().into(),
-                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Proto>().into(),
             })
     }
 }

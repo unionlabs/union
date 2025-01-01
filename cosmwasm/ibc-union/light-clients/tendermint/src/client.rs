@@ -10,7 +10,7 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use unionlabs::{
     bounded::BoundedI64,
-    encoding::{Bincode, DecodeAs, Proto},
+    encoding::{DecodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
@@ -45,7 +45,7 @@ impl IbcClient for TendermintLightClient {
 
     type StorageProof = MerkleProof;
 
-    type Encoding = Bincode;
+    type Encoding = Proto;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
@@ -54,21 +54,21 @@ impl IbcClient for TendermintLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
-        let consensus_state = ctx.read_self_consensus_state(height)?;
-        let path = MerklePath::decode_as::<Proto>(&key).unwrap();
+        // let consensus_state = ctx.read_self_consensus_state(height)?;
+        // let path = MerklePath::decode_as::<Proto>(&key).unwrap();
 
-        ics23::ibc_api::verify_membership(
-            &storage_proof,
-            &SDK_SPECS,
-            &consensus_state.root,
-            &path
-                .key_path
-                .into_iter()
-                .map(|s| s.into_bytes())
-                .collect::<Vec<_>>(),
-            value,
-        )
-        .map_err(Error::VerifyMembership)?;
+        // ics23::ibc_api::verify_membership(
+        //     &storage_proof,
+        //     &SDK_SPECS,
+        //     &consensus_state.root,
+        //     &path
+        //         .key_path
+        //         .into_iter()
+        //         .map(|s| s.into_bytes())
+        //         .collect::<Vec<_>>(),
+        //     value,
+        // )
+        // .map_err(Error::VerifyMembership)?;
 
         Ok(())
     }

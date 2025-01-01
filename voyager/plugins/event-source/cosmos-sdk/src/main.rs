@@ -10,7 +10,7 @@ use std::{
 
 use dashmap::DashMap;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::IbcUnion;
+use ibc_union_spec::{ChannelPath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -1205,6 +1205,66 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
+                    IbcEvent::UnionChannelOpenInit(channel_open_init) => {
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                ibc_union_spec::ConnectionPath {
+                                    connection_id: channel_open_init.connection_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id,
+                            )
+                            .await?;
+
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                ChannelPath {
+                                    channel_id: channel_open_init.channel_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        let event = ibc_union_spec::ChannelOpenInit {
+                            port_id: channel_open_init.port_id.into_bytes().into(),
+                            channel_id: channel_open_init.channel_id,
+                            counterparty_port_id: channel_open_init
+                                .counterparty_port_id
+                                .into_encoding(),
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                        }))
+                    }
                     IbcEvent::UnionChannelOpenTry(channel_open_try) => {
                         let connection = voyager_client
                             .query_ibc_state(
@@ -1254,6 +1314,68 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
+                    IbcEvent::UnionChannelOpenAck(channel_open_ack) => {
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                ibc_union_spec::ConnectionPath {
+                                    connection_id: channel_open_ack.connection_id,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
+
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
+                            .await?;
+
+                        let client_meta = voyager_client
+                            .client_meta::<IbcUnion>(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id,
+                            )
+                            .await?;
+
+                        let channel_id = channel_open_ack.channel_id;
+
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                provable_height.into(),
+                                ChannelPath { channel_id },
+                            )
+                            .await?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
+
+                        let event = ibc_union_spec::ChannelOpenAck {
+                            port_id: channel_open_ack.port_id.into_bytes().into(),
+                            channel_id: channel_open_ack.channel_id,
+                            counterparty_port_id: channel_open_ack
+                                .counterparty_port_id
+                                .into_encoding(),
+                            counterparty_channel_id: channel_open_ack.counterparty_channel_id,
+                            connection,
+                            version: channel.version,
+                        }
+                        .into();
+
+                        ibc_union_spec::log_event(&event, &self.chain_id);
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height,
+                            ibc_spec_id: IbcUnion::ID,
+                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                        }))
+                    }
+
                     IbcEvent::UnionChannelOpenConfirm(channel_open_confirm) => {
                         let channel = voyager_client
                             .query_ibc_state(

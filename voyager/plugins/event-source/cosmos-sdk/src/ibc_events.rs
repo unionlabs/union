@@ -330,18 +330,18 @@ event! {
             counterparty_connection_id: u32,
         },
 
-        // #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
-        // ChannelOpenInit {
-        //     #[parse(String::from_str)]
-        //     port_id: String,
-        //     #[parse(u32::from_str)]
-        //     channel_id: u32,
-        //     #[parse(String::from_str)]
-        //     counterparty_port_id: String,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        //     version: String,
-        // },
+        #[event(tag = "wasm-channel_open_init")]
+        UnionChannelOpenInit {
+            #[parse(String::from_str)]
+            port_id: String,
+            #[parse(u32::from_str)]
+            channel_id: u32,
+            #[parse(<Bytes<HexUnprefixed>>::from_str)]
+            counterparty_port_id: Bytes<HexUnprefixed>,
+            #[parse(u32::from_str)]
+            connection_id: u32,
+            version: String,
+        },
 
         #[event(tag = "wasm-channel_open_try")]
         UnionChannelOpenTry {
@@ -357,19 +357,19 @@ event! {
             counterparty_version: String,
         },
 
-        // #[event(tag = "channel_open_ack")]
-        // ChannelOpenAck {
-        //     #[parse(String::from_str)]
-        //     port_id: String,
-        //     #[parse(u32::from_str)]
-        //     channel_id: u32,
-        //     #[parse(String::from_str)]
-        //     counterparty_port_id: String,
-        //     #[parse(u32::from_str)]
-        //     counterparty_channel_id: u32,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
+        #[event(tag = "wasm-channel_open_ack")]
+        UnionChannelOpenAck {
+            #[parse(String::from_str)]
+            port_id: String,
+            #[parse(u32::from_str)]
+            channel_id: u32,
+            #[parse(<Bytes<HexUnprefixed>>::from_str)]
+            counterparty_port_id: Bytes<HexUnprefixed>,
+            #[parse(u32::from_str)]
+            counterparty_channel_id: u32,
+            #[parse(u32::from_str)]
+            connection_id: u32,
+        },
 
         #[event(tag = "wasm-channel_open_confirm")]
         UnionChannelOpenConfirm {
@@ -542,9 +542,9 @@ impl IbcEvent {
             IbcEvent::UnionConnectionOpenTry(_) => "connection_open_try",
             IbcEvent::UnionConnectionOpenAck(_) => "connection_open_ack",
             IbcEvent::UnionConnectionOpenConfirm(_) => "connection_open_confirm",
-            // IbcEvent::UnionChannelOpenInit(_) => "channel_open_init",
+            IbcEvent::UnionChannelOpenInit(_) => "channel_open_init",
             IbcEvent::UnionChannelOpenTry(_) => "channel_open_try",
-            // IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
+            IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
             IbcEvent::UnionChannelOpenConfirm(_) => "channel_open_confirm",
             // IbcEvent::UnionWriteAcknowledgement(_) => "write_acknowledgement",
             // IbcEvent::UnionRecvPacket(_) => "recv_packet",
