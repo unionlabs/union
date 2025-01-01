@@ -461,12 +461,12 @@ impl Module {
                             "cosmos transaction failed"
                         );
 
-                        if let Some(union_ibc_error) =
+                        if let Some(ibc_union_error) =
                             tx.tx_result.log.split(": ").find_map(|x| {
-                                union_ibc::ContractErrorKind::parse_from_error_message(x)
+                                ibc_union::ContractErrorKind::parse_from_error_message(x)
                             })
                         {
-                            break Err(BroadcastTxCommitError::UnionIbcError(union_ibc_error));
+                            break Err(BroadcastTxCommitError::IbcUnionError(ibc_union_error));
                         } else {
                             break Err(BroadcastTxCommitError::Tx(error));
                         }
@@ -604,7 +604,7 @@ pub enum BroadcastTxCommitError {
     #[error("account sequence mismatch")]
     AccountSequenceMismatch(#[source] Option<tonic::Status>),
     #[error("union IBC error: {0}")]
-    UnionIbcError(union_ibc::ContractErrorKind),
+    IbcUnionError(ibc_union::ContractErrorKind),
     #[error("out of gas")]
     OutOfGas,
 }
@@ -686,7 +686,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     None::<()>,
                                 ),
                             },
-                            BroadcastTxCommitError::UnionIbcError(_) => ErrorObject::owned(
+                            BroadcastTxCommitError::IbcUnionError(_) => ErrorObject::owned(
                                 FATAL_JSONRPC_ERROR_CODE,
                                 ErrorReporter(err).to_string(),
                                 None::<()>,
@@ -871,8 +871,8 @@ fn process_msgs(
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::CreateClient(
-                                union_ibc_msg::msg::MsgCreateClient {
+                            msg: serde_json::to_vec(&ibc_union_msg::msg::ExecuteMsg::CreateClient(
+                                ibc_union_msg::msg::MsgCreateClient {
                                     client_type: msg_create_client.client_type.to_string(),
                                     client_state_bytes: msg_create_client.client_state_bytes,
                                     consensus_state_bytes: msg_create_client.consensus_state_bytes,
@@ -887,8 +887,8 @@ fn process_msgs(
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&union_ibc_msg::msg::ExecuteMsg::UpdateClient(
-                                union_ibc_msg::msg::MsgUpdateClient {
+                            msg: serde_json::to_vec(&ibc_union_msg::msg::ExecuteMsg::UpdateClient(
+                                ibc_union_msg::msg::MsgUpdateClient {
                                     client_id: msg_update_client.client_id,
                                     client_message: msg_update_client.client_message,
                                     relayer: signer.to_string(),
@@ -903,8 +903,8 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
-                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenInit(
-                                    union_ibc_msg::msg::MsgConnectionOpenInit {
+                                &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenInit(
+                                    ibc_union_msg::msg::MsgConnectionOpenInit {
                                         client_id: msg_connection_open_init.client_id,
                                         counterparty_client_id: msg_connection_open_init
                                             .counterparty_client_id,
@@ -921,8 +921,8 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
-                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenTry(
-                                    union_ibc_msg::msg::MsgConnectionOpenTry {
+                                &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenTry(
+                                    ibc_union_msg::msg::MsgConnectionOpenTry {
                                         counterparty_client_id: msg_connection_open_try
                                             .counterparty_client_id,
                                         counterparty_connection_id: msg_connection_open_try
@@ -943,8 +943,8 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(
-                                &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenAck(
-                                    union_ibc_msg::msg::MsgConnectionOpenAck {
+                                &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenAck(
+                                    ibc_union_msg::msg::MsgConnectionOpenAck {
                                         connection_id: msg_connection_open_ack.connection_id,
                                         counterparty_connection_id: msg_connection_open_ack
                                             .counterparty_connection_id,
@@ -964,8 +964,8 @@ fn process_msgs(
                         sender: signer.to_string(),
                         contract: ibc_host_contract_address.to_string(),
                         msg: serde_json::to_vec(
-                            &union_ibc_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
-                                union_ibc_msg::msg::MsgConnectionOpenConfirm {
+                            &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
+                                ibc_union_msg::msg::MsgConnectionOpenConfirm {
                                     connection_id: msg_connection_open_confirm.connection_id,
                                     proof_ack: msg_connection_open_confirm.proof_ack,
                                     proof_height: msg_connection_open_confirm.proof_height,
@@ -977,8 +977,8 @@ fn process_msgs(
                         funds: vec![],
                     }),
                     ibc_union_spec::Datagram::ChannelOpenInit(msg_channel_open_init) => {
-                        let channel_open_init = union_ibc_msg::msg::ExecuteMsg::ChannelOpenInit(
-                            union_ibc_msg::msg::MsgChannelOpenInit {
+                        let channel_open_init = ibc_union_msg::msg::ExecuteMsg::ChannelOpenInit(
+                            ibc_union_msg::msg::MsgChannelOpenInit {
                                 port_id: String::from_utf8(msg_channel_open_init.port_id.to_vec())
                                     .unwrap(),
                                 relayer: signer.to_string(),
@@ -996,8 +996,8 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::Datagram::ChannelOpenTry(msg_channel_open_try) => {
-                        let channel_open_try = union_ibc_msg::msg::ExecuteMsg::ChannelOpenTry(
-                            union_ibc_msg::msg::MsgChannelOpenTry {
+                        let channel_open_try = ibc_union_msg::msg::ExecuteMsg::ChannelOpenTry(
+                            ibc_union_msg::msg::MsgChannelOpenTry {
                                 port_id: String::from_utf8(msg_channel_open_try.port_id.to_vec())
                                     .unwrap(),
                                 channel: msg_channel_open_try.channel,
@@ -1016,8 +1016,8 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::Datagram::ChannelOpenAck(msg_channel_open_ack) => {
-                        let channel_open_ack = union_ibc_msg::msg::ExecuteMsg::ChannelOpenAck(
-                            union_ibc_msg::msg::MsgChannelOpenAck {
+                        let channel_open_ack = ibc_union_msg::msg::ExecuteMsg::ChannelOpenAck(
+                            ibc_union_msg::msg::MsgChannelOpenAck {
                                 channel_id: msg_channel_open_ack.channel_id,
                                 counterparty_version: msg_channel_open_ack.counterparty_version,
                                 counterparty_channel_id: msg_channel_open_ack
@@ -1037,8 +1037,8 @@ fn process_msgs(
                     }
                     ibc_union_spec::Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => {
                         let channel_open_confirm =
-                            union_ibc_msg::msg::ExecuteMsg::ChannelOpenConfirm(
-                                union_ibc_msg::msg::MsgChannelOpenConfirm {
+                            ibc_union_msg::msg::ExecuteMsg::ChannelOpenConfirm(
+                                ibc_union_msg::msg::MsgChannelOpenConfirm {
                                     channel_id: msg_channel_open_confirm.channel_id,
                                     proof_ack: msg_channel_open_confirm.proof_ack,
                                     proof_height: msg_channel_open_confirm.proof_height,
@@ -1058,8 +1058,8 @@ fn process_msgs(
                         todo!()
                     }
                     ibc_union_spec::Datagram::PacketRecv(msg_packet_recv) => {
-                        let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketRecv(
-                            union_ibc_msg::msg::MsgPacketRecv {
+                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketRecv(
+                            ibc_union_msg::msg::MsgPacketRecv {
                                 packets: msg_packet_recv.packets,
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
@@ -1076,8 +1076,8 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::Datagram::PacketAcknowledgement(msg_packet_acknowledgement) => {
-                        let packet_recv = union_ibc_msg::msg::ExecuteMsg::PacketAck(
-                            union_ibc_msg::msg::MsgPacketAcknowledgement {
+                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketAck(
+                            ibc_union_msg::msg::MsgPacketAcknowledgement {
                                 packets: msg_packet_acknowledgement.packets,
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,

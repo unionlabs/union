@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
+use ibc_union_msg::module::IbcUnionMsg;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::types::Fees;
-use union_ibc_msg::module::UnionIbcMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -36,7 +36,7 @@ pub enum ExecuteMsg {
     BatchExecute {
         msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
     },
-    UnionIbcMsg(UnionIbcMsg),
+    IbcUnionMsg(IbcUnionMsg),
 }
 
 /// This is the message we accept via Receive

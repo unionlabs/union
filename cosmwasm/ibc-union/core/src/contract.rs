@@ -8,14 +8,9 @@ use cosmwasm_std::{
 };
 use cw_storage_plus::Item;
 use ibc_solidity::{Channel, ChannelState, Connection, ConnectionState, Packet};
-use ibc_union_spec::{
-    BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-    ConsensusStatePath, COMMITMENT_MAGIC,
-};
-use serde::{Deserialize, Serialize};
-use union_ibc_msg::{
+use ibc_union_msg::{
     lightclient::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
-    module::{ExecuteMsg as ModuleMsg, UnionIbcMsg},
+    module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
         MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
@@ -26,6 +21,11 @@ use union_ibc_msg::{
     },
     query::QueryMsg,
 };
+use ibc_union_spec::{
+    BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
+    ConsensusStatePath, COMMITMENT_MAGIC,
+};
+use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
     hash::{hash_v2::HexPrefixed, H256},
@@ -555,7 +555,7 @@ fn timeout_packet(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
                 packet,
                 relayer: relayer.into(),
             }),
@@ -617,7 +617,7 @@ fn acknowledge_packet(
         ]));
         messages.push(wasm_execute(
             port_id.clone(),
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnAcknowledgementPacket {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
                 packet,
                 acknowledgement: ack.to_vec().into(),
                 relayer: relayer.clone().into(),
@@ -1005,7 +1005,7 @@ fn channel_open_init(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenInit {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
                 connection_id,
                 channel_id,
                 version,
@@ -1080,7 +1080,7 @@ fn channel_open_try(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenTry {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
                 connection_id: channel.connection_id,
                 channel_id,
                 version: channel.version,
@@ -1151,7 +1151,7 @@ fn channel_open_ack(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenAck {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
                 channel_id,
                 counterparty_channel_id,
                 counterparty_version,
@@ -1217,7 +1217,7 @@ fn channel_open_confirm(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1252,7 +1252,7 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelCloseInit {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1320,7 +1320,7 @@ fn channel_close_confirm(
         ]))
         .add_message(wasm_execute(
             port_id,
-            &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenConfirm {
+            &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1410,7 +1410,7 @@ fn process_receive(
 
                 messages.push(wasm_execute(
                     port_id.clone(),
-                    &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnIntentRecvPacket {
+                    &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnIntentRecvPacket {
                         packet,
                         market_maker: deps.api.addr_validate(&relayer)?.into(),
                         market_maker_msg: relayer_msg.to_vec().into(),
@@ -1432,7 +1432,7 @@ fn process_receive(
 
                 messages.push(wasm_execute(
                     port_id.clone(),
-                    &ModuleMsg::UnionIbcMsg(UnionIbcMsg::OnRecvPacket {
+                    &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
                         packet,
                         relayer: deps.api.addr_validate(&relayer)?.into(),
                         relayer_msg: relayer_msg.to_vec().into(),

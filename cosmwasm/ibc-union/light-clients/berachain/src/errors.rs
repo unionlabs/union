@@ -1,3 +1,4 @@
+use ibc_union_light_client::IbcClientError;
 use ics23::ibc_api::VerifyMembershipError;
 use tendermint_light_client::{
     client::TendermintLightClient,
@@ -7,7 +8,6 @@ use tendermint_light_client::{
         NegativeTimestamp, RevisionNumberMismatch, TrustedValidatorsMismatch,
     },
 };
-use union_ibc_light_client::IbcClientError;
 
 use crate::client::BerachainLightClient;
 

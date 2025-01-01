@@ -1,7 +1,7 @@
 use cosmwasm_std::StdError;
 use ethereum_light_client::client::EthereumLightClient;
+use ibc_union_light_client::IbcClientError;
 use scroll_codec::batch_header::BatchHeaderV3DecodeError;
-use union_ibc_light_client::IbcClientError;
 use unionlabs::{hash::H256, ibc::core::client::height::Height, ics24::PathParseError};
 
 use crate::client::ScrollLightClient;

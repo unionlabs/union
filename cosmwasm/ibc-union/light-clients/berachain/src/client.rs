@@ -2,9 +2,9 @@ use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
+use ibc_union_light_client::IbcClient;
+use ibc_union_msg::lightclient::Status;
 use tendermint_light_client::client::TendermintLightClient;
-use union_ibc_light_client::IbcClient;
-use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{Bincode, EncodeAs, Ssz},
@@ -33,12 +33,12 @@ impl IbcClient for BerachainLightClient {
     type StorageProof = StorageProof;
 
     fn verify_membership(
-        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         ethereum_light_client::client::verify_membership(
             key,
@@ -51,11 +51,11 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn verify_non_membership(
-        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         ethereum_light_client::client::verify_non_membership(
             key,
@@ -84,17 +84,17 @@ impl IbcClient for BerachainLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         Ok(())
     }
 
     // TODO: rearrange to avoid the clones
     fn verify_header(
-        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
+        ibc_union_light_client::IbcClientError<Self>,
     > {
         let mut client_state = ctx.read_self_client_state()?;
 
@@ -148,9 +148,9 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn misbehaviour(
-        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
         Err(Error::Unimplemented.into())
     }
 }

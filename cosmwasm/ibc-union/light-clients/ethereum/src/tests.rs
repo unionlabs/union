@@ -5,7 +5,7 @@ use cosmwasm_std::{
     Addr, Timestamp,
 };
 use ethereum_light_client_types::{ClientState, ConsensusState, Header};
-use union_ibc_light_client::IbcClientCtx;
+use ibc_union_light_client::IbcClientCtx;
 use unionlabs::encoding::{Bincode, DecodeAs, EthAbi};
 
 use crate::client::verify_header;

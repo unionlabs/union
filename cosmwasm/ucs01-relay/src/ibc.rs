@@ -8,17 +8,17 @@ use cosmwasm_std::{
     Timestamp,
 };
 use ibc_solidity::{Channel, Packet};
+use ibc_union_msg::{
+    module::IbcUnionMsg,
+    msg::{ExecuteMsg as IbcUnionHostMsg, MsgWriteAcknowledgement},
+    query::QueryMsg as IbcUnionQuery,
+};
 use prost::{Message, Name};
 use protos::cosmwasm::wasm::v1::MsgIbcSendResponse;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     middleware::InFlightPfmPacket,
     protocol::{TransferProtocol, IBC_SEND_ID},
-};
-use union_ibc_msg::{
-    module::UnionIbcMsg,
-    msg::{ExecuteMsg as UnionIbcHostMsg, MsgWriteAcknowledgement},
-    query::QueryMsg as UnionIbcQuery,
 };
 
 pub type IbcResponse = IbcBasicResponse<TokenFactoryMsg>;
@@ -312,18 +312,18 @@ pub fn ibc_packet_timeout(
     }
 }
 
-pub(crate) fn execute_union_ibc(
+pub(crate) fn execute_ibc_union(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: UnionIbcMsg,
+    msg: IbcUnionMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
     if info.sender != ibc_host {
         return Err(ContractError::OnlyIBCHost);
     }
     match msg {
-        UnionIbcMsg::OnChannelOpenInit {
+        IbcUnionMsg::OnChannelOpenInit {
             channel_id,
             version,
             ..
@@ -336,7 +336,7 @@ pub(crate) fn execute_union_ibc(
             }
             Ok(Response::new())
         }
-        UnionIbcMsg::OnChannelOpenTry {
+        IbcUnionMsg::OnChannelOpenTry {
             channel_id,
             version,
             counterparty_version,
@@ -356,17 +356,17 @@ pub(crate) fn execute_union_ibc(
             }
             Ok(Response::new())
         }
-        UnionIbcMsg::OnChannelOpenAck { .. } => Ok(Response::new()),
-        UnionIbcMsg::OnChannelOpenConfirm { .. } => Ok(Response::new()),
-        UnionIbcMsg::OnChannelCloseInit { .. } => Err(ContractError::Unauthorized),
-        UnionIbcMsg::OnChannelCloseConfirm { .. } => Err(ContractError::Unauthorized),
-        UnionIbcMsg::OnIntentRecvPacket { .. } => Err(ContractError::Unsupported),
-        UnionIbcMsg::OnRecvPacket {
+        IbcUnionMsg::OnChannelOpenAck { .. } => Ok(Response::new()),
+        IbcUnionMsg::OnChannelOpenConfirm { .. } => Ok(Response::new()),
+        IbcUnionMsg::OnChannelCloseInit { .. } => Err(ContractError::Unauthorized),
+        IbcUnionMsg::OnChannelCloseConfirm { .. } => Err(ContractError::Unauthorized),
+        IbcUnionMsg::OnIntentRecvPacket { .. } => Err(ContractError::Unsupported),
+        IbcUnionMsg::OnRecvPacket {
             packet, relayer, ..
         } => {
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
-                &UnionIbcQuery::GetChannel {
+                &IbcUnionQuery::GetChannel {
                     channel_id: packet.destination_channel,
                 },
             )?;
@@ -443,7 +443,7 @@ pub(crate) fn execute_union_ibc(
             if let Some(ack) = msg.acknowledgement {
                 response = response.add_message(wasm_execute(
                     &ibc_host,
-                    &UnionIbcHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                    &IbcUnionHostMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
                         channel_id: packet.destination_channel,
                         packet,
                         acknowledgement: Vec::from(ack).into(),
@@ -454,7 +454,7 @@ pub(crate) fn execute_union_ibc(
 
             Ok(response)
         }
-        UnionIbcMsg::OnAcknowledgementPacket {
+        IbcUnionMsg::OnAcknowledgementPacket {
             packet,
             relayer,
             acknowledgement,
@@ -463,7 +463,7 @@ pub(crate) fn execute_union_ibc(
 
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
-                &UnionIbcQuery::GetChannel {
+                &IbcUnionQuery::GetChannel {
                     channel_id: packet.destination_channel,
                 },
             )?;
@@ -541,10 +541,10 @@ pub(crate) fn execute_union_ibc(
                 .add_events(response.events)
                 .add_attributes(response.attributes))
         }
-        UnionIbcMsg::OnTimeoutPacket { packet, relayer } => {
+        IbcUnionMsg::OnTimeoutPacket { packet, relayer } => {
             let channel = deps.querier.query_wasm_smart::<Channel>(
                 &ibc_host,
-                &UnionIbcQuery::GetChannel {
+                &IbcUnionQuery::GetChannel {
                     channel_id: packet.destination_channel,
                 },
             )?;

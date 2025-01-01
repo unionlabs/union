@@ -12,8 +12,8 @@ use ethereum_sync_protocol::{
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
-use union_ibc_light_client::{IbcClientCtx, IbcClientError};
-use union_ibc_msg::lightclient::Status;
+use ibc_union_light_client::{IbcClientCtx, IbcClientError};
+use ibc_union_msg::lightclient::Status;
 use unionlabs::{
     encoding::Bincode, ensure, ethereum::ibc_commitment_key, hash::H256,
     ibc::core::client::height::Height, uint::U256,
@@ -23,7 +23,7 @@ use crate::{errors::Error, verification::VerificationContext};
 
 pub enum EthereumLightClient {}
 
-impl union_ibc_light_client::IbcClient for EthereumLightClient {
+impl ibc_union_light_client::IbcClient for EthereumLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;

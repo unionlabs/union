@@ -3,11 +3,11 @@ use cometbft_types::{
     types::{commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet},
 };
 use cosmwasm_std::Empty;
+use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
+use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
-use union_ibc_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     bounded::BoundedI64,
     encoding::{Bincode, DecodeAs, Proto},
@@ -102,7 +102,7 @@ impl IbcClient for TendermintLightClient {
         header: Self::Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
+        ibc_union_light_client::IbcClientError<Self>,
     > {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;

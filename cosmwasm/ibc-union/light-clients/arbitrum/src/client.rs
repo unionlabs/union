@@ -2,8 +2,8 @@ use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
-use union_ibc_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use union_ibc_msg::lightclient::Status;
+use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
+use ibc_union_msg::lightclient::Status;
 use unionlabs::encoding::Bincode;
 
 use crate::errors::Error;
@@ -64,7 +64,7 @@ impl IbcClient for ArbitrumLightClient {
         header: Self::Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
+        ibc_union_light_client::IbcClientError<Self>,
     > {
         let mut client_state = ctx.read_self_client_state()?;
         let l1_consensus_state = ctx
@@ -107,7 +107,7 @@ impl IbcClient for ArbitrumLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         Ok(())
     }
 

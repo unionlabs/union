@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use union_ibc_light_client::{
+use ibc_union_light_client::{
     msg::{InstantiateMsg, QueryMsg},
     IbcClientError,
 };
@@ -15,12 +15,12 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, IbcClientError<CometblsLightClient>> {
-    union_ibc_light_client::instantiate(deps, env, info, msg)
+    ibc_union_light_client::instantiate(deps, env, info, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    union_ibc_light_client::query::<CometblsLightClient>(deps, env, msg).map_err(Into::into)
+    ibc_union_light_client::query::<CometblsLightClient>(deps, env, msg).map_err(Into::into)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

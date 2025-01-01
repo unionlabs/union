@@ -1,5 +1,5 @@
+use ibc_union_light_client::IbcClientError;
 use tendermint_light_client_types::{ClientState, Header};
-use union_ibc_light_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,

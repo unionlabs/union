@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use ethabi::{ParamType, Token};
-use union_ibc_msg::msg::MsgSendPacket;
+use ibc_union_msg::msg::MsgSendPacket;
 
 use crate::{state::Config, ContractError};
 
@@ -38,12 +38,12 @@ impl UCS00PingPong {
         config: &Config,
         current_timestamp: u64,
         source_channel: u32,
-    ) -> union_ibc_msg::msg::ExecuteMsg {
+    ) -> ibc_union_msg::msg::ExecuteMsg {
         let counterparty_packet = UCS00PingPong {
             ping: !self.ping,
             // counterparty_timeout: config.seconds_before_timeout * 1_000_000_000 + current_timestamp,
         };
-        union_ibc_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
+        ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel,
             timeout_height: 0,
             timeout_timestamp: current_timestamp + config.seconds_before_timeout * 1_000_000_000,
@@ -64,5 +64,5 @@ pub enum ExecuteMsg {
         channel_id: u32,
         packet: UCS00PingPong,
     },
-    UnionIbcMsg(union_ibc_msg::module::UnionIbcMsg),
+    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
 }

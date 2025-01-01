@@ -7,11 +7,11 @@ use cosmwasm_std::{
     Response, StdError,
 };
 use cw_storage_plus::{Item, Map};
-use msg::InstantiateMsg;
-use state::IBC_HOST;
-use union_ibc_msg::lightclient::{
+use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate,
 };
+use msg::InstantiateMsg;
+use state::IBC_HOST;
 use unionlabs::{
     bytes::Bytes,
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},

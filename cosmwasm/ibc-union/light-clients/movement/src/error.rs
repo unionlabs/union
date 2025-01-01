@@ -1,5 +1,5 @@
+use ibc_union_light_client::IbcClientError;
 use cosmwasm_std::StdError;
-use union_ibc_light_client::IbcClientError;
 use unionlabs::{
     aptos::storage_proof::TryFromStorageProofError, ibc::core::client::height::Height,
     TryFromProtoBytesError,

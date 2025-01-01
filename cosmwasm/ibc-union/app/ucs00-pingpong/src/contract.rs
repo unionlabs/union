@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{wasm_execute, DepsMut, Env, MessageInfo, Response, StdError};
-use union_ibc_msg::{module::UnionIbcMsg, msg::MsgWriteAcknowledgement};
+use ibc_union_msg::{module::IbcUnionMsg, msg::MsgWriteAcknowledgement};
 
 use crate::{
     msg::{ExecuteMsg, InitMsg, UCS00PingPong},
@@ -37,11 +37,11 @@ pub fn execute(
 
             Ok(Response::default().add_message(wasm_execute(config.ibc_host, &msg, vec![])?))
         }
-        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenInit { version, .. }) => {
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit { version, .. }) => {
             enforce_version(&version, None)?;
             Ok(Response::default())
         }
-        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnChannelOpenTry {
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
             version,
             counterparty_version,
             ..
@@ -49,7 +49,7 @@ pub fn execute(
             enforce_version(&version, Some(&counterparty_version))?;
             Ok(Response::default())
         }
-        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnRecvPacket { packet, .. }) => {
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket { packet, .. }) => {
             let ping_packet = UCS00PingPong::decode(&packet.data)?;
             let config = CONFIG.load(deps.storage)?;
             let msg =
@@ -58,7 +58,7 @@ pub fn execute(
             Ok(Response::default()
                 .add_message(wasm_execute(
                     &config.ibc_host,
-                    &union_ibc_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                    &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
                             channel_id: packet.destination_channel,
                             packet,
@@ -71,12 +71,12 @@ pub fn execute(
                 .add_attribute("action", if ping_packet.ping { "ping" } else { "pong" })
                 .add_attribute("success", "true"))
         }
-        ExecuteMsg::UnionIbcMsg(UnionIbcMsg::OnTimeoutPacket { .. }) => Ok(Response::default()
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket { .. }) => Ok(Response::default()
             .add_attribute("action", "acknowledge")
             .add_attribute("success", "false")
             .add_attribute("error", "timeout")),
-        ExecuteMsg::UnionIbcMsg(
-            UnionIbcMsg::OnChannelCloseInit { .. } | UnionIbcMsg::OnChannelCloseConfirm { .. },
+        ExecuteMsg::IbcUnionMsg(
+            IbcUnionMsg::OnChannelCloseInit { .. } | IbcUnionMsg::OnChannelCloseConfirm { .. },
         ) => Err(StdError::generic_err("the show must go on").into()),
         _ => Ok(Response::default()),
     }

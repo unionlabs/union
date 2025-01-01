@@ -1,5 +1,5 @@
 use cosmwasm_std::StdError;
-use union_ibc_light_client::IbcClientError;
+use ibc_union_light_client::IbcClientError;
 use unionlabs::{
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::client::height::Height,

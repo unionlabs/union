@@ -1,5 +1,5 @@
 use cosmwasm_std::StdError;
-use union_ibc_light_client::IbcClientError;
+use ibc_union_light_client::IbcClientError;
 use unionlabs::{hash::H256, uint::U256};
 
 use crate::client::EthereumLightClient;

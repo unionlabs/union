@@ -1,8 +1,8 @@
 use cosmwasm_std::Empty;
+use ibc_union_msg::lightclient::Status;
 use movement_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
-use union_ibc_msg::lightclient::Status;
 use unionlabs::{
     aptos::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
@@ -23,7 +23,7 @@ pub struct BlockCommitment {
     pub block_id: U256,
 }
 
-impl union_ibc_light_client::IbcClient for MovementLightClient {
+impl ibc_union_light_client::IbcClient for MovementLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -41,12 +41,12 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
         _storage_proof: Self::StorageProof,
         _value: Vec<u8>,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         // let client_state = ctx.read_self_client_state()?;
         // let consensus_state = ctx.read_self_consensus_state(height)?;
         // verify_membership(
@@ -61,11 +61,11 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     }
 
     fn verify_non_membership(
-        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
         _storage_proof: Self::StorageProof,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         unimplemented!()
     }
 
@@ -88,16 +88,16 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         Ok(())
     }
 
     fn verify_header(
-        ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
-        union_ibc_light_client::IbcClientError<Self>,
+        ibc_union_light_client::IbcClientError<Self>,
     > {
         let client_state = ctx.read_self_client_state()?;
         // NOTE(aeryz): FOR AUDITORS and NERDS:
@@ -159,9 +159,9 @@ impl union_ibc_light_client::IbcClient for MovementLightClient {
     }
 
     fn misbehaviour(
-        _ctx: union_ibc_light_client::IbcClientCtx<Self>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, union_ibc_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
         unimplemented!()
     }
 }

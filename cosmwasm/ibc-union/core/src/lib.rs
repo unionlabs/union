@@ -12,7 +12,7 @@ use unionlabs::bytes::Bytes;
 #[strum_discriminants(
     derive(strum::EnumString, strum::Display),
     name(ContractErrorKind),
-    strum(prefix = "UNION_IBC_ERR_", serialize_all = "SCREAMING_SNAKE_CASE")
+    strum(prefix = "IBC_UNION_ERR_", serialize_all = "SCREAMING_SNAKE_CASE")
 )]
 pub enum ContractError {
     #[error("{} std error: {0}", ContractErrorKind::from(self))]
@@ -104,7 +104,7 @@ impl ContractErrorKind {
     pub fn parse_from_error_message(s: &str) -> Option<Self> {
         let (err, _) = s.split_once(' ')?;
 
-        err.strip_prefix("UNION_IBC_ERR_")?.parse().ok()
+        err.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
     }
 }
 
