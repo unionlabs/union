@@ -11,13 +11,13 @@ bcs                         = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
 evm-storage-verifier        = { workspace = true }
 hex-literal                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
 movement-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
-ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [dev-dependencies]

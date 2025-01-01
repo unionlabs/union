@@ -20,9 +20,9 @@ cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["stargate"] }
 cw-storage-plus = { workspace = true }
 ethabi          = { workspace = true }
+ibc-union-msg   = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
-ibc-union-msg   = { workspace = true }
 
 [dev-dependencies]
 hex        = { workspace = true }

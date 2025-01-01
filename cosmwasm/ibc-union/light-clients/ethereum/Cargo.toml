@@ -22,11 +22,11 @@ cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm
 ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 ethereum-sync-protocol      = { workspace = true }
 evm-storage-verifier        = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
 rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
-ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

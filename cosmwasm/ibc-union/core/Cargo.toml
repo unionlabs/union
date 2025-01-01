@@ -21,10 +21,10 @@ cosmwasm-std             = { workspace = true, features = ["abort"] }
 cw-storage-plus          = { workspace = true }
 hex                      = { workspace = true }
 ibc-solidity             = { workspace = true, features = ["serde"] }
+ibc-union-msg            = { workspace = true }
 ibc-union-spec.workspace = true
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 strum                    = { version = "0.26.3", features = ["derive"] }
 thiserror                = { workspace = true }
-ibc-union-msg            = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }

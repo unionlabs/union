@@ -21,11 +21,11 @@ sha2         = { workspace = true }
 thiserror    = { workspace = true }
 
 cometbft-types                = { workspace = true, features = ["proto", "hash"] }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
 ics23                         = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 tendermint-verifier           = { workspace = true }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]

@@ -18,9 +18,9 @@ arbitrum-verifier           = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client       = { workspace = true, features = ["library"] }
 ethereum-light-client-types = { workspace = true }
-thiserror                   = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
+thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

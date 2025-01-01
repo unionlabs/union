@@ -24,11 +24,11 @@ thiserror             = { workspace = true }
 berachain-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 ethereum-light-client-types  = { workspace = true, features = ["serde", "ethabi"] }
 evm-storage-verifier         = { workspace = true }
+ibc-union-light-client       = { workspace = true }
+ibc-union-msg                = { workspace = true }
 ics23                        = { workspace = true }
 tendermint-light-client      = { workspace = true, features = ["library"] }
 tendermint-verifier          = { workspace = true }
-ibc-union-light-client       = { workspace = true }
-ibc-union-msg                = { workspace = true }
 unionlabs                    = { workspace = true }
 
 [dev-dependencies]

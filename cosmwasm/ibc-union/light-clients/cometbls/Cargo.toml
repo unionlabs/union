@@ -19,11 +19,11 @@ crate-type = ["cdylib", "rlib"]
 cometbls-groth16-verifier   = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 cosmwasm-std                = { workspace = true, features = ["abort", "iterator"] }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
 ics23                       = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
-ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
