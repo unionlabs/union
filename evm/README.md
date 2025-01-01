@@ -1,6 +1,6 @@
 ## Deployments
 
-Deployment addresses have been moved to ../docs/src/content/docs/protocol/deployments.mdx 
+Deployment addresses have been moved to ../docs/src/content/docs/protocol/deployments.mdx
 
 ### Deployment Process
 
@@ -10,7 +10,6 @@ The addresses are different because we often redeploy without upgrading when a s
 Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
 
 :::
-
 
 All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
 
@@ -49,7 +48,6 @@ The following table maps salt to contracts:
 
 The combination `(deployer_source, deployer_source_nonce, deployer, sender, salt)` fully determines the final addresses (no bytecode hash of any of the above contract involved).
 
-
 ### Computing deployment addresses on other networks
 
 Assuming you create the deployer from a fresh account `<SOURCE>` (0 nonce), the `<DEPLOYER>` address can be precomputed with `cast compute-address --nonce 0 <SOURCE>`
@@ -78,4 +76,3 @@ Gas used: 52087
   UCS01: 0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46
   UCS02: 0x524d4d28fc90dc5a257162abe37081f52681c7d6
 ```
-
