@@ -749,6 +749,12 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ucs00";
+            value = eth-upgrade ({ protocol = "UCS00"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-upgrade-${args.network}-ucs01";
             value = eth-upgrade ({ protocol = "UCS01"; } // args);
           }) networks

@@ -12,7 +12,6 @@ import "../../../core/25-handler/IBCHandler.sol";
 struct PingPongPacket {
     bool ping;
 }
-// uint64 counterpartyTimeout;
 
 library PingPongLib {
     bytes1 public constant ACK_SUCCESS = 0x01;
@@ -30,7 +29,6 @@ library PingPongLib {
         PingPongPacket memory packet
     ) internal pure returns (bytes memory) {
         return abi.encode(packet.ping);
-        // packet.counterpartyTimeout
     }
 
     function decode(
@@ -38,7 +36,6 @@ library PingPongLib {
     ) internal pure returns (PingPongPacket memory) {
         bool ping = abi.decode(packet, (bool));
         return PingPongPacket({ping: ping});
-        // counterpartyTimeout: counterpartyTimeout
     }
 }
 
@@ -52,7 +49,7 @@ contract PingPong is
     using PingPongLib for *;
 
     IIBCPacket private ibcHandler;
-    uint32 private srcChannelId;
+    uint32 private _gap0;
     uint64 private timeout;
 
     constructor() {
@@ -75,13 +72,11 @@ contract PingPong is
 
     function initiate(
         PingPongPacket memory packet,
+        uint32 channelId,
         uint64 localTimeout
     ) public {
-        if (srcChannelId == 0) {
-            revert PingPongLib.ErrNoChannel();
-        }
         ibcHandler.sendPacket(
-            srcChannelId,
+            channelId,
             // No height timeout
             0,
             // Timestamp timeout
@@ -90,8 +85,6 @@ contract PingPong is
             packet.encode()
         );
     }
-
-    error ERROR();
 
     function onRecvPacket(
         IBCPacket calldata packet,
@@ -108,15 +101,14 @@ contract PingPong is
 
         emit PingPongLib.Ring(pp.ping);
 
-        // uint64 localTimeout = pp.counterpartyTimeout;
-
-        pp.ping = !pp.ping;
         uint64 localTimeout = uint64(block.timestamp * 1e9) + timeout;
 
         // Send back the packet after having reversed the bool and set the counterparty timeout
-        initiate(pp, localTimeout);
-
-        // revert ERROR();
+        initiate(
+            PingPongPacket({ping: !pp.ping}),
+            packet.destinationChannel,
+            localTimeout
+        );
 
         // Return protocol specific successful acknowledgement
         return abi.encodePacked(PingPongLib.ACK_SUCCESS);
@@ -157,12 +149,7 @@ contract PingPong is
         uint32,
         string calldata,
         address
-    ) external virtual override onlyIBC {
-        // This protocol is only accepting a single counterparty.
-        if (srcChannelId != 0) {
-            revert PingPongLib.ErrOnlyOneChannel();
-        }
-    }
+    ) external virtual override onlyIBC {}
 
     function onChanOpenTry(
         uint32,
@@ -171,30 +158,19 @@ contract PingPong is
         string calldata,
         string calldata,
         address
-    ) external virtual override onlyIBC {
-        // Symmetric to onChanOpenInit
-        if (srcChannelId != 0) {
-            revert PingPongLib.ErrOnlyOneChannel();
-        }
-    }
+    ) external virtual override onlyIBC {}
 
     function onChanOpenAck(
         uint32 channelId,
         uint32,
         string calldata,
         address
-    ) external virtual override onlyIBC {
-        // Store the port/channel needed to send packets.
-        srcChannelId = channelId;
-    }
+    ) external virtual override onlyIBC {}
 
     function onChanOpenConfirm(
         uint32 channelId,
         address
-    ) external virtual override onlyIBC {
-        // Symmetric to onChanOpenAck
-        srcChannelId = channelId;
-    }
+    ) external virtual override onlyIBC {}
 
     function onChanCloseInit(
         uint32,
