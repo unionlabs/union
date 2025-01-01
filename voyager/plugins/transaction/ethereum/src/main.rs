@@ -587,18 +587,22 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                         })
                         .clear_decoder(),
                 ),
-                // Datagram::AcknowledgePacket(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .acknowledgePacket(MsgPacketAcknowledgement {
-                //             packets: vec![convert_packet(data.packet)?],
-                //             acknowledgements: vec![data.acknowledgement.into()],
-                //             proof: data.proof_acked.into(),
-                //             proofHeight: data.proof_height.height(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                Datagram::PacketAcknowledgement(data) => (
+                    msg,
+                    ibc_handler
+                        .acknowledgePacket(ibc_solidity::MsgPacketAcknowledgement {
+                            packets: data.packets,
+                            acknowledgements: data
+                                .acknowledgements
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
+                            proof: data.proof.into(),
+                            proof_height: data.proof_height,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 // Datagram::TimeoutPacket(data) => (
                 //     msg,
                 //     ibc_handler
