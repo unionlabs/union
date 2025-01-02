@@ -170,7 +170,7 @@ mod test {
             hash_fixed(&preimage)
         };
 
-        assert_eq!(mix_in_length(&H256::new([42; BYTES_PER_CHUNK]), 42), &hash);
+        assert_eq!(mix_in_length(&H256::new([42; BYTES_PER_CHUNK]), 42), hash);
     }
 
     #[test]
