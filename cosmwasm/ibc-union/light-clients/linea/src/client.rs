@@ -15,7 +15,7 @@ use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::{DecodeAs, Proto},
     ethereum::keccak256,
-    hash::H256,
+    primitives::H256,
     ibc::{
         core::{
             client::{genesis_metadata::GenesisMetadata, height::Height},

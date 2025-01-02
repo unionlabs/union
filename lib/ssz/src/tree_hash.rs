@@ -170,17 +170,17 @@ mod test {
             hash_fixed(&preimage)
         };
 
-        assert_eq!(mix_in_length(&[42; BYTES_PER_CHUNK], 42), &hash[..]);
+        assert_eq!(mix_in_length(&H256::new([42; BYTES_PER_CHUNK]), 42), &hash);
     }
 
     #[test]
     fn bool() {
-        let mut true_bytes: Vec<u8> = vec![1];
-        true_bytes.append(&mut vec![0; 31]);
+        let mut true_bytes = <H256>::default();
+        true_bytes[0] = 1;
 
-        let false_bytes: Vec<u8> = vec![0; 32];
+        let false_bytes = <H256>::default();
 
-        assert_eq!(true.tree_hash_root(), true_bytes.as_slice());
-        assert_eq!(false.tree_hash_root(), false_bytes.as_slice());
+        assert_eq!(true.tree_hash_root(), true_bytes);
+        assert_eq!(false.tree_hash_root(), false_bytes);
     }
 }

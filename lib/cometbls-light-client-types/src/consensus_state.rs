@@ -1,6 +1,6 @@
 use unionlabs::{
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::commitment::merkle_root::MerkleRoot,
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,9 +14,10 @@ pub struct ConsensusState {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        errors::{required, InvalidLength, MissingField},
+        errors::{required, MissingField},
         ibc::core::commitment::merkle_root::TryFromMerkleRootError,
         impl_proto_via_try_from_into,
+        primitives::FixedBytesError,
     };
 
     use crate::consensus_state::ConsensusState;
@@ -47,7 +48,7 @@ pub mod proto {
         #[error("invalid root")]
         Root(#[from] TryFromMerkleRootError),
         #[error("invalid next validators hash")]
-        NextValidatorsHash(#[from] InvalidLength),
+        NextValidatorsHash(#[from] FixedBytesError),
     }
 
     impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {

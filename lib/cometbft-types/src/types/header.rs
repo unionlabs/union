@@ -175,11 +175,8 @@ impl Header {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        bounded::BoundedIntError,
-        errors::{InvalidLength, MissingField},
-        google::protobuf::timestamp::TryFromTimestampError,
-        primitives::FixedBytesError,
-        required,
+        bounded::BoundedIntError, errors::MissingField,
+        google::protobuf::timestamp::TryFromTimestampError, primitives::FixedBytesError, required,
     };
 
     use crate::types::{block_id, header::Header};

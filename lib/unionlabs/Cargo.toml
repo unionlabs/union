@@ -63,7 +63,7 @@ serde_json = { workspace = true }
 default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
-ethabi   = ["alloy"]
+ethabi   = ["alloy", "unionlabs-primitives/alloy-primitives-compat"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["subtle-encoding/std", "sha2/std"]

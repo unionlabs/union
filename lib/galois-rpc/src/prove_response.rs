@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    primitives::H256,
 };
 
 use crate::zero_knowledge_proof::ZeroKnowledgeProof;

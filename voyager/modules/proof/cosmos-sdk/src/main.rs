@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
-    hash::H256,
+    primitives::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     ErrorReporter, WasmClientType,
 };

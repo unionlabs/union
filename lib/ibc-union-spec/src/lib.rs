@@ -2,7 +2,11 @@ use enumorph::Enumorph;
 use ibc_solidity::{Channel, Connection, Packet};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
-use unionlabs::{bytes::Bytes, hash::H256, ibc::core::client::height::Height, uint::U256};
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{Bytes, H256},
+    uint::U256,
+};
 use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

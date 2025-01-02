@@ -164,7 +164,7 @@ mod tests {
     use hex_literal::hex;
     use unionlabs::{
         encoding::{DecodeAs, Proto},
-        hash::H256,
+        primitives::H256,
         ibc::core::commitment::{
             merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
         },

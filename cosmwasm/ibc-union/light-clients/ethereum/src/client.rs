@@ -15,7 +15,7 @@ use evm_storage_verifier::{
 use ibc_union_light_client::{IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::Status;
 use unionlabs::{
-    encoding::Bincode, ensure, ethereum::ibc_commitment_key, hash::H256,
+    encoding::Bincode, ensure, ethereum::ibc_commitment_key, primitives::H256,
     ibc::core::client::height::Height, uint::U256,
 };
 

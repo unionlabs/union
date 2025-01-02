@@ -18,7 +18,7 @@ use unionlabs::{
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
     bytes::Bytes,
-    hash::H256,
+    primitives::H256,
     ibc::core::client::height::Height,
     ErrorReporter,
 };

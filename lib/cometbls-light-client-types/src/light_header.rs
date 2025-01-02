@@ -1,7 +1,7 @@
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
-    hash::{hash_v2::HexUnprefixed, H256},
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,10 +18,9 @@ pub struct LightHeader {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        bounded::BoundedIntError,
-        errors::{InvalidLength, MissingField},
-        google::protobuf::timestamp::TryFromTimestampError,
-        impl_proto_via_try_from_into, required,
+        bounded::BoundedIntError, errors::MissingField,
+        google::protobuf::timestamp::TryFromTimestampError, impl_proto_via_try_from_into,
+        primitives::FixedBytesError, required,
     };
 
     use crate::light_header::LightHeader;
@@ -49,11 +48,11 @@ pub mod proto {
         #[error("invalid timestamp")]
         Timestamp(#[from] TryFromTimestampError),
         #[error("invalid validators hash")]
-        ValidatorsHash(#[source] InvalidLength),
+        ValidatorsHash(#[source] FixedBytesError),
         #[error("invalid next validators hash")]
-        NextValidatorsHash(#[source] InvalidLength),
+        NextValidatorsHash(#[source] FixedBytesError),
         #[error("invalid app hash")]
-        AppHash(#[source] InvalidLength),
+        AppHash(#[source] FixedBytesError),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for LightHeader {

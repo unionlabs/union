@@ -359,38 +359,6 @@ impl<E: Encoding, const BYTES: usize> rlp::Encodable for Hash<BYTES, E> {
     }
 }
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: Encoding, const BYTES: usize> From<alloy::core::primitives::FixedBytes<BYTES>>
-    for Hash<BYTES, E>
-{
-    fn from(value: alloy::core::primitives::FixedBytes<BYTES>) -> Self {
-        value.0.into()
-    }
-}
-
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: Encoding> From<Hash<20, E>> for alloy::core::primitives::Address {
-    fn from(value: Hash<20, E>) -> Self {
-        value.get().into()
-    }
-}
-
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: Encoding> From<alloy::core::primitives::Address> for Hash<20, E> {
-    fn from(value: alloy::core::primitives::Address) -> Self {
-        value.0.into()
-    }
-}
-
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>>
-    for alloy::core::primitives::FixedBytes<BYTES>
-{
-    fn from(value: Hash<BYTES, E>) -> Self {
-        value.get().into()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use hex::FromHexError;

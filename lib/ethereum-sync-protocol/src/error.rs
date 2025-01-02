@@ -1,7 +1,7 @@
 use milagro_bls::AmclError;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    hash::H256,
+    primitives::H256,
 };
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]

@@ -18,7 +18,7 @@ use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
     bounded::BoundedI64,
-    hash::H256,
+    primitives::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     ErrorReporter,
 };

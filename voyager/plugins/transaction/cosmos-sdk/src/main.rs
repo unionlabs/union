@@ -32,7 +32,7 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::{mk_any, Any},
-    hash::H256,
+    primitives::H256,
     signer::CosmosSigner,
     ErrorReporter,
 };

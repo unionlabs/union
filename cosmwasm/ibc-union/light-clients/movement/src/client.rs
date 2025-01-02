@@ -8,7 +8,7 @@ use unionlabs::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
     encoding::Bincode,
-    hash::H256,
+    primitives::H256,
     uint::U256,
 };
 

@@ -3,7 +3,7 @@ use ics008_wasm_client::IbcClientError;
 use linea_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    hash::H256,
+    primitives::H256,
     ibc::core::client::height::Height,
     ics24::PathParseError,
     linea::proof::InclusionProof,

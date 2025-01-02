@@ -24,7 +24,7 @@ use move_bindgen::MoveOutputType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument};
-use unionlabs::{hash::H256, ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},

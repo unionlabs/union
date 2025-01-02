@@ -12,7 +12,7 @@ use constants::*;
 use hex_literal::hex;
 use sha3::Digest;
 use substrate_bn::G1;
-use unionlabs::{hash::H256, uint::U256, ByteArrayExt};
+use unionlabs::{primitives::H256, uint::U256, ByteArrayExt};
 
 mod constants;
 

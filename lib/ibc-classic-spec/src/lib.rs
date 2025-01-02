@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 use subset_of::SubsetOf;
 use tracing::info;
 use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
     ibc::core::{
         channel::{
             channel::Channel, msg_acknowledgement::MsgAcknowledgement,
@@ -27,6 +25,7 @@ use unionlabs::{
         },
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    primitives::Bytes,
     ErrorReporter,
 };
 use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};

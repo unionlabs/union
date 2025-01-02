@@ -1,3 +1,5 @@
+use crate::H160;
+
 #[cfg(feature = "primitive-types-compat")]
 impl From<crate::H256> for primitive_types::H256 {
     fn from(value: crate::H256) -> Self {
@@ -53,17 +55,64 @@ where
 }
 
 #[cfg(feature = "alloy-primitives-compat")]
-impl<EBytes: Encoding> TryFrom<crate::Bytes<EBytes>> for alloy::core::primitives::Address {
+impl<EBytes: crate::encoding::Encoding> TryFrom<crate::Bytes<EBytes>>
+    for alloy_primitives::Address
+{
     type Error = crate::hash::FixedBytesError;
 
-    fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
-        <crate::hash::H160>::try_from(value).map(Self::from)
+    fn try_from(value: crate::Bytes<EBytes>) -> Result<Self, Self::Error> {
+        <crate::H160>::try_from(value).map(Self::from)
     }
 }
 
 #[cfg(feature = "alloy-primitives-compat")]
-impl<EBytes: Encoding> From<alloy::core::primitives::Address> for crate::Bytes<EBytes> {
-    fn from(value: alloy::core::primitives::Address) -> Self {
+impl<E: crate::encoding::Encoding> From<alloy_primitives::Address> for crate::Bytes<E> {
+    fn from(value: alloy_primitives::Address) -> Self {
         value.0 .0.into()
+    }
+}
+
+#[cfg(feature = "alloy-primitives-compat")]
+impl<E: crate::encoding::Encoding> From<alloy_primitives::Address> for crate::H160<E> {
+    fn from(value: alloy_primitives::Address) -> Self {
+        value.0 .0.into()
+    }
+}
+
+impl<E: crate::encoding::Encoding> From<crate::H160<E>> for alloy_primitives::Address {
+    fn from(value: crate::H160<E>) -> Self {
+        value.get().into()
+    }
+}
+
+#[cfg(feature = "alloy-primitives-compat")]
+impl<E: crate::encoding::Encoding, const BYTES: usize> From<alloy_primitives::FixedBytes<BYTES>>
+    for crate::Hash<BYTES, E>
+{
+    fn from(value: alloy_primitives::FixedBytes<BYTES>) -> Self {
+        value.0.into()
+    }
+}
+
+#[cfg(feature = "alloy-primitives-compat")]
+impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::Hash<BYTES, E>>
+    for alloy_primitives::FixedBytes<BYTES>
+{
+    fn from(value: crate::Hash<BYTES, E>) -> Self {
+        value.get().into()
+    }
+}
+
+#[cfg(feature = "alloy-primitives-compat")]
+impl<E: crate::encoding::Encoding> From<alloy_primitives::Bytes> for crate::Bytes<E> {
+    fn from(value: alloy_primitives::Bytes) -> Self {
+        value.to_vec().into()
+    }
+}
+
+#[cfg(feature = "alloy-primitives-compat")]
+impl<E: crate::encoding::Encoding> From<crate::Bytes<E>> for alloy_primitives::Bytes {
+    fn from(value: crate::Bytes<E>) -> Self {
+        value.to_vec().into()
     }
 }
