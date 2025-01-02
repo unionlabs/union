@@ -1,10 +1,6 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    errors::InvalidLength,
-    hash::{hash_v2::HexUnprefixed, H256},
-};
+use unionlabs_bytes::{encoding::HexUnprefixed, FixedBytesError, H256};
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
@@ -93,15 +89,15 @@ impl From<TransactionInfo> for protos::union::ibc::lightclients::movement::v1::T
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromTransactionInfoError {
     #[error("invalid transaction hash")]
-    TransactionHash(#[source] InvalidLength),
+    TransactionHash(#[source] FixedBytesError),
     #[error("invalid event root hash")]
-    EventRootHash(#[source] InvalidLength),
+    EventRootHash(#[source] FixedBytesError),
     #[error("invalid state change hash")]
-    StateChangeHash(#[source] InvalidLength),
+    StateChangeHash(#[source] FixedBytesError),
     #[error("invalid state checkpoint hash")]
-    StateCheckpointHash(#[source] InvalidLength),
+    StateCheckpointHash(#[source] FixedBytesError),
     #[error("invalid state cemetery hash")]
-    StateCemeteryHash(#[source] InvalidLength),
+    StateCemeteryHash(#[source] FixedBytesError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::TransactionInfo> for TransactionInfo {

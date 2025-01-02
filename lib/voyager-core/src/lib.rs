@@ -7,8 +7,6 @@ use macros::{apply, model};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{
-    bytes::Bytes,
-    hash::H256,
     ibc::core::client::height::{Height, HeightFromStrError},
     traits::Member,
 };
@@ -289,7 +287,7 @@ pub struct ConsensusStateMeta {
 
 #[model]
 pub struct IbcGo08WasmClientMetadata {
-    pub checksum: H256,
+    pub checksum: H256<HexUnprefixed>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -335,19 +333,24 @@ impl FromStr for QueryHeight {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Timestamp(u64);
+
 impl Timestamp {
+    #[must_use = "constructing a Timestamp has no effect"]
     pub fn from_nanos(nanos: u64) -> Self {
         Timestamp(nanos)
     }
 
+    #[must_use = "constructing a Timestamp has no effect"]
     pub fn from_secs(secs: u64) -> Self {
         Timestamp(secs * 1_000_000_000)
     }
 
+    #[must_use = "accessing the inner value has no effect"]
     pub fn as_nanos(&self) -> u64 {
         self.0
     }
 
+    #[must_use = "accessing the inner value has no effect"]
     pub fn as_secs(&self) -> u64 {
         self.0 / 1_000_000_000
     }
@@ -425,3 +428,4 @@ macro_rules! str_newtype {
     };
 }
 pub(crate) use str_newtype;
+use unionlabs_bytes::{encoding::HexUnprefixed, Bytes, H256};

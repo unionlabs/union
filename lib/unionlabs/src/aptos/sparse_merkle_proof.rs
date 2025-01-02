@@ -1,10 +1,6 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    errors::InvalidLength,
-    hash::{hash_v2::HexUnprefixed, H256},
-};
+use unionlabs_bytes::{encoding::HexUnprefixed, FixedBytesError, H256};
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
@@ -53,11 +49,11 @@ impl From<SparseMerkleProof> for protos::union::ibc::lightclients::movement::v1:
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromSparseMerkleProofError {
     #[error("invalid siblings")]
-    Siblings(#[source] InvalidLength),
+    Siblings(#[source] FixedBytesError),
     #[error("invalid leaf key")]
-    LeafKey(#[source] InvalidLength),
+    LeafKey(#[source] FixedBytesError),
     #[error("invalid leaf value hash")]
-    LeafValueHash(#[source] InvalidLength),
+    LeafValueHash(#[source] FixedBytesError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::SparseMerkleProof>

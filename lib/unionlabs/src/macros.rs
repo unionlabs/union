@@ -99,9 +99,9 @@ macro_rules! hex_string_array_wrapper {
                     (&self).into_iter()
                 }
 
-                pub fn iter_bits(&self) -> $crate::hash::BytesBitIterator<'_> {
-                    $crate::hash::BytesBitIterator::new(self)
-                }
+                // pub fn iter_bits(&self) -> $crate::hash::BytesBitIterator<'_> {
+                //     $crate::hash::BytesBitIterator::new(self)
+                // }
             }
 
             impl core::str::FromStr for $Struct {

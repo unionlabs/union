@@ -1,7 +1,7 @@
 use macros::model;
+use unionlabs_bytes::Bytes;
 
 use crate::{
-    bytes::Bytes,
     ibc::core::{channel::channel::Channel, client::height::Height},
     id::PortId,
 };

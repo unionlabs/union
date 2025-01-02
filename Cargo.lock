@@ -5417,15 +5417,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "generic-array"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cb8bc4c28d15ade99c7e90b219f30da4be5c88e586277e8cbe886beeb868ab2"
-dependencies = [
- "typenum",
-]
-
-[[package]]
 name = "get_if_addrs"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6261,7 +6252,7 @@ version = "1.0.0"
 dependencies = [
  "ibc-solidity",
  "serde",
- "unionlabs",
+ "unionlabs-bytes",
 ]
 
 [[package]]
@@ -12742,6 +12733,7 @@ dependencies = [
  "thiserror",
  "typenum",
  "uint",
+ "unionlabs-bytes",
  "wasmparser",
 ]
 
@@ -12751,7 +12743,7 @@ version = "0.0.1"
 dependencies = [
  "alloy-primitives",
  "base64 0.21.7",
- "generic-array 1.1.1",
+ "generic-array 0.14.7",
  "hex",
  "primitive-types 0.12.2",
  "rlp",
@@ -13381,6 +13373,7 @@ dependencies = [
  "serde",
  "serde_json",
  "unionlabs",
+ "unionlabs-bytes",
 ]
 
 [[package]]

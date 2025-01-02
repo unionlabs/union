@@ -1,4 +1,4 @@
-use unionlabs::bytes::Bytes;
+use unionlabs_bytes::Bytes;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

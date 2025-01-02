@@ -27,10 +27,10 @@ impl From<primitive_types::H160> for crate::H160 {
 }
 
 #[cfg(feature = "generic-array-compat")]
-impl<E: Encoding, const BYTES: usize> From<generic_array::GenericArray<u8, typenum::U<BYTES>>>
-    for crate::Hash<BYTES, E>
+impl<E: crate::encoding::Encoding, const BYTES: usize>
+    From<generic_array::GenericArray<u8, typenum::U<BYTES>>> for crate::Hash<BYTES, E>
 where
-    typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength<u8>>,
+    typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
 {
     fn from(arr: generic_array::GenericArray<u8, typenum::U<BYTES>>) -> Self {
         Self::new(
@@ -42,10 +42,10 @@ where
 }
 
 #[cfg(feature = "generic-array-compat")]
-impl<E: Encoding, const BYTES: usize> From<crate::Hash<BYTES, E>>
+impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::Hash<BYTES, E>>
     for generic_array::GenericArray<u8, typenum::U<BYTES>>
 where
-    typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength<u8>>,
+    typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
 {
     fn from(arr: crate::Hash<BYTES, E>) -> Self {
         generic_array::GenericArray::<u8, typenum::U<BYTES>>::from_slice(arr.get()).to_owned()

@@ -1,13 +1,7 @@
 use macros::model;
+use unionlabs_bytes::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
 
 use super::epoch_state::{EpochState, TryFromEpochStateError};
-use crate::{
-    errors::InvalidLength,
-    hash::{
-        hash_v2::{Hash, HexUnprefixed},
-        H256,
-    },
-};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -66,9 +60,9 @@ impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockIn
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromBlockInfoError {
     #[error("invalid id")]
-    Id(#[source] InvalidLength),
+    Id(#[source] FixedBytesError),
     #[error("invalid executed state id")]
-    ExecutedStateId(#[source] InvalidLength),
+    ExecutedStateId(#[source] FixedBytesError),
     #[error("invalid next epoch state: {0}")]
     NextEpochState(#[from] TryFromEpochStateError),
 }

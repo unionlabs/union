@@ -297,6 +297,7 @@ enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }
 frame-support-procedural = { version = "30.0.0", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
+generic-array            = { version = "0.14.7", default-features = false }
 go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }

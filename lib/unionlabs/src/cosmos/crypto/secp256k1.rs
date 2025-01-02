@@ -1,25 +1,19 @@
 use macros::model;
+use unionlabs_bytes::{encoding::Base64, FixedBytesError, Hash};
 
 use crate::errors::{ExpectedLength, InvalidLength};
 
 #[model(proto(raw(protos::cosmos::crypto::secp256k1::PubKey), into, from))]
 pub struct PubKey {
-    #[serde(with = "::serde_utils::base64")]
-    pub key: [u8; 33],
+    pub key: Hash<33, Base64>,
 }
 
 impl TryFrom<protos::cosmos::crypto::secp256k1::PubKey> for PubKey {
-    type Error = InvalidLength;
+    type Error = FixedBytesError;
 
     fn try_from(value: protos::cosmos::crypto::secp256k1::PubKey) -> Result<Self, Self::Error> {
         Ok(Self {
-            key: value
-                .key
-                .try_into()
-                .map_err(|invalid: Vec<u8>| InvalidLength {
-                    expected: ExpectedLength::Exact(33),
-                    found: invalid.len(),
-                })?,
+            key: value.key.try_into()?,
         })
     }
 }

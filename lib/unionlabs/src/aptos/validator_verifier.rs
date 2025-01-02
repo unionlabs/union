@@ -1,9 +1,10 @@
 use macros::model;
+use unionlabs_bytes::FixedBytesError;
 
 use super::public_key::PublicKey;
 use crate::{
     aptos::account::AccountAddress,
-    errors::{required, InvalidLength, MissingField},
+    errors::{required, MissingField},
 };
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
@@ -80,7 +81,7 @@ pub enum TryFromValidatorConsensusInfoError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid address")]
-    Address(#[source] InvalidLength),
+    Address(#[source] FixedBytesError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>

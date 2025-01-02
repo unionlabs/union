@@ -1,5 +1,5 @@
 use ibc_solidity::Packet;
-use unionlabs::bytes::Bytes;
+use unionlabs_bytes::Bytes;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

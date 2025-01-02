@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
+use unionlabs_bytes::H256;
 
 use crate::{
     errors::{ExpectedLength, InvalidLength},
-    hash::H256,
     uint::U256,
     ByteArrayExt,
 };

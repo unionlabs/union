@@ -82,8 +82,11 @@ impl Encoding for HexUnprefixed {
     }
 }
 
+#[cfg(feature = "base64")]
 pub struct Base64;
+#[cfg(feature = "base64")]
 impl Sealed for Base64 {}
+#[cfg(feature = "base64")]
 impl Encoding for Base64 {
     type Error = Base64Error;
 
@@ -119,6 +122,7 @@ impl Encoding for Base64 {
     }
 }
 
+#[cfg(feature = "base64")]
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Base64Error {
     #[error("invalid encoding")]

@@ -1,6 +1,5 @@
 use macros::model;
-
-use crate::bytes::Bytes;
+use unionlabs_bytes::Bytes;
 
 #[model(proto(raw(protos::ibc::core::client::v1::MsgCreateClient)))]
 pub struct MsgCreateClient {

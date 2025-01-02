@@ -1,6 +1,7 @@
 use macros::model;
+use unionlabs_bytes::Bytes;
 
-use crate::{bytes::Bytes, ibc::core::client::height::Height, id::ConnectionId};
+use crate::{ibc::core::client::height::Height, id::ConnectionId};
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenConfirm)))]
 pub struct MsgConnectionOpenConfirm {

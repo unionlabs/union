@@ -1,9 +1,9 @@
 use core::num::{NonZeroU64, TryFromIntError};
 
 use macros::model;
+use unionlabs_bytes::Bytes;
 
 use crate::{
-    bytes::Bytes,
     errors::{required, MissingField},
     ibc::core::client::height::Height,
     id::{ChannelId, Ics24IdParseError, ParsePrefixedIdError, PortId},

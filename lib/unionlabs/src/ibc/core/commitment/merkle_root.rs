@@ -1,9 +1,5 @@
 use macros::model;
-
-use crate::{
-    errors::InvalidLength,
-    hash::{hash_v2::Base64, H256},
-};
+use unionlabs_bytes::{encoding::Base64, FixedBytesError, H256};
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
 pub struct MerkleRoot {
@@ -27,7 +23,7 @@ impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromMerkleRootError {
     #[error("invalid hash")]
-    Hash(#[from] InvalidLength),
+    Hash(#[from] FixedBytesError),
 }
 
 impl TryFrom<protos::ibc::core::commitment::v1::MerkleRoot> for MerkleRoot {

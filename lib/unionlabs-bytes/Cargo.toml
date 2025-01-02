@@ -8,8 +8,8 @@ version      = "0.0.1"
 [dependencies]
 alloy-primitives = { workspace = true, optional = true }
 base64           = { workspace = true, optional = true }
-generic-array    = { version = "1.1.1", optional = true }
-hex              = { workspace = true }
+generic-array    = { workspace = true, optional = true }
+hex              = { workspace = true, features = ["std"] }
 primitive-types  = { workspace = true, optional = true }
 rlp              = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }

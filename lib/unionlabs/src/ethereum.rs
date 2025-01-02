@@ -1,9 +1,9 @@
 use sha2::Digest;
 use sha3::Keccak256;
+use unionlabs_bytes::H256;
 
 use crate::{
     ethereum::slot::{MappingKey, Slot},
-    hash::H256,
     uint::U256,
 };
 

@@ -361,9 +361,9 @@ mod u256_tests {
     use core::str::FromStr;
 
     use serde::{Deserialize, Serialize};
+    use unionlabs_bytes::H256;
 
     use crate::{
-        hash::H256,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
         uint::U256,
     };

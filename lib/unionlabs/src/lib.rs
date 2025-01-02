@@ -71,9 +71,6 @@ pub mod constants;
 // TODO: Remove (only used in ucs01-relay-api currently)
 pub mod validated;
 
-pub mod bytes;
-pub mod hash;
-
 pub mod encoding;
 
 /// Stable replacement for [`!`].
