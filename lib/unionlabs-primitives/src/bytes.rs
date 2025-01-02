@@ -3,7 +3,7 @@ use core::{cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr};
 
 use crate::{
     encoding::{Encoding, HexPrefixed},
-    hash::FixedBytesError,
+    fixed_bytes::FixedBytesError,
 };
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
@@ -195,7 +195,7 @@ impl<E: Encoding> IntoIterator for Bytes<E> {
 }
 
 impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes>>
-    for crate::hash::Hash<BYTES, EHash>
+    for crate::fixed_bytes::FixedBytes<BYTES, EHash>
 {
     type Error = FixedBytesError;
 
@@ -252,10 +252,10 @@ impl<E: Encoding, const N: usize> From<[u8; N]> for Bytes<E> {
     }
 }
 
-impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<crate::hash::Hash<N, EHash>>
-    for Bytes<EBytes>
+impl<EBytes: Encoding, EHash: Encoding, const N: usize>
+    From<crate::fixed_bytes::FixedBytes<N, EHash>> for Bytes<EBytes>
 {
-    fn from(value: crate::hash::Hash<N, EHash>) -> Self {
+    fn from(value: crate::fixed_bytes::FixedBytes<N, EHash>) -> Self {
         Self::new(value.get().as_slice().to_owned())
     }
 }

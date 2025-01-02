@@ -1,6 +1,6 @@
 use unionlabs::{
     bls::BlsSignature,
-    primitives::{Hash, H256},
+    primitives::{FixedBytes, H256},
 };
 #[cfg(feature = "ssz")]
 use {
@@ -55,7 +55,7 @@ pub struct BeaconBlockBodySsz<
     pub sync_aggregate: SyncAggregateSsz<C>,
     pub execution_payload: ExecutionPayloadSsz<C>,
     pub bls_to_execution_changes: List<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
-    pub blob_kzg_commitments: List<Hash<48>, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
+    pub blob_kzg_commitments: List<FixedBytes<48>, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -72,5 +72,5 @@ pub struct BeaconBlockBody {
     pub sync_aggregate: SyncAggregate,
     pub execution_payload: ExecutionPayload,
     pub bls_to_execution_changes: Vec<SignedBlsToExecutionChange>,
-    pub blob_kzg_commitments: Vec<Hash<48>>,
+    pub blob_kzg_commitments: Vec<FixedBytes<48>>,
 }

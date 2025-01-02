@@ -2,7 +2,7 @@ use macros::model;
 
 use crate::{
     aptos::transaction_info::TransactionInfo,
-    primitives::{encoding::HexUnprefixed, Hash, H256},
+    primitives::{encoding::HexUnprefixed, FixedBytes, H256},
 };
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
@@ -27,10 +27,10 @@ impl Default for TransactionInfoWithProof {
             transaction_info: TransactionInfo::V0(super::transaction_info::TransactionInfoV0 {
                 gas_used: 0,
                 status: super::transaction_info::ExecutionStatus::Success,
-                transaction_hash: Hash::default(),
-                event_root_hash: Hash::default(),
-                state_change_hash: Hash::default(),
-                state_checkpoint_hash: Some(Hash::default()),
+                transaction_hash: FixedBytes::default(),
+                event_root_hash: FixedBytes::default(),
+                state_change_hash: FixedBytes::default(),
+                state_checkpoint_hash: Some(FixedBytes::default()),
                 state_cemetery_hash: None,
             }),
         }

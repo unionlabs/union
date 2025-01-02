@@ -14,7 +14,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::{Hash, H160},
+    primitives::{FixedBytes, H160},
     uint::U256,
 };
 use voyager_message::{
@@ -160,7 +160,7 @@ impl ClientBootstrapModuleServer for Module {
             l1_client_id: self.l1_client_id,
             l1_contract_address: self.l1_settlement_address,
             l2_contract_address: self.ibc_handler_address,
-            table_handle: AccountAddress(Hash::new(
+            table_handle: AccountAddress(FixedBytes::new(
                 U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
             )),
             frozen_height: Height::new(0),

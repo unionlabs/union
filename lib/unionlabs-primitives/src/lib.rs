@@ -11,7 +11,7 @@ extern crate alloc;
 
 pub mod encoding;
 
-mod hash;
+mod fixed_bytes;
 
 mod bytes;
 
@@ -19,12 +19,12 @@ mod compat;
 
 pub use crate::{
     bytes::Bytes,
-    hash::{FixedBytesError, Hash},
+    fixed_bytes::{FixedBytes, FixedBytesError},
 };
 
-pub type H64<E = HexPrefixed> = Hash<8, E>;
-pub type H160<E = HexPrefixed> = Hash<20, E>;
-pub type H256<E = HexPrefixed> = Hash<32, E>;
-pub type H384<E = HexPrefixed> = Hash<48, E>;
-pub type H512<E = HexPrefixed> = Hash<64, E>;
-pub type H2048<E = HexPrefixed> = Hash<256, E>;
+pub type H64<E = HexPrefixed> = FixedBytes<8, E>;
+pub type H160<E = HexPrefixed> = FixedBytes<20, E>;
+pub type H256<E = HexPrefixed> = FixedBytes<32, E>;
+pub type H384<E = HexPrefixed> = FixedBytes<48, E>;
+pub type H512<E = HexPrefixed> = FixedBytes<64, E>;
+pub type H2048<E = HexPrefixed> = FixedBytes<256, E>;

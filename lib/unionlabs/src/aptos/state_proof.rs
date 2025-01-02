@@ -11,7 +11,7 @@ use crate::{
         ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
         signature::AggregateSignature,
     },
-    primitives::Hash,
+    primitives::FixedBytes,
 };
 
 /// A convenience type for the collection of sub-proofs that constitute a
@@ -36,13 +36,13 @@ impl Default for StateProof {
                     commit_info: BlockInfo {
                         epoch: 0,
                         round: 0,
-                        id: Hash::default(),
-                        executed_state_id: Hash::default(),
+                        id: FixedBytes::default(),
+                        executed_state_id: FixedBytes::default(),
                         version: 0,
                         timestamp_usecs: 0,
                         next_epoch_state: None,
                     },
-                    consensus_data_hash: Hash::default(),
+                    consensus_data_hash: FixedBytes::default(),
                 },
                 signatures: AggregateSignature {
                     validator_bitmask: super::signature::ValidatorBitmask { inner: vec![] },
