@@ -1,9 +1,7 @@
 import { type Readable } from "svelte/store"
 import { createIntentStore, type IntentStore } from "./intents.ts"
 import { type ContextStore, createContextStore} from "$lib/components/TransferFrom/transfer/context.ts"
-import {
-  createValidationStore, type ValidationStoreAndMethods
-} from "$lib/components/TransferFrom/transfer/validation.ts"
+import { createValidationStore, type ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 
 export interface TransferStore {
   intents: IntentStore

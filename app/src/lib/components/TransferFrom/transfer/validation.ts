@@ -111,6 +111,7 @@ export function createValidationStore(
     }
     const errors: FieldErrors = {}
 
+    //Example
     if (formFields.source && formFields.destination && formFields.source === formFields.destination) {
       errors.destination = "Source and destination chains must be different"
     }
