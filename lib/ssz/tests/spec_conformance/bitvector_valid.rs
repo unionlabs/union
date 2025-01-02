@@ -29,7 +29,7 @@ fn valid_bitvec_16_max() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_16_random() {
@@ -51,7 +51,7 @@ fn valid_bitvec_16_random() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_16_zero() {
@@ -73,7 +73,7 @@ fn valid_bitvec_16_zero() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_1_max() {
@@ -94,7 +94,7 @@ fn valid_bitvec_1_max() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_1_random() {
@@ -115,7 +115,7 @@ fn valid_bitvec_1_random() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_1_zero() {
@@ -136,7 +136,7 @@ fn valid_bitvec_1_zero() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_2_max() {
@@ -157,7 +157,7 @@ fn valid_bitvec_2_max() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_2_random() {
@@ -178,7 +178,7 @@ fn valid_bitvec_2_random() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_2_zero() {
@@ -199,7 +199,7 @@ fn valid_bitvec_2_zero() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_31_max() {
@@ -221,7 +221,7 @@ fn valid_bitvec_31_max() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_31_random() {
@@ -243,7 +243,7 @@ fn valid_bitvec_31_random() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_31_zero() {
@@ -265,7 +265,7 @@ fn valid_bitvec_31_zero() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_3_max() {
@@ -286,7 +286,7 @@ fn valid_bitvec_3_max() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_3_random() {
@@ -307,7 +307,7 @@ fn valid_bitvec_3_random() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_3_zero() {
@@ -328,7 +328,7 @@ fn valid_bitvec_3_zero() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_4_max() {
@@ -349,7 +349,7 @@ fn valid_bitvec_4_max() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_4_random() {
@@ -370,7 +370,7 @@ fn valid_bitvec_4_random() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_4_zero() {
@@ -391,7 +391,7 @@ fn valid_bitvec_4_zero() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_512_max() {
@@ -431,7 +431,7 @@ fn valid_bitvec_512_max() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_512_random() {
@@ -471,7 +471,7 @@ fn valid_bitvec_512_random() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_512_zero() {
@@ -509,7 +509,7 @@ fn valid_bitvec_512_zero() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_513_max() {
@@ -549,7 +549,7 @@ fn valid_bitvec_513_max() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_513_random() {
@@ -589,7 +589,7 @@ fn valid_bitvec_513_random() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_513_zero() {
@@ -627,7 +627,7 @@ fn valid_bitvec_513_zero() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_5_max() {
@@ -648,7 +648,7 @@ fn valid_bitvec_5_max() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_5_random() {
@@ -669,7 +669,7 @@ fn valid_bitvec_5_random() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_5_zero() {
@@ -690,7 +690,7 @@ fn valid_bitvec_5_zero() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_8_max() {
@@ -711,7 +711,7 @@ fn valid_bitvec_8_max() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_8_random() {
@@ -732,7 +732,7 @@ fn valid_bitvec_8_random() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_bitvec_8_zero() {
@@ -753,5 +753,5 @@ fn valid_bitvec_8_zero() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }

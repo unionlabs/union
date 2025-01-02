@@ -168,7 +168,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     // This confirms that the `finalized_header` is really finalized.
     validate_merkle_branch(
-        &update.finalized_header.beacon.tree_hash_root().into(),
+        &update.finalized_header.beacon.tree_hash_root(),
         &update.finality_branch,
         floorlog2(FINALIZED_ROOT_INDEX),
         get_subtree_index(FINALIZED_ROOT_INDEX),
@@ -193,8 +193,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         validate_merkle_branch(
             &TryInto::<SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
                 .unwrap()
-                .tree_hash_root()
-                .into(),
+                .tree_hash_root(),
             &update.next_sync_committee_branch.unwrap_or_default(),
             floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
             get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
@@ -250,8 +249,7 @@ pub fn get_lc_execution_root<C: ChainSpec>(
     if epoch >= fork_parameters.deneb.epoch {
         return TryInto::<ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
             .unwrap()
-            .tree_hash_root()
-            .into();
+            .tree_hash_root();
     }
 
     // TODO: Figure out what to do here

@@ -1,6 +1,6 @@
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{ibc::core::client::height::Height, TryFromProtoBytesError};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::client::MovementLightClient;
 

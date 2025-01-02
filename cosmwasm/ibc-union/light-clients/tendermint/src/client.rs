@@ -48,11 +48,11 @@ impl IbcClient for TendermintLightClient {
     type Encoding = Proto;
 
     fn verify_membership(
-        ctx: IbcClientCtx<Self>,
-        height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
-        value: Vec<u8>,
+        _ctx: IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+        _value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         // let consensus_state = ctx.read_self_consensus_state(height)?;
         // let path = MerklePath::decode_as::<Proto>(&key).unwrap();

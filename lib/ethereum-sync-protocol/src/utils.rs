@@ -94,7 +94,6 @@ pub fn compute_fork_data_root(current_version: Version, genesis_validators_root:
         genesis_validators_root,
     }
     .tree_hash_root()
-    .into()
 }
 
 /// Return the signing root for the corresponding signing data
@@ -102,7 +101,7 @@ pub fn compute_fork_data_root(current_version: Version, genesis_validators_root:
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_signing_root)
 pub fn compute_signing_root<T: Ssz>(ssz_object: &T, domain: Domain) -> H256 {
     SigningData {
-        object_root: ssz_object.tree_hash_root().into(),
+        object_root: ssz_object.tree_hash_root(),
         domain,
     }
     .tree_hash_root()

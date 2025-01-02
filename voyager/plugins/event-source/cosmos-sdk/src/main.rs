@@ -1581,7 +1581,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 timeout_height: packet.timeout_height,
                                 timeout_timestamp: packet.timeout_timestamp,
                             },
-                            acknowledgement: ack_packet.acknowledgement.into(),
+                            acknowledgement: ack_packet.acknowledgement,
                         }
                         .into();
 
@@ -1675,7 +1675,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 timeout_height: packet.timeout_height,
                                 timeout_timestamp: packet.timeout_timestamp,
                             },
-                            relayer_msg: recv_packet.relayer_msg.into(),
+                            relayer_msg: recv_packet.relayer_msg,
                         }
                         .into();
 

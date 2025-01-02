@@ -412,7 +412,7 @@ mod test {
         let merklizer_root_individual_single_bytes = {
             let mut m = MerkleHasher::with_depth(depth);
             for byte in reference_bytes.iter() {
-                m.write(&[*byte]).expect("should process byte");
+                m.write([*byte]).expect("should process byte");
             }
             m.finish().expect("should finish")
         };
@@ -565,7 +565,7 @@ mod test {
     fn remaining_buffer() {
         let a = {
             let mut m = MerkleHasher::with_leaves(2);
-            m.write(&[1]).expect("should write");
+            m.write([1]).expect("should write");
             m.finish().expect("should finish")
         };
 
@@ -574,7 +574,7 @@ mod test {
             let mut leaf = vec![1];
             leaf.extend_from_slice(&[0; 31]);
             m.write(&leaf).expect("should write");
-            m.write(&[0; 32]).expect("should write");
+            m.write([0; 32]).expect("should write");
             m.finish().expect("should finish")
         };
 

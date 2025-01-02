@@ -28,7 +28,7 @@ fn valid_false() {
         <bool as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_true() {
@@ -49,5 +49,5 @@ fn valid_true() {
         <bool as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }

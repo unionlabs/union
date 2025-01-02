@@ -1,5 +1,6 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
+use unionlabs_primitives::encoding::HexUnprefixed;
 
 use crate::{
     encoding::{Decode, DecodeErrorOf, Encode, Proto},
@@ -16,7 +17,7 @@ use crate::{
 ))]
 pub struct ClientState<Data> {
     pub data: Data,
-    pub checksum: H256,
+    pub checksum: H256<HexUnprefixed>,
     pub latest_height: Height,
 }
 

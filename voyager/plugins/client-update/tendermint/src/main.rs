@@ -8,7 +8,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::instrument;
-use unionlabs::primitives::{hash_v2::HexUnprefixed, H160};
+use unionlabs::primitives::{encoding::HexUnprefixed, H160};
 use voyager_message::{
     call::Call,
     core::{ChainId, ClientType},
