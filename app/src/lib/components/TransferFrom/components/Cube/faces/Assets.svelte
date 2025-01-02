@@ -31,28 +31,32 @@
 
 </script>
 
-<div class="flex flex-col h-full w-full">
-  <div class="flex-1 overflow-y-auto">
-    {#each $context.balances as asset}
-      {@const supportedAsset = getSupportedAsset($context.sourceChain, asset.address)}
-      {#if $showUnsupported || supportedAsset}
-        <div class="pb-2 flex flex-col justify-start">
-          <Button
-                  variant="ghost"
-                  class="px-4 py-2 w-full rounded-none flex justify-between items-center"
-                  on:click={() => setAsset(asset.address)}
-          >
-            <div class:opacity-30={!supportedAsset}>
-              {truncate((supportedAsset?.display_symbol || asset?.symbol || ''), 6) || 'Unknown symbol'}
-            </div>
-            <p class="text-lg font-black" class:opacity-30={!supportedAsset}>
-              {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
-            </p>
-          </Button>
-        </div>
-      {/if}
-    {/each}
-  </div>
+<div class="flex flex-col justify-between h-full w-full p-4">
+  {#if $context.balances.length}
+    <div class="flex-1 overflow-y-auto">
+      {#each $context.balances as asset}
+        {@const supportedAsset = getSupportedAsset($context.sourceChain, asset.address)}
+        {#if $showUnsupported || supportedAsset}
+          <div class="pb-2 flex flex-col justify-start">
+            <Button
+                    variant="ghost"
+                    class="px-4 py-2 w-full rounded-none flex justify-between items-center"
+                    on:click={() => setAsset(asset.address)}
+            >
+              <div class:opacity-30={!supportedAsset}>
+                {truncate((supportedAsset?.display_symbol || asset?.symbol || ''), 6) || 'Unknown symbol'}
+              </div>
+              <p class="text-lg font-black" class:opacity-30={!supportedAsset}>
+                {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
+              </p>
+            </Button>
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {:else}
+    <p>No spendable balances</p>
+  {/if}
 
   <div class="mt-4">
     <Button on:click={() => rotateTo("intentFace")} class="w-full">

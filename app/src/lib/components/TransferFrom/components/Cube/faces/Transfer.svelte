@@ -4,6 +4,7 @@
   import type {Readable} from "svelte/store";
   import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
   import type {CubeFaces} from "$lib/components/TransferFrom/types.ts";
+  import {Button} from "$lib/components/ui/button";
 
   interface Props {
     stores: {
@@ -20,4 +21,10 @@
   $: ({intents, validation, context} = stores)
 </script>
 
-<button on:click={() => rotateTo("intentFace")}>Transfer</button>
+<div class="h-full w-full flex flex-col justify-between p-4">
+  <h2>Transfer</h2>
+  <div class="flex flex-col gap-2">
+    <Button>Confirm</Button>
+    <Button variant="outline" on:click={() => rotateTo("intentFace")}>CANCEL</Button>
+  </div>
+</div>

@@ -31,7 +31,7 @@
   }
 </script>
 
-<div class="flex h-full justify-between flex-col gap-4">
+<div class="flex h-full justify-between flex-col gap-4 p-4">
   <div class="flex flex-col gap-2">
     {#each $context.chains as chain}
       <Button variant="ghost"
