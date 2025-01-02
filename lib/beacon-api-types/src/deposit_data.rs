@@ -1,5 +1,7 @@
-use ssz::H256;
-use unionlabs::bls::{BlsPublicKey, BlsSignature};
+use unionlabs::{
+    bls::{BlsPublicKey, BlsSignature},
+    primitives::H256,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

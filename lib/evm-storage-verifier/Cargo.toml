@@ -14,7 +14,7 @@ serde-utils        = { workspace = true, default-features = false }
 sha3               = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = ["rlp"] }
 
 [lints]
 workspace = true

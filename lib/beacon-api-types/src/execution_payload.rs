@@ -1,6 +1,5 @@
-use ssz::H256;
 use unionlabs::{
-    primitives::{Bytes, H160},
+    primitives::{Bytes, H160, H256},
     uint::U256,
 };
 #[cfg(feature = "ssz")]
