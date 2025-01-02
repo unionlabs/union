@@ -11632,6 +11632,7 @@ dependencies = [
  "ibc-union-msg",
  "ics23",
  "lazy_static",
+ "serde",
  "serde_json",
  "sha2 0.10.8",
  "tendermint-light-client-types",
