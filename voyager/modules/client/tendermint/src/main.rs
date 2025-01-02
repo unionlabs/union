@@ -11,7 +11,7 @@ use tracing::{debug, instrument};
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi, Json, Proto},
+    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
     ErrorReporter,
 };

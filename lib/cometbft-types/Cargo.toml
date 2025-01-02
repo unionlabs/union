@@ -16,7 +16,6 @@ serde.workspace       = true
 sha2                  = { workspace = true, optional = true }
 thiserror.workspace   = true
 unionlabs             = { workspace = true }
-bincode = "2.0.0-rc.3"
 
 [dev-dependencies]
 cometbft-types        = { workspace = true, default-features = true }   # enable all features for tests

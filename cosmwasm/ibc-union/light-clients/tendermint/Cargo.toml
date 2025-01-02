@@ -27,9 +27,6 @@ ics23                         = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 tendermint-verifier           = { workspace = true }
 unionlabs                     = { workspace = true }
-serde = { workspace = true }
-hex-literal = { workspace = true }
-serde-utils = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

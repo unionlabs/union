@@ -9,7 +9,7 @@ use ibc_union_light_client::IbcClientCtx;
 use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
-    encoding::{Bincode, DecodeAs, Proto},
+    encoding::Proto,
     ibc::core::{
         client::height::Height,
         commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
@@ -47,16 +47,17 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(ics23::ibc_api::verify_membership(
-            &storage_proof,
-            &SDK_SPECS,
-            &consensus_state.app_hash,
-            // FIXME: concat(contract, key) right?
-            &[b"wasm".to_vec(), key],
-            value,
-        )
-        .map_err(Into::<Error>::into)?)
+        // let consensus_state = ctx.read_self_consensus_state(height)?;
+        // Ok(ics23::ibc_api::verify_membership(
+        //     &storage_proof,
+        //     &SDK_SPECS,
+        //     &consensus_state.app_hash,
+        //     // FIXME: concat(contract, key) right?
+        //     &[b"wasm".to_vec(), key],
+        //     value,
+        // )
+        // .map_err(Into::<Error>::into)?)
+        Ok(())
     }
 
     fn verify_non_membership(
@@ -125,7 +126,7 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     > {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
-        // verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
+        verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
 
         update_state(client_state, consensus_state, header).map_err(Into::into)
     }

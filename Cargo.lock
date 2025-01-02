@@ -2297,25 +2297,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bincode"
-version = "2.0.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f11ea1a0346b94ef188834a65c068a03aec181c94896d481d7a0a40d85b0ce95"
-dependencies = [
- "bincode_derive",
- "serde",
-]
-
-[[package]]
-name = "bincode_derive"
-version = "2.0.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e30759b3b99a1b802a7a3aa21c85c3ded5c28e1c83170d82d70f08bbf7f3e4c"
-dependencies = [
- "virtue",
-]
-
-[[package]]
 name = "bip32"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3126,7 +3107,6 @@ dependencies = [
 name = "cometbft-types"
 version = "0.1.0"
 dependencies = [
- "bincode 2.0.0-rc.3",
  "cometbft-types",
  "hex-literal",
  "prost 0.12.6",
@@ -10515,7 +10495,7 @@ version = "0.20.6"
 source = "git+https://github.com/aptos-labs/serde-reflection?rev=73b6bbf748334b71ff6d7d09d06a29e3062ca075#73b6bbf748334b71ff6d7d09d06a29e3062ca075"
 dependencies = [
  "bcs 0.1.6",
- "bincode 1.3.3",
+ "bincode",
  "heck 0.3.3",
  "include_dir",
  "maplit",
@@ -11648,13 +11628,10 @@ dependencies = [
  "base64 0.21.7",
  "cometbft-types",
  "cosmwasm-std 2.1.4",
- "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ics23",
  "lazy_static",
- "serde",
- "serde-utils",
  "serde_json",
  "sha2 0.10.8",
  "tendermint-light-client-types",
@@ -12718,7 +12695,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
- "bincode 1.3.3",
+ "bincode",
  "bip32",
  "borsh",
  "bs58 0.4.0",
@@ -12902,12 +12879,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "virtue"
-version = "0.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dcc60c0624df774c82a0ef104151231d37da4962957d691c011c852b2473314"
 
 [[package]]
 name = "voyager"

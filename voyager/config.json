@@ -2,7 +2,7 @@
   "modules": {
     "state": [
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-state-module-cosmos-sdk",
         "info": {
           "chain_id": "union-devnet-1",
@@ -14,7 +14,7 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-devnet-1",
@@ -28,44 +28,6 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk",
-        "info": {
-          "chain_id": "union-testnet-9",
-          "ibc_spec_id": "1.0.0"
-        },
-        "config": {
-          "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-          "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
-        "info": {
-          "chain_id": "union-testnet-9",
-          "ibc_spec_id": "ibc-union"
-        },
-        "config": {
-          "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-          "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-          "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
-        "info": {
-          "chain_id": "elgafar-1",
-          "ibc_spec_id": "ibc-union"
-        },
-        "config": {
-          "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-          "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660",
-          "ibc_host_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm"
-        }
-      },
-      {
-        "enabled": false,
         "path": "./target/debug/voyager-state-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -79,7 +41,7 @@
     ],
     "proof": [
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-devnet-1",
@@ -93,32 +55,6 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
-        "info": {
-          "chain_id": "union-testnet-9",
-          "ibc_spec_id": "ibc-union"
-        },
-        "config": {
-          "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-          "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-          "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
-        "info": {
-          "chain_id": "elgafar-1",
-          "ibc_spec_id": "ibc-union"
-        },
-        "config": {
-          "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-          "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660",
-          "ibc_host_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm"
-        }
-      },
-      {
-        "enabled": false,
         "path": "./target/debug/voyager-proof-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -132,7 +68,7 @@
     ],
     "consensus": [
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-consensus-module-cometbls",
         "info": {
           "chain_id": "union-devnet-1",
@@ -146,19 +82,6 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-cometbls",
-        "info": {
-          "chain_id": "union-testnet-9",
-          "consensus_type": "cometbls"
-        },
-        "config": {
-          "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-          "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-          "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-        }
-      },
-      {
-        "enabled": false,
         "path": "./target/debug/voyager-consensus-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -169,18 +92,6 @@
           "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
           "eth_rpc_api": "http://localhost:8545",
           "eth_beacon_rpc_api": "http://localhost:9596"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-tendermint",
-        "info": {
-          "chain_id": "elgafar-1",
-          "consensus_type": "tendermint"
-        },
-        "config": {
-          "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-          "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660"
         }
       }
     ],
@@ -217,26 +128,6 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-cometbls",
-        "info": {
-          "client_type": "cometbls",
-          "consensus_type": "cometbls",
-          "ibc_interface": "ibc-cosmwasm",
-          "ibc_spec_id": "ibc-union"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-client-module-tendermint",
-        "info": {
-          "client_type": "tendermint",
-          "consensus_type": "tendermint",
-          "ibc_interface": "ibc-cosmwasm",
-          "ibc_spec_id": "ibc-union"
-        }
-      },
-      {
-        "enabled": true,
         "path": "./target/debug/voyager-client-module-ethereum",
         "info": {
           "client_type": "ethereum",
@@ -249,38 +140,11 @@
         }
       }
     ],
-    "client_bootstrap": [
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-cometbls",
-        "info": {
-          "chain_id": "union-testnet-9",
-          "client_type": "cometbls"
-        },
-        "config": {
-          "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-          "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-          "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-tendermint",
-        "info": {
-          "chain_id": "elgafar-1",
-          "client_type": "tendermint"
-        },
-        "config": {
-          "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-          "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660",
-          "ibc_host_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm"
-        }
-      }
-    ]
+    "client_bootstrap": []
   },
   "plugins": [
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
@@ -290,24 +154,6 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
-      "config": {
-        "chain_id": "union-testnet-9",
-        "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-        "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443"
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
-      "config": {
-        "chain_id": "elgafar-1",
-        "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-        "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660"
-      }
-    },
-    {
-      "enabled": false,
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -317,7 +163,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
@@ -344,58 +190,6 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
-      "config": {
-        "chain_id": "union-testnet-9",
-        "keyring": {
-          "name": "union-testnet",
-          "keys": [
-            {
-              "type": "raw",
-              "name": "alice",
-              "key": "0x5efcae5986b659d008a87dffdd6f26982011f40b7fbaf277fdf8d4c59e2c415a"
-            }
-          ]
-        },
-        "gas_config": {
-          "gas_price": "1.0",
-          "gas_denom": "muno",
-          "gas_multiplier": "1.1",
-          "max_gas": 10000000
-        },
-        "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-        "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-        "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
-      "config": {
-        "chain_id": "elgafar-1",
-        "ibc_host_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm",
-        "keyring": {
-          "name": "union-devnet",
-          "keys": [
-            {
-              "type": "raw",
-              "name": "alice",
-              "key": "0x089f6742fe5a3d9897695089ab5551a57af0bb503caedb471626f618f423eaa0"
-            }
-          ]
-        },
-        "gas_config": {
-          "gas_price": "1.0",
-          "gas_denom": "ustars",
-          "gas_multiplier": "1.4",
-          "max_gas": 10000000
-        },
-        "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-        "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660"
-      }
-    },
-    {
-      "enabled": false,
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
@@ -435,7 +229,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-devnet-1",
@@ -451,36 +245,6 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
-      "config": {
-        "chain_id": "union-testnet-9",
-        "client_configs": {
-          "min_batch_size": 1,
-          "max_batch_size": 4,
-          "max_wait_time": {
-            "secs": 1,
-            "nanos": 0
-          }
-        }
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
-      "config": {
-        "chain_id": "elgafar-1",
-        "client_configs": {
-          "min_batch_size": 1,
-          "max_batch_size": 4,
-          "max_wait_time": {
-            "secs": 1,
-            "nanos": 0
-          }
-        }
-      }
-    },
-    {
-      "enabled": false,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "32382",
@@ -495,7 +259,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-client-update-plugin-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
@@ -506,25 +270,6 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-cometbls",
-      "config": {
-        "chain_id": "union-testnet-9",
-        "ws_url": "https://rpc.union-testnet-9.union.chain.kitchen:443",
-        "grpc_url": "https://grpc.union-testnet-9.union.chain.kitchen:443",
-        "prover_endpoints": ["http://localhost:9999"]
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-tendermint",
-      "config": {
-        "chain_id": "elgafar-1",
-        "ws_url": "https://rpc.elgafar-1.stargaze-apis.com:443",
-        "grpc_url": "http://grpc-1.elgafar-1.stargaze-apis.com:26660"
-      }
-    },
-    {
-      "enabled": false,
       "path": "./target/debug/voyager-client-update-plugin-ethereum",
       "config": {
         "chain_id": "32382",

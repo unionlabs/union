@@ -13,7 +13,7 @@ use tracing::{debug, instrument};
 use unionlabs::{
     self,
     bytes::Bytes,
-    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
     ibc::lightclients::wasm,
     union::ics23,
