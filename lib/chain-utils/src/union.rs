@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    hash::H256, ibc::core::client::height::Height, id::ClientId, signer::CosmosSigner,
+    ibc::core::client::height::Height, id::ClientId, primitives::H256, signer::CosmosSigner,
     WasmClientType,
 };
 

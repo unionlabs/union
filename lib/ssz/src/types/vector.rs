@@ -10,12 +10,11 @@ use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 pub use typenum;
 use typenum::{Const, NonZero, ToUInt, Unsigned, U};
+use unionlabs_primitives::H256;
 
 use crate::{
-    decode::TryFromIter,
-    decode_list_of_variable_length_items, sequence_ssz_append, sequence_ssz_bytes_len,
-    tree_hash::{Hash256, TreeHashType},
-    types::tree_hash::vec_tree_hash_root,
+    decode::TryFromIter, decode_list_of_variable_length_items, sequence_ssz_append,
+    sequence_ssz_bytes_len, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root,
     DecodeError, Ssz,
 };
 
@@ -197,7 +196,7 @@ where
 
     const TREE_HASH_TYPE: TreeHashType = TreeHashType::Vector;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         vec_tree_hash_root::<T, N>(&self.vec)
     }
 

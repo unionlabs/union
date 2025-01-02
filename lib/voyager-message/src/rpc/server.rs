@@ -9,7 +9,7 @@ use jsonrpsee::{
 };
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
-use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
 use voyager_core::{IbcSpecId, Timestamp};
 use voyager_vm::ItemId;
 

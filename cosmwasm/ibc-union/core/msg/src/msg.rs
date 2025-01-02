@@ -1,5 +1,5 @@
 use ibc_solidity::Packet;
-use unionlabs::bytes::Bytes;
+use unionlabs_primitives::Bytes;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]

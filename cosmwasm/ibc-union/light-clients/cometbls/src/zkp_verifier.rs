@@ -1,5 +1,5 @@
 use cometbls_light_client_types::{ChainId, LightHeader};
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 pub trait ZkpVerifier {
     fn verify_zkp(

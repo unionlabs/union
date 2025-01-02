@@ -1,7 +1,7 @@
 use unionlabs::{
     google::protobuf::timestamp::Timestamp,
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::commitment::merkle_root::MerkleRoot,
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -54,10 +54,9 @@ pub mod ethabi {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        errors::{InvalidLength, MissingField},
-        google::protobuf::timestamp::TryFromTimestampError,
-        ibc::core::commitment::merkle_root::TryFromMerkleRootError,
-        impl_proto_via_try_from_into, required,
+        errors::MissingField, google::protobuf::timestamp::TryFromTimestampError,
+        ibc::core::commitment::merkle_root::TryFromMerkleRootError, impl_proto_via_try_from_into,
+        primitives::FixedBytesError, required,
     };
 
     use crate::ConsensusState;
@@ -85,7 +84,7 @@ pub mod proto {
         #[error("invalid root")]
         Root(#[from] TryFromMerkleRootError),
         #[error("invalid next validators hash")]
-        NextValidatorsHash(#[from] InvalidLength),
+        NextValidatorsHash(#[from] FixedBytesError),
         #[error("invalid timestamp")]
         Timestamp(#[from] TryFromTimestampError),
     }

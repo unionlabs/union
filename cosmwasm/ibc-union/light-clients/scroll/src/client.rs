@@ -5,7 +5,7 @@ use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::Status;
 use scroll_codec::batch_header::BatchHeaderV3;
 use scroll_light_client_types::{ClientState, ConsensusState, Header};
-use unionlabs::{encoding::Proto, hash::H256};
+use unionlabs::{encoding::Proto, primitives::H256};
 
 use crate::errors::Error;
 
@@ -179,7 +179,7 @@ pub fn verify_header(
 //         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
 //         encoding::{EncodeAs, Proto},
 //         google::protobuf::any::Any,
-//         hash::{H160, H256},
+//         primitives::{H160, H256},
 //         ibc::core::client::height::Height,
 //         uint::U256,
 //     };

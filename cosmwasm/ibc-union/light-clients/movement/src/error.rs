@@ -1,9 +1,6 @@
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{
-    aptos::storage_proof::TryFromStorageProofError, ibc::core::client::height::Height,
-    TryFromProtoBytesError,
-};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::client::MovementLightClient;
 
@@ -25,8 +22,6 @@ pub enum Error {
     ProofValueHashMismatch,
     #[error("proof key hash doesn't match the calculated one")]
     ProofKeyMismatch,
-    #[error("storage proof decode: {0}")]
-    StorageProofDecode(#[from] TryFromProtoBytesError<TryFromStorageProofError>),
     #[error("invalid ibc path {0}")]
     InvalidIbcPath(String),
     #[error(transparent)]

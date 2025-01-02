@@ -163,7 +163,7 @@ mod tests {
     use serde_utils::Hex;
     use unionlabs::{
         encoding::{Bcs, DecodeAs, EncodeAs},
-        hash::H256,
+        primitives::H256,
     };
 
     use super::*;

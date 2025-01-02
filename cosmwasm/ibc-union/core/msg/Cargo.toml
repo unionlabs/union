@@ -10,6 +10,6 @@ version      = "1.0.0"
 workspace = true
 
 [dependencies]
-ibc-solidity = { workspace = true, features = ["serde"] }
-serde        = { workspace = true, features = ["derive"] }
-unionlabs    = { workspace = true, features = ["ethabi"] }
+ibc-solidity         = { workspace = true, features = ["serde"] }
+serde                = { workspace = true, features = ["derive"] }
+unionlabs-primitives = { workspace = true, features = ["serde"] }

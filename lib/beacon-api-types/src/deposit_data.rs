@@ -1,6 +1,6 @@
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    hash::H256,
+    primitives::H256,
 };
 
 #[derive(Debug, Clone, PartialEq)]

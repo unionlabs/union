@@ -12,10 +12,10 @@ use serde_json::{json, Value};
 use tracing::{debug, instrument};
 use unionlabs::{
     self,
-    bytes::Bytes,
     encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
     ibc::lightclients::wasm,
+    primitives::Bytes,
     union::ics23,
     ErrorReporter,
 };

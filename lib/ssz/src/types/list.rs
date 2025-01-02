@@ -10,13 +10,11 @@ use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 pub use typenum;
 use typenum::{NonZero, Unsigned};
+use unionlabs_primitives::H256;
 
 use crate::{
-    decode::TryFromIter,
-    decode_list_of_variable_length_items, sequence_ssz_append, sequence_ssz_bytes_len,
-    tree_hash::{Hash256, TreeHashType},
-    types::tree_hash::vec_tree_hash_root,
-    Ssz,
+    decode::TryFromIter, decode_list_of_variable_length_items, sequence_ssz_append,
+    sequence_ssz_bytes_len, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root, Ssz,
 };
 
 /// Emulates a SSZ `List`.
@@ -217,7 +215,7 @@ where
 
     const TREE_HASH_TYPE: TreeHashType = TreeHashType::List;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         let root = vec_tree_hash_root::<T, N>(&self.vec);
 
         crate::tree_hash::mix_in_length(&root, self.len())
@@ -374,7 +372,7 @@ mod test {
         round_trip::<List<u16, U8>>(vec![0; 8].try_into().unwrap());
     }
 
-    fn root_with_length(bytes: &[u8], len: usize) -> Hash256 {
+    fn root_with_length(bytes: &[u8], len: usize) -> H256 {
         let root = merkle_root(bytes, 0);
         crate::tree_hash::mix_in_length(&root, len)
     }

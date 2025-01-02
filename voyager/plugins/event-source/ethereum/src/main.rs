@@ -23,7 +23,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace, warn};
-use unionlabs::{hash::H160, ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_message::{
     call::Call,
     core::{ChainId, ClientInfo, IbcSpec, QueryHeight},

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone)]
 pub struct ScrollClient {

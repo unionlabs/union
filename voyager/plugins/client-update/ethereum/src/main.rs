@@ -25,8 +25,8 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    hash::{H160, H256},
     ibc::core::client::height::Height,
+    primitives::{H160, H256},
     ErrorReporter,
 };
 use voyager_message::{

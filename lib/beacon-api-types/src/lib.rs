@@ -59,7 +59,7 @@ use core::{
 
 use hex_literal::hex;
 use typenum::{NonZero, Unsigned};
-use unionlabs::hash::hash_v2::Hash;
+use unionlabs::primitives::Hash;
 
 pub use crate::{
     attestation::Attestation, attestation_data::AttestationData,

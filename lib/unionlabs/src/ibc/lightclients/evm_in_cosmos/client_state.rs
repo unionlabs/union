@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H160, uint::U256};
+use crate::{errors::InvalidLength, primitives::H160, uint::U256};
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::evmincosmos::v1::ClientState),

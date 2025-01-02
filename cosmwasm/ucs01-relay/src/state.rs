@@ -4,7 +4,7 @@ use cw_controllers::Admin;
 use cw_storage_plus::{Item, KeyDeserialize, Map, Prefixer, PrimaryKey};
 use serde::{Deserialize, Serialize};
 use ucs01_relay_api::middleware::InFlightPfmPacket;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 pub const ADMIN: Admin = Admin::new("admin");
 

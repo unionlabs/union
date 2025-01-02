@@ -3,7 +3,7 @@
 use hex_literal::hex;
 use ssz::{types::*, Ssz};
 use typenum::U;
-use unionlabs::{hash::H256, uint::U256};
+use unionlabs::{primitives::H256, uint::U256};
 
 pub mod container_types {
     include!("../../tests-generator/src/container_types.rs");
@@ -28,7 +28,7 @@ fn valid_false() {
         <bool as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_true() {
@@ -49,5 +49,5 @@ fn valid_true() {
         <bool as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }

@@ -1,6 +1,6 @@
 use crate::{
     errors::{ExpectedLength, InvalidLength},
-    hash::H256,
+    primitives::H256,
     uint::U256,
     ByteArrayExt,
 };

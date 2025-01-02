@@ -29,7 +29,10 @@ use tracing::{
     Instrument,
 };
 use unionlabs::{
-    bytes::Bytes, ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter,
+    ethereum::keccak256,
+    primitives::{encoding::HexUnprefixed, Bytes},
+    traits::Member,
+    ErrorReporter,
 };
 use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};

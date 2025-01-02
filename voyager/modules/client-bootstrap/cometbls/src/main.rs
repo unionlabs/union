@@ -13,8 +13,8 @@ use serde_json::Value;
 use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
-    hash::H256,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+    primitives::H256,
     traits::Member,
 };
 use voyager_message::{

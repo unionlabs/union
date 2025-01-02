@@ -1,0 +1,32 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "unionlabs-primitives"
+repository   = { workspace = true }
+version      = "0.0.1"
+
+[dependencies]
+alloy-primitives = { workspace = true, optional = true }
+base64           = { workspace = true, optional = true }
+generic-array    = { workspace = true, optional = true }
+hex              = { workspace = true, features = ["std"] }
+primitive-types  = { workspace = true, optional = true }
+rlp              = { workspace = true, optional = true }
+serde            = { workspace = true, features = ["derive"], optional = true }
+serde_bytes      = { version = "0.11.15", optional = true }
+thiserror        = { workspace = true }
+typenum          = { workspace = true, optional = true }
+
+[lints]
+workspace = true
+
+[features]
+default = ["serde", "base64"]
+
+base64 = ["dep:base64"]
+rlp    = ["dep:rlp"]
+serde  = ["dep:serde", "dep:serde_bytes"]
+
+alloy-primitives-compat = ["dep:alloy-primitives"]
+generic-array-compat    = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
+primitive-types-compat  = ["dep:primitive-types"]

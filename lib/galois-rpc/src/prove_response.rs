@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    errors::{required, MissingField},
+    primitives::{FixedBytesError, H256},
 };
 
 use crate::zero_knowledge_proof::ZeroKnowledgeProof;
@@ -26,9 +26,7 @@ pub enum Error {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid trusted_validator_set_root")]
-    TrustedValidatorSetRoot(#[source] InvalidLength),
-    #[error("invalid untrusted_validator_set_root")]
-    UntrustedValidatorSetRoot(#[source] InvalidLength),
+    TrustedValidatorSetRoot(#[source] FixedBytesError),
 }
 
 impl TryFrom<protos::union::galois::api::v3::ProveResponse> for ProveResponse {

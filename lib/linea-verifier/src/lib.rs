@@ -5,8 +5,8 @@ use gnark_mimc::new_mimc_constants_bls12_377;
 use linea_light_client_types::{ClientState, Header};
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
-    hash::H256,
     linea::account::ZkAccount,
+    primitives::H256,
     uint::U256,
 };
 

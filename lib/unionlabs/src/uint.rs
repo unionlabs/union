@@ -15,6 +15,7 @@ use crate::{
     encoding::{Decode, Encode, Proto},
     errors::{ExpectedLength, InvalidLength},
     option_unwrap,
+    primitives::H256,
 };
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
@@ -259,10 +260,10 @@ impl ssz::Ssz for U256 {
     const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType =
         ssz::tree_hash::TreeHashType::Basic { size: 32 };
 
-    fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         let mut result = [0; 32];
         self.0.to_little_endian(&mut result[..]);
-        result
+        H256::new(result)
     }
 
     fn ssz_bytes_len(&self) -> NonZeroUsize {
@@ -308,12 +309,14 @@ impl Display for U256 {
     }
 }
 
+#[cfg(feature = "rlp")]
 impl rlp::Encodable for U256 {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
         s.encoder().encode_value(&self.to_be_bytes_packed());
     }
 }
 
+#[cfg(feature = "rlp")]
 impl rlp::Decodable for U256 {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         <primitive_types::U256 as rlp::Decodable>::decode(rlp).map(Self)
@@ -363,7 +366,7 @@ mod u256_tests {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        hash::H256,
+        primitives::H256,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
         uint::U256,
     };

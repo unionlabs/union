@@ -23,7 +23,7 @@ use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
-    hash::{hash_v2::HexUnprefixed, H256},
+    primitives::{encoding::HexUnprefixed, H256},
     signer::CosmosSigner,
     ErrorReporter,
 };

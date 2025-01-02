@@ -1,4 +1,6 @@
-use super::{get_zero_hash, Hash256, BYTES_PER_CHUNK};
+use unionlabs_primitives::H256;
+
+use super::{get_zero_hash, BYTES_PER_CHUNK};
 use crate::tree_hash::{hash_concat, hash_fixed};
 
 /// Merkleize `bytes` and return the root, optionally padding the tree out to `min_leaves` number of
@@ -33,12 +35,12 @@ use crate::tree_hash::{hash_concat, hash_fixed};
 /// _Note: there are some minor memory overheads, including a handful of usizes and a list of
 /// `MAX_TREE_DEPTH` hashes as `lazy_static` constants._
 #[must_use]
-pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
+pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> H256 {
     // If the bytes are just one chunk or less, pad to one chunk and return without hashing.
     if bytes.len() <= BYTES_PER_CHUNK && min_leaves <= 1 {
         let mut o = [0; BYTES_PER_CHUNK];
         o[0..bytes.len()].copy_from_slice(bytes);
-        return o;
+        return H256::new(o);
     }
 
     assert!(
@@ -92,15 +94,9 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
             }
         };
 
-        assert_eq!(
-            hash.len(),
-            BYTES_PER_CHUNK,
-            "Hashes should be exactly one chunk"
-        );
-
         // Store the parent node.
         chunks
-            .set(i, &hash)
+            .set(i, hash.get())
             .expect("Buffer should always have capacity for parent nodes");
     }
 
@@ -123,7 +119,7 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
         for i in 0..parent_nodes {
             let (left, right) = match (chunks.get(i * 2), chunks.get(i * 2 + 1)) {
                 (Ok(left), Ok(right)) => (left, right),
-                (Ok(left), Err(_)) => (left, get_zero_hash(height)),
+                (Ok(left), Err(_)) => (left, get_zero_hash(height).get().as_slice()),
                 // Deriving `parent_nodes` from `chunks.len()` has ensured that we never encounter the
                 // scenario where we expect two nodes but there are none.
                 (Err(_), Err(_)) => unreachable!("Parent must have one child"),
@@ -141,7 +137,7 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> Hash256 {
 
             // Store a parent node.
             chunks
-                .set(i, &hash)
+                .set(i, hash.get())
                 .expect("Buf is adequate size for parent");
         }
 
@@ -172,6 +168,7 @@ impl ChunkStore {
     /// Set the `i`th chunk to `value`.
     ///
     /// Returns `Err` if `value.len() != BYTES_PER_CHUNK` or `i` is out-of-bounds.
+    // TODO: Take H256 here instead of a slice(???)
     fn set(&mut self, i: usize, value: &[u8]) -> Result<(), ()> {
         if i < self.len() && value.len() == BYTES_PER_CHUNK {
             let slice = &mut self.0[i * BYTES_PER_CHUNK..i * BYTES_PER_CHUNK + BYTES_PER_CHUNK];
@@ -221,7 +218,7 @@ mod test {
     use super::*;
     use crate::tree_hash::ZERO_HASHES_MAX_INDEX;
 
-    pub fn reference_root(bytes: &[u8]) -> Hash256 {
+    pub fn reference_root(bytes: &[u8]) -> H256 {
         crate::tree_hash::merkleize_standard(bytes)
     }
 
@@ -282,7 +279,7 @@ mod test {
                 let min_nodes = 2usize.pow(ZERO_HASHES_MAX_INDEX as u32);
                 assert_eq!(
                     merkleize_padded(&input, min_nodes),
-                    get_zero_hash(ZERO_HASHES_MAX_INDEX)
+                    *get_zero_hash(ZERO_HASHES_MAX_INDEX)
                 );
             }
         };

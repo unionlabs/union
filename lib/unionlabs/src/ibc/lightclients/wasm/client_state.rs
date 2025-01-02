@@ -1,11 +1,12 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
+use unionlabs_primitives::encoding::HexUnprefixed;
 
 use crate::{
     encoding::{Decode, DecodeErrorOf, Encode, Proto},
-    errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    errors::{required, MissingField},
     ibc::core::client::height::Height,
+    primitives::{FixedBytesError, H256},
 };
 
 #[model(proto(
@@ -16,8 +17,7 @@ use crate::{
 ))]
 pub struct ClientState<Data> {
     pub data: Data,
-    pub checksum: H256,
-    // #[deprecated = "use data.height()"]
+    pub checksum: H256<HexUnprefixed>,
     pub latest_height: Height,
 }
 
@@ -42,7 +42,7 @@ pub enum TryFromWasmClientStateError<Data: Decode<Proto, Error: core::error::Err
     #[error("unable to decode wasm client state data")]
     Data(#[source] DecodeErrorOf<Proto, Data>),
     #[error("invalid checksum")]
-    Checksum(#[from] InvalidLength),
+    Checksum(#[from] FixedBytesError),
 }
 
 impl<Data: Decode<Proto, Error: core::error::Error + Clone>> Clone

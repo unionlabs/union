@@ -1,8 +1,8 @@
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::{
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::client::height::Height,
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};

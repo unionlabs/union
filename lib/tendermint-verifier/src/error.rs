@@ -2,7 +2,7 @@ use cometbft_types::types::block_id::BlockId;
 use unionlabs::{
     errors::InvalidLength,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{hash_v2::HexUnprefixed, H160, H256},
+    primitives::{encoding::HexUnprefixed, H160, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]

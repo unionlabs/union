@@ -346,9 +346,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-primitives"
-version = "0.8.12"
+version = "0.8.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fce5dbd6a4f118eecc4719eaa9c7ffc31c315e6c5ccde3642db927802312425"
+checksum = "0540fd0355d400b59633c27bd4b42173e59943f28e9d3376b77a24771d432d04"
 dependencies = [
  "alloy-rlp",
  "bytes",
@@ -366,7 +366,7 @@ dependencies = [
  "proptest",
  "rand 0.8.5",
  "ruint",
- "rustc-hash 2.0.0",
+ "rustc-hash 2.1.0",
  "serde",
  "sha3 0.10.8",
  "tiny-keccak",
@@ -3196,9 +3196,9 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.12.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94fb8a24a26d37e1ffd45343323dc9fe6654ceea44c12f2fcb3d7ac29e610bc6"
+checksum = "4b0485bab839b018a8f1723fc5391819fea5f8f0f32288ef8a735fd096b6160c"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -5141,9 +5141,9 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "foldhash"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81ec6369c545a7d40e4589b5597581fa1c441fe1cce96dd1de43159910a36a2"
+checksum = "a0d2fde1f7b3d48b8395d5f2de76c18a528bd6a9cdde438df747bfcba3e05d6f"
 
 [[package]]
 name = "foreign-types"
@@ -6252,7 +6252,7 @@ version = "1.0.0"
 dependencies = [
  "ibc-solidity",
  "serde",
- "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -6790,7 +6790,7 @@ dependencies = [
  "parking_lot",
  "pin-project",
  "rand 0.8.5",
- "rustc-hash 2.0.0",
+ "rustc-hash 2.1.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -7890,7 +7890,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -10061,9 +10061,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
+checksum = "c7fb8039b3032c191086b10f11f319a6e99e1e82889c5cc6046f515c9db1d497"
 
 [[package]]
 name = "rustc-hex"
@@ -11243,6 +11243,7 @@ dependencies = [
  "thiserror",
  "typenum",
  "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -12733,7 +12734,24 @@ dependencies = [
  "thiserror",
  "typenum",
  "uint",
+ "unionlabs-primitives",
  "wasmparser",
+]
+
+[[package]]
+name = "unionlabs-primitives"
+version = "0.0.1"
+dependencies = [
+ "alloy-primitives",
+ "base64 0.21.7",
+ "generic-array 0.14.7",
+ "hex",
+ "primitive-types 0.12.2",
+ "rlp",
+ "serde",
+ "serde_bytes",
+ "thiserror",
+ "typenum",
 ]
 
 [[package]]

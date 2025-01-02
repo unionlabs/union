@@ -18,7 +18,6 @@ use unionlabs::{
     encoding::{DecodeAs, Ssz},
     ethereum::IBC_HANDLER_COMMITMENTS_SLOT,
     google::protobuf::duration::Duration,
-    hash::H160,
     ibc::{
         core::client::height::Height,
         lightclients::ethereum::{
@@ -26,7 +25,9 @@ use unionlabs::{
             execution_payload_header::ExecutionPayloadHeader, storage_proof::StorageProof,
         },
     },
-    option_unwrap, result_unwrap,
+    option_unwrap,
+    primitives::H160,
+    result_unwrap,
     uint::U256,
 };
 

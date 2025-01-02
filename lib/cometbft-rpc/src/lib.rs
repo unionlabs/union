@@ -20,8 +20,9 @@ use jsonrpsee::{
 use tracing::{debug, debug_span, instrument, Instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
-    hash::H256,
-    option_unwrap, result_unwrap,
+    option_unwrap,
+    primitives::H256,
+    result_unwrap,
 };
 
 use crate::rpc_types::{

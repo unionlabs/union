@@ -1,6 +1,6 @@
 use unionlabs::{
     bls::BlsSignature,
-    hash::{hash_v2::Hash, H256},
+    primitives::{Hash, H256},
 };
 #[cfg(feature = "ssz")]
 use {

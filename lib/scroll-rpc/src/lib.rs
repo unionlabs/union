@@ -8,7 +8,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    hash::{H160, H256},
+    primitives::{H160, H256},
     uint::U256,
 };
 

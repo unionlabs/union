@@ -5,13 +5,7 @@ use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    errors::InvalidLength,
-    hash::{
-        hash_v2::{Hash, HexUnprefixed},
-        H256,
-    },
-};
+use crate::primitives::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
 
 #[derive(
     macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
@@ -49,7 +43,7 @@ impl AsRef<[u8]> for AccountAddress {
 }
 
 impl TryFrom<Vec<u8>> for AccountAddress {
-    type Error = InvalidLength;
+    type Error = FixedBytesError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         value.try_into().map(Self)

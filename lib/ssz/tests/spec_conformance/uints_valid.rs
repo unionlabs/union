@@ -3,7 +3,7 @@
 use hex_literal::hex;
 use ssz::{types::*, Ssz};
 use typenum::U;
-use unionlabs::{hash::H256, uint::U256};
+use unionlabs::{primitives::H256, uint::U256};
 
 pub mod container_types {
     include!("../../tests-generator/src/container_types.rs");
@@ -31,7 +31,7 @@ fn valid_uint_128_last_byte_empty() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_max() {
@@ -55,7 +55,7 @@ fn valid_uint_128_max() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_random_0() {
@@ -79,7 +79,7 @@ fn valid_uint_128_random_0() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_random_1() {
@@ -103,7 +103,7 @@ fn valid_uint_128_random_1() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_random_2() {
@@ -127,7 +127,7 @@ fn valid_uint_128_random_2() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_random_3() {
@@ -151,7 +151,7 @@ fn valid_uint_128_random_3() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_random_4() {
@@ -175,7 +175,7 @@ fn valid_uint_128_random_4() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_128_zero() {
@@ -199,7 +199,7 @@ fn valid_uint_128_zero() {
         <u128 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_last_byte_empty() {
@@ -220,7 +220,7 @@ fn valid_uint_16_last_byte_empty() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_max() {
@@ -241,7 +241,7 @@ fn valid_uint_16_max() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_random_0() {
@@ -262,7 +262,7 @@ fn valid_uint_16_random_0() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_random_1() {
@@ -283,7 +283,7 @@ fn valid_uint_16_random_1() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_random_2() {
@@ -304,7 +304,7 @@ fn valid_uint_16_random_2() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_random_3() {
@@ -325,7 +325,7 @@ fn valid_uint_16_random_3() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_random_4() {
@@ -346,7 +346,7 @@ fn valid_uint_16_random_4() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_16_zero() {
@@ -367,7 +367,7 @@ fn valid_uint_16_zero() {
         <u16 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_last_byte_empty() {
@@ -397,7 +397,7 @@ fn valid_uint_256_last_byte_empty() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_max() {
@@ -427,7 +427,7 @@ fn valid_uint_256_max() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_random_0() {
@@ -457,7 +457,7 @@ fn valid_uint_256_random_0() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_random_1() {
@@ -487,7 +487,7 @@ fn valid_uint_256_random_1() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_random_2() {
@@ -517,7 +517,7 @@ fn valid_uint_256_random_2() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_random_3() {
@@ -547,7 +547,7 @@ fn valid_uint_256_random_3() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_random_4() {
@@ -577,7 +577,7 @@ fn valid_uint_256_random_4() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_256_zero() {
@@ -602,7 +602,7 @@ fn valid_uint_256_zero() {
         <U256 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_last_byte_empty() {
@@ -623,7 +623,7 @@ fn valid_uint_32_last_byte_empty() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_max() {
@@ -644,7 +644,7 @@ fn valid_uint_32_max() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_random_0() {
@@ -665,7 +665,7 @@ fn valid_uint_32_random_0() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_random_1() {
@@ -686,7 +686,7 @@ fn valid_uint_32_random_1() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_random_2() {
@@ -707,7 +707,7 @@ fn valid_uint_32_random_2() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_random_3() {
@@ -728,7 +728,7 @@ fn valid_uint_32_random_3() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_random_4() {
@@ -749,7 +749,7 @@ fn valid_uint_32_random_4() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_32_zero() {
@@ -770,7 +770,7 @@ fn valid_uint_32_zero() {
         <u32 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_last_byte_empty() {
@@ -792,7 +792,7 @@ fn valid_uint_64_last_byte_empty() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_max() {
@@ -815,7 +815,7 @@ fn valid_uint_64_max() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_random_0() {
@@ -836,7 +836,7 @@ fn valid_uint_64_random_0() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_random_1() {
@@ -858,7 +858,7 @@ fn valid_uint_64_random_1() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_random_2() {
@@ -880,7 +880,7 @@ fn valid_uint_64_random_2() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_random_3() {
@@ -901,7 +901,7 @@ fn valid_uint_64_random_3() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_random_4() {
@@ -922,7 +922,7 @@ fn valid_uint_64_random_4() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_64_zero() {
@@ -943,7 +943,7 @@ fn valid_uint_64_zero() {
         <u64 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_last_byte_empty() {
@@ -964,7 +964,7 @@ fn valid_uint_8_last_byte_empty() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_max() {
@@ -985,7 +985,7 @@ fn valid_uint_8_max() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_random_0() {
@@ -1006,7 +1006,7 @@ fn valid_uint_8_random_0() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_random_1() {
@@ -1027,7 +1027,7 @@ fn valid_uint_8_random_1() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_random_2() {
@@ -1048,7 +1048,7 @@ fn valid_uint_8_random_2() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_random_3() {
@@ -1069,7 +1069,7 @@ fn valid_uint_8_random_3() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_random_4() {
@@ -1090,7 +1090,7 @@ fn valid_uint_8_random_4() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }
 #[test]
 fn valid_uint_8_zero() {
@@ -1111,5 +1111,5 @@ fn valid_uint_8_zero() {
         <u8 as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
+    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root());
 }

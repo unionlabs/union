@@ -1,7 +1,7 @@
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    hash::{H256, H512},
+    primitives::{H256, H512},
     ByteArrayExt,
 };
 

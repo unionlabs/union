@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
     google::protobuf::timestamp::Timestamp,
-    hash::H160,
+    primitives::H160,
 };
 
 use crate::types::{block_id::BlockId, signed_msg_type::SignedMsgType};
@@ -28,8 +28,9 @@ pub struct Vote {
 pub mod proto {
     use unionlabs::{
         bounded::BoundedIntError,
-        errors::{InvalidLength, MissingField, UnknownEnumVariant},
+        errors::{MissingField, UnknownEnumVariant},
         google::protobuf::timestamp::TryFromTimestampError,
+        primitives::FixedBytesError,
         required,
     };
 
@@ -67,7 +68,7 @@ pub mod proto {
         #[error("invalid timestamp")]
         Timestamp(#[from] TryFromTimestampError),
         #[error("invalid validator address")]
-        ValidatorAddress(#[from] InvalidLength),
+        ValidatorAddress(#[from] FixedBytesError),
     }
 
     impl TryFrom<protos::cometbft::types::v1::Vote> for Vote {

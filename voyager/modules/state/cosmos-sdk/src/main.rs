@@ -23,15 +23,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
-    bytes::Bytes,
     encoding::{DecodeAs, Proto},
-    hash::{hash_v2::HexUnprefixed, H256, H64},
     ibc::core::{
         channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    parse_wasm_client_type, ErrorReporter, WasmClientType,
+    parse_wasm_client_type,
+    primitives::{encoding::HexUnprefixed, Bytes, H256, H64},
+    ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
@@ -62,7 +62,7 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
-    pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
+    pub checksum_cache: Arc<DashMap<H256<HexUnprefixed>, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,7 +111,10 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
-    async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
+    async fn client_type_of_checksum(
+        &self,
+        checksum: H256<HexUnprefixed>,
+    ) -> RpcResult<Option<WasmClientType>> {
         if let Some(ty) = self.checksum_cache.get(&checksum) {
             debug!(
                 %checksum,
@@ -177,7 +180,7 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(%client_id))]
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
+    async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256<HexUnprefixed>> {
         type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
 
         let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(

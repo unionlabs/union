@@ -4,8 +4,8 @@ use macros::model;
 
 use crate::{
     encoding::{DecodeAs, Proto},
-    errors::InvalidLength,
     google::protobuf::any::Any,
+    primitives::FixedBytesError,
     TryFromProtoBytesError, TypeUrl,
 };
 
@@ -54,7 +54,7 @@ pub enum TryFromAnyPubKeyError {
         expected: Vec<String>,
     },
     #[error("unable to decode pub key from proto bytes")]
-    TryFromProto(TryFromProtoBytesError<InvalidLength>),
+    TryFromProto(TryFromProtoBytesError<FixedBytesError>),
 }
 
 impl TryFrom<protos::google::protobuf::Any> for AnyPubKey {

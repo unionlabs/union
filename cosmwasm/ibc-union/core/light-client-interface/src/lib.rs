@@ -13,9 +13,8 @@ use ibc_union_msg::lightclient::{
 use msg::InstantiateMsg;
 use state::IBC_HOST;
 use unionlabs::{
-    bytes::Bytes,
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
-    hash::hash_v2::Base64,
+    primitives::{encoding::Base64, Bytes},
     ErrorReporter,
 };
 

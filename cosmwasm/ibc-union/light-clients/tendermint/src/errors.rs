@@ -2,8 +2,8 @@ use ibc_union_light_client::IbcClientError;
 use tendermint_light_client_types::{ClientState, Header};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    hash::H256,
     ibc::core::commitment::merkle_proof::MerkleProof,
+    primitives::H256,
 };
 
 use crate::client::TendermintLightClient;

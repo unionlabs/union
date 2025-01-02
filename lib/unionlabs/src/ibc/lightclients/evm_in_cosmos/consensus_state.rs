@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{errors::InvalidLength, primitives::H256};
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::evmincosmos::v1::ConsensusState),

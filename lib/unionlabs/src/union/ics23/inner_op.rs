@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::{bytes::Bytes, cosmos::ics23::hash_op::HashOp, ensure};
+use crate::{cosmos::ics23::hash_op::HashOp, ensure, primitives::Bytes};
 
 #[model(proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from))]
 pub struct InnerOp {

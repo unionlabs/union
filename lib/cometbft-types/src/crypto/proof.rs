@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    bytes::Bytes,
-    hash::{hash_v2::Base64, H256},
+    primitives::{encoding::Base64, Bytes, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -17,7 +16,7 @@ pub struct Proof {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::{bounded::BoundedIntError, errors::InvalidLength};
+    use unionlabs::{bounded::BoundedIntError, primitives::FixedBytesError};
 
     use crate::crypto::proof::Proof;
 
@@ -52,6 +51,6 @@ pub mod proto {
         #[error("invalid index")]
         Index(#[source] BoundedIntError<i64>),
         #[error("invalid leaf hash")]
-        LeafHash(#[from] InvalidLength),
+        LeafHash(#[from] FixedBytesError),
     }
 }

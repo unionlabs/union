@@ -1,4 +1,4 @@
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::Checkpoint;
 

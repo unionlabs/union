@@ -1,4 +1,4 @@
-use unionlabs::hash::H256;
+use unionlabs_primitives::H256;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

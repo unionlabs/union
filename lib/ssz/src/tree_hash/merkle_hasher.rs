@@ -2,8 +2,9 @@ use std::mem;
 
 use sha2::Digest;
 use smallvec::{smallvec, SmallVec};
+use unionlabs_primitives::H256;
 
-use crate::tree_hash::{get_zero_hash, Hash256, HASHSIZE};
+use crate::tree_hash::{get_zero_hash, HASHSIZE};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 
@@ -17,7 +18,7 @@ pub enum Error {
 ///
 /// Should be used as a left or right value for some node.
 enum Preimage<'a> {
-    Digest([u8; 32]),
+    Digest(H256),
     Slice(&'a [u8]),
 }
 
@@ -51,7 +52,7 @@ impl HalfNode {
 
     /// Complete the half-node by providing a `right` value. Returns a digest of the left and right
     /// nodes.
-    fn finish(mut self, right: Preimage) -> [u8; 32] {
+    fn finish(mut self, right: Preimage) -> H256 {
         self.context.update(right.as_bytes());
         self.context.finalize().into()
     }
@@ -138,7 +139,7 @@ pub struct MerkleHasher {
     /// A buffer of bytes that are waiting to be written to a leaf.
     buffer: SmallVec<[u8; 32]>,
     /// Set to Some(root) when the root of the tree is known.
-    root: Option<Hash256>,
+    root: Option<H256>,
 }
 
 /// Returns the parent of node with id `i`.
@@ -200,7 +201,8 @@ impl MerkleHasher {
     /// Returns an error if the given bytes would create a leaf that would exceed the maximum
     /// permissible number of leaves defined by the initialization `depth`. E.g., a tree of `depth
     /// == 2` can only accept 2 leaves. A tree of `depth == 14` can only accept 8,192 leaves.
-    pub fn write(&mut self, bytes: &[u8]) -> Result<(), Error> {
+    pub fn write(&mut self, bytes: impl AsRef<[u8]>) -> Result<(), Error> {
+        let bytes = bytes.as_ref();
         let mut ptr = 0;
         while ptr <= bytes.len() {
             let slice = &bytes[ptr..std::cmp::min(bytes.len(), ptr + HASHSIZE)];
@@ -245,7 +247,7 @@ impl MerkleHasher {
             return Err(Error::MaximumLeavesExceeded { max_leaves });
         } else if self.next_leaf == 1 {
             // A tree of depth one has a root that is equal to the first given leaf.
-            self.root = Some(leaf);
+            self.root = Some(H256::new(leaf));
         } else if self.next_leaf % 2 == 0 {
             self.process_left_node(self.next_leaf, Preimage::Slice(&leaf));
         } else {
@@ -266,7 +268,7 @@ impl MerkleHasher {
     ///
     /// Returns an error if the bytes remaining in the buffer would create a leaf that would exceed
     /// the maximum permissible number of leaves defined by the initialization `depth`.
-    pub fn finish(mut self) -> Result<Hash256, Error> {
+    pub fn finish(mut self) -> Result<H256, Error> {
         if !self.buffer.is_empty() {
             let mut leaf = [0; HASHSIZE];
             leaf[..self.buffer.len()].copy_from_slice(&self.buffer);
@@ -281,9 +283,9 @@ impl MerkleHasher {
                 let right_child = node.id * 2 + 1;
                 self.process_right_node(right_child, self.zero_hash(right_child));
             } else if self.next_leaf == 1 {
-                // The next_leaf can only be 1 if the tree has a depth of one. If have been no
-                // leaves supplied, assume a root of zero.
-                break Ok([0; 32]);
+                // The next_leaf can only be 1 if the tree has a depth of one. If no leaves have
+                // been supplied, assume a root of zero.
+                break Ok(H256::default());
             } else {
                 // The only scenario where there are (a) no half nodes and (b) a tree of depth
                 // two or more is where no leaves have been supplied at all.
@@ -356,7 +358,7 @@ impl MerkleHasher {
     /// will be `[0; 32]`.  However, the `zero_hash` for a node at depth 0 will be
     /// `hash(concat([0; 32], [0; 32])))`.
     fn zero_hash(&self, id: usize) -> Preimage<'static> {
-        Preimage::Slice(get_zero_hash(self.depth - (get_depth(id) + 1)))
+        Preimage::Slice(get_zero_hash(self.depth - (get_depth(id) + 1)).get())
     }
 }
 
@@ -376,7 +378,7 @@ mod test {
         );
     }
 
-    fn compare_with_reference(leaves: &[Hash256], depth: usize) {
+    fn compare_with_reference(leaves: &[H256], depth: usize) {
         let reference_bytes = leaves.iter().flatten().copied().collect::<Vec<_>>();
 
         let reference_root = merkleize_padded(&reference_bytes, 1 << (depth - 1));
@@ -384,7 +386,7 @@ mod test {
         let merklizer_root_32_bytes = {
             let mut m = MerkleHasher::with_depth(depth);
             for leaf in leaves.iter() {
-                m.write(leaf).expect("should process leaf");
+                m.write(leaf.as_ref()).expect("should process leaf");
             }
             m.finish().expect("should finish")
         };
@@ -410,7 +412,7 @@ mod test {
         let merklizer_root_individual_single_bytes = {
             let mut m = MerkleHasher::with_depth(depth);
             for byte in reference_bytes.iter() {
-                m.write(&[*byte]).expect("should process byte");
+                m.write([*byte]).expect("should process byte");
             }
             m.finish().expect("should finish")
         };
@@ -427,7 +429,7 @@ mod test {
         let leaves = (0..leaves)
             .map(|n| {
                 let n = n.to_be_bytes();
-                let mut out = [0; 32];
+                let mut out = H256::default();
                 out[24..32].copy_from_slice(&n);
                 out
             })
@@ -503,7 +505,7 @@ mod test {
     #[test]
     fn with_0_leaves() {
         let hasher = MerkleHasher::with_leaves(0);
-        assert_eq!(hasher.finish().unwrap(), [0; 32]);
+        assert_eq!(hasher.finish().unwrap(), <H256>::default());
     }
 
     #[test]
@@ -563,7 +565,7 @@ mod test {
     fn remaining_buffer() {
         let a = {
             let mut m = MerkleHasher::with_leaves(2);
-            m.write(&[1]).expect("should write");
+            m.write([1]).expect("should write");
             m.finish().expect("should finish")
         };
 
@@ -572,7 +574,7 @@ mod test {
             let mut leaf = vec![1];
             leaf.extend_from_slice(&[0; 31]);
             m.write(&leaf).expect("should write");
-            m.write(&[0; 32]).expect("should write");
+            m.write([0; 32]).expect("should write");
             m.finish().expect("should finish")
         };
 

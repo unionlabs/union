@@ -1,12 +1,12 @@
 use macros::model;
 
 use crate::{
-    bytes::Bytes,
     ibc::core::{
         client::height::Height,
         connection::{counterparty::Counterparty, version::Version},
     },
     id::ClientId,
+    primitives::Bytes,
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]

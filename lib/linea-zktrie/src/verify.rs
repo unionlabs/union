@@ -1,12 +1,12 @@
 use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377, MiMCBls12377Constants};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    errors::InvalidLength,
-    hash::{H160, H256},
+    errors::{ExpectedLength, InvalidLength},
     linea::{
         account::{MimcSafeBytes, ZkAccount},
         proof::{MerklePath, MerkleProof, NonInclusionProof},
     },
+    primitives::{H160, H256},
     uint::U256,
 };
 
@@ -69,7 +69,10 @@ impl ZkValue for H256 {
     where
         Self: Sized,
     {
-        H256::try_from(value.as_ref())
+        H256::try_from(value.as_ref()).map_err(|e| InvalidLength {
+            expected: ExpectedLength::Exact(e.expected_len),
+            found: e.found_len,
+        })
     }
 }
 
@@ -334,8 +337,8 @@ mod tests {
     use gnark_mimc::{new_mimc_bls12_377, new_mimc_constants_bls12_377};
     use hex_literal::hex;
     use unionlabs::{
-        hash::{H160, H256},
         linea::{account::ZkAccount, proof::GetProof},
+        primitives::{H160, H256},
     };
 
     use super::verify;

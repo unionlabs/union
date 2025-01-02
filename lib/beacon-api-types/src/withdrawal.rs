@@ -1,4 +1,4 @@
-use unionlabs::hash::H160;
+use unionlabs::primitives::H160;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

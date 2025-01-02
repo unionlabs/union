@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 const LEAF_PREFIX: &[u8] = &[0];
 const INNER_PREFIX: &[u8] = &[1];

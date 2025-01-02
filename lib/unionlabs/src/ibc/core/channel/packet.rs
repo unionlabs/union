@@ -3,10 +3,10 @@ use core::num::{NonZeroU64, TryFromIntError};
 use macros::model;
 
 use crate::{
-    bytes::Bytes,
     errors::{required, MissingField},
     ibc::core::client::height::Height,
     id::{ChannelId, Ics24IdParseError, ParsePrefixedIdError, PortId},
+    primitives::Bytes,
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::Packet), into, from))]

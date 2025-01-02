@@ -2,7 +2,7 @@ use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377Constants};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    hash::H256,
+    primitives::H256,
     ByteArrayExt,
 };
 

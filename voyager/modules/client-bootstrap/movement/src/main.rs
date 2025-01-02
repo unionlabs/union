@@ -13,8 +13,8 @@ use unionlabs::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::{hash_v2::Hash, H160},
     ibc::core::client::height::Height,
+    primitives::{Hash, H160},
     uint::U256,
 };
 use voyager_message::{

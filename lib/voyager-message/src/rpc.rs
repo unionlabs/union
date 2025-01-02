@@ -7,7 +7,7 @@ use jsonrpsee::{
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
-use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
 use voyager_core::{IbcSpecId, Timestamp};
 
 use crate::{

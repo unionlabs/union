@@ -16,7 +16,8 @@ use unionlabs::{
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::{BytesBitIterator, H256},
+    primitives::H256,
+    BytesBitIterator,
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;

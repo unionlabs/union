@@ -1,4 +1,4 @@
-use unionlabs::{bls::BlsPublicKey, hash::H256};
+use unionlabs::{bls::BlsPublicKey, primitives::H256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

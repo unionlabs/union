@@ -14,8 +14,8 @@ use tracing::instrument;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
-    hash::H160,
     ibc::core::client::height::Height,
+    primitives::H160,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType, Timestamp},

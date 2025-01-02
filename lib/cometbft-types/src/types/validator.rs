@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    hash::{hash_v2::HexUnprefixed, H160},
+    primitives::{encoding::HexUnprefixed, H160},
 };
 
 use crate::crypto::public_key::PublicKey;
@@ -19,9 +19,7 @@ pub struct Validator {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        bounded::BoundedIntError,
-        errors::{InvalidLength, MissingField},
-        required,
+        bounded::BoundedIntError, errors::MissingField, primitives::FixedBytesError, required,
     };
 
     use crate::{crypto::public_key, types::validator::Validator};
@@ -45,7 +43,7 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid address")]
-        Address(#[source] InvalidLength),
+        Address(#[source] FixedBytesError),
         #[error("invalid voting power")]
         VotingPower(#[source] BoundedIntError<i64>),
         #[error("invalid pubkey")]

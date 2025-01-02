@@ -21,7 +21,6 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
-    bytes::Bytes,
     ethereum::keccak256,
     ibc::core::{
         client::height::Height,
@@ -31,6 +30,7 @@ use unionlabs::{
         },
     },
     id::{ClientId, ConnectionId},
+    primitives::Bytes,
     traits::Member,
     DELAY_PERIOD,
 };

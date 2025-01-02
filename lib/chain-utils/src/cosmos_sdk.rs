@@ -20,9 +20,9 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
-    hash::{hash_v2::HexUnprefixed, H256},
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
+    primitives::{encoding::HexUnprefixed, H256},
     signer::CosmosSigner,
     ErrorReporter, WasmClientType,
 };
@@ -384,7 +384,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         let auth_info = AuthInfo {
             signer_infos: [SignerInfo {
                 public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key(),
+                    key: signer.public_key().into(),
                 })),
                 mode_info: ModeInfo::Single {
                     mode: SignMode::Direct,

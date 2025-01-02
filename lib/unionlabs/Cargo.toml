@@ -18,7 +18,7 @@ cosmwasm-std             = { workspace = true, optional = true, features = ["std
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
-generic-array            = "0.14.7"
+generic-array            = { workspace = true }
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
@@ -29,7 +29,7 @@ primitive-types          = { workspace = true, features = ["serde_no_std", "impl
 prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
 ripemd                   = { workspace = true }
-rlp                      = { workspace = true, features = ["derive"] }
+rlp                      = { workspace = true, features = ["derive"], optional = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
@@ -53,6 +53,7 @@ near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
+unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
 
 [dev-dependencies]
 rand       = "0.8.5"
@@ -62,7 +63,7 @@ serde_json = { workspace = true }
 default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
-ethabi   = ["alloy"]
+ethabi   = ["alloy", "unionlabs-primitives/alloy-primitives-compat"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["subtle-encoding/std", "sha2/std"]
@@ -71,5 +72,6 @@ fuzzing    = []
 test_utils = []
 
 proto    = []
+rlp      = ["dep:rlp", "unionlabs-primitives/rlp"]
 schemars = ["dep:schemars"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

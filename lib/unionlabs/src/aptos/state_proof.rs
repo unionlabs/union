@@ -4,15 +4,14 @@
 
 use macros::model;
 
-use super::{
-    block_info::BlockInfo,
-    epoch_change::{EpochChangeProof, TryFromEpochChangeProof},
-    ledger_info::{LedgerInfo, LedgerInfoWithSignatures, TryFromLedgerInfoWithSignatures},
-    signature::AggregateSignature,
-};
 use crate::{
-    errors::{required, MissingField},
-    hash::hash_v2::Hash,
+    aptos::{
+        block_info::BlockInfo,
+        epoch_change::EpochChangeProof,
+        ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
+        signature::AggregateSignature,
+    },
+    primitives::Hash,
 };
 
 /// A convenience type for the collection of sub-proofs that constitute a
@@ -22,11 +21,7 @@ use crate::{
 /// `TrustedState` to the last epoch change LI in the [`EpochChangeProof`]
 /// or the latest [`LedgerInfoWithSignatures`] if the epoch changes get them into
 /// the most recent epoch.
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::StateProof),
-    into,
-    from
-))]
+#[model]
 pub struct StateProof {
     pub latest_li_w_sigs: LedgerInfoWithSignatures,
     pub epoch_changes: EpochChangeProof,
@@ -89,37 +84,5 @@ impl StateProof {
     pub fn latest_ledger_info(&self) -> &LedgerInfo {
         let LedgerInfoWithSignatures::V0(ledger_info) = &self.latest_li_w_sigs;
         &ledger_info.ledger_info
-    }
-}
-
-impl From<StateProof> for protos::union::ibc::lightclients::movement::v1::StateProof {
-    fn from(value: StateProof) -> Self {
-        Self {
-            latest_li_w_sigs: Some(value.latest_li_w_sigs.into()),
-            epoch_changes: Some(value.epoch_changes.into()),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromStateProofError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid latest ledger info with sigs")]
-    LatestLiWSigs(#[from] TryFromLedgerInfoWithSignatures),
-    #[error("invalid epoch changes")]
-    EpochChanges(#[from] TryFromEpochChangeProof),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::StateProof> for StateProof {
-    type Error = TryFromStateProofError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::StateProof,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            latest_li_w_sigs: required!(value.latest_li_w_sigs)?.try_into()?,
-            epoch_changes: required!(value.epoch_changes)?.try_into()?,
-        })
     }
 }

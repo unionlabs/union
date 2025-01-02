@@ -1,7 +1,7 @@
 use rlp::Encodable;
 use sha3::{Digest, Keccak256};
 use unionlabs::{
-    hash::{H160, H2048, H256, H64},
+    primitives::{H160, H2048, H256, H64},
     uint::U256,
 };
 

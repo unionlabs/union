@@ -6,7 +6,7 @@ pub mod state;
 use cosmwasm_std::{Addr, StdError};
 use ibc_solidity::{ChannelState, ConnectionState};
 use thiserror::Error;
-use unionlabs::bytes::Bytes;
+use unionlabs::primitives::Bytes;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(

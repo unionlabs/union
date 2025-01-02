@@ -3,7 +3,7 @@ use sha3::Keccak256;
 
 use crate::{
     ethereum::slot::{MappingKey, Slot},
-    hash::H256,
+    primitives::H256,
     uint::U256,
 };
 

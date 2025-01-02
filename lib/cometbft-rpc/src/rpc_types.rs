@@ -12,11 +12,10 @@ use cometbft_types::{
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedU8,
-    bytes::Bytes,
     google::protobuf::timestamp::Timestamp,
-    hash::{
-        hash_v2::{Base64, HexUnprefixed},
-        H160, H256,
+    primitives::{
+        encoding::{Base64, HexUnprefixed},
+        Bytes, H160, H256,
     },
 };
 

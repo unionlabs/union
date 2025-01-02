@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::hash::{hash_v2::HexUnprefixed, H256};
+use unionlabs::primitives::{encoding::HexUnprefixed, H256};
 
 use crate::types::part_set_header::PartSetHeader;
 
@@ -15,8 +15,9 @@ pub struct BlockId {
 pub mod proto {
     use unionlabs::{
         errors::{ExpectedLength, InvalidLength, MissingField},
-        hash::{hash_v2::HexUnprefixed, H256},
-        impl_proto_via_try_from_into, required,
+        impl_proto_via_try_from_into,
+        primitives::{encoding::HexUnprefixed, FixedBytesError, H256},
+        required,
     };
 
     use crate::types::{block_id::BlockId, part_set_header};
@@ -32,9 +33,9 @@ pub mod proto {
             Some(
                 value
                     .try_into()
-                    .map_err(|err: InvalidLength| InvalidLength {
+                    .map_err(|err: FixedBytesError| InvalidLength {
                         expected: ExpectedLength::Either(0, 32),
-                        found: err.found,
+                        found: err.found_len,
                     })?,
             )
         })

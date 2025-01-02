@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    bytes::Bytes,
-    errors::{InvalidLength, UnknownEnumVariant},
+    errors::UnknownEnumVariant,
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
-    hash::{
-        hash_v2::{Base64, HexUnprefixed},
-        H160,
+    primitives::{
+        encoding::{Base64, HexUnprefixed},
+        Bytes, FixedBytesError, H160,
     },
 };
 
@@ -75,7 +74,7 @@ impl From<CommitSig> for CommitSigRaw {
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("invalid validator_address")]
-    ValidatorAddress(#[from] InvalidLength),
+    ValidatorAddress(#[from] FixedBytesError),
     #[error("invalid block_id_flag")]
     BlockIdFlag(#[from] UnknownEnumVariant<i32>),
     #[error("invalid timestamp")]

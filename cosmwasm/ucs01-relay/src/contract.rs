@@ -10,7 +10,7 @@ use ucs01_relay_api::{
     protocol::{TransferInput, TransferProtocol},
     types::{make_factory_denom, FeePerU128, TransferToken},
 };
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::{
     error::ContractError,

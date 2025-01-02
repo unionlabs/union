@@ -10,7 +10,6 @@ use tracing::{debug, instrument};
 use unionlabs::{
     bounded::BoundedU32,
     google::protobuf::any::Any,
-    hash::{H160, H256},
     ibc::{
         core::client::height::Height,
         lightclients::{
@@ -18,6 +17,7 @@ use unionlabs::{
             ethereum::{self, storage_proof::StorageProof},
         },
     },
+    primitives::{H160, H256},
     uint::U256,
     validated::ValidateT,
 };

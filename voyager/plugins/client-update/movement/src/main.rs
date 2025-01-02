@@ -14,8 +14,8 @@ use unionlabs::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::H160,
     ibc::core::client::height::Height,
+    primitives::H160,
 };
 use voyager_message::{
     call::Call,

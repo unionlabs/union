@@ -6,7 +6,9 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, instrument};
-use unionlabs::{bech32::Bech32, hash::H256, ibc::core::client::height::Height, traits::Member};
+use unionlabs::{
+    bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
+};
 use voyager_message::{
     core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},

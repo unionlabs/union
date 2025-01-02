@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    has_coins, Coin, DepsMut, Env, MessageInfo, Reply, Response, SubMsg, Uint128, WasmMsg,
+    has_coins, Coin, DepsMut, Env, MessageInfo, Never, Reply, Response, SubMsg, Uint128, WasmMsg,
 };
-use unionlabs::never::Never;
 
 use crate::{
     msg::{ExecuteMsg, InitMsg},

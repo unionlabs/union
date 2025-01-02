@@ -2,7 +2,7 @@ use core::{fmt, marker::PhantomData, str::FromStr};
 
 use serde::{de, Deserialize, Serialize};
 
-use crate::{bytes::Bytes, ErrorReporter};
+use crate::{primitives::Bytes, ErrorReporter};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bech32<Data = Bytes, Hrp = String> {

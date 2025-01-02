@@ -1,9 +1,9 @@
 use macros::model;
 
 use crate::{
-    bytes::Bytes,
     ibc::core::{client::height::Height, connection::version::Version},
     id::ConnectionId,
+    primitives::Bytes,
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenAck)))]

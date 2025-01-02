@@ -1,6 +1,6 @@
 use ethereum_light_client::client::EthereumLightClient;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{hash::H256, ibc::core::client::height::Height};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 
 use crate::client::ArbitrumLightClient;
 

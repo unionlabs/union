@@ -1,4 +1,6 @@
-use super::{hash_fixed, Hash256, HASHSIZE, MERKLE_HASH_CHUNK};
+use unionlabs_primitives::H256;
+
+use super::{hash_fixed, HASHSIZE, MERKLE_HASH_CHUNK};
 
 /// Merkleizes bytes and returns the root, using a simple algorithm that does not optimize to avoid
 /// processing or storing padding bytes.
@@ -18,12 +20,12 @@ use super::{hash_fixed, Hash256, HASHSIZE, MERKLE_HASH_CHUNK};
 ///  - Stores all internal nodes, even if they are padding.
 ///  - Does not free up unused memory during operation.
 #[must_use]
-pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
+pub fn merkleize_standard(bytes: &[u8]) -> H256 {
     // If the bytes are just one chunk (or less than one chunk) just return them.
     if bytes.len() <= HASHSIZE {
         let mut o = [0; HASHSIZE];
         o[0..bytes.len()].copy_from_slice(bytes);
-        return o;
+        return H256::new(o);
     }
 
     let leaves = num_sanitized_leaves(bytes.len());
@@ -65,7 +67,7 @@ pub fn merkleize_standard(bytes: &[u8]) -> Hash256 {
             }
         };
 
-        o[j..j + HASHSIZE].copy_from_slice(&hash);
+        o[j..j + HASHSIZE].copy_from_slice(hash.get());
     }
 
     o[0..HASHSIZE]

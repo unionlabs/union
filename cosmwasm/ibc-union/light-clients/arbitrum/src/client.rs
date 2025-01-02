@@ -138,7 +138,7 @@ impl IbcClient for ArbitrumLightClient {
 //         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
 //         encoding::{EncodeAs, Proto},
 //         google::protobuf::any::Any,
-//         hash::{H160, H256},
+//         primitives::{H160, H256},
 //         ibc::core::client::height::Height,
 //         id::ClientId,
 //         uint::U256,

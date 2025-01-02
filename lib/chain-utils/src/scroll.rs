@@ -9,12 +9,12 @@ use tracing::debug;
 use unionlabs::{
     ethereum::config::Mainnet,
     google::protobuf::any::Any,
-    hash::{H160, H256},
     ibc::{
         core::client::height::Height,
         lightclients::{ethereum, scroll},
     },
     id::ClientId,
+    primitives::{H160, H256},
     uint::U256,
 };
 

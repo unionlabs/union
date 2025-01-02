@@ -1,27 +1,13 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    block_info::{BlockInfo, TryFromBlockInfoError},
-    signature::{AggregateSignature, TryFromAggregateSignatureError},
-};
 use crate::{
-    errors::{required, InvalidLength, MissingField},
-    hash::{
-        hash_v2::{Hash, HexUnprefixed},
-        H256,
-    },
+    aptos::{block_info::BlockInfo, signature::AggregateSignature},
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 /// Wrapper to support future upgrades, this is the data being persisted.
-#[model(
-    proto(
-        raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
-        into,
-        from
-    ),
-    no_serde
-)]
+#[model(no_serde)]
 #[derive(Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
@@ -40,85 +26,11 @@ pub struct LedgerInfoWithV0 {
     pub signatures: AggregateSignature,
 }
 
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::LedgerInfo),
-    into,
-    from
-))]
+#[model]
 pub struct LedgerInfo {
     pub commit_info: BlockInfo,
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
     pub consensus_data_hash: H256<HexUnprefixed>,
-}
-
-impl From<LedgerInfoWithSignatures>
-    for protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures
-{
-    fn from(value: LedgerInfoWithSignatures) -> Self {
-        let LedgerInfoWithSignatures::V0(value) = value;
-        Self {
-            ledger_info: Some(value.ledger_info.into()),
-            signatures: Some(value.signatures.into()),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromLedgerInfoWithSignatures {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid ledger info")]
-    LedgerInfo(#[from] TryFromLedgerInfo),
-    #[error("invalid signatures")]
-    Signatures(#[from] TryFromAggregateSignatureError),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures>
-    for LedgerInfoWithSignatures
-{
-    type Error = TryFromLedgerInfoWithSignatures;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self::V0(LedgerInfoWithV0 {
-            ledger_info: required!(value.ledger_info)?.try_into()?,
-            signatures: required!(value.signatures)?.try_into()?,
-        }))
-    }
-}
-
-impl From<LedgerInfo> for protos::union::ibc::lightclients::movement::v1::LedgerInfo {
-    fn from(value: LedgerInfo) -> Self {
-        Self {
-            commit_info: Some(value.commit_info.into()),
-            consensus_data_hash: value.consensus_data_hash.into_bytes().into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromLedgerInfo {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid commit info")]
-    CommitInfo(#[from] TryFromBlockInfoError),
-    #[error("invalid consensus data hash")]
-    ConsensusDataHash(#[source] InvalidLength),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfo> for LedgerInfo {
-    type Error = TryFromLedgerInfo;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::LedgerInfo,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            commit_info: required!(value.commit_info)?.try_into()?,
-            consensus_data_hash: Hash::try_from(value.consensus_data_hash)
-                .map_err(TryFromLedgerInfo::ConsensusDataHash)?,
-        })
-    }
 }

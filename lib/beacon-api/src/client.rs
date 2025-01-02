@@ -8,7 +8,7 @@ use beacon_api_types::{
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, info, trace};
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::{
     errors::{Error, InternalServerError, NotFoundError},

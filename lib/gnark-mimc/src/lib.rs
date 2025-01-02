@@ -5,7 +5,7 @@ use num_bigint::BigUint;
 use sha3::Digest;
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    hash::H256,
+    primitives::H256,
 };
 
 // https://github.com/Consensys/gnark-crypto/blob/564b6f724c3beac52d805e6e600d0a1fda9770b5/ecc/bn254/fr/mimc/mimc.go#L31

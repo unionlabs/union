@@ -1,11 +1,9 @@
 use alloc::borrow::Cow;
 use core::{cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
 use crate::{
-    errors::InvalidLength,
-    hash::hash_v2::{Encoding, HexPrefixed},
+    encoding::{Encoding, HexPrefixed},
+    hash::FixedBytesError,
 };
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
@@ -134,10 +132,11 @@ impl<E: Encoding> Ord for Bytes<E> {
     }
 }
 
-impl<E: Encoding> Serialize for Bytes<E> {
+#[cfg(feature = "serde")]
+impl<E: Encoding> serde::Serialize for Bytes<E> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
         if serializer.is_human_readable() {
             serializer.collect_str(self)
@@ -147,10 +146,11 @@ impl<E: Encoding> Serialize for Bytes<E> {
     }
 }
 
-impl<'de, E: Encoding> Deserialize<'de> for Bytes<E> {
+#[cfg(feature = "serde")]
+impl<'de, E: Encoding> serde::Deserialize<'de> for Bytes<E> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
             String::deserialize(deserializer)
@@ -195,28 +195,12 @@ impl<E: Encoding> IntoIterator for Bytes<E> {
 }
 
 impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes>>
-    for crate::hash::hash_v2::Hash<BYTES, EHash>
+    for crate::hash::Hash<BYTES, EHash>
 {
-    type Error = InvalidLength;
+    type Error = FixedBytesError;
 
     fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
         Self::try_from(value.into_vec())
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy::core::primitives::Address {
-    type Error = InvalidLength;
-
-    fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
-        <crate::hash::H160>::try_from(value).map(Self::from)
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<EBytes: Encoding> From<alloy::core::primitives::Address> for Bytes<EBytes> {
-    fn from(value: alloy::core::primitives::Address) -> Self {
-        value.0 .0.into()
     }
 }
 
@@ -268,49 +252,49 @@ impl<E: Encoding, const N: usize> From<[u8; N]> for Bytes<E> {
     }
 }
 
-impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<crate::hash::hash_v2::Hash<N, EHash>>
+impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<crate::hash::Hash<N, EHash>>
     for Bytes<EBytes>
 {
-    fn from(value: crate::hash::hash_v2::Hash<N, EHash>) -> Self {
+    fn from(value: crate::hash::Hash<N, EHash>) -> Self {
         Self::new(value.get().as_slice().to_owned())
     }
 }
 
-// TODO: Feature gate rlp across the crate
-// #[cfg(feature = "rlp")]
-impl<E: Encoding> rlp::Decodable for Bytes<E> {
-    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        rlp.decoder()
-            .decode_value(|bytes| Ok(Self::new(bytes.to_owned())))
-    }
-}
+// // TODO: Feature gate rlp across the crate
+// // #[cfg(feature = "rlp")]
+// impl<E: Encoding> rlp::Decodable for Bytes<E> {
+//     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+//         rlp.decoder()
+//             .decode_value(|bytes| Ok(Self::new(bytes.to_owned())))
+//     }
+// }
 
-// TODO: Feature gate rlp across the crate
-// #[cfg(feature = "rlp")]
-impl<E: Encoding> rlp::Encodable for Bytes<E> {
-    fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
-        s.encoder().encode_value(self.as_ref());
-    }
-}
+// // TODO: Feature gate rlp across the crate
+// // #[cfg(feature = "rlp")]
+// impl<E: Encoding> rlp::Encodable for Bytes<E> {
+//     fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
+//         s.encoder().encode_value(self.as_ref());
+//     }
+// }
 
-#[cfg(feature = "ethabi")]
-impl<E: Encoding> From<alloy::core::primitives::Bytes> for Bytes<E> {
-    fn from(value: alloy::core::primitives::Bytes) -> Self {
-        value.0.to_vec().into()
-    }
-}
+// #[cfg(feature = "ethabi")]
+// impl<E: Encoding> From<alloy::core::primitives::Bytes> for Bytes<E> {
+//     fn from(value: alloy::core::primitives::Bytes) -> Self {
+//         value.0.to_vec().into()
+//     }
+// }
 
-#[cfg(feature = "ethabi")]
-impl<E: Encoding> From<Bytes<E>> for alloy::core::primitives::Bytes {
-    fn from(value: Bytes<E>) -> Self {
-        value.deref().to_owned().into()
-    }
-}
+// #[cfg(feature = "ethabi")]
+// impl<E: Encoding> From<Bytes<E>> for alloy::core::primitives::Bytes {
+//     fn from(value: Bytes<E>) -> Self {
+//         value.deref().to_owned().into()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hash::hash_v2::{Base64, HexUnprefixed};
+    use crate::encoding::{Base64, HexUnprefixed};
 
     const BASE64_STR: &str = "YWJjZA==";
     const HEX_PREFIXED_STR: &str = "0x61626364";
