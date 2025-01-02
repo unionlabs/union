@@ -1,7 +1,6 @@
-use crate::primitives::H256;
-
 use crate::{
     errors::{ExpectedLength, InvalidLength},
+    primitives::H256,
     uint::U256,
     ByteArrayExt,
 };

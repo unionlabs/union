@@ -10,11 +10,11 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-macros               = { workspace = true }
-schemars             = { workspace = true, optional = true }
-serde                = { workspace = true, features = ["derive"] }
-serde_json           = { workspace = true }
-unionlabs            = { workspace = true }
+macros     = { workspace = true }
+schemars   = { workspace = true, optional = true }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+unionlabs  = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

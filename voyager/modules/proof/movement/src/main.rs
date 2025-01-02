@@ -17,8 +17,8 @@ use unionlabs::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
-    primitives::H256,
     ibc::core::client::height::Height,
+    primitives::H256,
     uint::U256,
     ErrorReporter,
 };

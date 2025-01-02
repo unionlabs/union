@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use enumorph::Enumorph;
 use macros::model;
-use unionlabs::{primitives::H256, ibc::core::client::height::Height};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 
 #[model]
 #[derive(Enumorph)]

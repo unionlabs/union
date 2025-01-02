@@ -3,10 +3,10 @@ use ics008_wasm_client::IbcClientError;
 use linea_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    primitives::H256,
     ibc::core::client::height::Height,
     ics24::PathParseError,
     linea::proof::InclusionProof,
+    primitives::H256,
 };
 
 use crate::client::LineaLightClient;

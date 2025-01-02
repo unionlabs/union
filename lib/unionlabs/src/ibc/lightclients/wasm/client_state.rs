@@ -1,11 +1,11 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use crate::primitives::{FixedBytesError, H256};
 
 use crate::{
     encoding::{Decode, DecodeErrorOf, Encode, Proto},
     errors::{required, MissingField},
     ibc::core::client::height::Height,
+    primitives::{FixedBytesError, H256},
 };
 
 #[model(proto(

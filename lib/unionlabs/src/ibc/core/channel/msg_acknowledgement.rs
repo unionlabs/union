@@ -1,7 +1,9 @@
 use macros::model;
-use crate::primitives::Bytes;
 
-use crate::ibc::core::{channel::packet::Packet, client::height::Height};
+use crate::{
+    ibc::core::{channel::packet::Packet, client::height::Height},
+    primitives::Bytes,
+};
 
 #[model(proto(raw(protos::ibc::core::channel::v1::MsgAcknowledgement)))]
 pub struct MsgAcknowledgement {

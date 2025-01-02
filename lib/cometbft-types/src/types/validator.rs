@@ -19,7 +19,7 @@ pub struct Validator {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        bounded::BoundedIntError, errors::MissingField, primitives::FixedBytesError, required
+        bounded::BoundedIntError, errors::MissingField, primitives::FixedBytesError, required,
     };
 
     use crate::{crypto::public_key, types::validator::Validator};

@@ -1,5 +1,4 @@
 use macros::model;
-use crate::primitives::Bytes;
 
 use crate::{
     ibc::core::{
@@ -7,6 +6,7 @@ use crate::{
         connection::{counterparty::Counterparty, version::Version},
     },
     id::ClientId,
+    primitives::Bytes,
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]

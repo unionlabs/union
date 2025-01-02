@@ -1,9 +1,9 @@
 use macros::model;
-use crate::primitives::Bytes;
 
 use crate::{
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
     ensure,
+    primitives::Bytes,
     union::ics23::inner_op::InnerOp,
 };
 

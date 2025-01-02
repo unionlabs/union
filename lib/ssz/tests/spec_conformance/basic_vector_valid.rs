@@ -3,7 +3,7 @@
 use hex_literal::hex;
 use ssz::{types::*, Ssz};
 use typenum::U;
-use unionlabs::{hash::H256, uint::U256};
+use unionlabs::{primitives::H256, uint::U256};
 
 pub mod container_types {
     include!("../../tests-generator/src/container_types.rs");

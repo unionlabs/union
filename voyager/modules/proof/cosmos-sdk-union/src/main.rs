@@ -18,8 +18,8 @@ use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
     bounded::BoundedI64,
-    primitives::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    primitives::H256,
     ErrorReporter,
 };
 use voyager_message::{

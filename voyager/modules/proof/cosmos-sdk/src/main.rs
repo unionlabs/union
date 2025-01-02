@@ -18,8 +18,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
-    primitives::H256,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    primitives::H256,
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{

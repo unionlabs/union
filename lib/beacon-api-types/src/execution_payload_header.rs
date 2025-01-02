@@ -123,12 +123,16 @@ pub mod ssz {
                 gas_limit: value.gas_limit,
                 gas_used: value.gas_used,
                 timestamp: value.timestamp,
-                extra_data: value.extra_data.into_vec().try_into().map_err(|l: Vec<_>| {
-                    Error::ExtraData(InvalidLength {
-                        expected: ExpectedLength::Between(0, C::MAX_EXTRA_DATA_BYTES::USIZE),
-                        found: l.len(),
-                    })
-                })?,
+                extra_data: value
+                    .extra_data
+                    .into_vec()
+                    .try_into()
+                    .map_err(|l: Vec<_>| {
+                        Error::ExtraData(InvalidLength {
+                            expected: ExpectedLength::Between(0, C::MAX_EXTRA_DATA_BYTES::USIZE),
+                            found: l.len(),
+                        })
+                    })?,
                 base_fee_per_gas: value.base_fee_per_gas,
                 block_hash: value.block_hash,
                 transactions_root: value.transactions_root,

@@ -5,7 +5,7 @@ use protos::cosmos::auth::v1beta1::Bech32PrefixRequest;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    primitives::H256, ibc::core::client::height::Height, signer::CosmosSigner, WasmClientType,
+    ibc::core::client::height::Height, primitives::H256, signer::CosmosSigner, WasmClientType,
 };
 
 use crate::{

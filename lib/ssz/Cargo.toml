@@ -9,16 +9,16 @@ version = "0.5.3"
 name = "ssz"
 
 [dependencies]
-derivative  = "2.1.1"
-itertools   = "0.10.3"
-lazy_static = { workspace = true }
-serde       = { workspace = true, features = ["derive"] }          # TODO: Feature gate this
-serde-utils = { workspace = true }
-sha2        = { workspace = true }
-smallvec    = { version = "1.6.1", features = ["const_generics"] }
-ssz-derive  = { workspace = true }
-thiserror   = { workspace = true }
-typenum     = { workspace = true, features = ["const-generics"] }
+derivative                     = "2.1.1"
+itertools                      = "0.10.3"
+lazy_static                    = { workspace = true }
+serde                          = { workspace = true, features = ["derive"] }          # TODO: Feature gate this
+serde-utils                    = { workspace = true }
+sha2                           = { workspace = true }
+smallvec                       = { version = "1.6.1", features = ["const_generics"] }
+ssz-derive                     = { workspace = true }
+thiserror                      = { workspace = true }
+typenum                        = { workspace = true, features = ["const-generics"] }
 unionlabs-primitives.workspace = true
 
 [dev-dependencies]
