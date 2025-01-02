@@ -147,6 +147,7 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
+            /*
             {
               label: "Connect",
               items: [
@@ -160,6 +161,7 @@ export default defineConfig({
                 }
               ]
             },
+            */
             {
               label: "Protocol",
               items: [
