@@ -82,7 +82,7 @@ impl ClientType {
     ///
     /// [CometBFT]: https://github.com/cometbft/cometbft
     /// [`07-tendermint`]: https://github.com/cosmos/ibc/blob/main/spec/client/ics-007-tendermint-client/README.md
-    pub const TENDERMINT: &'static str = "07-tendermint";
+    pub const TENDERMINT: &'static str = "tendermint";
 
     /// A client tracking the Ethereum beacon chain consensus verified through the
     /// [Ethereum Proof-of-Stake Consensus Specifications][spec].

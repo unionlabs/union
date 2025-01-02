@@ -111,7 +111,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     Err(Error::AbsentWithValidatorAddress)
                 } else if value.timestamp.is_some_and(|ts| ts != Timestamp::default()) {
                     Err(Error::AbsentWithTimestamp)
-                } else if value.signature.is_some() {
+                } else if !value.signature.unwrap_or_default().is_empty() {
                     Err(Error::AbsentWithSignature)
                 } else {
                     Ok(Self::Absent)

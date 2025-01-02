@@ -147,6 +147,21 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
+            /*
+            {
+              label: "Connect",
+              items: [
+                {
+                  label: "App",
+                  link: "/connect/app"
+                },
+                {
+                  label: "New Chain",
+                  link: "/connect/new-chain"
+                }
+              ]
+            },
+            */
             {
               label: "Protocol",
               items: [

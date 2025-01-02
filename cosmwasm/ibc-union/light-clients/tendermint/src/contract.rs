@@ -20,3 +20,11 @@ pub fn instantiate(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     ibc_union_light_client::query::<TendermintLightClient>(deps, env, msg).map_err(Into::into)
 }
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct MigrateMsg {}
+
+#[entry_point]
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
+}

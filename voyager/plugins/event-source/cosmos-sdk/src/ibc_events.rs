@@ -330,18 +330,18 @@ event! {
             counterparty_connection_id: u32,
         },
 
-        // #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
-        // ChannelOpenInit {
-        //     #[parse(String::from_str)]
-        //     port_id: String,
-        //     #[parse(u32::from_str)]
-        //     channel_id: u32,
-        //     #[parse(String::from_str)]
-        //     counterparty_port_id: String,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        //     version: String,
-        // },
+        #[event(tag = "wasm-channel_open_init")]
+        UnionChannelOpenInit {
+            #[parse(String::from_str)]
+            port_id: String,
+            #[parse(u32::from_str)]
+            channel_id: u32,
+            #[parse(<Bytes<HexUnprefixed>>::from_str)]
+            counterparty_port_id: Bytes<HexUnprefixed>,
+            #[parse(u32::from_str)]
+            connection_id: u32,
+            version: String,
+        },
 
         #[event(tag = "wasm-channel_open_try")]
         UnionChannelOpenTry {
@@ -357,19 +357,19 @@ event! {
             counterparty_version: String,
         },
 
-        // #[event(tag = "channel_open_ack")]
-        // ChannelOpenAck {
-        //     #[parse(String::from_str)]
-        //     port_id: String,
-        //     #[parse(u32::from_str)]
-        //     channel_id: u32,
-        //     #[parse(String::from_str)]
-        //     counterparty_port_id: String,
-        //     #[parse(u32::from_str)]
-        //     counterparty_channel_id: u32,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
+        #[event(tag = "wasm-channel_open_ack")]
+        UnionChannelOpenAck {
+            #[parse(String::from_str)]
+            port_id: String,
+            #[parse(u32::from_str)]
+            channel_id: u32,
+            #[parse(<Bytes<HexUnprefixed>>::from_str)]
+            counterparty_port_id: Bytes<HexUnprefixed>,
+            #[parse(u32::from_str)]
+            counterparty_channel_id: u32,
+            #[parse(u32::from_str)]
+            connection_id: u32,
+        },
 
         #[event(tag = "wasm-channel_open_confirm")]
         UnionChannelOpenConfirm {
@@ -391,80 +391,21 @@ event! {
             packet: ibc_solidity::Packet,
         },
 
-        // #[event(
-        //     tag = "write_acknowledgement",
-        //     deprecated("packet_data", "packet_ack", "packet_connection")
-        // )]
-        // WriteAcknowledgement {
-        //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-        //     packet_data_hex: Bytes,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(NonZeroU64::from_str)]
-        //     packet_sequence: NonZeroU64,
-        //     #[parse(String::from_str)]
-        //     packet_src_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_src_channel: u32,
-        //     #[parse(String::from_str)]
-        //     packet_dst_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_dst_channel: u32,
-        //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-        //     packet_ack_hex: Bytes,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
+        #[event(tag = "wasm-recv_packet")]
+        UnionRecvPacket {
+            #[parse(serde_json::from_str)]
+            packet: ibc_solidity::Packet,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            relayer_msg: Bytes,
+        },
 
-        // #[event(tag = "recv_packet", deprecated("packet_data", "packet_connection"))]
-        // RecvPacket {
-        //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-        //     packet_data_hex: Bytes,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(NonZeroU64::from_str)]
-        //     packet_sequence: NonZeroU64,
-        //     #[parse(String::from_str)]
-        //     packet_src_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_src_channel: u32,
-        //     #[parse(String::from_str)]
-        //     packet_dst_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_dst_channel: u32,
-        //     #[parse(Order::from_str)]
-        //     packet_channel_ordering: Order,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
-
-        // #[event(tag = "send_packet", deprecated("packet_data", "packet_connection"))]
-        // SendPacket {
-        //     #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-        //     packet_data_hex: Bytes,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(NonZeroU64::from_str)]
-        //     packet_sequence: NonZeroU64,
-        //     #[parse(String::from_str)]
-        //     packet_src_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_src_channel: u32,
-        //     #[parse(String::from_str)]
-        //     packet_dst_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_dst_channel: u32,
-        //     #[parse(Order::from_str)]
-        //     packet_channel_ordering: Order,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
+        #[event(tag = "wasm-acknowledge_packet")]
+        UnionAcknowledgePacket {
+            #[parse(serde_json::from_str)]
+            packet: ibc_solidity::Packet,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            acknowledgement: Bytes,
+        },
 
         // #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
         // AcknowledgePacket {
@@ -542,14 +483,14 @@ impl IbcEvent {
             IbcEvent::UnionConnectionOpenTry(_) => "connection_open_try",
             IbcEvent::UnionConnectionOpenAck(_) => "connection_open_ack",
             IbcEvent::UnionConnectionOpenConfirm(_) => "connection_open_confirm",
-            // IbcEvent::UnionChannelOpenInit(_) => "channel_open_init",
+            IbcEvent::UnionChannelOpenInit(_) => "channel_open_init",
             IbcEvent::UnionChannelOpenTry(_) => "channel_open_try",
-            // IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
+            IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
             IbcEvent::UnionChannelOpenConfirm(_) => "channel_open_confirm",
             // IbcEvent::UnionWriteAcknowledgement(_) => "write_acknowledgement",
-            // IbcEvent::UnionRecvPacket(_) => "recv_packet",
+            IbcEvent::UnionRecvPacket(_) => "recv_packet",
             IbcEvent::UnionSendPacket(_) => "send_packet",
-            // IbcEvent::UnionAcknowledgePacket(_) => "acknowledge_packet",
+            IbcEvent::UnionAcknowledgePacket(_) => "acknowledge_packet",
             // IbcEvent::UnionTimeoutPacket(_) => "timeout_packet",
         }
     }

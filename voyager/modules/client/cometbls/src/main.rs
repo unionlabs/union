@@ -40,6 +40,7 @@ pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcMoveAptos,
     IbcGoV8_08Wasm,
+    IbcCosmwasm,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -51,6 +52,7 @@ impl TryFrom<String> for SupportedIbcInterface {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
             IbcInterface::IBC_GO_V8_08_WASM => Ok(SupportedIbcInterface::IbcGoV8_08Wasm),
+            IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -62,6 +64,7 @@ impl SupportedIbcInterface {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
             SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
+            SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
 }
@@ -96,16 +99,9 @@ impl ClientModule for Module {
 impl Module {
     pub fn decode_consensus_state(&self, consensus_state: &[u8]) -> RpcResult<ConsensusState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcSolidity => {
-                ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                })
-            }
-            SupportedIbcInterface::IbcMoveAptos => {
+            SupportedIbcInterface::IbcSolidity
+            | SupportedIbcInterface::IbcMoveAptos
+            | SupportedIbcInterface::IbcCosmwasm => {
                 ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
@@ -161,6 +157,14 @@ impl Module {
                 })
                 .map(|any| any.0.data)
             }
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Proto>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
         }
     }
 }
@@ -252,6 +256,19 @@ impl ClientModuleServer for Module {
 
                     Ok(cs.encode_as::<Bcs>())
                 }
+                SupportedIbcInterface::IbcCosmwasm => {
+                    if !metadata.is_null() {
+                        return Err(ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "metadata was provided, but this client type does not require \
+                            metadata for client state encoding",
+                            Some(json!({
+                                "provided_metadata": metadata,
+                            })),
+                        ));
+                    }
+                    Ok(cs.encode_as::<Proto>())
+                }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
                     let metadata =
                         serde_json::from_value::<IbcGo08WasmClientMetadata>(metadata.clone())
@@ -294,9 +311,9 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity | SupportedIbcInterface::IbcMoveAptos => {
-                    cs.encode_as::<EthAbi>()
-                }
+                SupportedIbcInterface::IbcSolidity
+                | SupportedIbcInterface::IbcMoveAptos
+                | SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
                     Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
                 }
@@ -336,6 +353,7 @@ impl ClientModuleServer for Module {
             })
             .map(|mut header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
+                SupportedIbcInterface::IbcCosmwasm => Ok(header.encode_as::<Proto>()),
                 SupportedIbcInterface::IbcMoveAptos => {
                     header.zero_knowledge_proof =
                         reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
@@ -369,6 +387,7 @@ impl ClientModuleServer for Module {
             })
             .map(|proof| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => encode_merkle_proof_for_evm(proof),
+                SupportedIbcInterface::IbcCosmwasm => proof.encode_as::<Proto>(),
                 SupportedIbcInterface::IbcMoveAptos => encode_merkle_proof_for_move(
                     ics23::merkle_proof::MerkleProof::try_from(
                         protos::ibc::core::commitment::v1::MerkleProof::from(proof),
