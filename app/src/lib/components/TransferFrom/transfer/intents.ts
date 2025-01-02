@@ -12,46 +12,44 @@ export type FormFields = {
   amount: string
 }
 
-export interface RawTransferIntents extends FormFields {
-  isValid: boolean
-}
-
 export interface IntentStore {
-  subscribe: (callback: (value: RawTransferIntents) => void) => () => void
+  subscribe: (callback: (value: FormFields) => void) => () => void
   set: (value: Partial<FormFields>) => void
   updateField: (field: keyof FormFields, valueOrEvent: string | Event) => void
   reset: () => void
 }
 
+// Helper function to clean the state object
+const cleanState = (state: any): FormFields => {
+  const { source, destination, asset, receiver, amount } = state
+  return { source, destination, asset, receiver, amount }
+}
+
 export function createIntentStore(): IntentStore {
-  const store = writable<RawTransferIntents>(defaultParams)
+  const store = writable<FormFields>(cleanState(defaultParams))
   const { subscribe, set, update } = store
 
-  const debouncedUpdateUrl = debounce(
-    ({ source, destination, asset, receiver, amount }: FormFields) => {
-      if (browser) {
-        const url = new URL(window.location.href)
-        const params = { source, destination, asset, receiver, amount }
-
-        Object.entries(params).forEach(([key, val]) => {
-          if (val) {
-            url.searchParams.set(key, val)
-          } else {
-            url.searchParams.delete(key)
-          }
-        })
-        history.replaceState({}, "", url.toString())
-        window.dispatchEvent(new PopStateEvent("popstate"))
-      }
-    },
-    1000
-  )
+  const debouncedUpdateUrl = debounce((params: FormFields) => {
+    if (browser) {
+      const url = new URL(window.location.href)
+      Object.entries(params).forEach(([key, val]) => {
+        if (val) {
+          url.searchParams.set(key, val)
+        } else {
+          url.searchParams.delete(key)
+        }
+      })
+      history.replaceState({}, "", url.toString())
+      window.dispatchEvent(new PopStateEvent("popstate"))
+    }
+  }, 1000)
 
   if (browser) {
     const setDefaultParamsIfEmpty = (searchParams: URLSearchParams) => {
       if ([...searchParams.entries()].length === 0) {
         const url = new URL(window.location.href)
-        Object.entries(defaultParams).forEach(([key, val]) => {
+        const cleanedParams = cleanState(defaultParams)
+        Object.entries(cleanedParams).forEach(([key, val]) => {
           if (val) {
             url.searchParams.set(key, val)
           }
@@ -74,10 +72,12 @@ export function createIntentStore(): IntentStore {
           }
         })
 
-        update(state => ({
-          ...state,
-          ...newParams
-        }))
+        update(state =>
+          cleanState({
+            ...state,
+            ...newParams
+          })
+        )
       }
     })
   }
@@ -87,7 +87,7 @@ export function createIntentStore(): IntentStore {
 
     set: (value: Partial<FormFields>) => {
       update(state => {
-        const newParams = { ...state, ...value }
+        const newParams = cleanState({ ...state, ...value })
         debouncedUpdateUrl(newParams)
         return newParams
       })
@@ -100,7 +100,20 @@ export function createIntentStore(): IntentStore {
           : valueOrEvent
 
       update(state => {
-        const newParams = { ...state, [field]: value }
+        let newParams = cleanState({ ...state, [field]: value })
+
+        if (field === "source") {
+          newParams = {
+            ...newParams,
+            asset: ""
+          }
+
+          if (browser) {
+            const url = new URL(window.location.href)
+            url.searchParams.delete("asset")
+            history.replaceState({}, "", url.toString())
+          }
+        }
         debouncedUpdateUrl(newParams)
         return newParams
       })
@@ -110,7 +123,8 @@ export function createIntentStore(): IntentStore {
       if (browser) {
         const url = new URL(window.location.href)
         url.search = ""
-        Object.entries(defaultParams).forEach(([key, val]) => {
+        const cleanedParams = cleanState(defaultParams)
+        Object.entries(cleanedParams).forEach(([key, val]) => {
           if (val) {
             url.searchParams.set(key, val)
           }
@@ -118,7 +132,7 @@ export function createIntentStore(): IntentStore {
         history.replaceState({}, "", url.toString())
         window.dispatchEvent(new PopStateEvent("popstate"))
       }
-      set(defaultParams)
+      set(cleanState(defaultParams))
     }
   }
 }

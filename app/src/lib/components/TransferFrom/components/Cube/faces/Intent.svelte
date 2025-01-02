@@ -25,7 +25,8 @@ let { intents, validation, context } = stores
 
 <div class="flex flex-col justify-between w-full h-full p-4">
   <div class="flex flex-col gap-4">
-    <Direction {context} {intents} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
+    <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
+               getDestinationChain={() => rotateTo("destinationFace")}/>
     <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
     <div class="flex flex-col gap-1">
       <input
