@@ -1,5 +1,5 @@
 use macros::model;
-use unionlabs_bytes::Bytes;
+use crate::primitives::Bytes;
 
 use crate::{
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},

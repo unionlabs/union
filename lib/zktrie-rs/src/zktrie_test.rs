@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::{
     byte32_test::TestHash, copy_truncated, decode_smt_proofs, to_secure_key, Byte32, Database,

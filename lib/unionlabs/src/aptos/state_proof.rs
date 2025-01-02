@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use macros::model;
-use unionlabs_bytes::Hash;
 
-use super::{
-    block_info::BlockInfo,
-    epoch_change::EpochChangeProof,
-    ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-    signature::AggregateSignature,
+use crate::{
+    aptos::{
+        block_info::BlockInfo,
+        epoch_change::EpochChangeProof,
+        ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
+        signature::AggregateSignature,
+    },
+    primitives::Hash,
 };
 
 /// A convenience type for the collection of sub-proofs that constitute a

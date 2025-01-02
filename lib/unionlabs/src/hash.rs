@@ -38,48 +38,6 @@ impl From<primitive_types::H160> for H160 {
     }
 }
 
-#[must_use = "constructing an iterator has no effect"]
-pub struct BytesBitIterator<'a> {
-    bz: &'a [u8],
-    pos: core::ops::Range<usize>,
-}
-
-impl<'a> BytesBitIterator<'a> {
-    pub fn new(bz: &'a impl AsRef<[u8]>) -> Self {
-        BytesBitIterator {
-            bz: bz.as_ref(),
-            pos: (0..bz.as_ref().len() * 8),
-        }
-    }
-
-    /// Returns the `index`-th bit in the bytes.
-    fn get_bit(&self, index: usize) -> bool {
-        // debug_assert_eq!(self.hash_bytes.len(), Hash::LENGTH); // invariant
-        // debug_assert_lt!(index, Hash::LENGTH_IN_BITS); // assumed precondition
-        let pos = index / 8;
-        let bit = index % 8;
-        (self.bz[pos] >> bit) & 1 != 0
-    }
-}
-
-impl core::iter::Iterator for BytesBitIterator<'_> {
-    type Item = bool;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.pos.next().map(|x| self.get_bit(x))
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.pos.size_hint()
-    }
-}
-
-impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.pos.next_back().map(|x| self.get_bit(x))
-    }
-}
-
 #[allow(clippy::inline_always)]
 pub mod hash_v2 {
     use core::{

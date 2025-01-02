@@ -19,6 +19,7 @@ smallvec    = { version = "1.6.1", features = ["const_generics"] }
 ssz-derive  = { workspace = true }
 thiserror   = { workspace = true }
 typenum     = { workspace = true, features = ["const-generics"] }
+unionlabs-primitives.workspace = true
 
 [dev-dependencies]
 hex-literal = { workspace = true }

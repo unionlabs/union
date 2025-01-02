@@ -1,5 +1,5 @@
 use trie_db::TrieError;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {

@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[model]
 #[derive(Enumorph)]

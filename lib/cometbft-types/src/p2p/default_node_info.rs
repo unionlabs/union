@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{bytes::Bytes, hash::hash_v2::HexUnprefixed};
+use unionlabs::primitives::{encoding::HexUnprefixed, Bytes};
 
 use crate::p2p::{
     default_node_info_other::DefaultNodeInfoOther, protocol_version::ProtocolVersion,

@@ -1,7 +1,9 @@
 use macros::model;
-use unionlabs_bytes::{encoding::HexUnprefixed, Hash, H256};
 
-use crate::aptos::transaction_info::TransactionInfo;
+use crate::{
+    aptos::transaction_info::TransactionInfo,
+    primitives::{encoding::HexUnprefixed, Hash, H256},
+};
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
 #[model]

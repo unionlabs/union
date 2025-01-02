@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{bounded::BoundedI64, bytes::Bytes, hash::hash_v2::Base64};
+use unionlabs::{
+    bounded::BoundedI64,
+    primitives::{encoding::Base64, Bytes},
+};
 
 use crate::crypto::proof_ops::ProofOps;
 

@@ -1,8 +1,7 @@
 use sha2::Digest;
 use sha3::Keccak256;
-use unionlabs_bytes::H256;
 
-use crate::{ethereum::keccak256, uint::U256};
+use crate::{ethereum::keccak256, primitives::H256, uint::U256};
 
 /// Solidity storage slot calculations. Note that this currently does not handle dynamic arrays with packed values; the index passed to [`Slot::Array`] will need to be calculated manually in this case.
 pub enum Slot<'a> {

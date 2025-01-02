@@ -1,11 +1,11 @@
 use core::fmt::Debug;
 
 use macros::model;
-use unionlabs_bytes::FixedBytesError;
 
 use crate::{
     encoding::{DecodeAs, Proto},
     google::protobuf::any::Any,
+    primitives::FixedBytesError,
     TryFromProtoBytesError, TypeUrl,
 };
 

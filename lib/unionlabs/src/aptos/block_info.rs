@@ -1,7 +1,9 @@
 use macros::model;
-use unionlabs_bytes::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
 
-use super::epoch_state::{EpochState, TryFromEpochStateError};
+use crate::{
+    aptos::epoch_state::EpochState,
+    primitives::{encoding::HexUnprefixed, H256},
+};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -21,11 +23,7 @@ pub const GENESIS_TIMESTAMP_USECS: u64 = 0;
 /// This structure contains all the information needed for tracking a block
 /// without having access to the block or its execution output state. It
 /// assumes that the block is the last block executed within the ledger.
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::BlockInfo),
-    into,
-    from
-))]
+#[model]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
     pub epoch: u64,
@@ -41,47 +39,4 @@ pub struct BlockInfo {
     pub timestamp_usecs: u64,
     /// An optional field containing the next epoch info
     pub next_epoch_state: Option<EpochState>,
-}
-
-impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockInfo {
-    fn from(value: BlockInfo) -> Self {
-        Self {
-            epoch: value.epoch,
-            round: value.round,
-            id: value.id.into_bytes().into(),
-            executed_state_id: value.executed_state_id.into_bytes().into(),
-            version: value.version,
-            timestamp_usecs: value.timestamp_usecs,
-            next_epoch_state: value.next_epoch_state.map(Into::into),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromBlockInfoError {
-    #[error("invalid id")]
-    Id(#[source] FixedBytesError),
-    #[error("invalid executed state id")]
-    ExecutedStateId(#[source] FixedBytesError),
-    #[error("invalid next epoch state: {0}")]
-    NextEpochState(#[from] TryFromEpochStateError),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for BlockInfo {
-    type Error = TryFromBlockInfoError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::BlockInfo,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            epoch: value.epoch,
-            round: value.round,
-            id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
-            executed_state_id: Hash::try_from(value.executed_state_id)
-                .map_err(TryFromBlockInfoError::ExecutedStateId)?,
-            version: value.version,
-            timestamp_usecs: value.timestamp_usecs,
-            next_epoch_state: value.next_epoch_state.map(TryInto::try_into).transpose()?,
-        })
-    }
 }

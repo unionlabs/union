@@ -1,32 +1,10 @@
 use macros::model;
 
 /// A BLS12381 public key
-#[model(
-    no_serde,
-    proto(
-        raw(protos::union::ibc::lightclients::movement::v1::PublicKey),
-        into,
-        from
-    )
-)]
+#[model(no_serde)]
 pub struct PublicKey {
+    // TODO: Use Bytes here and ensure the ser/de is the same
     pub pubkey: Vec<u8>,
-}
-
-impl From<PublicKey> for protos::union::ibc::lightclients::movement::v1::PublicKey {
-    fn from(value: PublicKey) -> Self {
-        Self {
-            pubkey: value.pubkey,
-        }
-    }
-}
-
-impl From<protos::union::ibc::lightclients::movement::v1::PublicKey> for PublicKey {
-    fn from(value: protos::union::ibc::lightclients::movement::v1::PublicKey) -> Self {
-        Self {
-            pubkey: value.pubkey,
-        }
-    }
 }
 
 impl serde::Serialize for PublicKey {

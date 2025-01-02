@@ -1,7 +1,7 @@
 use base64::{display::Base64Display, engine::general_purpose::STANDARD};
 use bip39::Mnemonic;
 use clap::{Parser, Subcommand};
-use unionlabs::hash::{H160, H256};
+use unionlabs::primitives::{H160, H256};
 
 #[derive(Parser)]
 #[clap(arg_required_else_help = true)]

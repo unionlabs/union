@@ -1,5 +1,6 @@
+use ssz::H256;
 use unionlabs::{
-    hash::{H160, H256},
+    primitives::{Bytes, H160},
     uint::U256,
 };
 #[cfg(feature = "ssz")]
@@ -21,8 +22,7 @@ pub struct ExecutionPayload {
     pub fee_recipient: H160,
     pub state_root: H256,
     pub receipts_root: H256,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
-    pub logs_bloom: Vec<u8>,
+    pub logs_bloom: Bytes,
     /// 'difficulty' in the yellow paper
     pub prev_randao: H256,
     /// 'number' in the yellow paper
@@ -34,14 +34,12 @@ pub struct ExecutionPayload {
     pub gas_used: u64,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
-    pub extra_data: Vec<u8>,
+    pub extra_data: Bytes,
     pub base_fee_per_gas: U256,
     /// Extra payload fields
     /// Hash of execution block
     pub block_hash: H256,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string_list"))]
-    pub transactions: Vec<Vec<u8>>,
+    pub transactions: Vec<Bytes>,
     pub withdrawals: Vec<Withdrawal>,
     // blob_gas_used: uint64  # [New in Deneb:EIP4844]
     #[cfg_attr(feature = "serde", serde(default, with = "::serde_utils::string"))]

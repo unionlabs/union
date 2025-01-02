@@ -1,4 +1,4 @@
-use unionlabs_bytes::H256;
+use crate::primitives::H256;
 
 use crate::{
     errors::{ExpectedLength, InvalidLength},

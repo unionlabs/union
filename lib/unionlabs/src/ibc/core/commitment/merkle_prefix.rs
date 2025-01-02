@@ -1,5 +1,6 @@
 use macros::model;
-use unionlabs_bytes::Bytes;
+
+use crate::primitives::Bytes;
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerklePrefix), into, from))]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]

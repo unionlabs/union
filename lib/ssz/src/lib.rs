@@ -41,12 +41,9 @@ pub use union_selector::UnionSelector;
 
 extern crate ssz_derive;
 pub use ssz_derive::*;
+pub use unionlabs_primitives::H256;
 
-use crate::{
-    decode::DecodeError,
-    tree_hash::{Hash256, TreeHashType},
-    types::tree_hash::vec_tree_hash_root,
-};
+use crate::{decode::DecodeError, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root};
 
 pub mod types;
 
@@ -71,7 +68,7 @@ pub trait Ssz: Sized {
 
     const TREE_HASH_TYPE: TreeHashType;
 
-    fn tree_hash_root(&self) -> Hash256;
+    fn tree_hash_root(&self) -> H256;
 
     /// Append the encoding `self` to `buf`.
     ///
@@ -130,10 +127,10 @@ macro_rules! impl_ssz_for_uint {
                 },
             };
 
-            fn tree_hash_root(&self) -> Hash256 {
+            fn tree_hash_root(&self) -> H256 {
                 let mut bytes = [0; crate::tree_hash::HASHSIZE];
                 bytes[0..(($T::BITS / 8) as usize)].copy_from_slice(&self.to_le_bytes());
-                bytes
+                H256::new(bytes)
             }
 
             fn ssz_bytes_len(&self) -> NonZeroUsize {
@@ -238,7 +235,7 @@ where
 
     const TREE_HASH_TYPE: TreeHashType = TreeHashType::Vector;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         vec_tree_hash_root::<T, U<N>>(self)
     }
 
@@ -302,7 +299,7 @@ impl Ssz for bool {
 
     const TREE_HASH_TYPE: TreeHashType = u8::TREE_HASH_TYPE;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         (*self as u8).tree_hash_root()
     }
 
@@ -340,7 +337,7 @@ impl Ssz for NonZeroUsize {
 
     const TREE_HASH_TYPE: TreeHashType = usize::TREE_HASH_TYPE;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         self.get().tree_hash_root()
     }
 
@@ -441,6 +438,32 @@ macro_rules! option_unwrap {
     }};
 }
 pub(crate) use option_unwrap;
+
+impl<const BYTES: usize, E: unionlabs_primitives::encoding::Encoding> Ssz
+    for unionlabs_primitives::Hash<BYTES, E>
+where
+    [u8; BYTES]: Ssz,
+{
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = <[u8; BYTES] as Ssz>::SSZ_FIXED_LEN;
+
+    const TREE_HASH_TYPE: TreeHashType = <[u8; BYTES] as Ssz>::TREE_HASH_TYPE;
+
+    fn tree_hash_root(&self) -> H256 {
+        <[u8; BYTES] as Ssz>::tree_hash_root(self.get())
+    }
+
+    fn ssz_append(&self, buf: &mut Vec<u8>) {
+        <[u8; BYTES] as Ssz>::ssz_append(self.get(), buf);
+    }
+
+    fn ssz_bytes_len(&self) -> NonZeroUsize {
+        <[u8; BYTES] as Ssz>::ssz_bytes_len(self.get())
+    }
+
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, DecodeError> {
+        <[u8; BYTES] as Ssz>::from_ssz_bytes(bytes).map(Self::new)
+    }
+}
 
 #[cfg(test)]
 mod tests {

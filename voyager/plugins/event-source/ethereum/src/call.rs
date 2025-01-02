@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use ibc_solidity::Ibc;
 use macros::model;
 use subset_of::SubsetOf;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[model]
 #[derive(Enumorph, SubsetOf)]

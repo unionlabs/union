@@ -1,7 +1,7 @@
 use core::num::{NonZeroU64, TryFromIntError};
 
 use macros::model;
-use unionlabs_bytes::Bytes;
+use crate::primitives::Bytes;
 
 use crate::{
     errors::{required, MissingField},

@@ -379,13 +379,15 @@ fn normalize_for_ibc_transfer(
         .and_then(|denom| denom.strip_prefix("/"))
     {
         Some(denom_hash) => {
-            if let Some(normalized_denom) = hash_to_denom(DenomHash(unionlabs::hash::H256::new(
-                denom_hash
-                    .from_base58()
-                    .expect("impossible")
-                    .try_into()
-                    .expect("impossible"),
-            )))? {
+            if let Some(normalized_denom) =
+                hash_to_denom(DenomHash(unionlabs::primitives::H256::new(
+                    denom_hash
+                        .from_base58()
+                        .expect("impossible")
+                        .try_into()
+                        .expect("impossible"),
+                )))?
+            {
                 // This is the POV of the counterparty chain, where we transfer from A to B. It's a similar check than in receive_phase1.
                 // If the denom is prefixed by the source chain path (A), it means it was local (originating from B and minted on A).
                 // If the denom isn't prefixed by the source chain path (A), it means it was remote (originating from A chain).

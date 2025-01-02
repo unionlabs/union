@@ -1,8 +1,10 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
-use unionlabs_bytes::{encoding::HexUnprefixed, H256};
 
-use super::{block_info::BlockInfo, signature::AggregateSignature};
+use crate::{
+    aptos::{block_info::BlockInfo, signature::AggregateSignature},
+    primitives::{encoding::HexUnprefixed, H256},
+};
 
 /// Wrapper to support future upgrades, this is the data being persisted.
 #[model(no_serde)]

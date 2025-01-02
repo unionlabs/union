@@ -1,7 +1,6 @@
 use macros::model;
-use unionlabs_bytes::Bytes;
 
-use crate::id::ClientId;
+use crate::{id::ClientId, primitives::Bytes};
 
 #[model(proto(raw(protos::ibc::core::client::v1::MsgUpdateClient)))]
 pub struct MsgUpdateClient {

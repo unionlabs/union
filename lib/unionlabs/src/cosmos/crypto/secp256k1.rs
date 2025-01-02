@@ -1,7 +1,6 @@
 use macros::model;
-use unionlabs_bytes::{encoding::Base64, FixedBytesError, Hash};
 
-use crate::errors::{ExpectedLength, InvalidLength};
+use crate::primitives::{encoding::Base64, FixedBytesError, Hash};
 
 #[model(proto(raw(protos::cosmos::crypto::secp256k1::PubKey), into, from))]
 pub struct PubKey {

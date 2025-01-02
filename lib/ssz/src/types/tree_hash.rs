@@ -1,13 +1,14 @@
 use typenum::Unsigned;
+use unionlabs_primitives::H256;
 
 use crate::{
-    tree_hash::{Hash256, MerkleHasher, TreeHashType, BYTES_PER_CHUNK},
+    tree_hash::{MerkleHasher, TreeHashType, BYTES_PER_CHUNK},
     Ssz,
 };
 
 /// A helper function providing common functionality between the `TreeHash` implementations for
 /// `Vector` and `List`.
-pub fn vec_tree_hash_root<T, N>(vec: &[T]) -> Hash256
+pub fn vec_tree_hash_root<T, N>(vec: &[T]) -> H256
 where
     T: Ssz,
     N: Unsigned,
@@ -31,7 +32,7 @@ where
 
             for item in vec {
                 hasher
-                    .write(&item.tree_hash_root())
+                    .write(item.tree_hash_root().get())
                     .expect("ssz::types vec should not contain more elements than max");
             }
 
@@ -54,7 +55,7 @@ where
 /// A helper function providing common functionality for finding the Merkle root of some bytes that
 /// represent a bitfield.
 #[must_use]
-pub fn bitfield_bytes_tree_hash_root<N: Unsigned>(bytes: &[u8]) -> Hash256 {
+pub fn bitfield_bytes_tree_hash_root<N: Unsigned>(bytes: &[u8]) -> H256 {
     let byte_size = (N::USIZE + 7) / 8;
     let leaf_count = byte_size.div_ceil(BYTES_PER_CHUNK);
 

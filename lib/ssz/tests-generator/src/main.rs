@@ -94,7 +94,7 @@ use hex_literal::hex;
 use ssz::types::*;
 use ssz::Ssz;
 use unionlabs::uint::U256;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 use typenum::U;
 
 pub mod container_types {

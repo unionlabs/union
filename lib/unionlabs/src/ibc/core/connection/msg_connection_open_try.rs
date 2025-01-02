@@ -1,5 +1,5 @@
 use macros::model;
-use unionlabs_bytes::Bytes;
+use crate::primitives::Bytes;
 
 use crate::{
     ibc::core::{

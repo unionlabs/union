@@ -4,7 +4,8 @@
 use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
-use unionlabs_bytes::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
+
+use crate::primitives::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
 
 #[derive(
     macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,

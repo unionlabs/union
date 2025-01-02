@@ -1,5 +1,6 @@
 use sha3::Digest;
-use unionlabs_bytes::H256;
+
+use crate::primitives::H256;
 
 /// <https://legacy.aptos.dev/reference/move/?branch=mainnet&page=aptos-framework/doc/object.md#0x1_object_OBJECT_FROM_SEED_ADDRESS_SCHEME>
 pub const OBJECT_FROM_SEED_ADDRESS_SCHEME: u8 = 254;
@@ -18,9 +19,8 @@ pub fn create_object_address(address: H256, seed: &[u8]) -> H256 {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs_bytes::H256;
 
-    use crate::aptos::object::create_object_address;
+    use crate::{aptos::object::create_object_address, primitives::H256};
 
     #[test]
     fn ibc_store_address() {

@@ -25,7 +25,7 @@ use trie_db::{
     node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
     ChildReference, NodeCodec, TrieLayout,
 };
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[derive(Default, Clone)]
 pub struct EthLayout;

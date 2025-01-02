@@ -1,7 +1,7 @@
 [package]
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "unionlabs-bytes"
+name         = "unionlabs-primitives"
 repository   = { workspace = true }
 version      = "0.0.1"
 

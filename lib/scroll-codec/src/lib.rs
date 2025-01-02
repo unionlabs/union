@@ -4,7 +4,7 @@
 
 //! Scroll types, as specified in <https://github.com/scroll-tech/scroll/tree/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/libraries/codec>, with the commit from [this announcement](https://scroll.io/blog/blobs-are-here-scrolls-bernoulli-upgrade).
 
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::batch_header::{BatchHeaderV3, BatchHeaderV3DecodeError};
 
@@ -47,7 +47,7 @@ pub fn hash_batch(batch_header: &[u8]) -> Result<H256, HashBatchError> {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::hash::H256;
+    use unionlabs::primitives::H256;
 
     use crate::hash_batch;
 

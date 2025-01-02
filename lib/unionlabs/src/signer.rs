@@ -5,7 +5,8 @@ use bip32::{
     PrivateKey, PublicKey,
 };
 use ripemd::Digest;
-use unionlabs_bytes::H256;
+
+use crate::primitives::H256;
 
 /// A simple wrapper around a cosmos signer (ECDSA), easily representable as a bech32 string.
 #[derive(Debug, Clone)]

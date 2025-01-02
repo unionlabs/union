@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{
     ibc::core::client::height::{Height, HeightFromStrError},
+    primitives::{encoding::HexUnprefixed, Bytes, H256},
     traits::Member,
 };
 
@@ -428,4 +429,3 @@ macro_rules! str_newtype {
     };
 }
 pub(crate) use str_newtype;
-use unionlabs_bytes::{encoding::HexUnprefixed, Bytes, H256};

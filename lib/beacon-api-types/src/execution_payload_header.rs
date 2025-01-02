@@ -1,5 +1,5 @@
 use unionlabs::{
-    hash::{H160, H256},
+    primitives::{Bytes, H160, H256},
     uint::U256,
 };
 #[cfg(feature = "ssz")]
@@ -15,9 +15,7 @@ pub struct ExecutionPayloadHeader {
     pub fee_recipient: H160,
     pub state_root: H256,
     pub receipts_root: H256,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
-    // #[debug("{}", serde_utils::to_hex(&logs_bloom))]
-    pub logs_bloom: Vec<u8>,
+    pub logs_bloom: Bytes,
     pub prev_randao: H256,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block_number: u64,
@@ -27,9 +25,7 @@ pub struct ExecutionPayloadHeader {
     pub gas_used: u64,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
-    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub extra_data: Vec<u8>,
+    pub extra_data: Bytes,
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
     #[cfg_attr(feature = "serde", serde(default))]
@@ -112,18 +108,22 @@ pub mod ssz {
                 fee_recipient: value.fee_recipient,
                 state_root: value.state_root,
                 receipts_root: value.receipts_root,
-                logs_bloom: value.logs_bloom.try_into().map_err(|v: Vec<_>| {
-                    Error::LogsBloom(InvalidLength {
-                        expected: ExpectedLength::Exact(C::BYTES_PER_LOGS_BLOOM::USIZE),
-                        found: v.len(),
-                    })
-                })?,
+                logs_bloom: value
+                    .logs_bloom
+                    .into_vec()
+                    .try_into()
+                    .map_err(|v: Vec<_>| {
+                        Error::LogsBloom(InvalidLength {
+                            expected: ExpectedLength::Exact(C::BYTES_PER_LOGS_BLOOM::USIZE),
+                            found: v.len(),
+                        })
+                    })?,
                 prev_randao: value.prev_randao,
                 block_number: value.block_number,
                 gas_limit: value.gas_limit,
                 gas_used: value.gas_used,
                 timestamp: value.timestamp,
-                extra_data: value.extra_data.try_into().map_err(|l: Vec<_>| {
+                extra_data: value.extra_data.into_vec().try_into().map_err(|l: Vec<_>| {
                     Error::ExtraData(InvalidLength {
                         expected: ExpectedLength::Between(0, C::MAX_EXTRA_DATA_BYTES::USIZE),
                         found: l.len(),

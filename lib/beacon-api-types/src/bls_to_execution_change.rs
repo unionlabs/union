@@ -1,4 +1,4 @@
-use unionlabs::{bls::BlsPublicKey, hash::H160};
+use unionlabs::{bls::BlsPublicKey, primitives::H160};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

@@ -1,5 +1,6 @@
 use macros::model;
-use unionlabs_bytes::{encoding::Base64, FixedBytesError, H256};
+
+use crate::primitives::{encoding::Base64, FixedBytesError, H256};
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
 pub struct MerkleRoot {

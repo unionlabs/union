@@ -6252,7 +6252,7 @@ version = "1.0.0"
 dependencies = [
  "ibc-solidity",
  "serde",
- "unionlabs-bytes",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -7890,7 +7890,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -11243,6 +11243,7 @@ dependencies = [
  "thiserror",
  "typenum",
  "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -12733,12 +12734,12 @@ dependencies = [
  "thiserror",
  "typenum",
  "uint",
- "unionlabs-bytes",
+ "unionlabs-primitives",
  "wasmparser",
 ]
 
 [[package]]
-name = "unionlabs-bytes"
+name = "unionlabs-primitives"
 version = "0.0.1"
 dependencies = [
  "alloy-primitives",
@@ -13373,7 +13374,6 @@ dependencies = [
  "serde",
  "serde_json",
  "unionlabs",
- "unionlabs-bytes",
 ]
 
 [[package]]

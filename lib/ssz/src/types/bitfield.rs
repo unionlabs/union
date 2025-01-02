@@ -8,9 +8,9 @@ use serde::{
 };
 use smallvec::{smallvec, SmallVec, ToSmallVec};
 use typenum::Unsigned;
+use unionlabs_primitives::H256;
 
 use crate::{
-    tree_hash::Hash256,
     types::{tree_hash::bitfield_bytes_tree_hash_root, Error},
     DecodeError, Ssz,
 };
@@ -467,7 +467,7 @@ impl<N: Unsigned + Clone> Ssz for Bitfield<Variable<N>> {
 
     const TREE_HASH_TYPE: crate::tree_hash::TreeHashType = crate::tree_hash::TreeHashType::List;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         // Note: we use `as_slice` because it does _not_ have the length-delimiting bit set (or
         // present).
         let root = bitfield_bytes_tree_hash_root::<N>(self.as_slice());
@@ -504,7 +504,7 @@ impl<N: Unsigned + Clone> Ssz for Bitfield<Fixed<N>> {
 
     const TREE_HASH_TYPE: crate::tree_hash::TreeHashType = crate::tree_hash::TreeHashType::Vector;
 
-    fn tree_hash_root(&self) -> Hash256 {
+    fn tree_hash_root(&self) -> H256 {
         bitfield_bytes_tree_hash_root::<N>(self.as_slice())
     }
 

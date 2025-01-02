@@ -2,6 +2,7 @@ use core::{
     cmp::Ordering,
     fmt::{self, Display},
     marker::PhantomData,
+    slice::SliceIndex,
     str::FromStr,
 };
 
@@ -24,32 +25,6 @@ pub struct FixedBytesError {
     expected_len: usize,
     found_len: usize,
 }
-
-// impl<const BYTES: usize, E: Encoding> ssz::Ssz for Hash<BYTES, E>
-// where
-//     typenum::Const<BYTES>: typenum::ToUInt,
-//     typenum::U<BYTES>: typenum::Unsigned + typenum::NonZero,
-// {
-//     const SSZ_FIXED_LEN: Option<core::num::NonZeroUsize> = <[u8; BYTES] as ssz::Ssz>::SSZ_FIXED_LEN;
-
-//     const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType = <[u8; BYTES] as ssz::Ssz>::TREE_HASH_TYPE;
-
-//     fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
-//         <[u8; BYTES] as ssz::Ssz>::tree_hash_root(self.get())
-//     }
-
-//     fn ssz_append(&self, buf: &mut Vec<u8>) {
-//         <[u8; BYTES] as ssz::Ssz>::ssz_append(self.get(), buf);
-//     }
-
-//     fn ssz_bytes_len(&self) -> core::num::NonZeroUsize {
-//         <[u8; BYTES] as ssz::Ssz>::ssz_bytes_len(self.get())
-//     }
-
-//     fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::decode::DecodeError> {
-//         <[u8; BYTES] as ssz::Ssz>::from_ssz_bytes(bytes).map(Self::new)
-//     }
-// }
 
 impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for Hash<BYTES, E> {
     fn as_ref(&self) -> &[u8] {
@@ -74,6 +49,22 @@ impl<const BYTES: usize, E: Encoding> Copy for Hash<BYTES, E> {}
 impl<const BYTES: usize, E: Encoding> core::hash::Hash for Hash<BYTES, E> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         core::hash::Hash::hash(self.get(), state);
+    }
+}
+
+impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::Index<I> for Hash<BYTES, E> {
+    type Output = <I as SliceIndex<[u8]>>::Output;
+
+    fn index(&self, index: I) -> &Self::Output {
+        &self.get()[index]
+    }
+}
+
+impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::IndexMut<I>
+    for Hash<BYTES, E>
+{
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut self.get_mut()[index]
     }
 }
 

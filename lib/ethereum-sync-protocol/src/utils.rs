@@ -5,7 +5,7 @@ use beacon_api_types::{
 use sha2::{Digest, Sha256};
 use ssz::Ssz;
 use typenum::Unsigned;
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 use crate::{
     error::{Error, InvalidMerkleBranch},
@@ -100,7 +100,7 @@ pub fn compute_fork_data_root(current_version: Version, genesis_validators_root:
 /// Return the signing root for the corresponding signing data
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_signing_root)
-pub fn compute_signing_root<T: Ssz>(ssz_object: &T, domain: Domain) -> ssz::tree_hash::Hash256 {
+pub fn compute_signing_root<T: Ssz>(ssz_object: &T, domain: Domain) -> H256 {
     SigningData {
         object_root: ssz_object.tree_hash_root().into(),
         domain,
