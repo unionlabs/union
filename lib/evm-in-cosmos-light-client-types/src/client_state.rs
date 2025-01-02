@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use unionlabs::hash::H160;
+use unionlabs::hash::{H160, H256};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -9,7 +9,8 @@ pub struct ClientState {
     pub l1_client_id: u32,
     pub l2_client_id: u32,
     pub latest_slot: u64,
-    pub ibc_contract_address: H160,
+    pub l1_ibc_contract_address: H256,
+    pub l2_ibc_contract_address: H160,
 }
 
 // #[cfg(feature = "proto")]

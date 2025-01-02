@@ -1,5 +1,5 @@
 use ethereum_light_client_types::AccountProof;
-use unionlabs::{ibc::core::client::height::Height, union::ics23::merkle_proof::MerkleProof};
+use unionlabs::ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

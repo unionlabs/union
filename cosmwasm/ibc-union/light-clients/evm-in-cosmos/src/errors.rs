@@ -1,3 +1,4 @@
+use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::ibc::core::client::height::Height;
@@ -20,6 +21,9 @@ pub enum Error {
 
     #[error(transparent)]
     EthereumLightClient(#[from] ethereum_light_client::errors::Error),
+
+    #[error("error while querying l1 state: {0}")]
+    L1Error(#[from] IbcClientError<CometblsLightClient>),
 }
 
 impl From<Error> for IbcClientError<EvmInCosmosLightClient> {

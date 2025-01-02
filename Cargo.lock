@@ -4908,6 +4908,7 @@ dependencies = [
  "ibc-union-spec",
  "ics23",
  "protos",
+ "serde",
  "thiserror",
  "unionlabs",
 ]

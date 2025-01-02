@@ -1,6 +1,6 @@
 use cometbls_light_client::client::CometblsLightClient;
-use cosmwasm_std::{Deps, DepsMut, Empty, Env};
-use ethereum_light_client::client::{do_verify_membership, do_verify_non_membership};
+use cosmwasm_std::Empty;
+use ethereum_light_client_types::StorageProof;
 use evm_in_cosmos_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
@@ -8,13 +8,7 @@ use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
 use ics23::ibc_api::SDK_SPECS;
-use unionlabs::{
-    encoding::{DecodeAs, EncodeAs, Json, Proto},
-    ibc::core::{
-        client::{genesis_metadata::GenesisMetadata, height::Height},
-        commitment::merkle_path::MerklePath,
-    },
-};
+use unionlabs::encoding::{EncodeAs, EthAbi, Json};
 
 use crate::errors::Error;
 
@@ -33,6 +27,8 @@ impl IbcClient for EvmInCosmosLightClient {
 
     type ConsensusState = ConsensusState;
 
+    type StorageProof = StorageProof;
+
     type Encoding = Json;
 
     fn verify_membership(
@@ -43,12 +39,14 @@ impl IbcClient for EvmInCosmosLightClient {
         value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        let client_state = ctx.read_self_client_state()?;
 
-        let storage_root = consensus_state.ibc_storage_root;
-
-        ethereum_light_client::client::verify_membership(key, storage_root, storage_proof, value)
-            .map_err(Error::EthereumLightClient)?;
+        ethereum_light_client::client::verify_membership(
+            key,
+            consensus_state.ibc_storage_root,
+            storage_proof,
+            value,
+        )
+        .map_err(Error::EthereumLightClient)?;
 
         Ok(())
     }
@@ -60,12 +58,13 @@ impl IbcClient for EvmInCosmosLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        let client_state = ctx.read_self_client_state()?;
 
-        let storage_root = consensus_state.ibc_storage_root;
-
-        ethereum_light_client::client::verify_non_membership(key, storage_root, storage_proof)
-            .map_err(Error::EthereumLightClient)?;
+        ethereum_light_client::client::verify_non_membership(
+            key,
+            consensus_state.ibc_storage_root,
+            storage_proof,
+        )
+        .map_err(Error::EthereumLightClient)?;
 
         Ok(())
     }
@@ -119,14 +118,17 @@ impl IbcClient for EvmInCosmosLightClient {
         let client_state = ctx.read_self_client_state()?;
         let l1_consensus_state: cometbls_light_client_types::ConsensusState = ctx
             .read_consensus_state::<CometblsLightClient>(
-            client_state.l1_client_id,
-            header.l1_height.height(),
-        )?;
+                client_state.l1_client_id,
+                header.l1_height.height(),
+            )
+            .map_err(Into::<Error>::into)?;
         let consensus_state_path = ConsensusStatePath {
             client_id: client_state.l2_client_id,
             height: header.l2_slot,
         }
         .key();
+
+        let header_ = header.clone();
         // The ethereum consensus state is stored in proto-encoded wasm-wrapped form.
         // Verify inclusion of the ethereum consensus state against union.
         ics23::ibc_api::verify_membership(
@@ -134,107 +136,41 @@ impl IbcClient for EvmInCosmosLightClient {
             &SDK_SPECS,
             &l1_consensus_state.app_hash,
             &[
-                b"ibc".to_vec(),
-                client_consensus_state_path.to_string().into_bytes(),
+                b"wasm".to_vec(),
+                3u8.to_le_bytes()
+                    .into_iter()
+                    .chain(client_state.l1_ibc_contract_address)
+                    .chain(consensus_state_path)
+                    .collect::<Vec<u8>>(),
             ],
-            header.l2_consensus_state.encode_as::<Ethabi>(),
+            header.l2_consensus_state.encode_as::<EthAbi>(),
         )
         .map_err(Error::VerifyL2Membership)?;
-        Ok(())
+
+        Ok(update_state(client_state, header_)?)
     }
 
-    fn verify_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _env: Env,
+    fn misbehaviour(
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
+    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+        unimplemented!()
+    }
+}
+
+fn update_state(
+    mut client_state: ClientState,
+    header: Header,
+) -> Result<(u64, ClientState, ConsensusState), Error> {
+    if client_state.latest_slot < header.l1_height.height() {
+        client_state.latest_slot = header.l1_height.height();
     }
 
-    fn update_state(
-        mut deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
-        header: Self::Header,
-    ) -> Result<Vec<Height>, IbcClientError<Self>> {
-        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+    let consensus_state = ConsensusState {
+        evm_state_root: header.l2_consensus_state.state_root,
+        ibc_storage_root: header.l2_consensus_state.storage_root,
+        timestamp: header.l2_consensus_state.timestamp,
+    };
 
-        let updated_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: header.l1_height.revision_height,
-        };
-
-        if client_state.latest_height < header.l1_height {
-            client_state.data.latest_slot = updated_height.revision_height;
-            update_client_state::<Self>(
-                deps.branch(),
-                client_state,
-                updated_height.revision_height,
-            );
-        }
-
-        let consensus_state = WasmConsensusState {
-            data: ConsensusState {
-                evm_state_root: header.l2_consensus_state.state_root,
-                ibc_storage_root: header.l2_consensus_state.storage_root,
-                timestamp: header.l2_consensus_state.timestamp,
-            },
-        };
-        save_consensus_state::<Self>(deps, consensus_state, &updated_height);
-        Ok(vec![updated_height])
-    }
-
-    fn update_state_on_misbehaviour(
-        _deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
-        _client_message: Vec<u8>,
-    ) -> Result<(), IbcClientError<Self>> {
-        panic!("impossible; misbehavior check is done on the l1 light client.")
-    }
-
-    fn check_for_misbehaviour_on_header(
-        _deps: Deps<Self::CustomQuery>,
-        _header: Self::Header,
-    ) -> Result<bool, IbcClientError<Self>> {
-        Ok(false)
-    }
-
-    fn check_for_misbehaviour_on_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _misbehaviour: Self::Misbehaviour,
-    ) -> Result<bool, IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
-    }
-
-    fn verify_upgrade_and_update_state(
-        _deps: DepsMut<Self::CustomQuery>,
-        _upgrade_client_state: Self::ClientState,
-        _upgrade_consensus_state: Self::ConsensusState,
-        _proof_upgrade_client: Vec<u8>,
-        _proof_upgrade_consensus_state: Vec<u8>,
-    ) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
-    }
-
-    fn migrate_client_store(_deps: DepsMut<Self::CustomQuery>) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
-    }
-
-    //
-
-    fn export_metadata(
-        _deps: Deps<Self::CustomQuery>,
-        _env: &Env,
-    ) -> Result<Vec<GenesisMetadata>, IbcClientError<Self>> {
-        Ok(Vec::new())
-    }
-
-    fn timestamp_at_height(
-        deps: Deps<Self::CustomQuery>,
-        height: Height,
-    ) -> Result<u64, IbcClientError<Self>> {
-        Ok(read_consensus_state::<Self>(deps, &height)?
-            .ok_or(Error::ConsensusStateNotFound(height))?
-            .data
-            .timestamp)
-    }
+    Ok((header.l1_height.height(), client_state, consensus_state))
 }

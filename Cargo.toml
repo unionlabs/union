@@ -200,8 +200,8 @@ arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", defaul
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
+cometbls-light-client       = { path = "cosmwasm/ibc-union/light-clients/cometbls", default-features = false }
 cometbls-light-client-types = { path = "lib/cometbls-light-client-types", default-features = false }
-cometbls-light-client= { path = "cosmwasm/ibc-union/light-clients/cometbls", default-features = false }
 
 scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
 
