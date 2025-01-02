@@ -1,0 +1,9 @@
+{
+  "name": "evm dev tools",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "vscode-solidity-server": "0.0.179"
+  }
+}
