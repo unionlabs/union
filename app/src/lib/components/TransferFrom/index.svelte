@@ -1,17 +1,17 @@
 <script lang="ts">
-  import DebugBox from "$lib/components/TransferFrom/components/DebugBox/index.svelte";
-  import {TRANSFER_DEBUG} from "$lib/components/TransferFrom/transfer/config.ts";
-  import {createTransferStore } from "$lib/components/TransferFrom/transfer";
-  import Intent from "$lib/components/TransferFrom/components/Cube/faces/Intent.svelte";
-  import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.svelte";
-  import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte";
-  import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte";
-  import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte";
+import DebugBox from "$lib/components/TransferFrom/components/DebugBox/index.svelte"
+import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
+import { createTransferStore } from "$lib/components/TransferFrom/transfer"
+import Intent from "$lib/components/TransferFrom/components/Cube/faces/Intent.svelte"
+import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.svelte"
+import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
+import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
+import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 
-  const stores = createTransferStore()
-  let {context} = stores
+const stores = createTransferStore()
+let { context } = stores
 
-  $: console.log($context)
+$: console.log($context)
 </script>
 
 <Cube>

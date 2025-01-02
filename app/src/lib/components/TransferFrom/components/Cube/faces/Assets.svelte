@@ -1,34 +1,33 @@
 <script lang="ts">
-  import type {IntentStore} from "$lib/components/TransferFrom/transfer/intents.ts";
-  import type {ValidationStoreAndMethods} from "$lib/components/TransferFrom/transfer/validation.ts";
-  import type {Readable} from "svelte/store";
-  import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
-  import type {CubeFaces} from "$lib/components/TransferFrom/types.ts";
-  import {showUnsupported} from "$lib/stores/user.ts";
-  import {getSupportedAsset} from "$lib/utilities/helpers.ts";
-  import {truncate} from "$lib/utilities/format.ts";
-  import {formatUnits} from "viem";
-  import {Button} from "$lib/components/ui/button";
+import type { IntentStore } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
+import type { Readable } from "svelte/store"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
+import { showUnsupported } from "$lib/stores/user.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { truncate } from "$lib/utilities/format.ts"
+import { formatUnits } from "viem"
+import { Button } from "$lib/components/ui/button"
 
-  interface Props {
-    stores: {
-      intents: IntentStore
-      validation: ValidationStoreAndMethods
-      context: Readable<ContextStore>
-    }
-    rotateTo: (face: CubeFaces) => void
+interface Props {
+  stores: {
+    intents: IntentStore
+    validation: ValidationStoreAndMethods
+    context: Readable<ContextStore>
   }
+  rotateTo: (face: CubeFaces) => void
+}
 
-  export let stores: Props["stores"]
-  export let rotateTo: Props["rotateTo"]
+export let stores: Props["stores"]
+export let rotateTo: Props["rotateTo"]
 
-  let {intents, validation, context} = stores
+let { intents, validation, context } = stores
 
-  function setAsset(address: string) {
-    intents.updateField('asset', address)
-    rotateTo("intentFace")
-  }
-
+function setAsset(address: string) {
+  intents.updateField("asset", address)
+  rotateTo("intentFace")
+}
 </script>
 
 <div class="flex flex-col justify-between h-full w-full p-4">

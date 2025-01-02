@@ -1,26 +1,26 @@
 <script lang="ts">
-  import * as Drawer from "$lib/components/ui/drawer";
-  import type {Readable} from "svelte/store"
-  import type {IntentStore} from "../../transfer/intents.ts"
-  import type {ValidationStoreAndMethods} from "../../transfer/validation.ts"
-  import type {ContextStore} from "../../transfer/context.ts"
-  import CollapsibleDisplay from "./CollapsibleDisplay.svelte"
-  import CopyUrlButton from "./CopyUrlButton.svelte";
-  import ResetButton from "./ResetButton.svelte";
-  import {Button} from "$lib/components/ui/button";
-  import {ScrollArea} from "$lib/components/ui/scroll-area";
+import * as Drawer from "$lib/components/ui/drawer"
+import type { Readable } from "svelte/store"
+import type { IntentStore } from "../../transfer/intents.ts"
+import type { ValidationStoreAndMethods } from "../../transfer/validation.ts"
+import type { ContextStore } from "../../transfer/context.ts"
+import CollapsibleDisplay from "./CollapsibleDisplay.svelte"
+import CopyUrlButton from "./CopyUrlButton.svelte"
+import ResetButton from "./ResetButton.svelte"
+import { Button } from "$lib/components/ui/button"
+import { ScrollArea } from "$lib/components/ui/scroll-area"
 
-  interface Props {
-    stores: {
-      intents: IntentStore
-      validation: ValidationStoreAndMethods
-      context: Readable<ContextStore>
-    }
+interface Props {
+  stores: {
+    intents: IntentStore
+    validation: ValidationStoreAndMethods
+    context: Readable<ContextStore>
   }
+}
 
-  export let stores: Props["stores"]
+export let stores: Props["stores"]
 
-  $: ({intents, validation, context} = stores)
+$: ({ intents, validation, context } = stores)
 </script>
 
 <Drawer.Root>

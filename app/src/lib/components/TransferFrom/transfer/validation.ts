@@ -1,6 +1,6 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
-import type { IntentStore, FormFields, RawTransferIntents } from "./intents.ts"
+import type { IntentStore, FormFields } from "./intents.ts"
 import type { Chain } from "$lib/types"
 import type { Balance, ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
@@ -29,39 +29,36 @@ export function createValidationStore(
   intents: IntentStore,
   context: Readable<ContextStore>
 ): ValidationStoreAndMethods {
-  const store = derived(
-    [intents, context],
-    ([$intents, $context]) => {
-      const errors = validateAll({
-        formFields: {
-          source: $intents.source,
-          destination: $intents.destination,
-          asset: $intents.asset,
-          receiver: $intents.receiver,
-          amount: $intents.amount
-        },
-        balances: $context.balances,
-        sourceChain: $context.sourceChain,
-        destinationChain: $context.destinationChain,
-        assetInfo: $context.assetInfo,
-        chains: $context.chains
-      })
+  const store = derived([intents, context], ([$intents, $context]) => {
+    const errors = validateAll({
+      formFields: {
+        source: $intents.source,
+        destination: $intents.destination,
+        asset: $intents.asset,
+        receiver: $intents.receiver,
+        amount: $intents.amount
+      },
+      balances: $context.balances,
+      sourceChain: $context.sourceChain,
+      destinationChain: $context.destinationChain,
+      assetInfo: $context.assetInfo,
+      chains: $context.chains
+    })
 
-      return {
-        errors,
-        isValid: Object.keys(errors).length === 0
-      }
+    return {
+      errors,
+      isValid: Object.keys(errors).length === 0
     }
-  )
+  })
 
   function validateAll({
-                         formFields,
-                         balances,
-                         sourceChain,
-                         destinationChain,
-                         assetInfo,
-                         chains
-                       }: {
+    formFields,
+    balances,
+    sourceChain,
+    destinationChain,
+    assetInfo,
+    chains
+  }: {
     formFields: FormFields
     balances: Array<Balance>
     sourceChain: Chain | undefined
@@ -105,13 +102,17 @@ export function createValidationStore(
     })
   }
 
-  function validateBusinessRules(formFields: FormFields, context: ValidationContext): FieldErrors {
+  function validateBusinessRules(formFields: FormFields, _context: ValidationContext): FieldErrors {
     if (Object.values(formFields).every(value => !value)) {
       return {}
     }
     const errors: FieldErrors = {}
 
-    if (formFields.source && formFields.destination && formFields.source === formFields.destination) {
+    if (
+      formFields.source &&
+      formFields.destination &&
+      formFields.source === formFields.destination
+    ) {
       errors.destination = "Source and destination chains must be different"
     }
 
@@ -126,7 +127,7 @@ export function createValidationStore(
         const unsubscribe = store.subscribe(value => {
           currentState = value
         })
-        const isValid = currentState!.isValid
+        const isValid = currentState?.isValid
         unsubscribe()
         resolve(isValid)
       })

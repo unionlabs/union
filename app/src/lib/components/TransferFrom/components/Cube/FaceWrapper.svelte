@@ -1,9 +1,9 @@
 <script>
-  export let visible = true;
-  export let width = 0; // Pixel value
-  export let height = 0; // Pixel value
-  export let translateZ = 0;
-  export let rotateY = "0deg";
+export let visible = true
+export let width = 0 // Pixel value
+export let height = 0 // Pixel value
+export let translateZ = 0
+export let rotateY = "0deg"
 </script>
 
 <div

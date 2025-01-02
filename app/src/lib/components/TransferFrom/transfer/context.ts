@@ -15,7 +15,7 @@ type BalanceRecord = {
   symbol: string
 }
 
-type BalancesList = BalanceRecord[]
+type BalancesList = Array<BalanceRecord>
 
 export interface ContextStore {
   chains: Array<Chain>

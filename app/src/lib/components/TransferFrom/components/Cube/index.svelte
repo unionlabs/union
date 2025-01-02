@@ -1,61 +1,70 @@
 <script lang="ts">
-  import type {CubeFaces} from "$lib/components/TransferFrom/types.ts";
-  import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte";
-  import {deviceWidth} from "$lib/utilities/device.ts";
+import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
+import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte"
+import { deviceWidth } from "$lib/utilities/device.ts"
 
-  let currentRotation = {x: 0, y: 0};
+let currentRotation = { x: 0, y: 0 }
 
-  const facePositions = {
-    intentFace: 0,
-    chainsFace: -90,
-    verifyFace: -180,
-    assetsFace: -270,
-    sourceFace: -90,
-    destinationFace: -90,
-  } as const;
+const facePositions = {
+  intentFace: 0,
+  chainsFace: -90,
+  verifyFace: -180,
+  assetsFace: -270,
+  sourceFace: -90,
+  destinationFace: -90
+} as const
 
-  let currentVisibleFace: "source" | "destination" = "source";
-  $: currentVisibleFace = "source";
+let currentVisibleFace: "source" | "destination" = "source"
+$: currentVisibleFace = "source"
 
-  function findShortestRotation(current: number, target: number): number {
-    const revolution = Math.floor(current / 360) * 360;
-    const normalizedTarget = target + revolution;
+function findShortestRotation(current: number, target: number): number {
+  const revolution = Math.floor(current / 360) * 360
+  const normalizedTarget = target + revolution
 
-    let diff = normalizedTarget - current;
-    if (Math.abs(diff) > 180) {
-      diff = diff > 0 ? diff - 360 : diff + 360;
-    }
-    return current + diff;
+  let diff = normalizedTarget - current
+  if (Math.abs(diff) > 180) {
+    diff = diff > 0 ? diff - 360 : diff + 360
   }
+  return current + diff
+}
 
-  function rotateTo(face: CubeFaces) {
-    console.log('rotate to: ', face)
-    const targetRotation = facePositions[face];
+function rotateTo(face: CubeFaces) {
+  console.log("rotate to: ", face)
+  const targetRotation = facePositions[face]
 
-    // Calculate the new Y rotation
-    const newY = findShortestRotation(currentRotation.y, targetRotation);
-    currentRotation = {x: 0, y: newY};
+  // Calculate the new Y rotation
+  const newY = findShortestRotation(currentRotation.y, targetRotation)
+  currentRotation = { x: 0, y: newY }
 
-    // Update visibility state
-    if (face === "sourceFace") {
-      currentVisibleFace = "source";
-    } else if (face === "destinationFace") {
-      currentVisibleFace = "destination";
-    }
+  // Update visibility state
+  if (face === "sourceFace") {
+    currentVisibleFace = "source"
+  } else if (face === "destinationFace") {
+    currentVisibleFace = "destination"
   }
+}
 
-  //If we want to be specific we can set each w
-  $: width =
-    $deviceWidth >= 1536 ? 400 : // 2xl breakpoint
-      $deviceWidth >= 1280 ? 400 : // xl breakpoint
-        $deviceWidth >= 1024 ? 400 : // lg breakpoint
-          $deviceWidth >= 768 ? 400 :  // md breakpoint
-            $deviceWidth >= 640 ? 400 :  // sm breakpoint
-              300; // Default for smaller screens
+//If we want to be specific we can set each w
+$: width =
+  $deviceWidth >= 1536
+    ? 400
+    : // 2xl breakpoint
+      $deviceWidth >= 1280
+      ? 400
+      : // xl breakpoint
+        $deviceWidth >= 1024
+        ? 400
+        : // lg breakpoint
+          $deviceWidth >= 768
+          ? 400
+          : // md breakpoint
+            $deviceWidth >= 640
+            ? 400
+            : // sm breakpoint
+              300 // Default for smaller screens
 
-  $: height = width * 1.5;
-  $: translateZ = width / 2;
-
+$: height = width * 1.5
+$: translateZ = width / 2
 </script>
 
 <div class="h-screen w-full flex items-center justify-center bg-black perspective-[2000px]">

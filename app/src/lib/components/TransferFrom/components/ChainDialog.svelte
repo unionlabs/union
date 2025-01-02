@@ -1,20 +1,20 @@
 <script lang="ts">
-  import type {Readable} from "svelte/store";
-  import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
+import type { Readable } from "svelte/store"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 
-  interface Props {
-    context: Readable<ContextStore>
-    kind: "source" | "destination"
-    dialogOpen: boolean
-    onChainSelect: (type: 'source' | 'destination', chain: string) => void
-    onClose: () => void
-  }
+interface Props {
+  context: Readable<ContextStore>
+  kind: "source" | "destination"
+  dialogOpen: boolean
+  onChainSelect: (type: "source" | "destination", chain: string) => void
+  onClose: () => void
+}
 
-  export let context: Props["context"]
-  export let kind: Props["kind"]
-  export let dialogOpen: Props["dialogOpen"]
-  export let onChainSelect: Props["onChainSelect"]
-  export let onClose: Props["onClose"]
+export let context: Props["context"]
+export let kind: Props["kind"]
+export let dialogOpen: Props["dialogOpen"]
+export let onChainSelect: Props["onChainSelect"]
+export let onClose: Props["onClose"]
 </script>
 
 {#if dialogOpen && $context?.chains}
