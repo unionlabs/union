@@ -1,11 +1,8 @@
-// use prost::Message;
-// use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
-// use rs_merkle::{algorithms::Sha256, Hasher};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
-    hash::{hash_v2::HexUnprefixed, H160, H256},
+    primitives::{encoding::HexUnprefixed, H160, H256},
 };
 
 use crate::{types::block_id::BlockId, version::consensus::Consensus};
@@ -181,6 +178,7 @@ pub mod proto {
         bounded::BoundedIntError,
         errors::{InvalidLength, MissingField},
         google::protobuf::timestamp::TryFromTimestampError,
+        primitives::FixedBytesError,
         required,
     };
 
@@ -218,23 +216,23 @@ pub mod proto {
         #[error("invalid timestamp")]
         Timestamp(#[source] TryFromTimestampError),
         #[error("invalid last commit hash")]
-        LastCommitHash(#[source] InvalidLength),
+        LastCommitHash(#[source] FixedBytesError),
         #[error("invalid data hash")]
-        DataHash(#[source] InvalidLength),
+        DataHash(#[source] FixedBytesError),
         #[error("invalid validators hash")]
-        ValidatorsHash(#[source] InvalidLength),
+        ValidatorsHash(#[source] FixedBytesError),
         #[error("invalid next validators hash")]
-        NextValidatorsHash(#[source] InvalidLength),
+        NextValidatorsHash(#[source] FixedBytesError),
         #[error("invalid consensus hash")]
-        ConsensusHash(#[source] InvalidLength),
+        ConsensusHash(#[source] FixedBytesError),
         #[error("invalid app hash")]
-        AppHash(#[source] InvalidLength),
+        AppHash(#[source] FixedBytesError),
         #[error("invalid last results hash")]
-        LastResultsHash(#[source] InvalidLength),
+        LastResultsHash(#[source] FixedBytesError),
         #[error("invalid evidence hash")]
-        EvidenceHash(#[source] InvalidLength),
+        EvidenceHash(#[source] FixedBytesError),
         #[error("invalid proposer address")]
-        ProposerAddress(#[source] InvalidLength),
+        ProposerAddress(#[source] FixedBytesError),
     }
 
     impl TryFrom<protos::cometbft::types::v1::Header> for Header {

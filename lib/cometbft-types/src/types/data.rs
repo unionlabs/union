@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{bytes::Bytes, hash::hash_v2::Base64};
+use unionlabs::primitives::{encoding::Base64, Bytes};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Data {

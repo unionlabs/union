@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    hash::{hash_v2::HexUnprefixed, H160},
+    primitives::{encoding::HexUnprefixed, H160},
 };
 
 use crate::crypto::public_key::PublicKey;

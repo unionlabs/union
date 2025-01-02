@@ -22,8 +22,8 @@ pub struct Hash<const BYTES: usize, E: Encoding = HexPrefixed> {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("invalid length (expected {expected_len}, found {found_len})")]
 pub struct FixedBytesError {
-    expected_len: usize,
-    found_len: usize,
+    pub expected_len: usize,
+    pub found_len: usize,
 }
 
 impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for Hash<BYTES, E> {

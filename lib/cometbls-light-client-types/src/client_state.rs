@@ -1,4 +1,4 @@
-use unionlabs::{hash::H256, ibc::core::client::height::Height};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 
 use crate::chain_id::ChainId;
 
@@ -30,8 +30,9 @@ pub struct ClientState {
 pub mod proto {
     use unionlabs::{
         errors::{InvalidLength, MissingField},
-        hash::H256,
-        impl_proto_via_try_from_into, required,
+        impl_proto_via_try_from_into,
+        primitives::H256,
+        required,
     };
 
     use crate::{client_state::ClientState, ChainId};

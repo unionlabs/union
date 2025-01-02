@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{bytes::Bytes, hash::hash_v2::Base64};
+use unionlabs::primitives::{encoding::Base64, Bytes};
 
 // TODO: These are fixed sizes, not arbitrary bytes
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

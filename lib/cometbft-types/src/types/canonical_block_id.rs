@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{hash_v2::HexUnprefixed, H256};
+use unionlabs::primitives::{encoding::HexUnprefixed, H256};
 
 use crate::types::canonical_part_set_header::CanonicalPartSetHeader;
 

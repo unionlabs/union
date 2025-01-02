@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    bytes::Bytes,
-    hash::{
-        hash_v2::{Base64, HexUnprefixed},
-        H256,
-    },
+use unionlabs::primitives::{
+    encoding::{Base64, HexUnprefixed},
+    Bytes, H256,
 };
 
 use crate::crypto::proof::Proof;
@@ -18,10 +15,7 @@ pub struct TxProof {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::{
-        errors::{InvalidLength, MissingField},
-        required,
-    };
+    use unionlabs::{errors::MissingField, primitives::FixedBytesError, required};
 
     use crate::{crypto::proof, types::tx_proof::TxProof};
 
@@ -52,7 +46,7 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid root_hash")]
-        RootHash(#[from] InvalidLength),
+        RootHash(#[from] FixedBytesError),
         #[error("invalid proof")]
         Proof(#[from] proof::proto::Error),
     }

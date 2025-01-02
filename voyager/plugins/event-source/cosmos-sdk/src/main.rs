@@ -20,13 +20,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument};
 use unionlabs::{
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
         channel::{self},
         client::height::Height,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    option_unwrap, parse_wasm_client_type, ErrorReporter, WasmClientType,
+    option_unwrap, parse_wasm_client_type,
+    primitives::{encoding::HexUnprefixed, H256},
+    ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     call::{Call, WaitForHeight},

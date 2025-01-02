@@ -2,10 +2,9 @@ use std::{num::NonZeroU64, str::FromStr};
 
 use cosmos_sdk_event::event;
 use unionlabs::{
-    bytes::Bytes,
-    hash::hash_v2::HexUnprefixed,
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    primitives::{encoding::HexUnprefixed, Bytes},
 };
 
 event! {
