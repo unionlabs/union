@@ -440,7 +440,7 @@ macro_rules! option_unwrap {
 pub(crate) use option_unwrap;
 
 impl<const BYTES: usize, E: unionlabs_primitives::encoding::Encoding> Ssz
-    for unionlabs_primitives::Hash<BYTES, E>
+    for unionlabs_primitives::FixedBytes<BYTES, E>
 where
     [u8; BYTES]: Ssz,
 {

@@ -5,7 +5,7 @@ use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{encoding::HexUnprefixed, FixedBytesError, Hash, H256};
+use crate::primitives::{encoding::HexUnprefixed, FixedBytes, FixedBytesError, H256};
 
 #[derive(
     macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
@@ -107,7 +107,7 @@ impl FromStr for AccountAddress {
         // Check if the address is in LONG form. If it is not, this is only allowed for
         // special addresses, in which case we check it is in proper SHORT form.
         match address.len() {
-            32 => Ok(Self(Hash::new(address.try_into().unwrap()))),
+            32 => Ok(Self(FixedBytes::new(address.try_into().unwrap()))),
             1 => {
                 let b = address[0];
 
@@ -124,7 +124,7 @@ impl FromStr for AccountAddress {
 
                 address[32 - 1] = b;
 
-                Ok(Self(Hash::new(address)))
+                Ok(Self(FixedBytes::new(address)))
             }
             len => Err(AccountAddressParseError::InvalidLength(len)),
         }

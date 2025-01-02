@@ -1,10 +1,10 @@
 use macros::model;
 
-use crate::primitives::{encoding::Base64, FixedBytesError, Hash};
+use crate::primitives::{encoding::Base64, FixedBytes, FixedBytesError};
 
 #[model(proto(raw(protos::cosmos::crypto::secp256k1::PubKey), into, from))]
 pub struct PubKey {
-    pub key: Hash<33, Base64>,
+    pub key: FixedBytes<33, Base64>,
 }
 
 impl TryFrom<protos::cosmos::crypto::secp256k1::PubKey> for PubKey {

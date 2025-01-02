@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[repr(transparent)]
-pub struct Hash<const BYTES: usize, E: Encoding = HexPrefixed> {
+pub struct FixedBytes<const BYTES: usize, E: Encoding = HexPrefixed> {
     // we abuse deprecated a bit here to make sure this field doesn't get read anywhere it shouldn't, enforcing usage of the constructor instead - this makes sure that the const {} block gets monomorphized, causing a post-mono error if BYTES is 0.
     #[deprecated = "this field should never be used directly, use Hash::new() to construct this type and .get{_mut}() to access the data"]
     arr: [u8; BYTES],
@@ -21,38 +21,41 @@ pub struct Hash<const BYTES: usize, E: Encoding = HexPrefixed> {
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("invalid length (expected {expected_len}, found {found_len})")]
+#[allow(clippy::module_name_repetitions)]
 pub struct FixedBytesError {
     pub expected_len: usize,
     pub found_len: usize,
 }
 
-impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for FixedBytes<BYTES, E> {
     fn as_ref(&self) -> &[u8] {
         self.get()
     }
 }
 
-impl<const BYTES: usize, E: Encoding> AsMut<[u8]> for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> AsMut<[u8]> for FixedBytes<BYTES, E> {
     fn as_mut(&mut self) -> &mut [u8] {
         self.get_mut()
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Clone for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> Clone for FixedBytes<BYTES, E> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Copy for Hash<BYTES, E> {}
+impl<const BYTES: usize, E: Encoding> Copy for FixedBytes<BYTES, E> {}
 
-impl<const BYTES: usize, E: Encoding> core::hash::Hash for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> core::hash::Hash for FixedBytes<BYTES, E> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         core::hash::Hash::hash(self.get(), state);
     }
 }
 
-impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::Index<I> for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::Index<I>
+    for FixedBytes<BYTES, E>
+{
     type Output = <I as SliceIndex<[u8]>>::Output;
 
     fn index(&self, index: I) -> &Self::Output {
@@ -61,14 +64,14 @@ impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::Index<I> f
 }
 
 impl<const BYTES: usize, E: Encoding, I: SliceIndex<[u8]>> core::ops::IndexMut<I>
-    for Hash<BYTES, E>
+    for FixedBytes<BYTES, E>
 {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.get_mut()[index]
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
     pub const BITS_LEN: usize = BYTES * 8;
     pub const BYTES_LEN: usize = BYTES;
 
@@ -117,14 +120,14 @@ impl<const BYTES: usize, E: Encoding> Hash<BYTES, E> {
 
     #[must_use = "converting a hash to a hash with a different encoding has no effect"]
     #[inline]
-    pub fn into_encoding<E2: Encoding>(&self) -> Hash<BYTES, E2> {
-        Hash::new(*self.get())
+    pub fn into_encoding<E2: Encoding>(&self) -> FixedBytes<BYTES, E2> {
+        FixedBytes::new(*self.get())
     }
 
     #[must_use = "converting a hash to a hash with a different encoding has no effect"]
     #[inline]
-    pub fn as_encoding<E2: Encoding>(&self) -> &Hash<BYTES, E2> {
-        Hash::new_ref(self.get())
+    pub fn as_encoding<E2: Encoding>(&self) -> &FixedBytes<BYTES, E2> {
+        FixedBytes::new_ref(self.get())
     }
 
     #[must_use]
@@ -133,44 +136,44 @@ impl<const BYTES: usize, E: Encoding> Hash<BYTES, E> {
     }
 }
 
-impl<const BYTES: usize, E: Encoding> fmt::Debug for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> fmt::Debug for FixedBytes<BYTES, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("Hash<{BYTES}>({self})"))
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Display for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> Display for FixedBytes<BYTES, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         E::fmt(self.get(), f)
     }
 }
 
-impl<const BYTES: usize, E: Encoding, RhsE: Encoding> PartialEq<Hash<BYTES, RhsE>>
-    for Hash<BYTES, E>
+impl<const BYTES: usize, E: Encoding, RhsE: Encoding> PartialEq<FixedBytes<BYTES, RhsE>>
+    for FixedBytes<BYTES, E>
 {
-    fn eq(&self, other: &Hash<BYTES, RhsE>) -> bool {
+    fn eq(&self, other: &FixedBytes<BYTES, RhsE>) -> bool {
         self.get() == other.get()
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Eq for Hash<BYTES, E> {}
+impl<const BYTES: usize, E: Encoding> Eq for FixedBytes<BYTES, E> {}
 
-impl<const BYTES: usize, E: Encoding, RhsE: Encoding> PartialOrd<Hash<BYTES, RhsE>>
-    for Hash<BYTES, E>
+impl<const BYTES: usize, E: Encoding, RhsE: Encoding> PartialOrd<FixedBytes<BYTES, RhsE>>
+    for FixedBytes<BYTES, E>
 {
-    fn partial_cmp(&self, other: &Hash<BYTES, RhsE>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &FixedBytes<BYTES, RhsE>) -> Option<Ordering> {
         self.get().partial_cmp(other.get())
     }
 }
 
-impl<const BYTES: usize, E: Encoding> Ord for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> Ord for FixedBytes<BYTES, E> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.get().cmp(other.get())
     }
 }
 
 #[cfg(feature = "serde")]
-impl<const BYTES: usize, E: Encoding> serde::Serialize for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> serde::Serialize for FixedBytes<BYTES, E> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -190,7 +193,7 @@ impl<const BYTES: usize, E: Encoding> serde::Serialize for Hash<BYTES, E> {
 }
 
 #[cfg(feature = "serde")]
-impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for Hash<BYTES, E> {
+impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for FixedBytes<BYTES, E> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -233,7 +236,7 @@ impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for Hash<BYTE
     }
 }
 
-impl<const BYTES: usize, E: Encoding> FromStr for Hash<BYTES, E> {
+impl<const BYTES: usize, E: Encoding> FromStr for FixedBytes<BYTES, E> {
     type Err = E::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -253,13 +256,13 @@ impl<const BYTES: usize, E: Encoding> FromStr for Hash<BYTES, E> {
 //     FixedBytesError(#[from] FixedBytesError),
 // }
 
-impl<E: Encoding, const BYTES: usize> Default for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> Default for FixedBytes<BYTES, E> {
     fn default() -> Self {
         Self::new([0_u8; BYTES])
     }
 }
 
-impl<'a, E: Encoding, const BYTES: usize> IntoIterator for &'a Hash<BYTES, E> {
+impl<'a, E: Encoding, const BYTES: usize> IntoIterator for &'a FixedBytes<BYTES, E> {
     type Item = &'a u8;
     type IntoIter = core::slice::Iter<'a, u8>;
 
@@ -268,7 +271,7 @@ impl<'a, E: Encoding, const BYTES: usize> IntoIterator for &'a Hash<BYTES, E> {
     }
 }
 
-impl<E: Encoding, const BYTES: usize> IntoIterator for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> IntoIterator for FixedBytes<BYTES, E> {
     type Item = u8;
     type IntoIter = core::array::IntoIter<u8, BYTES>;
 
@@ -277,7 +280,7 @@ impl<E: Encoding, const BYTES: usize> IntoIterator for Hash<BYTES, E> {
     }
 }
 
-impl<E: Encoding, const BYTES: usize> TryFrom<Vec<u8>> for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> TryFrom<Vec<u8>> for FixedBytes<BYTES, E> {
     type Error = FixedBytesError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
@@ -291,7 +294,7 @@ impl<E: Encoding, const BYTES: usize> TryFrom<Vec<u8>> for Hash<BYTES, E> {
     }
 }
 
-impl<E: Encoding, const BYTES: usize> TryFrom<&Vec<u8>> for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> TryFrom<&Vec<u8>> for FixedBytes<BYTES, E> {
     type Error = FixedBytesError;
 
     fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
@@ -306,7 +309,7 @@ impl<E: Encoding, const BYTES: usize> TryFrom<&Vec<u8>> for Hash<BYTES, E> {
     }
 }
 
-impl<E: Encoding, const BYTES: usize> TryFrom<&[u8]> for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> TryFrom<&[u8]> for FixedBytes<BYTES, E> {
     type Error = FixedBytesError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -320,26 +323,26 @@ impl<E: Encoding, const BYTES: usize> TryFrom<&[u8]> for Hash<BYTES, E> {
     }
 }
 
-impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>> for Vec<u8> {
-    fn from(value: Hash<BYTES, E>) -> Self {
+impl<E: Encoding, const BYTES: usize> From<FixedBytes<BYTES, E>> for Vec<u8> {
+    fn from(value: FixedBytes<BYTES, E>) -> Self {
         value.get().into()
     }
 }
 
-impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>> for [u8; BYTES] {
-    fn from(value: Hash<BYTES, E>) -> Self {
+impl<E: Encoding, const BYTES: usize> From<FixedBytes<BYTES, E>> for [u8; BYTES] {
+    fn from(value: FixedBytes<BYTES, E>) -> Self {
         *value.get()
     }
 }
 
-impl<E: Encoding, const BYTES: usize> From<[u8; BYTES]> for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> From<[u8; BYTES]> for FixedBytes<BYTES, E> {
     fn from(value: [u8; BYTES]) -> Self {
         Self::new(value)
     }
 }
 
 #[cfg(feature = "rlp")]
-impl<E: Encoding, const BYTES: usize> rlp::Decodable for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> rlp::Decodable for FixedBytes<BYTES, E> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         rlp.decoder()
             .decode_value(|bytes| match bytes.len().cmp(&BYTES) {
@@ -353,7 +356,7 @@ impl<E: Encoding, const BYTES: usize> rlp::Decodable for Hash<BYTES, E> {
 }
 
 #[cfg(feature = "rlp")]
-impl<E: Encoding, const BYTES: usize> rlp::Encodable for Hash<BYTES, E> {
+impl<E: Encoding, const BYTES: usize> rlp::Encodable for FixedBytes<BYTES, E> {
     fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
         s.encoder().encode_value(self.as_ref());
     }
@@ -374,7 +377,7 @@ mod tests {
 
     #[test]
     fn hex_prefixed() {
-        type H = Hash<4, HexPrefixed>;
+        type H = FixedBytes<4, HexPrefixed>;
 
         let decoded = H::from_str(HEX_PREFIXED_STR).unwrap();
 
@@ -385,7 +388,7 @@ mod tests {
 
     #[test]
     fn hex_prefixed_too_long() {
-        type H = Hash<3, HexPrefixed>;
+        type H = FixedBytes<3, HexPrefixed>;
 
         assert_eq!(
             H::from_str(HEX_PREFIXED_STR),
@@ -397,7 +400,7 @@ mod tests {
 
     #[test]
     fn hex_prefixed_too_short() {
-        type H = Hash<5, HexPrefixed>;
+        type H = FixedBytes<5, HexPrefixed>;
 
         assert_eq!(
             H::from_str(HEX_PREFIXED_STR),
@@ -409,7 +412,7 @@ mod tests {
 
     #[test]
     fn hex_unprefixed() {
-        type H = Hash<4, HexUnprefixed>;
+        type H = FixedBytes<4, HexUnprefixed>;
 
         let decoded = H::from_str(HEX_UNPREFIXED_STR).unwrap();
 
@@ -420,7 +423,7 @@ mod tests {
 
     #[test]
     fn hex_unprefixed_too_long() {
-        type H = Hash<3, HexUnprefixed>;
+        type H = FixedBytes<3, HexUnprefixed>;
 
         assert_eq!(
             H::from_str(HEX_UNPREFIXED_STR),
@@ -430,7 +433,7 @@ mod tests {
 
     #[test]
     fn hex_unprefixed_too_short() {
-        type H = Hash<5, HexUnprefixed>;
+        type H = FixedBytes<5, HexUnprefixed>;
 
         assert_eq!(
             H::from_str(HEX_UNPREFIXED_STR),
@@ -440,7 +443,7 @@ mod tests {
 
     #[test]
     fn base64() {
-        type H = Hash<4, Base64>;
+        type H = FixedBytes<4, Base64>;
 
         let decoded = H::from_str(BASE64_STR).unwrap();
 
@@ -451,7 +454,7 @@ mod tests {
 
     #[test]
     fn base64_too_long() {
-        type H = Hash<3, Base64>;
+        type H = FixedBytes<3, Base64>;
 
         assert_eq!(
             H::from_str(BASE64_STR),
@@ -464,7 +467,7 @@ mod tests {
 
     #[test]
     fn base64_too_short() {
-        type H = Hash<5, Base64>;
+        type H = FixedBytes<5, Base64>;
 
         assert_eq!(
             H::from_str(BASE64_STR),
@@ -479,6 +482,6 @@ mod tests {
     fn new_ref() {
         let arr = &[1, 2, 3];
 
-        assert_eq!(<Hash<3, HexPrefixed>>::new_ref(arr).get(), arr);
+        assert_eq!(<FixedBytes<3, HexPrefixed>>::new_ref(arr).get(), arr);
     }
 }

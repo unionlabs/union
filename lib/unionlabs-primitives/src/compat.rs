@@ -28,7 +28,7 @@ impl From<primitive_types::H160> for crate::H160 {
 
 #[cfg(feature = "generic-array-compat")]
 impl<E: crate::encoding::Encoding, const BYTES: usize>
-    From<generic_array::GenericArray<u8, typenum::U<BYTES>>> for crate::Hash<BYTES, E>
+    From<generic_array::GenericArray<u8, typenum::U<BYTES>>> for crate::FixedBytes<BYTES, E>
 where
     typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
 {
@@ -42,12 +42,12 @@ where
 }
 
 #[cfg(feature = "generic-array-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::Hash<BYTES, E>>
+impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::FixedBytes<BYTES, E>>
     for generic_array::GenericArray<u8, typenum::U<BYTES>>
 where
     typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
 {
-    fn from(arr: crate::Hash<BYTES, E>) -> Self {
+    fn from(arr: crate::FixedBytes<BYTES, E>) -> Self {
         generic_array::GenericArray::<u8, typenum::U<BYTES>>::from_slice(arr.get()).to_owned()
     }
 }
@@ -56,7 +56,7 @@ where
 impl<EBytes: crate::encoding::Encoding> TryFrom<crate::Bytes<EBytes>>
     for alloy_primitives::Address
 {
-    type Error = crate::hash::FixedBytesError;
+    type Error = crate::fixed_bytes::FixedBytesError;
 
     fn try_from(value: crate::Bytes<EBytes>) -> Result<Self, Self::Error> {
         <crate::H160>::try_from(value).map(Self::from)
@@ -86,7 +86,7 @@ impl<E: crate::encoding::Encoding> From<crate::H160<E>> for alloy_primitives::Ad
 
 #[cfg(feature = "alloy-primitives-compat")]
 impl<E: crate::encoding::Encoding, const BYTES: usize> From<alloy_primitives::FixedBytes<BYTES>>
-    for crate::Hash<BYTES, E>
+    for crate::FixedBytes<BYTES, E>
 {
     fn from(value: alloy_primitives::FixedBytes<BYTES>) -> Self {
         value.0.into()
@@ -94,10 +94,10 @@ impl<E: crate::encoding::Encoding, const BYTES: usize> From<alloy_primitives::Fi
 }
 
 #[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::Hash<BYTES, E>>
+impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::FixedBytes<BYTES, E>>
     for alloy_primitives::FixedBytes<BYTES>
 {
-    fn from(value: crate::Hash<BYTES, E>) -> Self {
+    fn from(value: crate::FixedBytes<BYTES, E>) -> Self {
         value.get().into()
     }
 }

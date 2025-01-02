@@ -59,7 +59,7 @@ use core::{
 
 use hex_literal::hex;
 use typenum::{NonZero, Unsigned};
-use unionlabs::primitives::Hash;
+use unionlabs::primitives::FixedBytes;
 
 pub use crate::{
     attestation::Attestation, attestation_data::AttestationData,
@@ -96,7 +96,7 @@ pub use crate::{
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-pub struct Version(pub Hash<4>);
+pub struct Version(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -106,7 +106,7 @@ pub struct Version(pub Hash<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-pub struct DomainType(pub Hash<4>);
+pub struct DomainType(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -116,7 +116,7 @@ pub struct DomainType(pub Hash<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-pub struct ForkDigest(pub Hash<4>);
+pub struct ForkDigest(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -126,23 +126,23 @@ pub struct ForkDigest(pub Hash<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-pub struct Domain(pub Hash<32>);
+pub struct Domain(pub FixedBytes<32>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#domain-types>
 #[rustfmt::skip]
 impl DomainType {
-    pub const BEACON_PROPOSER: Self                = Self(Hash::new(hex!("00000000")));
-    pub const BEACON_ATTESTER: Self                = Self(Hash::new(hex!("01000000")));
-    pub const RANDAO: Self                         = Self(Hash::new(hex!("02000000")));
-    pub const DEPOSIT: Self                        = Self(Hash::new(hex!("03000000")));
-    pub const VOLUNTARY_EXIT: Self                 = Self(Hash::new(hex!("04000000")));
-    pub const SELECTION_PROOF: Self                = Self(Hash::new(hex!("05000000")));
-    pub const AGGREGATE_AND_PROOF: Self            = Self(Hash::new(hex!("06000000")));
-    pub const SYNC_COMMITTEE: Self                 = Self(Hash::new(hex!("07000000")));
-    pub const SYNC_COMMITTEE_SELECTION_PROOF: Self = Self(Hash::new(hex!("08000000")));
-    pub const CONTRIBUTION_AND_PROOF: Self         = Self(Hash::new(hex!("09000000")));
-    pub const BLS_TO_EXECUTION_CHANGE: Self        = Self(Hash::new(hex!("0A000000")));
-    pub const APPLICATION_MASK: Self               = Self(Hash::new(hex!("00000001")));
+    pub const BEACON_PROPOSER: Self                = Self(FixedBytes::new(hex!("00000000")));
+    pub const BEACON_ATTESTER: Self                = Self(FixedBytes::new(hex!("01000000")));
+    pub const RANDAO: Self                         = Self(FixedBytes::new(hex!("02000000")));
+    pub const DEPOSIT: Self                        = Self(FixedBytes::new(hex!("03000000")));
+    pub const VOLUNTARY_EXIT: Self                 = Self(FixedBytes::new(hex!("04000000")));
+    pub const SELECTION_PROOF: Self                = Self(FixedBytes::new(hex!("05000000")));
+    pub const AGGREGATE_AND_PROOF: Self            = Self(FixedBytes::new(hex!("06000000")));
+    pub const SYNC_COMMITTEE: Self                 = Self(FixedBytes::new(hex!("07000000")));
+    pub const SYNC_COMMITTEE_SELECTION_PROOF: Self = Self(FixedBytes::new(hex!("08000000")));
+    pub const CONTRIBUTION_AND_PROOF: Self         = Self(FixedBytes::new(hex!("09000000")));
+    pub const BLS_TO_EXECUTION_CHANGE: Self        = Self(FixedBytes::new(hex!("0A000000")));
+    pub const APPLICATION_MASK: Self               = Self(FixedBytes::new(hex!("00000001")));
 }
 
 /// Minimal config.
@@ -412,24 +412,24 @@ pub struct Config {
 pub const MAINNET: Config = Config {
     preset: preset::MAINNET,
     fork_parameters: ForkParameters {
-        genesis_fork_version: Version(Hash::new([0, 0, 0, 0])),
+        genesis_fork_version: Version(FixedBytes::new([0, 0, 0, 0])),
         genesis_slot: 0,
 
         altair: Fork {
-            version: Version(Hash::new([1, 0, 0, 0])),
+            version: Version(FixedBytes::new([1, 0, 0, 0])),
             epoch: 74_240,
         },
         bellatrix: Fork {
-            version: Version(Hash::new([2, 0, 0, 0])),
+            version: Version(FixedBytes::new([2, 0, 0, 0])),
             epoch: 144_896,
         },
         capella: Fork {
-            version: Version(Hash::new([3, 0, 0, 0])),
+            version: Version(FixedBytes::new([3, 0, 0, 0])),
             epoch: 194_048,
         },
         // TODO: enabled march 13th 2024
         deneb: Fork {
-            version: Version(Hash::new([4, 0, 0, 0])),
+            version: Version(FixedBytes::new([4, 0, 0, 0])),
             epoch: u64::MAX,
         },
     },
@@ -439,27 +439,27 @@ pub const MAINNET: Config = Config {
 pub const MINIMAL: Config = Config {
     preset: preset::MINIMAL,
     fork_parameters: ForkParameters {
-        genesis_fork_version: Version(Hash::new([0, 0, 0, 1])),
+        genesis_fork_version: Version(FixedBytes::new([0, 0, 0, 1])),
         genesis_slot: 0,
 
         altair: Fork {
-            version: Version(Hash::new([1, 0, 0, 1])),
+            version: Version(FixedBytes::new([1, 0, 0, 1])),
             epoch: 0,
         },
 
         bellatrix: Fork {
-            version: Version(Hash::new([2, 0, 0, 1])),
+            version: Version(FixedBytes::new([2, 0, 0, 1])),
             epoch: 0,
         },
 
         capella: Fork {
-            version: Version(Hash::new([3, 0, 0, 1])),
+            version: Version(FixedBytes::new([3, 0, 0, 1])),
             epoch: 0,
         },
 
         // NOTE: dummy data
         deneb: Fork {
-            version: Version(Hash::new([4, 0, 0, 1])),
+            version: Version(FixedBytes::new([4, 0, 0, 1])),
             epoch: 0,
         },
     },
