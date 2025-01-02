@@ -9,7 +9,7 @@ use prost::Message;
 use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{H160, H256},
+    primitives::{H160, H256},
 };
 
 use crate::{error::Error, merkle::calculate_merkle_root};

@@ -30,7 +30,7 @@ use unionlabs::{
         config::{ChainSpec, Mainnet, Minimal},
         ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT,
     },
-    hash::{H160, H256},
+    primitives::{H160, H256},
     ibc::lightclients::ethereum::storage_proof::StorageProof,
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,

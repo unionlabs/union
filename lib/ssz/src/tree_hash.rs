@@ -124,11 +124,11 @@ pub const ZERO_HASHES_MAX_INDEX: usize = 48;
 
 lazy_static::lazy_static! {
     /// Cached zero hashes where `ZERO_HASHES[i]` is the hash of a Merkle tree with 2^i zero leaves.
-    pub static ref ZERO_HASHES: Vec<Vec<u8>> = {
-        let mut hashes = vec![vec![0; 32]; ZERO_HASHES_MAX_INDEX + 1];
+    pub static ref ZERO_HASHES: Vec<H256> = {
+        let mut hashes = vec![H256::default(); ZERO_HASHES_MAX_INDEX + 1];
 
         for i in 0..ZERO_HASHES_MAX_INDEX {
-            hashes[i + 1] = hash_concat(&hashes[i], &hashes[i]).into();
+            hashes[i + 1] = hash_concat(hashes[i].as_ref(), hashes[i].as_ref());
         }
 
         hashes
@@ -136,7 +136,7 @@ lazy_static::lazy_static! {
 }
 
 /// Returns a cached padding node for a given height.
-fn get_zero_hash(height: usize) -> &'static [u8] {
+fn get_zero_hash(height: usize) -> &'static H256 {
     if height <= ZERO_HASHES_MAX_INDEX {
         &ZERO_HASHES[height]
     } else {

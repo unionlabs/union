@@ -358,7 +358,7 @@ impl MerkleHasher {
     /// will be `[0; 32]`.  However, the `zero_hash` for a node at depth 0 will be
     /// `hash(concat([0; 32], [0; 32])))`.
     fn zero_hash(&self, id: usize) -> Preimage<'static> {
-        Preimage::Slice(get_zero_hash(self.depth - (get_depth(id) + 1)))
+        Preimage::Slice(get_zero_hash(self.depth - (get_depth(id) + 1)).get())
     }
 }
 

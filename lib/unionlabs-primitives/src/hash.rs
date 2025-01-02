@@ -7,8 +7,8 @@ use core::{
 };
 
 use crate::{
-    bytes::Bytes,
     encoding::{Encoding, HexPrefixed},
+    Bytes,
 };
 
 #[repr(transparent)]

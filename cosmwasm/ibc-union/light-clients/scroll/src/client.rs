@@ -179,7 +179,7 @@ pub fn verify_header(
 //         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
 //         encoding::{EncodeAs, Proto},
 //         google::protobuf::any::Any,
-//         hash::{H160, H256},
+//         primitives::{H160, H256},
 //         ibc::core::client::height::Height,
 //         uint::U256,
 //     };

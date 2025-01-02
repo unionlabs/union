@@ -11,9 +11,9 @@ use tracing::instrument;
 use unionlabs::{
     self,
     aptos::storage_proof::StorageProof,
-    bytes::Bytes,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
+    primitives::Bytes,
     ErrorReporter,
 };
 use voyager_message::{

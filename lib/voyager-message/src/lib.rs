@@ -29,7 +29,9 @@ use tracing::{
     debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace,
     Instrument,
 };
-use unionlabs::{bytes::Bytes, ibc::core::client::height::Height, traits::Member, ErrorReporter};
+use unionlabs::{
+    ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
+};
 use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
     IbcStorePathKey, QueryHeight, Timestamp,

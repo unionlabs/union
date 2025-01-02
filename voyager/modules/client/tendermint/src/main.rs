@@ -10,9 +10,9 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tracing::{debug, instrument};
 use unionlabs::{
     self,
-    bytes::Bytes,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
+    primitives::Bytes,
     ErrorReporter,
 };
 use voyager_message::{

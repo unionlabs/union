@@ -233,12 +233,14 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            #[cfg(feature = "rlp")]
             impl ::rlp::Encodable for $Struct {
                 fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
                     s.encoder().encode_value(self.as_ref());
                 }
             }
 
+            #[cfg(feature = "rlp")]
             impl ::rlp::Decodable for $Struct {
                 fn decode(rlp: &rlp::Rlp) -> Result<Self, ::rlp::DecoderError> {
                     rlp.decoder()

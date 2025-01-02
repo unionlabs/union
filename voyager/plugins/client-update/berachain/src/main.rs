@@ -17,8 +17,8 @@ use tracing::instrument;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
-    hash::H160,
     ibc::core::commitment::merkle_proof::MerkleProof,
+    primitives::H160,
     ErrorReporter,
 };
 use voyager_message::{

@@ -25,7 +25,7 @@ use unionlabs::{
         },
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    primitives::Bytes,
+    primitives::{Bytes, H256},
     ErrorReporter,
 };
 use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};

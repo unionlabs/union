@@ -23,9 +23,9 @@ use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
-    bytes::Bytes,
     hash::{hash_v2::Base64, H256},
     ibc::core::client::height::Height,
+    primitives::Bytes,
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{

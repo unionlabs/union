@@ -309,12 +309,14 @@ impl Display for U256 {
     }
 }
 
+#[cfg(feature = "rlp")]
 impl rlp::Encodable for U256 {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
         s.encoder().encode_value(&self.to_be_bytes_packed());
     }
 }
 
+#[cfg(feature = "rlp")]
 impl rlp::Decodable for U256 {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         <primitive_types::U256 as rlp::Decodable>::decode(rlp).map(Self)

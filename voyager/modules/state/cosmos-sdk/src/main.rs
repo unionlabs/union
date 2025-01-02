@@ -23,7 +23,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
-    bytes::Bytes,
     encoding::{DecodeAs, Proto},
     hash::{hash_v2::HexUnprefixed, H256, H64},
     ibc::core::{
@@ -31,7 +30,9 @@ use unionlabs::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    parse_wasm_client_type, ErrorReporter, WasmClientType,
+    parse_wasm_client_type,
+    primitives::Bytes,
+    ErrorReporter, WasmClientType,
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},

@@ -23,7 +23,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
-    hash::{H160, H256},
+    primitives::{H160, H256},
     ErrorReporter,
 };
 use voyager_message::{

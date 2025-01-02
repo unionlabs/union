@@ -28,7 +28,7 @@ use ibc_union_spec::{
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    hash::{hash_v2::HexPrefixed, H256},
+    primitives::{encoding::HexPrefixed, H256},
 };
 
 use crate::{

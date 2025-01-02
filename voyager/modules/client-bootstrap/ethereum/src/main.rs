@@ -17,8 +17,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument, trace};
 use unionlabs::{
-    hash::{H160, H256},
     ibc::core::client::height::Height,
+    primitives::{H160, H256},
     ErrorReporter,
 };
 use voyager_message::{

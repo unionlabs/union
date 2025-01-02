@@ -19,7 +19,8 @@ use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     ensure,
-    hash::{BytesBitIterator, H256},
+    primitives::H256,
+    BytesBitIterator,
 };
 
 use crate::{

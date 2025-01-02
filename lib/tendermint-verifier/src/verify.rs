@@ -12,7 +12,7 @@ use cometbft_types::{
 use tendermint_light_client_types::Fraction;
 use unionlabs::{
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::H160,
+    primitives::H160,
 };
 
 use crate::{

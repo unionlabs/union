@@ -1,5 +1,3 @@
-use crate::H160;
-
 #[cfg(feature = "primitive-types-compat")]
 impl From<crate::H256> for primitive_types::H256 {
     fn from(value: crate::H256) -> Self {
@@ -79,6 +77,7 @@ impl<E: crate::encoding::Encoding> From<alloy_primitives::Address> for crate::H1
     }
 }
 
+#[cfg(feature = "alloy-primitives-compat")]
 impl<E: crate::encoding::Encoding> From<crate::H160<E>> for alloy_primitives::Address {
     fn from(value: crate::H160<E>) -> Self {
         value.get().into()

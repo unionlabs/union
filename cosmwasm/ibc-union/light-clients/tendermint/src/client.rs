@@ -12,11 +12,11 @@ use unionlabs::{
     bounded::BoundedI64,
     encoding::{DecodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
         client::height::Height,
         commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 use crate::{

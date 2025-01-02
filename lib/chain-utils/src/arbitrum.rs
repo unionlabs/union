@@ -10,7 +10,7 @@ use tracing::{debug, instrument};
 use unionlabs::{
     bounded::BoundedU32,
     google::protobuf::any::Any,
-    hash::{H160, H256},
+    primitives::{H160, H256},
     ibc::{
         core::client::height::Height,
         lightclients::{

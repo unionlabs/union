@@ -2,8 +2,8 @@ use cometbls_light_client_types::ClientState;
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    primitives::{encoding::HexUnprefixed, H256},
 };
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};

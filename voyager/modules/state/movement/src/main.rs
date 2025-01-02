@@ -17,9 +17,8 @@ use unionlabs::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
-    bytes::Bytes,
-    primitives::H256,
     ibc::core::client::height::Height,
+    primitives::{Bytes, H256},
     ErrorReporter,
 };
 use voyager_message::{

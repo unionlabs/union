@@ -1,4 +1,4 @@
-use unionlabs::{hash::H160, ibc::core::client::height::Height, uint::U256};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160, uint::U256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

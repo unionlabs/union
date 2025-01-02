@@ -119,7 +119,7 @@ pub fn merkleize_padded(bytes: &[u8], min_leaves: usize) -> H256 {
         for i in 0..parent_nodes {
             let (left, right) = match (chunks.get(i * 2), chunks.get(i * 2 + 1)) {
                 (Ok(left), Ok(right)) => (left, right),
-                (Ok(left), Err(_)) => (left, get_zero_hash(height)),
+                (Ok(left), Err(_)) => (left, get_zero_hash(height).get().as_slice()),
                 // Deriving `parent_nodes` from `chunks.len()` has ensured that we never encounter the
                 // scenario where we expect two nodes but there are none.
                 (Err(_), Err(_)) => unreachable!("Parent must have one child"),
@@ -279,7 +279,7 @@ mod test {
                 let min_nodes = 2usize.pow(ZERO_HASHES_MAX_INDEX as u32);
                 assert_eq!(
                     merkleize_padded(&input, min_nodes),
-                    get_zero_hash(ZERO_HASHES_MAX_INDEX)
+                    *get_zero_hash(ZERO_HASHES_MAX_INDEX)
                 );
             }
         };

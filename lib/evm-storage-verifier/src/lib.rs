@@ -5,7 +5,7 @@ use rlp::RlpDecodable;
 use trie_db::{Trie, TrieDBBuilder};
 use unionlabs::{
     ensure,
-    hash::{H160, H256},
+    primitives::{H160, H256},
     uint::U256,
 };
 

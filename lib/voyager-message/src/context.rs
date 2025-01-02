@@ -28,9 +28,7 @@ use tracing::{
     debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace, warn,
     Instrument,
 };
-use unionlabs::{
-    bytes::Bytes, ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter,
-};
+use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
 use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 

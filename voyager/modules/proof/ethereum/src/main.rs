@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
-    ethereum::ibc_commitment_key, hash::H160, ibc::core::client::height::Height, uint::U256,
+    ethereum::ibc_commitment_key, ibc::core::client::height::Height, primitives::H160, uint::U256,
     ErrorReporter,
 };
 use voyager_message::{
