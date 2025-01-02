@@ -11,6 +11,10 @@ command = "biome"
 args    = ["--stdio"]
 command = "emmet-language-server"
 
+[language-server.vscode-solidity-server]
+args    = ["--stdio"]
+command = "./evm/node_modules/vscode-solidity-server/dist/cli/server.js"
+
 [language-server.tailwindcss-ls]
 args    = ["--stdio"]
 command = "tailwindcss-language-server"
@@ -24,6 +28,11 @@ config.provideFormatter    = true
 [language-server.vscode-html-language-server]
 args    = ["--stdio"]
 command = "vscode-html-language-server"
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "vscode-solidity-server" }]
+name             = "solidity"
 
 [[language]]
 auto-format      = true
