@@ -1,33 +1,29 @@
-use cosmwasm_std::{Deps, DepsMut, Env};
+use cometbls_light_client::client::CometblsLightClient;
+use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ethereum_light_client::client::{do_verify_membership, do_verify_non_membership};
+use evm_in_cosmos_light_client_types::{
+    client_state::ClientState, consensus_state::ConsensusState, header::Header,
+};
+use ibc_union_light_client::IbcClient;
+use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::ConsensusStatePath;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
-    encoding::{DecodeAs, EncodeAs, Proto},
+    encoding::{DecodeAs, EncodeAs, Json, Proto},
     ibc::core::{
         client::{genesis_metadata::GenesisMetadata, height::Height},
         commitment::merkle_path::MerklePath,
     },
-    ics24::{ClientConsensusStatePath, Path},
 };
 
 use crate::errors::Error;
-
-type WasmClientState = wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
-type WasmL1ConsensusState = wasm::consensus_state::ConsensusState<
-    cometbls_light_client_types::consensus_state::ConsensusState,
->;
-type WasmL1ClientState =
-    wasm::client_state::ClientState<cometbls_light_client_types::client_state::ClientState>;
-type WasmL2ConsensusState =
-    wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
 
 pub struct EvmInCosmosLightClient;
 
 impl IbcClient for EvmInCosmosLightClient {
     type Error = Error;
 
-    type CustomQuery = UnionCustomQuery;
+    type CustomQuery = Empty;
 
     type Header = Header;
 
@@ -37,75 +33,111 @@ impl IbcClient for EvmInCosmosLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type Encoding = Proto;
+    type Encoding = Json;
 
     fn verify_membership(
-        deps: Deps<Self::CustomQuery>,
-        height: Height,
-        _delay_time_period: u64,
-        _delay_block_period: u64,
-        proof: Vec<u8>,
-        mut path: MerklePath,
-        value: ics008_wasm_client::StorageState,
-    ) -> Result<(), IbcClientError<Self>> {
-        let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
-        let client_state: WasmClientState = read_client_state(deps)?;
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        let client_state = ctx.read_self_client_state()?;
 
-        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
+        let storage_root = consensus_state.ibc_storage_root;
 
-        // This storage root is verified during the header update, so we don't need to verify it again.
-        let storage_root = consensus_state.data.ibc_storage_root;
-
-        let storage_proof =
-            StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
-
-        match value {
-            StorageState::Occupied(value) => {
-                do_verify_membership(path, storage_root, storage_proof, value)
-                    .map_err(Error::EthereumLightClient)?
-            }
-            StorageState::Empty => do_verify_non_membership(path, storage_root, storage_proof)
-                .map_err(Error::EthereumLightClient)?,
-        }
+        ethereum_light_client::client::verify_membership(key, storage_root, storage_proof, value)
+            .map_err(Error::EthereumLightClient)?;
 
         Ok(())
     }
 
+    fn verify_non_membership(
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        let client_state = ctx.read_self_client_state()?;
+
+        let storage_root = consensus_state.ibc_storage_root;
+
+        ethereum_light_client::client::verify_non_membership(key, storage_root, storage_proof)
+            .map_err(Error::EthereumLightClient)?;
+
+        Ok(())
+    }
+
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+        consensus_state.timestamp
+    }
+
+    fn get_latest_height(client_state: &Self::ClientState) -> u64 {
+        client_state.latest_slot
+    }
+
+    fn status(_client_state: &Self::ClientState) -> Status {
+        // FIXME: expose the ctx to this call to allow threading this call to L1
+        // client. generally, we want to thread if a client is an L2 so always
+        // provide the ctx?
+        // let client_state: WasmClientState = read_client_state(deps)?;
+        // let l1_client_state = query_client_state::<WasmL1ClientState>(
+        //     deps,
+        //     env,
+        //     client_state.data.l1_client_id.clone(),
+        // )
+        // .map_err(Error::CustomQuery)?;
+
+        // if l1_client_state.data.frozen_height != Height::default() {
+        //     return Ok(Status::Frozen);
+        // }
+
+        // let Some(_) = read_consensus_state::<Self>(deps, &client_state.latest_height)? else {
+        //     return Ok(Status::Expired);
+        // };
+
+        // Ok(Status::Active)
+        Status::Active
+    }
+
+    fn verify_creation(
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+        Ok(())
+    }
+
     fn verify_header(
-        deps: Deps<Self::CustomQuery>,
-        env: Env,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
-    ) -> Result<(), IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps)?;
-        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
-            deps,
-            &env,
-            client_state.data.l1_client_id.clone(),
-            header.l1_height,
-        )
-        .map_err(Error::CustomQuery)?;
-        let client_consensus_state_path = Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_state.data.l2_client_id.parse().unwrap(),
-            height: Height {
-                revision_number: 0,
-                revision_height: header.l2_slot,
-            },
-        });
+    ) -> Result<
+        (u64, Self::ClientState, Self::ConsensusState),
+        ibc_union_light_client::IbcClientError<Self>,
+    > {
+        let client_state = ctx.read_self_client_state()?;
+        let l1_consensus_state: cometbls_light_client_types::ConsensusState = ctx
+            .read_consensus_state::<CometblsLightClient>(
+            client_state.l1_client_id,
+            header.l1_height.height(),
+        )?;
+        let consensus_state_path = ConsensusStatePath {
+            client_id: client_state.l2_client_id,
+            height: header.l2_slot,
+        }
+        .key();
         // The ethereum consensus state is stored in proto-encoded wasm-wrapped form.
-        let normalized_l2_consensus_state = WasmL2ConsensusState {
-            data: header.l2_consensus_state,
-        };
         // Verify inclusion of the ethereum consensus state against union.
         ics23::ibc_api::verify_membership(
             &header.l2_inclusion_proof,
             &SDK_SPECS,
-            &l1_consensus_state.data.app_hash,
+            &l1_consensus_state.app_hash,
             &[
                 b"ibc".to_vec(),
                 client_consensus_state_path.to_string().into_bytes(),
             ],
-            normalized_l2_consensus_state.encode_as::<Proto>(),
+            header.l2_consensus_state.encode_as::<Ethabi>(),
         )
         .map_err(Error::VerifyL2Membership)?;
         Ok(())
@@ -187,25 +219,7 @@ impl IbcClient for EvmInCosmosLightClient {
         Err(Error::Unimplemented.into())
     }
 
-    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps)?;
-        let l1_client_state = query_client_state::<WasmL1ClientState>(
-            deps,
-            env,
-            client_state.data.l1_client_id.clone(),
-        )
-        .map_err(Error::CustomQuery)?;
-
-        if l1_client_state.data.frozen_height != Height::default() {
-            return Ok(Status::Frozen);
-        }
-
-        let Some(_) = read_consensus_state::<Self>(deps, &client_state.latest_height)? else {
-            return Ok(Status::Expired);
-        };
-
-        Ok(Status::Active)
-    }
+    //
 
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,

@@ -28,9 +28,9 @@ pub mod ethabi {
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                evm_storage_root: value.evm_storage_root.get().into(),
-                ibc_storage_root: value.root.hash.get().into(),
-                timestamp: value.timestamp.as_unix_nanos(),
+                evm_state_root: value.evm_state_root.get().into(),
+                ibc_storage_root: value.ibc_storage_root.get().into(),
+                timestamp: value.timestamp,
             }
         }
     }
@@ -38,10 +38,9 @@ pub mod ethabi {
     impl From<SolConsensusState> for ConsensusState {
         fn from(value: SolConsensusState) -> Self {
             Self {
-                evm_storage_root: H256::new(value.evm_storage_root.0).into(),
+                evm_state_root: H256::new(value.evm_state_root.0).into(),
                 ibc_storage_root: H256::new(value.ibc_storage_root.0).into(),
-                timestamp: Timestamp::try_from_unix_nanos(value.timestamp.into())
-                    .expect("impossible"),
+                timestamp: value.timestamp,
             }
         }
     }

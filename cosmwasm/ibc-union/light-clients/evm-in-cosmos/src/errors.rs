@@ -1,10 +1,10 @@
 use cosmwasm_std::StdError;
-use union_ibc_light_client::IbcClientError;
+use ibc_union_light_client::IbcClientError;
 use unionlabs::ibc::core::client::height::Height;
 
 use crate::client::EvmInCosmosLightClient;
 
-#[derive(thiserror::Error, Debug, Clone, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
@@ -17,8 +17,9 @@ pub enum Error {
 
     #[error("verify l2 membership error")]
     VerifyL2Membership(#[from] ics23::ibc_api::VerifyMembershipError),
-    // #[error(transparent)]
-    // EthereumLightClient(#[from] ethereum_light_client::errors::Error),
+
+    #[error(transparent)]
+    EthereumLightClient(#[from] ethereum_light_client::errors::Error),
 }
 
 impl From<Error> for IbcClientError<EvmInCosmosLightClient> {

@@ -201,6 +201,7 @@ arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
 cometbls-light-client-types = { path = "lib/cometbls-light-client-types", default-features = false }
+cometbls-light-client= { path = "cosmwasm/ibc-union/light-clients/cometbls", default-features = false }
 
 scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
 
@@ -209,10 +210,11 @@ ethereum-light-client-types = { path = "lib/ethereum-light-client-types", defaul
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
-berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
-scroll-api                   = { path = "lib/scroll-api", default-features = false }
-scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
+berachain-light-client-types     = { path = "lib/berachain-light-client-types", default-features = false }
+evm-in-cosmos-light-client-types = { path = "lib/evm-in-cosmos-light-client-types", default-features = false }
+scroll-api                       = { path = "lib/scroll-api", default-features = false }
+scroll-codec                     = { path = "lib/scroll-codec", default-features = false }
+scroll-rpc                       = { path = "lib/scroll-rpc", default-features = false }
 
 evm-state-lens-light-client-types = { path = "lib/state-lens/evm-light-client-types", default-features = false }
 
