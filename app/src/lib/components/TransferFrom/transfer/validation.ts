@@ -1,8 +1,8 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
 import type { IntentStore, FormFields } from "./intents.ts"
-import type { Chain } from "$lib/types"
-import type { Balance, ContextStore } from "$lib/components/TransferFrom/transfer/context"
+import type { Chain, ChainAsset } from "$lib/types"
+import type { BalanceRecord, ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
 import { safeParse } from "valibot"
 
@@ -18,10 +18,11 @@ export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
 }
 
 interface ValidationContext {
-  balances: Array<Balance>
+  balances: Array<BalanceRecord>
   sourceChain: Chain | undefined
   destinationChain: Chain | undefined
-  assetInfo: Balance | undefined
+  assetBalance: BalanceRecord | undefined
+  assetInfo: ChainAsset | undefined
   chains: Array<Chain>
 }
 
@@ -41,6 +42,7 @@ export function createValidationStore(
       balances: $context.balances,
       sourceChain: $context.sourceChain,
       destinationChain: $context.destinationChain,
+      assetBalance: $context.assetBalance,
       assetInfo: $context.assetInfo,
       chains: $context.chains
     })
@@ -56,24 +58,26 @@ export function createValidationStore(
     balances,
     sourceChain,
     destinationChain,
+    assetBalance,
     assetInfo,
     chains
   }: {
     formFields: FormFields
-    balances: Array<Balance>
-    sourceChain: Chain | undefined
+    balances: Array<BalanceRecord>
+    sourceChain: Chain
     destinationChain: Chain | undefined
-    assetInfo: Balance | undefined
+    assetBalance: BalanceRecord | undefined
+    assetInfo: ChainAsset | undefined
     chains: Array<Chain>
   }): FieldErrors {
     if (Object.values(formFields).every(value => !value)) {
       return {}
     }
 
-    // First, try to parse with the schema including balance if available
     const parseInput = {
       ...formFields,
-      balance: assetInfo && "balance" in assetInfo ? assetInfo.balance.toString() : undefined
+      balance: assetBalance?.balance.toString(),
+      decimals: assetInfo?.decimals
     }
 
     const schemaResult = safeParse(transferSchema, parseInput)
@@ -92,22 +96,24 @@ export function createValidationStore(
       }, {} as FieldErrors)
     }
 
-    // Only proceed with business rules if schema validation passes
-    return validateBusinessRules(formFields, {
+    // Only proceed with rules if schema validation passes
+    return validateRules(formFields, {
       balances,
       sourceChain,
       destinationChain,
+      assetBalance,
       assetInfo,
       chains
     })
   }
 
-  function validateBusinessRules(formFields: FormFields, _context: ValidationContext): FieldErrors {
+  function validateRules(formFields: FormFields, _context: ValidationContext): FieldErrors {
     if (Object.values(formFields).every(value => !value)) {
       return {}
     }
     const errors: FieldErrors = {}
 
+    //Example of a rule
     if (
       formFields.source &&
       formFields.destination &&
@@ -123,13 +129,12 @@ export function createValidationStore(
     subscribe: store.subscribe,
     validate: () => {
       return new Promise(resolve => {
-        let currentState: ValidationStore
+        let currentState: ValidationStore | undefined
         const unsubscribe = store.subscribe(value => {
           currentState = value
+          unsubscribe()
+          resolve(currentState?.isValid ?? false)
         })
-        const isValid = currentState?.isValid
-        unsubscribe()
-        resolve(isValid)
       })
     }
   }

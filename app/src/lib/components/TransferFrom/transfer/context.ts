@@ -4,28 +4,28 @@ import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
 import { userBalancesQuery } from "$lib/queries/balance"
-import type { Chain, UserAddresses } from "$lib/types"
+import type { Chain, ChainAsset, UserAddresses } from "$lib/types"
 import { useQueryClient } from "@tanstack/svelte-query"
 import type { Address } from "$lib/wallet/types"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
-type BalanceRecord = {
+export type BalanceRecord = {
   balance: bigint
   gasToken: boolean
   address: Address
   symbol: string
 }
 
-type BalancesList = Array<BalanceRecord>
+export type BalancesList = Array<BalanceRecord>
 
 export interface ContextStore {
   chains: Array<Chain>
   userAddress: UserAddresses
   sourceChain: Chain
   destinationChain: Chain | undefined
-  // Changed from Array<BalancesStore> to just BalancesList
   balances: BalancesList
-  // Changed from BalancesStore to single BalanceRecord
-  assetInfo: BalanceRecord | undefined
+  assetBalance: BalanceRecord | undefined
+  assetInfo: ChainAsset | undefined
 }
 
 export function createContextStore(intents: IntentStore): Readable<ContextStore> {
@@ -64,12 +64,12 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
       userAddress,
       userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })
     ],
-    ([intentsValue, _userAddressValue, rawBalances]) => {
-      const sourceChain = chains.find(chain => chain.chain_id === intentsValue.source)
+    ([$intents, _userAddressValue, $rawBalances]) => {
+      const sourceChain = chains.find(chain => chain.chain_id === $intents.source)
       if (!sourceChain) return []
 
       const chainIndex = chains.findIndex(c => c.chain_id === sourceChain.chain_id)
-      const balanceResult = rawBalances[chainIndex]
+      const balanceResult = $rawBalances[chainIndex]
 
       if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
         console.log("No balances fetched yet for selected chain")
@@ -83,18 +83,26 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     }
   ) as Readable<BalancesList>
 
-  const assetInfo = derived([balances, intents], ([balancesValue, intentsValue]) =>
-    balancesValue.find(x => x?.address === intentsValue.asset)
+  const assetBalance = derived([balances, intents], ([$balances, $intents]) =>
+    $balances.find(x => x?.address === $intents.asset)
   )
 
+  const assetInfo = derived([sourceChain, intents], ([$sourceChain, $intents]) => {
+    if ($intents.asset) {
+      return getSupportedAsset($sourceChain, $intents.asset)
+    }
+    return undefined
+  })
+
   return derived(
-    [userAddress, sourceChain, destinationChain, balances, assetInfo],
-    ([$userAddress, $sourceChain, $destinationChain, $balances, $assetInfo]) => ({
+    [userAddress, sourceChain, destinationChain, balances, assetBalance, assetInfo],
+    ([$userAddress, $sourceChain, $destinationChain, $balances, $assetBalance, $assetInfo]) => ({
       chains,
       userAddress: $userAddress,
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
       balances: $balances,
+      assetBalance: $assetBalance,
       assetInfo: $assetInfo
     })
   )

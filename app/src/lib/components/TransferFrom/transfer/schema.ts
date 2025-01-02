@@ -6,7 +6,7 @@ import {
   isValidBech32Address
 } from "@unionlabs/client"
 import * as v from "valibot"
-import { isHex } from "viem"
+import { isHex, parseUnits } from "viem"
 
 const chainId = [...evmChainId, ...cosmosChainId, ...aptosChainId]
 
@@ -47,22 +47,34 @@ export const transferSchema = v.pipe(
       v.trim(),
       v.title("Balance"),
       v.description("Current balance for the asset")
-    )
+    ),
+    decimals: v.fallback(v.number(), 0)
   }),
   v.forward(
     v.partialCheck(
-      [["amount"], ["balance"]],
+      [["amount"], ["balance"], ["decimals"]],
       input => {
-        const amount = Number.parseFloat(input.amount)
-        const balance = Number.parseFloat(input.balance)
-
-        if (Number.isNaN(amount) || Number.isNaN(balance) || amount <= 0) {
+        try {
+          const parseAmount = (amount: string, dec: number): bigint => {
+            try {
+              if (dec === 0) {
+                const wholeNumber = Math.floor(Number.parseFloat(amount)).toString()
+                return parseUnits(wholeNumber, 0)
+              }
+              return parseUnits(amount, dec)
+            } catch {
+              return 0n
+            }
+          }
+          const amountBigInt = parseAmount(input.amount, input.decimals)
+          const balanceBigInt = BigInt(input.balance)
+          return amountBigInt <= balanceBigInt
+        } catch (error) {
+          console.error("Validation error:", error)
           return false
         }
-
-        return amount <= balance
       },
-      "Amount must be a valid number greater than 0 and not exceed available balance"
+      "Amount must be greater than 0 and not exceed available balance"
     ),
     ["amount"]
   ),

@@ -20,5 +20,5 @@ export let onSelectAsset: Props["onSelectAsset"]
         variant="outline"
         class="border-2 border-white font-bold"
         on:click={onSelectAsset}>
-  {$context?.assetInfo ?? "Select Asset"}
+  {$context?.assetInfo?.display_symbol ? $context?.assetInfo?.display_symbol : $context?.assetBalance?.address ?? "Select Asset"}
 </Button>
