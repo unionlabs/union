@@ -10,7 +10,7 @@ hash-db            = { version = "0.16.0", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
 memory-db          = { version = "0.32.0", default-features = false }
 rlp                = { workspace = true, features = ["derive", "std"] }
-serde-utils        = { workspace = true, default-features = false }
+serde-utils        = { workspace = true }
 sha3               = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }

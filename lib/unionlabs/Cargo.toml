@@ -18,7 +18,7 @@ cosmwasm-std             = { workspace = true, optional = true, features = ["std
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
-generic-array            = "0.14.7"
+generic-array            = { workspace = true }
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
