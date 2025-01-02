@@ -35,7 +35,7 @@
     "mikestead.dotenv",
     "redhat.vscode-yaml",
     "hashhar.gitattributes",
-    "tamasfe.even-better-toml",
+    "bungcip.better-toml",
     "tobermory.es6-string-html",
     "yzhang.markdown-all-in-one",
     "orta.vscode-twoslash-queries",

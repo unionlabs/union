@@ -64,7 +64,6 @@
     "*.css": "tailwindcss",
     ".vscode/*.json": "jsonc"
   },
-  "evenBetterToml.schema.enabled": true,
   "files.exclude": {
     "result": true,
     ".direnv": true
