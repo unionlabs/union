@@ -46,6 +46,7 @@ module ucs03::zkgm_relay {
     const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
+    const E_BATCH_MISMATCH: u64 = 16;
 
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
@@ -133,7 +134,7 @@ module ucs03::zkgm_relay {
     public struct FungibleAssetTransferPacket has copy, drop, store {
         sender: vector<u8>,
         receiver: vector<u8>,
-        sent_token: vector<u8>,
+        sent_token: address,
         sent_token_prefix: u256,
         sent_symbol: string::String,
         sent_name: string::String,
@@ -545,7 +546,7 @@ module ucs03::zkgm_relay {
         let only_maker = (ethabi::decode_uint(&buf, &mut index) == 1);
         let sender = ethabi::decode_bytes(&buf, &mut index);
         let receiver = ethabi::decode_bytes(&buf, &mut index);
-        let sent_token = ethabi::decode_bytes(&buf, &mut index);
+        let sent_token = ethabi::decode_address(&buf, &mut index);
         let sent_symbol = ethabi::decode_string(&buf, &mut index);
         let sent_name = ethabi::decode_string(&buf, &mut index);
         let ask_token = ethabi::decode_bytes(&buf, &mut index);
@@ -1159,16 +1160,17 @@ module ucs03::zkgm_relay {
         timeout_timestamp: u64,
         salt: vector<u8>,
         raw_syscall: vector<u8>,
+        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ) {
         let sender = tx_context::sender(ctx);
-        verify_internal(ibc_store, relay_store, sender, channel_id, 0, raw_syscall, ctx);
+        verify_internal(ibc_store, relay_store, sender, channel_id, 0, raw_syscall, coin, ctx);
         ibc::send_packet(
             ibc_store,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            encode_packet(&ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall })
+            encode_packet(&ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall }),
         );
     }
     fun verify_internal(
@@ -1178,6 +1180,7 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         raw_syscall: vector<u8>,
+        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
         let syscall_packet = decode_syscall(raw_syscall);
@@ -1192,6 +1195,7 @@ module ucs03::zkgm_relay {
                 channel_id,
                 path,
                 decode_fungible_asset_transfer(syscall_packet.packet),
+                coin,
                 ctx
             )
         } else if (syscall_packet.index == SYSCALL_BATCH) {
@@ -1202,6 +1206,7 @@ module ucs03::zkgm_relay {
                 channel_id,
                 path,
                 decode_batch_packet(syscall_packet.packet),
+                coin,
                 ctx
             )
         } else if (syscall_packet.index == SYSCALL_FORWARD) {
@@ -1212,6 +1217,7 @@ module ucs03::zkgm_relay {
                 channel_id,
                 path,
                 decode_forward(syscall_packet.packet),
+                coin,
                 ctx
             )
         } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
@@ -1226,7 +1232,7 @@ module ucs03::zkgm_relay {
             )
         } else {
             abort E_UNKNOWN_SYSCALL
-        }
+        };
     }
 
     fun verify_fungible_asset_transfer(
@@ -1236,9 +1242,15 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         transfer_packet: FungibleAssetTransferPacket,
+        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
-        // TODO: handle it later.
+        let sent_token = transfer_packet.sent_token;
+        let treasury_cap = relay_store.address_to_treasurycap.borrow_mut(sent_token);
+
+        // TODO: implement this further, can't take coin as argument because of that
+        // copy issue
+
     }
 
     fun verify_batch(
@@ -1248,9 +1260,13 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         batch_packet: BatchPacket,
+        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
         let l = vector::length(&batch_packet.syscall_packets);
+        // if (l != vector::length(&coins)) {
+        //     abort E_BATCH_MISMATCH
+        // };
         let mut i = 0;
         while (i < l) {
             verify_internal(
@@ -1260,6 +1276,8 @@ module ucs03::zkgm_relay {
                 channel_id,
                 path,
                 batch_packet.syscall_packets[i],
+                // coins[i],
+                coin,
                 ctx
             );
             i = i + 1;
@@ -1274,6 +1292,7 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         forward_packet: ForwardPacket,
+        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
         verify_internal(
@@ -1283,6 +1302,7 @@ module ucs03::zkgm_relay {
             channel_id,
             update_channel_path(path, forward_packet.channel_id),
             forward_packet.syscall_packet,
+            coin,
             ctx
         );
     }
@@ -2040,7 +2060,7 @@ module ucs03::zkgm_relay {
         let fatp = FungibleAssetTransferPacket {
             sender: b"0xSenderAddress",
             receiver: b"0xReceiverAddress",
-            sent_token: b"0xSentTokenAddress",
+            sent_token: @0xdeadbeef,
             sent_token_prefix: 33344445555,
             sent_symbol: string::utf8(b"SSSSSSSSSSSSSSSYMBOL"),
             sent_name: string::utf8(b"TTTTTTTTTTTToken Name"),
