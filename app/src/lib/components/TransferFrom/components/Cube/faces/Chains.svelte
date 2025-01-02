@@ -4,6 +4,9 @@
   import type {Readable} from "svelte/store";
   import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
   import type {CubeFaces} from "$lib/components/TransferFrom/types.ts";
+  import {Button} from "$lib/components/ui/button";
+  import {truncate} from "$lib/utilities/format.ts";
+  import {formatUnits} from "viem";
 
   interface Props {
     stores: {
@@ -12,17 +15,31 @@
       context: Readable<ContextStore>
     }
     rotateTo: (face: CubeFaces) => void
-    select: "source" | "destination"
+    selected: "source" | "destination"
   }
 
-  export let stores: Props["stores"]
-  export let rotateTo: Props["rotateTo"]
-  export let select: Props["select"]
+  export let stores: Props["stores"];
+  export let rotateTo: Props["rotateTo"];
+  export let selected: Props["selected"];
 
-  $: ({intents, validation, context} = stores)
+  $: ({intents, validation, context} = stores);
+
+  function setChain(selected: "source" | "destination", chainId: string) {
+    intents.updateField(selected, chainId);
+    console.log(selected, chainId);
+    rotateTo("intentFace");
+  }
 </script>
 
-<h2 class="font-supermolot font-bold text-lg mb-4">Select chain</h2>
-{#each $context.chains as chain}
-  <button on:click={() => rotateTo("intentFace")}>{chain.display_name}</button>
-{/each}
+<div class="flex h-full justify-between flex-col gap-4">
+  <div class="flex flex-col gap-2">
+    {#each $context.chains as chain}
+      <Button variant="ghost"
+              class="px-4 py-2 w-full rounded-none flex justify-between items-center"
+              on:click={() => setChain(selected, chain.chain_id)}
+      >{chain.display_name}
+      </Button>
+    {/each}
+  </div>
+  <Button on:click={() => rotateTo("intentFace")}>Back</Button>
+</div>

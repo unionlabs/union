@@ -15,12 +15,10 @@
   export let onSelectAsset: Props["onSelectAsset"]
 </script>
 
-<Button
-        type="button"
+<Button type="button"
         size="sm"
         variant="outline"
-        class="border-2 border-white min-w-[150px]"
-        on:click={onSelectAsset}
->
-  {$context?.assetInfo ?? "Select asset"}
+        class="border-2 border-white font-bold"
+        on:click={onSelectAsset}>
+  {$context?.assetInfo ?? "Select Asset"}
 </Button>

@@ -22,7 +22,7 @@
           variant="outline"
           type="button"
           size="sm"
-          class="border-2 border-white  min-w-[150px] font-bold"
+          class="border-2 border-white font-bold"
           on:click={getSourceChain}
   >
     {$context?.sourceChain?.display_name.split(" ")[0]}
@@ -31,9 +31,9 @@
           variant="outline"
           type="button"
           size="sm"
-          class="border-2 border-white min-w-[150px] font-bold"
+          class="border-2 border-white font-bold"
           on:click={getDestinationChain}
   >
-    {$context?.destinationChain?.display_name.split(" ")[0] ?? "To"}
+    {$context?.destinationChain?.display_name.split(" ")[0] ?? "To chain"}
   </Button>
 </div>

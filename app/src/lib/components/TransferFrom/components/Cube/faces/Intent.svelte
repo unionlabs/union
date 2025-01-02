@@ -1,6 +1,6 @@
 <script lang="ts">
   import Direction from "$lib/components/TransferFrom/components/Direction.svelte";
-  import AssetDialog from "$lib/components/TransferFrom/components/AssetDialog.svelte";
+  import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte";
   import type {Readable} from "svelte/store";
   import type {IntentStore} from "$lib/components/TransferFrom/transfer/intents.ts";
   import type {ValidationStoreAndMethods} from "$lib/components/TransferFrom/transfer/validation.ts";
@@ -20,22 +20,13 @@
   export let stores: Props["stores"]
   export let rotateTo: Props["rotateTo"]
 
-  $: ({intents, validation, context} = stores)
+  let {intents, validation, context} = stores
 </script>
 
 <div class="flex flex-col justify-between w-full h-full">
   <div class="flex flex-col gap-4">
-    <Direction
-            {context}
-            {intents}
-            getSourceChain={() => rotateTo("sourceFace")}
-            getDestinationChain={() => rotateTo("destinationFace")}
-    />
-    <AssetDialog
-            {context}
-            {intents}
-            onSelectAsset={() => rotateTo("assetsFace")}
-    />
+    <Direction {context} {intents} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
+    <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
     <div class="flex flex-col gap-1">
       <input
               id="amount"
@@ -44,7 +35,7 @@
               minlength={1}
               maxlength={64}
               required={true}
-              disabled={false}
+              disabled={!$context.assetInfo}
               autocorrect="off"
               placeholder="0.00"
               spellcheck="false"
@@ -68,7 +59,7 @@
               id="receiver"
               name="receiver"
               required={true}
-              disabled={false}
+              disabled={!$context.destinationChain}
               autocorrect="off"
               spellcheck="false"
               autocomplete="off"

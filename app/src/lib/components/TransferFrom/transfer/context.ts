@@ -8,32 +8,24 @@ import type { Chain, UserAddresses } from "$lib/types"
 import { useQueryClient } from "@tanstack/svelte-query"
 import type { Address } from "$lib/wallet/types"
 
-export type AddressBalance = {
+type BalanceRecord = {
   balance: bigint
   gasToken: boolean
   address: Address
   symbol: string
 }
 
-export type NamedBalance = {
-  balance: bigint
-  address: string
-  name: string | null
-  symbol: string
-  gasToken: boolean
-}
-
-export type EmptyBalance = {}
-
-export type Balance = AddressBalance | NamedBalance | EmptyBalance
+type BalancesList = BalanceRecord[]
 
 export interface ContextStore {
   chains: Array<Chain>
   userAddress: UserAddresses
-  sourceChain: Chain | undefined
+  sourceChain: Chain
   destinationChain: Chain | undefined
-  balances: Array<Balance>
-  assetInfo: Balance | undefined
+  // Changed from Array<BalancesStore> to just BalancesList
+  balances: BalancesList
+  // Changed from BalancesStore to single BalanceRecord
+  assetInfo: BalanceRecord | undefined
 }
 
 export function createContextStore(intents: IntentStore): Readable<ContextStore> {
@@ -47,19 +39,20 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     return (filter ? data.filter(filter) : data) as T
   }
 
-  // Chain data
   const chains = queryData<Array<Chain>>(["chains"], chain => chain.enabled_staging)
 
-  // User address data
   const userAddress = derived(
     [userAddrCosmos, userAddrEvm, userAddressAptos],
     ([cosmos, evm, aptos]) => ({ evm, aptos, cosmos })
   ) as Readable<UserAddresses>
 
-  // Chain selections
-  const sourceChain = derived(intents, intentsValue =>
-    chains.find(chain => chain.chain_id === intentsValue.source)
-  )
+  const sourceChain = derived(intents, intentsValue => {
+    const chain = chains.find(chain => chain.chain_id === intentsValue.source)
+    if (!chain) {
+      throw new Error(`No chain found for source ${intentsValue.source}`)
+    }
+    return chain
+  })
 
   const destinationChain = derived(intents, intentsValue =>
     chains.find(chain => chain.chain_id === intentsValue.destination)
@@ -88,7 +81,7 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
         balance: BigInt(balance.balance)
       }))
     }
-  )
+  ) as Readable<BalancesList>
 
   const assetInfo = derived([balances, intents], ([balancesValue, intentsValue]) =>
     balancesValue.find(x => x?.address === intentsValue.asset)

@@ -1,5 +1,5 @@
 <script>
-  export let visible = true
+  export let visible = true;
   export let width = 0; // Pixel value
   export let height = 0; // Pixel value
   export let translateZ = 0;
@@ -7,8 +7,11 @@
 </script>
 
 <div
-        class="absolute bg-neutral-900 flex flex-col items-center p-4 border-2 {visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}}"
-        style={`width: ${width}px; height: ${height}px; transform: rotateY(${rotateY}) translateZ(${translateZ}px);;`}
+        class="absolute bg-neutral-900 flex flex-col items-center border-2"
+        class:opacity-100={visible}
+        class:opacity-0={!visible}
+        class:pointer-events-none={!visible}
+        style={`width: ${width}px; height: ${height}px; transform: rotateY(${rotateY}) translateZ(${translateZ}px);`}
 >
   <slot />
 </div>

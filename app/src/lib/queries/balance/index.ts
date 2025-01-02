@@ -9,15 +9,7 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
-export function userBalancesQuery({
-  userAddr,
-  chains,
-  connected = true
-}: {
-  userAddr: UserAddresses
-  chains: Array<Chain>
-  connected?: boolean
-}) {
+export function userBalancesQuery({userAddr, chains, connected = true}: { userAddr: UserAddresses, chains: Array<Chain>, connected?: boolean }) {
   return createQueries({
     queries: chains.map(chain => ({
       queryKey: [
