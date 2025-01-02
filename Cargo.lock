@@ -4892,6 +4892,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
+name = "evm-in-cosmos-light-client"
+version = "0.1.0"
+dependencies = [
+ "cometbls-light-client-types",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "protos",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "evm-in-cosmos-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "ethereum-light-client-types",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "evm-state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [

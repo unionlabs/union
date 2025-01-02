@@ -1,29 +1,11 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{do_verify_membership, do_verify_non_membership};
-use ics008_wasm_client::{
-    storage_utils::{
-        read_client_state, read_consensus_state, save_consensus_state, update_client_state,
-    },
-    IbcClient, IbcClientError, Status, StorageState,
-};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::{
-        query_client_state, query_consensus_state, UnionCustomQuery,
-    },
     encoding::{DecodeAs, EncodeAs, Proto},
-    ibc::{
-        core::{
-            client::{genesis_metadata::GenesisMetadata, height::Height},
-            commitment::merkle_path::MerklePath,
-        },
-        lightclients::{
-            ethereum::{self, storage_proof::StorageProof},
-            evm_in_cosmos::{
-                client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            },
-            wasm,
-        },
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::merkle_path::MerklePath,
     },
     ics24::{ClientConsensusStatePath, Path},
 };

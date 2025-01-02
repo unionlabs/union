@@ -85,7 +85,7 @@ members = [
   "cosmwasm/ibc-union/light-clients/arbitrum",
   "cosmwasm/ibc-union/light-clients/berachain",
   "cosmwasm/ibc-union/light-clients/cometbls",
-  # "cosmwasm/ibc-union/light-clients/evm-in-cosmos",
+  "cosmwasm/ibc-union/light-clients/evm-in-cosmos",
   # "cosmwasm/ibc-union/light-clients/scroll",
   "cosmwasm/ibc-union/light-clients/tendermint",
   # "cosmwasm/ibc-union/light-clients/linea",
@@ -167,6 +167,7 @@ members = [
 
   "lib/ibc-union-spec",
   "lib/ibc-classic-spec",
+  "lib/evm-in-cosmos-light-client-types",
 ]
 
 [workspace.package]

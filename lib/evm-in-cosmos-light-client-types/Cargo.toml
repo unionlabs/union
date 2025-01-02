@@ -1,0 +1,24 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "evm-in-cosmos-light-client-types"
+repository.workspace   = true
+version                = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy                       = { workspace = true, features = ["sol-types"], optional = true }
+beacon-api-types            = { workspace = true }
+ethereum-light-client-types = { workspace = true }
+protos                      = { workspace = true, optional = true, features = ["union+ibc+lightclients+evmincosmos+v1"] }
+serde                       = { workspace = true, optional = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true }
+
+[features]
+default = []
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+proto   = ["dep:protos"]
+serde   = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]
