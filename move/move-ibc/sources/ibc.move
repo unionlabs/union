@@ -591,9 +591,7 @@ module ibc::ibc {
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
-            event::emit(
-                ClientUpdated { client_id, client_type: client_type, height }
-            );
+            event::emit(ClientUpdated { client_id, client_type: client_type, height });
 
             i = i + 1;
         };
