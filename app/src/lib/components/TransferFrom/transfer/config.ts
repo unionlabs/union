@@ -1,12 +1,11 @@
-import type { RawTransferIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type {FormFields} from "$lib/components/TransferFrom/transfer/intents.ts"
 
 export const TRANSFER_DEBUG = true
 
-export const defaultParams: RawTransferIntents = {
+export const defaultParams: FormFields = {
   source: "union-testnet-8",
   destination: "",
-  asset: "muno",
+  asset: "",
   receiver: "",
   amount: "",
-  isValid: false
 }

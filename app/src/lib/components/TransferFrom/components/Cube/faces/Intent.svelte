@@ -30,8 +30,7 @@ let { intents, validation, context } = stores
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
     <div class="flex flex-col gap-4">
-      <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
-                 getDestinationChain={() => rotateTo("destinationFace")}/>
+      <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1">
         <input
@@ -41,7 +40,7 @@ let { intents, validation, context } = stores
                 minlength={1}
                 maxlength={64}
                 required={true}
-                disabled={!$context.selectedAsset}
+                disabled={!$context.selectedAsset.balance}
                 autocorrect="off"
                 placeholder="0.00"
                 spellcheck="false"
