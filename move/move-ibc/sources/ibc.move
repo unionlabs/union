@@ -557,9 +557,7 @@ module ibc::ibc {
         );
 
         if (light_client::check_for_misbehaviour(client_type, client_id, client_message)) {
-            event::emit(
-                SubmitMisbehaviour { client_id, client_type: client_type }
-            );
+            event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
             return
         };
 
@@ -620,9 +618,7 @@ module ibc::ibc {
 
         light_client::report_misbehaviour(client_type, client_id, misbehaviour);
 
-        event::emit(
-            SubmitMisbehaviour { client_id, client_type: client_type }
-        );
+        event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
     }
 
     /// Execute the init phase of the channel handshake. `T` is the witness type of the target module that is
@@ -1881,3 +1877,4 @@ module ibc::ibc {
     //     assert!(*channel::chan_counterparty_channel_id(&stored_channel) == string::utf8(b"counterparty-channel-0"), 9003);
     // }
 }
+

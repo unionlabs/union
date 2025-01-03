@@ -22,8 +22,7 @@ module ibc::statelens_lc {
 
     public fun report_misbehaviour(
         _client_id: u32, _misbehaviour: vector<u8>
-    ) {
-    }
+    ) {}
 
     public fun verify_membership(
         _client_id: u32,
