@@ -102,17 +102,26 @@ export function createIntentStore(): IntentStore {
       update(state => {
         let newParams = cleanState({ ...state, [field]: value })
 
-        if (field === "source") {
-          newParams = {
-            ...newParams,
-            asset: ""
-          }
+        const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
+          source: ["asset", "amount"],
+          asset: ["amount"],
+          destination: ["receiver"]
+        } as const
 
-          if (browser) {
-            const url = new URL(window.location.href)
-            url.searchParams.delete("asset")
-            history.replaceState({}, "", url.toString())
-          }
+        const fieldsToReset = resetMapping[field]
+        if (fieldsToReset) {
+          fieldsToReset.forEach(resetField => {
+            newParams = {
+              ...newParams,
+              [resetField]: ""
+            }
+
+            if (browser) {
+              const url = new URL(window.location.href)
+              url.searchParams.delete(resetField)
+              history.replaceState({}, "", url.toString())
+            }
+          })
         }
         debouncedUpdateUrl(newParams)
         return newParams

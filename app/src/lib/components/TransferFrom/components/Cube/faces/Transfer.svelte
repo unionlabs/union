@@ -20,6 +20,8 @@ export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
 let { intents, validation, context } = stores
+
+function transfer() {}
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4">

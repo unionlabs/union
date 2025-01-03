@@ -75,5 +75,7 @@ let { intents, validation, context } = stores
       {/if}
     </div>
   </div>
-  <Button on:click={() => rotateTo("verifyFace")}>Transfer</Button>
+  <Button
+          disabled={!$validation.isValid}
+          on:click={() => rotateTo("verifyFace")}>Transfer</Button>
 </div>

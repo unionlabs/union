@@ -31,14 +31,32 @@ export function createValidationStore(
   context: Readable<ContextStore>
 ): ValidationStoreAndMethods {
   const store = derived([intents, context], ([$intents, $context]) => {
+    const formFields = {
+      source: $intents.source,
+      destination: $intents.destination,
+      asset: $intents.asset,
+      receiver: $intents.receiver,
+      amount: $intents.amount
+    }
+
+    // Check if all required fields have values
+    const hasAllRequiredValues = Object.values(formFields).every(value => Boolean(value))
+
+    // Parse input with schema if all fields are present
+    let schemaValid = false
+    if (hasAllRequiredValues) {
+      const parseInput = {
+        ...formFields,
+        balance: $context.assetBalance?.balance.toString(),
+        decimals: $context.assetInfo?.decimals
+      }
+      const schemaResult = safeParse(transferSchema, parseInput)
+      schemaValid = schemaResult.success
+    }
+
+    // Always validate fields for error display
     const errors = validateAll({
-      formFields: {
-        source: $intents.source,
-        destination: $intents.destination,
-        asset: $intents.asset,
-        receiver: $intents.receiver,
-        amount: $intents.amount
-      },
+      formFields,
       balances: $context.balances,
       sourceChain: $context.sourceChain,
       destinationChain: $context.destinationChain,
@@ -49,7 +67,8 @@ export function createValidationStore(
 
     return {
       errors,
-      isValid: Object.keys(errors).length === 0
+      // isValid only when all fields present, schema valid, and no validation errors
+      isValid: hasAllRequiredValues && schemaValid && Object.keys(errors).length === 0
     }
   })
 
@@ -70,10 +89,6 @@ export function createValidationStore(
     assetInfo: ChainAsset | undefined
     chains: Array<Chain>
   }): FieldErrors {
-    if (Object.values(formFields).every(value => !value)) {
-      return {}
-    }
-
     const parseInput = {
       ...formFields,
       balance: assetBalance?.balance.toString(),
@@ -82,14 +97,12 @@ export function createValidationStore(
 
     const schemaResult = safeParse(transferSchema, parseInput)
 
-    // If schema validation fails, return those errors immediately
+    // If schema validation fails, return those errors
     if (!schemaResult.success) {
       return schemaResult.issues.reduce((acc, issue) => {
         const fieldName = issue.path?.[0]?.key as keyof FormFields
-        if (fieldName && !formFields[fieldName]) {
-          return acc
-        }
-        if (fieldName) {
+        if (fieldName && formFields[fieldName]) {
+          // Only show error if field has a value
           acc[fieldName] = issue.message
         }
         return acc
@@ -108,12 +121,8 @@ export function createValidationStore(
   }
 
   function validateRules(formFields: FormFields, _context: ValidationContext): FieldErrors {
-    if (Object.values(formFields).every(value => !value)) {
-      return {}
-    }
     const errors: FieldErrors = {}
 
-    //Example of a rule
     if (
       formFields.source &&
       formFields.destination &&

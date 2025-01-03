@@ -10,8 +10,6 @@ import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 
 const stores = createTransferStore()
 let { context } = stores
-
-$: console.log($context)
 </script>
 
 <Cube>
