@@ -11,7 +11,9 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
+#[cfg(feature = "bincode")]
 pub enum Bincode {}
+#[cfg(feature = "bincode")]
 impl Encoding for Bincode {}
 
 impl<T> Encode<Ssz> for T
@@ -70,23 +72,26 @@ where
     }
 }
 
+#[cfg(feature = "bincode")]
 impl<T> Encode<Bincode> for T
 where
-    T: serde::Serialize,
+    T: bincode::Encode,
 {
     fn encode(self) -> Vec<u8> {
-        bincode::serialize(&self).expect("bincode serialization should be infallible")
+        bincode::encode_to_vec(self, bincode::config::standard())
+            .expect("bincode encoding should be infallible")
     }
 }
 
+#[cfg(feature = "bincode")]
 impl<T> Decode<Bincode> for T
 where
-    T: serde::de::DeserializeOwned,
+    T: bincode::Decode,
 {
-    type Error = bincode::Error;
+    type Error = bincode::error::DecodeError;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        bincode::deserialize(bytes)
+        bincode::decode_from_slice(bytes, bincode::config::standard()).map(|(t, _)| t)
     }
 }
 

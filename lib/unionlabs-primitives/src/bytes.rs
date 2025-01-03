@@ -180,6 +180,15 @@ impl<Enc: Encoding> bincode::Decode for Bytes<Enc> {
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<'de, Enc: Encoding> bincode::BorrowDecode<'de> for Bytes<Enc> {
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        bincode::Decode::decode(decoder)
+    }
+}
+
 impl<E: Encoding> FromStr for Bytes<E> {
     type Err = E::Error;
 

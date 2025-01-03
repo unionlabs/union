@@ -381,6 +381,15 @@ impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, En
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for FixedBytes<BYTES, Enc> {
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        bincode::Decode::decode(decoder)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex::FromHexError;
