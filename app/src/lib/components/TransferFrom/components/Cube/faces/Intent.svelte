@@ -23,59 +23,66 @@ export let rotateTo: Props["rotateTo"]
 let { intents, validation, context } = stores
 </script>
 
-<div class="flex flex-col justify-between w-full h-full p-4">
-  <div class="flex flex-col gap-4">
-    <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
-               getDestinationChain={() => rotateTo("destinationFace")}/>
-    <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
-    <div class="flex flex-col gap-1">
-      <input
-              id="amount"
-              type="number"
-              name="amount"
-              minlength={1}
-              maxlength={64}
-              required={true}
-              disabled={!$context.assetBalance}
-              autocorrect="off"
-              placeholder="0.00"
-              spellcheck="false"
-              autocomplete="off"
-              inputmode="decimal"
-              data-field="amount"
-              autocapitalize="none"
-              pattern="^[0-9]*[.,]?[0-9]*$"
-              class="p-1 {$validation.errors.amount ? 'border-red-500' : ''}"
-              value={$intents.amount}
-              on:input={event => intents.updateField('amount', event)}
-      />
-      {#if $validation.errors.amount}
-        <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
-      {/if}
-    </div>
+<div class="flex flex-col w-full h-full ">
 
-    <div class="flex flex-col gap-1">
-      <input
-              type="text"
-              id="receiver"
-              name="receiver"
-              required={true}
-              disabled={!$context.destinationChain}
-              autocorrect="off"
-              spellcheck="false"
-              autocomplete="off"
-              data-field="receiver"
-              class="p-1 disabled:bg-black/30 {$validation.errors.receiver ? 'border-red-500' : ''}"
-              placeholder="Enter destination address"
-              value={$intents.receiver}
-              on:input={event => intents.updateField('receiver', event)}
-      />
-      {#if $validation.errors.receiver}
-        <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
-      {/if}
-    </div>
+  <div class="text-white p-2 flex items-center justify-between border-b-2">
+    <span class="font-bold uppercase">Transfer</span>
   </div>
-  <Button
-          disabled={!$validation.isValid}
-          on:click={() => rotateTo("verifyFace")}>Transfer</Button>
+  <div class="flex flex-col h-full w-full justify-between p-4">
+    <div class="flex flex-col gap-4">
+      <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
+                 getDestinationChain={() => rotateTo("destinationFace")}/>
+      <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
+      <div class="flex flex-col gap-1">
+        <input
+                id="amount"
+                type="number"
+                name="amount"
+                minlength={1}
+                maxlength={64}
+                required={true}
+                disabled={!$context.selectedAsset}
+                autocorrect="off"
+                placeholder="0.00"
+                spellcheck="false"
+                autocomplete="off"
+                inputmode="decimal"
+                data-field="amount"
+                autocapitalize="none"
+                pattern="^[0-9]*[.,]?[0-9]*$"
+                class="p-1 {$validation.errors.amount ? 'border-red-500' : ''}"
+                value={$intents.amount}
+                on:input={event => intents.updateField('amount', event)}
+        />
+        {#if $validation.errors.amount}
+          <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
+        {/if}
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <input
+                type="text"
+                id="receiver"
+                name="receiver"
+                required={true}
+                disabled={!$context.destinationChain}
+                autocorrect="off"
+                spellcheck="false"
+                autocomplete="off"
+                data-field="receiver"
+                class="p-1 disabled:bg-black/30 {$validation.errors.receiver ? 'border-red-500' : ''}"
+                placeholder="Enter destination address"
+                value={$intents.receiver}
+                on:input={event => intents.updateField('receiver', event)}
+        />
+        {#if $validation.errors.receiver}
+          <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
+        {/if}
+      </div>
+    </div>
+    <Button
+            disabled={!$validation.isValid}
+            on:click={() => rotateTo("verifyFace")}>Transfer
+    </Button>
+  </div>
 </div>

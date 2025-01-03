@@ -41,7 +41,7 @@ function toggleExpand(chainId: string) {
 <div class="flex flex-col h-full w-full">
   <!-- Title Bar -->
   <div class="text-white p-2 flex items-center justify-between border-b-2">
-    <span class="font-bold">SELECT CHAIN</span>
+    <span class="font-bold uppercase">{selected} chain</span>
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
             on:click={() => rotateTo("intentFace")}

@@ -4,8 +4,7 @@ import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/tra
 import type { Readable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
-import { showUnsupported } from "$lib/stores/user.ts"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import type { AssetListItem } from "$lib/components/TransferFrom/transfer/context.ts"
 import { truncate } from "$lib/utilities/format.ts"
 import { formatUnits } from "viem"
 import { Button } from "$lib/components/ui/button"
@@ -22,7 +21,19 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { intents, validation, context } = stores
+let { intents, context } = stores
+
+$: sortedAssets = [...($context.assetsList ?? [])].sort((a, b) => {
+  if (a.isSupported !== b.isSupported) {
+    return a.isSupported ? -1 : 1
+  }
+  return Number(b.balance.balance - a.balance.balance)
+})
+
+$: getSymbol = (item: AssetListItem) =>
+  item.supportedAsset?.display_symbol ||
+  (item.balance.symbol && item.balance.symbol !== "" ? item.balance.symbol : null) ||
+  item.balance.address
 
 function setAsset(address: string) {
   intents.updateField("asset", address)
@@ -30,36 +41,38 @@ function setAsset(address: string) {
 }
 </script>
 
-<div class="flex flex-col justify-between h-full w-full p-4">
-  {#if $context.balances.length}
+<div class="flex flex-col h-full w-full">
+  <div class="text-white p-2 px-4 flex items-center justify-between border-b-2">
+    <span class="font-bold uppercase">Asset</span>
+    <button
+            class="border-2 h-6 w-6 flex items-center justify-center"
+            on:click={() => rotateTo("intentFace")}
+    >✕
+    </button>
+  </div>
+
+  {#if sortedAssets.length}
     <div class="flex-1 overflow-y-auto">
-      {#each $context.balances as asset}
-        {@const supportedAsset = getSupportedAsset($context.sourceChain, asset.address)}
-        {#if $showUnsupported || supportedAsset}
-          <div class="pb-2 flex flex-col justify-start">
-            <Button
-                    variant="ghost"
-                    class="px-4 py-2 w-full rounded-none flex justify-between items-center"
-                    on:click={() => setAsset(asset.address)}
-            >
-              <div class:opacity-30={!supportedAsset}>
-                {truncate((supportedAsset?.display_symbol || asset?.symbol || ''), 6) || 'Unknown symbol'}
-              </div>
-              <p class="text-lg font-black" class:opacity-30={!supportedAsset}>
-                {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
-              </p>
-            </Button>
-          </div>
-        {/if}
+      {#each sortedAssets as asset}
+        <div class="pb-2 flex flex-col justify-start">
+          <Button
+                  variant="ghost"
+                  class="px-4 py-2 w-full rounded-none flex justify-between items-center"
+                  on:click={() => setAsset(asset.balance.address)}
+          >
+            <div class:opacity-30={!asset.isSupported}>
+              {truncate(getSymbol(asset), 6)}
+            </div>
+            <p class:opacity-30={!asset.isSupported}>
+              {formatUnits(asset.balance.balance, asset.supportedAsset?.decimals ?? 0)}
+            </p>
+          </Button>
+        </div>
       {/each}
     </div>
   {:else}
-    <p>No spendable balances</p>
+    <div class="px-4 p-2">
+      <p>No spendable balances</p>
+    </div>
   {/if}
-
-  <div class="mt-4">
-    <Button on:click={() => rotateTo("intentFace")} class="w-full">
-      Back
-    </Button>
-  </div>
 </div>

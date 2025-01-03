@@ -1,8 +1,12 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
 import type { IntentStore, FormFields } from "./intents.ts"
-import type { Chain, ChainAsset } from "$lib/types"
-import type { BalanceRecord, ContextStore } from "$lib/components/TransferFrom/transfer/context"
+import type { Chain } from "$lib/types"
+import type {
+  BalanceRecord,
+  ContextStore,
+  SelectedAsset
+} from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
 import { safeParse } from "valibot"
 
@@ -19,10 +23,9 @@ export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
 
 interface ValidationContext {
   balances: Array<BalanceRecord>
-  sourceChain: Chain | undefined
+  sourceChain: Chain
   destinationChain: Chain | undefined
-  assetBalance: BalanceRecord | undefined
-  assetInfo: ChainAsset | undefined
+  selectedAsset: SelectedAsset
   chains: Array<Chain>
 }
 
@@ -47,8 +50,8 @@ export function createValidationStore(
     if (hasAllRequiredValues) {
       const parseInput = {
         ...formFields,
-        balance: $context.assetBalance?.balance.toString(),
-        decimals: $context.assetInfo?.decimals
+        balance: $context.selectedAsset.balance?.toString(),
+        decimals: $context.selectedAsset.supported?.decimals
       }
       const schemaResult = safeParse(transferSchema, parseInput)
       schemaValid = schemaResult.success
@@ -60,8 +63,7 @@ export function createValidationStore(
       balances: $context.balances,
       sourceChain: $context.sourceChain,
       destinationChain: $context.destinationChain,
-      assetBalance: $context.assetBalance,
-      assetInfo: $context.assetInfo,
+      selectedAsset: $context.selectedAsset,
       chains: $context.chains
     })
 
@@ -77,22 +79,20 @@ export function createValidationStore(
     balances,
     sourceChain,
     destinationChain,
-    assetBalance,
-    assetInfo,
+    selectedAsset,
     chains
   }: {
     formFields: FormFields
     balances: Array<BalanceRecord>
     sourceChain: Chain
     destinationChain: Chain | undefined
-    assetBalance: BalanceRecord | undefined
-    assetInfo: ChainAsset | undefined
+    selectedAsset: SelectedAsset
     chains: Array<Chain>
   }): FieldErrors {
     const parseInput = {
       ...formFields,
-      balance: assetBalance?.balance.toString(),
-      decimals: assetInfo?.decimals
+      balance: selectedAsset.balance?.toString(),
+      decimals: selectedAsset.supported?.decimals
     }
 
     const schemaResult = safeParse(transferSchema, parseInput)
@@ -114,8 +114,7 @@ export function createValidationStore(
       balances,
       sourceChain,
       destinationChain,
-      assetBalance,
-      assetInfo,
+      selectedAsset,
       chains
     })
   }

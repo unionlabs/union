@@ -20,7 +20,7 @@ interface Props {
 
 export let stores: Props["stores"]
 
-$: ({ intents, validation, context } = stores)
+let { intents, validation, context } = stores
 </script>
 
 <Drawer.Root>
@@ -50,7 +50,11 @@ $: ({ intents, validation, context } = stores)
         </div>
 
         <div class="mb-4">
-          <CollapsibleDisplay data={$context.assetInfo} label="Selected Asset Info" color="text-yellow-500"/>
+          <CollapsibleDisplay data={$context.selectedAsset} label="Selected Asset" color="text-yellow-500"/>
+        </div>
+
+        <div class="mb-4">
+          <CollapsibleDisplay data={$context.assetsList} label="Assets List" color="text-pink-500"/>
         </div>
 
         <div class="mb-4">

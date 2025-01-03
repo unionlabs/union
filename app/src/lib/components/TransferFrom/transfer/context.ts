@@ -8,6 +8,7 @@ import type { Chain, ChainAsset, UserAddresses } from "$lib/types"
 import { useQueryClient } from "@tanstack/svelte-query"
 import type { Address } from "$lib/wallet/types"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import { showUnsupported } from "$lib/stores/user.ts"
 
 export type BalanceRecord = {
   balance: bigint
@@ -18,23 +19,37 @@ export type BalanceRecord = {
 
 export type BalancesList = Array<BalanceRecord>
 
+export interface AssetListItem {
+  balance: BalanceRecord
+  isSupported: boolean
+  supportedAsset?: ChainAsset
+}
+
+export interface SelectedAsset {
+  address: Address | undefined
+  balance: bigint | undefined
+  symbol: string | undefined
+  gasToken: boolean | undefined
+  supported: ChainAsset | undefined
+  raw: BalanceRecord | undefined
+}
+
 export interface ContextStore {
   chains: Array<Chain>
-  userAddress: UserAddresses
   sourceChain: Chain
   destinationChain: Chain | undefined
+  userAddress: UserAddresses
   balances: BalancesList
-  assetBalance: BalanceRecord | undefined
-  assetInfo: ChainAsset | undefined
+  assetsList: Array<AssetListItem>
+  selectedAsset: SelectedAsset
 }
 
 export function createContextStore(intents: IntentStore): Readable<ContextStore> {
   const queryClient = useQueryClient()
-
-  function queryData<T extends Array<unknown>>(
+  const queryData = <T extends Array<unknown>>(
     key: Array<string>,
     filter?: (value: T[number]) => boolean
-  ): T {
+  ): T => {
     const data = queryClient.getQueryData<T>(key) ?? []
     return (filter ? data.filter(filter) : data) as T
   }
@@ -46,16 +61,14 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     ([cosmos, evm, aptos]) => ({ evm, aptos, cosmos })
   ) as Readable<UserAddresses>
 
-  const sourceChain = derived(intents, intentsValue => {
-    const chain = chains.find(chain => chain.chain_id === intentsValue.source)
-    if (!chain) {
-      throw new Error(`No chain found for source ${intentsValue.source}`)
-    }
+  const sourceChain = derived(intents, $intents => {
+    const chain = chains.find(chain => chain.chain_id === $intents.source)
+    if (!chain) throw new Error(`No chain found for source ${$intents.source}`)
     return chain
   })
 
-  const destinationChain = derived(intents, intentsValue =>
-    chains.find(chain => chain.chain_id === intentsValue.destination)
+  const destinationChain = derived(intents, $intents =>
+    chains.find(chain => chain.chain_id === $intents.destination)
   )
 
   const balances = derived(
@@ -64,7 +77,7 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
       userAddress,
       userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })
     ],
-    ([$intents, _userAddressValue, $rawBalances]) => {
+    ([$intents, _, $rawBalances]) => {
       const sourceChain = chains.find(chain => chain.chain_id === $intents.source)
       if (!sourceChain) return []
 
@@ -83,27 +96,53 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     }
   ) as Readable<BalancesList>
 
-  const assetBalance = derived([balances, intents], ([$balances, $intents]) =>
+  const assetsList = derived(
+    [balances, sourceChain, showUnsupported],
+    ([$balances, $sourceChain, $showUnsupported]) =>
+      $balances
+        .map(balance => {
+          const supportedAsset = getSupportedAsset($sourceChain, balance.address)
+          const isSupported = Boolean(supportedAsset)
+
+          if (!($showUnsupported || isSupported)) return null
+
+          return {
+            balance,
+            isSupported,
+            supportedAsset
+          }
+        })
+        .filter(Boolean) as Array<AssetListItem>
+  )
+
+  const asset = derived([balances, intents], ([$balances, $intents]) =>
     $balances.find(x => x?.address === $intents.asset)
   )
 
-  const assetInfo = derived([sourceChain, intents], ([$sourceChain, $intents]) => {
-    if ($intents.asset) {
-      return getSupportedAsset($sourceChain, $intents.asset)
-    }
-    return undefined
-  })
+  const supportedAsset = derived(
+    [sourceChain, asset],
+    ([$sourceChain, $asset]) => $asset && getSupportedAsset($sourceChain, $asset.address)
+  )
+
+  const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
+    address: $asset?.address,
+    balance: $asset?.balance,
+    symbol: $supportedAsset?.display_symbol ?? $asset?.symbol,
+    gasToken: $asset?.gasToken,
+    supported: $supportedAsset,
+    raw: $asset
+  }))
 
   return derived(
-    [userAddress, sourceChain, destinationChain, balances, assetBalance, assetInfo],
-    ([$userAddress, $sourceChain, $destinationChain, $balances, $assetBalance, $assetInfo]) => ({
+    [userAddress, sourceChain, destinationChain, balances, assetsList, selectedAsset],
+    ([$userAddress, $sourceChain, $destinationChain, $balances, $assetsList, $selectedAsset]) => ({
       chains,
       userAddress: $userAddress,
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
       balances: $balances,
-      assetBalance: $assetBalance,
-      assetInfo: $assetInfo
+      assetsList: $assetsList,
+      selectedAsset: $selectedAsset
     })
   )
 }
