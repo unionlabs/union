@@ -48,7 +48,13 @@ module ibc::recv_packet {
             i = i + 1;
         };
 
-        process_receive<T>(client_type, packets, proof_height, proof, false);
+        process_receive<T>(
+            client_type,
+            packets,
+            proof_height,
+            proof,
+            false
+        );
     }
 
     public fun process_receive<T: key + store + drop>(

@@ -22,8 +22,7 @@ module ibc::statelens_lc {
 
     public fun report_misbehaviour(
         _client_id: u32, _misbehaviour: vector<u8>
-    )  {
-        
+    ) {
     }
 
     public fun verify_membership(
@@ -32,7 +31,7 @@ module ibc::statelens_lc {
         _proof: vector<u8>,
         _key: vector<u8>,
         _value: vector<u8>
-    ): u64  {
+    ): u64 {
         0
     }
 
@@ -49,7 +48,7 @@ module ibc::statelens_lc {
         0
     }
 
-    public fun get_timestamp_at_height(_client_id: u32, _height: u64): u64  {
+    public fun get_timestamp_at_height(_client_id: u32, _height: u64): u64 {
         0
     }
 
@@ -57,7 +56,7 @@ module ibc::statelens_lc {
         vector::empty()
     }
 
-    public fun get_consensus_state(_client_id: u32, _height: u64): vector<u8>  {
+    public fun get_consensus_state(_client_id: u32, _height: u64): vector<u8> {
         vector::empty()
     }
 
@@ -66,5 +65,4 @@ module ibc::statelens_lc {
     ): bool {
         false
     }
-
 }

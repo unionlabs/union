@@ -94,7 +94,13 @@ module ibc::channel_handshake {
         proof_ack: vector<u8>,
         proof_height: u64
     ) {
-        ibc::channel_open_confirm<T>(client_type, port_id, channel_id, proof_ack, proof_height);
+        ibc::channel_open_confirm<T>(
+            client_type,
+            port_id,
+            channel_id,
+            proof_ack,
+            proof_height
+        );
 
         engine::dispatch<T>(helpers::pack_channel_open_confirm_params(channel_id));
 
