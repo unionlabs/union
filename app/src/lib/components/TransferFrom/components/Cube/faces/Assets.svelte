@@ -30,11 +30,6 @@ $: sortedAssets = [...($context.assetsList ?? [])].sort((a, b) => {
   return Number(b.balance.balance - a.balance.balance)
 })
 
-$: getSymbol = (item: AssetListItem) =>
-  item.supportedAsset?.display_symbol ||
-  (item.balance.symbol && item.balance.symbol !== "" ? item.balance.symbol : null) ||
-  item.balance.address
-
 function setAsset(address: string) {
   intents.updateField("asset", address)
   rotateTo("intentFace")
@@ -61,7 +56,7 @@ function setAsset(address: string) {
                   on:click={() => setAsset(asset.balance.address)}
           >
             <div class:opacity-30={!asset.isSupported}>
-              {truncate(getSymbol(asset), 6)}
+              {truncate(asset.symbol, 6)}
             </div>
             <p class:opacity-30={!asset.isSupported}>
               {formatUnits(asset.balance.balance, asset.supportedAsset?.decimals ?? 0)}

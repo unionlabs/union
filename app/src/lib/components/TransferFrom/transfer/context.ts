@@ -23,6 +23,7 @@ export interface AssetListItem {
   balance: BalanceRecord
   isSupported: boolean
   supportedAsset?: ChainAsset
+  symbol: string // Pre-computed symbol
 }
 
 export interface SelectedAsset {
@@ -43,6 +44,12 @@ export interface ContextStore {
   assetsList: Array<AssetListItem>
   selectedAsset: SelectedAsset
 }
+
+const getDisplaySymbol = (
+  balance: BalanceRecord | undefined,
+  supportedAsset: ChainAsset | undefined
+): string | undefined =>
+  supportedAsset?.display_symbol || balance?.symbol || null || balance?.address || undefined
 
 export function createContextStore(intents: IntentStore): Readable<ContextStore> {
   const queryClient = useQueryClient()
@@ -109,7 +116,8 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
           return {
             balance,
             isSupported,
-            supportedAsset
+            supportedAsset,
+            symbol: getDisplaySymbol(balance, supportedAsset) || balance.address
           }
         })
         .filter(Boolean) as Array<AssetListItem>
@@ -127,7 +135,7 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
   const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
     address: $asset?.address,
     balance: $asset?.balance,
-    symbol: $supportedAsset?.display_symbol ?? $asset?.symbol,
+    symbol: getDisplaySymbol($asset, $supportedAsset),
     gasToken: $asset?.gasToken,
     supported: $supportedAsset,
     raw: $asset

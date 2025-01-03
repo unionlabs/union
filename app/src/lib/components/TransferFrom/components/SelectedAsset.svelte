@@ -14,12 +14,6 @@ interface Props {
 export let intents: Props["intents"]
 export let context: Props["context"]
 export let onSelectAsset: Props["onSelectAsset"]
-
-$: getSymbol = () =>
-  $context.selectedAsset.supported?.display_symbol ??
-  ($context.selectedAsset.symbol || null) ??
-  $context.selectedAsset.address ??
-  "Select Asset"
 </script>
 
 <Button
@@ -29,5 +23,5 @@ $: getSymbol = () =>
         class="border-2 border-white font-bold"
         on:click={onSelectAsset}
 >
-  {truncate(getSymbol(), 12)}
+  {$context.selectedAsset.symbol ? truncate($context.selectedAsset.symbol, 18) : "Select Asset"}
 </Button>
