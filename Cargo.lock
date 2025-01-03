@@ -2297,6 +2297,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "2.0.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f11ea1a0346b94ef188834a65c068a03aec181c94896d481d7a0a40d85b0ce95"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bip32"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10495,7 +10504,7 @@ version = "0.20.6"
 source = "git+https://github.com/aptos-labs/serde-reflection?rev=73b6bbf748334b71ff6d7d09d06a29e3062ca075#73b6bbf748334b71ff6d7d09d06a29e3062ca075"
 dependencies = [
  "bcs 0.1.6",
- "bincode",
+ "bincode 1.3.3",
  "heck 0.3.3",
  "include_dir",
  "maplit",
@@ -12697,7 +12706,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
- "bincode",
+ "bincode 1.3.3",
  "bip32",
  "borsh",
  "bs58 0.4.0",
@@ -12744,6 +12753,7 @@ version = "0.0.1"
 dependencies = [
  "alloy-primitives",
  "base64 0.21.7",
+ "bincode 2.0.0-rc.3",
  "generic-array 0.14.7",
  "hex",
  "primitive-types 0.12.2",

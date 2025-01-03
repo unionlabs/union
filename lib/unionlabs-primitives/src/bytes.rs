@@ -161,6 +161,25 @@ impl<'de, E: Encoding> serde::Deserialize<'de> for Bytes<E> {
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<Enc: Encoding> bincode::Encode for Bytes<Enc> {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        self.bytes.encode(encoder)
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl<Enc: Encoding> bincode::Decode for Bytes<Enc> {
+    fn decode<D: bincode::de::Decoder>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        Ok(Self::from(<Vec<u8> as bincode::Decode>::decode(decoder)?))
+    }
+}
+
 impl<E: Encoding> FromStr for Bytes<E> {
     type Err = E::Error;
 

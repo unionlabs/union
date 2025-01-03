@@ -280,6 +280,7 @@ aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
+bincode                  = { version = "2.0.0-rc.3", default-features = false }                      # we use bincode 2 for the custom non-serde traits & derives
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
