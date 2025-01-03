@@ -51,7 +51,7 @@ export function createValidationStore(
       const parseInput = {
         ...formFields,
         balance: $context.selectedAsset.balance?.toString(),
-        decimals: $context.selectedAsset.supported?.decimals
+        decimals: $context.selectedAsset?.decimals
       }
       const schemaResult = safeParse(transferSchema, parseInput)
       schemaValid = schemaResult.success

@@ -30,6 +30,7 @@ export interface SelectedAsset {
   address: Address | undefined
   balance: bigint | undefined
   symbol: string | undefined
+  decimals: number | undefined
   gasToken: boolean | undefined
   supported: ChainAsset | undefined
   raw: BalanceRecord | undefined
@@ -136,6 +137,7 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     address: $asset?.address,
     balance: $asset?.balance,
     symbol: getDisplaySymbol($asset, $supportedAsset),
+    decimals: $supportedAsset?.decimals ?? 0,
     gasToken: $asset?.gasToken,
     supported: $supportedAsset,
     raw: $asset

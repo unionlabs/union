@@ -6,6 +6,7 @@ import type { ContextStore } from "$lib/components/TransferFrom/transfer/context
 import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
 import { Button } from "$lib/components/ui/button"
 import { truncateAddress } from "@unionlabs/client"
+import {truncate} from "$lib/utilities/format.ts";
 
 interface Props {
   stores: {
@@ -30,6 +31,7 @@ function transfer() {}
     <p>RPC_TYPE: {$context?.sourceChain?.rpc_type}</p>
     <p>SOURCE: {$context?.sourceChain?.display_name}</p>
     <p>DESTINATION: {$context?.destinationChain?.display_name}</p>
+    <p>ASSET: {$context?.selectedAsset?.address ? truncate($context.selectedAsset.address, 12) : ""}</p>
     <p>AMOUNT: {$intents.amount}</p>
     <p>RECEIVER: {truncateAddress({address: $intents.receiver})}</p>
   </div>
