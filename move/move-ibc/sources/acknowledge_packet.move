@@ -1,7 +1,7 @@
 module ibc::acknowledge_packet {
 
     use ibc::packet::{Self, Packet};
-    use std::string::{Self, String};
+    use std::string::{String};
     use ibc::channel;
     use ibc::engine;
     use ibc::commitment;

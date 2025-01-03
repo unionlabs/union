@@ -1,14 +1,5 @@
 module ibc::statelens_lc {
     use std::vector;
-    use std::bcs;
-    use std::string::{Self};
-    use aptos_std::smart_table::{Self, SmartTable};
-    use std::object;
-    use std::timestamp;
-    use ibc::ics23;
-    use ibc::ethabi;
-    use ibc::bcs_utils;
-    use ibc::groth16_verifier::{Self, ZKP};
 
     public fun create_client(
         _ibc_signer: &signer,
