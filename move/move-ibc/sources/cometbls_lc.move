@@ -1,4 +1,4 @@
-module ibc::light_client {
+module ibc::cometbls_lc {
     use std::vector;
     use std::bcs;
     use std::string::{Self};
