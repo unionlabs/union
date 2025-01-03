@@ -81,11 +81,11 @@ function createCosmosStore(
       }
       try {
         await walletApi.experimentalSuggestChain(chainInfo)
-        await walletApi.enable(["union-testnet-8"])
+        await walletApi.enable(["union-testnet-9"])
       } catch (e) {
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
-      const account = await walletApi.getKey("union-testnet-8")
+      const account = await walletApi.getKey("union-testnet-9")
       update(v => ({
         ...v,
         connectionStatus: "connected",
@@ -100,9 +100,9 @@ function createCosmosStore(
       console.log("[cosmos] cosmosDisconnectClick", get(cosmosStore))
       if (cosmosWalletId && window[cosmosWalletId]) {
         if (cosmosWalletId === "keplr") {
-          await window[cosmosWalletId]?.disable("union-testnet-8")
+          await window[cosmosWalletId]?.disable("union-testnet-9")
         } else if (cosmosWalletId === "leap") {
-          await window[cosmosWalletId]?.disconnect("union-testnet-8")
+          await window[cosmosWalletId]?.disconnect("union-testnet-9")
         }
         update(v => ({
           ...v,
