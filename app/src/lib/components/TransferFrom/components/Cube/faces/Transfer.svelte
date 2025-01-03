@@ -6,7 +6,7 @@ import type { ContextStore } from "$lib/components/TransferFrom/transfer/context
 import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
 import { Button } from "$lib/components/ui/button"
 import { truncateAddress } from "@unionlabs/client"
-import {truncate} from "$lib/utilities/format.ts";
+import { truncate } from "$lib/utilities/format.ts"
 
 interface Props {
   stores: {
