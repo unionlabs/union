@@ -25,16 +25,6 @@ where
     }
 }
 
-// TODO: Figure out why this doesn't work, I'm not sure why it doesn't
-// impl<T> Encode<Ssz> for &'_ T
-// where
-//     T: ssz::Ssz,
-// {
-//     fn encode(self) -> Vec<u8> {
-//         ssz::Ssz::as_ssz_bytes(self)
-//     }
-// }
-
 impl<T> Decode<Ssz> for T
 where
     T: ssz::Ssz,

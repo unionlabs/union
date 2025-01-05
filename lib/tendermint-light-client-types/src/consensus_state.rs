@@ -100,3 +100,46 @@ pub mod proto {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use unionlabs::{
+        encoding::{Bincode, EthAbi, Json, Proto},
+        test_utils::assert_codec_iso,
+    };
+
+    use super::*;
+
+    fn mk_consensus_state() -> ConsensusState {
+        ConsensusState {
+            timestamp: Timestamp {
+                seconds: 123.try_into().unwrap(),
+                nanos: 456.try_into().unwrap(),
+            },
+            root: MerkleRoot {
+                hash: H256::new([0xAA; 32]),
+            },
+            next_validators_hash: H256::new([0xAA; 32]),
+        }
+    }
+
+    #[test]
+    fn ethabi_iso() {
+        assert_codec_iso::<_, EthAbi>(&mk_consensus_state());
+    }
+
+    #[test]
+    fn bincode_iso() {
+        assert_codec_iso::<_, Bincode>(&mk_consensus_state());
+    }
+
+    #[test]
+    fn json_iso() {
+        assert_codec_iso::<_, Json>(&mk_consensus_state());
+    }
+
+    #[test]
+    fn proto_iso() {
+        assert_codec_iso::<_, Proto>(&mk_consensus_state());
+    }
+}

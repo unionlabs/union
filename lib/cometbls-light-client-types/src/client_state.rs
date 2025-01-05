@@ -150,52 +150,39 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn bincode_iso() {
-        assert_codec_iso::<_, Bincode>(&ClientState {
+    fn mk_client_state() -> ClientState {
+        ClientState {
             chain_id: ChainId::from_string("oogabooga").unwrap(),
             trusting_period: 12345,
             max_clock_drift: 67890,
             frozen_height: Height::default(),
             latest_height: Height::new(1337),
             contract_address: <H256>::from([0xAA; 32]),
-        });
+        }
+    }
+
+    #[test]
+    fn bincode_iso() {
+        assert_codec_iso::<_, Bincode>(&mk_client_state());
     }
 
     #[test]
     fn ethabi_iso() {
-        assert_codec_iso::<_, EthAbi>(&ClientState {
-            chain_id: ChainId::from_string("oogabooga").unwrap(),
-            trusting_period: 12345,
-            max_clock_drift: 67890,
-            frozen_height: Height::default(),
-            latest_height: Height::new(1337),
-            contract_address: <H256>::from([0xAA; 32]),
-        });
+        assert_codec_iso::<_, EthAbi>(&mk_client_state());
     }
 
     #[test]
     fn json_iso() {
-        assert_codec_iso::<_, Json>(&ClientState {
-            chain_id: ChainId::from_string("oogabooga").unwrap(),
-            trusting_period: 12345,
-            max_clock_drift: 67890,
-            frozen_height: Height::default(),
-            latest_height: Height::new(1337),
-            contract_address: <H256>::from([0xAA; 32]),
-        });
+        assert_codec_iso::<_, Json>(&mk_client_state());
     }
 
     #[test]
     fn proto_iso() {
-        assert_codec_iso::<_, Proto>(&ClientState {
-            chain_id: ChainId::from_string("oogabooga").unwrap(),
-            trusting_period: 12345,
-            max_clock_drift: 67890,
-            frozen_height: Height::default(),
-            latest_height: Height::new(1337),
-            // this field is currently lost when encoding to proto since it is not supported in the native ibc-go implementation
-            contract_address: <H256>::from([0x00; 32]),
-        });
+        let mut client_state = mk_client_state();
+
+        // this field is currently lost when encoding to proto since it is not supported in the native ibc-go implementation
+        client_state.contract_address = <H256>::from([0x00; 32]);
+
+        assert_codec_iso::<_, Proto>(&client_state);
     }
 }

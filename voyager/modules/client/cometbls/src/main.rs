@@ -356,13 +356,15 @@ impl ClientModuleServer for Module {
                 SupportedIbcInterface::IbcCosmwasm => Ok(header.encode_as::<Proto>()),
                 SupportedIbcInterface::IbcMoveAptos => {
                     header.zero_knowledge_proof =
-                        reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                format!("unable to decode zkp: {}", e),
-                                None::<()>,
-                            )
-                        })?;
+                        reencode_zkp_for_move(&header.zero_knowledge_proof)
+                            .map_err(|e| {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    format!("unable to decode zkp: {}", e),
+                                    None::<()>,
+                                )
+                            })?
+                            .into();
                     Ok(header.encode_as::<Bcs>())
                 }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
