@@ -108,7 +108,7 @@ mod tests {
         cosmos::ics23::{
             hash_op::HashOp, inner_spec::InnerSpec, leaf_op::LeafOp, length_op::LengthOp,
         },
-        encoding::{Bincode, EthAbi, Json, Proto},
+        encoding::{Bincode, Json, Proto},
         primitives::Bytes,
         test_utils::assert_codec_iso,
     };

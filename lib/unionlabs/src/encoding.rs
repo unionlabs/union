@@ -78,7 +78,7 @@ where
     T: bincode::Encode,
 {
     fn encode(self) -> Vec<u8> {
-        bincode::encode_to_vec(self, bincode::config::standard())
+        bincode::encode_to_vec(self, bincode::config::legacy())
             .expect("bincode encoding should be infallible")
     }
 }
@@ -91,7 +91,7 @@ where
     type Error = bincode::error::DecodeError;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        bincode::decode_from_slice(bytes, bincode::config::standard()).map(|(t, _)| t)
+        bincode::decode_from_slice(bytes, bincode::config::legacy()).map(|(t, _)| t)
     }
 }
 
