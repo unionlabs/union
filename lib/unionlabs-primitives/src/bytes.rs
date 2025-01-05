@@ -35,6 +35,12 @@ impl<E: Encoding> FromIterator<u8> for Bytes<E> {
     }
 }
 
+impl<'a, E: Encoding> FromIterator<&'a u8> for Bytes<E> {
+    fn from_iter<T: IntoIterator<Item = &'a u8>>(iter: T) -> Self {
+        Self::new(iter.into_iter().copied().collect::<Vec<_>>())
+    }
+}
+
 impl<E: Encoding> Bytes<E> {
     #[must_use = "constructing a Bytes has no effect"]
     pub fn new(bytes: impl Into<Cow<'static, [u8]>>) -> Self {

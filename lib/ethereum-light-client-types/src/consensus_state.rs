@@ -79,3 +79,35 @@ pub mod ethabi {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use unionlabs::{
+        encoding::{EthAbi, Json},
+        primitives::H256,
+        test_utils::assert_codec_iso,
+    };
+
+    use super::*;
+
+    fn mk_consensus_state() -> ConsensusState {
+        ConsensusState {
+            slot: 42,
+            state_root: H256::new([0xAA; 32]),
+            storage_root: H256::new([0xAA; 32]),
+            timestamp: 123_456_789,
+            current_sync_committee: H384::new([0xAA; 48]),
+            next_sync_committee: H384::new([0xAA; 48]),
+        }
+    }
+
+    #[test]
+    fn ethabi_iso() {
+        assert_codec_iso::<_, EthAbi>(&mk_consensus_state());
+    }
+
+    #[test]
+    fn json_iso() {
+        assert_codec_iso::<_, Json>(&mk_consensus_state());
+    }
+}

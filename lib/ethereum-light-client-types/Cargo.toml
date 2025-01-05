@@ -12,8 +12,9 @@ thiserror        = { workspace = true }
 unionlabs        = { workspace = true }
 
 [features]
-bincode = ["dep:bincode", "beacon-api-types/bincode"]
-default = ["serde"]
+default = []
+
+bincode = ["dep:bincode", "unionlabs/bincode", "beacon-api-types/bincode"]
 ethabi = ["unionlabs/ethabi", "dep:alloy"]
 serde = [
   # TODO: Feature gate serde in unionlabs
@@ -23,4 +24,6 @@ serde = [
 ]
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+hex-literal                 = { workspace = true }
+unionlabs                   = { workspace = true, features = ["test-utils"] }

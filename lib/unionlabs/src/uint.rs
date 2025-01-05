@@ -65,6 +65,7 @@ impl bincode::Decode for U256 {
         }
     }
 }
+#[cfg(feature = "bincode")]
 bincode::impl_borrow_decode!(U256);
 
 #[cfg(feature = "bincode")]

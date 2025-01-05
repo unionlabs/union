@@ -4844,6 +4844,7 @@ dependencies = [
  "alloy",
  "beacon-api-types",
  "bincode 2.0.0-rc.3",
+ "ethereum-light-client-types",
  "hex-literal",
  "serde",
  "thiserror",
