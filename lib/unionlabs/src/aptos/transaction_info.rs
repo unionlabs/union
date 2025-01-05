@@ -7,11 +7,13 @@ use crate::primitives::{encoding::HexUnprefixed, H256};
 /// transaction as well as the execution result of this transaction.
 #[model(no_serde)]
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
 
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionInfoV0 {
     /// The amount of gas used.
     pub gas_used: u64,
@@ -55,6 +57,7 @@ pub struct TransactionInfoV0 {
 
 #[model(no_serde)]
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ExecutionStatus {
     #[serde(rename = "Success")]
     Success,

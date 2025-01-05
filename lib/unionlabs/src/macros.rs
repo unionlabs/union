@@ -268,7 +268,7 @@ macro_rules! wrapper_enum {
         pub enum $Enum:ident {
             $(
                 $(#[$inner_meta:meta])*
-                $Variant:ident = $discriminant:literal,
+                $Variant:ident = $discriminant:tt,
             )+
         }
     ) => {

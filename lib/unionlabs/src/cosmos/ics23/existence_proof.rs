@@ -1,6 +1,5 @@
-use alloc::borrow::Cow;
-
 use macros::model;
+use unionlabs_primitives::Bytes;
 
 use crate::{
     cosmos::ics23::{
@@ -11,13 +10,10 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExistenceProof {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub key: Cow<'static, [u8]>,
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub value: Cow<'static, [u8]>,
+    pub key: Bytes,
+    pub value: Bytes,
     pub leaf: LeafOp,
     pub path: Vec<InnerOp>,
 }

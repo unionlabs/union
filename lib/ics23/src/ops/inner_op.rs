@@ -1,5 +1,8 @@
-use unionlabs::cosmos::ics23::{
-    hash_op::HashOp, inner_op::InnerOp, inner_spec::PositiveI32AsUsize, proof_spec::ProofSpec,
+use unionlabs::{
+    cosmos::ics23::{
+        hash_op::HashOp, inner_op::InnerOp, inner_spec::PositiveI32AsUsize, proof_spec::ProofSpec,
+    },
+    primitives::Bytes,
 };
 
 use super::{hash_op, validate_iavl_ops};
@@ -13,7 +16,7 @@ pub enum SpecMismatchError {
     #[error("unexpected hash op ({0:?})")]
     UnexpectedHashOp(HashOp),
     #[error("prefix ({prefix}) is not the prefix of ({full})", prefix = serde_utils::to_hex(prefix), full = serde_utils::to_hex(full))]
-    PrefixMismatch { full: Vec<u8>, prefix: Vec<u8> },
+    PrefixMismatch { full: Bytes, prefix: Bytes },
     #[error("inner prefix too short, got ({prefix_len}) while the min length is ({min_len})")]
     InnerOpPrefixTooShort {
         prefix_len: usize,
@@ -67,7 +70,7 @@ pub fn check_against_spec(
     if inner_op.prefix.starts_with(&spec.leaf_spec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
             full: inner_op.prefix.clone(),
-            prefix: spec.leaf_spec.prefix.clone().into_owned(),
+            prefix: spec.leaf_spec.prefix.clone(),
         });
     }
 

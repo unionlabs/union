@@ -4,6 +4,7 @@ use unionlabs::bounded::{BoundedI32, BoundedI64};
 use crate::types::{block_id::BlockId, commit_sig::CommitSig};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Commit {
     #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,

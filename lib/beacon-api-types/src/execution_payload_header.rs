@@ -10,6 +10,7 @@ use {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExecutionPayloadHeader {
     pub parent_hash: H256,
     pub fee_recipient: H160,

@@ -294,7 +294,9 @@ pub fn left_branches_are_empty(
     for i in 0..left_branches {
         let idx = get_position(&spec.child_order, i)?;
         let from = actual_prefix + (idx * spec.child_size.inner());
-        if Some(spec.empty_child.borrow()) != op.prefix.get(from..from + spec.child_size.inner()) {
+        if Some(spec.empty_child.borrow().as_ref())
+            != op.prefix.get(from..from + spec.child_size.inner())
+        {
             return Ok(false);
         }
     }

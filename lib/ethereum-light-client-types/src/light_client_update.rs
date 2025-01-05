@@ -4,6 +4,16 @@ use crate::LightClientUpdateData;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+// boxed for size
+pub enum LightClientUpdate {
+    EpochChange(Box<EpochChangeUpdate>),
+    WithinEpoch(Box<WithinEpochUpdate>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EpochChangeUpdate {
     /// The trusted sync committee for the *next* epoch that the client is being updated to.
     ///
@@ -22,6 +32,7 @@ pub struct EpochChangeUpdate {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct WithinEpochUpdate {
     /// The trusted sync committee for the *current* epoch.
     ///
@@ -29,14 +40,6 @@ pub struct WithinEpochUpdate {
     pub sync_committee: SyncCommittee,
 
     pub update_data: LightClientUpdateData,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-// boxed for size
-pub enum LightClientUpdate {
-    EpochChange(Box<EpochChangeUpdate>),
-    WithinEpoch(Box<WithinEpochUpdate>),
 }
 
 impl LightClientUpdate {

@@ -8,6 +8,7 @@ use unionlabs::{
         length_op::LengthOp,
         proof_spec::ProofSpec,
     },
+    primitives::Bytes,
     result_unwrap,
 };
 
@@ -17,7 +18,7 @@ pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
         prehash_key: HashOp::NoHash,
         prehash_value: HashOp::Sha256,
         length: LengthOp::VarProto,
-        prefix: Cow::Borrowed(&[0]),
+        prefix: Bytes::new_static(&[0]),
     },
     inner_spec: InnerSpec {
         child_order: Cow::Borrowed(
@@ -31,7 +32,7 @@ pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
         child_size: result_unwrap!(PositiveI32AsUsize::new_const(33)),
         min_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(4)),
         max_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(12)),
-        empty_child: Cow::Borrowed(&[]),
+        empty_child: Bytes::new_static(&[]),
         hash: HashOp::Sha256,
     },
     max_depth: None,
@@ -45,7 +46,7 @@ pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
         prehash_key: HashOp::NoHash,
         prehash_value: HashOp::Sha256,
         length: LengthOp::VarProto,
-        prefix: Cow::Borrowed(&[0]),
+        prefix: Bytes::new_static(&[0]),
     },
     inner_spec: InnerSpec {
         child_order: Cow::Borrowed(
@@ -59,7 +60,7 @@ pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
         child_size: result_unwrap!(PositiveI32AsUsize::new_const(32)),
         min_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(1)),
         max_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(1)),
-        empty_child: Cow::Borrowed(&[]),
+        empty_child: Bytes::new_static(&[]),
         hash: HashOp::Sha256,
     },
     max_depth: None,

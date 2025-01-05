@@ -8,6 +8,7 @@ use {alloy::core::primitives::FixedBytes, std::string::FromUtf8Error};
 ///
 /// The size limitation is required such that the entire ID will fit in the bn254 scalar field. The *actual* maximum size is 254 bits, but it's truncated down to 31 bytes for simplicity.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ChainId(String);
 
 impl ChainId {

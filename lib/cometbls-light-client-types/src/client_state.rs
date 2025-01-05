@@ -4,6 +4,7 @@ use crate::chain_id::ChainId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trusting_period: u64,
@@ -137,5 +138,64 @@ pub mod ethabi {
     pub enum Error {
         #[error("invalid chain_id")]
         ChainId(#[from] FromUtf8Error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use unionlabs::{
+        encoding::{Bincode, EthAbi, Json, Proto},
+        test_utils::assert_codec_iso,
+    };
+
+    use super::*;
+
+    #[test]
+    fn bincode_iso() {
+        assert_codec_iso::<_, Bincode>(&ClientState {
+            chain_id: ChainId::from_string("oogabooga").unwrap(),
+            trusting_period: 12345,
+            max_clock_drift: 67890,
+            frozen_height: Height::default(),
+            latest_height: Height::new(1337),
+            contract_address: <H256>::from([0xAA; 32]),
+        });
+    }
+
+    #[test]
+    fn ethabi_iso() {
+        assert_codec_iso::<_, EthAbi>(&ClientState {
+            chain_id: ChainId::from_string("oogabooga").unwrap(),
+            trusting_period: 12345,
+            max_clock_drift: 67890,
+            frozen_height: Height::default(),
+            latest_height: Height::new(1337),
+            contract_address: <H256>::from([0xAA; 32]),
+        });
+    }
+
+    #[test]
+    fn json_iso() {
+        assert_codec_iso::<_, Json>(&ClientState {
+            chain_id: ChainId::from_string("oogabooga").unwrap(),
+            trusting_period: 12345,
+            max_clock_drift: 67890,
+            frozen_height: Height::default(),
+            latest_height: Height::new(1337),
+            contract_address: <H256>::from([0xAA; 32]),
+        });
+    }
+
+    #[test]
+    fn proto_iso() {
+        assert_codec_iso::<_, Proto>(&ClientState {
+            chain_id: ChainId::from_string("oogabooga").unwrap(),
+            trusting_period: 12345,
+            max_clock_drift: 67890,
+            frozen_height: Height::default(),
+            latest_height: Height::new(1337),
+            // this field is currently lost when encoding to proto since it is not supported in the native ibc-go implementation
+            contract_address: <H256>::from([0x00; 32]),
+        });
     }
 }

@@ -1373,6 +1373,7 @@ name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
  "hex-literal",
  "rlp",
@@ -2171,6 +2172,7 @@ dependencies = [
 name = "beacon-api-types"
 version = "0.1.0"
 dependencies = [
+ "bincode 2.0.0-rc.3",
  "hex-literal",
  "serde",
  "serde-utils",
@@ -2244,6 +2246,7 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
+ "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
  "protos",
  "serde",
@@ -2299,18 +2302,17 @@ dependencies = [
 [[package]]
 name = "bincode"
 version = "2.0.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f11ea1a0346b94ef188834a65c068a03aec181c94896d481d7a0a40d85b0ce95"
+source = "git+https://github.com/bincode-org/bincode#29d8d84d3269f6e9b122c0ef6d8ea300dee3048f"
 dependencies = [
  "bincode_derive",
  "serde",
+ "unty",
 ]
 
 [[package]]
 name = "bincode_derive"
 version = "2.0.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e30759b3b99a1b802a7a3aa21c85c3ded5c28e1c83170d82d70f08bbf7f3e4c"
+source = "git+https://github.com/bincode-org/bincode#29d8d84d3269f6e9b122c0ef6d8ea300dee3048f"
 dependencies = [
  "virtue",
 ]
@@ -3126,6 +3128,7 @@ dependencies = [
 name = "cometbft-types"
 version = "0.1.0"
 dependencies = [
+ "bincode 2.0.0-rc.3",
  "cometbft-types",
  "hex-literal",
  "prost 0.12.6",
@@ -3178,6 +3181,8 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "bcs 0.1.6",
+ "bincode 2.0.0-rc.3",
+ "cometbls-light-client-types",
  "hex",
  "hex-literal",
  "protos",
@@ -4838,6 +4843,7 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
+ "bincode 2.0.0-rc.3",
  "hex-literal",
  "serde",
  "thiserror",
@@ -7824,6 +7830,7 @@ name = "movement-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -11666,10 +11673,12 @@ name = "tendermint-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "cometbft-types",
  "hex-literal",
  "protos",
  "serde",
+ "tendermint-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -12819,6 +12828,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
+name = "unty"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1a88342087869553c259588a3ec9ca73ce9b2d538b7051ba5789ff236b6c129"
+
+[[package]]
 name = "ureq"
 version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12921,9 +12936,9 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "virtue"
-version = "0.0.13"
+version = "0.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dcc60c0624df774c82a0ef104151231d37da4962957d691c011c852b2473314"
+checksum = "051eb1abcf10076295e815102942cc58f9d5e3b4560e46e53c21e8ff6f3af7b1"
 
 [[package]]
 name = "voyager"

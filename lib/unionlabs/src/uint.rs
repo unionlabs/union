@@ -36,6 +36,62 @@ use crate::{
 #[debug("U256({})", self)]
 pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
 
+#[cfg(feature = "bincode")]
+impl bincode::Decode for U256 {
+    fn decode<D: bincode::de::Decoder>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        use bincode::{
+            config::{Config, Endianness, IntEncoding},
+            de::read::Reader,
+        };
+
+        decoder.claim_bytes_read(32)?;
+
+        match decoder.config().int_encoding() {
+            IntEncoding::Variable => Err(bincode::error::DecodeError::Other(
+                "varint encoding is not supported for U256",
+            )),
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 32];
+                decoder.reader().read(&mut bytes)?;
+                match decoder.config().endianness() {
+                    Endianness::Little => Ok(Self::from_le_bytes(bytes)),
+                    Endianness::Big => Ok(Self::from_be_bytes(bytes)),
+                    _ => Err(bincode::error::DecodeError::Other("unknown endianness")),
+                }
+            }
+            _ => Err(bincode::error::DecodeError::Other("unknown int encoding")),
+        }
+    }
+}
+bincode::impl_borrow_decode!(U256);
+
+#[cfg(feature = "bincode")]
+impl bincode::Encode for U256 {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        use bincode::{
+            config::{Config, Endianness, IntEncoding},
+            enc::write::Writer,
+        };
+
+        match encoder.config().int_encoding() {
+            IntEncoding::Variable => Err(bincode::error::EncodeError::Other(
+                "varint encoding is not supported for U256",
+            )),
+            IntEncoding::Fixed => match encoder.config().endianness() {
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
+                _ => Err(bincode::error::EncodeError::Other("unknown endianness")),
+            },
+            _ => Err(bincode::error::EncodeError::Other("unknown int encoding")),
+        }
+    }
+}
+
 impl fmt::LowerHex for U256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
@@ -133,6 +189,11 @@ impl U256 {
     #[must_use]
     pub fn from_be_bytes(bz: [u8; 32]) -> Self {
         Self(primitive_types::U256::from_big_endian(&bz))
+    }
+
+    #[must_use]
+    pub fn from_le_bytes(bz: [u8; 32]) -> Self {
+        Self(primitive_types::U256::from_little_endian(&bz))
     }
 
     #[must_use]

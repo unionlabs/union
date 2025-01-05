@@ -66,6 +66,15 @@ impl<E: Encoding> Bytes<E> {
     pub fn into_vec(self) -> Vec<u8> {
         self.bytes.into()
     }
+
+    // TODO: Benchmark and optimize if needed
+    pub fn extend_from_slice(&mut self, other: &[u8]) {
+        let mut vec = self.clone().into_vec();
+
+        vec.extend_from_slice(other);
+
+        *self = Self::new(vec);
+    }
 }
 
 impl<E: Encoding> Deref for Bytes<E> {

@@ -74,8 +74,8 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
                 .path
                 .into_iter()
                 .map(|io| InnerOp {
-                    prefix: io.prefix.into(),
-                    suffix: io.suffix.into(),
+                    prefix: io.prefix,
+                    suffix: io.suffix,
                 })
                 .collect(),
         })
@@ -93,7 +93,7 @@ impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
                     prehash_key: EXPECTED_PREHASH_KEY,
                     prehash_value: EXPECTED_PREHASH_VALUE,
                     length: EXPECTED_LENGTH,
-                    prefix: value.leaf_prefix.into(),
+                    prefix: value.leaf_prefix,
                 }
                 .into(),
             ),

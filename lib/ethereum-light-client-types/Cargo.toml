@@ -6,11 +6,13 @@ version = "0.1.0"
 [dependencies]
 alloy            = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types = { workspace = true }
+bincode          = { workspace = true, features = ["alloc", "derive"], optional = true }
 serde            = { workspace = true, optional = true, features = ["derive"] }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true }
 
 [features]
+bincode = ["dep:bincode", "beacon-api-types/bincode"]
 default = ["serde"]
 ethabi = ["unionlabs/ethabi", "dep:alloy"]
 serde = [

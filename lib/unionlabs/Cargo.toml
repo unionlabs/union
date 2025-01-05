@@ -46,7 +46,7 @@ wasmparser               = { version = "0.113" }
 alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
 base64               = { workspace = true }
 bcs                  = { workspace = true }
-bincode              = { version = "2.0.0-rc.3", features = ["alloc", "derive"], optional = true }
+bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
 near-primitives-core = { version = "0.21", optional = true }
@@ -69,9 +69,9 @@ near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["subtle-encoding/std", "sha2/std"]
 
 fuzzing    = []
-test_utils = []
+test-utils = []
 
-bincode  = ["dep:bincode"]
+bincode  = ["dep:bincode", "unionlabs-primitives/bincode"]
 proto    = []
 rlp      = ["dep:rlp", "unionlabs-primitives/rlp"]
 schemars = ["dep:schemars"]

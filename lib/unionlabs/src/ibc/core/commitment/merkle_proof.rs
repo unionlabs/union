@@ -3,6 +3,7 @@ use macros::model;
 use crate::cosmos::ics23::commitment_proof::{CommitmentProof, TryFromCommitmentProofError};
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleProof), into, from))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }

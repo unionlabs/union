@@ -8,6 +8,7 @@ use unionlabs::{
 use crate::{types::block_id::BlockId, version::consensus::Consensus};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     /// basic block info
     pub version: Consensus,

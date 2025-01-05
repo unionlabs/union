@@ -1,6 +1,6 @@
 use cosmwasm_std::{Deps, Empty, HashFunction, BLS12_381_G1_GENERATOR};
 use ethereum_sync_protocol::{BlsVerify, DST_POP_G2};
-use unionlabs::bls::{BlsPublicKey, BlsSignature};
+use unionlabs::primitives::{H384, H768};
 
 pub struct VerificationContext<'a> {
     pub deps: Deps<'a, Empty>,
@@ -9,13 +9,13 @@ pub struct VerificationContext<'a> {
 impl BlsVerify for VerificationContext<'_> {
     fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+        public_keys: impl IntoIterator<Item = &'pk H384>,
         msg: Vec<u8>,
-        signature: BlsSignature,
+        signature: H768,
     ) -> Result<(), ethereum_sync_protocol::error::Error> {
         let pubkeys = public_keys
             .into_iter()
-            .flat_map(|x| x.0)
+            .flat_map(|x| *x)
             .collect::<Vec<u8>>();
 
         let pubkey = self
@@ -37,7 +37,12 @@ impl BlsVerify for VerificationContext<'_> {
         let valid = self
             .deps
             .api
-            .bls12_381_pairing_equality(&BLS12_381_G1_GENERATOR, &signature.0, &pubkey, &hashed_msg)
+            .bls12_381_pairing_equality(
+                &BLS12_381_G1_GENERATOR,
+                signature.as_ref(),
+                &pubkey,
+                &hashed_msg,
+            )
             .map_err(|e| {
                 ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
             })?;

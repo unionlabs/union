@@ -2,6 +2,7 @@ use crate::macros::wrapper_enum;
 
 wrapper_enum! {
     #[model(proto(protos::cosmos::ics23::v1::LengthOp))]
+    #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
     pub enum LengthOp {
         NoPrefix = 0,
         VarProto = 1,

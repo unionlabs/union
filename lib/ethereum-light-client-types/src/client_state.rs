@@ -7,6 +7,7 @@ use unionlabs::{
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     pub chain_id: U256,
     pub chain_spec: PresetBaseKind,

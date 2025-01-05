@@ -4,6 +4,7 @@ use crate::{AccountProof, LightClientUpdate};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     /// The currently trusted height of the light client to apply this update against.
     pub trusted_height: Height,

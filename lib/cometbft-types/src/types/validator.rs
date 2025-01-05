@@ -7,6 +7,7 @@ use unionlabs::{
 use crate::crypto::public_key::PublicKey;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Validator {
     pub address: H160<HexUnprefixed>,
     pub pub_key: PublicKey,

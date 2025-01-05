@@ -2,6 +2,7 @@ use unionlabs::uint::U256;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StorageProof {
     // #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub key: U256,
