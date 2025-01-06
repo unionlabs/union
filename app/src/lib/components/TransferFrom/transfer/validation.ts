@@ -2,7 +2,7 @@ import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
 import type { IntentsStore, SelectedAsset } from "./intents.ts"
 import type { Chain } from "$lib/types"
-import type { BalanceRecord, ContextStore } from "$lib/components/TransferFrom/transfer/context"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
 import { safeParse } from "valibot"
 import type {
@@ -22,7 +22,6 @@ export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
 }
 
 interface ValidationContext {
-  balances: Array<BalanceRecord>
   sourceChain: Chain | undefined
   destinationChain: Chain | undefined
   selectedAsset: SelectedAsset
@@ -51,7 +50,7 @@ export function createValidationStore(
     if (hasAllRequiredValues) {
       const parseInput = {
         ...formFields,
-        balance: $intents.selectedAsset.balance?.toString(),
+        balance: $intents.selectedAsset.balance,
         decimals: $intents.selectedAsset?.decimals
       }
       const schemaResult = safeParse(transferSchema, parseInput)
@@ -61,7 +60,6 @@ export function createValidationStore(
     // Always validate fields for error display
     const errors = validateAll({
       formFields,
-      balances: $context.balances,
       sourceChain: $intents.sourceChain,
       destinationChain: $intents.destinationChain,
       selectedAsset: $intents.selectedAsset,
@@ -77,14 +75,12 @@ export function createValidationStore(
 
   function validateAll({
     formFields,
-    balances,
     sourceChain,
     destinationChain,
     selectedAsset,
     chains
   }: {
     formFields: FormFields
-    balances: Array<BalanceRecord>
     sourceChain: Chain | undefined
     destinationChain: Chain | undefined
     selectedAsset: SelectedAsset
@@ -112,7 +108,6 @@ export function createValidationStore(
 
     // Only proceed with rules if schema validation passes
     return validateRules(formFields, {
-      balances,
       sourceChain,
       destinationChain,
       selectedAsset,

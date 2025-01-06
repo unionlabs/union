@@ -54,7 +54,7 @@ let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 const transfer = async () => {
   if (!$intents.selectedAsset.address) return toast.error(`Please select a asset`)
-  if (!$intents.sourceChain.chain_id) return toast.error("Please select a from chain")
+  if (!$intents.sourceChain?.chain_id) return toast.error("Please select a from chain")
   if (!$intents.sourceChain) return toast.error("can't find chain in config")
   if (!$intents.destinationChain) return toast.error("can't find chain in config")
   if (!$intents.destinationChain.chain_id) return toast.error("Please select a to chain")

@@ -1,16 +1,18 @@
 import { derived, type Readable } from "svelte/store"
 import type { Chain, ChainAsset } from "$lib/types"
 import { useQueryClient } from "@tanstack/svelte-query"
-import type { Address } from "$lib/wallet/types"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { ContextStore, BalanceRecord } from "$lib/components/TransferFrom/transfer/context.ts"
+import { showUnsupported } from "$lib/stores/user.ts"
+import { get } from "svelte/store"
 
-export type BalanceRecord = {
-  balance: bigint
-  gasToken: boolean
-  address: Address
+export type AssetListItem = {
+  balance: BalanceRecord
+  isSupported: boolean
+  supportedAsset?: ChainAsset
   symbol: string
+  sourceChain: Chain
 }
 
 export interface SelectedAsset {
@@ -26,6 +28,7 @@ export interface IntentsStore {
   sourceChain: Chain | undefined
   destinationChain: Chain | undefined
   selectedAsset: SelectedAsset
+  sourceAssets: Array<AssetListItem>
   receiver: string
   amount: string
 }
@@ -50,14 +53,43 @@ export function createIntentStore(
     $context.chains.find(chain => chain.chain_id === $intents.destination)
   )
 
-  const asset = derived([context, rawIntents], ([$context, $intents]) =>
-    $context.balances.find(x => x?.address === $intents.asset)
+  //Assets of selected chain
+  const sourceAssets = derived([context, sourceChain], ([$context, $sourceChain]) => {
+    if (!$sourceChain) return []
+
+    const chainBalances =
+      $context.balances.find(chain => chain.chainId === $sourceChain.chain_id)?.balances || []
+
+    return chainBalances
+      .map(balance => {
+        const supportedAsset = getSupportedAsset($sourceChain, balance.address)
+        const isSupported = Boolean(supportedAsset)
+
+        if (!(get(showUnsupported) || isSupported)) return null
+
+        return {
+          balance,
+          isSupported,
+          supportedAsset,
+          symbol: getDisplaySymbol(balance, supportedAsset) || balance.address,
+          sourceChain: $sourceChain
+        }
+      })
+      .filter(Boolean) as Array<AssetListItem>
+  })
+
+  // Find the specific asset in the source chain assets
+  const asset = derived(
+    [sourceAssets, rawIntents],
+    ([$assets, $intents]) => $assets.find(x => x.balance.address === $intents.asset)?.balance
   )
 
+  //Get supported asset info (if supported)
   const supportedAsset = derived([sourceChain, asset], ([$sourceChain, $asset]) =>
     $sourceChain && $asset ? getSupportedAsset($sourceChain, $asset.address) : undefined
   )
 
+  //Create th selected asset with all info
   const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
     address: $asset?.address,
     balance: $asset?.balance,
@@ -68,11 +100,12 @@ export function createIntentStore(
   }))
 
   return derived(
-    [sourceChain, destinationChain, selectedAsset, rawIntents],
-    ([$sourceChain, $destinationChain, $selectedAsset, $rawIntents]) => ({
+    [sourceChain, destinationChain, selectedAsset, sourceAssets, rawIntents],
+    ([$sourceChain, $destinationChain, $selectedAsset, $sourceAssets, $rawIntents]) => ({
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
       selectedAsset: $selectedAsset,
+      sourceAssets: $sourceAssets,
       receiver: $rawIntents.receiver,
       amount: $rawIntents.amount
     })

@@ -6,10 +6,12 @@ import { formatUnits } from "viem"
 import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 
 interface Props {
   stores: {
     rawIntents: RawIntentsStore
+    intents: Readable<IntentsStore>
     context: Readable<ContextStore>
   }
   rotateTo: (face: CubeFaces) => void
@@ -18,9 +20,9 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { rawIntents, context } = stores
+let { rawIntents, context, intents } = stores
 
-$: sortedAssets = [...($context.assetsList ?? [])].sort((a, b) => {
+$: sortedAssets = [...($intents.sourceAssets ?? [])].sort((a, b) => {
   if (a.isSupported !== b.isSupported) {
     return a.isSupported ? -1 : 1
   }

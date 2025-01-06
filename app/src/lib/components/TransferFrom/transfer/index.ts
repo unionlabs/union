@@ -22,7 +22,7 @@ export interface TransferStore {
 
 export function createTransferStore(): TransferStore {
   const rawIntents = createRawIntentsStore()
-  const context = createContextStore(rawIntents)
+  const context = createContextStore()
   const intents = createIntentStore(rawIntents, context)
   const validation = createValidationStore(rawIntents, intents, context)
 
