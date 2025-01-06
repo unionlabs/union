@@ -88,8 +88,8 @@ export function createValidationStore(
   }): FieldErrors {
     const parseInput = {
       ...formFields,
-      balance: selectedAsset.balance?.toString(),
-      decimals: selectedAsset.supported?.decimals
+      balance: selectedAsset.balance ?? 0n,
+      decimals: selectedAsset.supported?.decimals ?? 0
     }
 
     const schemaResult = safeParse(transferSchema, parseInput)

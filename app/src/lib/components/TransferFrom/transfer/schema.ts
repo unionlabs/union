@@ -42,12 +42,7 @@ export const transferSchema = v.pipe(
       v.title("Amount"),
       v.description("Amount must be a valid number greater than 0 and not exceed balance")
     ),
-    balance: v.pipe(
-      v.string(),
-      v.trim(),
-      v.title("Balance"),
-      v.description("Current balance for the asset")
-    ),
+    balance: v.pipe(v.bigint(), v.title("Balance"), v.description("Current balance for the asset")),
     decimals: v.fallback(v.number(), 0)
   }),
   v.forward(
@@ -67,8 +62,7 @@ export const transferSchema = v.pipe(
             }
           }
           const amountBigInt = parseAmount(input.amount, input.decimals)
-          const balanceBigInt = BigInt(input.balance)
-          return amountBigInt <= balanceBigInt
+          return amountBigInt <= input.balance // input.balance is already BigInt
         } catch (error) {
           console.error("Validation error:", error)
           return false
