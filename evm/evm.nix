@@ -594,6 +594,10 @@ _: {
                     ${contracts}/out/NFT.sol/NFTLib.json \
                     ${contracts}/out/NFT.sol/NFTPacketLib.json \
                     ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/Zkgm.sol/ZkgmLib.json \
+                    ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
                 ''
             );
 
