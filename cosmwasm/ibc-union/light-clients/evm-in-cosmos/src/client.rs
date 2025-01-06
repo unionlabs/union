@@ -1,14 +1,11 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use evm_in_cosmos_light_client_types::{
-    client_state::ClientState, consensus_state::ConsensusState, header::Header,
-};
+use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
-use ics23::ibc_api::SDK_SPECS;
-use unionlabs::encoding::{EncodeAs, EthAbi, Json};
+use unionlabs::{encoding::Json, hash::H256};
 
 use crate::errors::Error;
 
@@ -42,7 +39,7 @@ impl IbcClient for EvmInCosmosLightClient {
 
         ethereum_light_client::client::verify_membership(
             key,
-            consensus_state.ibc_storage_root,
+            consensus_state.storage_root,
             storage_proof,
             value,
         )
@@ -61,7 +58,7 @@ impl IbcClient for EvmInCosmosLightClient {
 
         ethereum_light_client::client::verify_non_membership(
             key,
-            consensus_state.ibc_storage_root,
+            consensus_state.storage_root,
             storage_proof,
         )
         .map_err(Error::EthereumLightClient)?;
@@ -74,7 +71,7 @@ impl IbcClient for EvmInCosmosLightClient {
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        client_state.latest_slot
+        client_state.l2_latest_height
     }
 
     fn status(_client_state: &Self::ClientState) -> Status {
@@ -115,39 +112,48 @@ impl IbcClient for EvmInCosmosLightClient {
         (u64, Self::ClientState, Self::ConsensusState),
         ibc_union_light_client::IbcClientError<Self>,
     > {
-        let client_state = ctx.read_self_client_state()?;
-        let l1_consensus_state: cometbls_light_client_types::ConsensusState = ctx
-            .read_consensus_state::<CometblsLightClient>(
-                client_state.l1_client_id,
-                header.l1_height.height(),
-            )
-            .map_err(Into::<Error>::into)?;
-        let consensus_state_path = ConsensusStatePath {
-            client_id: client_state.l2_client_id,
-            height: header.l2_slot,
-        }
-        .key();
+        let mut client_state = ctx.read_self_client_state()?;
 
-        let header_ = header.clone();
-        // The ethereum consensus state is stored in proto-encoded wasm-wrapped form.
-        // Verify inclusion of the ethereum consensus state against union.
-        ics23::ibc_api::verify_membership(
-            &header.l2_inclusion_proof,
-            &SDK_SPECS,
-            &l1_consensus_state.app_hash,
-            &[
-                b"wasm".to_vec(),
-                3u8.to_le_bytes()
-                    .into_iter()
-                    .chain(client_state.l1_ibc_contract_address)
-                    .chain(consensus_state_path)
-                    .collect::<Vec<u8>>(),
-            ],
-            header.l2_consensus_state.encode_as::<EthAbi>(),
+        ctx.verify_membership::<CometblsLightClient>(
+            client_state.l1_client_id,
+            header.l1_height.height(),
+            ConsensusStatePath {
+                client_id: client_state.l2_client_id,
+                height: header.l2_height.height(),
+            }
+            .key()
+            .into_bytes(),
+            header.l2_consensus_state_proof.clone(),
+            header.l2_consensus_state.clone(),
         )
-        .map_err(Error::VerifyL2Membership)?;
+        .map_err(Error::L1Error)?;
 
-        Ok(update_state(client_state, header_)?)
+        let l2_timestamp = extract_uint64(
+            &header.l2_consensus_state,
+            client_state.timestamp_offset as usize,
+        );
+
+        let l2_state_root = extract_bytes32(
+            &header.l2_consensus_state,
+            client_state.state_root_offset as usize,
+        );
+
+        let l2_storage_root = extract_bytes32(
+            &header.l2_consensus_state,
+            client_state.storage_root_offset as usize,
+        );
+
+        if client_state.l2_latest_height < header.l2_height.height() {
+            client_state.l2_latest_height = header.l2_height.height();
+        }
+
+        let consensus_state = ConsensusState {
+            timestamp: l2_timestamp,
+            state_root: l2_state_root,
+            storage_root: l2_storage_root,
+        };
+
+        Ok((header.l2_height.height(), client_state, consensus_state))
     }
 
     fn misbehaviour(
@@ -158,19 +164,18 @@ impl IbcClient for EvmInCosmosLightClient {
     }
 }
 
-fn update_state(
-    mut client_state: ClientState,
-    header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
-    if client_state.latest_slot < header.l1_height.height() {
-        client_state.latest_slot = header.l1_height.height();
-    }
+fn extract_uint64(data: &[u8], offset: usize) -> u64 {
+    u64::from_le_bytes(
+        data[offset..offset + 8]
+            .try_into()
+            .expect("impossible; qed"),
+    )
+}
 
-    let consensus_state = ConsensusState {
-        evm_state_root: header.l2_consensus_state.state_root,
-        ibc_storage_root: header.l2_consensus_state.storage_root,
-        timestamp: header.l2_consensus_state.timestamp,
-    };
-
-    Ok((header.l1_height.height(), client_state, consensus_state))
+fn extract_bytes32(data: &[u8], offset: usize) -> H256 {
+    H256::new(
+        data[offset..offset + 32]
+            .try_into()
+            .expect("impossible; qed"),
+    )
 }

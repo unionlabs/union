@@ -4847,7 +4847,6 @@ dependencies = [
  "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
  "hex-literal",
- "protos",
  "serde",
  "thiserror",
  "unionlabs",
@@ -4901,25 +4900,12 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethereum-light-client-types",
- "evm-in-cosmos-light-client-types",
+ "evm-state-lens-light-client-types",
  "evm-storage-verifier",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
  "ics23",
- "protos",
- "serde",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
-name = "evm-in-cosmos-light-client-types"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "beacon-api-types",
- "ethereum-light-client-types",
  "protos",
  "serde",
  "thiserror",

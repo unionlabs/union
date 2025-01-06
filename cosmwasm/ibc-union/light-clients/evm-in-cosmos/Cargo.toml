@@ -18,7 +18,7 @@ cometbls-light-client-types      = { workspace = true, features = ["proto"] }
 cosmwasm-std                     = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client            = { workspace = true, features = ["library"] }
 ethereum-light-client-types      = { workspace = true, features = ["serde", "ethabi"] }
-evm-in-cosmos-light-client-types = { workspace = true, features = ["serde", "ethabi", "proto"] }
+evm-state-lens-light-client-types= { workspace = true, features = ["serde", "ethabi"] }
 evm-storage-verifier             = { workspace = true }
 ibc-union-light-client           = { workspace = true }
 ibc-union-msg                    = { workspace = true }
