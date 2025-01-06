@@ -47,17 +47,24 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
         _storage_proof: Self::StorageProof,
         _value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        // let consensus_state = ctx.read_self_consensus_state(height)?;
-        // Ok(ics23::ibc_api::verify_membership(
-        //     &storage_proof,
-        //     &SDK_SPECS,
-        //     &consensus_state.app_hash,
-        //     // FIXME: concat(contract, key) right?
-        //     &[b"wasm".to_vec(), key],
-        //     value,
-        // )
-        // .map_err(Into::<Error>::into)?)
-        Ok(())
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        Ok(ics23::ibc_api::verify_membership(
+            &storage_proof,
+            &SDK_SPECS,
+            &consensus_state.app_hash,
+            &[
+                b"wasm".to_vec(),
+                0x3u8
+                    .to_le_bytes()
+                    .into_iter()
+                    .chain(client_state.contract_address)
+                    .chain(key)
+                    .collect::<Vec<_>>(),
+            ],
+            value,
+        )
+        .map_err(Into::<Error>::into)?)
     }
 
     fn verify_non_membership(
