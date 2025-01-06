@@ -20,6 +20,7 @@ import {EvmInCosmosClient} from "../contracts/clients/EvmInCosmosClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
+import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../contracts/lib/Hex.sol";
 
 import "./Deployer.sol";
@@ -56,6 +57,7 @@ library Protocols {
     string constant UCS00 = "ucs00";
     string constant UCS01 = "ucs01";
     string constant UCS02 = "ucs02";
+    string constant UCS03 = "ucs03";
 
     function make(
         string memory protocol
@@ -188,6 +190,21 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployUCS03(
+        IBCHandler handler,
+        address owner
+    ) internal returns (UCS03Zkgm) {
+        return UCS03Zkgm(
+            deploy(
+                Protocols.make(Protocols.UCS03),
+                abi.encode(
+                    address(new UCS03Zkgm()),
+                    abi.encodeCall(UCS03Zkgm.initialize, (handler, owner))
+                )
+            )
+        );
+    }
+
     function deployIBC(
         address owner
     )
@@ -292,6 +309,47 @@ contract DeployEvmLens is UnionScript {
         vm.stopBroadcast();
 
         console.log("EvmInCosmosClient: ", address(evmLensClient));
+    }
+}
+
+contract DeployUCS03 is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        address handler = getDeployed(IBC.BASED);
+
+        vm.startBroadcast(privateKey);
+
+        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner);
+
+        vm.stopBroadcast();
+
+        console.log("UCS03: ", address(zkgm));
     }
 }
 
@@ -414,6 +472,7 @@ contract GetDeployed is Script {
         address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
+        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
 
         console.log(
             string(abi.encodePacked("Multicall: ", multicall.toHexString()))
@@ -436,6 +495,7 @@ contract GetDeployed is Script {
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
         console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
         console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
+        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
 
         string memory impls = "base";
 
@@ -541,6 +601,24 @@ contract GetDeployed is Script {
         );
         impls.serialize(ucs02.toHexString(), proxyUCS02);
 
+        string memory proxyUCS03 = "proxyUCS03";
+        proxyUCS03.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyUCS03 = proxyUCS03.serialize(
+            "args",
+            abi.encode(
+                implOf(ucs03),
+                abi.encodeCall(
+                    UCS03Zkgm.initialize, (IIBCPacket(handler), sender)
+                )
+            )
+        );
+        impls.serialize(ucs03.toHexString(), proxyUCS03);
+
         string memory implMulticall = "implMulticall";
         implMulticall.serialize(
             "contract", string("contracts/Multicall.sol:Multicall")
@@ -593,9 +671,50 @@ contract GetDeployed is Script {
             "contract", string("contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT")
         );
         implUCS02 = implUCS02.serialize("args", bytes(hex""));
-        impls = impls.serialize(implOf(ucs01).toHexString(), implUCS02);
+        impls = impls.serialize(implOf(ucs02).toHexString(), implUCS02);
+
+        string memory implUCS03 = "implUCS03";
+        implUCS03.serialize(
+            "contract", string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03Zkgm")
+        );
+        implUCS03 = implUCS03.serialize("args", bytes(hex""));
+        impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
 
         impls.write(vm.envString("OUTPUT"));
+    }
+}
+
+contract UpgradeUCS03 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+
+        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new UCS03Zkgm());
+        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
     }
 }
 
