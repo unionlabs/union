@@ -13182,6 +13182,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-state-lens-ics23-ics23"
+version = "0.1.0"
+dependencies = [
+ "beacon-api-types",
+ "chain-utils",
+ "cosmos-state-lens-light-client-types",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-tendermint"
 version = "0.1.0"
 dependencies = [

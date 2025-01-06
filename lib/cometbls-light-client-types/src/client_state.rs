@@ -29,6 +29,8 @@ pub struct ClientState {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use std::array::TryFromSliceError;
+
     use unionlabs::{
         errors::{InvalidLength, MissingField},
         impl_proto_via_try_from_into,
@@ -52,12 +54,14 @@ pub mod proto {
         }
     }
 
-    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    #[derive(Debug, Clone, thiserror::Error)]
     pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid chain_id")]
         ChainId(#[from] InvalidLength),
+        #[error("invalid contract address")]
+        ContractAddress(#[source] TryFromSliceError),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for ClientState {

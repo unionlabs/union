@@ -118,6 +118,7 @@ members = [
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
   "voyager/modules/client/state-lens/evm",
+  "voyager/modules/client/state-lens/ics23-ics23",
 
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
@@ -210,13 +211,13 @@ ethereum-light-client-types = { path = "lib/ethereum-light-client-types", defaul
 ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
-berachain-light-client-types     = { path = "lib/berachain-light-client-types", default-features = false }
-scroll-api                       = { path = "lib/scroll-api", default-features = false }
-scroll-codec                     = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc                       = { path = "lib/scroll-rpc", default-features = false }
+berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
+scroll-api                   = { path = "lib/scroll-api", default-features = false }
+scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
+scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
 
-evm-state-lens-light-client-types = { path = "lib/state-lens/evm-light-client-types", default-features = false }
 cosmos-state-lens-light-client-types = { path = "lib/state-lens/cosmos-light-client-types", default-features = false }
+evm-state-lens-light-client-types    = { path = "lib/state-lens/evm-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }

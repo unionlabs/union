@@ -38,7 +38,7 @@ pub mod ethabi {
         fn from(value: SolConsensusState) -> Self {
             Self {
                 timestamp: value.timestamp,
-                app_hash: H256::new(value.app_hash.0),
+                app_hash: H256::new(value.appHash.0),
             }
         }
     }

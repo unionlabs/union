@@ -19,8 +19,6 @@ pub struct ClientState {
     #[prost(message, optional, tag = "6")]
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "7")]
-    pub contract_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {
     const NAME: &'static str = "ClientState";
