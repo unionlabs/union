@@ -27,7 +27,7 @@ let { rawIntents, intents, validation, context } = stores
 
 <div class="flex flex-col w-full h-full ">
 
-  <div class="text-white p-2 flex items-center justify-between border-b-2">
+  <div class="text-primary p-2 flex items-center justify-between border-b-2">
     <span class="font-bold uppercase">Transfer</span>
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">

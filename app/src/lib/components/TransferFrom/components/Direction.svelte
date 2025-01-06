@@ -22,7 +22,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           variant="outline"
           type="button"
           size="sm"
-          class="border-2 border-white font-bold"
+          class="border-2 font-bold"
           on:click={getSourceChain}
   >
     {$intents?.sourceChain?.display_name.split(" ")[0] ?? 'Source chain'}
@@ -31,7 +31,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           variant="outline"
           type="button"
           size="sm"
-          class="border-2 border-white font-bold"
+          class="border-2 font-bold"
           on:click={getDestinationChain}
   >
     {$intents?.destinationChain?.display_name.split(" ")[0] ?? "Destination chain"}

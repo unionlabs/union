@@ -34,8 +34,8 @@ function setAsset(address: string) {
 </script>
 
 <div class="flex flex-col h-full w-full">
-  <div class="text-white p-2 px-4 flex items-center justify-between border-b-2">
-    <span class="font-bold uppercase">Asset</span>
+  <div class="text-primary p-2 px-4 flex items-center justify-between border-b-2">
+    <span class="font-bold uppercase">Assets</span>
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
             on:click={() => rotateTo("intentFace")}

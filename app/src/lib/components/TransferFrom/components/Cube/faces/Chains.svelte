@@ -1,40 +1,42 @@
 <!-- ChainSelector.svelte -->
 <script lang="ts">
-import type { Readable } from "svelte/store"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
+  import type {Readable} from "svelte/store"
+  import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts"
+  import type {RawIntentsStore} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+  import type {CubeFaces} from "$lib/components/TransferFrom/components/Cube/types.ts"
+  import {Button} from "$lib/components/ui/button";
+  import {TRANSFER_DEBUG} from "$lib/components/TransferFrom/transfer/config.ts";
 
-interface Props {
-  stores: {
-    rawIntents: RawIntentsStore
-    context: Readable<ContextStore>
+  interface Props {
+    stores: {
+      rawIntents: RawIntentsStore
+      context: Readable<ContextStore>
+    }
+    rotateTo: (face: CubeFaces) => void
+    selected: "source" | "destination"
   }
-  rotateTo: (face: CubeFaces) => void
-  selected: "source" | "destination"
-}
 
-export let stores: Props["stores"]
-export let rotateTo: Props["rotateTo"]
-export let selected: Props["selected"]
+  export let stores: Props["stores"]
+  export let rotateTo: Props["rotateTo"]
+  export let selected: Props["selected"]
 
-let expandedChainId: string | null = null
+  let expandedChainId: string | null = null
 
-let { rawIntents, context } = stores
+  let {rawIntents, context} = stores
 
-function setChain(selected: "source" | "destination", chainId: string) {
-  rawIntents.updateField(selected, chainId)
-  rotateTo("intentFace")
-}
+  function setChain(selected: "source" | "destination", chainId: string) {
+    rawIntents.updateField(selected, chainId)
+    rotateTo("intentFace")
+  }
 
-function toggleExpand(chainId: string) {
-  expandedChainId = expandedChainId === chainId ? null : chainId
-}
+  function toggleExpand(chainId: string) {
+    expandedChainId = expandedChainId === chainId ? null : chainId
+  }
 </script>
 
 <div class="flex flex-col h-full w-full">
   <!-- Title Bar -->
-  <div class="text-white p-2 flex items-center justify-between border-b-2">
+  <div class="text-primary p-2 flex items-center justify-between border-b-2">
     <span class="font-bold uppercase">{selected} chain</span>
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
@@ -48,8 +50,9 @@ function toggleExpand(chainId: string) {
     <div class="p-2 space-y-2 h-full">
       {#each $context.chains as chain}
         <div>
-          <div
-                  class="flex items-center justify-between p-2 cursor-pointer bg-secondary hover:bg-secondary-foreground"
+          <Button
+                  variant="ghost"
+                  class="px-4 py-2 w-full rounded-none flex justify-between items-center"
                   on:click={() => setChain(selected, chain.chain_id)}
           >
             <div class="flex items-center gap-2">
@@ -61,11 +64,11 @@ function toggleExpand(chainId: string) {
             >
               <span>i</span>
             </button>
-          </div>
+          </Button>
 
           <!-- Expanded Info Panel -->
           {#if expandedChainId === chain.chain_id}
-            <div class="border-t-2 border-black p-2 bg-secondary">
+            <div class="">
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div class="border-2 border-black p-2">
                   <h4 class="font-bold mb-1">Network Info</h4>
@@ -73,11 +76,13 @@ function toggleExpand(chainId: string) {
                   <p>Type: {chain.rpc_type}</p>
                   <p>Prefix: {chain.addr_prefix}</p>
                 </div>
-                <div class="border-2 border-black p-2">
-                  <h4 class="font-bold mb-1">Status</h4>
-                  <p>Enabled: {chain.enabled ? '✓' : '✗'}</p>
-                  <p>Staging: {chain.enabled_staging ? '✓' : '✗'}</p>
-                </div>
+                {#if !TRANSFER_DEBUG}
+                  <div class="border-2 border-black p-2">
+                    <h4 class="font-bold mb-1">Status</h4>
+                    <p>Enabled: {chain.enabled ? '✓' : '✗'}</p>
+                    <p>Staging: {chain.enabled_staging ? '✓' : '✗'}</p>
+                  </div>
+                {/if}
                 {#if chain.explorers?.length}
                   <div class="col-span-2 border-2 border-black p-2">
                     <h4 class="font-bold mb-1">Explorers</h4>

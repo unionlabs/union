@@ -74,7 +74,7 @@ $: height = width * 1.5
 $: translateZ = width / 2
 </script>
 
-<div class="h-screen w-full flex items-center justify-center bg-black perspective-[2000px]">
+<div class="h-screen w-full flex items-center justify-center perspective-[2000px]">
   <div
           class="relative transform-style-preserve-3d transition-transform duration-1000"
           style={`width: ${width}px; height: ${height}px; transform: rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`}

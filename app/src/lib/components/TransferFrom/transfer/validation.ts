@@ -23,7 +23,7 @@ export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
 
 interface ValidationContext {
   balances: Array<BalanceRecord>
-  sourceChain: Chain
+  sourceChain: Chain | undefined
   destinationChain: Chain | undefined
   selectedAsset: SelectedAsset
   chains: Array<Chain>
@@ -85,7 +85,7 @@ export function createValidationStore(
   }: {
     formFields: FormFields
     balances: Array<BalanceRecord>
-    sourceChain: Chain
+    sourceChain: Chain | undefined
     destinationChain: Chain | undefined
     selectedAsset: SelectedAsset
     chains: Array<Chain>

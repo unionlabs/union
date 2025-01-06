@@ -20,7 +20,6 @@ export interface SelectedAsset {
   decimals: number
   gasToken: boolean | undefined
   supported: ChainAsset | undefined
-  raw: BalanceRecord | undefined
 }
 
 export interface IntentsStore {
@@ -66,7 +65,6 @@ export function createIntentStore(
     decimals: $supportedAsset?.decimals ?? 0,
     gasToken: $asset?.gasToken,
     supported: $supportedAsset,
-    raw: $asset
   }))
 
   return derived(

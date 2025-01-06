@@ -20,7 +20,7 @@ export let onSelectAsset: Props["onSelectAsset"]
         type="button"
         size="sm"
         variant="outline"
-        class="border-2 border-white font-bold"
+        class="border-2 font-bold"
         on:click={onSelectAsset}
 >
   {$intents.selectedAsset.symbol ? truncate($intents.selectedAsset.symbol, 18) : "Select Asset"}
