@@ -55,7 +55,7 @@ let { rawIntents, intents, validation, context } = stores
         </div>
 
         <div class="mb-4">
-          <CollapsibleDisplay data={$context.assetsList} label="Assets List" color="text-pink-500"/>
+          <CollapsibleDisplay data={$intents.sourceAssets} label="Assets List" color="text-pink-500"/>
         </div>
 
         <div class="mb-4">
