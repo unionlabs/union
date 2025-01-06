@@ -8,6 +8,7 @@ import { Button } from "$lib/components/ui/button"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import { Input } from "$lib/components/ui/input"
 
 interface Props {
   stores: {
@@ -35,7 +36,7 @@ let { rawIntents, intents, validation, context } = stores
       <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1">
-        <input
+        <Input
                 id="amount"
                 type="number"
                 name="amount"
@@ -61,7 +62,7 @@ let { rawIntents, intents, validation, context } = stores
       </div>
 
       <div class="flex flex-col gap-1">
-        <input
+        <Input
                 type="text"
                 id="receiver"
                 name="receiver"
