@@ -30,7 +30,7 @@ struct ClientState {
     string l2ChainId;
     uint32 l1ClientId;
     uint32 l2ClientId;
-    uint64 latestHeight;
+    uint64 l2LatestHeight;
 }
 
 struct ConsensusState {
@@ -59,7 +59,7 @@ library CosmosInCosmosLib {
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight
         );
     }
 
@@ -117,20 +117,20 @@ contract CosmosInCosmosClient is
         assembly {
             consensusState := consensusStateBytes.offset
         }
-        if (clientState.latestHeight == 0 || consensusState.timestamp == 0) {
+        if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
             revert CosmosInCosmosLib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
-        consensusStates[clientId][clientState.latestHeight] = consensusState;
+        consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
         // Normalize to nanosecond because ibc-go recvPacket expects nanos...
-        processedMoments[clientId][clientState.latestHeight] = ProcessedMoment({
+        processedMoments[clientId][clientState.l2LatestHeight] = ProcessedMoment({
             timestamp: block.timestamp * 1e9,
             height: block.number
         });
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
-            height: clientState.latestHeight
+            height: clientState.l2LatestHeight
         });
     }
 
@@ -172,8 +172,8 @@ contract CosmosInCosmosClient is
             l2ConsensusState := rawL2ConsensusState.offset
         }
 
-        if (header.l2Height > clientState.latestHeight) {
-            clientState.latestHeight = header.l2Height;
+        if (header.l2Height > clientState.l2LatestHeight) {
+            clientState.l2LatestHeight = header.l2Height;
         }
 
         // L₂[H₂] = S₂
@@ -265,7 +265,7 @@ contract CosmosInCosmosClient is
     function getLatestHeight(
         uint32 clientId
     ) external view override returns (uint64) {
-        return clientStates[clientId].latestHeight;
+        return clientStates[clientId].l2LatestHeight;
     }
 
     function isFrozen(

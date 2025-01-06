@@ -3370,6 +3370,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmos-state-lens-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "cosmwasm-core"
 version = "2.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

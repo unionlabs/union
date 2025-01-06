@@ -78,6 +78,7 @@ members = [
   "lib/linea-light-client-types",
   "lib/movement-light-client-types",
   "lib/state-lens/evm-light-client-types",
+  "lib/state-lens/cosmos-light-client-types",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
@@ -215,6 +216,7 @@ scroll-codec                     = { path = "lib/scroll-codec", default-features
 scroll-rpc                       = { path = "lib/scroll-rpc", default-features = false }
 
 evm-state-lens-light-client-types = { path = "lib/state-lens/evm-light-client-types", default-features = false }
+cosmos-state-lens-light-client-types = { path = "lib/state-lens/cosmos-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
