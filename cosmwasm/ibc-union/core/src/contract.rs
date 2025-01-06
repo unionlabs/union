@@ -2034,6 +2034,128 @@ mod tests {
     }
 
     #[test]
+    fn update_client_ok() {
+        let mut deps = mock_dependencies();
+        let sender = mock_addr(SENDER);
+
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&sender, &[]),
+            InitMsg {},
+        )
+        .expect("instantiate ok");
+        deps.querier
+            .update_wasm(wasm_query_handler(|msg| match msg {
+                LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+                LightClientQueryMsg::VerifyClientMessage { .. } => {
+                    to_json_binary(&VerifyClientMessageUpdate {
+                        height: 2,
+                        consensus_state: vec![3, 2, 1].into(),
+                        client_state: vec![3, 2, 1].into(),
+                    })
+                }
+                msg => panic!("should not be called: {:?}", msg),
+            }));
+
+        let res = create_client(deps.as_mut()).expect("create client ok");
+        let client_id: u32 = res
+            .events
+            .iter()
+            .find(|event| event.ty.eq(events::client::CREATE))
+            .expect("create client event exists")
+            .attributes
+            .iter()
+            .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
+            .expect("client type attribute exists")
+            .value
+            .parse()
+            .expect("client type string is u32");
+
+        let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
+            client_id,
+            client_message: vec![3, 2, 1].into(),
+            relayer: mock_addr(RELAYER).into_string(),
+        });
+        assert!(execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            msg
+        )
+        .is_ok())
+    }
+
+    #[test]
+    fn update_client_ko() {
+        todo!()
+    }
+
+    #[test]
+    fn update_client_commitments_saved() {
+        let mut deps = mock_dependencies();
+        let sender = mock_addr(SENDER);
+
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&sender, &[]),
+            InitMsg {},
+        )
+        .expect("instantiate ok");
+        deps.querier
+            .update_wasm(wasm_query_handler(|msg| match msg {
+                LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+                LightClientQueryMsg::VerifyClientMessage { .. } => {
+                    to_json_binary(&VerifyClientMessageUpdate {
+                        height: 2,
+                        consensus_state: vec![3, 2, 1].into(),
+                        client_state: vec![3, 2, 1].into(),
+                    })
+                }
+                msg => panic!("should not be called: {:?}", msg),
+            }));
+
+        let res = create_client(deps.as_mut()).expect("create client ok");
+        let client_id: u32 = res
+            .events
+            .iter()
+            .find(|event| event.ty.eq(events::client::CREATE))
+            .expect("create client event exists")
+            .attributes
+            .iter()
+            .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
+            .expect("client type attribute exists")
+            .value
+            .parse()
+            .expect("client type string is u32");
+
+        let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
+            client_id,
+            client_message: vec![3, 2, 1].into(),
+            relayer: mock_addr(RELAYER).into_string(),
+        });
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            msg,
+        )
+        .expect("update client ok");
+
+        assert_eq!(
+            CLIENT_STATES.load(&deps.storage, client_id).unwrap(),
+            vec![3, 2, 1]
+        );
+        assert_eq!(
+            CLIENT_CONSENSUS_STATES
+                .load(&deps.storage, (client_id, 2))
+                .unwrap(),
+            vec![3, 2, 1]
+        );
+    }
+
+    #[test]
     fn channel_value() {
         let channel = Channel {
             state: ChannelState::Init,
