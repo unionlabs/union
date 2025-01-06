@@ -33,8 +33,8 @@ let { rawIntents, intents, validation, context } = stores
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
     <div class="flex flex-col gap-4">
-      <Direction {context} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
-      <SelectedAsset {context} {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
+      <Direction {intents} {validation} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
+      <SelectedAsset {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1">
         <Input
                 id="amount"

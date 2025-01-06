@@ -50,7 +50,7 @@ export function createValidationStore(
     if (hasAllRequiredValues) {
       const parseInput = {
         ...formFields,
-        balance: $intents.selectedAsset.balance,
+        balance: $intents.selectedAsset.balance?.toString(),
         decimals: $intents.selectedAsset?.decimals
       }
       const schemaResult = safeParse(transferSchema, parseInput)
