@@ -18,13 +18,20 @@ import { err, ok, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
 import { cosmosChainId } from "../cosmos/client.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
-import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
+import {
+  sepolia,
+  holesky,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
+} from "viem/chains"
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 export const evmChainId = [
   `${sepolia.id}`,
+  `${holesky.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
   `${berachainTestnetbArtio.id}`
@@ -75,26 +82,40 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           return ok(transfer.value)
         }
 
-        const chainDetails = await getHubbleChainDetails({
-          destinationChainId,
-          sourceChainId: parameters.chainId
-        })
+        // TODO: don't hardcode chain details
+        // const chainDetails2 = await getHubbleChainDetails({
+        //   destinationChainId,
+        //   sourceChainId: parameters.chainId
+        // })
 
-        if (chainDetails.isErr()) return err(chainDetails.error)
-
-        if (chainDetails.value.transferType === "pfm") {
-          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-          const pfmMemo = createPfmMemo({
-            channel: chainDetails.value.destinationChannel,
-            port: chainDetails.value.port,
-            receiver: cosmosChainId.includes(destinationChainId)
-              ? bech32AddressToHex({ address: receiver })
-              : receiver
-          })
-
-          if (pfmMemo.isErr()) return err(pfmMemo.error)
-          memo = pfmMemo.value
+        const chainDetails = {
+          value: {
+            sourceChannel: "3",
+            relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
+            transferType: "direct",
+            destinationChainId
+          }
         }
+        // const chainDetails = await getHubbleChainDetails({
+        //   destinationChainId,
+        //   sourceChainId: parameters.chainId
+        // })
+
+        // if (chainDetails.isErr()) return err(chainDetails.error)
+
+        // if (chainDetails.value.transferType === "pfm") {
+        //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        //   const pfmMemo = createPfmMemo({
+        //     channel: chainDetails.value.destinationChannel,
+        //     port: chainDetails.value.port,
+        //     receiver: cosmosChainId.includes(destinationChainId)
+        //       ? bech32AddressToHex({ address: receiver })
+        //       : receiver
+        //   })
+
+        //   if (pfmMemo.isErr()) return err(pfmMemo.error)
+        //   memo = pfmMemo.value
+        // }
 
         destinationChainId ??= chainDetails.value.destinationChainId
         const sourceChannel = chainDetails.value.sourceChannel
@@ -125,12 +146,13 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
         // otherwise, it's the relayer contract address from ucs config
         if (parameters.chainId !== destinationChainId) {
-          const ucsDetails = await getHubbleChainDetails({
-            destinationChainId,
-            sourceChainId: parameters.chainId
-          })
-          if (ucsDetails.isErr()) return err(ucsDetails.error)
-          _receiver = getAddress(ucsDetails.value.relayContractAddress)
+          // TODO: don't hardcode
+          // const ucsDetails = await getHubbleChainDetails({
+          //   destinationChainId,
+          //   sourceChainId: parameters.chainId
+          // })
+          // if (ucsDetails.isErr()) return err(ucsDetails.error)
+          _receiver = "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa"
         } else _receiver = getAddress(receiver)
 
         return await evmApproveTransferAsset(client, {
@@ -161,26 +183,34 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           })
           return ok(gas.toString())
         }
-        const chainDetails = await getHubbleChainDetails({
-          destinationChainId,
-          sourceChainId: parameters.chainId
-        })
-
-        if (chainDetails.isErr()) return err(chainDetails.error)
-
-        if (chainDetails.value.transferType === "pfm") {
-          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-          const pfmMemo = createPfmMemo({
-            port: chainDetails.value.port,
-            channel: chainDetails.value.destinationChannel,
-            receiver: cosmosChainId.includes(destinationChainId)
-              ? bech32AddressToHex({ address: receiver })
-              : receiver
-          })
-
-          if (pfmMemo.isErr()) return err(pfmMemo.error)
-          memo = pfmMemo.value
+        // const chainDetails = await getHubbleChainDetails({
+        //   destinationChainId,
+        //   sourceChainId: parameters.chainId
+        // })
+        const chainDetails = {
+          value: {
+            sourceChannel: "3",
+            relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
+            transferType: "direct",
+            destinationChainId
+          }
         }
+
+        // if (chainDetails.isErr()) return err(chainDetails.error)
+
+        // if (chainDetails.value.transferType === "pfm") {
+        //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        //   const pfmMemo = createPfmMemo({
+        //     port: chainDetails.value.port,
+        //     channel: chainDetails.value.destinationChannel,
+        //     receiver: cosmosChainId.includes(destinationChainId)
+        //       ? bech32AddressToHex({ address: receiver })
+        //       : receiver
+        //   })
+
+        //   if (pfmMemo.isErr()) return err(pfmMemo.error)
+        //   memo = pfmMemo.value
+        // }
 
         const sourceChannel = chainDetails.value.sourceChannel
         relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
