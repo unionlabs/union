@@ -177,6 +177,12 @@ library ZkgmLib {
         return packet;
     }
 
+    function encodeSyscall(
+        SyscallPacket memory syscall
+    ) internal pure returns (bytes memory) {
+        return abi.encode(syscall.version, syscall.index, syscall.packet);
+    }
+
     function decodeSyscall(
         bytes calldata stream
     ) internal pure returns (SyscallPacket calldata) {
@@ -215,6 +221,23 @@ library ZkgmLib {
             packet := stream.offset
         }
         return packet;
+    }
+
+    function encodeFungibleAssetTransfer(
+        FungibleAssetTransferPacket memory transfer
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            transfer.sender,
+            transfer.receiver,
+            transfer.sentToken,
+            transfer.sentTokenPrefix,
+            transfer.sentSymbol,
+            transfer.sentName,
+            transfer.sentAmount,
+            transfer.askToken,
+            transfer.askAmount,
+            transfer.onlyMaker
+        );
     }
 
     function decodeFungibleAssetTransfer(
@@ -291,6 +314,65 @@ contract UCS03Zkgm is
 
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
+    }
+
+    function transfer(
+        uint32 channelId,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        bytes calldata receiver,
+        address sentToken,
+        uint256 sentAmount,
+        bytes calldata askToken,
+        uint256 askAmount,
+        bool onlyMaker
+    ) public {
+        IERC20Metadata sentTokenMeta = IERC20Metadata(sentToken);
+        string memory tokenName = sentTokenMeta.name();
+        string memory tokenSymbol = sentTokenMeta.symbol();
+        uint256 origin = tokenOrigin[sentToken];
+        if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
+            IZkgmERC20(sentToken).burn(msg.sender, sentAmount);
+        } else {
+            // TODO: extract this as a step before verifying to allow for ERC777
+            // send hook
+            SafeERC20.safeTransferFrom(
+                sentTokenMeta, msg.sender, address(this), sentAmount
+            );
+            channelBalance[channelId][address(sentToken)] += sentAmount;
+        }
+        ibcHandler.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: salt,
+                    path: 0,
+                    syscall: ZkgmLib.encodeSyscall(
+                        SyscallPacket({
+                            version: ZkgmLib.ZKGM_VERSION_0,
+                            index: ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER,
+                            packet: ZkgmLib.encodeFungibleAssetTransfer(
+                                FungibleAssetTransferPacket({
+                                    sender: abi.encodePacked(msg.sender),
+                                    receiver: receiver,
+                                    sentToken: abi.encodePacked(sentToken),
+                                    sentTokenPrefix: origin,
+                                    sentSymbol: tokenSymbol,
+                                    sentName: tokenName,
+                                    sentAmount: sentAmount,
+                                    askToken: askToken,
+                                    askAmount: askAmount,
+                                    onlyMaker: onlyMaker
+                                })
+                            )
+                        })
+                    )
+                })
+            )
+        );
     }
 
     function send(
