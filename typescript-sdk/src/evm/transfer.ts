@@ -1,4 +1,4 @@
-import { ucs01RelayAbi } from "../abi/ucs-01.ts"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { timestamp } from "../utilities/index.ts"
 import { err, ok, type Result } from "neverthrow"
 import type { Hex, HexAddress } from "../types.ts"
