@@ -213,7 +213,7 @@ _: {
         }
         {
           network = "holesky";
-          rpc-url = "https://ethereum-holesky-rpc.publicnode.com";
+          rpc-url = "https://1rpc.io/holesky";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
@@ -695,6 +695,12 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-deploy-${args.network}-ucs03";
+            value = eth-deploy-single ({ kind = "UCS03"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-multicall";
             value = eth-deploy-single ({ kind = "Multicall"; } // args);
           }) networks
@@ -718,6 +724,18 @@ _: {
               {
                 dry = true;
                 protocol = "CometblsClient";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ucs03";
+            value = eth-upgrade (
+              {
+                dry = false;
+                protocol = "UCS03";
               }
               // args
             );
