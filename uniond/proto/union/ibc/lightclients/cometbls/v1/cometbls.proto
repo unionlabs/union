@@ -20,6 +20,7 @@ message ClientState {
   .ibc.core.client.v1.Height frozen_height = 5 [(gogoproto.nullable) = false];
   // Latest height the client was updated to
   .ibc.core.client.v1.Height latest_height = 6 [(gogoproto.nullable) = false];
+  bytes contract_address = 7;
 }
 
 message ConsensusState {
