@@ -64,7 +64,7 @@ export function createIntentStore(
     symbol: getDisplaySymbol($asset, $supportedAsset),
     decimals: $supportedAsset?.decimals ?? 0,
     gasToken: $asset?.gasToken,
-    supported: $supportedAsset,
+    supported: $supportedAsset
   }))
 
   return derived(

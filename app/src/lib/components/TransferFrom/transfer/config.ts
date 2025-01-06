@@ -1,4 +1,4 @@
-import type {FormFields} from "$lib/components/TransferFrom/transfer/raw-intents.ts";
+import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 export const TRANSFER_DEBUG = true
 
