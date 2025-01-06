@@ -13,82 +13,105 @@ module ibc::mpt_verifier {
     }
 
 
-    public fun parse_list(data: &vector<u8>): (u64, u64) {
-        let start_idx = 0;
+    public fun parse_list(data: &vector<u8>): (u256, u256) {
         let n = vector::length(data);
-        assert!(start_idx < n, 8001);
-
-        let kind = *vector::borrow(data, start_idx);
+        assert!(n > 0, 201); // Ensure we have at least one byte
+        let kind = *vector::borrow(data, 0); // Get first byte
 
         assert!(kind >= 0xC0, 8002);
 
         if (kind < 0xF8) {
-            let list_size = (kind as u64) - 0xC0;
+            let list_size = (kind as u256) - 0xC0;
             let offset = 1;
-            (list_size, offset)
+            return (list_size, offset);
+        };
+        let length_size = (kind as u64) - 0xF7;
+        assert!(length_size <= 31, 202); // Length size must be <= 31
+        assert!(n >= ((length_size as u64) + 1), 203); // Ensure buffer has enough bytes
 
-        } else {
-            let length_size = (kind as u64) - 0xF7;
-            assert!(length_size <= 31, 8003);
-            assert!((start_idx + 1 + length_size) <= n, 8004);
+        let length = 0;
+        if (length_size > 0) {
+            let j = 0;
+            while(j < length_size) {
+                let idx = (1 + (j as u64));
+                let b = 0;
+                if (idx < n) {
+                    b = (*vector::borrow(data, idx) as u256);
+                };
+                length = (length << 8) | (b);
+                j = j + 1;
+            }
+        };
+        let list_size = (length as u256);
+        let offset = (1 + (length_size as u256));
+        (list_size, offset)
 
-            let list_size = 0u64;
-            let i = 0u64;
-            while (i < length_size) {
-                let b = *vector::borrow(data, start_idx + 1 + i);
-                list_size = (list_size << 8) | (b as u64);
-                i = i + 1;
-            };
-            let offset = length_size + 1;
-            (list_size, offset)
-        }
     }
 
     public fun next_size(data: &vector<u8>): u64 {
-        let start_idx = 0;
         let n = vector::length(data);
-        assert!(start_idx < n, 101);
+        assert!(n > 0, 201); // Ensure we have at least one byte
 
-        // TODO: not %100 sure about this
-        let kind = *vector::borrow(data, start_idx);
+        let kind = vector::borrow(data, 0); // Get first byte
+        let kind_u8 = *kind;
 
-        if (kind < 0x80) {
-            1
-        } else if (kind < 0xB8) {
-            (1 + (kind as u64) - 0x80)
-        } else if (kind < 0xC0) {
-            let length_size = (kind as u64) - 0xB7;
-            assert!(length_size <= 31, 102);
-            assert!((start_idx + 1 + length_size) <= n, 103);
+        if (kind_u8 < 0x80) {
+            // Small single byte
+            return 1;
+        } else if (kind_u8 < 0xB8) {
+            // Short string
+            return 1 + (((kind_u8 as u256) - 0x80) as u64);
+        } else if (kind_u8 < 0xC0) {
+            // Long string
+            let length_size = (((kind_u8 as u256) - 0xB7) as u8);
 
-            let length: u64 = 0;
-            let i = 0;
-            while (i < length_size) {
-                let b = *vector::borrow(data, start_idx + 1 + i);
-                length = (length << 8) | (b as u64);
-                i = i + 1;
+            // Ensure that we don't overflow and don't read out of bounds
+            assert!(length_size <= 31, 202); // Length size must be <= 31
+            assert!(n >= ((length_size as u64) + 1), 203); // Ensure buffer has enough bytes
+
+            let length = 0;
+            if (length_size > 0) {
+                let j = 0;
+                while(j < length_size) {
+                    let idx = (1 + (j as u64));
+                    let b = 0;
+                    if (idx < n) {
+                        b = (*vector::borrow(data, idx) as u256);
+                    };
+                    length = (length << 8) | (b);
+                    j = j + 1;
+                }
             };
-            (1 + length_size + length)
+            return (length as u64) + (1 + (length_size as u64));
+        } else if (kind_u8 < 0xF8) {
+            // Short list
+            return 1 + (((kind_u8 as u256) - 0xC0) as u64);
+        };
+        // Long list
+        let length_size = (((kind_u8 as u256) - 0xf7) as u8);
 
-        } else if (kind < 0xF8) {
-            (1 + (kind as u64) - 0xC0)
+        // Ensure that we don't overflow and don't read out of bounds
+        assert!(length_size <= 31, 202); // Length size must be <= 31
+        assert!(n >= ((length_size as u64)), 203); // Ensure buffer has enough bytes
 
-        } else {
-            let length_size = (kind as u64) - 0xF7;
-            assert!(length_size <= 31, 104);
-            assert!((start_idx + 1 + length_size) <= n, 105);
+        let length = 0;
+        if (length_size > 0) {
+            let j = 0;
+            while(j < length_size) {
+                let idx = (1 + (j as u64));
 
-            let length: u64 = 0;
-            let i = 0;
-            while (i < length_size) {
-                let b = *vector::borrow(data, start_idx + 1 + i);
-                length = (length << 8) | (b as u64);
-                i = i + 1;
-            };
-            (1 + length_size + length)
-        }
+                    let b = 0;
+                    if (idx < n) {
+                        b = (*vector::borrow(data, idx) as u256);
+                    };
+                length = (length << 8) | (b);
+                j = j + 1;
+            }
+        };
+        (length as u64) + (1 + (length_size as u64))
     }
 
+//0xffab1234567891ba
     public fun skip(data: &vector<u8>): vector<u8> {
         let start_idx = 0;
         let size_to_skip = next_size(data);
@@ -109,52 +132,56 @@ module ibc::mpt_verifier {
 
 
     public fun parse_uint(data: &vector<u8>): (u256, u64) {
-            let n = vector::length(data);
-            assert!(n > 0, 201);
+        let n = vector::length(data);
+        assert!(n > 0, 201);
 
-            let kind = vector::borrow(data, 0);
-            let kind_u8 = *kind;
-            assert!(kind_u8 <= 0xA0, 202);
+        let kind = vector::borrow(data, 0);
+        let kind_u8 = *kind;
+        assert!(kind_u8 <= 0xA0, 202);
 
-            if (kind_u8 < 0x80) {
-                ((kind_u8 as u256), 1)
+        if (kind_u8 < 0x80) {
+            ((kind_u8 as u256), 1)
+        } else {
+            // Short string
+            let short_len = (((kind_u8 as u64) - 0x80) as u8);
+
+            assert!((short_len as u64) <= n, 203);
+
+            assert!((short_len as u64) <= 32, 204);
+
+            let val = 0;
+            if (short_len == 32) {
+                let j: u8 = 0;
+                while (j < short_len) {
+                    let idx = ((1 + j) as u64);
+                    let b = 0;
+                    if (idx < n) {
+                        b = (*vector::borrow(data, idx) as u256);
+                    };
+                    val = val | ((b << (8 * (31-j))) as u256);
+                    j = j + 1;
+                }
             } else {
-                // Short string
-                let short_len = (((kind_u8 as u64) - 0x80) as u8);
-
-                assert!((short_len as u64) <= n, 203);
-
-                assert!((short_len as u64) <= 32, 204);
-
-                let val = 0;
-                if (short_len == 32) {
-                    let j: u8 = 0;
-                    while (j < short_len-1) {
+                let j: u8 = 0;
+                if (short_len > 0){
+                    while (j < short_len) {
                         let idx = ((1 + j) as u64);
-                        let b = (*vector::borrow(data, idx) as u256);
-                        val = val | ((b << (8 * (31-j))) as u256);
+                        let b = 0;
+                        if (idx < n) {
+                            b = (*vector::borrow(data, idx) as u256);
+                        };
+                        val = val | (b << ((8 * (short_len - 1 - j))) as u256);
                         j = j + 1;
                     }
-                } else {
-                    let j: u8 = 0;
-                    if (short_len > 0){
-                        while (j < short_len -1) {
-                            let idx = ((1 + j) as u64);
-                            let b = (*vector::borrow(data, idx) as u256);
-                            val = val | (b << ((8 * (short_len - 1 - j))) as u256);
-                            j = j + 1;
-                        }
-                    }
-                };
-
-                ((val as u256), (1 + short_len as u64) )
-            }
+                }
+            };
+            ((val as u256), (1 + short_len as u64) )
         }
-
+    }
 
     public fun split_bytes(data: &vector<u8>): (vector<u8>, vector<u8>) {
         let n = vector::length(data);
-        assert!(n > 0, 9001);
+        assert!(n > 0, 201); // Ensure we have at least one byte
 
         let kind = *vector::borrow(data, 0);
 
@@ -170,33 +197,36 @@ module ibc::mpt_verifier {
             if (kind < 0xB8) {
                 offset = 1;
                 size = (kind as u64) - 0x80;
+                assert!(offset + size >= n, 9001);
             } else {
-                let length_size = (kind as u64) - 0xB7;
+                let length_size = (((kind as u256) - 0xB7) as u8);
                 assert!(length_size <= 31, 9003);
-                assert!((1 + length_size) <= n, 9004);
+                assert!(n >= ((length_size as u64) + 1), 203); // Ensure buffer has enough bytes
 
-                let tmp_len = 0u64;
-                let i = 0u64;
-                while (i < length_size) {
-                    let b = *vector::borrow(data, 1 + i);
-                    tmp_len = (tmp_len << 8) | (b as u64);
-                    i = i + 1;
+                let length = 0;
+                if (length_size == 32) {
+                    let j: u8 = 0;
+                    while (j < length_size) {
+                        let idx = ((1 + j) as u64);
+                        let b = 0;
+                        if (idx < n) {
+                            b = (*vector::borrow(data, idx) as u256);
+                        };
+                        length = length | ((b << (8 * (31-j))) as u256);
+                        j = j + 1;
+                    }
                 };
-
-                size = tmp_len;
-                offset = 1 + length_size;
+                size = (length as u64);
+                offset = 1 + (length_size as u64);
+                assert!(offset + size >= n, 9004);
             }
+
         };
-
-        let end_of_result = offset + size;
-        assert!(end_of_result <= n, 9005);
-
-        let splitted = vector::slice(data, offset, size);
-
-        let remainder_len = n - end_of_result;
-        let remainder = vector::slice(data, end_of_result, remainder_len);
-
-        (splitted, remainder)
+        let end  = offset + size;
+        assert!(end <= n, 9005);
+        let result = vector::slice(data, offset, end);
+        let rest = vector::slice(data, end, n);
+        (result, rest)
     }
 
 
@@ -234,4 +264,66 @@ module ibc::mpt_verifier {
         assert!(size == 33, 1);
     }
 
+    #[test]
+    public fun test_next_size() {
+        let buf: vector<u8> = x"ffab1234567891ba";
+        let size = next_size(&buf);
+        assert!(size == 12326972676061116937, 1);
+
+        let buf: vector<u8> = x"75";
+        let size = next_size(&buf);
+        assert!(size == 1, 1);
+
+        let buf: vector<u8> = x"85";
+        let size = next_size(&buf);
+        assert!(size == 6, 1);
+
+        let buf: vector<u8> = x"b9b8b7";
+        let size = next_size(&buf);
+        assert!(size == 47290, 1);
+
+        let buf: vector<u8> = x"b9b8b7";
+        let size = next_size(&buf);
+        assert!(size == 47290, 1);
+
+        let buf: vector<u8> = x"babbaacc";
+        let size = next_size(&buf);
+        assert!(size == 12298960, 1);
+
+        let buf: vector<u8> = x"c5c4";
+        let size = next_size(&buf);
+        assert!(size == 6, 1);
+    }
+
+
+    #[test]
+    public fun test_parse_list() {
+        let buf: vector<u8> = x"f9aabbcc";
+        let (list_size, offset) = parse_list(&buf);
+        assert!(list_size == 43707, 1);
+        assert!(offset == 3, 1);
+
+        let buf: vector<u8> = x"faaabbccdd";
+        let (list_size, offset) = parse_list(&buf);
+        assert!(list_size == 11189196, 1);
+        assert!(offset == 4, 1);
+    }
+
+    #[test]
+    public fun test_split_bytes() {
+        let buf: vector<u8> = x"b90000ab12";
+        let (result, res) = split_bytes(&buf);
+        assert!(result == x"", 1);
+        assert!(res == x"ab12", 1);
+
+        let buf: vector<u8> = x"b800113344";
+        let (result, res) = split_bytes(&buf);
+        assert!(result == x"", 1);
+        assert!(res == x"113344", 1);
+
+        let buf: vector<u8> = x"b80011";
+        let (result, res) = split_bytes(&buf);
+        assert!(result == x"", 1);
+        assert!(res == x"11", 1);
+    }
 }
