@@ -1,7 +1,14 @@
 <script lang="ts">
-import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
 import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte"
 import { deviceWidth } from "$lib/utilities/device.ts"
+
+type CubeFaces =
+  | "intentFace"
+  | "chainsFace"
+  | "verifyFace"
+  | "assetsFace"
+  | "sourceFace"
+  | "destinationFace"
 
 let currentRotation = { x: 0, y: 0 }
 

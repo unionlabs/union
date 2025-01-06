@@ -23,14 +23,14 @@ export interface AssetListItem {
   balance: BalanceRecord
   isSupported: boolean
   supportedAsset?: ChainAsset
-  symbol: string // Pre-computed symbol
+  symbol: string
 }
 
 export interface SelectedAsset {
-  address: Address | undefined
+  address: string | undefined
   balance: bigint | undefined
   symbol: string | undefined
-  decimals: number | undefined
+  decimals: number
   gasToken: boolean | undefined
   supported: ChainAsset | undefined
   raw: BalanceRecord | undefined

@@ -40,7 +40,7 @@ export type Chain = (typeof CHAINS)[number]
 
 export const CHAIN = {
   UNION: {
-    ID: "union-testnet-9",
+    ID: "union-testnet-8",
     NAME: "Union Testnet"
   },
   SEPOLIA: {

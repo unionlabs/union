@@ -9,7 +9,6 @@ import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfe
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 
 const stores = createTransferStore()
-let { context } = stores
 </script>
 
 <Cube>
