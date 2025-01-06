@@ -2,17 +2,19 @@
 import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
 import type { Readable } from "svelte/store"
-import type { IntentStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
 import { Button } from "$lib/components/ui/button"
+import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 interface Props {
   stores: {
-    intents: IntentStore
-    validation: ValidationStoreAndMethods
+    rawIntents: RawIntentsStore
+    intents: Readable<IntentsStore>
     context: Readable<ContextStore>
+    validation: ValidationStoreAndMethods
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -20,7 +22,7 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { intents, validation, context } = stores
+let { rawIntents, intents, validation, context } = stores
 </script>
 
 <div class="flex flex-col w-full h-full ">
@@ -40,7 +42,7 @@ let { intents, validation, context } = stores
                 minlength={1}
                 maxlength={64}
                 required={true}
-                disabled={!$context.selectedAsset.balance}
+                disabled={!$intents.selectedAsset.address}
                 autocorrect="off"
                 placeholder="0.00"
                 spellcheck="false"
@@ -51,7 +53,7 @@ let { intents, validation, context } = stores
                 pattern="^[0-9]*[.,]?[0-9]*$"
                 class="p-1 {$validation.errors.amount ? 'border-red-500' : ''}"
                 value={$intents.amount}
-                on:input={event => intents.updateField('amount', event)}
+                on:input={event => rawIntents.updateField('amount', event)}
         />
         {#if $validation.errors.amount}
           <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
@@ -64,7 +66,7 @@ let { intents, validation, context } = stores
                 id="receiver"
                 name="receiver"
                 required={true}
-                disabled={!$context.destinationChain}
+                disabled={!$intents.destinationChain}
                 autocorrect="off"
                 spellcheck="false"
                 autocomplete="off"
@@ -72,7 +74,7 @@ let { intents, validation, context } = stores
                 class="p-1 disabled:bg-black/30 {$validation.errors.receiver ? 'border-red-500' : ''}"
                 placeholder="Enter destination address"
                 value={$intents.receiver}
-                on:input={event => intents.updateField('receiver', event)}
+                on:input={event => rawIntents.updateField('receiver', event)}
         />
         {#if $validation.errors.receiver}
           <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>

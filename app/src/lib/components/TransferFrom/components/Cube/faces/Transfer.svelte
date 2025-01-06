@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { IntentStore } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { derived, get, type Readable, writable, type Writable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
@@ -20,7 +20,6 @@ import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } fr
 import { getAddress, type HttpTransport, parseUnits } from "viem"
 import { config, userAddrEvm } from "$lib/wallet/evm/config.ts"
 import { toast } from "svelte-sonner"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
 import { stepAfter, stepBefore, type TransferState } from "$lib/transfer/transfer.ts"
 import { cosmosStore, getCosmosOfflineSigner, userAddrCosmos } from "$lib/wallet/cosmos"
@@ -33,12 +32,14 @@ import { goto } from "$app/navigation"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 interface Props {
   stores: {
-    intents: IntentStore
-    validation: ValidationStoreAndMethods
+    rawIntents: RawIntentsStore
+    intents: Readable<IntentsStore>
     context: Readable<ContextStore>
+    validation: ValidationStoreAndMethods
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -52,29 +53,29 @@ const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 const transfer = async () => {
-  if (!$context.selectedAsset.address) return toast.error(`Please select a asset`)
-  if (!$context.sourceChain.chain_id) return toast.error("Please select a from chain")
-  if (!$context.sourceChain) return toast.error("can't find chain in config")
-  if (!$context.destinationChain) return toast.error("can't find chain in config")
-  if (!$context.destinationChain.chain_id) return toast.error("Please select a to chain")
+  if (!$intents.selectedAsset.address) return toast.error(`Please select a asset`)
+  if (!$intents.sourceChain.chain_id) return toast.error("Please select a from chain")
+  if (!$intents.sourceChain) return toast.error("can't find chain in config")
+  if (!$intents.destinationChain) return toast.error("can't find chain in config")
+  if (!$intents.destinationChain.chain_id) return toast.error("Please select a to chain")
 
   if (!$intents.amount) return toast.error("Please select an amount")
-  if ($context.sourceChain.rpc_type === "evm" && !$context.userAddress.evm)
+  if ($intents.sourceChain.rpc_type === "evm" && !$context.userAddress.evm)
     return toast.error("No evm wallet connected")
-  if ($context.sourceChain.rpc_type === "cosmos" && !$context.userAddress.cosmos)
+  if ($intents.sourceChain.rpc_type === "cosmos" && !$context.userAddress.cosmos)
     return toast.error("No cosmos wallet connected")
-  if ($context.sourceChain.rpc_type === "aptos" && !$context.userAddress.aptos)
+  if ($intents.sourceChain.rpc_type === "aptos" && !$context.userAddress.aptos)
     return toast.error("No aptos wallet connected")
 
   if (!$intents.receiver) return toast.error("Invalid receiver")
 
   console.log("click")
 
-  let decimals = $context.selectedAsset.decimals
+  let decimals = $intents.selectedAsset.decimals
   let parsedAmount = parseUnits($intents.amount, decimals)
 
   /** --- APTOS START --- */
-  if ($context.sourceChain?.rpc_type === "aptos") {
+  if ($intents.sourceChain?.rpc_type === "aptos") {
     const { connectedWallet, connectionStatus } = get(aptosStore)
     if ($userAddressAptos === null) return toast.error("No aptos user address found")
 
@@ -98,13 +99,13 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    const rpcUrl = $context.sourceChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${$context.sourceChain?.display_name}`)
+    const rpcUrl = $intents.sourceChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl) return toast.error(`no rpc available for ${$intents.sourceChain?.display_name}`)
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = await wallet.getNetwork()
 
-      if (chainInfo?.chainId.toString() !== $context.sourceChain.chain_id) {
+      if (chainInfo?.chainId.toString() !== $intents.sourceChain.chain_id) {
         transferState.set({
           kind: "SWITCHING_TO_CHAIN",
           warning: new Error("Failed to switch chain")
@@ -129,8 +130,8 @@ const transfer = async () => {
           receiver: $intents.receiver,
           amount: parsedAmount,
           authAccess: "wallet",
-          denomAddress: $context.selectedAsset.address,
-          destinationChainId: $context.destinationChain.chain_id as ChainId
+          denomAddress: $intents.selectedAsset.address,
+          destinationChainId: $intents.destinationChain.chain_id as ChainId
         } satisfies TransferAssetsParameters<"2">
 
         const transfer = await client.transferAsset(transferPayload)
@@ -147,7 +148,7 @@ const transfer = async () => {
     }
 
     /** --- APTOS END --- */
-  } else if ($context.sourceChain.rpc_type === "cosmos") {
+  } else if ($intents.sourceChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -172,11 +173,11 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    const rpcUrl = $context.sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${$context.sourceChain.display_name}`)
+    const rpcUrl = $intents.sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl) return toast.error(`no rpc available for ${$intents.sourceChain.display_name}`)
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
-      const chainInfo = getCosmosChainInfo($context.sourceChain.chain_id, connectedWallet)
+      const chainInfo = getCosmosChainInfo($intents.sourceChain.chain_id, connectedWallet)
 
       if (chainInfo === null) {
         transferState.set({
@@ -188,7 +189,7 @@ const transfer = async () => {
 
       try {
         await wallet.experimentalSuggestChain(chainInfo)
-        await wallet.enable([$context.sourceChain.chain_id])
+        await wallet.enable([$intents.sourceChain.chain_id])
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
@@ -211,24 +212,24 @@ const transfer = async () => {
       try {
         const cosmosOfflineSigner = await getCosmosOfflineSigner({
           connectedWallet,
-          chainId: $context.sourceChain.chain_id
+          chainId: $intents.sourceChain.chain_id
         })
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),
-          chainId: $context.sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.0025", denom: $context.selectedAsset.address }
+          chainId: $intents.sourceChain.chain_id as CosmosChainId,
+          gasPrice: { amount: "0.0025", denom: $intents.selectedAsset.address }
         })
 
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
           receiver: $intents.receiver,
           amount: parsedAmount,
-          denomAddress: $context.selectedAsset.address,
+          denomAddress: $intents.selectedAsset.address,
           account: cosmosOfflineSigner,
           // TODO: verify chain id is correct
-          destinationChainId: $context.destinationChain.chain_id as ChainId,
-          gasPrice: { amount: "0.0025", denom: $context.selectedAsset.address }
+          destinationChainId: $intents.destinationChain.chain_id as ChainId,
+          gasPrice: { amount: "0.0025", denom: $intents.selectedAsset.address }
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
@@ -240,13 +241,13 @@ const transfer = async () => {
         return
       }
     }
-  } else if ($context.sourceChain.rpc_type === "evm") {
+  } else if ($intents.sourceChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    const selectedChain = evmChainFromChainId($context.sourceChain.chain_id)
+    const selectedChain = evmChainFromChainId($intents.sourceChain.chain_id)
 
     const unionClient = createUnionClient({
       account: connectorClient.account,
-      chainId: $context.sourceChain.chain_id as EvmChainId,
+      chainId: $intents.sourceChain.chain_id as EvmChainId,
       transport: custom(window.ethereum) as unknown as HttpTransport
     })
 
@@ -289,9 +290,9 @@ const transfer = async () => {
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
           receiver: $intents.receiver,
-          denomAddress: getAddress($context.selectedAsset.address),
+          denomAddress: getAddress($intents.selectedAsset.address),
           // TODO: verify chain id is correct
-          destinationChainId: $context.destinationChain.chain_id as ChainId
+          destinationChainId: $intents.destinationChain.chain_id as ChainId
         })
 
         if (approve.isErr()) throw approve.error
@@ -350,9 +351,9 @@ const transfer = async () => {
           autoApprove: false,
           amount: parsedAmount,
           receiver: $intents.receiver,
-          denomAddress: getAddress($context.selectedAsset.address),
+          denomAddress: getAddress($intents.selectedAsset.address),
           // TODO: verify chain id is correct
-          destinationChainId: $context.destinationChain.chain_id as ChainId
+          destinationChainId: $intents.destinationChain.chain_id as ChainId
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
@@ -392,21 +393,21 @@ const transfer = async () => {
     submittedTransfers.update(ts => {
       // @ts-ignore
       ts[$transferState.transferHash] = {
-        source_chain_id: $context.sourceChain.chain_id,
-        destination_chain_id: $context.destinationChain?.chain_id,
+        source_chain_id: $intents.sourceChain.chain_id,
+        destination_chain_id: $intents.destinationChain?.chain_id,
         source_transaction_hash: $transferState.transferHash,
-        hop_chain_id: $context.destinationChain?.chain_id,
-        sender: userAddrOnChain($context.userAddress, $context.sourceChain),
+        hop_chain_id: $intents.destinationChain?.chain_id,
+        sender: userAddrOnChain($context.userAddress, $intents.sourceChain),
         normalized_sender:
-          $context.sourceChain?.rpc_type === "cosmos"
+          $intents.sourceChain?.rpc_type === "cosmos"
             ? $userAddrCosmos?.normalized
             : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
         receiver: $intents.receiver,
         assets: {
-          [$context.selectedAsset.address]: {
+          [$intents.selectedAsset.address]: {
             info:
-              $context.sourceChain?.assets?.find(d => d.denom === $context.selectedAsset.address) ??
+              $intents.sourceChain?.assets?.find(d => d.denom === $intents.selectedAsset.address) ??
               null,
             amount: parsedAmount
           }
@@ -442,28 +443,28 @@ const stateToStatus = <K extends TransferState["kind"]>(
 
 let stepperSteps = derived([context, transferState], ([$context, $transferState]) => {
   if ($transferState.kind === "PRE_TRANSFER") return [] // don"t generate steps before transfer is ready
-  if ($context.sourceChain?.rpc_type === "evm") {
+  if ($intents.sourceChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
       // Do not uncomment
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
-        `Switch to ${$context.sourceChain.display_name}`,
-        `Switched to ${$context.sourceChain.display_name}`,
+        `Switch to ${$intents.sourceChain.display_name}`,
+        `Switched to ${$intents.sourceChain.display_name}`,
         ts => ({
           status: "ERROR",
-          title: `Error switching to ${$context.sourceChain.display_name}`,
-          description: `There was an issue switching to ${$context.sourceChain.display_name} to your wallet. ${ts.warning}`
+          title: `Error switching to ${$intents.sourceChain.display_name}`,
+          description: `There was an issue switching to ${$intents.sourceChain.display_name} to your wallet. ${ts.warning}`
         }),
         () => ({
           status: "WARNING",
           title: `Could not automatically switch chain.`,
-          description: `Please make sure your wallet is connected to  ${$context.sourceChain.display_name}`
+          description: `Please make sure your wallet is connected to  ${$intents.sourceChain.display_name}`
         }),
         () => ({
           status: "IN_PROGRESS",
-          title: `Switching to ${$context.sourceChain.display_name}`,
+          title: `Switching to ${$intents.sourceChain.display_name}`,
           description: `Click "Approve" in wallet.`
         })
       ),
@@ -498,7 +499,7 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting approval receipt",
-          description: `Waiting on ${$context.sourceChain.display_name}`
+          description: `Waiting on ${$intents.sourceChain.display_name}`
         })
       ),
       stateToStatus(
@@ -508,7 +509,7 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
         "Simulated transfer",
         ts => ({
           status: "ERROR",
-          title: `Error simulating transfer on ${$context.sourceChain.display_name}`,
+          title: `Error simulating transfer on ${$intents.sourceChain.display_name}`,
           // @ts-expect-error
           description: `${ts.error}`
         }),
@@ -520,7 +521,7 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
         () => ({
           status: "IN_PROGRESS",
           title: "Simulating transfer",
-          description: `Waiting on ${$context.sourceChain.display_name}`
+          description: `Waiting on ${$intents.sourceChain.display_name}`
         })
       ),
       stateToStatus(
@@ -554,7 +555,7 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting transfer receipt",
-          description: `Waiting on ${$context.sourceChain.display_name}`
+          description: `Waiting on ${$intents.sourceChain.display_name}`
         })
       ),
       stateToStatus(
@@ -572,26 +573,26 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
       )
     ] as Array<Step>
   }
-  if ($context.sourceChain?.rpc_type === "cosmos" || $context.sourceChain?.rpc_type === "aptos") {
+  if ($intents.sourceChain?.rpc_type === "cosmos" || $intents.sourceChain?.rpc_type === "aptos") {
     return [
       stateToStatus(
         $transferState,
         "SWITCHING_TO_CHAIN",
-        `Switch to ${$context.sourceChain.display_name}`,
-        `Switched to ${$context.sourceChain.display_name}`,
+        `Switch to ${$intents.sourceChain.display_name}`,
+        `Switched to ${$intents.sourceChain.display_name}`,
         ts => ({
           status: "ERROR",
-          title: `Error switching to ${$context.sourceChain.display_name}`,
-          description: `There was an issue switching to ${$context.sourceChain.display_name} to your wallet. ${ts.warning}`
+          title: `Error switching to ${$intents.sourceChain.display_name}`,
+          description: `There was an issue switching to ${$intents.sourceChain.display_name} to your wallet. ${ts.warning}`
         }),
         () => ({
           status: "WARNING",
           title: `Could not automatically switch chain.`,
-          description: `Please make sure your wallet is connected to  ${$context.sourceChain.display_name}`
+          description: `Please make sure your wallet is connected to  ${$intents.sourceChain.display_name}`
         }),
         () => ({
           status: "IN_PROGRESS",
-          title: `Switching to ${$context.sourceChain.display_name}`,
+          title: `Switching to ${$intents.sourceChain.display_name}`,
           description: `Click "Approve" in wallet.`
         })
       ),
@@ -634,15 +635,15 @@ let stepperSteps = derived([context, transferState], ([$context, $transferState]
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
   <div>
     <h2>Transfer</h2>
-    <p>RPC_TYPE: {$context?.sourceChain?.rpc_type}</p>
-    <p>SOURCE: {$context?.sourceChain?.display_name}</p>
-    <p>DESTINATION: {$context?.destinationChain?.display_name}</p>
-    <p>ASSET: {$context?.selectedAsset?.address ? truncate($context.selectedAsset.address, 12) : ""}</p>
+    <p>RPC_TYPE: {$intents?.sourceChain?.rpc_type}</p>
+    <p>SOURCE: {$intents?.sourceChain?.display_name}</p>
+    <p>DESTINATION: {$intents?.destinationChain?.display_name}</p>
+    <p>ASSET: {$intents?.selectedAsset?.address ? truncate($intents.selectedAsset.address, 12) : ""}</p>
     <p>AMOUNT: {$intents.amount}</p>
     <p>RECEIVER: {truncateAddress({address: $intents.receiver})}</p>
   </div>
 
-  {#if $context.sourceChain}
+  {#if $intents.sourceChain}
     <Stepper
             steps={stepperSteps}
             on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}

@@ -1,147 +1,82 @@
-import { writable } from "svelte/store"
-import { browser } from "$app/environment"
-import { page } from "$app/stores"
-import { debounce } from "$lib/utilities"
-import { defaultParams } from "$lib/components/TransferFrom/transfer/config.ts"
+import { derived, type Readable } from "svelte/store"
+import type { Chain, ChainAsset } from "$lib/types"
+import { useQueryClient } from "@tanstack/svelte-query"
+import type { Address } from "$lib/wallet/types"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 
-export type FormFields = {
-  source: string
-  destination: string
-  asset: string
+export type BalanceRecord = {
+  balance: bigint
+  gasToken: boolean
+  address: Address
+  symbol: string
+}
+
+export interface SelectedAsset {
+  address: string | undefined
+  balance: bigint | undefined
+  symbol: string | undefined
+  decimals: number
+  gasToken: boolean | undefined
+  supported: ChainAsset | undefined
+  raw: BalanceRecord | undefined
+}
+
+export interface IntentsStore {
+  sourceChain: Chain | undefined
+  destinationChain: Chain | undefined
+  selectedAsset: SelectedAsset
   receiver: string
   amount: string
 }
 
-export interface IntentStore {
-  subscribe: (callback: (value: FormFields) => void) => () => void
-  set: (value: Partial<FormFields>) => void
-  updateField: (field: keyof FormFields, valueOrEvent: string | Event) => void
-  reset: () => void
-}
+const getDisplaySymbol = (
+  balance: BalanceRecord | undefined,
+  supportedAsset: ChainAsset | undefined
+): string | undefined =>
+  supportedAsset?.display_symbol || balance?.symbol || balance?.address || undefined
 
-// Helper function to clean the state object
-const cleanState = (state: any): FormFields => {
-  const { source, destination, asset, receiver, amount } = state
-  return { source, destination, asset, receiver, amount }
-}
+export function createIntentStore(
+  rawIntents: RawIntentsStore,
+  context: Readable<ContextStore>
+): Readable<IntentsStore> {
+  const queryClient = useQueryClient()
 
-export function createIntentStore(): IntentStore {
-  const store = writable<FormFields>(cleanState(defaultParams))
-  const { subscribe, set, update } = store
+  const sourceChain = derived([rawIntents, context], ([$intents, $context]) => {
+    return $context.chains.find(chain => chain.chain_id === $intents.source)
+  })
 
-  const debouncedUpdateUrl = debounce((params: FormFields) => {
-    if (browser) {
-      const url = new URL(window.location.href)
-      Object.entries(params).forEach(([key, val]) => {
-        if (val) {
-          url.searchParams.set(key, val)
-        } else {
-          url.searchParams.delete(key)
-        }
-      })
-      history.replaceState({}, "", url.toString())
-      window.dispatchEvent(new PopStateEvent("popstate"))
-    }
-  }, 1000)
+  const destinationChain = derived([rawIntents, context], ([$intents, $context]) =>
+    $context.chains.find(chain => chain.chain_id === $intents.destination)
+  )
 
-  if (browser) {
-    const setDefaultParamsIfEmpty = (searchParams: URLSearchParams) => {
-      if ([...searchParams.entries()].length === 0) {
-        const url = new URL(window.location.href)
-        const cleanedParams = cleanState(defaultParams)
-        Object.entries(cleanedParams).forEach(([key, val]) => {
-          if (val) {
-            url.searchParams.set(key, val)
-          }
-        })
-        history.replaceState({}, "", url.toString())
-        window.dispatchEvent(new PopStateEvent("popstate"))
-      }
-    }
+  const asset = derived([context, rawIntents], ([$context, $intents]) =>
+    $context.balances.find(x => x?.address === $intents.asset)
+  )
 
-    setDefaultParamsIfEmpty(new URL(window.location.href).searchParams)
+  const supportedAsset = derived([sourceChain, asset], ([$sourceChain, $asset]) =>
+    $sourceChain && $asset ? getSupportedAsset($sourceChain, $asset.address) : undefined
+  )
 
-    page.subscribe(pageData => {
-      if (pageData?.url?.searchParams) {
-        const newParams: Partial<FormFields> = {}
-        const queryParams = pageData.url.searchParams
-        ;(Object.keys(defaultParams) as Array<keyof FormFields>).forEach(key => {
-          const value = queryParams.get(key)
-          if (value) {
-            newParams[key] = value
-          }
-        })
+  const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
+    address: $asset?.address,
+    balance: $asset?.balance,
+    symbol: getDisplaySymbol($asset, $supportedAsset),
+    decimals: $supportedAsset?.decimals ?? 0,
+    gasToken: $asset?.gasToken,
+    supported: $supportedAsset,
+    raw: $asset
+  }))
 
-        update(state =>
-          cleanState({
-            ...state,
-            ...newParams
-          })
-        )
-      }
+  return derived(
+    [sourceChain, destinationChain, selectedAsset, rawIntents],
+    ([$sourceChain, $destinationChain, $selectedAsset, $rawIntents]) => ({
+      sourceChain: $sourceChain,
+      destinationChain: $destinationChain,
+      selectedAsset: $selectedAsset,
+      receiver: $rawIntents.receiver,
+      amount: $rawIntents.amount
     })
-  }
-
-  return {
-    subscribe,
-
-    set: (value: Partial<FormFields>) => {
-      update(state => {
-        const newParams = cleanState({ ...state, ...value })
-        debouncedUpdateUrl(newParams)
-        return newParams
-      })
-    },
-
-    updateField: (field: keyof FormFields, valueOrEvent: string | Event) => {
-      const value =
-        valueOrEvent instanceof Event
-          ? (valueOrEvent.target as HTMLInputElement).value
-          : valueOrEvent
-
-      update(state => {
-        let newParams = cleanState({ ...state, [field]: value })
-
-        const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
-          source: ["asset", "amount"],
-          asset: ["amount"],
-          destination: ["receiver"]
-        } as const
-
-        const fieldsToReset = resetMapping[field]
-        if (fieldsToReset) {
-          fieldsToReset.forEach(resetField => {
-            newParams = {
-              ...newParams,
-              [resetField]: ""
-            }
-
-            if (browser) {
-              const url = new URL(window.location.href)
-              url.searchParams.delete(resetField)
-              history.replaceState({}, "", url.toString())
-            }
-          })
-        }
-        debouncedUpdateUrl(newParams)
-        return newParams
-      })
-    },
-
-    reset: () => {
-      if (browser) {
-        const url = new URL(window.location.href)
-        url.search = ""
-        const cleanedParams = cleanState(defaultParams)
-        Object.entries(cleanedParams).forEach(([key, val]) => {
-          if (val) {
-            url.searchParams.set(key, val)
-          }
-        })
-        history.replaceState({}, "", url.toString())
-        window.dispatchEvent(new PopStateEvent("popstate"))
-      }
-      set(cleanState(defaultParams))
-    }
-  }
+  )
 }

@@ -1,20 +1,17 @@
 <script lang="ts">
-import type { IntentStore } from "../transfer/intents.ts"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { IntentsStore } from "../transfer/intents.ts"
 import type { Readable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
 import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 
 interface Props {
-  intents: IntentStore
-  context: Readable<ContextStore>
+  intents: Readable<IntentsStore>
   validation: ValidationStoreAndMethods
   getSourceChain: () => void
   getDestinationChain: () => void
 }
 
 export let intents: Props["intents"]
-export let context: Props["context"]
 export let validation: Props["validation"]
 export let getSourceChain: Props["getSourceChain"]
 export let getDestinationChain: Props["getDestinationChain"]
@@ -28,7 +25,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 border-white font-bold"
           on:click={getSourceChain}
   >
-    {$context?.sourceChain?.display_name.split(" ")[0]}
+    {$intents?.sourceChain?.display_name.split(" ")[0] ?? 'Source chain'}
   </Button>
   <Button
           variant="outline"
@@ -37,7 +34,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 border-white font-bold"
           on:click={getDestinationChain}
   >
-    {$context?.destinationChain?.display_name.split(" ")[0] ?? "To chain"}
+    {$intents?.destinationChain?.display_name.split(" ")[0] ?? "Destination chain"}
   </Button>
 </div>
 {#if $validation.errors.destination || $validation.errors.source}

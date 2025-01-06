@@ -1,14 +1,14 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
-import type { IntentStore, FormFields } from "./intents.ts"
+import type { IntentsStore, SelectedAsset } from "./intents.ts"
 import type { Chain } from "$lib/types"
-import type {
-  BalanceRecord,
-  ContextStore,
-  SelectedAsset
-} from "$lib/components/TransferFrom/transfer/context"
+import type { BalanceRecord, ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
 import { safeParse } from "valibot"
+import type {
+  FormFields,
+  RawIntentsStore
+} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
@@ -30,16 +30,17 @@ interface ValidationContext {
 }
 
 export function createValidationStore(
-  intents: IntentStore,
+  rawIntents: RawIntentsStore,
+  intents: Readable<IntentsStore>,
   context: Readable<ContextStore>
 ): ValidationStoreAndMethods {
-  const store = derived([intents, context], ([$intents, $context]) => {
+  const store = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const formFields = {
-      source: $intents.source,
-      destination: $intents.destination,
-      asset: $intents.asset,
-      receiver: $intents.receiver,
-      amount: $intents.amount
+      source: $rawIntents.source,
+      destination: $rawIntents.destination,
+      asset: $rawIntents.asset,
+      receiver: $rawIntents.receiver,
+      amount: $rawIntents.amount
     }
 
     // Check if all required fields have values
@@ -50,8 +51,8 @@ export function createValidationStore(
     if (hasAllRequiredValues) {
       const parseInput = {
         ...formFields,
-        balance: $context.selectedAsset.balance?.toString(),
-        decimals: $context.selectedAsset?.decimals
+        balance: $intents.selectedAsset.balance?.toString(),
+        decimals: $intents.selectedAsset?.decimals
       }
       const schemaResult = safeParse(transferSchema, parseInput)
       schemaValid = schemaResult.success
@@ -61,9 +62,9 @@ export function createValidationStore(
     const errors = validateAll({
       formFields,
       balances: $context.balances,
-      sourceChain: $context.sourceChain,
-      destinationChain: $context.destinationChain,
-      selectedAsset: $context.selectedAsset,
+      sourceChain: $intents.sourceChain,
+      destinationChain: $intents.destinationChain,
+      selectedAsset: $intents.selectedAsset,
       chains: $context.chains
     })
 

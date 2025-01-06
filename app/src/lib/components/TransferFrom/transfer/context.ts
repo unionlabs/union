@@ -1,5 +1,5 @@
 import { derived, get, type Readable } from "svelte/store"
-import type { IntentStore } from "./intents.ts"
+import type { RawIntentsStore } from "./raw-intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
@@ -24,26 +24,14 @@ export interface AssetListItem {
   isSupported: boolean
   supportedAsset?: ChainAsset
   symbol: string
-}
-
-export interface SelectedAsset {
-  address: string | undefined
-  balance: bigint | undefined
-  symbol: string | undefined
-  decimals: number
-  gasToken: boolean | undefined
-  supported: ChainAsset | undefined
-  raw: BalanceRecord | undefined
+  sourceChain: Chain
 }
 
 export interface ContextStore {
   chains: Array<Chain>
-  sourceChain: Chain
-  destinationChain: Chain | undefined
   userAddress: UserAddresses
   balances: BalancesList
   assetsList: Array<AssetListItem>
-  selectedAsset: SelectedAsset
 }
 
 const getDisplaySymbol = (
@@ -52,8 +40,9 @@ const getDisplaySymbol = (
 ): string | undefined =>
   supportedAsset?.display_symbol || balance?.symbol || null || balance?.address || undefined
 
-export function createContextStore(intents: IntentStore): Readable<ContextStore> {
+export function createContextStore(rawIntents: RawIntentsStore): Readable<ContextStore> {
   const queryClient = useQueryClient()
+
   const queryData = <T extends Array<unknown>>(
     key: Array<string>,
     filter?: (value: T[number]) => boolean
@@ -69,19 +58,9 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     ([cosmos, evm, aptos]) => ({ evm, aptos, cosmos })
   ) as Readable<UserAddresses>
 
-  const sourceChain = derived(intents, $intents => {
-    const chain = chains.find(chain => chain.chain_id === $intents.source)
-    if (!chain) throw new Error(`No chain found for source ${$intents.source}`)
-    return chain
-  })
-
-  const destinationChain = derived(intents, $intents =>
-    chains.find(chain => chain.chain_id === $intents.destination)
-  )
-
   const balances = derived(
     [
-      intents,
+      rawIntents,
       userAddress,
       userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })
     ],
@@ -104,55 +83,32 @@ export function createContextStore(intents: IntentStore): Readable<ContextStore>
     }
   ) as Readable<BalancesList>
 
-  const assetsList = derived(
-    [balances, sourceChain, showUnsupported],
-    ([$balances, $sourceChain, $showUnsupported]) =>
-      $balances
-        .map(balance => {
-          const supportedAsset = getSupportedAsset($sourceChain, balance.address)
-          const isSupported = Boolean(supportedAsset)
+  const assetsList = derived([balances, rawIntents], ([$balances, $rawIntents]) => {
+    const sourceChain = chains.find(chain => chain.chain_id === $rawIntents.source)
+    if (!sourceChain) return []
 
-          if (!($showUnsupported || isSupported)) return null
+    return $balances
+      .map(balance => {
+        const supportedAsset = getSupportedAsset(sourceChain, balance.address)
+        const isSupported = Boolean(supportedAsset)
 
-          return {
-            balance,
-            isSupported,
-            supportedAsset,
-            symbol: getDisplaySymbol(balance, supportedAsset) || balance.address
-          }
-        })
-        .filter(Boolean) as Array<AssetListItem>
-  )
+        if (!(get(showUnsupported) || isSupported)) return null
 
-  const asset = derived([balances, intents], ([$balances, $intents]) =>
-    $balances.find(x => x?.address === $intents.asset)
-  )
+        return {
+          balance,
+          isSupported,
+          supportedAsset,
+          symbol: getDisplaySymbol(balance, supportedAsset) || balance.address,
+          sourceChain
+        }
+      })
+      .filter(Boolean) as Array<AssetListItem>
+  })
 
-  const supportedAsset = derived(
-    [sourceChain, asset],
-    ([$sourceChain, $asset]) => $asset && getSupportedAsset($sourceChain, $asset.address)
-  )
-
-  const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
-    address: $asset?.address,
-    balance: $asset?.balance,
-    symbol: getDisplaySymbol($asset, $supportedAsset),
-    decimals: $supportedAsset?.decimals ?? 0,
-    gasToken: $asset?.gasToken,
-    supported: $supportedAsset,
-    raw: $asset
+  return derived([userAddress, balances, assetsList], ([$userAddress, $balances, $assetsList]) => ({
+    chains,
+    userAddress: $userAddress,
+    balances: $balances,
+    assetsList: $assetsList
   }))
-
-  return derived(
-    [userAddress, sourceChain, destinationChain, balances, assetsList, selectedAsset],
-    ([$userAddress, $sourceChain, $destinationChain, $balances, $assetsList, $selectedAsset]) => ({
-      chains,
-      userAddress: $userAddress,
-      sourceChain: $sourceChain,
-      destinationChain: $destinationChain,
-      balances: $balances,
-      assetsList: $assetsList,
-      selectedAsset: $selectedAsset
-    })
-  )
 }

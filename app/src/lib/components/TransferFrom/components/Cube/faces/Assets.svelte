@@ -1,17 +1,15 @@
 <script lang="ts">
-import type { IntentStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { Readable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import { truncate } from "$lib/utilities/format.ts"
 import { formatUnits } from "viem"
 import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 interface Props {
   stores: {
-    intents: IntentStore
-    validation: ValidationStoreAndMethods
+    rawIntents: RawIntentsStore
     context: Readable<ContextStore>
   }
   rotateTo: (face: CubeFaces) => void
@@ -20,7 +18,7 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { intents, context } = stores
+let { rawIntents, context } = stores
 
 $: sortedAssets = [...($context.assetsList ?? [])].sort((a, b) => {
   if (a.isSupported !== b.isSupported) {
@@ -30,7 +28,7 @@ $: sortedAssets = [...($context.assetsList ?? [])].sort((a, b) => {
 })
 
 function setAsset(address: string) {
-  intents.updateField("asset", address)
+  rawIntents.updateField("asset", address)
   rotateTo("intentFace")
 }
 </script>

@@ -1,19 +1,13 @@
 <!-- ChainSelector.svelte -->
 <script lang="ts">
-import type { IntentStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { Readable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import type { CubeFaces } from "$lib/components/TransferFrom/types.ts"
-import { Button } from "$lib/components/ui/button"
-import ChevronDown from "virtual:icons/lucide/chevron-down"
-import ChevronRight from "virtual:icons/lucide/chevron-right"
-import { InfoCircled } from "svelte-radix"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 
 interface Props {
   stores: {
-    intents: IntentStore
-    validation: ValidationStoreAndMethods
+    rawIntents: RawIntentsStore
     context: Readable<ContextStore>
   }
   rotateTo: (face: CubeFaces) => void
@@ -26,10 +20,10 @@ export let selected: Props["selected"]
 
 let expandedChainId: string | null = null
 
-let { intents, validation, context } = stores
+let { rawIntents, context } = stores
 
 function setChain(selected: "source" | "destination", chainId: string) {
-  intents.updateField(selected, chainId)
+  rawIntents.updateField(selected, chainId)
   rotateTo("intentFace")
 }
 
@@ -45,7 +39,8 @@ function toggleExpand(chainId: string) {
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
             on:click={() => rotateTo("intentFace")}
-    >✕</button>
+    >✕
+    </button>
   </div>
 
   <!-- Chain List -->
@@ -64,7 +59,7 @@ function toggleExpand(chainId: string) {
                     class="border-2 border-black h-8 w-8 hover:bg-gray-200 active:border-gray-400"
                     on:click|stopPropagation={() => toggleExpand(chain.chain_id)}
             >
-              <span >i</span>
+              <span>i</span>
             </button>
           </div>
 
