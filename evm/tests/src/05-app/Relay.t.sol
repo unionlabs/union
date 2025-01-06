@@ -18,8 +18,8 @@ contract MockIBCHandler {
         bytes calldata data
     ) external returns (IBCPacket memory packet) {
         return IBCPacket({
-            sourceChannel: sourceChannel,
-            destinationChannel: 0,
+            sourceChannelId: sourceChannel,
+            destinationChannelId: 0,
             data: bytes(""),
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
@@ -222,8 +222,8 @@ contract UCS01RelayTests is Test {
         vm.expectEmit(true, true, true, true);
         emit RelayLib.Sent(
             IBCPacket({
-                sourceChannel: 1,
-                destinationChannel: 0,
+                sourceChannelId: 1,
+                destinationChannelId: 0,
                 data: "",
                 timeoutHeight: 0,
                 timeoutTimestamp: 0
@@ -253,8 +253,8 @@ contract UCS01RelayTests is Test {
 
     //     // Prepare the IBCPacket for refund
     //     IBCPacket memory ibcPacket = IBCPacket({
-    //         sourceChannel: 1,
-    //         destinationChannel: 0,
+    //         sourceChannelId: 1,
+    //         destinationChannelId: 0,
     //         data: abi.encode(
     //             RelayPacket({
     //                 sender: abi.encodePacked(user),
@@ -415,8 +415,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket for timeout
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 0,
+            sourceChannelId: 1,
+            destinationChannelId: 0,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -474,8 +474,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket for timeout
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 0,
+            sourceChannelId: 1,
+            destinationChannelId: 0,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -536,8 +536,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket for processing
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
+            sourceChannelId: 1,
+            destinationChannelId: 1,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -575,8 +575,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket for processing
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
+            sourceChannelId: 1,
+            destinationChannelId: 1,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -615,8 +615,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket for processing
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
+            sourceChannelId: 1,
+            destinationChannelId: 1,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -657,8 +657,8 @@ contract UCS01RelayTests is Test {
 
         // Prepare the IBCPacket
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
+            sourceChannelId: 1,
+            destinationChannelId: 1,
             data: RelayPacketLib.encode(packet),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -680,8 +680,8 @@ contract UCS01RelayTests is Test {
     function test_onAcknowledgementPacket_invalidAck_reverts() public {
         // Prepare a dummy IBCPacket
         IBCPacket memory ibcPacket = IBCPacket({
-            sourceChannel: 1,
-            destinationChannel: 1,
+            sourceChannelId: 1,
+            destinationChannelId: 1,
             data: bytes(""),
             timeoutHeight: 0,
             timeoutTimestamp: 0
@@ -754,8 +754,8 @@ contract UCS01RelayTests is Test {
         );
         relay.onRecvIntentPacket(
             IBCPacket({
-                sourceChannel: 1,
-                destinationChannel: 1,
+                sourceChannelId: 1,
+                destinationChannelId: 1,
                 data: bytes(""),
                 timeoutHeight: 0,
                 timeoutTimestamp: 0

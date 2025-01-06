@@ -23,7 +23,7 @@ library IBCChannelLib {
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
-        string version
+        string counterpartyVersion
     );
     event ChannelOpenAck(
         address portId,

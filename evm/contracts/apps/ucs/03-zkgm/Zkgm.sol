@@ -570,7 +570,7 @@ contract UCS03Zkgm is
                 ZkgmPacket({
                     salt: keccak256(abi.encode(salt)),
                     path: ZkgmLib.updateChannelPath(
-                        path, ibcPacket.destinationChannel
+                        path, ibcPacket.destinationChannelId
                     ),
                     syscall: forwardPacket.syscallPacket
                 })
@@ -598,8 +598,8 @@ contract UCS03Zkgm is
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
-                sourceChannel: ibcPacket.sourceChannel,
-                destinationChannel: ibcPacket.destinationChannel,
+                sourceChannelId: ibcPacket.sourceChannelId,
+                destinationChannelId: ibcPacket.destinationChannelId,
                 data: abi.encode(
                     multiplexPacket.sender, multiplexPacket.contractCalldata
                 ),
@@ -658,7 +658,7 @@ contract UCS03Zkgm is
         }
         (address wrappedToken, bytes32 wrappedTokenSalt) =
         internalPredictWrappedToken(
-            path, ibcPacket.destinationChannel, assetTransferPacket.sentToken
+            path, ibcPacket.destinationChannelId, assetTransferPacket.sentToken
         );
         address askToken = address(bytes20(assetTransferPacket.askToken));
         address receiver = address(bytes20(assetTransferPacket.receiver));
@@ -679,7 +679,7 @@ contract UCS03Zkgm is
                     wrappedTokenSalt
                 );
                 tokenOrigin[wrappedToken] = ZkgmLib.updateChannelPath(
-                    path, ibcPacket.destinationChannel
+                    path, ibcPacket.destinationChannelId
                 );
             }
             IZkgmERC20(wrappedToken).mint(
@@ -689,9 +689,10 @@ contract UCS03Zkgm is
                 IZkgmERC20(wrappedToken).mint(relayer, fee);
             }
         } else {
-            if (assetTransferPacket.sentTokenPrefix == ibcPacket.sourceChannel)
-            {
-                channelBalance[ibcPacket.destinationChannel][askToken] -=
+            if (
+                assetTransferPacket.sentTokenPrefix == ibcPacket.sourceChannelId
+            ) {
+                channelBalance[ibcPacket.destinationChannelId][askToken] -=
                     assetTransferPacket.sentAmount;
                 SafeERC20.safeTransfer(
                     IERC20(askToken), receiver, assetTransferPacket.askAmount
@@ -836,8 +837,8 @@ contract UCS03Zkgm is
     ) internal {
         if (successful && !multiplexPacket.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
-                sourceChannel: ibcPacket.sourceChannel,
-                destinationChannel: ibcPacket.destinationChannel,
+                sourceChannelId: ibcPacket.sourceChannelId,
+                destinationChannelId: ibcPacket.destinationChannelId,
                 data: abi.encode(
                     multiplexPacket.contractAddress,
                     multiplexPacket.contractCalldata
@@ -874,7 +875,7 @@ contract UCS03Zkgm is
                 if (
                     ZkgmLib.lastChannelFromPath(
                         assetTransferPacket.sentTokenPrefix
-                    ) == ibcPacket.sourceChannel
+                    ) == ibcPacket.sourceChannelId
                 ) {
                     IZkgmERC20(address(sentToken)).mint(
                         marketMaker, assetTransferPacket.sentAmount
@@ -890,7 +891,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrInvalidFillType();
             }
         } else {
-            refund(ibcPacket.sourceChannel, assetTransferPacket);
+            refund(ibcPacket.sourceChannelId, assetTransferPacket);
         }
     }
 
@@ -997,8 +998,8 @@ contract UCS03Zkgm is
     ) internal {
         if (!multiplexPacket.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
-                sourceChannel: ibcPacket.sourceChannel,
-                destinationChannel: ibcPacket.destinationChannel,
+                sourceChannelId: ibcPacket.sourceChannelId,
+                destinationChannelId: ibcPacket.destinationChannelId,
                 data: abi.encode(
                     multiplexPacket.contractAddress,
                     multiplexPacket.contractCalldata
@@ -1018,18 +1019,18 @@ contract UCS03Zkgm is
         bytes32 salt,
         FungibleAssetTransferPacket calldata assetTransferPacket
     ) internal {
-        refund(ibcPacket.sourceChannel, assetTransferPacket);
+        refund(ibcPacket.sourceChannelId, assetTransferPacket);
     }
 
     function refund(
-        uint32 sourceChannel,
+        uint32 sourceChannelId,
         FungibleAssetTransferPacket calldata assetTransferPacket
     ) internal {
         address sender = address(bytes20(assetTransferPacket.sender));
         address sentToken = address(bytes20(assetTransferPacket.sentToken));
         if (
             ZkgmLib.lastChannelFromPath(assetTransferPacket.sentTokenPrefix)
-                == sourceChannel
+                == sourceChannelId
         ) {
             IZkgmERC20(address(sentToken)).mint(
                 sender, assetTransferPacket.sentAmount
