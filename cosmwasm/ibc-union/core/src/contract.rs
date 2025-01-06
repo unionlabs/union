@@ -1850,8 +1850,149 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 #[cfg(test)]
 mod tests {
     use alloy::hex;
+    use cosmwasm_std::{
+        from_json,
+        testing::{message_info, mock_dependencies, mock_env, MockApi},
+        Coin, QuerierResult, StdResult, Storage, WasmQuery,
+    };
+    use union_ibc_msg::lightclient::QueryMsg as LightClientQueryMsg;
 
     use super::*;
+
+    const CLIENT_TYPE: &str = "union";
+    const CLIENT_ADDRESS: &str = "unionclient";
+    const SENDER: &str = "unionsender";
+    const RELAYER: &str = "unionrelayer";
+
+    fn mock_addr(sender: &str) -> Addr {
+        let mock_api = MockApi::default();
+        mock_api.addr_make(sender)
+    }
+
+    fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Event {
+        Event::new(events::client::REGISTER)
+            .add_attribute(events::attribute::CLIENT_TYPE, client_type)
+            .add_attribute(events::attribute::CLIENT_ADDRESS, client_address)
+    }
+
+    fn new_client_created_event(client_type: &str, client_id: u32) -> Event {
+        Event::new(events::client::CREATE).add_attributes([
+            (events::attribute::CLIENT_TYPE, client_type),
+            (events::attribute::CLIENT_ID, &client_id.to_string()),
+        ])
+    }
+
+    fn register_client(deps: DepsMut) -> Result<Response, ContractError> {
+        let register_msg = ExecuteMsg::RegisterClient(MsgRegisterClient {
+            client_type: CLIENT_TYPE.into(),
+            client_address: mock_addr(CLIENT_ADDRESS).to_string(),
+        });
+        let sender = mock_addr(SENDER);
+
+        execute(deps, mock_env(), message_info(&sender, &[]), register_msg)
+    }
+
+    fn create_client(mut deps: DepsMut) -> Result<Response, ContractError> {
+        let _ = register_client(deps.branch())?;
+
+        let execute_msg = ExecuteMsg::CreateClient(MsgCreateClient {
+            client_type: CLIENT_TYPE.into(),
+            client_state_bytes: vec![1, 2, 3].into(),
+            consensus_state_bytes: vec![1, 2, 3].into(),
+            relayer: mock_addr(RELAYER).into_string(),
+        });
+        let sender = mock_addr(SENDER);
+
+        execute(deps, mock_env(), message_info(&sender, &[]), execute_msg)
+    }
+
+    fn wasm_query_handler<F: Fn(LightClientQueryMsg) -> StdResult<Binary> + 'static>(
+        querier: F,
+    ) -> impl Fn(&WasmQuery) -> QuerierResult + 'static {
+        move |msg| match msg {
+            WasmQuery::Smart { msg, .. } => {
+                let msg: LightClientQueryMsg = from_json(msg).unwrap();
+                let res = querier(msg).unwrap();
+                QuerierResult::Ok(cosmwasm_std::ContractResult::Ok(res))
+            }
+            _ => panic!(
+                "Only smart queries should be possible now. Adjust this based on your needs."
+            ),
+        }
+    }
+
+    #[test]
+    fn register_client_ok() {
+        let mut deps = mock_dependencies();
+        let res = register_client(deps.as_mut()).unwrap();
+
+        assert!(res
+            .events
+            .into_iter()
+            .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS))));
+
+        assert_eq!(
+            CLIENT_REGISTRY
+                .load(&deps.storage, CLIENT_TYPE)
+                .unwrap()
+                .as_str(),
+            mock_addr(CLIENT_ADDRESS).to_string()
+        );
+    }
+
+    #[test]
+    fn register_client_fails_when_duplicate() {
+        let mut deps = mock_dependencies();
+        register_client(deps.as_mut()).unwrap();
+        assert_eq!(
+            register_client(deps.as_mut()),
+            Err(ContractError::ClientTypeAlreadyExists)
+        );
+    }
+
+    #[test]
+    fn create_client_ok() {
+        let mut deps = mock_dependencies();
+        let sender = mock_addr(SENDER);
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&sender, &[]),
+            InitMsg {},
+        )
+        .unwrap();
+        deps.querier
+            .update_wasm(wasm_query_handler(|msg| match msg {
+                LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+                msg => panic!("should not be called: {:?}", msg),
+            }));
+        let res = create_client(deps.as_mut()).unwrap();
+
+        assert!(res
+            .events
+            .into_iter()
+            .any(|e| e == new_client_created_event(CLIENT_TYPE, 1)));
+
+        assert_eq!(CLIENT_TYPES.load(&deps.storage, 1).unwrap(), CLIENT_TYPE);
+        assert_eq!(
+            CLIENT_IMPLS.load(&deps.storage, 1).unwrap().as_str(),
+            mock_addr(CLIENT_ADDRESS).to_string()
+        );
+        assert_eq!(CLIENT_STATES.load(&deps.storage, 1).unwrap(), vec![1, 2, 3]);
+        assert_eq!(
+            CLIENT_CONSENSUS_STATES.load(&deps.storage, (1, 1)).unwrap(),
+            vec![1, 2, 3]
+        );
+        // assert_eq!(
+        //     deps.storage
+        //         .get(unionlabs::ics24::ethabi::client_state_key(1).as_ref())
+        //         .unwrap(),
+        //     commit(vec![1, 2, 3]).into_bytes().to_vec()
+        // );
+    }
+
+    #[test]
+    fn create_client_commitments_saved() {}
 
     #[test]
     fn channel_value() {
