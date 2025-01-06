@@ -109,52 +109,48 @@ module ibc::mpt_verifier {
 
 
     public fun parse_uint(data: &vector<u8>): (u256, u64) {
-        let start_idx = 0;
-        // TODO: All of these are wrong, need to investigate
-        // calldataload mechanism in solidity assembly not sure how it works.
-        // all below also wrong, need to be fixed.
-        let n = vector::length(data);
-        assert!(start_idx < n, 201);
+            let n = vector::length(data);
+            assert!(n > 0, 201);
 
-        // let kind = *vector::borrow(data, start_idx);
-        let val = vector::empty();
-        let i = 0;
-        while (i < 32) {
-            vector::push_back(&mut val, *vector::borrow(data, start_idx+i));
-            i = i + 1;
-        };
-        let kind = from_bcs::to_u256(val);
+            let kind = vector::borrow(data, 0);
+            let kind_u8 = *kind;
+            assert!(kind_u8 <= 0xA0, 202);
 
-        assert!(kind <= 0xA0, 202);
+            if (kind_u8 < 0x80) {
+                ((kind_u8 as u256), 1)
+            } else {
+                // Short string
+                let short_len = (((kind_u8 as u64) - 0x80) as u8);
 
-        if (kind < 0x80) {
-            std::debug::print(&string::utf8(b"returning under if: "));
-            (kind, 1)
-        } else {
-            let short_len = (kind as u64) - 0x80;
+                assert!((short_len as u64) <= n, 203);
 
-            assert!((start_idx + 1 + short_len) <= n, 203);
+                assert!((short_len as u64) <= 32, 204);
 
-            assert!(short_len <= 32, 204);
+                let val = 0;
+                if (short_len == 32) {
+                    let j: u8 = 0;
+                    while (j < short_len-1) {
+                        let idx = ((1 + j) as u64);
+                        let b = (*vector::borrow(data, idx) as u256);
+                        val = val | ((b << (8 * (31-j))) as u256);
+                        j = j + 1;
+                    }
+                } else {
+                    let j: u8 = 0;
+                    if (short_len > 0){
+                        while (j < short_len -1) {
+                            let idx = ((1 + j) as u64);
+                            let b = (*vector::borrow(data, idx) as u256);
+                            val = val | (b << ((8 * (short_len - 1 - j))) as u256);
+                            j = j + 1;
+                        }
+                    }
+                };
 
-            let val = vector::empty<u8>();
-            let i = 0u64;
-            while (i < (32 - short_len)) {
-                vector::push_back(&mut val, 0);
-                i = i + 1;
-            };
-
-            let j = 0u64;
-            while (j < short_len) {
-                let b = *vector::borrow(data, start_idx + 1 + j);
-                vector::push_back(&mut val, b);
-                j = j + 1;
-            };
-            std::debug::print(&string::utf8(b"returning under else: "));
-
-            (kind, 1 + short_len)
+                ((val as u256), (1 + short_len as u64) )
+            }
         }
-    }
+
 
     public fun split_bytes(data: &vector<u8>): (vector<u8>, vector<u8>) {
         let n = vector::length(data);
@@ -206,15 +202,36 @@ module ibc::mpt_verifier {
 
     #[test]
     public fun test_parse_uint() {
-        let buf = x"15";
+        let buf: vector<u8> = x"334455667733445566112233334455667733445566112233334455667733445544";
 
         let (result, size) = parse_uint(&buf);
-        std::debug::print(&string::utf8(b"result is: "));
-        std::debug::print(&result);
-        std::debug::print(&string::utf8(b"size is: "));
-        std::debug::print(&size);
-        assert!(result == 21, 1);
+        assert!(result == 51, 1);
         assert!(size == 1, 1);
+
+        let buf: vector<u8> = x"4432";
+        let (result, size) = parse_uint(&buf);
+        assert!(result == 68, 1);
+        assert!(size == 1, 1);
+
+        let buf: vector<u8> = x"80";
+        let (result, size) = parse_uint(&buf);
+        assert!(result == 0, 1);
+        assert!(size == 1, 1);
+
+        let buf: vector<u8> = x"84848589";
+        let (result, size) = parse_uint(&buf);
+        assert!(result == 2223343872, 1);
+        assert!(size == 5, 1);
+
+        let buf: vector<u8> = x"85848589aa";
+        let (result, size) = parse_uint(&buf);
+        assert!(result == 569176074752, 1);
+        assert!(size == 6, 1);
+
+        let buf: vector<u8> = x"a012121212121212121212121212121212121212121212121212121212121212";
+        let (result, size) = parse_uint(&buf);
+        assert!(result == 8173559240281143206369716588848558201407293035221686873373476518205632680448, 1);
+        assert!(size == 33, 1);
     }
 
 }
