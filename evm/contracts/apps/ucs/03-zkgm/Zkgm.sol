@@ -24,7 +24,7 @@ import "./ZkgmERC20.sol";
 struct ZkgmPacket {
     bytes32 salt;
     uint256 path;
-    bytes syscall;
+    SyscallPacket syscall;
 }
 
 struct SyscallPacket {
@@ -37,7 +37,7 @@ struct ForwardPacket {
     uint32 channelId;
     uint64 timeoutHeight;
     uint64 timeoutTimestamp;
-    bytes syscallPacket;
+    SyscallPacket syscallPacket;
 }
 
 struct MultiplexPacket {
@@ -48,7 +48,7 @@ struct MultiplexPacket {
 }
 
 struct BatchPacket {
-    bytes[] syscallPackets;
+    SyscallPacket[] syscallPackets;
 }
 
 struct FungibleAssetTransferPacket {
@@ -171,22 +171,6 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (ZkgmPacket calldata) {
         ZkgmPacket calldata packet;
-        assembly {
-            packet := stream.offset
-        }
-        return packet;
-    }
-
-    function encodeSyscall(
-        SyscallPacket memory syscall
-    ) internal pure returns (bytes memory) {
-        return abi.encode(syscall.version, syscall.index, syscall.packet);
-    }
-
-    function decodeSyscall(
-        bytes calldata stream
-    ) internal pure returns (SyscallPacket calldata) {
-        SyscallPacket calldata packet;
         assembly {
             packet := stream.offset
         }
@@ -350,26 +334,24 @@ contract UCS03Zkgm is
                 ZkgmPacket({
                     salt: salt,
                     path: 0,
-                    syscall: ZkgmLib.encodeSyscall(
-                        SyscallPacket({
-                            version: ZkgmLib.ZKGM_VERSION_0,
-                            index: ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER,
-                            packet: ZkgmLib.encodeFungibleAssetTransfer(
-                                FungibleAssetTransferPacket({
-                                    sender: abi.encodePacked(msg.sender),
-                                    receiver: receiver,
-                                    sentToken: abi.encodePacked(sentToken),
-                                    sentTokenPrefix: origin,
-                                    sentSymbol: tokenSymbol,
-                                    sentName: tokenName,
-                                    sentAmount: sentAmount,
-                                    askToken: askToken,
-                                    askAmount: askAmount,
-                                    onlyMaker: onlyMaker
-                                })
-                            )
-                        })
-                    )
+                    syscall: SyscallPacket({
+                        version: ZkgmLib.ZKGM_VERSION_0,
+                        index: ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER,
+                        packet: ZkgmLib.encodeFungibleAssetTransfer(
+                            FungibleAssetTransferPacket({
+                                sender: abi.encodePacked(msg.sender),
+                                receiver: receiver,
+                                sentToken: abi.encodePacked(sentToken),
+                                sentTokenPrefix: origin,
+                                sentSymbol: tokenSymbol,
+                                sentName: tokenName,
+                                sentAmount: sentAmount,
+                                askToken: askToken,
+                                askAmount: askAmount,
+                                onlyMaker: onlyMaker
+                            })
+                        )
+                    })
                 })
             )
         );
@@ -380,16 +362,16 @@ contract UCS03Zkgm is
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes32 salt,
-        bytes calldata rawSyscall
+        SyscallPacket calldata syscallPacket
     ) public {
-        verifyInternal(channelId, 0, rawSyscall);
+        verifyInternal(channelId, 0, syscallPacket);
         ibcHandler.sendPacket(
             channelId,
             timeoutHeight,
             timeoutTimestamp,
             ZkgmLib.encode(
                 // TODO: change salt to string and then assert its prefixed with user address and keccak256 it
-                ZkgmPacket({salt: salt, path: 0, syscall: rawSyscall})
+                ZkgmPacket({salt: salt, path: 0, syscall: syscallPacket})
             )
         );
     }
@@ -397,9 +379,8 @@ contract UCS03Zkgm is
     function verifyInternal(
         uint32 channelId,
         uint256 path,
-        bytes calldata rawSyscall
+        SyscallPacket calldata syscallPacket
     ) internal {
-        SyscallPacket calldata syscallPacket = ZkgmLib.decodeSyscall(rawSyscall);
         if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
@@ -548,7 +529,7 @@ contract UCS03Zkgm is
             relayerMsg,
             zkgmPacket.salt,
             zkgmPacket.path,
-            ZkgmLib.decodeSyscall(zkgmPacket.syscall)
+            zkgmPacket.syscall
         );
     }
 
@@ -614,8 +595,7 @@ contract UCS03Zkgm is
         uint256 l = batchPacket.syscallPackets.length;
         bytes[] memory acks = new bytes[](l);
         for (uint256 i = 0; i < l; i++) {
-            SyscallPacket calldata syscallPacket =
-                ZkgmLib.decodeSyscall(batchPacket.syscallPackets[i]);
+            SyscallPacket calldata syscallPacket = batchPacket.syscallPackets[i];
             acks[i] = executeInternal(
                 ibcPacket,
                 relayer,
@@ -812,7 +792,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 zkgmPacket.salt,
-                ZkgmLib.decodeSyscall(zkgmPacket.syscall),
+                zkgmPacket.syscall,
                 zkgmAck.tag == ZkgmLib.ACK_SUCCESS,
                 zkgmAck.innerAck
             );
@@ -893,7 +873,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 keccak256(abi.encode(salt)),
-                ZkgmLib.decodeSyscall(batchPacket.syscallPackets[i]),
+                batchPacket.syscallPackets[i],
                 successful,
                 syscallAck
             );
@@ -998,10 +978,7 @@ contract UCS03Zkgm is
         } else {
             ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
             timeoutInternal(
-                ibcPacket,
-                relayer,
-                zkgmPacket.salt,
-                ZkgmLib.decodeSyscall(zkgmPacket.syscall)
+                ibcPacket, relayer, zkgmPacket.salt, zkgmPacket.syscall
             );
         }
     }
@@ -1060,7 +1037,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 keccak256(abi.encode(salt)),
-                ZkgmLib.decodeSyscall(batchPacket.syscallPackets[i])
+                batchPacket.syscallPackets[i]
             );
         }
     }
