@@ -106,7 +106,7 @@ contract PingPong is
         // Send back the packet after having reversed the bool and set the counterparty timeout
         initiate(
             PingPongPacket({ping: !pp.ping}),
-            packet.destinationChannel,
+            packet.destinationChannelId,
             localTimeout
         );
 

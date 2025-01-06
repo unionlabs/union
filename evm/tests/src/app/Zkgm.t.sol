@@ -91,8 +91,8 @@ contract ZkgmTests is Test {
 
         zkgm.onRecvPacket(
             IBCPacket({
-                sourceChannel: 3,
-                destinationChannel: 5,
+                sourceChannelId: 3,
+                destinationChannelId: 5,
                 data: rawZk,
                 timeoutHeight: 0,
                 timeoutTimestamp: 0

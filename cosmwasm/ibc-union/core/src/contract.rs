@@ -1486,7 +1486,7 @@ fn write_acknowledgement(
     )?;
 
     Ok(
-        Response::new().add_event(Event::new("write_acknowledgement").add_attributes([
+        Response::new().add_event(Event::new("write_ack").add_attributes([
             (
                 events::attribute::PACKET,
                 serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),

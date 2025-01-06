@@ -259,7 +259,7 @@ if ."@type" == "data" then
             ({packet_filter})
         elif $event_type == "recv_packet" then
             ({packet_filter})
-        elif $event_type == "write_acknowledgement" then
+        elif $event_type == "write_ack" then
             ({packet_filter})
 
         elif $event_type == "channel_open_init" then
