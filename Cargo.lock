@@ -4928,6 +4928,7 @@ name = "evm-state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "protos",
  "serde",
  "thiserror",
@@ -13206,17 +13207,13 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-ics23"
 version = "0.1.0"
 dependencies = [
- "beacon-api-types",
- "chain-utils",
+ "alloy",
  "cosmos-state-lens-light-client-types",
- "enumorph",
- "ethereum-light-client-types",
  "futures",
  "jsonrpsee",
  "macros",
- "prost 0.12.6",
+ "protos",
  "serde",
- "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",

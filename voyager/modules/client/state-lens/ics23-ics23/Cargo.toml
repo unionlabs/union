@@ -4,17 +4,13 @@ name    = "voyager-client-module-state-lens-ics23-ics23"
 version = "0.1.0"
 
 [dependencies]
-beacon-api-types                     = { workspace = true, features = ["serde"] }
-chain-utils                          = { workspace = true }
+alloy                                = { workspace = true, features = ["sol-types"] }
 cosmos-state-lens-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-enumorph                             = { workspace = true }
-ethereum-light-client-types          = { workspace = true, features = ["serde", "ethabi"] }
 futures                              = { workspace = true }
 jsonrpsee                            = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                               = { workspace = true }
-prost                                = { workspace = true }
+protos                               = { workspace = true }
 serde                                = { workspace = true, features = ["derive"] }
-serde-utils                          = { workspace = true }
 serde_json                           = { workspace = true }
 thiserror                            = { workspace = true }
 tokio                                = { workspace = true }

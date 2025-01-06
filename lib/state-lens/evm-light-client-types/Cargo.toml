@@ -7,10 +7,12 @@ version = "0.1.0"
 alloy     = { workspace = true, features = ["sol-types"], optional = true }
 protos    = { workspace = true, optional = true, features = ["proto_full", "serde"] }
 serde     = { workspace = true, optional = true, features = ["derive"] }
+bincode          = { workspace = true, features = ["alloc", "derive"], optional = true }
 thiserror = { workspace = true }
 unionlabs = { workspace = true, features = ["ethabi", "proto"] }
 
 [features]
 default = []
+bincode = ["dep:bincode", "unionlabs/bincode"]
 ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]
 serde   = ["dep:serde"]

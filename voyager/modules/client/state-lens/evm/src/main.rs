@@ -10,10 +10,9 @@ use serde_json::{json, Value};
 use tracing::instrument;
 use unionlabs::{
     self,
-    encoding::{DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    ErrorReporter,
 };
 use voyager_message::{
     core::{
@@ -31,8 +30,45 @@ async fn main() {
     Module::run().await
 }
 
+#[derive(Debug, Clone, PartialEq, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub enum SupportedIbcInterface {
+    IbcSolidity,
+    IbcCosmwasm,
+}
+
+impl TryFrom<String> for SupportedIbcInterface {
+    // TODO: Better error type here
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match &*value {
+            IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
+            IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
+            _ => Err(format!("unsupported IBC interface: `{value}`")),
+        }
+    }
+}
+
+impl SupportedIbcInterface {
+    fn as_str(&self) -> &'static str {
+        match self {
+            SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
+            SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
+        }
+    }
+}
+
+impl From<SupportedIbcInterface> for String {
+    fn from(value: SupportedIbcInterface) -> Self {
+        value.as_str().to_owned()
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct Module {}
+pub struct Module {
+    pub ibc_interface: SupportedIbcInterface,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {}
@@ -43,8 +79,19 @@ impl ClientModule for Module {
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_EVM)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
-        info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)?;
-        Ok(Self {})
+        // TODO(aeryz): impl a nice combinator
+        if info
+            .ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)
+            .is_err()
+            && info
+                .ensure_ibc_interface(IbcInterface::IBC_COSMWASM)
+                .is_err()
+        {
+            panic!("no no no")
+        }
+        Ok(Self {
+            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
+        })
     }
 }
 
@@ -56,20 +103,33 @@ impl Module {
         SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode consensus state: {}", ErrorReporter(err)),
+                format!("unable to decode consensus state: {err}"),
                 None::<()>,
             )
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<SelfClientState> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => {
+                <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {err}"),
+                        None::<()>,
+                    )
+                })
+            }
+            SupportedIbcInterface::IbcCosmwasm => {
+                <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {err}"),
+                        None::<()>,
+                    )
+                })
+            }
+        }
     }
 
     pub fn make_height(revision_height: u64) -> Height {
@@ -85,7 +145,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Module::decode_client_state(&client_state)?;
+        let cs = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.l2_chain_id.to_string()),
@@ -108,7 +168,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(into_value(Module::decode_client_state(&client_state)?))
+        Ok(into_value(self.decode_client_state(&client_state)?))
     }
 
     #[instrument]
@@ -144,11 +204,14 @@ impl ClientModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize client state: {}", ErrorReporter(err)),
+                    format!("unable to deserialize client state: {err}"),
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|cs| match self.ibc_interface {
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
+            })
             .map(Into::into)
     }
 
@@ -162,10 +225,7 @@ impl ClientModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "unable to deserialize consensus state: {}",
-                        ErrorReporter(err)
-                    ),
+                    format!("unable to deserialize consensus state: {err}"),
                     None::<()>,
                 )
             })
@@ -199,11 +259,14 @@ impl ClientModuleServer for Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize header: {}", ErrorReporter(err)),
+                    format!("unable to deserialize header: {err}"),
                     None::<()>,
                 )
             })
-            .map(|header| header.encode_as::<EthAbi>())
+            .map(|header| match self.ibc_interface {
+                SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>(),
+            })
             .map(Into::into)
     }
 
@@ -212,12 +275,15 @@ impl ClientModuleServer for Module {
         let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to deserialize proof: {}", ErrorReporter(err)),
+                format!("unable to deserialize proof: {err}"),
                 None::<()>,
             )
         })?;
         // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
         // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
-        Ok(proof.proof.into_iter().flatten().collect())
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
+            SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
+        }
     }
 }

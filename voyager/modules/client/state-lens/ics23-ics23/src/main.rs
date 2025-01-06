@@ -1,5 +1,5 @@
+use alloy::sol_types::SolValue as _;
 use cosmos_state_lens_light_client_types::{ClientState, ConsensusState, Header};
-use ethereum_light_client_types::StorageProof;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -13,6 +13,7 @@ use unionlabs::{
     bytes::Bytes,
     encoding::{DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
+    union::ics23,
     ErrorReporter,
 };
 use voyager_message::{
@@ -209,15 +210,86 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
+        let proof = serde_json::from_value::<
+            unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
+        >(proof)
+        .map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to deserialize proof: {}", ErrorReporter(err)),
                 None::<()>,
             )
         })?;
-        // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
-        // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
-        Ok(proof.proof.concat().into())
+        Ok(encode_merkle_proof_for_evm(proof).into())
+    }
+}
+
+fn encode_merkle_proof_for_evm(
+    proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
+) -> Vec<u8> {
+    alloy::sol! {
+        struct ExistenceProof {
+            bytes key;
+            bytes value;
+            bytes leafPrefix;
+            InnerOp[] path;
+        }
+
+        struct NonExistenceProof {
+            bytes key;
+            ExistenceProof left;
+            ExistenceProof right;
+        }
+
+        struct InnerOp {
+            bytes prefix;
+            bytes suffix;
+        }
+
+        struct ProofSpec {
+            uint256 childSize;
+            uint256 minPrefixLength;
+            uint256 maxPrefixLength;
+        }
+    }
+
+    let merkle_proof = ics23::merkle_proof::MerkleProof::try_from(
+        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+    )
+    .unwrap();
+
+    let convert_inner_op = |i: unionlabs::union::ics23::inner_op::InnerOp| InnerOp {
+        prefix: i.prefix.into(),
+        suffix: i.suffix.into(),
+    };
+
+    let convert_existence_proof =
+        |e: unionlabs::union::ics23::existence_proof::ExistenceProof| ExistenceProof {
+            key: e.key.into(),
+            value: e.value.into(),
+            leafPrefix: e.leaf_prefix.into(),
+            path: e.path.into_iter().map(convert_inner_op).collect(),
+        };
+
+    let exist_default = || ics23::existence_proof::ExistenceProof {
+        key: vec![].into(),
+        value: vec![].into(),
+        leaf_prefix: vec![].into(),
+        path: vec![],
+    };
+
+    match merkle_proof {
+        ics23::merkle_proof::MerkleProof::Membership(a, b) => {
+            (convert_existence_proof(a), convert_existence_proof(b)).abi_encode_params()
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(a, b) => (
+            NonExistenceProof {
+                key: a.key.into(),
+                left: convert_existence_proof(a.left.unwrap_or_else(exist_default)),
+                right: convert_existence_proof(a.right.unwrap_or_else(exist_default)),
+            },
+            convert_existence_proof(b),
+        )
+            .abi_encode_params(),
     }
 }

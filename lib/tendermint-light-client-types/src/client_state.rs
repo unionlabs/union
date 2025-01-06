@@ -1,6 +1,6 @@
 use unionlabs::{
-    cosmos::ics23::proof_spec::ProofSpec, google::protobuf::duration::Duration, hash::H256,
-    ibc::core::client::height::Height,
+    cosmos::ics23::proof_spec::ProofSpec, google::protobuf::duration::Duration,
+    ibc::core::client::height::Height, primitives::H256,
 };
 
 use crate::Fraction;
@@ -30,7 +30,7 @@ pub struct ClientState {
 pub mod proto {
     use unionlabs::{
         cosmos::ics23::proof_spec::TryFromProofSpecError, errors::MissingField,
-        google::protobuf::duration::DurationError, hash::H256, impl_proto_via_try_from_into,
+        google::protobuf::duration::DurationError, impl_proto_via_try_from_into, primitives::H256,
         required,
     };
 
@@ -158,6 +158,7 @@ mod tests {
             }]
             .to_vec(),
             upgrade_path: ["upgrade".to_owned(), "path".to_owned()].to_vec(),
+            contract_address: H25::default(),
         }
     }
 
