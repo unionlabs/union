@@ -1849,13 +1849,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 
 #[cfg(test)]
 mod tests {
+    use std::io::Read;
+
     use alloy::hex;
     use cosmwasm_std::{
         from_json,
         testing::{message_info, mock_dependencies, mock_env, MockApi},
         Coin, QuerierResult, StdResult, Storage, WasmQuery,
     };
-    use union_ibc_msg::lightclient::QueryMsg as LightClientQueryMsg;
+    use union_ibc_msg::{lightclient::QueryMsg as LightClientQueryMsg, query};
 
     use super::*;
 
@@ -1954,6 +1956,7 @@ mod tests {
     fn create_client_ok() {
         let mut deps = mock_dependencies();
         let sender = mock_addr(SENDER);
+
         instantiate(
             deps.as_mut(),
             mock_env(),
@@ -1966,33 +1969,69 @@ mod tests {
                 LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
                 msg => panic!("should not be called: {:?}", msg),
             }));
-        let res = create_client(deps.as_mut()).unwrap();
+
+        assert!(create_client(deps.as_mut()).is_ok())
+    }
+
+    #[test]
+    fn create_client_commitments_saved() {
+        let mut deps = mock_dependencies();
+        let sender = mock_addr(SENDER);
+
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&sender, &[]),
+            InitMsg {},
+        )
+        .expect("instantiate ok");
+        deps.querier
+            .update_wasm(wasm_query_handler(|msg| match msg {
+                LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+                msg => panic!("should not be called: {:?}", msg),
+            }));
+
+        let res = create_client(deps.as_mut()).expect("create client ok");
+        let client_id: u32 = res
+            .events
+            .iter()
+            .find(|event| event.ty.eq(events::client::CREATE))
+            .expect("create client event exists")
+            .attributes
+            .iter()
+            .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
+            .expect("client type attribute exists")
+            .value
+            .parse()
+            .expect("client type string is u32");
 
         assert!(res
             .events
             .into_iter()
-            .any(|e| e == new_client_created_event(CLIENT_TYPE, 1)));
+            .any(|e| e == new_client_created_event(CLIENT_TYPE, client_id)));
 
-        assert_eq!(CLIENT_TYPES.load(&deps.storage, 1).unwrap(), CLIENT_TYPE);
         assert_eq!(
-            CLIENT_IMPLS.load(&deps.storage, 1).unwrap().as_str(),
+            CLIENT_TYPES.load(&deps.storage, client_id).unwrap(),
+            CLIENT_TYPE
+        );
+        assert_eq!(
+            CLIENT_IMPLS
+                .load(&deps.storage, client_id)
+                .unwrap()
+                .as_str(),
             mock_addr(CLIENT_ADDRESS).to_string()
         );
-        assert_eq!(CLIENT_STATES.load(&deps.storage, 1).unwrap(), vec![1, 2, 3]);
         assert_eq!(
-            CLIENT_CONSENSUS_STATES.load(&deps.storage, (1, 1)).unwrap(),
+            CLIENT_STATES.load(&deps.storage, client_id).unwrap(),
             vec![1, 2, 3]
         );
-        // assert_eq!(
-        //     deps.storage
-        //         .get(unionlabs::ics24::ethabi::client_state_key(1).as_ref())
-        //         .unwrap(),
-        //     commit(vec![1, 2, 3]).into_bytes().to_vec()
-        // );
+        assert_eq!(
+            CLIENT_CONSENSUS_STATES
+                .load(&deps.storage, (client_id, 1))
+                .unwrap(),
+            vec![1, 2, 3]
+        );
     }
-
-    #[test]
-    fn create_client_commitments_saved() {}
 
     #[test]
     fn channel_value() {
