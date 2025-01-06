@@ -125,6 +125,7 @@ members = [
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
   "voyager/modules/client-bootstrap/state-lens/evm",
+  "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
 
   "voyager/modules/consensus/berachain",
   "voyager/modules/consensus/cometbls",
