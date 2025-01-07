@@ -28,17 +28,17 @@ const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 
 try {
   const client = createUnionClient({
-    chainId: "11155111",
+    chainId: "17000",
     account: evmAccount,
     transport: fallback([
-      http("https://rpc.11155111.sepolia.chain.kitchen"),
-      http(sepolia?.rpcUrls.default.http.at(0))
+      http("https://rpc.holesky.sepolia.chain.kitchen"),
+      http(holesky?.rpcUrls.default.http.at(0))
     ])
   })
 
   const transactionPayload = {
     amount: 420n,
-    destinationChainId: `${holesky.id}`,
+    destinationChainId: `${sepolia.id}`,
     receiver: RECEIVER,
     denomAddress: LINK_CONTRACT_ADDRESS,
     autoApprove: true

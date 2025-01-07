@@ -20,7 +20,7 @@ export type EvmTransferParams = {
   account?: Account
   simulate?: boolean
   autoApprove?: boolean
-  sourceChannel: string
+  sourceChannel: number
   denomAddress: HexAddress
   relayContractAddress: HexAddress
 }
@@ -73,6 +73,11 @@ export async function transferAssetFromEvm(
 
   memo ??= timestamp()
 
+  // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
+  // we do this by calling the ucs03 instance on the counterparty chain.
+  //
+  await client.readContract
+
   // add a salt to each transfer to prevent hash collisions
   // important because ibc-union does not use sequence numbers
   // such that intents are possible based on deterministic packet hashes
@@ -102,7 +107,7 @@ export async function transferAssetFromEvm(
      * bool onlyMaker
      */
     args: [
-      Number(sourceChannel), // TODO: make typesafe
+      sourceChannel,
       0n, // TODO: customize timeoutheight
       "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
       toHex(salt),

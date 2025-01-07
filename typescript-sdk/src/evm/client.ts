@@ -89,26 +89,12 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           return ok(transfer.value)
         }
 
-        // TODO: don't hardcode chain details
-        // const chainDetails2 = await getHubbleChainDetails({
-        //   destinationChainId,
-        //   sourceChainId: parameters.chainId
-        // })
+        const chainDetails = await getHubbleChainDetails({
+          destinationChainId,
+          sourceChainId: parameters.chainId
+        })
 
-        const chainDetails = {
-          value: {
-            sourceChannel: "3",
-            relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
-            transferType: "direct",
-            destinationChainId
-          }
-        }
-        // const chainDetails = await getHubbleChainDetails({
-        //   destinationChainId,
-        //   sourceChainId: parameters.chainId
-        // })
-
-        // if (chainDetails.isErr()) return err(chainDetails.error)
+        if (chainDetails.isErr()) return err(chainDetails.error)
 
         // if (chainDetails.value.transferType === "pfm") {
         //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
@@ -124,7 +110,6 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         //   memo = pfmMemo.value
         // }
 
-        destinationChainId ??= chainDetails.value.destinationChainId
         const sourceChannel = chainDetails.value.sourceChannel
         relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
 
@@ -154,12 +139,12 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         // otherwise, it's the relayer contract address from ucs config
         if (parameters.chainId !== destinationChainId) {
           // TODO: don't hardcode
-          // const ucsDetails = await getHubbleChainDetails({
-          //   destinationChainId,
-          //   sourceChainId: parameters.chainId
-          // })
-          // if (ucsDetails.isErr()) return err(ucsDetails.error)
-          _receiver = "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa"
+          const ucsDetails = await getHubbleChainDetails({
+            destinationChainId,
+            sourceChainId: parameters.chainId
+          })
+          if (ucsDetails.isErr()) return err(ucsDetails.error)
+          _receiver = ucsDetails.value.relayContractAddress as `0x${string}`
         } else _receiver = getAddress(receiver)
 
         return await evmApproveTransferAsset(client, {
