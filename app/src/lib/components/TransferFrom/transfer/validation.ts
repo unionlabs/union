@@ -52,12 +52,11 @@ export function createValidationStore(
       amount: $rawIntents.amount
     }
 
-    if (formFields.asset && !formFields.amount) {
-      return { amount: "Amount is required" }
-    }
-
-    if (formFields.asset && !formFields.receiver) {
-      return { receiver: "Receiver is required" }
+    if (formFields.asset) {
+      const errors: FieldErrors = {}
+      if (!formFields.amount) errors.amount = "Amount is required"
+      if (!formFields.receiver) errors.receiver = "Receiver is required"
+      if (Object.keys(errors).length > 0) return errors
     }
 
     const parseInput = {
