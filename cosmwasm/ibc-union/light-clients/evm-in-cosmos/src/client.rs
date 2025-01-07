@@ -5,7 +5,7 @@ use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
-use unionlabs::{encoding::Json, hash::H256};
+use unionlabs::{encoding::Bincode, ethereum::ibc_commitment_key, hash::H256, uint::U256};
 
 use crate::errors::Error;
 
@@ -26,7 +26,7 @@ impl IbcClient for EvmInCosmosLightClient {
 
     type StorageProof = StorageProof;
 
-    type Encoding = Json;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
@@ -37,13 +37,7 @@ impl IbcClient for EvmInCosmosLightClient {
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        ethereum_light_client::client::verify_membership(
-            key,
-            consensus_state.storage_root,
-            storage_proof,
-            value,
-        )
-        .map_err(Error::EthereumLightClient)?;
+        verify_membership(key, consensus_state.storage_root, storage_proof, value)?;
 
         Ok(())
     }
@@ -56,12 +50,7 @@ impl IbcClient for EvmInCosmosLightClient {
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        ethereum_light_client::client::verify_non_membership(
-            key,
-            consensus_state.storage_root,
-            storage_proof,
-        )
-        .map_err(Error::EthereumLightClient)?;
+        verify_non_membership(key, consensus_state.storage_root, storage_proof)?;
 
         Ok(())
     }
@@ -178,4 +167,71 @@ fn extract_bytes32(data: &[u8], offset: usize) -> H256 {
             .try_into()
             .expect("impossible; qed"),
     )
+}
+
+pub fn verify_membership(
+    key: Vec<u8>,
+    storage_root: H256,
+    storage_proof: StorageProof,
+    value: Vec<u8>,
+) -> Result<(), Error> {
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
+
+    let value = H256::try_from(&value).map_err(|_| Error::InvalidCommitmentValueLength(value))?;
+
+    let proof_value = H256::from(storage_proof.value.to_be_bytes());
+
+    if value != proof_value {
+        return Err(Error::StoredValueMismatch {
+            expected: value,
+            stored: proof_value,
+        });
+    }
+
+    evm_storage_verifier::verify_storage_proof(
+        storage_root,
+        storage_proof.key,
+        &rlp::encode(&storage_proof.value),
+        &storage_proof.proof,
+    )
+    .map_err(Error::VerifyStorageProof)
+}
+
+pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
+    let expected_commitment_key = ibc_commitment_key(path);
+
+    if expected_commitment_key != key {
+        Err(Error::InvalidCommitmentKey {
+            expected: expected_commitment_key,
+            found: key,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+pub fn verify_non_membership(
+    key: Vec<u8>,
+    storage_root: H256,
+    storage_proof: StorageProof,
+) -> Result<(), Error> {
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
+
+    if evm_storage_verifier::verify_storage_absence(
+        storage_root,
+        storage_proof.key,
+        &storage_proof.proof,
+    )
+    .map_err(Error::VerifyStorageAbsence)?
+    {
+        Ok(())
+    } else {
+        Err(Error::CounterpartyStorageNotNil)
+    }
 }

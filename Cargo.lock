@@ -4907,9 +4907,7 @@ name = "evm-in-cosmos-light-client"
 version = "0.1.0"
 dependencies = [
  "cometbls-light-client",
- "cometbls-light-client-types",
  "cosmwasm-std 2.1.4",
- "ethereum-light-client",
  "ethereum-light-client-types",
  "evm-state-lens-light-client-types",
  "evm-storage-verifier",
@@ -4917,7 +4915,7 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "ics23",
- "protos",
+ "rlp",
  "serde",
  "thiserror",
  "unionlabs",
