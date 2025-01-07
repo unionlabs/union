@@ -48,11 +48,11 @@ impl IbcClient for TendermintLightClient {
     type Encoding = Proto;
 
     fn verify_membership(
-        _ctx: IbcClientCtx<Self>,
-        _height: u64,
-        _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
-        _value: Vec<u8>,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -367,7 +367,7 @@ pub fn verify_membership(
             0x3u8
                 .to_le_bytes()
                 .into_iter()
-                .chain(contract_address.clone())
+                .chain(*contract_address)
                 .chain(key)
                 .collect::<Vec<_>>(),
         ],
@@ -391,7 +391,7 @@ pub fn verify_non_membership(
             0x3u8
                 .to_le_bytes()
                 .into_iter()
-                .chain(contract_address.clone())
+                .chain(*contract_address)
                 .chain(key)
                 .collect::<Vec<_>>(),
         ],

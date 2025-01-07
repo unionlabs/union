@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::ConsensusState as TmConsensusState;
 use tracing::instrument;
-use unionlabs::{bech32::Bech32, hash::H256, ibc::core::client::height::Height};
+use unionlabs::{bech32::Bech32, ibc::core::client::height::Height, primitives::H256};
 use voyager_message::{
     core::{ChainId, ClientType, QueryHeight},
     into_value,

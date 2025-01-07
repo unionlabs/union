@@ -1,6 +1,6 @@
 use unionlabs::{
-    bytes::Bytes,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    primitives::Bytes,
 };
 
 #[derive(Debug, Clone, PartialEq)]

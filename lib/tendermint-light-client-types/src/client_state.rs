@@ -158,7 +158,7 @@ mod tests {
             }]
             .to_vec(),
             upgrade_path: ["upgrade".to_owned(), "path".to_owned()].to_vec(),
-            contract_address: H25::default(),
+            contract_address: H256::default(),
         }
     }
 

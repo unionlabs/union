@@ -1,7 +1,7 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{hash::H256, ibc::core::client::height::Height, uint::U256};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256, uint::U256};
 
 use crate::client::EvmInCosmosLightClient;
 

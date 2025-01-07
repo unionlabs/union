@@ -15,9 +15,10 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
-    hash::H256,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-    option_unwrap, result_unwrap, ErrorReporter,
+    option_unwrap,
+    primitives::H256,
+    result_unwrap, ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ClientType},

@@ -5,7 +5,7 @@ use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
-use unionlabs::{encoding::Bincode, ethereum::ibc_commitment_key, hash::H256, uint::U256};
+use unionlabs::{encoding::Bincode, ethereum::ibc_commitment_key, primitives::H256, uint::U256};
 
 use crate::errors::Error;
 

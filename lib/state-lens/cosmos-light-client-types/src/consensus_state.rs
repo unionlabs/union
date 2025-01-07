@@ -1,4 +1,4 @@
-use unionlabs::hash::H256;
+use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

@@ -10,9 +10,9 @@ use serde_json::{json, Value};
 use tracing::instrument;
 use unionlabs::{
     self,
-    bytes::Bytes,
     encoding::{DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
+    primitives::Bytes,
     union::ics23,
     ErrorReporter,
 };
