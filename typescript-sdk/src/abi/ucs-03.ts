@@ -355,7 +355,7 @@ export const ucs03ZkgmAbi = [
       { name: "", type: "address", internalType: "address" },
       { name: "", type: "bytes32", internalType: "bytes32" }
     ],
-    stateMutability: "nonpayable"
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -379,7 +379,16 @@ export const ucs03ZkgmAbi = [
       { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
       { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
       { name: "salt", type: "bytes32", internalType: "bytes32" },
-      { name: "rawSyscall", type: "bytes", internalType: "bytes" }
+      {
+        name: "syscallPacket",
+        type: "tuple",
+        internalType: "struct SyscallPacket",
+        components: [
+          { name: "version", type: "uint8", internalType: "uint8" },
+          { name: "index", type: "uint8", internalType: "uint8" },
+          { name: "packet", type: "bytes", internalType: "bytes" }
+        ]
+      }
     ],
     outputs: [],
     stateMutability: "nonpayable"
