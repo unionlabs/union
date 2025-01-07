@@ -15,9 +15,9 @@ use ibc_union_msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
         MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
         MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgPacketAcknowledgement,
-        MsgPacketRecv, MsgPacketTimeout, MsgRegisterClient, MsgSendPacket, MsgUpdateClient,
-        MsgWriteAcknowledgement,
+        MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgMigrateState,
+        MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgRegisterClient,
+        MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
     },
     query::QueryMsg,
 };
@@ -391,7 +391,63 @@ pub fn execute(
             packets,
             acks.into_iter().map(Into::into).collect(),
         ),
+        ExecuteMsg::MigrateState(MsgMigrateState {
+            client_id,
+            client_state,
+            consensus_state,
+            height,
+        }) => migrate_state(
+            deps,
+            info.sender,
+            client_id,
+            client_state,
+            consensus_state,
+            height,
+        ),
     }
+}
+
+fn migrate_state(
+    mut deps: DepsMut,
+    sender: Addr,
+    client_id: u32,
+    client_state: unionlabs::primitives::Bytes,
+    consensus_state: unionlabs::primitives::Bytes,
+    height: u64,
+) -> Result<Response, ContractError> {
+    let client_addr = CLIENT_IMPLS.load(deps.storage, client_id)?;
+
+    if client_addr != sender {
+        return Err(ContractError::UnauthorizedMigration {
+            client_id,
+            caller: sender,
+            client: client_addr,
+        });
+    }
+
+    CLIENT_STATES.update(deps.storage, client_id, |s| {
+        let _ = s.ok_or(ContractError::CannotMigrateWithNoClientState { client_id })?;
+        Ok::<Binary, ContractError>(client_state.to_vec().into())
+    })?;
+
+    store_commit(
+        deps.branch(),
+        &ClientStatePath { client_id }.key(),
+        &commit(client_state),
+    )?;
+
+    CLIENT_CONSENSUS_STATES.update(deps.storage, (client_id, height), |s| {
+        let _ = s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
+        Ok::<Binary, ContractError>(consensus_state.to_vec().into())
+    })?;
+
+    store_commit(
+        deps.branch(),
+        &ConsensusStatePath { client_id, height }.key(),
+        &commit(consensus_state),
+    )?;
+
+    Ok(Response::new())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
