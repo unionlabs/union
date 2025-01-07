@@ -24,7 +24,6 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
-// const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 
 try {
@@ -38,7 +37,7 @@ try {
   })
 
   const transactionPayload = {
-    amount: 102n,
+    amount: 420n,
     destinationChainId: `${holesky.id}`,
     receiver: RECEIVER,
     denomAddress: LINK_CONTRACT_ADDRESS,
@@ -52,7 +51,7 @@ try {
     process.exit(1)
   }
 
-  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
+  consola.success("Sepolia to Holesky gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
