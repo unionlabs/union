@@ -6,7 +6,7 @@ version = "0.1.0"
 [dependencies]
 chain-utils                 = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-movement-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+movement-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
 thiserror                   = { workspace = true }

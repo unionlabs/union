@@ -11,7 +11,7 @@ serde                       = { workspace = true, optional = true, features = ["
 unionlabs                   = { workspace = true }
 
 [features]
-bincode = ["dep:bincode", "unionlabs/bincode"]
+bincode = ["dep:bincode", "unionlabs/bincode", "ethereum-light-client-types/bincode"]
 ethabi  = ["unionlabs/ethabi", "dep:alloy"]
 serde   = ["dep:serde", "ethereum-light-client-types/serde"]
 

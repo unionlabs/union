@@ -4820,6 +4820,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "beacon-api-types",
+ "bincode 1.3.3",
  "cosmwasm-std 2.1.4",
  "ethereum-light-client-types",
  "ethereum-sync-protocol",
