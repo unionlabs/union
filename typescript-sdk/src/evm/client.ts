@@ -11,7 +11,7 @@ import {
   http
 } from "viem"
 import {
-  evmSameChainTransfer,
+  // evmSameChainTransfer,
   transferAssetFromEvm,
   evmApproveTransferAsset,
   transferAssetFromEvmSimulate
@@ -78,17 +78,17 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         account ||= client.account
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
         // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
-        if (parameters.chainId === destinationChainId) {
-          const transfer = await evmSameChainTransfer(client, {
-            amount,
-            account,
-            simulate,
-            receiver,
-            denomAddress
-          })
-          if (transfer.isErr()) return err(transfer.error)
-          return ok(transfer.value)
-        }
+        // if (parameters.chainId === destinationChainId) {
+        //   const transfer = await evmSameChainTransfer(client, {
+        //     amount,
+        //     account,
+        //     simulate,
+        //     receiver,
+        //     denomAddress
+        //   })
+        //   if (transfer.isErr()) return err(transfer.error)
+        //   return ok(transfer.value)
+        // }
 
         const chainDetails = await getHubbleChainDetails({
           sourceChainId: parameters.chainId,

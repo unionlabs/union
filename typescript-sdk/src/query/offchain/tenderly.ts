@@ -97,7 +97,7 @@ export async function simulateTransaction({
     abi: ucs01RelayAbi,
     functionName: "send",
     args: [
-      sourceChannel,
+      sourceChannel.toString(),
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       [{ denom: denomAddress, amount }],
       memo ?? "",
