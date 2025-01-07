@@ -28,7 +28,7 @@ env:
 jobs:
   preview:
     name: 'Publish TypeScript SDK Preview'
-    runs-on: ['ubuntu-latest']
+    runs-on: [ 'ubuntu-latest' ]
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
@@ -44,7 +44,10 @@ jobs:
         working-directory: './typescript-sdk'
         run: bun install
 
+      - name: 'Build Preview SDK'
+        working-directory: './typescript-sdk'
+        run: bun run build
+
       - name: 'Publish Preview Version'
         run: |
-          bun install
           bun x pkg-pr-new publish --no-template --comment=update typescript-sdk
