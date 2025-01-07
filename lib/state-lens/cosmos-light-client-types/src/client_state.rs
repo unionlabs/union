@@ -1,3 +1,5 @@
+use unionlabs::hash::H256;
+
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
@@ -9,6 +11,8 @@ pub struct ClientState {
     pub l2_client_id: u32,
     /// l2 latest height
     pub l2_latest_height: u64,
+    /// ibc contract that is running on l2
+    pub contract_address: H256,
 }
 
 #[cfg(feature = "ethabi")]
@@ -30,6 +34,7 @@ pub mod ethabi {
             uint32 l1ClientId;
             uint32 l2ClientId;
             uint64 l2LatestHeight;
+            bytes32 contractAddress;
         }
     }
 
@@ -40,6 +45,7 @@ pub mod ethabi {
                 l1ClientId: self.l1_client_id,
                 l2ClientId: self.l2_client_id,
                 l2LatestHeight: self.l2_latest_height,
+                contractAddress: self.contract_address.into(),
             }
             .abi_encode_params()
         }
@@ -49,7 +55,7 @@ pub mod ethabi {
         type Error = TryFromEthAbiBytesErrorAlloy<Error>;
 
         fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let client_state = SolClientState::abi_decode(bytes, true)?;
+            let client_state = SolClientState::abi_decode_params(bytes, true)?;
 
             Ok(Self {
                 l2_chain_id: String::from_utf8(client_state.l2ChainId.into_bytes())
@@ -57,6 +63,7 @@ pub mod ethabi {
                 l1_client_id: client_state.l1ClientId,
                 l2_client_id: client_state.l2ClientId,
                 l2_latest_height: client_state.l2LatestHeight,
+                contract_address: client_state.contractAddress.into(),
             })
         }
     }
@@ -65,5 +72,16 @@ pub mod ethabi {
     pub enum Error {
         #[error("invalid chain_id")]
         ChainId(#[from] FromUtf8Error),
+    }
+
+    #[cfg(test)]
+    mod test {
+        fn test_decode() {
+            // TODO(aeryz): impl
+        }
+
+        fn test_encode() {
+            // TODO(aeryz): impl
+        }
     }
 }

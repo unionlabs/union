@@ -64,6 +64,8 @@ impl Module {
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
+        println!("RAW CLIENT STATE ============================");
+        println!("{client_state:?}");
         <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,

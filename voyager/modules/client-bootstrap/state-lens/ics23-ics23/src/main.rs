@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::ConsensusState as TmConsensusState;
 use tracing::instrument;
-use unionlabs::{hash::H256, ibc::core::client::height::Height};
+use unionlabs::{bech32::Bech32, hash::H256, ibc::core::client::height::Height};
 use voyager_message::{
     core::{ChainId, ClientType, QueryHeight},
     into_value,
@@ -26,12 +26,14 @@ pub struct Module {
     pub l2_chain_id: ChainId,
     pub l1_client_id: u32,
     pub l2_client_id: u32,
+    pub l2_contract_address: H256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub l1_client_id: u32,
     pub l2_client_id: u32,
+    pub l2_contract_address: Bech32<H256>,
 }
 
 impl ClientBootstrapModule for Module {
@@ -45,6 +47,7 @@ impl ClientBootstrapModule for Module {
             l2_chain_id: info.chain_id,
             l1_client_id: config.l1_client_id,
             l2_client_id: config.l2_client_id,
+            l2_contract_address: *config.l2_contract_address.data(),
         })
     }
 }
@@ -58,6 +61,7 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: self.l2_client_id,
             l2_latest_height: height.height(),
+            contract_address: self.l2_contract_address,
         }))
     }
 
