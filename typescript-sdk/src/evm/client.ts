@@ -190,20 +190,21 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           })
           return ok(gas.toString())
         }
-        // const chainDetails = await getHubbleChainDetails({
-        //   destinationChainId,
-        //   sourceChainId: parameters.chainId
-        // })
-        const chainDetails = {
-          value: {
-            sourceChannel: "3",
-            relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
-            transferType: "direct",
-            destinationChainId
-          }
-        }
 
-        // if (chainDetails.isErr()) return err(chainDetails.error)
+        const chainDetails = await getHubbleChainDetails({
+          sourceChainId: parameters.chainId,
+          destinationChainId
+        })
+        // const chainDetails = {
+        //   value: {
+        //     sourceChannel: "3",
+        //     relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
+        //     transferType: "direct",
+        //     destinationChainId
+        //   }
+        // }
+
+        if (chainDetails.isErr()) return err(chainDetails.error)
 
         // if (chainDetails.value.transferType === "pfm") {
         //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))

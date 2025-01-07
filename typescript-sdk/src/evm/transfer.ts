@@ -261,7 +261,7 @@ export async function transferAssetFromEvmSimulate(
     receiver: string
     account?: HexAddress
     denomAddress: HexAddress
-    sourceChannel: string
+    sourceChannel: number
     relayContractAddress: HexAddress
   }
 ): Promise<Result<string, Error>> {

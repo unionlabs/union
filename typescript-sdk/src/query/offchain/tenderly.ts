@@ -65,7 +65,7 @@ export async function simulateTransaction({
   receiver: string
   account?: Address
   denomAddress: Address
-  sourceChannel: string
+  sourceChannel: number
   sourceChainId?: ChainId
   destinationChainId?: ChainId
   relayContractAddress: Address
