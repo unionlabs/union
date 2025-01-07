@@ -28,7 +28,14 @@ import {
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
-export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
+export const evmChains = [
+  sepolia,
+  holesky,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
+] as const
+
 export const evmChainId = [
   `${sepolia.id}`,
   `${holesky.id}`,
