@@ -67,7 +67,7 @@ impl Module {
                         app_hash: signed_header.header.app_hash.into_encoding(),
                     },
                     trusted_height: update_from,
-                    zero_knowledge_proof: response.proof.evm_proof,
+                    zero_knowledge_proof: response.proof.evm_proof.into(),
                 })
                 .unwrap(),
             )],

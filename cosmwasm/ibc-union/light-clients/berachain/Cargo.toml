@@ -21,7 +21,7 @@ cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"]
 ethereum-light-client = { workspace = true, features = ["library"] }
 thiserror             = { workspace = true }
 
-berachain-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 ethereum-light-client-types  = { workspace = true, features = ["serde", "ethabi"] }
 evm-storage-verifier         = { workspace = true }
 ibc-union-light-client       = { workspace = true }

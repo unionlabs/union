@@ -1,18 +1,19 @@
 use macros::model;
-
-use crate::{bls::BlsSignature, errors::InvalidLength};
+use unionlabs_primitives::{FixedBytesError, H768};
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::AggregateSignature),
     into,
     from
 ))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct AggregateSignature {
     pub validator_bitmask: ValidatorBitmask,
-    pub sig: Option<BlsSignature>,
+    pub sig: Option<H768>,
 }
 
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ValidatorBitmask {
     pub inner: Vec<u8>,
 }
@@ -31,7 +32,7 @@ impl From<AggregateSignature>
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromAggregateSignatureError {
     #[error("invalid sig")]
-    Sig(#[from] InvalidLength),
+    Sig(#[from] FixedBytesError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::AggregateSignature>

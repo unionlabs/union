@@ -1,10 +1,11 @@
-use unionlabs::bls::BlsPublicKey;
+use unionlabs::primitives::H384;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SyncCommittee {
-    pub pubkeys: Vec<BlsPublicKey>,
-    pub aggregate_pubkey: BlsPublicKey,
+    pub pubkeys: Vec<H384>,
+    pub aggregate_pubkey: H384,
 }
 
 #[cfg(feature = "ssz")]
@@ -15,8 +16,8 @@ pub struct SyncCommittee {
     serde(bound(serialize = "", deserialize = ""))
 )]
 pub struct SyncCommitteeSsz<C: crate::SYNC_COMMITTEE_SIZE> {
-    pub pubkeys: ::ssz::types::Vector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,
-    pub aggregate_pubkey: BlsPublicKey,
+    pub pubkeys: ::ssz::types::Vector<H384, C::SYNC_COMMITTEE_SIZE>,
+    pub aggregate_pubkey: H384,
 }
 
 #[cfg(feature = "ssz")]

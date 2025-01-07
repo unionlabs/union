@@ -13,7 +13,7 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-arbitrum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+arbitrum-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 arbitrum-verifier           = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 ethereum-light-client       = { workspace = true, features = ["library"] }

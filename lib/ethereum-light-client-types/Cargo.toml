@@ -6,12 +6,15 @@ version = "0.1.0"
 [dependencies]
 alloy            = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types = { workspace = true }
+bincode          = { workspace = true, features = ["alloc", "derive"], optional = true }
 serde            = { workspace = true, optional = true, features = ["derive"] }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true }
 
 [features]
-default = ["serde"]
+default = []
+
+bincode = ["dep:bincode", "unionlabs/bincode", "beacon-api-types/bincode"]
 ethabi = ["unionlabs/ethabi", "dep:alloy"]
 serde = [
   # TODO: Feature gate serde in unionlabs
@@ -21,4 +24,6 @@ serde = [
 ]
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+hex-literal                 = { workspace = true }
+unionlabs                   = { workspace = true, features = ["test-utils"] }

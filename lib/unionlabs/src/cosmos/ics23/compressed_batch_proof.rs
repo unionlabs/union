@@ -6,6 +6,7 @@ use crate::cosmos::ics23::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchProof), into, from))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CompressedBatchProof {
     pub entries: Vec<CompressedBatchEntry>,
     pub lookup_inners: Vec<InnerOp>,

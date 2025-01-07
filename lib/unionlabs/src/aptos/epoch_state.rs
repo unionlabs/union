@@ -11,6 +11,7 @@ use crate::aptos::validator_verifier::ValidatorVerifier;
 /// `EpochState` represents a trusted validator set to validate messages from the specific epoch,
 /// it could be updated with `EpochChangeProof`.
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EpochState {
     pub epoch: u64,
     pub verifier: ValidatorVerifier,

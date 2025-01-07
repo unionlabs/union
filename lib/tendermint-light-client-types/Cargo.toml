@@ -4,18 +4,22 @@ name    = "tendermint-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy                    = { workspace = true, features = ["sol-types"], optional = true }
-cometbft-types.workspace = true
-protos                   = { workspace = true, features = ["ibc+lightclients+tendermint+v1"], optional = true }
-serde                    = { workspace = true, features = ["derive"], optional = true }
-thiserror                = { workspace = true }
-unionlabs                = { workspace = true }
+alloy          = { workspace = true, features = ["sol-types"], optional = true }
+bincode        = { workspace = true, features = ["alloc", "derive"], optional = true }
+cometbft-types = { workspace = true }
+protos         = { workspace = true, features = ["ibc+lightclients+tendermint+v1"], optional = true }
+serde          = { workspace = true, features = ["derive"], optional = true }
+thiserror      = { workspace = true }
+unionlabs      = { workspace = true }
 
 [features]
+bincode = ["dep:bincode", "unionlabs/bincode", "cometbft-types/bincode"]
 default = ["proto"]
 ethabi  = ["unionlabs/ethabi", "dep:alloy"]
 proto   = ["unionlabs/proto", "cometbft-types/proto", "dep:protos"]
 serde   = ["dep:serde"]
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+hex-literal                   = { workspace = true }
+tendermint-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde", "proto"] }
+unionlabs                     = { workspace = true, features = ["test-utils"] }

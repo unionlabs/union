@@ -26,7 +26,7 @@ base64                        = { workspace = true }
 clap                          = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre                    = { workspace = true, features = ["default"] }
 cometbft-rpc                  = { workspace = true }
-cometbls-light-client-types   = { workspace = true, features = ["proto", "ethabi", "serde"] }
+cometbls-light-client-types   = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
 futures                       = { workspace = true, features = ["async-await"] }
 hex                           = { workspace = true }
 itertools                     = "0.13.0"
@@ -40,7 +40,7 @@ reqwest                       = { workspace = true, features = ["json", "blockin
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
 sqlx                          = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
-tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }
+tendermint-light-client-types = { workspace = true, features = ["proto", "serde", "bincode"] }
 thiserror                     = { workspace = true }
 time                          = { workspace = true, features = ["serde"] }
 tokio                         = { workspace = true, features = ["full"] }

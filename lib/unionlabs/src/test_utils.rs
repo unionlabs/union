@@ -3,7 +3,7 @@ use core::{
     str::FromStr,
 };
 
-use crate::encoding::{Decode, Encode, Proto};
+use crate::encoding::{Decode, DecodeAs, Encode, EncodeAs, Encoding, Proto};
 
 pub fn assert_proto_roundtrip<T>(t: &T)
 where
@@ -30,4 +30,13 @@ where
     let from_str = t.to_string().parse::<T>().unwrap();
 
     assert_eq!(t, &from_str, "string roundtrip failed");
+}
+
+pub fn assert_codec_iso<T, E: Encoding>(t: &T)
+where
+    T: Encode<E> + Decode<E> + Clone + Debug + PartialEq,
+{
+    let iso = T::decode_as::<E>(&t.clone().encode_as::<E>()).unwrap();
+
+    assert_eq!(t, &iso, "roundtrip failed");
 }

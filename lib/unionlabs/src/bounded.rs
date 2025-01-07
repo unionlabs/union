@@ -32,6 +32,35 @@ macro_rules! bounded_int {
                 }
             }
 
+            #[cfg(feature = "bincode")]
+            impl<const MIN: $ty, const MAX: $ty> bincode::Encode for $Struct<MIN, MAX> {
+                fn encode<E: bincode::enc::Encoder>(
+                    &self,
+                    encoder: &mut E,
+                ) -> Result<(), bincode::error::EncodeError> {
+                    self.0.encode(encoder)
+                }
+            }
+
+            #[cfg(feature = "bincode")]
+            impl<const MIN: $ty, const MAX: $ty> bincode::Decode for $Struct<MIN, MAX> {
+                fn decode<D: bincode::de::Decoder>(
+                    decoder: &mut D,
+                ) -> Result<Self, bincode::error::DecodeError> {
+                    Self::new(<$ty as bincode::Decode>::decode(decoder)?)
+                        .map_err(|err| bincode::error::DecodeError::OtherString(err.to_string()))
+                }
+            }
+
+            #[cfg(feature = "bincode")]
+            impl<'de, const MIN: $ty, const MAX: $ty> bincode::BorrowDecode<'de> for $Struct<MIN, MAX> {
+                fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+                    decoder: &mut D,
+                ) -> Result<Self, bincode::error::DecodeError> {
+                    bincode::Decode::decode(decoder)
+                }
+            }
+
             impl<const MIN: $ty, const MAX: $ty> serde::Serialize for $Struct<MIN, MAX> {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
                 where

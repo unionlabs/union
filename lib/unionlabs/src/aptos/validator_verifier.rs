@@ -6,6 +6,7 @@ use crate::aptos::{account::AccountAddress, public_key::PublicKey};
 /// can be used for all signature verification operations including block and network signature
 /// verification, respectively.
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ValidatorVerifier {
     /// A vector of each validator's on-chain account address to its pubkeys and voting power.
     pub validator_infos: Vec<ValidatorConsensusInfo>,
@@ -13,6 +14,7 @@ pub struct ValidatorVerifier {
 
 /// Helper struct to manage validator information for validation
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ValidatorConsensusInfo {
     pub address: AccountAddress,
     pub public_key: PublicKey,

@@ -6,6 +6,7 @@ use crate::primitives::{encoding::HexUnprefixed, H256};
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SparseMerkleProof {
     /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
     ///     - If this is `Some(leaf_node)`
@@ -24,6 +25,7 @@ pub struct SparseMerkleProof {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SparseMerkleLeafNode {
     pub key: H256<HexUnprefixed>,
     pub value_hash: H256<HexUnprefixed>,

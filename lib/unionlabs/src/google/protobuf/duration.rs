@@ -53,6 +53,7 @@ type DurationInner = BoundedI128<
 #[model(proto(raw(protos::google::protobuf::Duration), into, from), no_serde)]
 #[derive(PartialOrd, Ord, Copy)]
 #[debug("Duration({})", self)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Duration(DurationInner);
 
 impl Neg for Duration {

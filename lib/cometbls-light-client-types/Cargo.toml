@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 alloy       = { workspace = true, features = ["sol-types"], optional = true }
+bincode     = { workspace = true, features = ["alloc", "derive"], optional = true }
 protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
 serde       = { workspace = true, features = ["derive"], optional = true }
 serde-utils = { workspace = true }
@@ -19,11 +20,15 @@ unionlabs   = { workspace = true }
 
 [features]
 default = []
+
+bincode = ["dep:bincode", "unionlabs/bincode"]
 ethabi  = ["dep:alloy", "unionlabs/ethabi"]
 proto   = ["dep:protos", "unionlabs/proto"]
 serde   = ["dep:serde"]
 
 [dev-dependencies]
-bcs         = { workspace = true }
-hex         = { workspace = true }
-hex-literal = { workspace = true }
+bcs                         = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde", "proto"] }
+hex                         = { workspace = true }
+hex-literal                 = { workspace = true }
+unionlabs                   = { workspace = true, features = ["test-utils"] }

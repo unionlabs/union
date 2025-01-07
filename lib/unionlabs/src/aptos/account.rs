@@ -11,6 +11,7 @@ use crate::primitives::{encoding::HexUnprefixed, FixedBytes, FixedBytesError, H2
     macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
 #[debug("AccountAddress({})", self)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct AccountAddress(pub H256<HexUnprefixed>);
 
 impl AccountAddress {

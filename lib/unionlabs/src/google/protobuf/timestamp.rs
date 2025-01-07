@@ -28,6 +28,7 @@ pub type ValidTimestampUnixNanos = BoundedI128<
 #[model(proto(raw(protos::google::protobuf::Timestamp), into, from), no_serde)]
 #[debug("Timestamp({})", self)]
 #[derive(Copy)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
