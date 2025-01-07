@@ -16,17 +16,17 @@ export type AssetListItem = {
 }
 
 export interface SelectedAsset {
-  address: string | undefined
-  balance: bigint | undefined
-  symbol: string | undefined
+  address: string | null
+  balance: bigint | null
+  symbol: string | null
   decimals: number
-  gasToken: boolean | undefined
-  supported: ChainAsset | undefined
+  gasToken: boolean
+  supported: ChainAsset | null
 }
 
 export interface IntentsStore {
-  sourceChain: Chain | undefined
-  destinationChain: Chain | undefined
+  sourceChain: Chain | null
+  destinationChain: Chain | null
   selectedAsset: SelectedAsset
   sourceAssets: Array<AssetListItem>
   receiver: string
@@ -46,11 +46,13 @@ export function createIntentStore(
   const queryClient = useQueryClient()
 
   const sourceChain = derived([rawIntents, context], ([$intents, $context]) => {
-    return $context.chains.find(chain => chain.chain_id === $intents.source)
+    return $context.chains.find(chain => chain.chain_id === $intents.source) ?? null
   })
 
-  const destinationChain = derived([rawIntents, context], ([$intents, $context]) =>
-    $context.chains.find(chain => chain.chain_id === $intents.destination)
+  const destinationChain = derived(
+    [rawIntents, context],
+    ([$intents, $context]) =>
+      $context.chains.find(chain => chain.chain_id === $intents.destination) ?? null
   )
 
   //Assets of selected chain
@@ -91,12 +93,12 @@ export function createIntentStore(
 
   //Create th selected asset with all info
   const selectedAsset = derived([asset, supportedAsset], ([$asset, $supportedAsset]) => ({
-    address: $asset?.address,
-    balance: $asset?.balance,
-    symbol: getDisplaySymbol($asset, $supportedAsset),
+    address: $asset?.address ?? "",
+    balance: $asset?.balance ?? 0n,
+    symbol: getDisplaySymbol($asset, $supportedAsset) ?? "",
     decimals: $supportedAsset?.decimals ?? 0,
-    gasToken: $asset?.gasToken,
-    supported: $supportedAsset
+    gasToken: $asset?.gasToken ?? false,
+    supported: $supportedAsset ?? null
   }))
 
   return derived(

@@ -5,19 +5,19 @@ import {
   createContextStore
 } from "$lib/components/TransferFrom/transfer/context.ts"
 import {
-  createValidationStore,
-  type ValidationStoreAndMethods
-} from "$lib/components/TransferFrom/transfer/validation.ts"
-import {
   createRawIntentsStore,
   type RawIntentsStore
 } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import {
+  createValidationStore,
+  type ValidationStore
+} from "$lib/components/TransferFrom/transfer/validation.ts"
 
 export interface TransferStore {
   rawIntents: RawIntentsStore
   intents: Readable<IntentsStore>
   context: Readable<ContextStore>
-  validation: ValidationStoreAndMethods
+  validation: Readable<ValidationStore>
 }
 
 export function createTransferStore(): TransferStore {

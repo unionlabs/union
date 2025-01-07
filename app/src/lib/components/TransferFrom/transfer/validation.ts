@@ -1,39 +1,49 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
-import type { IntentsStore, SelectedAsset } from "./intents.ts"
-import type { Chain } from "$lib/types"
+import type { IntentsStore } from "./intents.ts"
+import type { Chain, ChainAsset } from "$lib/types"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { transferSchema } from "./schema.ts"
 import { safeParse } from "valibot"
-import type {
-  FormFields,
-  RawIntentsStore
-} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { FormFields, RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
-export interface ValidationStore {
+export interface ValidTransfer {
+  sourceChain: Chain
+  destinationChain: Chain
+  asset: {
+    address: string
+    balance: bigint
+    symbol: string
+    decimals: number
+    gasToken: boolean
+    supported: ChainAsset
+  }
+  receiver: string
+  amount: string
+}
+
+export interface InvalidValidationStore {
+  transfer: undefined
   errors: FieldErrors
-  isValid: boolean
+  isValid: false
 }
 
-export interface ValidationStoreAndMethods extends Readable<ValidationStore> {
-  validate: () => Promise<boolean>
+export interface ValidValidationStore {
+  transfer: ValidTransfer
+  errors: FieldErrors
+  isValid: true
 }
 
-interface ValidationContext {
-  sourceChain: Chain | undefined
-  destinationChain: Chain | undefined
-  selectedAsset: SelectedAsset
-  chains: Array<Chain>
-}
+export type ValidationStore = InvalidValidationStore | ValidValidationStore
 
 export function createValidationStore(
   rawIntents: RawIntentsStore,
   intents: Readable<IntentsStore>,
   context: Readable<ContextStore>
-): ValidationStoreAndMethods {
-  const store = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
+): Readable<ValidationStore> {
+  const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, _$context]) => {
     const formFields = {
       source: $rawIntents.source,
       destination: $rawIntents.destination,
@@ -42,104 +52,80 @@ export function createValidationStore(
       amount: $rawIntents.amount
     }
 
-    // Check if all required fields have values
-    const hasAllRequiredValues = Object.values(formFields).every(value => Boolean(value))
-
-    // Parse input with schema if all fields are present
-    let schemaValid = false
-    if (hasAllRequiredValues) {
-      const parseInput = {
-        ...formFields,
-        balance: $intents.selectedAsset.balance ?? 0n,
-        decimals: $intents.selectedAsset.decimals ?? 0
-      }
-      const schemaResult = safeParse(transferSchema, parseInput)
-      schemaValid = schemaResult.success
+    if (formFields.asset && !formFields.amount) {
+      return { amount: "Amount is required" }
     }
 
-    // Always validate fields for error display
-    const errors = validateAll({
-      formFields,
-      sourceChain: $intents.sourceChain,
-      destinationChain: $intents.destinationChain,
-      selectedAsset: $intents.selectedAsset,
-      chains: $context.chains
-    })
-
-    return {
-      errors,
-      // isValid only when all fields present, schema valid, and no validation errors
-      isValid: hasAllRequiredValues && schemaValid && Object.keys(errors).length === 0
+    if (formFields.asset && !formFields.receiver) {
+      return { receiver: "Receiver is required" }
     }
-  })
 
-  function validateAll({
-    formFields,
-    sourceChain,
-    destinationChain,
-    selectedAsset,
-    chains
-  }: {
-    formFields: FormFields
-    sourceChain: Chain | undefined
-    destinationChain: Chain | undefined
-    selectedAsset: SelectedAsset
-    chains: Array<Chain>
-  }): FieldErrors {
     const parseInput = {
       ...formFields,
-      balance: selectedAsset.balance ?? 0n,
-      decimals: selectedAsset.decimals ?? 0
+      balance: $intents.selectedAsset.balance ?? 0n,
+      decimals: $intents.selectedAsset.decimals ?? 0
     }
 
     const schemaResult = safeParse(transferSchema, parseInput)
-
-    // If schema validation fails, return those errors
     if (!schemaResult.success) {
       return schemaResult.issues.reduce((acc, issue) => {
         const fieldName = issue.path?.[0]?.key as keyof FormFields
         if (fieldName && formFields[fieldName]) {
-          // Only show error if field has a value
           acc[fieldName] = issue.message
         }
         return acc
       }, {} as FieldErrors)
     }
 
-    // Only proceed with rules if schema validation passes
-    return validateRules(formFields, {
-      sourceChain,
-      destinationChain,
-      selectedAsset,
-      chains
-    })
-  }
-
-  function validateRules(formFields: FormFields, _context: ValidationContext): FieldErrors {
-    const errors: FieldErrors = {}
-
     if (
       formFields.source &&
       formFields.destination &&
       formFields.source === formFields.destination
     ) {
-      errors.destination = "Source and destination chains must be different"
+      return { destination: "Source and destination chains must be different" }
     }
 
-    return errors
-  }
+    return {}
+  })
 
-  return {
-    subscribe: store.subscribe,
-    validate: () => {
-      return new Promise(resolve => {
-        let currentState: ValidationStore | undefined
-        const unsubscribe = store.subscribe(value => {
-          currentState = value
-          unsubscribe()
-          resolve(currentState?.isValid ?? false)
-        })
-      })
+  const transfer = derived([rawIntents, intents, errors], ([$rawIntents, $intents, $errors]) => {
+    if (Object.keys($errors).length > 0 || !$rawIntents.amount || !$rawIntents.receiver)
+      return undefined
+
+    if (
+      !(
+        $intents.sourceChain &&
+        $intents.destinationChain &&
+        $intents.selectedAsset.address &&
+        $intents.selectedAsset.balance &&
+        $intents.selectedAsset.symbol &&
+        $intents.selectedAsset.supported
+      )
+    ) {
+      return undefined
     }
-  }
+
+    return {
+      sourceChain: $intents.sourceChain,
+      destinationChain: $intents.destinationChain,
+      asset: {
+        address: $intents.selectedAsset.address,
+        balance: $intents.selectedAsset.balance,
+        symbol: $intents.selectedAsset.symbol,
+        decimals: $intents.selectedAsset.decimals,
+        gasToken: $intents.selectedAsset.gasToken,
+        supported: $intents.selectedAsset.supported
+      },
+      receiver: $rawIntents.receiver,
+      amount: $rawIntents.amount
+    } as ValidTransfer
+  })
+
+  return derived([transfer, errors], ([$transfer, $errors]): ValidationStore => {
+    const isValid = $transfer !== undefined
+
+    return isValid
+      ? { transfer: $transfer as ValidTransfer, errors: $errors, isValid: true }
+      : { transfer: undefined, errors: $errors, isValid: false }
+  })
 }
