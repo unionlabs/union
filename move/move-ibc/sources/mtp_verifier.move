@@ -13,8 +13,6 @@ module ibc::mpt_verifier {
     const LEAF: u8       = 2;
     const MAX_PREFIX: u8 = 3;
 
-
-
     /// A lightweight struct containing the node bytes + node hash
     struct Node has copy, drop, store {
         data: vector<u8>,  // entire node RLP data
@@ -23,19 +21,19 @@ module ibc::mpt_verifier {
 
     public fun parse_list(data: &vector<u8>): (u256, u256) {
         let n = vector::length(data);
-        assert!(n > 0, 201); // Ensure we have at least one byte
-        let kind = *vector::borrow(data, 0); // Get first byte
+        assert!(n > 0, 201);
+        let kind = *vector::borrow(data, 0);
 
         assert!(kind >= 0xC0, 8002);
 
         if (kind < 0xF8) {
             let list_size = (kind as u256) - 0xC0;
             let offset = 1;
-            return (list_size, offset);
+            return (list_size, offset)
         };
         let length_size = (kind as u64) - 0xF7;
-        assert!(length_size <= 31, 202); // Length size must be <= 31
-        assert!(n >= ((length_size as u64) + 1), 203); // Ensure buffer has enough bytes
+        assert!(length_size <= 31, 202);
+        assert!(n >= ((length_size as u64) + 1), 203);
 
         let length = 0;
         if (length_size > 0) {
@@ -58,24 +56,20 @@ module ibc::mpt_verifier {
 
     public fun next_size(data: &vector<u8>): u64 {
         let n = vector::length(data);
-        assert!(n > 0, 201); // Ensure we have at least one byte
+        assert!(n > 0, 201);
 
-        let kind = vector::borrow(data, 0); // Get first byte
+        let kind = vector::borrow(data, 0);
         let kind_u8 = *kind;
 
         if (kind_u8 < 0x80) {
-            // Small single byte
-            return 1;
+            return 1
         } else if (kind_u8 < 0xB8) {
-            // Short string
-            return 1 + (((kind_u8 as u256) - 0x80) as u64);
+            return 1 + (((kind_u8 as u256) - 0x80) as u64)
         } else if (kind_u8 < 0xC0) {
-            // Long string
             let length_size = (((kind_u8 as u256) - 0xB7) as u8);
 
-            // Ensure that we don't overflow and don't read out of bounds
-            assert!(length_size <= 31, 202); // Length size must be <= 31
-            assert!(n >= ((length_size as u64) + 1), 203); // Ensure buffer has enough bytes
+            assert!(length_size <= 31, 202);
+            assert!(n >= ((length_size as u64) + 1), 203);
 
             let length = 0;
             if (length_size > 0) {
@@ -90,17 +84,14 @@ module ibc::mpt_verifier {
                     j = j + 1;
                 }
             };
-            return (length as u64) + (1 + (length_size as u64));
+            return (length as u64) + (1 + (length_size as u64))
         } else if (kind_u8 < 0xF8) {
-            // Short list
-            return 1 + (((kind_u8 as u256) - 0xC0) as u64);
+            return 1 + (((kind_u8 as u256) - 0xC0) as u64)
         };
-        // Long list
         let length_size = (((kind_u8 as u256) - 0xf7) as u8);
 
-        // Ensure that we don't overflow and don't read out of bounds
-        assert!(length_size <= 31, 202); // Length size must be <= 31
-        assert!(n >= ((length_size as u64)), 203); // Ensure buffer has enough bytes
+        assert!(length_size <= 31, 202);
+        assert!(n >= ((length_size as u64)), 203);
 
         let length = 0;
         if (length_size > 0) {
@@ -149,7 +140,6 @@ module ibc::mpt_verifier {
         if (kind_u8 < 0x80) {
             ((kind_u8 as u256), 1)
         } else {
-            // Short string
             let short_len = (((kind_u8 as u64) - 0x80) as u8);
 
             assert!((short_len as u64) <= n, 203);
@@ -238,13 +228,13 @@ module ibc::mpt_verifier {
 
     public fun encode_uint(value: u256): vector<u8> {
         if (value == 0) {
-            return x"80";
+            return x"80"
         };
 
         if (value < 128) {
             let out = vector::empty<u8>();
             vector::push_back(&mut out, (value as u8));
-            return out;
+            return out
         };
 
 
@@ -260,7 +250,7 @@ module ibc::mpt_verifier {
                 vector::push_back(&mut out, b_u8);
                 i = i + 1;
             };
-            return out;
+            return out
         };
 
 
@@ -276,7 +266,7 @@ module ibc::mpt_verifier {
                 vector::push_back(&mut out, (b_u256 as u8));
                 i = i + 1;
             };
-            return out;
+            return out
         };
 
 
@@ -298,7 +288,7 @@ module ibc::mpt_verifier {
 
     fun num_bytes(value: u256): u8 {
         if (value == 0) {
-            return 1;
+            return 1
         };
 
         let len = 0u8;
@@ -314,6 +304,7 @@ module ibc::mpt_verifier {
         let (val, consumed) = parse_uint(data);
         let hash_bytes = bcs::to_bytes<u256>(&val);
         vector::reverse(&mut hash_bytes);
+
         (hash_bytes, consumed)
     }
 
@@ -328,23 +319,14 @@ module ibc::mpt_verifier {
 
             let total_len = (vector::length(&remaining) as u256);
             let consumed = offset + list_size;
-            // std::debug::print(&string::utf8(b"consumed: "));
-            // std::debug::print(&consumed);
-            // std::debug::print(&string::utf8(b"offset: "));
-            // std::debug::print(&offset);
-            // std::debug::print(&string::utf8(b"total_len: "));
-            // std::debug::print(&total_len);
-            // std::debug::print(&string::utf8(b"input: "));
-            // std::debug::print(&input);
+
             assert!(consumed <= total_len, 777);
 
             let node_data = vector::slice(&remaining, 0, (consumed as u64));
             let node_hash = keccak256(node_data);
+
             let node_data = vector::slice(&remaining, (offset as u64), (consumed as u64));
-            // std::debug::print(&string::utf8(b"node_hash: "));
-            // std::debug::print(&node_hash);
-            // std::debug::print(&string::utf8(b"node_data: "));
-            // std::debug::print(&node_data);
+
 
             let node = Node {
                 data: node_data,
@@ -422,8 +404,7 @@ module ibc::mpt_verifier {
             let empty_hash = aptos_std::aptos_hash::keccak256(empty_trie);
             if (empty_hash != expected_hash) {
                 // root hash incorrect
-                std::debug::print(&string::utf8(b"breaking here: "));
-                return (false, vector::empty<u8>());
+                return (false, vector::empty<u8>())
             };
         };
 
@@ -437,51 +418,34 @@ module ibc::mpt_verifier {
 
         while (true) {
             if (i >= nodes_count) {
-                std::debug::print(&string::utf8(b"breaking here: "));
-                return (false, vector::empty<u8>());
+                return (false, vector::empty<u8>())
             };
 
             let node_struct = *vector::borrow(nodes, i);
             i = i + 1;
 
-            let node_hash = &node_struct.hash;
-            // if (node_struct.hash != expected_hash) {
-            //     std::debug::print(&string::utf8(b"breaking here2: "));
-            //     return (false, vector::empty<u8>());
-            // };
+            if (node_struct.hash != expected_hash) {
+                return (false, vector::empty<u8>())
+            };
 
             let node_data = node_struct.data;
             let node_len = vector::length(&node_data);
 
             let size1 = next_size(&node_data);
-            std::debug::print(&string::utf8(b"size1: "));
-            std::debug::print(&size1);
-            std::debug::print(&string::utf8(b"node_len: "));
-            std::debug::print(&node_len);
-            std::debug::print(&string::utf8(b"node_data: "));
-            std::debug::print(&node_data);
 
             let suffix_1 = suffix_bytes(&node_data, size1);
             let size2 = next_size(&suffix_1);
             let sum_size = size1 + size2;
-            std::debug::print(&string::utf8(b"size2: "));
-            std::debug::print(&size2);
 
             if (sum_size == node_len) {
-                std::debug::print(&string::utf8(b"node_data split bytes: "));
-                std::debug::print(&node_data);
                 let (encoded_path, node_remainder) = split_bytes(&node_data);
                 node_data = node_remainder;
-                std::debug::print(&string::utf8(b"encoded_path: "));
-                std::debug::print(&encoded_path);
 
                 let kind = *vector::borrow(&encoded_path, 0);
                 let prefix = (kind >> 4);
                 assert!(prefix <= MAX_PREFIX, 9008);
 
                 let keys_match = false;
-                std::debug::print(&string::utf8(b"prefix: "));
-                std::debug::print(&prefix);
                 if ((prefix & ODD_LENGTH) == 0) {
                     assert!((kind & 0x0f) == 0, 9009);
                     keys_match = true;
@@ -510,7 +474,6 @@ module ibc::mpt_verifier {
 
                 if ((prefix & LEAF) == 0) {
                     assert!(keys_match, 9010);
-
                     let (hash_bytes, _) = parse_hash(&node_data);
                     expected_hash = hash_bytes;
                 } else {
@@ -519,41 +482,34 @@ module ibc::mpt_verifier {
                     if (keys_match) {
                         let (valBytes, _) = split_bytes(&node_data);
                         value = valBytes;
-                        break;
+                        break
                     } else {
-                        std::debug::print(&string::utf8(b"breaking here3: "));
                         is_exists = false;
-                        break;
+                        break
                     }
                 };
 
             } else {
                 let key_nibble = (key_u256 >> 252);
-
-                let node_branch = suffix_bytes(&node_data, sum_size);
-
                 let i2 = 0;
+                let node_branch = node_data;
+                if (key_nibble >= 2){
+                    i2 = 2;
+                    node_branch = suffix_bytes(&node_data, sum_size);
+                };
+
                 while (i2 < key_nibble) {
                     node_branch = skip(&node_branch);
                     i2 = i2 + 1;
                 };
-                std::debug::print(&string::utf8(b"key_nibble: "));
-                std::debug::print(&key_nibble);
-                std::debug::print(&string::utf8(b"node_branch: "));
-                std::debug::print(&node_branch);
-                std::debug::print(&string::utf8(b"i2: "));
-                std::debug::print(&i2);
 
                 let (hash_bytes, _) = parse_hash(&node_branch);
-                std::debug::print(&string::utf8(b"hash_bytes: "));
-                std::debug::print(&hash_bytes);
 
                 if (vector::length(&hash_bytes) == 0) {
                     is_exists = false;
-                    break;
+                    break
                 };
                 expected_hash = hash_bytes;
-
                 key_u256 = key_u256 << 4;
                 key_len_nibbles = key_len_nibbles - 1;
             };
@@ -573,29 +529,21 @@ module ibc::mpt_verifier {
 
     #[test]
     public fun test_parse_nodes_small() {
-        // A minimal RLP-encoded node:
-        //   0xc6 => short list of length 6
-        //   0x85 => short string of length 5
-        //   'h' 'e' 'l' 'l' 'o'
         let data: vector<u8> = x"c68568656c6c6f";
 
-        // Call your parse_nodes(...) on this small example
         let nodes = parse_nodes(&data);
 
-        // We expect exactly 1 node
         assert!(vector::length(&nodes) == 1, 9991);
 
         let node0 = *vector::borrow(&nodes, 0);
-        // node0.data should be x"8568656c6c6f", i.e. 6 bytes
         assert!(vector::length(&node0.data) == 6, 9992);
 
-        // Optionally, you can confirm the hash matches keccak256 of x"c68568656c6c6f"
         let check = aptos_std::aptos_hash::keccak256(data);
         assert!(node0.hash == check, 9993);
     }
 
     #[test]
-    public fun test_non_existance() {
+    public fun test_verify_false() {
         let storage_root = x"195170ca4e76873504de92ee3651ba91e339555d9d008c5995e51c2c3ada74eb";
         let proof0 = x"f90211a0b51ceda38c7c0d96cee1d651d8c9001299aae0a56dd4778366faccf8c89802f0a011e1adf2007c6afdc9300271c03ad104cf9ed625a3cca7050416449175f7ef21a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580";
         let proof1 = x"f90211a0d2ad4e2cda383901cb101634058b0c28584f168817c8447237daeb3c9faf6a57a02aded885b60f7182faa84f45d253edfab7a4038ee77c0175a8a20c9ecdd5f7c1a0438af8d7678818cc1e6f8bd83fc257651d70271cb471aa44b8ae9ca1aaa39786a0461f00dce5db7e9aa3ea7809371894a533df231c19a7c560bc7dd8ed2da011bba0c7a35d543c85562f030230c6da9e7b14009763aede970ced5a7aa386efcc62aaa09ed4100cc66c040897a2f0ea8aad36b9e40a0a2d4c60ecd7e6f2fa1d0e9fe707a007dadece03c60c19d74e6b837b77016ec48bb2c03ee427f87a12fa2302414a70a099ea06c8a1ac2f55e4d92ee67d611246e4a5decbfacfb401280d36fdd7ed72f0a04314144712573463dd20917ec938c54c19d033345f4eefaa8176d5cc0947cd1ba0b186d1d4416d902040cd48bf76d66b9c07178a295eedd0b27dcdb9a1c62eaf3ea0725af34d18fa40a2bceb40044cc53887f6142ce85a117594880a961d7338ff5da0a5e885ec57fe93a8ea19d0a7d59978504369d1d70cc6725be2c3ce8269e8e43da03a9da344b108b810acdbb908a5126884db431ab6f92c1ae4ec8588878c9755e0a060725a3a4909300cb466cead03f96631829328cad205178b209075f93e3fba2aa088932d16240dba2d1e610ba21f8ae39eec93c7ea2b7f24cfaf5382b9473a6df7a07c8ef77d3c8bf3eba9410f21bd181cd5e3ab748853591bcb4590b369b51f8b6c80";
@@ -617,11 +565,15 @@ module ibc::mpt_verifier {
 
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
+        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&is_exists);
+        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&value);
         assert(!is_exists, 1001);
     }
 
     #[test]
-    public fun test_verify_okk() {
+    public fun test_verify_ok() {
         let storage_root = x"195170ca4e76873504de92ee3651ba91e339555d9d008c5995e51c2c3ada74eb";
         let proof0 = x"f90211a0b51ceda38c7c0d96cee1d651d8c9001299aae0a56dd4778366faccf8c89802f0a011e1adf2007c6afdc9300271c03ad104cf9ed625a3cca7050416449175f7ef21a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580";
         let proof1 = x"f90211a0e06a0657d0607ed2e2c32e879f439169a7fc4af77b35d9932dbeb2dfebe695c7a0a36e146bac35dbfac21f392c4030f374d6a749fbb09a17f61763374b758850f7a06984b50415a207367532fa5a6191f819b7ac6ef29164bc545b55d49397e2651fa022cc8e966d7c342d94abbe77dbcfb0a52b123f8117d78aa50463b8355acaadaaa0fcd4ae819a2addc899ddc0dda500f51bf61e2f20b3835c9ebd1011d62f28c934a0db9ed7b2486bb67a7971ae8c29683266ad9add781a1825de4e36c890e0f3cdf6a03b12d6c5b2b7211fbe8be70283bfdb3a382f85ec3db7f4e40733037b0d74dd7fa0b47f4e1076af0e9fe906587dd314896bcf4e496660b1f48a7fffd23f82b2ab5da098b00edd42f648defdd793c58f1d7f62ffa20f0b2b49073901496b9735e70e39a03adf726421bddaf8624147ca2ec8abc017e40ad77eada3157da77078ea9adf22a0e9ae74e8967516c78db4ac8aa7de5d80f02cd78b63213c3ba3357410df0a2e04a0cf56383af5dbdf2f6a1faae0681f81d00235ed137d5ac60e9ec0ff6ec8c37617a03826b3b060923bb30be9247355a3a7f570798bd1bdffeaf8c9100a1148f2071ca0a26f8f831f9939d92f85544dd55113f789a2042c5bf6adbf2f1fa261ad0d1266a0d07681f008065226a1ca369667ca08e1b6f76e92e0943d8075a25cb44c000814a01bcb25ed256b6742464e7229c04009279be5064d99ff5beb73361c5e79e6a55480";
@@ -644,6 +596,10 @@ module ibc::mpt_verifier {
         let key = keccak256(slot);
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
+        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&is_exists);
+        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&value);
         assert(is_exists, 1001);
         assert(value == x"01", 1002);
     }
@@ -662,10 +618,15 @@ module ibc::mpt_verifier {
         vector::append(&mut proofChain, proof2);
 
         let slot = x"91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a70000000000000000000000000000000000000000000000000000000000000000";
-        let key = keccak256(slot);
-        let key = keccak256(key);
+        let key = keccak256(keccak256(slot));
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
+        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&is_exists);
+        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&value);
+        assert(is_exists, 1001);
+        assert(value == expected_valude, 1002);
     }
 
 
@@ -681,18 +642,10 @@ module ibc::mpt_verifier {
     #[test]
     public fun test_parse_nodes() {
         let buf: vector<u8> = x"f90211a0b51ceda38c7c0d96cee1d651d8c9001299aae0a56dd4778366faccf8c89802f0a011e1adf2007c6afdc9300271c03ad104cf9ed625a3cca7050416449175f7ef21a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580";
-
         let result = parse_nodes(&buf);
         std::debug::print(&string::utf8(b"result: "));
         std::debug::print(&result);
 
-        let test_me_hard = x"4700000000000000000000000000000211";
-        vector::reverse(&mut test_me_hard);
-        let res = keccak256(test_me_hard);
-        std::debug::print(&string::utf8(b"res: "));
-        std::debug::print(&res);
-        // assert!(result == x"0000000000000000000000000000000000000000000000000000000000000033", 1);
-        // assert!(offset == 1, 1);
     }
 
     #[test]
@@ -727,6 +680,20 @@ module ibc::mpt_verifier {
         let (result, size) = parse_uint(&buf);
         assert!(result == 8173559240281143206369716588848558201407293035221686873373476518205632680448, 1);
         assert!(size == 33, 1);
+    }
+
+    #[test]
+    public fun test_skip() {
+        let buf: vector<u8> = x"a06984b50415a207367532fa5a6191f819b7ac6ef29164bc545b55d49397e2651fa022cc8e966d7c342d94abbe77dbcfb0a52b123f8117d78aa50463b8355acaadaaa0fcd4ae819a2addc899ddc0dda500f51bf61e2f20b3835c9ebd1011d62f28c934a0db9ed7b2486bb67a7971ae8c29683266ad9add781a1825de4e36c890e0f3cdf6a03b12d6c5b2b7211fbe8be70283bfdb3a382f85ec3db7f4e40733037b0d74dd7fa0b47f4e1076af0e9fe906587dd314896bcf4e496660b1f48a7fffd23f82b2ab5da098b00edd42f648defdd793c58f1d7f62ffa20f0b2b49073901496b9735e70e39a03adf726421bddaf8624147ca2ec8abc017e40ad77eada3157da77078ea9adf22a0e9ae74e8967516c78db4ac8aa7de5d80f02cd78b63213c3ba3357410df0a2e04a0cf56383af5dbdf2f6a1faae0681f81d00235ed137d5ac60e9ec0ff6ec8c37617a03826b3b060923bb30be9247355a3a7f570798bd1bdffeaf8c9100a1148f2071ca0a26f8f831f9939d92f85544dd55113f789a2042c5bf6adbf2f1fa261ad0d1266a0d07681f008065226a1ca369667ca08e1b6f76e92e0943d8075a25cb44c000814a01bcb25ed256b6742464e7229c04009279be5064d99ff5beb73361c5e79e6a55480";
+        let new_buf = skip(&buf);
+        assert(new_buf == x"a022cc8e966d7c342d94abbe77dbcfb0a52b123f8117d78aa50463b8355acaadaaa0fcd4ae819a2addc899ddc0dda500f51bf61e2f20b3835c9ebd1011d62f28c934a0db9ed7b2486bb67a7971ae8c29683266ad9add781a1825de4e36c890e0f3cdf6a03b12d6c5b2b7211fbe8be70283bfdb3a382f85ec3db7f4e40733037b0d74dd7fa0b47f4e1076af0e9fe906587dd314896bcf4e496660b1f48a7fffd23f82b2ab5da098b00edd42f648defdd793c58f1d7f62ffa20f0b2b49073901496b9735e70e39a03adf726421bddaf8624147ca2ec8abc017e40ad77eada3157da77078ea9adf22a0e9ae74e8967516c78db4ac8aa7de5d80f02cd78b63213c3ba3357410df0a2e04a0cf56383af5dbdf2f6a1faae0681f81d00235ed137d5ac60e9ec0ff6ec8c37617a03826b3b060923bb30be9247355a3a7f570798bd1bdffeaf8c9100a1148f2071ca0a26f8f831f9939d92f85544dd55113f789a2042c5bf6adbf2f1fa261ad0d1266a0d07681f008065226a1ca369667ca08e1b6f76e92e0943d8075a25cb44c000814a01bcb25ed256b6742464e7229c04009279be5064d99ff5beb73361c5e79e6a55480", 1);
+    }
+
+    #[test]
+    public fun test_suffix_bytes() {
+        let buf: vector<u8> = x"a0b51ceda38c7c0d96cee1d651d8c9001299aae0a56dd4778366faccf8c89802f0a011e1adf2007c6afdc9300271c03ad104cf9ed625a3cca7050416449175f7ef21a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580";
+        let new_buf = suffix_bytes(&buf, 66);
+        assert(new_buf == x"a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580", 1);
     }
 
     #[test]
@@ -798,8 +765,6 @@ module ibc::mpt_verifier {
 
         let buf: vector<u8> = x"9e20d9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e56301";
         let (result, res) = split_bytes(&buf);
-        std::debug::print(&string::utf8(b"result: "));
-        std::debug::print(&result);
         assert!(result == x"20d9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563", 1);
         assert!(res == x"01", 1);
     }
