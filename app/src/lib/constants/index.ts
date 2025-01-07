@@ -1,5 +1,3 @@
-import { sepolia } from "viem/chains"
-
 type Environment = "PRODUCTION" | "STAGING" | "DEVELOPMENT"
 
 export const ENV = (): Environment =>
@@ -27,7 +25,7 @@ export const URLS = () => {
       RPC: "https://rpc.testnet-9.union.build",
       // REST: "https://api.testnet.bonlulu.uno"
       REST: "https://rest.testnet-9.union.build/"
-    },
+    }
   }
 }
 

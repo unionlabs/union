@@ -1,6 +1,5 @@
 import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import { offchainQuery, type Chain } from "./query/offchain/hubble.ts"
 import { sepolia } from "#mod.ts"
 import { holesky } from "viem/chains"
 

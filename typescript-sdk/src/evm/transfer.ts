@@ -10,11 +10,8 @@ import {
   type Account,
   type WalletClient,
   type PublicActions,
-  toHex,
-  createClient,
-  createPublicClient
+  toHex
 } from "viem"
-import { holesky } from "viem/chains"
 
 export type EvmTransferParams = {
   memo?: string
