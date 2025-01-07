@@ -687,7 +687,7 @@ contract UCS03Zkgm is
         uint256 path,
         uint32 channel,
         bytes calldata token
-    ) internal returns (address, bytes32) {
+    ) internal view returns (address, bytes32) {
         bytes32 wrappedTokenSalt = keccak256(abi.encode(path, channel, token));
         address wrappedToken =
             CREATE3.predictDeterministicAddress(wrappedTokenSalt);
@@ -698,7 +698,7 @@ contract UCS03Zkgm is
         uint256 path,
         uint32 channel,
         bytes calldata token
-    ) public returns (address, bytes32) {
+    ) public view returns (address, bytes32) {
         return internalPredictWrappedToken(path, channel, token);
     }
 
