@@ -107,3 +107,14 @@ To execute an upgrade (example values)
 nix run .\#eth-upgrade-holesky-ucs03 -- --deployer_pk 0xa3cd41bff71ad19fddfd901a9773c975a0404d97 --sender_pk 0x153919669Edc8A5D0c8D1E4507c9CE60435A1177 --private_key omitted
 ```
 
+To re-verify contracts after the upgrade:
+
+```bash
+nix run .\#eth-verify-holesky DEPLOYER_ADDR SENDER_ADDR ETHERSCAN_API_KEY
+```
+
+For example:
+
+```bash
+nix run .\#eth-verify-holesky 0xa3cd41bff71ad19fddfd901a9773c975a0404d97 0x153919669Edc8A5D0c8D1E4507c9CE60435A1177 omitted
+```
