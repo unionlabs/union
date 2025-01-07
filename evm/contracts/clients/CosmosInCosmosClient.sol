@@ -31,6 +31,7 @@ struct ClientState {
     uint32 l1ClientId;
     uint32 l2ClientId;
     uint64 l2LatestHeight;
+    bytes32 contractAddress;
 }
 
 struct ConsensusState {
@@ -59,7 +60,8 @@ library CosmosInCosmosLib {
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.l2LatestHeight
+            clientState.l2LatestHeight,
+            clientState.contractAddress
         );
     }
 
@@ -214,12 +216,15 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23Verifier.verifyMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path,
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            ),
             value
         );
     }
@@ -233,12 +238,15 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            )
         );
     }
 
