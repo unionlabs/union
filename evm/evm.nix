@@ -598,6 +598,10 @@ _: {
                   jq --compact-output --slurp 'map(.abi) | add' \
                     ${contracts}/out/Zkgm.sol/ZkgmLib.json \
                     ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosClient.json \
+                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosLib.json > evm-in-cosmos-client.json
                 ''
             );
 
