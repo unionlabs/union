@@ -43,6 +43,7 @@ export async function getHubbleChainDetails({
       sourceChannel: number
       destinationChannel: number
       relayContractAddress: string
+      destinationUCS03Address: string
       transferType: "direct" | "pfm"
     },
     Error
@@ -117,7 +118,8 @@ export async function getHubbleChainDetails({
     transferType: "direct",
     sourceChannel,
     destinationChannel,
-    relayContractAddress: sourceChain.ucs3_config.address
+    relayContractAddress: sourceChain.ucs3_config.address,
+    destinationUCS03Address: destinationChain.ucs3_config.address
   })
   // }
 

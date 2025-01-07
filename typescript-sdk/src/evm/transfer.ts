@@ -10,11 +10,15 @@ import {
   type Account,
   type WalletClient,
   type PublicActions,
-  toHex
+  toHex,
+  createClient,
+  createPublicClient
 } from "viem"
+import { holesky } from "viem/chains"
 
 export type EvmTransferParams = {
   memo?: string
+  askToken: HexAddress
   amount: bigint
   receiver: string
   account?: Account
@@ -48,6 +52,7 @@ export async function transferAssetFromEvm(
     account,
     receiver,
     denomAddress,
+    askToken,
     sourceChannel,
     simulate = true,
     autoApprove = false,
@@ -72,11 +77,6 @@ export async function transferAssetFromEvm(
   }
 
   memo ??= timestamp()
-
-  // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
-  // we do this by calling the ucs03 instance on the counterparty chain.
-  //
-  await client.readContract
 
   // add a salt to each transfer to prevent hash collisions
   // important because ibc-union does not use sequence numbers
@@ -112,16 +112,11 @@ export async function transferAssetFromEvm(
       "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
       toHex(salt),
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
-      denomAddress, // TODO: customize sentToken
+      denomAddress,
       amount,
-      "0xd1b482d1b947a96e96c9b76d15de34f7f70a20a1", // TODO: customize askToken
+      askToken,
       amount, // we want the same amount on dest as we send on the source
       false
-      //
-      // [{ denom: denomAddress, amount }],
-      // memo,
-      // { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-      // 0n
     ]
   } as const
   if (!simulate) {

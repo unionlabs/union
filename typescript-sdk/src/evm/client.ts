@@ -6,7 +6,9 @@ import {
   type HttpTransport,
   createWalletClient,
   type CustomTransport,
-  type FallbackTransport
+  type FallbackTransport,
+  createPublicClient,
+  http
 } from "viem"
 import {
   evmSameChainTransfer,
@@ -26,6 +28,8 @@ import {
   berachainTestnetbArtio
 } from "viem/chains"
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
+import { getChainId } from "viem/actions"
+import { ucs03ZkgmAbi } from "#abi/ucs-03.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [
@@ -90,11 +94,28 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         }
 
         const chainDetails = await getHubbleChainDetails({
-          destinationChainId,
-          sourceChainId: parameters.chainId
+          sourceChainId: parameters.chainId,
+          destinationChainId
         })
 
         if (chainDetails.isErr()) return err(chainDetails.error)
+
+        // TODO: make resillient
+        const destinationChainClient = createPublicClient({
+          chain: evmChainFromChainId(destinationChainId),
+          transport: http()
+        })
+
+        // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
+        // we do this by calling the ucs03 instance on the counterparty chain.
+        const [askToken, _] = (await destinationChainClient.readContract({
+          address: chainDetails.value.destinationUCS03Address as `0x${string}`,
+          abi: ucs03ZkgmAbi,
+          functionName: "predictWrappedToken",
+          args: [0, chainDetails.value.destinationChannel, denomAddress]
+        })) as ["0x${string}", string]
+
+        console.log({ sentToken: denomAddress, askToken }) // useful for debugging app
 
         // if (chainDetails.value.transferType === "pfm") {
         //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
@@ -121,6 +142,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           autoApprove,
           denomAddress,
+          askToken,
           sourceChannel,
           relayContractAddress
         })

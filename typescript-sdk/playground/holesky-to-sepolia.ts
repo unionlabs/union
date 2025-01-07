@@ -23,7 +23,7 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+const LINK_CONTRACT_ADDRESS = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 
 try {
@@ -37,12 +37,12 @@ try {
   })
 
   const transactionPayload = {
-    amount: 420n,
+    amount: 421n,
     destinationChainId: `${sepolia.id}`,
     receiver: RECEIVER,
     denomAddress: LINK_CONTRACT_ADDRESS,
     autoApprove: true
-  } satisfies TransferAssetsParameters<"11155111">
+  } satisfies TransferAssetsParameters<"17000">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
