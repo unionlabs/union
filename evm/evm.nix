@@ -763,6 +763,18 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-upgrade-${args.network}-cosmos-lens-client";
+            value = eth-upgrade (
+              {
+                dry = false;
+                protocol = "CosmosInCosmos";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-dryupgrade-${args.network}-ibc";
             value = eth-upgrade (
               {
