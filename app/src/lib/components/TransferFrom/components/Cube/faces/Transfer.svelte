@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { derived, get, type Readable, writable, type Writable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
@@ -26,7 +25,6 @@ import { cosmosStore, getCosmosOfflineSigner, userAddrCosmos } from "$lib/wallet
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { raise, sleep } from "$lib/utilities"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { userAddrOnChain } from "$lib/utilities/address.ts"
 import { toIsoString } from "$lib/utilities/date.ts"
 import { goto } from "$app/navigation"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
@@ -381,7 +379,7 @@ const transfer = async () => {
         destination_chain_id: $validation.transfer?.destinationChain?.chain_id,
         source_transaction_hash: $transferState.transferHash,
         hop_chain_id: $validation.transfer?.destinationChain?.chain_id,
-        sender: userAddrOnChain($context.userAddress, $validation.transfer?.sourceChain),
+        sender: $validation.transfer?.sender,
         normalized_sender:
           $validation.transfer?.sourceChain?.rpc_type === "cosmos"
             ? $userAddrCosmos?.normalized
@@ -625,15 +623,38 @@ let stepperSteps = derived(
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
-  <div>
-    <h2>Transfer</h2>
-    <p>RPC_TYPE: {$validation.transfer?.sourceChain?.rpc_type}</p>
-    <p>SOURCE: {$validation.transfer?.sourceChain?.display_name}</p>
-    <p>DESTINATION: {$validation.transfer?.destinationChain?.display_name}</p>
-    <p>ASSET: {$validation.transfer?.asset?.address ? truncate($validation.transfer?.asset.address, 12) : ""}</p>
-    <p>AMOUNT: {$validation.transfer?.amount}</p>
-    <p>RECEIVER: {truncateAddress({address: $validation.transfer?.receiver ?? ''})}</p>
-  </div>
+  {#if $validation.isValid}
+    <div>
+      <div class="flex justify-between">
+        <span>RPC_TYPE:</span>
+        <span>{$validation.transfer.sourceChain.rpc_type}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>SENDER:</span>
+        <span>{truncateAddress({address: $validation.transfer.sender})}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>SOURCE:</span>
+        <span>{$validation.transfer.sourceChain.display_name}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>DESTINATION:</span>
+        <span>{$validation.transfer.destinationChain.display_name}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>ASSET:</span>
+        <span>{truncate($validation.transfer.asset.address, 6)}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>AMOUNT:</span>
+        <span>{$validation.transfer.amount}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>RECEIVER:</span>
+        <span>{truncateAddress({address: $validation.transfer.receiver})}</span>
+      </div>
+    </div>
+  {/if}
 
   {#if $validation.transfer?.sourceChain}
     <Stepper
