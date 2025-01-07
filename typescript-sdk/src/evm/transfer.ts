@@ -4,7 +4,14 @@ import { err, ok, type Result } from "neverthrow"
 import type { Hex, HexAddress } from "../types.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import { simulateTransaction } from "../query/offchain/tenderly.ts"
-import { erc20Abi, getAddress, type Account, type WalletClient, type PublicActions } from "viem"
+import {
+  erc20Abi,
+  getAddress,
+  type Account,
+  type WalletClient,
+  type PublicActions,
+  toHex
+} from "viem"
 
 export type EvmTransferParams = {
   memo?: string
@@ -66,8 +73,11 @@ export async function transferAssetFromEvm(
 
   memo ??= timestamp()
 
-  // const salt = new Uint8Array(32) // Create a buffer of 32 bytes (256 bits)
-  // crypto.getRandomValues(salt)
+  // add a salt to each transfer to prevent hash collisions
+  // important because ibc-union does not use sequence numbers
+  // such that intents are possible based on deterministic packet hashes
+  const salt = new Uint8Array(32)
+  crypto.getRandomValues(salt)
   /**
    * @dev
    * `UCS03` zkgm contract `transfer` function:
@@ -95,8 +105,7 @@ export async function transferAssetFromEvm(
       Number(sourceChannel), // TODO: make typesafe
       0n, // TODO: customize timeoutheight
       "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-      "0x000000000000000000000000000000000000000000000000000000000000fffe",
-      // "0x153919669edc8a5d0c8d1e4507c9ce60435a1177", // TODO: customize receiver
+      toHex(salt),
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       denomAddress, // TODO: customize sentToken
       amount,
