@@ -7,7 +7,7 @@ export const CHAIN_MAP: Record<
 > = {
   1: { name: "sepolia", chainId: "11155111", ecosystem: "evm" },
   5: { name: "stargaze", chainId: "elgafar-1", ecosystem: "cosmos" },
-  4: { name: "union", chainId: "union-testnet-8", ecosystem: "cosmos" },
+  4: { name: "union", chainId: "union-testnet-9", ecosystem: "cosmos" },
   6: { name: "osmosis", chainId: "osmo-test-5", ecosystem: "cosmos" },
   7: { name: "celestia", chainId: "mocha-4", ecosystem: "cosmos" },
   8: { name: "berachain", chainId: "80085", ecosystem: "evm" },

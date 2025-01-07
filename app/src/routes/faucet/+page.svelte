@@ -144,7 +144,7 @@ const requestUnoFromFaucet = async () => {
       {#if $unoFaucetState.kind === "RESULT_OK"}
         <p>
           Tokens sent: <a
-            href={`https://explorer.testnet-8.union.build/union/tx/${$unoFaucetState.message}`}
+            href={`https://explorer.testnet-9.union.build/union/tx/${$unoFaucetState.message}`}
           >
             <Truncate
               class="underline"
