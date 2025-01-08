@@ -312,6 +312,10 @@ contract UCS03Zkgm is
         uint256 askAmount,
         bool onlyMaker
     ) public {
+        if(sentAmount == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
+        // TODO: make this non-failable as it's not guaranteed to exist
         IERC20Metadata sentTokenMeta = IERC20Metadata(sentToken);
         string memory tokenName = sentTokenMeta.name();
         string memory tokenSymbol = sentTokenMeta.symbol();
@@ -412,6 +416,9 @@ contract UCS03Zkgm is
         uint256 path,
         FungibleAssetTransferPacket calldata assetTransferPacket
     ) internal {
+        if(assetTransfer.sentToken == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
         IERC20Metadata sentToken =
             IERC20Metadata(address(bytes20(assetTransferPacket.sentToken)));
         if (!assetTransferPacket.sentName.eq(sentToken.name())) {
