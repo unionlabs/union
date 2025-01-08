@@ -133,7 +133,8 @@ contract StateLensIcs23Ics23ClientTest is Test {
         // Deploy and initialize the StateLensIcs23Ics23Client contract
         ibcStore = new MockIbcStore();
         ibcHandler = address(ibcStore);
-        StateLensIcs23Ics23Client implementation = new StateLensIcs23Ics23Client();
+        StateLensIcs23Ics23Client implementation =
+            new StateLensIcs23Ics23Client();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
@@ -373,7 +374,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
         // Update client
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrInvalidL1Proof.selector)
+            abi.encodeWithSelector(
+                StateLensIcs23Ics23Lib.ErrInvalidL1Proof.selector
+            )
         );
         client.updateClient(clientId, clientMessageBytes);
     }
@@ -497,7 +500,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrClientFrozen.selector)
+            abi.encodeWithSelector(
+                StateLensIcs23Ics23Lib.ErrClientFrozen.selector
+            )
         );
         client.verifyMembership(1, 1, bytes(""), bytes(""), bytes(""));
     }
@@ -555,7 +560,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrClientFrozen.selector)
+            abi.encodeWithSelector(
+                StateLensIcs23Ics23Lib.ErrClientFrozen.selector
+            )
         );
         client.verifyNonMembership(1, 1, bytes(""), bytes(""));
     }
