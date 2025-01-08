@@ -921,7 +921,7 @@ struct ParamsWithItemId<'a> {
 
 impl ToRpcParams for ParamsWithItemId<'_> {
     fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, serde_json::Error> {
-        info!("to_rpc_params");
+        debug!("to_rpc_params");
 
         Ok(Some(
             RawValue::from_string(serde_json::to_string(&self)?).unwrap(),

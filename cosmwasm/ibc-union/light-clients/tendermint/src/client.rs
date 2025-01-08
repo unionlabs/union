@@ -10,11 +10,11 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use unionlabs::{
     bounded::BoundedI64,
-    encoding::{DecodeAs, Proto},
+    encoding::Bincode,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     ibc::core::{
         client::height::Height,
-        commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+        commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
     primitives::{encoding::HexUnprefixed, H256},
 };
@@ -45,30 +45,25 @@ impl IbcClient for TendermintLightClient {
 
     type StorageProof = MerkleProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
-        _ctx: IbcClientCtx<Self>,
-        _height: u64,
-        _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
-        _value: Vec<u8>,
+        ctx: IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
-        // let consensus_state = ctx.read_self_consensus_state(height)?;
-        // let path = MerklePath::decode_as::<Proto>(&key).unwrap();
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        // ics23::ibc_api::verify_membership(
-        //     &storage_proof,
-        //     &SDK_SPECS,
-        //     &consensus_state.root,
-        //     &path
-        //         .key_path
-        //         .into_iter()
-        //         .map(|s| s.into_bytes())
-        //         .collect::<Vec<_>>(),
-        //     value,
-        // )
-        // .map_err(Error::VerifyMembership)?;
+        verify_membership(
+            &client_state.contract_address,
+            &consensus_state.root,
+            key,
+            storage_proof,
+            value,
+        )?;
 
         Ok(())
     }
@@ -79,20 +74,15 @@ impl IbcClient for TendermintLightClient {
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        let path = MerklePath::decode_as::<Proto>(&key).unwrap();
 
-        ics23::ibc_api::verify_non_membership(
-            &storage_proof,
-            &SDK_SPECS,
+        verify_non_membership(
+            &client_state.contract_address,
             &consensus_state.root,
-            &path
-                .key_path
-                .into_iter()
-                .map(|s| s.into_bytes())
-                .collect::<Vec<_>>(),
-        )
-        .map_err(Error::VerifyMembership)?;
+            key,
+            storage_proof,
+        )?;
 
         Ok(())
     }
@@ -359,6 +349,54 @@ pub fn parse_revision_number(chain_id: &str) -> Option<u64> {
         .rsplit('-')
         .next()
         .map(|height_str| height_str.parse().ok())?
+}
+
+pub fn verify_membership(
+    contract_address: &H256,
+    root: &MerkleRoot,
+    key: Vec<u8>,
+    storage_proof: MerkleProof,
+    value: Vec<u8>,
+) -> Result<(), Error> {
+    ics23::ibc_api::verify_membership(
+        &storage_proof,
+        &SDK_SPECS,
+        root,
+        &[
+            b"wasm".to_vec(),
+            0x3u8
+                .to_le_bytes()
+                .into_iter()
+                .chain(*contract_address)
+                .chain(key)
+                .collect::<Vec<_>>(),
+        ],
+        value,
+    )
+    .map_err(Error::VerifyMembership)
+}
+
+pub fn verify_non_membership(
+    contract_address: &H256,
+    root: &MerkleRoot,
+    key: Vec<u8>,
+    storage_proof: MerkleProof,
+) -> Result<(), Error> {
+    ics23::ibc_api::verify_non_membership(
+        &storage_proof,
+        &SDK_SPECS,
+        root,
+        &[
+            b"wasm".to_vec(),
+            0x3u8
+                .to_le_bytes()
+                .into_iter()
+                .chain(*contract_address)
+                .chain(key)
+                .collect::<Vec<_>>(),
+        ],
+    )
+    .map_err(Error::VerifyMembership)
 }
 
 // #[cfg(test)]

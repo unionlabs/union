@@ -14,8 +14,11 @@ use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::{error, instrument};
 use unionlabs::{
+    bech32::Bech32,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-    option_unwrap, result_unwrap, ErrorReporter,
+    option_unwrap,
+    primitives::H256,
+    result_unwrap, ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ClientType},
@@ -36,12 +39,16 @@ pub struct Module {
     pub tm_client: cometbft_rpc::Client,
     pub chain_revision: u64,
     pub grpc_url: String,
+
+    pub ibc_host_contract_address: H256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ws_url: String,
     pub grpc_url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 impl ClientBootstrapModule for Module {
@@ -76,6 +83,10 @@ impl ClientBootstrapModule for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
+            ibc_host_contract_address: config
+                .ibc_host_contract_address
+                .map(|a| *a.data())
+                .unwrap_or_default(),
         })
     }
 }
@@ -171,6 +182,7 @@ impl ClientBootstrapModuleServer for Module {
             ),
             proof_specs: SDK_SPECS.into(),
             upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
+            contract_address: self.ibc_host_contract_address,
         })
         .unwrap())
     }

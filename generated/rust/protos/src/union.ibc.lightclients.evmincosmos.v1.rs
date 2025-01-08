@@ -2,10 +2,10 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
-    #[prost(string, tag = "1")]
-    pub l1_client_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub l2_client_id: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "1")]
+    pub l1_client_id: u32,
+    #[prost(uint32, tag = "2")]
+    pub l2_client_id: u32,
     #[prost(uint64, tag = "3")]
     pub latest_slot: u64,
     /// Evm

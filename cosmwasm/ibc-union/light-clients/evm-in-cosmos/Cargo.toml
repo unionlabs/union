@@ -13,14 +13,19 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cometbls-light-client-types = { workspace = true, features = ["proto"] }
-cosmwasm-std                = { workspace = true, features = ["abort"] }
-# ethereum-light-client       = { workspace = true, features = ["mainnet", "library"] }
-ics008-wasm-client = { workspace = true }
-ics23              = { workspace = true }
-protos             = { workspace = true }
-thiserror          = { workspace = true }
-unionlabs          = { workspace = true, features = ["ethabi", "stargate"] }
+cometbls-light-client             = { workspace = true, features = ["library"] }
+cosmwasm-std                      = { workspace = true, features = ["abort"] }
+ethereum-light-client-types       = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+evm-state-lens-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+evm-storage-verifier              = { workspace = true }
+ibc-union-light-client            = { workspace = true }
+ibc-union-msg                     = { workspace = true }
+ibc-union-spec                    = { workspace = true }
+ics23                             = { workspace = true }
+rlp                               = { workspace = true }
+serde                             = { workspace = true, features = ["derive"] }
+thiserror                         = { workspace = true }
+unionlabs                         = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
 
 [features]
 default = []

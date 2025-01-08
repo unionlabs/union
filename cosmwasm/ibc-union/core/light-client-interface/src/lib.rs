@@ -24,6 +24,7 @@ pub mod state;
 // These are only used for `key` calculation. We don't want this crate to depend on `ibc-union`.
 pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
 pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
+const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
 const QUERY_STORE: Item<Binary> = Item::new("query_store");
 
 // TODO: Add #[source] to all variants
@@ -121,6 +122,47 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
             height,
         )
     }
+
+    pub fn verify_membership<Client: IbcClient>(
+        &self,
+        client_id: u32,
+        height: u64,
+        path: Bytes,
+        storage_proof: Client::StorageProof,
+        value: Bytes,
+    ) -> Result<(), IbcClientError<Client>> {
+        let client_impl = client_impl(self.deps.querier.into_empty(), &self.ibc_host, client_id)?;
+        self.deps.querier.query_wasm_smart::<()>(
+            &client_impl,
+            &QueryMsg::VerifyMembership {
+                client_id,
+                height,
+                proof: storage_proof.encode_as::<Client::Encoding>().into(),
+                path,
+                value,
+            },
+        )?;
+
+        Ok(())
+    }
+}
+
+fn client_impl<T: IbcClient>(
+    querier: QuerierWrapper,
+    ibc_host: &Addr,
+    client_id: u32,
+) -> Result<Addr, IbcClientError<T>> {
+    let addr = from_json::<Addr>(
+        querier
+            .query_wasm_raw(ibc_host.to_string(), CLIENT_IMPLS.key(client_id).to_vec())?
+            .ok_or_else(|| {
+                IbcClientError::Std(StdError::generic_err(format!(
+                    "unable to read client state of client {client_id}"
+                )))
+            })?,
+    )?;
+
+    Ok(addr)
 }
 
 pub trait IbcClient: Sized {
@@ -136,7 +178,10 @@ pub trait IbcClient: Sized {
     /// a common encoding scheme for state lenses. When doing state lenses, client X will read the
     /// consensus state of client Y by assuming it's state is ethabi-encoded.
     type ConsensusState: Decode<EthAbi, Error: Debug> + Encode<EthAbi> + Debug + 'static;
-    type StorageProof: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
+    type StorageProof: Encode<Self::Encoding>
+        + Decode<Self::Encoding, Error: Debug>
+        + Debug
+        + 'static;
     type Encoding: Encoding;
 
     fn verify_membership(

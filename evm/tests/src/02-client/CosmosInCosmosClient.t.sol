@@ -159,13 +159,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         // Encode the consensus state
@@ -188,7 +190,7 @@ contract CosmosInCosmosClientTest is Test {
         );
         uint64 latestHeight = client.getLatestHeight(clientId);
         assertEq(
-            latestHeight, clientState.latestHeight, "Latest height mismatch"
+            latestHeight, clientState.l2LatestHeight, "Latest height mismatch"
         );
 
         // Verify consensus state
@@ -214,13 +216,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 0
+            l2LatestHeight: 0,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         // Encode the consensus state
@@ -249,13 +253,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -322,13 +328,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -388,13 +396,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -442,13 +452,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -498,13 +510,15 @@ contract CosmosInCosmosClientTest is Test {
             l2ChainId: "test-chain",
             l1ClientId: 2,
             l2ClientId: 3,
-            latestHeight: 100
+            l2LatestHeight: 100,
+            contractAddress: keccak256("test")
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            keccak256("test")
         );
 
         ConsensusState memory consensusState = ConsensusState({

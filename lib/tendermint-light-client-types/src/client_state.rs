@@ -1,6 +1,6 @@
 use unionlabs::{
     cosmos::ics23::proof_spec::ProofSpec, google::protobuf::duration::Duration,
-    ibc::core::client::height::Height,
+    ibc::core::client::height::Height, primitives::H256,
 };
 
 use crate::Fraction;
@@ -18,13 +18,20 @@ pub struct ClientState {
     pub latest_height: Height,
     pub proof_specs: Vec<ProofSpec>,
     pub upgrade_path: Vec<String>,
+    /// For clients that connect to the cosmwasm implementation of ibc-union, the contract address of the IBC host is required in order to verify storage proofs. For clients connecting to IBC classic, this field is not required and can be ignored during client creation and migration.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "H256::is_zero")
+    )]
+    pub contract_address: H256,
 }
 
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
         cosmos::ics23::proof_spec::TryFromProofSpecError, errors::MissingField,
-        google::protobuf::duration::DurationError, impl_proto_via_try_from_into, required,
+        google::protobuf::duration::DurationError, impl_proto_via_try_from_into, primitives::H256,
+        required,
     };
 
     impl_proto_via_try_from_into!(ClientState => protos::ibc::lightclients::tendermint::v1::ClientState);
@@ -95,6 +102,8 @@ pub mod proto {
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(Error::ProofSpecs)?,
                 upgrade_path: value.upgrade_path,
+                // contract address is not needed for native impl which uses proto
+                contract_address: H256::default(),
             })
         }
     }
@@ -149,6 +158,7 @@ mod tests {
             }]
             .to_vec(),
             upgrade_path: ["upgrade".to_owned(), "path".to_owned()].to_vec(),
+            contract_address: H256::default(),
         }
     }
 

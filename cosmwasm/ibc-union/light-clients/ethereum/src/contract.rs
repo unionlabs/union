@@ -4,14 +4,13 @@ use cosmwasm_std::{
     from_json, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, SubMsg,
 };
-use ethereum_light_client_types::{ClientState, ConsensusState};
+use ethereum_light_client_types::ClientState;
 use ibc_union_light_client::{
     msg::{InstantiateMsg, QueryMsg},
     read_consensus_state,
     state::IBC_HOST,
-    IbcClientError, CLIENT_CONSENSUS_STATES, CLIENT_STATES,
+    IbcClientError, CLIENT_STATES,
 };
-use ibc_union_msg::module::IbcUnionMsg;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{Bincode, EncodeAs, EthAbi},

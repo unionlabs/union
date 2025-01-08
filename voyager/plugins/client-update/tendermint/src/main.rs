@@ -8,7 +8,10 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::instrument;
-use unionlabs::primitives::{encoding::HexUnprefixed, H160};
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{encoding::HexUnprefixed, H160},
+};
 use voyager_message::{
     call::Call,
     core::{ChainId, ClientType},
@@ -198,7 +201,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         untrusted_commit.signed_header.header.proposer_address,
                     ),
                     signed_header: untrusted_commit.signed_header,
-                    trusted_height: update_from,
+                    trusted_height: Height::new_with_revision(
+                        self.chain_revision,
+                        update_from.height(),
+                    ),
                     trusted_validators: mk_validator_set(
                         trusted_validators.validators,
                         trusted_commit.signed_header.header.proposer_address,

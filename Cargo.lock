@@ -3370,6 +3370,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmos-state-lens-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "cosmwasm-core"
 version = "2.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4892,10 +4904,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
+name = "evm-in-cosmos-light-client"
+version = "0.1.0"
+dependencies = [
+ "cometbls-light-client",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client-types",
+ "evm-state-lens-light-client-types",
+ "evm-storage-verifier",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "ics23",
+ "rlp",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "evm-state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "protos",
  "serde",
  "thiserror",
@@ -13050,6 +13082,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "cosmos-state-lens-light-client-types",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-tendermint"
 version = "0.1.0"
 dependencies = [
@@ -13139,6 +13192,27 @@ dependencies = [
  "prost 0.12.6",
  "serde",
  "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-state-lens-ics23-ics23"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "cosmos-state-lens-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "protos",
+ "serde",
  "serde_json",
  "thiserror",
  "tokio",
@@ -13277,6 +13351,35 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "evm-state-lens-light-client-types",
+ "futures",
+ "ibc-union-spec",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-state-lens-ics23-ics23"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "cometbft-rpc",
+ "cometbft-types",
+ "cosmos-state-lens-light-client-types",
+ "dashmap 5.5.3",
+ "enumorph",
  "futures",
  "ibc-union-spec",
  "ics23",

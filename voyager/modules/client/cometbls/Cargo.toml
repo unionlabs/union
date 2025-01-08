@@ -7,7 +7,7 @@ version = "0.1.0"
 alloy                       = { workspace = true, features = ["sol-types"] }
 ark-bn254                   = { version = "0.4", default-features = false, features = ["curve"] }
 ark-serialize               = "0.4.2"
-cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde"] }
+cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
@@ -16,7 +16,7 @@ serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["bincode"] }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
 

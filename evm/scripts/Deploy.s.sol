@@ -44,6 +44,7 @@ library LightClients {
     string constant NAMESPACE = "lightclients";
     string constant COMETBLS = "cometbls";
     string constant STATE_LENS_EVM = "state-lens/evm";
+    string constant STATE_LENS_COSMOS = "state-lens/ics23-ics23";
 
     function make(
         string memory lightClient
@@ -119,6 +120,24 @@ abstract contract UnionScript is UnionBase {
                     address(new EvmInCosmosClient()),
                     abi.encodeCall(
                         EvmInCosmosClient.initialize, (address(handler), owner)
+                    )
+                )
+            )
+        );
+    }
+
+    function deployCosmosLens(
+        IBCHandler handler,
+        address owner
+    ) internal returns (CosmosInCosmosClient) {
+        return CosmosInCosmosClient(
+            deploy(
+                LightClients.make(LightClients.STATE_LENS_COSMOS),
+                abi.encode(
+                    address(new CosmosInCosmosClient()),
+                    abi.encodeCall(
+                        CosmosInCosmosClient.initialize,
+                        (address(handler), owner)
                     )
                 )
             )
@@ -213,6 +232,7 @@ abstract contract UnionScript is UnionBase {
             IBCHandler,
             CometblsClient,
             EvmInCosmosClient,
+            CosmosInCosmosClient,
             PingPong,
             UCS01Relay,
             UCS02NFT,
@@ -222,6 +242,7 @@ abstract contract UnionScript is UnionBase {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient cometblsClient = deployCometbls(handler, owner);
         EvmInCosmosClient evmLensClient = deployEvmLens(handler, owner);
+        CosmosInCosmosClient cosmosLensClient = deployCosmosLens(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
@@ -230,6 +251,7 @@ abstract contract UnionScript is UnionBase {
             handler,
             cometblsClient,
             evmLensClient,
+            cosmosLensClient,
             pingpong,
             relay,
             nft,
@@ -353,6 +375,48 @@ contract DeployUCS03 is UnionScript {
     }
 }
 
+contract DeployCosmosLens is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        address handler = getDeployed(IBC.BASED);
+
+        vm.startBroadcast(privateKey);
+
+        CosmosInCosmosClient cosmosLensClient =
+            deployCosmosLens(IBCHandler(handler), owner);
+
+        vm.stopBroadcast();
+
+        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
+    }
+}
+
 contract DeployIBC is UnionScript {
     Deployer immutable deployer;
 
@@ -372,6 +436,7 @@ contract DeployIBC is UnionScript {
             IBCHandler handler,
             CometblsClient cometblsClient,
             EvmInCosmosClient evmLensClient,
+            CosmosInCosmosClient cosmosLensClient,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
@@ -379,6 +444,7 @@ contract DeployIBC is UnionScript {
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(LightClients.STATE_LENS_EVM, evmLensClient);
+        handler.registerClient(LightClients.STATE_LENS_COSMOS, cosmosLensClient);
 
         vm.stopBroadcast();
 
@@ -387,6 +453,7 @@ contract DeployIBC is UnionScript {
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(cometblsClient));
         console.log("EvmInCosmosClient: ", address(evmLensClient));
+        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
@@ -412,6 +479,7 @@ contract DeployDeployerAndIBC is UnionScript {
             IBCHandler handler,
             CometblsClient cometblsClient,
             EvmInCosmosClient evmLensClient,
+            CosmosInCosmosClient cosmosLensClient,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
@@ -419,6 +487,7 @@ contract DeployDeployerAndIBC is UnionScript {
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(LightClients.STATE_LENS_EVM, evmLensClient);
+        handler.registerClient(LightClients.STATE_LENS_COSMOS, cosmosLensClient);
 
         vm.stopBroadcast();
 
@@ -427,6 +496,7 @@ contract DeployDeployerAndIBC is UnionScript {
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(cometblsClient));
         console.log("EvmInCosmosClient: ", address(evmLensClient));
+        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
@@ -469,6 +539,8 @@ contract GetDeployed is Script {
             getDeployed(LightClients.make(LightClients.COMETBLS));
         address evmLensClient =
             getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
+        address cosmosLensClient =
+            getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
         address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
@@ -490,6 +562,13 @@ contract GetDeployed is Script {
         console.log(
             string(
                 abi.encodePacked("EvmLensClient: ", evmLensClient.toHexString())
+            )
+        );
+        console.log(
+            string(
+                abi.encodePacked(
+                    "CosmosLensClient: ", cosmosLensClient.toHexString()
+                )
             )
         );
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
@@ -998,6 +1077,47 @@ contract UpgradeEvmInCosmosClient is Script {
         vm.startBroadcast(privateKey);
         address newImplementation = address(new EvmInCosmosClient());
         CometblsClient(evmLensClient).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
+        vm.stopBroadcast();
+    }
+}
+
+contract UpgradeCosmosInCosmosClient is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address cosmosLensClient =
+            getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
+        console.log(
+            string(
+                abi.encodePacked(
+                    "CosmosInCosmos: ", cosmosLensClient.toHexString()
+                )
+            )
+        );
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new CosmosInCosmosClient());
+        CosmosInCosmosClient(cosmosLensClient).upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();

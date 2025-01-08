@@ -1,31 +1,14 @@
-use ethereum_light_client::errors::CanonicalizeStoredValueError;
-use ics008_wasm_client::IbcClientError;
-use unionlabs::{
-    encoding::{DecodeErrorOf, Proto},
-    ibc::{
-        core::client::height::Height,
-        lightclients::{ethereum::storage_proof::StorageProof, evm_in_cosmos},
-    },
-};
+use cometbls_light_client::client::CometblsLightClient;
+use cosmwasm_std::StdError;
+use ibc_union_light_client::IbcClientError;
+use unionlabs::{ibc::core::client::height::Height, primitives::H256, uint::U256};
 
 use crate::client::EvmInCosmosLightClient;
 
-#[derive(thiserror::Error, Debug, Clone, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
-
-    #[error("unable to decode storage proof")]
-    StorageProofDecode(#[source] DecodeErrorOf<Proto, StorageProof>),
-
-    #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, evm_in_cosmos::client_state::ClientState>),
-
-    #[error(transparent)]
-    CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),
-
-    #[error("custom query error")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
@@ -36,12 +19,39 @@ pub enum Error {
     #[error("verify l2 membership error")]
     VerifyL2Membership(#[from] ics23::ibc_api::VerifyMembershipError),
 
-    #[error(transparent)]
-    EthereumLightClient(#[from] ethereum_light_client::errors::Error),
+    #[error("error while querying l1 state: {0}")]
+    L1Error(#[from] IbcClientError<CometblsLightClient>),
+
+    #[error("commitment key must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentKeyLength(Vec<u8>),
+
+    #[error("expected value ({expected}) and stored value ({stored}) don't match")]
+    StoredValueMismatch { expected: H256, stored: H256 },
+
+    #[error("verify storage proof error")]
+    VerifyStorageProof(#[source] evm_storage_verifier::error::Error),
+
+    #[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
+    InvalidCommitmentKey { expected: U256, found: U256 },
+
+    #[error("commitment value must be 32 bytes but we got: {0:?}")]
+    InvalidCommitmentValueLength(Vec<u8>),
+
+    #[error("verify storage absence error")]
+    VerifyStorageAbsence(#[source] evm_storage_verifier::error::Error),
+
+    #[error("counterparty storage not nil")]
+    CounterpartyStorageNotNil,
 }
 
 impl From<Error> for IbcClientError<EvmInCosmosLightClient> {
     fn from(value: Error) -> Self {
         IbcClientError::ClientSpecific(value)
+    }
+}
+
+impl From<Error> for StdError {
+    fn from(value: Error) -> Self {
+        StdError::generic_err(value.to_string())
     }
 }

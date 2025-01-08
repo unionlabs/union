@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 use tracing::{debug, instrument};
 use unionlabs::{
     self,
-    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
     ibc::lightclients::wasm,
     primitives::Bytes,
@@ -157,11 +157,11 @@ impl Module {
                 })
                 .map(|any| any.0.data)
             }
-            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Proto>(client_state)
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
                 .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        format!("unable to decode client state: {err}"),
                         None::<()>,
                     )
                 }),
@@ -267,7 +267,7 @@ impl ClientModuleServer for Module {
                             })),
                         ));
                     }
-                    Ok(cs.encode_as::<Proto>())
+                    Ok(cs.encode_as::<Bincode>())
                 }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
                     let metadata =
@@ -353,7 +353,7 @@ impl ClientModuleServer for Module {
             })
             .map(|mut header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
-                SupportedIbcInterface::IbcCosmwasm => Ok(header.encode_as::<Proto>()),
+                SupportedIbcInterface::IbcCosmwasm => Ok(header.encode_as::<Bincode>()),
                 SupportedIbcInterface::IbcMoveAptos => {
                     header.zero_knowledge_proof =
                         reencode_zkp_for_move(&header.zero_knowledge_proof)
@@ -389,7 +389,7 @@ impl ClientModuleServer for Module {
             })
             .map(|proof| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => encode_merkle_proof_for_evm(proof),
-                SupportedIbcInterface::IbcCosmwasm => proof.encode_as::<Proto>(),
+                SupportedIbcInterface::IbcCosmwasm => proof.encode_as::<Bincode>(),
                 SupportedIbcInterface::IbcMoveAptos => encode_merkle_proof_for_move(
                     ics23::merkle_proof::MerkleProof::try_from(
                         protos::ibc::core::commitment::v1::MerkleProof::from(proof),

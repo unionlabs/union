@@ -30,7 +30,8 @@ struct ClientState {
     string l2ChainId;
     uint32 l1ClientId;
     uint32 l2ClientId;
-    uint64 latestHeight;
+    uint64 l2LatestHeight;
+    bytes32 contractAddress;
 }
 
 struct ConsensusState {
@@ -59,7 +60,8 @@ library CosmosInCosmosLib {
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
-            clientState.latestHeight
+            clientState.l2LatestHeight,
+            clientState.contractAddress
         );
     }
 
@@ -117,20 +119,20 @@ contract CosmosInCosmosClient is
         assembly {
             consensusState := consensusStateBytes.offset
         }
-        if (clientState.latestHeight == 0 || consensusState.timestamp == 0) {
+        if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
             revert CosmosInCosmosLib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
-        consensusStates[clientId][clientState.latestHeight] = consensusState;
+        consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
         // Normalize to nanosecond because ibc-go recvPacket expects nanos...
-        processedMoments[clientId][clientState.latestHeight] = ProcessedMoment({
+        processedMoments[clientId][clientState.l2LatestHeight] = ProcessedMoment({
             timestamp: block.timestamp * 1e9,
             height: block.number
         });
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
-            height: clientState.latestHeight
+            height: clientState.l2LatestHeight
         });
     }
 
@@ -146,7 +148,7 @@ contract CosmosInCosmosClient is
         assembly {
             header := clientMessageBytes.offset
         }
-        ClientState memory clientState = clientStates[clientId];
+        ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
             IBCStore(ibcHandler).getClient(clientState.l1ClientId);
         // L₂[H₂] ∈ L₁[H₁]
@@ -160,7 +162,7 @@ contract CosmosInCosmosClient is
                         clientState.l2ClientId, header.l2Height
                     )
                 ),
-                abi.encodePacked(keccak256(abi.encode(header.l2ConsensusState)))
+                abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
             revert CosmosInCosmosLib.ErrInvalidL1Proof();
@@ -172,8 +174,8 @@ contract CosmosInCosmosClient is
             l2ConsensusState := rawL2ConsensusState.offset
         }
 
-        if (header.l2Height > clientState.latestHeight) {
-            clientState.latestHeight = header.l2Height;
+        if (header.l2Height > clientState.l2LatestHeight) {
+            clientState.l2LatestHeight = header.l2Height;
         }
 
         // L₂[H₂] = S₂
@@ -214,12 +216,15 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23Verifier.verifyMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path,
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            ),
             value
         );
     }
@@ -233,12 +238,15 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
             abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-            path
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            )
         );
     }
 
@@ -265,7 +273,7 @@ contract CosmosInCosmosClient is
     function getLatestHeight(
         uint32 clientId
     ) external view override returns (uint64) {
-        return clientStates[clientId].latestHeight;
+        return clientStates[clientId].l2LatestHeight;
     }
 
     function isFrozen(

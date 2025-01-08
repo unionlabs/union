@@ -8,9 +8,9 @@ jsonrpsee                     = { workspace = true, features = ["macros", "serve
 macros                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = ["proto", "serde", "ethabi"] }
+tendermint-light-client-types = { workspace = true, features = ["proto", "serde", "ethabi", "bincode"] }
 tokio                         = { workspace = true }
 tracing                       = { workspace = true }
-unionlabs                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["bincode"] }
 voyager-message               = { workspace = true }
 voyager-vm                    = { workspace = true }

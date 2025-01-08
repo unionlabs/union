@@ -20,7 +20,7 @@ cosmwasm-std = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterato
 sha2         = { workspace = true }
 thiserror    = { workspace = true }
 
-cometbft-types                = { workspace = true, features = ["proto", "hash"] }
+cometbft-types                = { workspace = true, features = ["hash"] }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ics23                         = { workspace = true }
