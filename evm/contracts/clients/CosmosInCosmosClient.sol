@@ -162,7 +162,7 @@ contract CosmosInCosmosClient is
                         clientState.l2ClientId, header.l2Height
                     )
                 ),
-                abi.encodePacked(keccak256(abi.encode(header.l2ConsensusState)))
+                abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
             revert CosmosInCosmosLib.ErrInvalidL1Proof();

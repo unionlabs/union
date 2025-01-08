@@ -5,7 +5,12 @@ use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
-use unionlabs::{encoding::Bincode, ethereum::ibc_commitment_key, primitives::H256, uint::U256};
+use unionlabs::{
+    encoding::Bincode,
+    ethereum::{ibc_commitment_key, keccak256},
+    primitives::H256,
+    uint::U256,
+};
 
 use crate::errors::Error;
 
@@ -113,7 +118,7 @@ impl IbcClient for EvmInCosmosLightClient {
             .key()
             .into_bytes(),
             header.l2_consensus_state_proof.clone(),
-            header.l2_consensus_state.clone(),
+            keccak256(&header.l2_consensus_state).into(),
         )
         .map_err(Error::L1Error)?;
 
