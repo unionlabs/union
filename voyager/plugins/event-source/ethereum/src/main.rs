@@ -451,7 +451,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_id: raw_event.client_id,
                             connection_id: raw_event.connection_id,
                             counterparty_client_id: raw_event.counterparty_client_id,
-                            counterparty_connection_id: raw_event.counterparty_client_id,
+                            counterparty_connection_id: raw_event.counterparty_connection_id,
                         }
                         .into();
 

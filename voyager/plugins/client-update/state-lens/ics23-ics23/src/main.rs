@@ -41,9 +41,6 @@ pub struct Module {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-
-    pub l2_tm_client: cometbft_rpc::Client,
-    pub l1_tm_client: cometbft_rpc::Client,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,9 +49,6 @@ pub struct Config {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-
-    pub l1_ws_url: String,
-    pub l2_ws_url: String,
 }
 
 impl Plugin for Module {
@@ -65,36 +59,11 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let l1_tm_client = cometbft_rpc::Client::new(config.l1_ws_url).await?;
-        let l2_tm_client = cometbft_rpc::Client::new(config.l2_ws_url).await?;
-
-        let l1_chain_id = l1_tm_client.status().await?.node_info.network.to_string();
-
-        if l1_chain_id != config.l1_chain_id.as_str() {
-            return Err(format!(
-                "incorrect chain id: expected `{}`, but found `{}`",
-                config.l1_chain_id, l1_chain_id
-            )
-            .into());
-        }
-
-        let l2_chain_id = l2_tm_client.status().await?.node_info.network.to_string();
-
-        if l2_chain_id != config.l2_chain_id.as_str() {
-            return Err(format!(
-                "incorrect chain id: expected `{}`, but found `{}`",
-                config.l2_chain_id, l2_chain_id
-            )
-            .into());
-        }
-
         Ok(Self {
             l0_client_id: config.l0_client_id,
             l1_client_id: config.l1_client_id,
-            l1_chain_id: ChainId::new(l1_chain_id),
-            l2_chain_id: ChainId::new(l2_chain_id),
-            l1_tm_client,
-            l2_tm_client,
+            l1_chain_id: config.l1_chain_id,
+            l2_chain_id: config.l2_chain_id,
         })
     }
 

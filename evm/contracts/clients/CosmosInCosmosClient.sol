@@ -148,7 +148,7 @@ contract CosmosInCosmosClient is
         assembly {
             header := clientMessageBytes.offset
         }
-        ClientState memory clientState = clientStates[clientId];
+        ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
             IBCStore(ibcHandler).getClient(clientState.l1ClientId);
         // L₂[H₂] ∈ L₁[H₁]
