@@ -12,9 +12,7 @@ import {
   createValidationStore,
   type ValidationStore
 } from "$lib/components/TransferFrom/transfer/validation.ts"
-import type { Chain, UserAddresses } from "$lib/types"
-import type { QueryObserverResult } from "@tanstack/svelte-query"
-
+import type { Chain } from "$lib/types"
 
 export interface TransferStore {
   rawIntents: RawIntentsStore

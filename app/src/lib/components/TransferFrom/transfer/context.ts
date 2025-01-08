@@ -1,7 +1,7 @@
 import { derived, type Readable } from "svelte/store"
 import type { Chain, UserAddresses } from "$lib/types"
 import type { Address } from "$lib/wallet/types"
-import { balanceStore, userAddress } from "./balances"
+import { balanceStore, userAddress } from "./balances.ts"
 
 export type BalanceRecord = {
   balance: bigint
@@ -24,40 +24,37 @@ export interface ContextStore {
 }
 
 export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
-  const balances = derived(
-    balanceStore,
-    ($rawBalances) => {
-      if (!$rawBalances?.length) {
-        return chains.map(chain => ({
-          chainId: chain.chain_id,
-          balances: []
-        }))
-      }
+  const balances = derived(balanceStore, $rawBalances => {
+    if ($rawBalances?.length === 0) {
+      return chains.map(chain => ({
+        chainId: chain.chain_id,
+        balances: []
+      }))
+    }
 
-      return chains.map((chain, chainIndex) => {
-        const balanceResult = $rawBalances[chainIndex]
+    return chains.map((chain, chainIndex) => {
+      const balanceResult = $rawBalances[chainIndex]
 
-        if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
-          console.log(`No balances fetched yet for chain ${chain.chain_id}`)
-          return {
-            chainId: chain.chain_id,
-            balances: []
-          }
-        }
-
+      if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
+        console.log(`No balances fetched yet for chain ${chain.chain_id}`)
         return {
           chainId: chain.chain_id,
-          balances: balanceResult.data.map(balance => ({
-            ...balance,
-            balance: BigInt(balance.balance),
-            gasToken: balance.gasToken ?? false,
-            address: balance.address as Address,
-            symbol: balance.symbol || balance.address
-          }))
+          balances: []
         }
-      })
-    }
-  ) as Readable<BalancesList>
+      }
+
+      return {
+        chainId: chain.chain_id,
+        balances: balanceResult.data.map(balance => ({
+          ...balance,
+          balance: BigInt(balance.balance),
+          gasToken: balance.gasToken ?? false,
+          address: balance.address as Address,
+          symbol: balance.symbol || balance.address
+        }))
+      }
+    })
+  }) as Readable<BalancesList>
 
   return derived([userAddress, balances], ([$userAddress, $balances]) => ({
     chains,
