@@ -7,8 +7,21 @@ import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.sv
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
+import type {Chain, UserAddresses} from "$lib/types.ts";
+import {userBalancesQuery} from "$lib/queries/balance";
+import {balanceStore, userAddress} from "$lib/components/TransferFrom/transfer/balances.ts";
 
-const stores = createTransferStore()
+export let chains: Array<Chain>
+
+$: userBalancesQuery({
+  chains,
+  userAddr: $userAddress,
+  connected: true
+}).subscribe(x => {
+  balanceStore.set(x)
+})
+
+const stores = createTransferStore(chains)
 </script>
 
 <Cube>

@@ -1,11 +1,7 @@
-import { derived, get, type Readable } from "svelte/store"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
-import { userAddrEvm } from "$lib/wallet/evm"
-import { userAddressAptos } from "$lib/wallet/aptos"
-import { userBalancesQuery } from "$lib/queries/balance"
+import { derived, type Readable } from "svelte/store"
 import type { Chain, UserAddresses } from "$lib/types"
-import { useQueryClient } from "@tanstack/svelte-query"
 import type { Address } from "$lib/wallet/types"
+import { balanceStore, userAddress } from "./balances"
 
 export type BalanceRecord = {
   balance: bigint
@@ -27,27 +23,17 @@ export interface ContextStore {
   balances: BalancesList
 }
 
-export function createContextStore(): Readable<ContextStore> {
-  const queryClient = useQueryClient()
-
-  const queryData = <T extends Array<unknown>>(
-    key: Array<string>,
-    filter?: (value: T[number]) => boolean
-  ): T => {
-    const data = queryClient.getQueryData<T>(key) ?? []
-    return (filter ? data.filter(filter) : data) as T
-  }
-
-  const chains = queryData<Array<Chain>>(["chains"], chain => chain.enabled_staging)
-
-  const userAddress = derived(
-    [userAddrCosmos, userAddrEvm, userAddressAptos],
-    ([cosmos, evm, aptos]) => ({ evm, aptos, cosmos })
-  ) as Readable<UserAddresses>
-
+export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
   const balances = derived(
-    [userAddress, userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })],
-    ([_, $rawBalances]) => {
+    balanceStore,
+    ($rawBalances) => {
+      if (!$rawBalances?.length) {
+        return chains.map(chain => ({
+          chainId: chain.chain_id,
+          balances: []
+        }))
+      }
+
       return chains.map((chain, chainIndex) => {
         const balanceResult = $rawBalances[chainIndex]
 
@@ -63,7 +49,10 @@ export function createContextStore(): Readable<ContextStore> {
           chainId: chain.chain_id,
           balances: balanceResult.data.map(balance => ({
             ...balance,
-            balance: BigInt(balance.balance)
+            balance: BigInt(balance.balance),
+            gasToken: balance.gasToken ?? false,
+            address: balance.address as Address,
+            symbol: balance.symbol || balance.address
           }))
         }
       })
