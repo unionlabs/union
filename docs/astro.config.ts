@@ -176,9 +176,23 @@ export default defineConfig({
             },
             {
               label: "Architecture",
-              autogenerate: {
-                directory: "/architecture"
-              }
+              items: [
+                {
+                  label: "CometBLS",
+                  link: "/architecture/cometbls"
+                },
+                {
+                  label: "Galois",
+                  link: "/architecture/galois"
+                },
+                {
+                  label: "Voyager",
+                  items: [
+                    { label: "Overview", link: "/architecture/voyager/overview" },
+                    { label: "Concepts", link: "/architecture/voyager/concepts" }
+                  ]
+                }
+              ]
             },
             {
               label: "Connect",
