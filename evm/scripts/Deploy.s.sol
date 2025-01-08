@@ -1083,7 +1083,6 @@ contract UpgradeEvmInCosmosClient is Script {
     }
 }
 
-
 contract UpgradeCosmosInCosmosClient is Script {
     using LibString for *;
 
@@ -1111,7 +1110,9 @@ contract UpgradeCosmosInCosmosClient is Script {
             getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
         console.log(
             string(
-                abi.encodePacked("CosmosInCosmos: ", cosmosLensClient.toHexString())
+                abi.encodePacked(
+                    "CosmosInCosmos: ", cosmosLensClient.toHexString()
+                )
             )
         );
         vm.startBroadcast(privateKey);
@@ -1122,4 +1123,3 @@ contract UpgradeCosmosInCosmosClient is Script {
         vm.stopBroadcast();
     }
 }
-
