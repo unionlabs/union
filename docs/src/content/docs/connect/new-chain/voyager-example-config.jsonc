@@ -9,7 +9,7 @@
       // preconfigured state module to read state from the ibc-union implementation running on union-testnet-9
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-state-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-testnet-9",
           "ibc_spec_id": "ibc-union"
@@ -23,7 +23,7 @@
       // preconfigured state module to read state from the ibc-union implementation running on the holesky ethereum testnet.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-ethereum",
+        "path": "/path/to/modules/voyager-state-module-ethereum",
         "info": {
           // holesky chain id.
           "chain_id": "17000",
@@ -40,7 +40,7 @@
       // the state module to read state from the ibc-union implementation running on your chain. fill in the empty values with the relevant information.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-state-module-cosmos-sdk-union",
         "info": {
           "chain_id": "",
           // since this is reading state for an ibc-union implementation, this must stay as ibc-union. any other value will error on startup.
@@ -64,7 +64,7 @@
       {
         // preconfigured proof module for union-testnet-9.
         "enabled": true,
-        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-proof-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-testnet-9",
           "ibc_spec_id": "ibc-union"
@@ -78,7 +78,7 @@
       // preconfigured proof module for the holesky ethereum testnet.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-proof-module-ethereum",
+        "path": "/path/to/modules/voyager-proof-module-ethereum",
         "info": {
           "chain_id": "17000",
           "ibc_spec_id": "ibc-union"
@@ -91,7 +91,7 @@
       // the state module to read proofs from the ibc-union implementation running on your chain. for a cosmwasm chain running ibc-union, all of the values are the same as the state module.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-proof-module-cosmos-sdk-union",
         "info": {
           "chain_id": "",
           "ibc_spec_id": "ibc-union"
@@ -111,7 +111,7 @@
       // preconfigured consensus module for union-testnet-9.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "path": "/path/to/modules/voyager-consensus-module-cometbls",
         "info": {
           "chain_id": "union-testnet-9",
           "consensus_type": "cometbls"
@@ -125,7 +125,7 @@
       // preconfigured consensus module for the holesky ethereum testnet.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-ethereum",
+        "path": "/path/to/modules/voyager-consensus-module-ethereum",
         "info": {
           "chain_id": "17000",
           "consensus_type": "ethereum"
@@ -139,7 +139,7 @@
       // the consensus module for your tendermint-based chain.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-tendermint",
+        "path": "/path/to/modules/voyager-consensus-module-tendermint",
         "info": {
           "chain_id": "",
           "consensus_type": "tendermint"
@@ -156,7 +156,7 @@
     "client": [
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-state-lens-evm",
+        "path": "/path/to/modules/voyager-client-module-state-lens-evm",
         "info": {
           "client_type": "state-lens/evm",
           "consensus_type": "ethereum",
@@ -166,7 +166,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-state-lens-ics23-ics23",
+        "path": "/path/to/modules/voyager-client-module-state-lens-ics23-ics23",
         "info": {
           "client_type": "state-lens/ics23-ics23",
           "consensus_type": "tendermint",
@@ -176,7 +176,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-cometbls",
+        "path": "/path/to/modules/voyager-client-module-cometbls",
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
@@ -186,7 +186,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-cometbls",
+        "path": "/path/to/modules/voyager-client-module-cometbls",
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
@@ -196,7 +196,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-cometbls",
+        "path": "/path/to/modules/voyager-client-module-cometbls",
         "info": {
           "client_type": "cometbls",
           "consensus_type": "cometbls",
@@ -206,7 +206,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-tendermint",
+        "path": "/path/to/modules/voyager-client-module-tendermint",
         "info": {
           "client_type": "tendermint",
           "consensus_type": "tendermint",
@@ -216,7 +216,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-ethereum",
+        "path": "/path/to/modules/voyager-client-module-ethereum",
         "info": {
           "client_type": "ethereum",
           "consensus_type": "ethereum",
@@ -233,10 +233,10 @@
       // client bootstrap module for a state lens client connecting to holesky, running on your chain.
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-state-lens-evm",
+        "path": "/path/to/modules/voyager-client-bootstrap-module-state-lens-evm",
         "info": {
           "chain_id": "17000",
-          "client_type": "state-lens/evm"
+          "client_type": "state-lens/ics23/mpt"
         },
         "config": {
           "l1_client_id": 5,
@@ -248,7 +248,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-state-lens-ics23-ics23",
+        "path": "/path/to/modules/voyager-client-bootstrap-module-state-lens-ics23-ics23",
         "info": {
           // configure your chain id here.
           "chain_id": "",
@@ -264,7 +264,7 @@
       {
         // preconfigured client bootstrap module for holesky.
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-ethereum",
+        "path": "/path/to/modules/voyager-client-bootstrap-module-ethereum",
         "info": {
           "chain_id": "17000",
           "client_type": "ethereum"
@@ -279,7 +279,7 @@
       {
         // preconfigured client bootstrap module for union-testnet-9.
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-cometbls",
+        "path": "/path/to/modules/voyager-client-bootstrap-module-cometbls",
         "info": {
           "chain_id": "union-testnet-9",
           "client_type": "cometbls"
@@ -293,7 +293,7 @@
       {
         // fill in the values for your chain here.
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-tendermint",
+        "path": "/path/to/modules/voyager-client-bootstrap-module-tendermint",
         "info": {
           "chain_id": "",
           "client_type": "tendermint"
@@ -308,7 +308,7 @@
   "plugins": [
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "path": "/path/to/modules/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-testnet-9",
         "ws_url": "http://rpc.testnet-9.union.build",
@@ -317,7 +317,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "path": "/path/to/modules/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "",
         "ws_url": "",
@@ -326,7 +326,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-ethereum",
+      "path": "/path/to/modules/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
@@ -336,7 +336,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
+      "path": "/path/to/modules/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-testnet-9",
         "ibc_host_contract_address": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme",
@@ -363,7 +363,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
+      "path": "/path/to/modules/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         // configure the chain id for your chain here.
         "chain_id": "",
@@ -394,7 +394,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-ethereum",
+      "path": "/path/to/modules/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
@@ -405,7 +405,7 @@
             {
               "type": "raw",
               "name": "holesky-key-1",
-              // the full private key of a funded account on holesky to use for relaying.
+              // the private key of a funded account on holesky to use for relaying.
               "key": ""
             }
           ]
@@ -417,7 +417,7 @@
     {
       // preconfigured for union-testnet-9
       "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "path": "/path/to/modules/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-testnet-9",
         "client_configs": {
@@ -433,7 +433,7 @@
     // preconfigured for holesky
     {
       "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "path": "/path/to/modules/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "17000",
         "client_configs": {
@@ -448,7 +448,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "path": "/path/to/modules/voyager-plugin-transaction-batch",
       "config": {
         // fill in the chain id of your chain here.
         "chain_id": "",
@@ -466,7 +466,7 @@
     {
       // preconfigued for updating cometbls clients tracking union-testnet-9.
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-cometbls",
+      "path": "/path/to/modules/voyager-client-update-plugin-cometbls",
       "config": {
         "chain_id": "union-testnet-9",
         "ws_url": "http://rpc.testnet-9.union.build",
@@ -476,33 +476,34 @@
         ]
       }
     },
+    // TODO: Configure these properly
+    // {
+    //   "enabled": true,
+    //   "path": "/path/to/modules/voyager-client-update-plugin-state-lens-evm",
+    //   "config": {
+    //     "l0_client_id": 1,
+    //     "l1_client_id": 2,
+    //     "l1_chain_id": "union-testnet-9",
+    //     "l2_chain_id": "17000",
+    //     "l1_ws_url": "http://rpc.testnet-9.union.build",
+    //     "l2_rpc_url": "https://rpc.17000.holesky.chain.kitchen"
+    //   }
+    // },
+    // {
+    //   "enabled": true,
+    //   "path": "/path/to/modules/voyager-client-update-plugin-state-lens-ics23-ics23",
+    //   "config": {
+    //     "l0_client_id": 1,
+    //     "l1_client_id": 2,
+    //     "l1_chain_id": "union-testnet-9",
+    //     "l2_chain_id": "",
+    //     "l1_ws_url": "http://rpc.testnet-9.union.build",
+    //     "l2_ws_url": ""
+    //   }
+    // },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-state-lens-evm",
-      "config": {
-        "l0_client_id": 1,
-        "l1_client_id": 2,
-        "l1_chain_id": "union-testnet-9",
-        "l2_chain_id": "17000",
-        "l1_ws_url": "http://rpc.testnet-9.union.build",
-        "l2_rpc_url": "https://rpc.17000.holesky.chain.kitchen"
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-state-lens-ics23-ics23",
-      "config": {
-        "l0_client_id": 1,
-        "l1_client_id": 2,
-        "l1_chain_id": "union-testnet-9",
-        "l2_chain_id": "",
-        "l1_ws_url": "http://rpc.testnet-9.union.build",
-        "l2_ws_url": ""
-      }
-    },
-    {
-      "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-ethereum",
+      "path": "/path/to/modules/voyager-client-update-plugin-ethereum",
       "config": {
         "chain_id": "17000",
         "chain_spec": "mainnet",
@@ -513,7 +514,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-tendermint",
+      "path": "/path/to/modules/voyager-client-update-plugin-tendermint",
       // fill in the values for your chain here.
       "config": {
         "chain_id": "",
