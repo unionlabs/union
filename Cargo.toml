@@ -171,7 +171,7 @@ members = [
   "mpc/coordinator",
 
   "lib/ibc-union-spec",
-  "lib/ibc-classic-spec",
+  "lib/ibc-classic-spec", "lib/state-lens-light-client-types",
 ]
 
 [workspace.package]
@@ -199,6 +199,8 @@ beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
 chain-utils      = { path = "lib/chain-utils", default-features = false }
 cometbft-rpc     = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types   = { path = "lib/cometbft-types", default-features = false }
+
+state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
 arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }

@@ -1,9 +1,5 @@
 use std::{collections::VecDeque, fmt::Debug};
 
-use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
-    transports::BoxTransport,
-};
 use call::FetchUpdateAfterL1Update;
 use ibc_union_spec::{ConsensusStatePath, IbcUnion};
 use jsonrpsee::{
@@ -11,7 +7,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use state_lens_ics23_mpt_light_client_types::Header;
+use state_lens_light_client_types::Header;
 use tracing::{debug, instrument};
 use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 use voyager_message::{
@@ -45,9 +41,8 @@ pub struct Module {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-
-    pub l2_eth_provider: RootProvider<BoxTransport>,
-    pub l1_tm_client: cometbft_rpc::Client,
+    pub l2_client_type: String,
+    pub state_lens_client_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,9 +51,8 @@ pub struct Config {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-
-    pub l1_ws_url: String,
-    pub l2_rpc_url: String,
+    pub l2_client_type: String,
+    pub state_lens_client_type: String,
 }
 
 impl Plugin for Module {
@@ -69,31 +63,13 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let l1_tm_client = cometbft_rpc::Client::new(config.l1_ws_url).await?;
-
-        let l1_chain_id = l1_tm_client.status().await?.node_info.network.to_string();
-
-        if l1_chain_id != config.l1_chain_id.as_str() {
-            return Err(format!(
-                "incorrect chain id: expected `{}`, but found `{}`",
-                config.l1_chain_id, l1_chain_id
-            )
-            .into());
-        }
-
-        let l2_eth_provider = ProviderBuilder::new()
-            .on_builtin(&config.l2_rpc_url)
-            .await?;
-
-        let l2_chain_id = ChainId::new(l2_eth_provider.get_chain_id().await?.to_string());
-
         Ok(Self {
             l0_client_id: config.l0_client_id,
             l1_client_id: config.l1_client_id,
-            l1_chain_id: ChainId::new(l1_chain_id),
-            l2_chain_id,
-            l1_tm_client,
-            l2_eth_provider,
+            l1_chain_id: config.l1_chain_id,
+            l2_chain_id: config.l2_chain_id,
+            l2_client_type: config.l2_client_type,
+            state_lens_client_type: config.state_lens_client_type,
         })
     }
 
@@ -102,7 +78,7 @@ impl Plugin for Module {
             name: plugin_name(&config.l2_chain_id),
             interest_filter: UpdateHook::filter(
                 &config.l2_chain_id,
-                &ClientType::new(ClientType::STATE_LENS_ICS23_MPT),
+                &ClientType::new(config.state_lens_client_type),
             ),
         }
     }
@@ -139,7 +115,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .map(|mut op| {
                     UpdateHook::new(
                         &self.l2_chain_id,
-                        &ClientType::new(ClientType::STATE_LENS_ICS23_MPT),
+                        &ClientType::new(self.state_lens_client_type.clone()),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),
@@ -209,7 +185,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
-                                client_type: ClientType::new(ClientType::ETHEREUM),
+                                client_type: ClientType::new(self.l2_client_type.clone()),
                                 chain_id: self.l2_chain_id.clone(),
                                 counterparty_chain_id: self.l1_chain_id.clone(),
                                 update_from,
