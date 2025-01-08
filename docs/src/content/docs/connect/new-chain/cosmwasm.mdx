@@ -6,15 +6,22 @@ template: doc
 
 import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
 
-## Upload Union contracts
+Connecting a new CosmWasm chain is easy and can be done in four simple steps documented here:
+
+<Steps>
+1. Upload `ibc-core` and `light-client` contracts.
+2. Configure the [Voyager](/architecture/voyager) relayer.
+3. Open the connection.
+4. Send assets and data.
+</Steps>
+
+## Upload IBC Core and Light Clients
 
 You'll need to upload two contracts:
 
 - [union-ibc](https://github.com/unionlabs/union/tree/main/cosmwasm/union-ibc/core): Union's modular IBC stack.
 - [cometbls-light-client](https://github.com/unionlabs/union/tree/main/cosmwasm/union-ibc/light-clients/cometbls): Light-client tracking [CometBLS](/architecture/cometbls) consensus.
 
-
-### Cosmos
 
 To upload [CosmWasm](https://cosmwasm.com/) contracts to your Cosmos chain, you need your chain's binary. We'll use `starsd` in this example. 
 
@@ -77,5 +84,14 @@ mkdir ./starsd-home
    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"register_client":{"client_type":"cometbls","client_address":"stars16khctrjjnm5nn5503hhqlcu7h4pngzpzc5g3d4ej25pz47eqsnjqdctmt7"}}' --home ./starsd-home --node https://rpc.elgafar-1.stargaze.chain.kitchen --chain-id elgafar-1 --from cor-systems --gas auto  --gas-adjustment 1.4 --gas-prices 1ustars -y
    ```
 </Steps>
+
+
+## Configure Voyager
+
+TODO 
+
+## Open the Connection
+
+TODO
 
 
