@@ -360,7 +360,6 @@ proto_full = [
 ## @@protoc_insertion_point(features)
 client      = ["tonic"]
 default     = ["proto_full", "std"]
-eth-abi     = ["ethers", "std"]
 json-schema = ["schemars"]
 std         = ["prost/std", "serde/std"]
 

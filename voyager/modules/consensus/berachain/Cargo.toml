@@ -6,7 +6,7 @@ version = "0.1.0"
 [dependencies]
 alloy                         = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
-berachain-light-client-types  = { workspace = true, features = ["proto", "serde"] }
+berachain-light-client-types  = { workspace = true, features = ["serde"] }
 cometbft-rpc                  = { workspace = true }
 dashmap                       = { workspace = true }
 enumorph                      = { workspace = true }

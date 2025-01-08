@@ -80,10 +80,6 @@ _: {
                 "prost/std"
                 "serde/std"
               ];
-              eth-abi = [
-                "ethers"
-                "std"
-              ];
               client = [ "tonic" ];
               json-schema = [ "schemars" ];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)

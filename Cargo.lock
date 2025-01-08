@@ -2248,7 +2248,6 @@ dependencies = [
  "beacon-api-types",
  "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
- "protos",
  "serde",
  "unionlabs",
 ]
