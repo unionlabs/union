@@ -273,6 +273,7 @@ module ibc::ibc {
 
         let (client_state, consensus_state) =
             light_client::create_client(
+                client_type,
                 &get_ibc_signer(),
                 client_id,
                 client_state,
@@ -280,7 +281,7 @@ module ibc::ibc {
             );
 
         // TODO(aeryz): fetch these status from proper exported consts
-        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(client_type, client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
         table::upsert(
@@ -289,7 +290,7 @@ module ibc::ibc {
             client_state
         );
 
-        let latest_height = light_client::latest_height(client_id);
+        let latest_height = light_client::latest_height(client_type, client_id);
 
         table::upsert(
             &mut store.commitments,
@@ -344,6 +345,7 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_init` was generated.
     public entry fun connection_open_try(
+        client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
         client_id: u32,
@@ -378,6 +380,7 @@ module ibc::ibc {
         // Verify the connection state
         let err =
             verify_connection_state(
+                client_type,
                 connection,
                 proof_height,
                 proof_init,
@@ -408,6 +411,7 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_try` was generated.
     public entry fun connection_open_ack(
+        client_type: String,
         connection_id: u32,
         counterparty_connection_id: u32,
         proof_try: vector<u8>,
@@ -438,6 +442,7 @@ module ibc::ibc {
         // Verify the connection state
         let err =
             verify_connection_state(
+                client_type,
                 connection,
                 proof_height,
                 proof_try,
@@ -475,7 +480,10 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_ack` was generated.
     public entry fun connection_open_confirm(
-        connection_id: u32, proof_ack: vector<u8>, proof_height: u64
+        client_type: String,
+        connection_id: u32,
+        proof_ack: vector<u8>,
+        proof_height: u64
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -504,6 +512,7 @@ module ibc::ibc {
         // Verify the connection state
         let err =
             verify_connection_state(
+                client_type,
                 connection,
                 proof_height,
                 proof_ack,
@@ -535,7 +544,7 @@ module ibc::ibc {
     /// the client update data. The light client just needs to make sure altering this data can NEVER make it
     /// transition to an invalid state.
     public entry fun update_client(
-        client_id: u32, client_message: vector<u8>
+        client_type: String, client_id: u32, client_message: vector<u8>
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -547,18 +556,13 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
-        if (light_client::check_for_misbehaviour(client_id, client_message)) {
-            event::emit(
-                SubmitMisbehaviour {
-                    client_id,
-                    client_type: string::utf8(CLIENT_TYPE_COMETBLS)
-                }
-            );
+        if (light_client::check_for_misbehaviour(client_type, client_id, client_message)) {
+            event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
             return
         };
 
         let (client_state, consensus_states, heights) =
-            light_client::update_client(client_id, client_message);
+            light_client::update_client(client_type, client_id, client_message);
 
         let heights_len = vector::length(&heights);
 
@@ -585,13 +589,7 @@ module ibc::ibc {
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
-            event::emit(
-                ClientUpdated {
-                    client_id,
-                    client_type: string::utf8(CLIENT_TYPE_COMETBLS),
-                    height
-                }
-            );
+            event::emit(ClientUpdated { client_id, client_type: client_type, height });
 
             i = i + 1;
         };
@@ -606,7 +604,7 @@ module ibc::ibc {
     /// * `misbehaviour`: Light client defined misbehaviour data. It's the responsibility of the caller to gather and encode
     ///   the correct data. The light client MUST detect any invalid misbehaviors and ignore those.
     public entry fun submit_misbehaviour(
-        client_id: u32, misbehaviour: vector<u8>
+        client_type: String, client_id: u32, misbehaviour: vector<u8>
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -618,14 +616,9 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
-        light_client::report_misbehaviour(client_id, misbehaviour);
+        light_client::report_misbehaviour(client_type, client_id, misbehaviour);
 
-        event::emit(
-            SubmitMisbehaviour {
-                client_id,
-                client_type: string::utf8(CLIENT_TYPE_COMETBLS)
-            }
-        );
+        event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
     }
 
     /// Execute the init phase of the channel handshake. `T` is the witness type of the target module that is
@@ -712,6 +705,7 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_init` was generated.
     public fun channel_open_try<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         connection_id: u32,
         counterparty_channel_id: u32,
@@ -737,6 +731,7 @@ module ibc::ibc {
 
         let err =
             verify_channel_state(
+                client_type,
                 client_id,
                 proof_height,
                 proof_init,
@@ -820,6 +815,7 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_try` was generated.
     public fun channel_open_ack<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         channel_id: u32,
         counterparty_version: String,
@@ -855,6 +851,7 @@ module ibc::ibc {
 
         let err =
             verify_channel_state(
+                client_type,
                 client_id,
                 proof_height,
                 proof_try,
@@ -894,6 +891,7 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_ack` was generated.
     public fun channel_open_confirm<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         channel_id: u32,
         proof_ack: vector<u8>,
@@ -926,6 +924,7 @@ module ibc::ibc {
 
         let err =
             verify_channel_state(
+                client_type,
                 client_id,
                 proof_height,
                 proof_ack,
@@ -1058,6 +1057,7 @@ module ibc::ibc {
     }
 
     public(friend) fun timeout_packet<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         packet_source_channel: u32,
         packet_destination_channel: u32,
@@ -1086,14 +1086,21 @@ module ibc::ibc {
         let client_id = ensure_connection_state(channel::connection_id(&channel));
 
         let proof_timestamp =
-            light_client::get_timestamp_at_height(client_id, proof_height);
+            light_client::get_timestamp_at_height(client_type, client_id, proof_height);
         assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
 
         let commitment_key =
             commitment::batch_receipts_commitment_key(
                 destination_channel, commitment::commit_packet(&packet)
             );
-        let err = verify_absent_commitment(client_id, proof_height, proof, commitment_key);
+        let err =
+            verify_absent_commitment(
+                client_type,
+                client_id,
+                proof_height,
+                proof,
+                commitment_key
+            );
         assert!(err == 0, err);
 
         if (packet::timeout_timestamp(&packet) != 0) {
@@ -1156,13 +1163,15 @@ module ibc::ibc {
     }
 
     #[view]
-    public fun client_state(client_id: u32): vector<u8> {
-        light_client::get_client_state(client_id)
+    public fun client_state(client_type: String, client_id: u32): vector<u8> {
+        light_client::get_client_state(client_type, client_id)
     }
 
     #[view]
-    public fun consensus_state(client_id: u32, revision_height: u64): vector<u8> {
-        light_client::get_consensus_state(client_id, revision_height)
+    public fun consensus_state(
+        client_type: String, client_id: u32, revision_height: u64
+    ): vector<u8> {
+        light_client::get_consensus_state(client_type, client_id, revision_height)
     }
 
     #[view]
@@ -1313,6 +1322,7 @@ module ibc::ibc {
     }
 
     fun verify_connection_state(
+        client_type: String,
         connection: &ConnectionEnd,
         height: u64,
         proof: vector<u8>,
@@ -1320,6 +1330,7 @@ module ibc::ibc {
         counterparty_connection: ConnectionEnd
     ): u64 {
         light_client::verify_membership(
+            client_type,
             connection_end::client_id(connection),
             height,
             proof,
@@ -1329,13 +1340,21 @@ module ibc::ibc {
     }
 
     public fun verify_commitment(
+        client_type: String,
         client_id: u32,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>,
         commitment: vector<u8>
     ): u64 {
-        light_client::verify_membership(client_id, height, proof, path, commitment)
+        light_client::verify_membership(
+            client_type,
+            client_id,
+            height,
+            proof,
+            path,
+            commitment
+        )
     }
 
     public fun generate_connection_identifier(): u32 acquires IBCStore {
@@ -1435,6 +1454,7 @@ module ibc::ibc {
     }
 
     fun verify_channel_state(
+        client_type: String,
         client_id: u32,
         height: u64,
         proof: vector<u8>,
@@ -1442,6 +1462,7 @@ module ibc::ibc {
         channel: Channel
     ): u64 {
         light_client::verify_membership(
+            client_type,
             client_id,
             height,
             proof,
@@ -1460,12 +1481,13 @@ module ibc::ibc {
     }
 
     fun verify_absent_commitment(
+        client_type: String,
         clientId: u32,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
-        light_client::verify_non_membership(clientId, height, proof, path)
+        light_client::verify_non_membership(client_type, clientId, height, proof, path)
     }
 
     fun address_to_string(addr: address): String {

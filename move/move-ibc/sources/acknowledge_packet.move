@@ -1,6 +1,7 @@
 module ibc::acknowledge_packet {
 
     use ibc::packet::{Self, Packet};
+    use std::string::{String};
     use ibc::channel;
     use ibc::engine;
     use ibc::commitment;
@@ -11,6 +12,7 @@ module ibc::acknowledge_packet {
     use std::vector;
 
     public entry fun acknowledge_packet<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
@@ -66,6 +68,7 @@ module ibc::acknowledge_packet {
 
         let err =
             ibc::verify_commitment(
+                client_type,
                 client_id,
                 proof_height,
                 proof,

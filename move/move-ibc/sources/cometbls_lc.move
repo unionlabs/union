@@ -1,4 +1,4 @@
-module ibc::light_client {
+module ibc::cometbls_lc {
     use std::vector;
     use std::bcs;
     use std::string::{Self};
@@ -436,7 +436,7 @@ module ibc::light_client {
     fun test_decode_consensus() {
         let buf =
             x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
-        let consensus = decode_consensus_state(buf);
+        let _consensus = decode_consensus_state(buf);
     }
 
     fun encode_consensus_state(cs: &ConsensusState): vector<u8> {

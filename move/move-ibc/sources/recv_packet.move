@@ -1,5 +1,6 @@
 module ibc::recv_packet {
     use ibc::packet::{Self, Packet};
+    use std::string::{String};
     use ibc::channel;
     use ibc::engine;
     use ibc::commitment;
@@ -18,6 +19,7 @@ module ibc::recv_packet {
     /// Note that any sanity check failures will result in this function to be aborted in order for caller's
     /// storage to be reverted. This will result in acks won't be able to written.
     public entry fun recv_packet<T: key + store + drop>(
+        client_type: String,
         port_id: address,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
@@ -46,10 +48,17 @@ module ibc::recv_packet {
             i = i + 1;
         };
 
-        process_receive<T>(packets, proof_height, proof, false);
+        process_receive<T>(
+            client_type,
+            packets,
+            proof_height,
+            proof,
+            false
+        );
     }
 
     public fun process_receive<T: key + store + drop>(
+        client_type: String,
         packets: vector<Packet>,
         proof_height: u64,
         proof: vector<u8>,
@@ -83,6 +92,7 @@ module ibc::recv_packet {
 
             let err =
                 ibc::verify_commitment(
+                    client_type,
                     client_id,
                     proof_height,
                     proof,
