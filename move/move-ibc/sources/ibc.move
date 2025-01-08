@@ -1877,4 +1877,3 @@ module ibc::ibc {
     //     assert!(*channel::chan_counterparty_channel_id(&stored_channel) == string::utf8(b"counterparty-channel-0"), 9003);
     // }
 }
-
