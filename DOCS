@@ -21,4 +21,8 @@
 
 # voyager
 
+- get voyager binary
+  - nix build github:unionlabs/union#voyager
 
+- get voyager plugins and modules binaries
+  - nix build github:unionlabs/union#voyager-modules-dev
