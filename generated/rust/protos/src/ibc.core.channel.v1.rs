@@ -460,6 +460,752 @@ impl ::prost::Name for ErrorReceipt {
         ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
     }
 }
+/// QueryChannelRequest is the request type for the Query/Channel RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryChannelRequest {
+    const NAME: &'static str = "QueryChannelRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelResponse is the response type for the Query/Channel RPC method.
+/// Besides the Channel end, it includes a proof and the height from which the
+/// proof was retrieved.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelResponse {
+    /// channel associated with the request identifiers
+    #[prost(message, optional, tag = "1")]
+    pub channel: ::core::option::Option<Channel>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryChannelResponse {
+    const NAME: &'static str = "QueryChannelResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelsRequest is the request type for the Query/Channels RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelsRequest {
+    /// pagination request
+    #[prost(message, optional, tag = "1")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+}
+impl ::prost::Name for QueryChannelsRequest {
+    const NAME: &'static str = "QueryChannelsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelsResponse is the response type for the Query/Channels RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelsResponse {
+    /// list of stored channels of the chain.
+    #[prost(message, repeated, tag = "1")]
+    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
+    /// pagination response
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+    /// query block height
+    #[prost(message, optional, tag = "3")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryChannelsResponse {
+    const NAME: &'static str = "QueryChannelsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryConnectionChannelsRequest is the request type for the
+/// Query/QueryConnectionChannels RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryConnectionChannelsRequest {
+    /// connection unique identifier
+    #[prost(string, tag = "1")]
+    pub connection: ::prost::alloc::string::String,
+    /// pagination request
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+}
+impl ::prost::Name for QueryConnectionChannelsRequest {
+    const NAME: &'static str = "QueryConnectionChannelsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryConnectionChannelsResponse is the Response type for the
+/// Query/QueryConnectionChannels RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryConnectionChannelsResponse {
+    /// list of channels associated with a connection.
+    #[prost(message, repeated, tag = "1")]
+    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
+    /// pagination response
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+    /// query block height
+    #[prost(message, optional, tag = "3")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryConnectionChannelsResponse {
+    const NAME: &'static str = "QueryConnectionChannelsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelClientStateRequest is the request type for the Query/ClientState
+/// RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelClientStateRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryChannelClientStateRequest {
+    const NAME: &'static str = "QueryChannelClientStateRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelClientStateResponse is the Response type for the
+/// Query/QueryChannelClientState RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelClientStateResponse {
+    /// client state associated with the channel
+    #[prost(message, optional, tag = "1")]
+    pub identified_client_state:
+        ::core::option::Option<super::super::client::v1::IdentifiedClientState>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryChannelClientStateResponse {
+    const NAME: &'static str = "QueryChannelClientStateResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelConsensusStateRequest is the request type for the
+/// Query/ConsensusState RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelConsensusStateRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// revision number of the consensus state
+    #[prost(uint64, tag = "3")]
+    pub revision_number: u64,
+    /// revision height of the consensus state
+    #[prost(uint64, tag = "4")]
+    pub revision_height: u64,
+}
+impl ::prost::Name for QueryChannelConsensusStateRequest {
+    const NAME: &'static str = "QueryChannelConsensusStateRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelClientStateResponse is the Response type for the
+/// Query/QueryChannelClientState RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelConsensusStateResponse {
+    /// consensus state associated with the channel
+    #[prost(message, optional, tag = "1")]
+    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
+    /// client ID associated with the consensus state
+    #[prost(string, tag = "2")]
+    pub client_id: ::prost::alloc::string::String,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryChannelConsensusStateResponse {
+    const NAME: &'static str = "QueryChannelConsensusStateResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketCommitmentRequest is the request type for the
+/// Query/PacketCommitment RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketCommitmentRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// packet sequence
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
+}
+impl ::prost::Name for QueryPacketCommitmentRequest {
+    const NAME: &'static str = "QueryPacketCommitmentRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketCommitmentResponse defines the client query response for a packet
+/// which also includes a proof and the height from which the proof was
+/// retrieved
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketCommitmentResponse {
+    /// packet associated with the request fields
+    #[prost(bytes = "vec", tag = "1")]
+    pub commitment: ::prost::alloc::vec::Vec<u8>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryPacketCommitmentResponse {
+    const NAME: &'static str = "QueryPacketCommitmentResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketCommitmentsRequest is the request type for the
+/// Query/QueryPacketCommitments RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketCommitmentsRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// pagination request
+    #[prost(message, optional, tag = "3")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+}
+impl ::prost::Name for QueryPacketCommitmentsRequest {
+    const NAME: &'static str = "QueryPacketCommitmentsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketCommitmentsResponse is the request type for the
+/// Query/QueryPacketCommitments RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketCommitmentsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
+    /// pagination response
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+    /// query block height
+    #[prost(message, optional, tag = "3")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryPacketCommitmentsResponse {
+    const NAME: &'static str = "QueryPacketCommitmentsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketReceiptRequest is the request type for the
+/// Query/PacketReceipt RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketReceiptRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// packet sequence
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
+}
+impl ::prost::Name for QueryPacketReceiptRequest {
+    const NAME: &'static str = "QueryPacketReceiptRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketReceiptResponse defines the client query response for a packet
+/// receipt which also includes a proof, and the height from which the proof was
+/// retrieved
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketReceiptResponse {
+    /// success flag for if receipt exists
+    #[prost(bool, tag = "2")]
+    pub received: bool,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryPacketReceiptResponse {
+    const NAME: &'static str = "QueryPacketReceiptResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketAcknowledgementRequest is the request type for the
+/// Query/PacketAcknowledgement RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketAcknowledgementRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// packet sequence
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
+}
+impl ::prost::Name for QueryPacketAcknowledgementRequest {
+    const NAME: &'static str = "QueryPacketAcknowledgementRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketAcknowledgementResponse defines the client query response for a
+/// packet which also includes a proof and the height from which the
+/// proof was retrieved
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketAcknowledgementResponse {
+    /// packet associated with the request fields
+    #[prost(bytes = "vec", tag = "1")]
+    pub acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryPacketAcknowledgementResponse {
+    const NAME: &'static str = "QueryPacketAcknowledgementResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketAcknowledgementsRequest is the request type for the
+/// Query/QueryPacketCommitments RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketAcknowledgementsRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// pagination request
+    #[prost(message, optional, tag = "3")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+    /// list of packet sequences
+    #[prost(uint64, repeated, tag = "4")]
+    pub packet_commitment_sequences: ::prost::alloc::vec::Vec<u64>,
+}
+impl ::prost::Name for QueryPacketAcknowledgementsRequest {
+    const NAME: &'static str = "QueryPacketAcknowledgementsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryPacketAcknowledgemetsResponse is the request type for the
+/// Query/QueryPacketAcknowledgements RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPacketAcknowledgementsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
+    /// pagination response
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+    /// query block height
+    #[prost(message, optional, tag = "3")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryPacketAcknowledgementsResponse {
+    const NAME: &'static str = "QueryPacketAcknowledgementsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUnreceivedPacketsRequest is the request type for the
+/// Query/UnreceivedPackets RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnreceivedPacketsRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// list of packet sequences
+    #[prost(uint64, repeated, tag = "3")]
+    pub packet_commitment_sequences: ::prost::alloc::vec::Vec<u64>,
+}
+impl ::prost::Name for QueryUnreceivedPacketsRequest {
+    const NAME: &'static str = "QueryUnreceivedPacketsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUnreceivedPacketsResponse is the response type for the
+/// Query/UnreceivedPacketCommitments RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnreceivedPacketsResponse {
+    /// list of unreceived packet sequences
+    #[prost(uint64, repeated, tag = "1")]
+    pub sequences: ::prost::alloc::vec::Vec<u64>,
+    /// query block height
+    #[prost(message, optional, tag = "2")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryUnreceivedPacketsResponse {
+    const NAME: &'static str = "QueryUnreceivedPacketsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUnreceivedAcks is the request type for the
+/// Query/UnreceivedAcks RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnreceivedAcksRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// list of acknowledgement sequences
+    #[prost(uint64, repeated, tag = "3")]
+    pub packet_ack_sequences: ::prost::alloc::vec::Vec<u64>,
+}
+impl ::prost::Name for QueryUnreceivedAcksRequest {
+    const NAME: &'static str = "QueryUnreceivedAcksRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUnreceivedAcksResponse is the response type for the
+/// Query/UnreceivedAcks RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnreceivedAcksResponse {
+    /// list of unreceived acknowledgement sequences
+    #[prost(uint64, repeated, tag = "1")]
+    pub sequences: ::prost::alloc::vec::Vec<u64>,
+    /// query block height
+    #[prost(message, optional, tag = "2")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryUnreceivedAcksResponse {
+    const NAME: &'static str = "QueryUnreceivedAcksResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryNextSequenceReceiveRequest is the request type for the
+/// Query/QueryNextSequenceReceiveRequest RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryNextSequenceReceiveRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryNextSequenceReceiveRequest {
+    const NAME: &'static str = "QueryNextSequenceReceiveRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QuerySequenceResponse is the response type for the
+/// Query/QueryNextSequenceReceiveResponse RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryNextSequenceReceiveResponse {
+    /// next sequence receive number
+    #[prost(uint64, tag = "1")]
+    pub next_sequence_receive: u64,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryNextSequenceReceiveResponse {
+    const NAME: &'static str = "QueryNextSequenceReceiveResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryNextSequenceSendRequest is the request type for the
+/// Query/QueryNextSequenceSend RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryNextSequenceSendRequest {
+    /// port unique identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryNextSequenceSendRequest {
+    const NAME: &'static str = "QueryNextSequenceSendRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryNextSequenceSendResponse is the request type for the
+/// Query/QueryNextSequenceSend RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryNextSequenceSendResponse {
+    /// next sequence send number
+    #[prost(uint64, tag = "1")]
+    pub next_sequence_send: u64,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryNextSequenceSendResponse {
+    const NAME: &'static str = "QueryNextSequenceSendResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradeErrorRequest {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryUpgradeErrorRequest {
+    const NAME: &'static str = "QueryUpgradeErrorRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradeErrorResponse {
+    #[prost(message, optional, tag = "1")]
+    pub error_receipt: ::core::option::Option<ErrorReceipt>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryUpgradeErrorResponse {
+    const NAME: &'static str = "QueryUpgradeErrorResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradeRequest {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryUpgradeRequest {
+    const NAME: &'static str = "QueryUpgradeRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradeResponse {
+    #[prost(message, optional, tag = "1")]
+    pub upgrade: ::core::option::Option<Upgrade>,
+    /// merkle proof of existence
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// height at which the proof was retrieved
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+}
+impl ::prost::Name for QueryUpgradeResponse {
+    const NAME: &'static str = "QueryUpgradeResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelParamsRequest {}
+impl ::prost::Name for QueryChannelParamsRequest {
+    const NAME: &'static str = "QueryChannelParamsRequest";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChannelParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for QueryChannelParamsResponse {
+    const NAME: &'static str = "QueryChannelParamsResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
 /// MsgChannelOpenInit defines an sdk.Msg to initialize a channel handshake. It
 /// is called by a relayer on Chain A.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -1249,752 +1995,6 @@ impl ResponseResultType {
             "RESPONSE_RESULT_TYPE_FAILURE" => Some(Self::Failure),
             _ => None,
         }
-    }
-}
-/// QueryChannelRequest is the request type for the Query/Channel RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryChannelRequest {
-    const NAME: &'static str = "QueryChannelRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelResponse is the response type for the Query/Channel RPC method.
-/// Besides the Channel end, it includes a proof and the height from which the
-/// proof was retrieved.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelResponse {
-    /// channel associated with the request identifiers
-    #[prost(message, optional, tag = "1")]
-    pub channel: ::core::option::Option<Channel>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryChannelResponse {
-    const NAME: &'static str = "QueryChannelResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelsRequest is the request type for the Query/Channels RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelsRequest {
-    /// pagination request
-    #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-}
-impl ::prost::Name for QueryChannelsRequest {
-    const NAME: &'static str = "QueryChannelsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelsResponse is the response type for the Query/Channels RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelsResponse {
-    /// list of stored channels of the chain.
-    #[prost(message, repeated, tag = "1")]
-    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
-    /// pagination response
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-    /// query block height
-    #[prost(message, optional, tag = "3")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryChannelsResponse {
-    const NAME: &'static str = "QueryChannelsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryConnectionChannelsRequest is the request type for the
-/// Query/QueryConnectionChannels RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConnectionChannelsRequest {
-    /// connection unique identifier
-    #[prost(string, tag = "1")]
-    pub connection: ::prost::alloc::string::String,
-    /// pagination request
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-}
-impl ::prost::Name for QueryConnectionChannelsRequest {
-    const NAME: &'static str = "QueryConnectionChannelsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryConnectionChannelsResponse is the Response type for the
-/// Query/QueryConnectionChannels RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConnectionChannelsResponse {
-    /// list of channels associated with a connection.
-    #[prost(message, repeated, tag = "1")]
-    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
-    /// pagination response
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-    /// query block height
-    #[prost(message, optional, tag = "3")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryConnectionChannelsResponse {
-    const NAME: &'static str = "QueryConnectionChannelsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelClientStateRequest is the request type for the Query/ClientState
-/// RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelClientStateRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryChannelClientStateRequest {
-    const NAME: &'static str = "QueryChannelClientStateRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelClientStateResponse is the Response type for the
-/// Query/QueryChannelClientState RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelClientStateResponse {
-    /// client state associated with the channel
-    #[prost(message, optional, tag = "1")]
-    pub identified_client_state:
-        ::core::option::Option<super::super::client::v1::IdentifiedClientState>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryChannelClientStateResponse {
-    const NAME: &'static str = "QueryChannelClientStateResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelConsensusStateRequest is the request type for the
-/// Query/ConsensusState RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelConsensusStateRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// revision number of the consensus state
-    #[prost(uint64, tag = "3")]
-    pub revision_number: u64,
-    /// revision height of the consensus state
-    #[prost(uint64, tag = "4")]
-    pub revision_height: u64,
-}
-impl ::prost::Name for QueryChannelConsensusStateRequest {
-    const NAME: &'static str = "QueryChannelConsensusStateRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelClientStateResponse is the Response type for the
-/// Query/QueryChannelClientState RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelConsensusStateResponse {
-    /// consensus state associated with the channel
-    #[prost(message, optional, tag = "1")]
-    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
-    /// client ID associated with the consensus state
-    #[prost(string, tag = "2")]
-    pub client_id: ::prost::alloc::string::String,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryChannelConsensusStateResponse {
-    const NAME: &'static str = "QueryChannelConsensusStateResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketCommitmentRequest is the request type for the
-/// Query/PacketCommitment RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketCommitmentRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// packet sequence
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
-}
-impl ::prost::Name for QueryPacketCommitmentRequest {
-    const NAME: &'static str = "QueryPacketCommitmentRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketCommitmentResponse defines the client query response for a packet
-/// which also includes a proof and the height from which the proof was
-/// retrieved
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketCommitmentResponse {
-    /// packet associated with the request fields
-    #[prost(bytes = "vec", tag = "1")]
-    pub commitment: ::prost::alloc::vec::Vec<u8>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryPacketCommitmentResponse {
-    const NAME: &'static str = "QueryPacketCommitmentResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketCommitmentsRequest is the request type for the
-/// Query/QueryPacketCommitments RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketCommitmentsRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// pagination request
-    #[prost(message, optional, tag = "3")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-}
-impl ::prost::Name for QueryPacketCommitmentsRequest {
-    const NAME: &'static str = "QueryPacketCommitmentsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketCommitmentsResponse is the request type for the
-/// Query/QueryPacketCommitments RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketCommitmentsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
-    /// pagination response
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-    /// query block height
-    #[prost(message, optional, tag = "3")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryPacketCommitmentsResponse {
-    const NAME: &'static str = "QueryPacketCommitmentsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketReceiptRequest is the request type for the
-/// Query/PacketReceipt RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketReceiptRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// packet sequence
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
-}
-impl ::prost::Name for QueryPacketReceiptRequest {
-    const NAME: &'static str = "QueryPacketReceiptRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketReceiptResponse defines the client query response for a packet
-/// receipt which also includes a proof, and the height from which the proof was
-/// retrieved
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketReceiptResponse {
-    /// success flag for if receipt exists
-    #[prost(bool, tag = "2")]
-    pub received: bool,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryPacketReceiptResponse {
-    const NAME: &'static str = "QueryPacketReceiptResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketAcknowledgementRequest is the request type for the
-/// Query/PacketAcknowledgement RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketAcknowledgementRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// packet sequence
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
-}
-impl ::prost::Name for QueryPacketAcknowledgementRequest {
-    const NAME: &'static str = "QueryPacketAcknowledgementRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketAcknowledgementResponse defines the client query response for a
-/// packet which also includes a proof and the height from which the
-/// proof was retrieved
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketAcknowledgementResponse {
-    /// packet associated with the request fields
-    #[prost(bytes = "vec", tag = "1")]
-    pub acknowledgement: ::prost::alloc::vec::Vec<u8>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryPacketAcknowledgementResponse {
-    const NAME: &'static str = "QueryPacketAcknowledgementResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketAcknowledgementsRequest is the request type for the
-/// Query/QueryPacketCommitments RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketAcknowledgementsRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// pagination request
-    #[prost(message, optional, tag = "3")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-    /// list of packet sequences
-    #[prost(uint64, repeated, tag = "4")]
-    pub packet_commitment_sequences: ::prost::alloc::vec::Vec<u64>,
-}
-impl ::prost::Name for QueryPacketAcknowledgementsRequest {
-    const NAME: &'static str = "QueryPacketAcknowledgementsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryPacketAcknowledgemetsResponse is the request type for the
-/// Query/QueryPacketAcknowledgements RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPacketAcknowledgementsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
-    /// pagination response
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-    /// query block height
-    #[prost(message, optional, tag = "3")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryPacketAcknowledgementsResponse {
-    const NAME: &'static str = "QueryPacketAcknowledgementsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUnreceivedPacketsRequest is the request type for the
-/// Query/UnreceivedPackets RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnreceivedPacketsRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// list of packet sequences
-    #[prost(uint64, repeated, tag = "3")]
-    pub packet_commitment_sequences: ::prost::alloc::vec::Vec<u64>,
-}
-impl ::prost::Name for QueryUnreceivedPacketsRequest {
-    const NAME: &'static str = "QueryUnreceivedPacketsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUnreceivedPacketsResponse is the response type for the
-/// Query/UnreceivedPacketCommitments RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnreceivedPacketsResponse {
-    /// list of unreceived packet sequences
-    #[prost(uint64, repeated, tag = "1")]
-    pub sequences: ::prost::alloc::vec::Vec<u64>,
-    /// query block height
-    #[prost(message, optional, tag = "2")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryUnreceivedPacketsResponse {
-    const NAME: &'static str = "QueryUnreceivedPacketsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUnreceivedAcks is the request type for the
-/// Query/UnreceivedAcks RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnreceivedAcksRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// list of acknowledgement sequences
-    #[prost(uint64, repeated, tag = "3")]
-    pub packet_ack_sequences: ::prost::alloc::vec::Vec<u64>,
-}
-impl ::prost::Name for QueryUnreceivedAcksRequest {
-    const NAME: &'static str = "QueryUnreceivedAcksRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUnreceivedAcksResponse is the response type for the
-/// Query/UnreceivedAcks RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnreceivedAcksResponse {
-    /// list of unreceived acknowledgement sequences
-    #[prost(uint64, repeated, tag = "1")]
-    pub sequences: ::prost::alloc::vec::Vec<u64>,
-    /// query block height
-    #[prost(message, optional, tag = "2")]
-    pub height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryUnreceivedAcksResponse {
-    const NAME: &'static str = "QueryUnreceivedAcksResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryNextSequenceReceiveRequest is the request type for the
-/// Query/QueryNextSequenceReceiveRequest RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryNextSequenceReceiveRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryNextSequenceReceiveRequest {
-    const NAME: &'static str = "QueryNextSequenceReceiveRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QuerySequenceResponse is the response type for the
-/// Query/QueryNextSequenceReceiveResponse RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryNextSequenceReceiveResponse {
-    /// next sequence receive number
-    #[prost(uint64, tag = "1")]
-    pub next_sequence_receive: u64,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryNextSequenceReceiveResponse {
-    const NAME: &'static str = "QueryNextSequenceReceiveResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryNextSequenceSendRequest is the request type for the
-/// Query/QueryNextSequenceSend RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryNextSequenceSendRequest {
-    /// port unique identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// channel unique identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryNextSequenceSendRequest {
-    const NAME: &'static str = "QueryNextSequenceSendRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryNextSequenceSendResponse is the request type for the
-/// Query/QueryNextSequenceSend RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryNextSequenceSendResponse {
-    /// next sequence send number
-    #[prost(uint64, tag = "1")]
-    pub next_sequence_send: u64,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryNextSequenceSendResponse {
-    const NAME: &'static str = "QueryNextSequenceSendResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradeErrorRequest {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryUpgradeErrorRequest {
-    const NAME: &'static str = "QueryUpgradeErrorRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradeErrorResponse {
-    #[prost(message, optional, tag = "1")]
-    pub error_receipt: ::core::option::Option<ErrorReceipt>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryUpgradeErrorResponse {
-    const NAME: &'static str = "QueryUpgradeErrorResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradeRequest {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryUpgradeRequest {
-    const NAME: &'static str = "QueryUpgradeRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradeResponse {
-    #[prost(message, optional, tag = "1")]
-    pub upgrade: ::core::option::Option<Upgrade>,
-    /// merkle proof of existence
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-}
-impl ::prost::Name for QueryUpgradeResponse {
-    const NAME: &'static str = "QueryUpgradeResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelParamsRequest {}
-impl ::prost::Name for QueryChannelParamsRequest {
-    const NAME: &'static str = "QueryChannelParamsRequest";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChannelParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryChannelParamsResponse {
-    const NAME: &'static str = "QueryChannelParamsResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
     }
 }
 include!("ibc.core.channel.v1.tonic.rs");

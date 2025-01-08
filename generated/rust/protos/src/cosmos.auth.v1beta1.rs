@@ -84,128 +84,6 @@ impl ::prost::Name for Params {
         ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
     }
 }
-/// MsgUpdateParams is the Msg/UpdateParams request type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-    /// params defines the x/auth parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the response structure for executing a
-/// MsgUpdateParams message.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgNonAtomicExec defines the Msg/NonAtomicExec request type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgNonAtomicExec {
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub msgs: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgNonAtomicExec {
-    const NAME: &'static str = "MsgNonAtomicExec";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// NonAtomicExecResult defines the response structure for executing a
-/// MsgNonAtomicExec.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NonAtomicExecResult {
-    #[prost(string, tag = "1")]
-    pub error: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub resp: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for NonAtomicExecResult {
-    const NAME: &'static str = "NonAtomicExecResult";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgNonAtomicExecResponse defines the response of MsgNonAtomicExec.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgNonAtomicExecResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub results: ::prost::alloc::vec::Vec<NonAtomicExecResult>,
-}
-impl ::prost::Name for MsgNonAtomicExecResponse {
-    const NAME: &'static str = "MsgNonAtomicExecResponse";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgMigrateAccount defines a message which allows users to migrate from BaseAccount
-/// to other x/accounts types.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgMigrateAccount {
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub account_type: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub account_init_msg: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgMigrateAccount {
-    const NAME: &'static str = "MsgMigrateAccount";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgMigrateAccountResponse defines the response given when migrating to
-/// an x/accounts account.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgMigrateAccountResponse {
-    /// init_response defines the response returned by the x/account account
-    /// initialization.
-    #[prost(message, optional, tag = "1")]
-    pub init_response: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgMigrateAccountResponse {
-    const NAME: &'static str = "MsgMigrateAccountResponse";
-    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
-    }
-}
 /// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -511,6 +389,128 @@ pub struct QueryAccountInfoResponse {
 }
 impl ::prost::Name for QueryAccountInfoResponse {
     const NAME: &'static str = "QueryAccountInfoResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams is the Msg/UpdateParams request type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+    /// params defines the x/auth parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the response structure for executing a
+/// MsgUpdateParams message.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgNonAtomicExec defines the Msg/NonAtomicExec request type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgNonAtomicExec {
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub msgs: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+}
+impl ::prost::Name for MsgNonAtomicExec {
+    const NAME: &'static str = "MsgNonAtomicExec";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// NonAtomicExecResult defines the response structure for executing a
+/// MsgNonAtomicExec.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NonAtomicExecResult {
+    #[prost(string, tag = "1")]
+    pub error: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub resp: ::core::option::Option<::pbjson_types::Any>,
+}
+impl ::prost::Name for NonAtomicExecResult {
+    const NAME: &'static str = "NonAtomicExecResult";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgNonAtomicExecResponse defines the response of MsgNonAtomicExec.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgNonAtomicExecResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub results: ::prost::alloc::vec::Vec<NonAtomicExecResult>,
+}
+impl ::prost::Name for MsgNonAtomicExecResponse {
+    const NAME: &'static str = "MsgNonAtomicExecResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgMigrateAccount defines a message which allows users to migrate from BaseAccount
+/// to other x/accounts types.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgMigrateAccount {
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub account_type: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub account_init_msg: ::core::option::Option<::pbjson_types::Any>,
+}
+impl ::prost::Name for MsgMigrateAccount {
+    const NAME: &'static str = "MsgMigrateAccount";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgMigrateAccountResponse defines the response given when migrating to
+/// an x/accounts account.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgMigrateAccountResponse {
+    /// init_response defines the response returned by the x/account account
+    /// initialization.
+    #[prost(message, optional, tag = "1")]
+    pub init_response: ::core::option::Option<::pbjson_types::Any>,
+}
+impl ::prost::Name for MsgMigrateAccountResponse {
+    const NAME: &'static str = "MsgMigrateAccountResponse";
     const PACKAGE: &'static str = "cosmos.auth.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)

@@ -1,5 +1,11 @@
 #![allow(clippy::all, rustdoc::all)]
 // @generated
+#[cfg(feature = "amino")]
+// @@protoc_insertion_point(attribute:amino)
+pub mod amino {
+    include!("amino.rs");
+    // @@protoc_insertion_point(amino)
+}
 pub mod capability {
     #[cfg(feature = "capability+v1")]
     // @@protoc_insertion_point(attribute:capability.v1)
@@ -855,76 +861,12 @@ pub mod union {
     }
     pub mod ibc {
         pub mod lightclients {
-            pub mod arbitrum {
-                #[cfg(feature = "union+ibc+lightclients+arbitrum+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.arbitrum.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.arbitrum.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.arbitrum.v1)
-                }
-            }
-            pub mod berachain {
-                #[cfg(feature = "union+ibc+lightclients+berachain+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.berachain.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.berachain.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.berachain.v1)
-                }
-            }
             pub mod cometbls {
                 #[cfg(feature = "union+ibc+lightclients+cometbls+v1")]
                 // @@protoc_insertion_point(attribute:union.ibc.lightclients.cometbls.v1)
                 pub mod v1 {
                     include!("union.ibc.lightclients.cometbls.v1.rs");
                     // @@protoc_insertion_point(union.ibc.lightclients.cometbls.v1)
-                }
-            }
-            pub mod cosmosincosmos {
-                #[cfg(feature = "union+ibc+lightclients+cosmosincosmos+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.cosmosincosmos.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.cosmosincosmos.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.cosmosincosmos.v1)
-                }
-            }
-            pub mod ethereum {
-                #[cfg(feature = "union+ibc+lightclients+ethereum+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.ethereum.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.ethereum.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.ethereum.v1)
-                }
-            }
-            pub mod evmincosmos {
-                #[cfg(feature = "union+ibc+lightclients+evmincosmos+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.evmincosmos.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.evmincosmos.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.evmincosmos.v1)
-                }
-            }
-            pub mod linea {
-                #[cfg(feature = "union+ibc+lightclients+linea+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.linea.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.linea.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.linea.v1)
-                }
-            }
-            pub mod movement {
-                #[cfg(feature = "union+ibc+lightclients+movement+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.movement.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.movement.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.movement.v1)
-                }
-            }
-            pub mod scroll {
-                #[cfg(feature = "union+ibc+lightclients+scroll+v1")]
-                // @@protoc_insertion_point(attribute:union.ibc.lightclients.scroll.v1)
-                pub mod v1 {
-                    include!("union.ibc.lightclients.scroll.v1.rs");
-                    // @@protoc_insertion_point(union.ibc.lightclients.scroll.v1)
                 }
             }
         }

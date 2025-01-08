@@ -456,7 +456,7 @@ _: {
               ''
                 #[cfg_attr(
                     feature = "serde",
-                    serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+                    serde(default, with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
                 )]''
             ];
 
