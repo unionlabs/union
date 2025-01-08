@@ -767,7 +767,7 @@ _: {
             value = eth-upgrade (
               {
                 dry = false;
-                protocol = "CosmosInCosmos";
+                protocol = "CosmosInCosmosClient";
               }
               // args
             );

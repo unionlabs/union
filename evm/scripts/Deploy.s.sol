@@ -1082,3 +1082,44 @@ contract UpgradeEvmInCosmosClient is Script {
         vm.stopBroadcast();
     }
 }
+
+
+contract UpgradeCosmosInCosmosClient is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address cosmosLensClient =
+            getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
+        console.log(
+            string(
+                abi.encodePacked("CosmosInCosmos: ", cosmosLensClient.toHexString())
+            )
+        );
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new CosmosInCosmosClient());
+        CosmosInCosmosClient(cosmosLensClient).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
+        vm.stopBroadcast();
+    }
+}
+
