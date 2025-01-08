@@ -24,56 +24,55 @@ import "./ZkgmERC20.sol";
 struct ZkgmPacket {
     bytes32 salt;
     uint256 path;
-    SyscallPacket syscall;
+    Instruction instruction;
 }
 
-struct SyscallPacket {
+struct Instruction {
     uint8 version;
-    uint8 index;
-    bytes packet;
+    uint8 opcode;
+    bytes operand;
 }
 
-struct ForwardPacket {
+struct Forward {
     uint32 channelId;
     uint64 timeoutHeight;
     uint64 timeoutTimestamp;
-    SyscallPacket syscallPacket;
+    Instruction instruction;
 }
 
-struct MultiplexPacket {
+struct Multiplex {
     bytes sender;
     bool eureka;
     bytes contractAddress;
     bytes contractCalldata;
 }
 
-struct BatchPacket {
-    SyscallPacket[] syscallPackets;
+struct Batch {
+    Instruction[] instructions;
 }
 
-struct FungibleAssetTransferPacket {
+struct FungibleAssetOrder {
     bytes sender;
     bytes receiver;
-    bytes sentToken;
-    uint256 sentTokenPrefix;
-    string sentSymbol;
-    string sentName;
-    uint256 sentAmount;
-    bytes askToken;
-    uint256 askAmount;
-    bool onlyMaker;
+    bytes baseToken;
+    uint256 baseAmount;
+    string baseTokenSymbol;
+    string baseTokenName;
+    uint256 baseTokenPath;
+    bytes quoteToken;
+    uint256 quoteAmount;
 }
 
-struct Acknowledgement {
+struct Ack {
     uint256 tag;
     bytes innerAck;
 }
 
-struct BatchAcknowledgement {
+struct BatchAck {
     bytes[] acknowledgements;
 }
 
-struct AssetTransferAcknowledgement {
+struct FungibleAssetOrderAck {
     uint256 fillType;
     bytes marketMaker;
 }
@@ -89,10 +88,10 @@ library ZkgmLib {
     uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
     uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
 
-    uint8 public constant SYSCALL_FORWARD = 0x00;
-    uint8 public constant SYSCALL_MULTIPLEX = 0x01;
-    uint8 public constant SYSCALL_BATCH = 0x02;
-    uint8 public constant SYSCALL_FUNGIBLE_ASSET_TRANSFER = 0x03;
+    uint8 public constant OP_FORWARD = 0x00;
+    uint8 public constant OP_MULTIPLEX = 0x01;
+    uint8 public constant OP_BATCH = 0x02;
+    uint8 public constant OP_FUNGIBLE_ASSET_TRANSFER = 0x03;
 
     uint8 public constant ZKGM_VERSION_0 = 0x00;
 
@@ -113,16 +112,16 @@ library ZkgmLib {
     error ErrInvalidAssetSymbol();
     error ErrInvalidAssetName();
 
-    function encodeAssetTransferAck(
-        AssetTransferAcknowledgement memory ack
+    function encodeFungibleAssetOrderAck(
+        FungibleAssetOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
     }
 
-    function decodeAssetTransferAck(
+    function decodeFungibleAssetOrderAck(
         bytes calldata stream
-    ) internal pure returns (AssetTransferAcknowledgement calldata) {
-        AssetTransferAcknowledgement calldata ack;
+    ) internal pure returns (FungibleAssetOrderAck calldata) {
+        FungibleAssetOrderAck calldata ack;
         assembly {
             ack := stream.offset
         }
@@ -130,15 +129,15 @@ library ZkgmLib {
     }
 
     function encodeBatchAck(
-        BatchAcknowledgement memory ack
+        BatchAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.acknowledgements);
     }
 
     function decodeBatchAck(
         bytes calldata stream
-    ) internal pure returns (BatchAcknowledgement calldata) {
-        BatchAcknowledgement calldata acks;
+    ) internal pure returns (BatchAck calldata) {
+        BatchAck calldata acks;
         assembly {
             acks := stream.offset
         }
@@ -146,92 +145,91 @@ library ZkgmLib {
     }
 
     function encodeAck(
-        Acknowledgement memory ack
+        Ack memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.tag, ack.innerAck);
     }
 
     function decodeAck(
         bytes calldata stream
-    ) internal pure returns (Acknowledgement calldata) {
-        Acknowledgement calldata packet;
+    ) internal pure returns (Ack calldata) {
+        Ack calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
     function encode(
-        ZkgmPacket memory packet
+        ZkgmPacket memory operand
     ) internal pure returns (bytes memory) {
-        return abi.encode(packet.salt, packet.path, packet.syscall);
+        return abi.encode(operand.salt, operand.path, operand.instruction);
     }
 
     function decode(
         bytes calldata stream
     ) internal pure returns (ZkgmPacket calldata) {
-        ZkgmPacket calldata packet;
+        ZkgmPacket calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
     function decodeBatch(
         bytes calldata stream
-    ) internal pure returns (BatchPacket calldata) {
-        BatchPacket calldata packet;
+    ) internal pure returns (Batch calldata) {
+        Batch calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
     function decodeForward(
         bytes calldata stream
-    ) internal pure returns (ForwardPacket calldata) {
-        ForwardPacket calldata packet;
+    ) internal pure returns (Forward calldata) {
+        Forward calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
     function decodeMultiplex(
         bytes calldata stream
-    ) internal pure returns (MultiplexPacket calldata) {
-        MultiplexPacket calldata packet;
+    ) internal pure returns (Multiplex calldata) {
+        Multiplex calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
-    function encodeFungibleAssetTransfer(
-        FungibleAssetTransferPacket memory transfer
+    function encodeFungibleAssetOrder(
+        FungibleAssetOrder memory transfer
     ) internal pure returns (bytes memory) {
         return abi.encode(
             transfer.sender,
             transfer.receiver,
-            transfer.sentToken,
-            transfer.sentTokenPrefix,
-            transfer.sentSymbol,
-            transfer.sentName,
-            transfer.sentAmount,
-            transfer.askToken,
-            transfer.askAmount,
-            transfer.onlyMaker
+            transfer.baseToken,
+            transfer.baseTokenPath,
+            transfer.baseTokenSymbol,
+            transfer.baseTokenName,
+            transfer.baseAmount,
+            transfer.quoteToken,
+            transfer.quoteAmount
         );
     }
 
-    function decodeFungibleAssetTransfer(
+    function decodeFungibleAssetOrder(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetTransferPacket calldata) {
-        FungibleAssetTransferPacket calldata packet;
+    ) internal pure returns (FungibleAssetOrder calldata) {
+        FungibleAssetOrder calldata operand;
         assembly {
-            packet := stream.offset
+            operand := stream.offset
         }
-        return packet;
+        return operand;
     }
 
     function isDeployed(
@@ -302,29 +300,32 @@ contract UCS03Zkgm is
 
     function transfer(
         uint32 channelId,
+        bytes calldata receiver,
+        address baseToken,
+        uint256 baseAmount,
+        bytes calldata quoteToken,
+        uint256 quoteAmount,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
-        bytes32 salt,
-        bytes calldata receiver,
-        address sentToken,
-        uint256 sentAmount,
-        bytes calldata askToken,
-        uint256 askAmount,
-        bool onlyMaker
+        bytes32 salt
     ) public {
-        IERC20Metadata sentTokenMeta = IERC20Metadata(sentToken);
+        if (baseAmount == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
+        // TODO: make this non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
         string memory tokenName = sentTokenMeta.name();
         string memory tokenSymbol = sentTokenMeta.symbol();
-        uint256 origin = tokenOrigin[sentToken];
+        uint256 origin = tokenOrigin[baseToken];
         if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
-            IZkgmERC20(sentToken).burn(msg.sender, sentAmount);
+            IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
         } else {
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                sentTokenMeta, msg.sender, address(this), sentAmount
+                sentTokenMeta, msg.sender, address(this), baseAmount
             );
-            channelBalance[channelId][address(sentToken)] += sentAmount;
+            channelBalance[channelId][address(baseToken)] += baseAmount;
         }
         ibcHandler.sendPacket(
             channelId,
@@ -334,21 +335,20 @@ contract UCS03Zkgm is
                 ZkgmPacket({
                     salt: salt,
                     path: 0,
-                    syscall: SyscallPacket({
+                    instruction: Instruction({
                         version: ZkgmLib.ZKGM_VERSION_0,
-                        index: ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER,
-                        packet: ZkgmLib.encodeFungibleAssetTransfer(
-                            FungibleAssetTransferPacket({
+                        opcode: ZkgmLib.OP_FUNGIBLE_ASSET_TRANSFER,
+                        operand: ZkgmLib.encodeFungibleAssetOrder(
+                            FungibleAssetOrder({
                                 sender: abi.encodePacked(msg.sender),
                                 receiver: receiver,
-                                sentToken: abi.encodePacked(sentToken),
-                                sentTokenPrefix: origin,
-                                sentSymbol: tokenSymbol,
-                                sentName: tokenName,
-                                sentAmount: sentAmount,
-                                askToken: askToken,
-                                askAmount: askAmount,
-                                onlyMaker: onlyMaker
+                                baseToken: abi.encodePacked(baseToken),
+                                baseTokenPath: origin,
+                                baseTokenSymbol: tokenSymbol,
+                                baseTokenName: tokenName,
+                                baseAmount: baseAmount,
+                                quoteToken: quoteToken,
+                                quoteAmount: quoteAmount
                             })
                         )
                     })
@@ -362,16 +362,16 @@ contract UCS03Zkgm is
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes32 salt,
-        SyscallPacket calldata syscallPacket
+        Instruction calldata instruction
     ) public {
-        verifyInternal(channelId, 0, syscallPacket);
+        verifyInternal(channelId, 0, instruction);
         ibcHandler.sendPacket(
             channelId,
             timeoutHeight,
             timeoutTimestamp,
             ZkgmLib.encode(
                 // TODO: change salt to string and then assert its prefixed with user address and keccak256 it
-                ZkgmPacket({salt: salt, path: 0, syscall: syscallPacket})
+                ZkgmPacket({salt: salt, path: 0, instruction: instruction})
             )
         );
     }
@@ -379,28 +379,28 @@ contract UCS03Zkgm is
     function verifyInternal(
         uint32 channelId,
         uint256 path,
-        SyscallPacket calldata syscallPacket
+        Instruction calldata instruction
     ) internal {
-        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+        if (instruction.version != ZkgmLib.ZKGM_VERSION_0) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
-        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_TRANSFER) {
             verifyFungibleAssetTransfer(
                 channelId,
                 path,
-                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             verifyBatch(
-                channelId, path, ZkgmLib.decodeBatch(syscallPacket.packet)
+                channelId, path, ZkgmLib.decodeBatch(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             verifyForward(
-                channelId, path, ZkgmLib.decodeForward(syscallPacket.packet)
+                channelId, path, ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             verifyMultiplex(
-                channelId, path, ZkgmLib.decodeMultiplex(syscallPacket.packet)
+                channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
             revert ZkgmLib.ErrUnknownSyscall();
@@ -410,76 +410,71 @@ contract UCS03Zkgm is
     function verifyFungibleAssetTransfer(
         uint32 channelId,
         uint256 path,
-        FungibleAssetTransferPacket calldata assetTransferPacket
+        FungibleAssetOrder calldata order
     ) internal {
-        IERC20Metadata sentToken =
-            IERC20Metadata(address(bytes20(assetTransferPacket.sentToken)));
-        if (!assetTransferPacket.sentName.eq(sentToken.name())) {
+        if (order.baseAmount == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
+        IERC20Metadata baseToken =
+            IERC20Metadata(address(bytes20(order.baseToken)));
+        if (!order.baseTokenName.eq(baseToken.name())) {
             revert ZkgmLib.ErrInvalidAssetName();
         }
-        if (!assetTransferPacket.sentSymbol.eq(sentToken.symbol())) {
+        if (!order.baseTokenSymbol.eq(baseToken.symbol())) {
             revert ZkgmLib.ErrInvalidAssetSymbol();
         }
-        uint256 origin = tokenOrigin[address(sentToken)];
+        uint256 origin = tokenOrigin[address(baseToken)];
         if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
-            IZkgmERC20(address(sentToken)).burn(
-                msg.sender, assetTransferPacket.sentAmount
-            );
+            IZkgmERC20(address(baseToken)).burn(msg.sender, order.baseAmount);
         } else {
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                sentToken,
-                msg.sender,
-                address(this),
-                assetTransferPacket.sentAmount
+                baseToken, msg.sender, address(this), order.baseAmount
             );
-            channelBalance[channelId][address(sentToken)] +=
-                assetTransferPacket.sentAmount;
+            channelBalance[channelId][address(baseToken)] += order.baseAmount;
         }
-        if (!assetTransferPacket.onlyMaker) {
-            if (assetTransferPacket.sentTokenPrefix != origin) {
-                revert ZkgmLib.ErrInvalidAssetOrigin();
-            }
+        if (order.baseTokenPath != origin) {
+            revert ZkgmLib.ErrInvalidAssetOrigin();
         }
     }
 
     function verifyBatch(
         uint32 channelId,
         uint256 path,
-        BatchPacket calldata batchPacket
+        Batch calldata batch
     ) internal {
-        uint256 l = batchPacket.syscallPackets.length;
+        uint256 l = batch.instructions.length;
         for (uint256 i = 0; i < l; i++) {
-            verifyInternal(channelId, path, batchPacket.syscallPackets[i]);
+            verifyInternal(channelId, path, batch.instructions[i]);
         }
     }
 
     function verifyForward(
         uint32 channelId,
         uint256 path,
-        ForwardPacket calldata forwardPacket
+        Forward calldata forward
     ) internal {
         verifyInternal(
             channelId,
-            ZkgmLib.updateChannelPath(path, forwardPacket.channelId),
-            forwardPacket.syscallPacket
+            ZkgmLib.updateChannelPath(path, forward.channelId),
+            forward.instruction
         );
     }
 
     function verifyMultiplex(
         uint32 channelId,
         uint256 path,
-        MultiplexPacket calldata multiplexPacket
+        Multiplex calldata multiplex
     ) internal {}
 
     function onRecvPacket(
-        IBCPacket calldata packet,
+        IBCPacket calldata operand,
         address relayer,
         bytes calldata relayerMsg
     ) external virtual override onlyIBC returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).call(
-            abi.encodeCall(this.execute, (packet, relayer, relayerMsg))
+            abi.encodeCall(this.execute, (operand, relayer, relayerMsg))
         );
         bytes memory acknowledgement = abi.decode(returnData, (bytes));
         if (success) {
@@ -488,7 +483,7 @@ contract UCS03Zkgm is
                 return ZkgmLib.ACK_EMPTY;
             }
 
-            // Special case where we should avoid the packet from being
+            // Special case where we should avoid the operand from being
             // received entirely as it is only fillable by a market maker.
             if (
                 keccak256(acknowledgement)
@@ -498,17 +493,11 @@ contract UCS03Zkgm is
             }
 
             return ZkgmLib.encodeAck(
-                Acknowledgement({
-                    tag: ZkgmLib.ACK_SUCCESS,
-                    innerAck: acknowledgement
-                })
+                Ack({tag: ZkgmLib.ACK_SUCCESS, innerAck: acknowledgement})
             );
         } else {
             return ZkgmLib.encodeAck(
-                Acknowledgement({
-                    tag: ZkgmLib.ACK_FAILURE,
-                    innerAck: ZkgmLib.ACK_EMPTY
-                })
+                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             );
         }
     }
@@ -529,7 +518,7 @@ contract UCS03Zkgm is
             relayerMsg,
             zkgmPacket.salt,
             zkgmPacket.path,
-            zkgmPacket.syscall
+            zkgmPacket.instruction
         );
     }
 
@@ -539,45 +528,45 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        SyscallPacket calldata syscallPacket
+        Instruction calldata instruction
     ) internal returns (bytes memory) {
-        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+        if (instruction.version != ZkgmLib.ZKGM_VERSION_0) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
-        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_TRANSFER) {
             return executeFungibleAssetTransfer(
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 salt,
                 path,
-                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             return executeBatch(
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 salt,
                 path,
-                ZkgmLib.decodeBatch(syscallPacket.packet)
+                ZkgmLib.decodeBatch(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             return executeForward(
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 salt,
                 path,
-                ZkgmLib.decodeForward(syscallPacket.packet)
+                ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             return executeMultiplex(
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 salt,
-                ZkgmLib.decodeMultiplex(syscallPacket.packet)
+                ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
             revert ZkgmLib.ErrUnknownSyscall();
@@ -590,27 +579,25 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        BatchPacket calldata batchPacket
+        Batch calldata batch
     ) internal returns (bytes memory) {
-        uint256 l = batchPacket.syscallPackets.length;
+        uint256 l = batch.instructions.length;
         bytes[] memory acks = new bytes[](l);
         for (uint256 i = 0; i < l; i++) {
-            SyscallPacket calldata syscallPacket = batchPacket.syscallPackets[i];
+            Instruction calldata instruction = batch.instructions[i];
             acks[i] = executeInternal(
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 keccak256(abi.encode(salt)),
                 path,
-                syscallPacket
+                instruction
             );
             if (acks[i].length == 0) {
                 revert ZkgmLib.ErrBatchMustBeSync();
             }
         }
-        return ZkgmLib.encodeBatchAck(
-            BatchAcknowledgement({acknowledgements: acks})
-        );
+        return ZkgmLib.encodeBatchAck(BatchAck({acknowledgements: acks}));
     }
 
     function executeForward(
@@ -619,22 +606,22 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        ForwardPacket calldata forwardPacket
+        Forward calldata forward
     ) internal returns (bytes memory) {
         // TODO: consider using a magic value for few bytes of the salt in order
-        // to know that it's a forwarded packet in the acknowledgement, without
+        // to know that it's a forwarded instruction in the acknowledgement, without
         // having to index in `inFlightPacket`, saving gas in the process.
         IBCPacket memory sentPacket = ibcHandler.sendPacket(
-            forwardPacket.channelId,
-            forwardPacket.timeoutHeight,
-            forwardPacket.timeoutTimestamp,
+            forward.channelId,
+            forward.timeoutHeight,
+            forward.timeoutTimestamp,
             ZkgmLib.encode(
                 ZkgmPacket({
                     salt: keccak256(abi.encode(salt)),
                     path: ZkgmLib.updateChannelPath(
                         path, ibcPacket.destinationChannelId
                     ),
-                    syscall: forwardPacket.syscallPacket
+                    instruction: forward.instruction
                 })
             )
         );
@@ -649,33 +636,30 @@ contract UCS03Zkgm is
         address relayer,
         bytes calldata relayerMsg,
         bytes32 salt,
-        MultiplexPacket calldata multiplexPacket
+        Multiplex calldata multiplex
     ) internal returns (bytes memory) {
-        address contractAddress =
-            address(bytes20(multiplexPacket.contractAddress));
-        if (multiplexPacket.eureka) {
+        address contractAddress = address(bytes20(multiplex.contractAddress));
+        if (multiplex.eureka) {
             IEurekaModule(contractAddress).onZkgm(
-                multiplexPacket.sender, multiplexPacket.contractCalldata
+                multiplex.sender, multiplex.contractCalldata
             );
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: abi.encode(
-                    multiplexPacket.sender, multiplexPacket.contractCalldata
-                ),
+                data: abi.encode(multiplex.sender, multiplex.contractCalldata),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
             bytes memory acknowledgement = IIBCModule(contractAddress)
                 .onRecvPacket(multiplexIbcPacket, relayer, relayerMsg);
             if (acknowledgement.length == 0) {
-                /* TODO: store the packet for async ack To handle async acks on
+                /* TODO: store the operand for async ack To handle async acks on
                    multiplexing, we need to have a mapping from (receiver,
                    virtualPacket) => ibcPacket. Then the receiver will be the
-                   only one able to acknowledge a virtual packet, resulting in
-                   the origin ibc packet to be acknowledged itself.
+                   only one able to acknowledge a virtual operand, resulting in
+                   the origin ibc operand to be acknowledged itself.
                  */
                 revert ZkgmLib.ErrUnimplemented();
             }
@@ -708,33 +692,29 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        FungibleAssetTransferPacket calldata assetTransferPacket
+        FungibleAssetOrder calldata order
     ) internal returns (bytes memory) {
-        if (assetTransferPacket.onlyMaker) {
-            return ZkgmLib.ACK_ERR_ONLYMAKER;
-        }
         // The protocol can only wrap or unwrap an asset, hence 1:1 baked.
         // The fee is the difference, which can only be positive.
-        if (assetTransferPacket.askAmount > assetTransferPacket.sentAmount) {
-            revert ZkgmLib.ErrInvalidAmount();
+        if (order.quoteAmount > order.baseAmount) {
+            return ZkgmLib.ACK_ERR_ONLYMAKER;
         }
         (address wrappedToken, bytes32 wrappedTokenSalt) =
         internalPredictWrappedToken(
-            path, ibcPacket.destinationChannelId, assetTransferPacket.sentToken
+            path, ibcPacket.destinationChannelId, order.baseToken
         );
-        address askToken = address(bytes20(assetTransferPacket.askToken));
-        address receiver = address(bytes20(assetTransferPacket.receiver));
+        address quoteToken = address(bytes20(order.quoteToken));
+        address receiver = address(bytes20(order.receiver));
         // Previously asserted to be <=.
-        uint256 fee =
-            assetTransferPacket.sentAmount - assetTransferPacket.askAmount;
-        if (askToken == wrappedToken) {
+        uint256 fee = order.baseAmount - order.quoteAmount;
+        if (quoteToken == wrappedToken) {
             if (!ZkgmLib.isDeployed(wrappedToken)) {
                 CREATE3.deployDeterministic(
                     abi.encodePacked(
                         type(ZkgmERC20).creationCode,
                         abi.encode(
-                            assetTransferPacket.sentName,
-                            assetTransferPacket.sentSymbol,
+                            order.baseTokenName,
+                            order.baseTokenSymbol,
                             address(this)
                         )
                     ),
@@ -744,30 +724,28 @@ contract UCS03Zkgm is
                     path, ibcPacket.destinationChannelId
                 );
             }
-            IZkgmERC20(wrappedToken).mint(
-                receiver, assetTransferPacket.askAmount
-            );
+            IZkgmERC20(wrappedToken).mint(receiver, order.quoteAmount);
             if (fee > 0) {
                 IZkgmERC20(wrappedToken).mint(relayer, fee);
             }
         } else {
-            if (
-                assetTransferPacket.sentTokenPrefix == ibcPacket.sourceChannelId
-            ) {
-                channelBalance[ibcPacket.destinationChannelId][askToken] -=
-                    assetTransferPacket.sentAmount;
+            // TODO: should be slightly more complicated, we have to check that
+            // the path is the inverse of the baseTokenPath
+            if (order.baseTokenPath == ibcPacket.sourceChannelId) {
+                channelBalance[ibcPacket.destinationChannelId][quoteToken] -=
+                    order.baseAmount;
                 SafeERC20.safeTransfer(
-                    IERC20(askToken), receiver, assetTransferPacket.askAmount
+                    IERC20(quoteToken), receiver, order.quoteAmount
                 );
                 if (fee > 0) {
-                    SafeERC20.safeTransfer(IERC20(askToken), relayer, fee);
+                    SafeERC20.safeTransfer(IERC20(quoteToken), relayer, fee);
                 }
             } else {
                 return ZkgmLib.ACK_ERR_ONLYMAKER;
             }
         }
-        return ZkgmLib.encodeAssetTransferAck(
-            AssetTransferAcknowledgement({
+        return ZkgmLib.encodeFungibleAssetOrderAck(
+            FungibleAssetOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
             })
@@ -787,12 +765,12 @@ contract UCS03Zkgm is
             delete inFlightPacket[packetHash];
         } else {
             ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
-            Acknowledgement calldata zkgmAck = ZkgmLib.decodeAck(ack);
+            Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
             acknowledgeInternal(
                 ibcPacket,
                 relayer,
                 zkgmPacket.salt,
-                zkgmPacket.syscall,
+                zkgmPacket.instruction,
                 zkgmAck.tag == ZkgmLib.ACK_SUCCESS,
                 zkgmAck.innerAck
             );
@@ -803,46 +781,46 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        SyscallPacket calldata syscallPacket,
+        Instruction calldata instruction,
         bool successful,
         bytes calldata ack
     ) internal {
-        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+        if (instruction.version != ZkgmLib.ZKGM_VERSION_0) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
-        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_TRANSFER) {
             acknowledgeFungibleAssetTransfer(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet),
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand),
                 successful,
                 ack
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             acknowledgeBatch(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeBatch(syscallPacket.packet),
+                ZkgmLib.decodeBatch(instruction.operand),
                 successful,
                 ack
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             acknowledgeForward(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeForward(syscallPacket.packet),
+                ZkgmLib.decodeForward(instruction.operand),
                 successful,
                 ack
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             acknowledgeMultiplex(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeMultiplex(syscallPacket.packet),
+                ZkgmLib.decodeMultiplex(instruction.operand),
                 successful,
                 ack
             );
@@ -855,12 +833,12 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        BatchPacket calldata batchPacket,
+        Batch calldata batch,
         bool successful,
         bytes calldata ack
     ) internal {
-        uint256 l = batchPacket.syscallPackets.length;
-        BatchAcknowledgement calldata batchAck = ZkgmLib.decodeBatchAck(ack);
+        uint256 l = batch.instructions.length;
+        BatchAck calldata batchAck = ZkgmLib.decodeBatchAck(ack);
         for (uint256 i = 0; i < l; i++) {
             // The syscallAck is set to the ack by default just to satisfy the
             // compiler. The failure branch will never read the ack, hence the
@@ -873,7 +851,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 keccak256(abi.encode(salt)),
-                batchPacket.syscallPackets[i],
+                batch.instructions[i],
                 successful,
                 syscallAck
             );
@@ -884,7 +862,7 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        ForwardPacket calldata forwardPacket,
+        Forward calldata forward,
         bool successful,
         bytes calldata ack
     ) internal {}
@@ -893,22 +871,21 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        MultiplexPacket calldata multiplexPacket,
+        Multiplex calldata multiplex,
         bool successful,
         bytes calldata ack
     ) internal {
-        if (successful && !multiplexPacket.eureka) {
+        if (successful && !multiplex.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
                 data: abi.encode(
-                    multiplexPacket.contractAddress,
-                    multiplexPacket.contractCalldata
+                    multiplex.contractAddress, multiplex.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
-            IIBCModule(address(bytes20(multiplexPacket.sender)))
+            IIBCModule(address(bytes20(multiplex.sender)))
                 .onAcknowledgementPacket(multiplexIbcPacket, ack, relayer);
         }
     }
@@ -917,13 +894,13 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        FungibleAssetTransferPacket calldata assetTransferPacket,
+        FungibleAssetOrder calldata order,
         bool successful,
         bytes calldata ack
     ) internal {
         if (successful) {
-            AssetTransferAcknowledgement calldata assetTransferAck =
-                ZkgmLib.decodeAssetTransferAck(ack);
+            FungibleAssetOrderAck calldata assetTransferAck =
+                ZkgmLib.decodeFungibleAssetOrderAck(ack);
             if (assetTransferAck.fillType == ZkgmLib.FILL_TYPE_PROTOCOL) {
                 // The protocol filled, fee was paid to relayer.
             } else if (
@@ -932,28 +909,24 @@ contract UCS03Zkgm is
                 // A market maker filled, we pay with the sent asset.
                 address marketMaker =
                     address(bytes20(assetTransferAck.marketMaker));
-                address sentToken =
-                    address(bytes20(assetTransferPacket.sentToken));
+                address baseToken = address(bytes20(order.baseToken));
                 if (
-                    ZkgmLib.lastChannelFromPath(
-                        assetTransferPacket.sentTokenPrefix
-                    ) == ibcPacket.sourceChannelId
+                    ZkgmLib.lastChannelFromPath(order.baseTokenPath)
+                        == ibcPacket.sourceChannelId
                 ) {
-                    IZkgmERC20(address(sentToken)).mint(
-                        marketMaker, assetTransferPacket.sentAmount
+                    IZkgmERC20(address(baseToken)).mint(
+                        marketMaker, order.baseAmount
                     );
                 } else {
                     SafeERC20.safeTransfer(
-                        IERC20(sentToken),
-                        marketMaker,
-                        assetTransferPacket.sentAmount
+                        IERC20(baseToken), marketMaker, order.baseAmount
                     );
                 }
             } else {
                 revert ZkgmLib.ErrInvalidFillType();
             }
         } else {
-            refund(ibcPacket.sourceChannelId, assetTransferPacket);
+            refund(ibcPacket.sourceChannelId, order);
         }
     }
 
@@ -968,17 +941,14 @@ contract UCS03Zkgm is
             ibcHandler.writeAcknowledgement(
                 parent,
                 ZkgmLib.encodeAck(
-                    Acknowledgement({
-                        tag: ZkgmLib.ACK_FAILURE,
-                        innerAck: ZkgmLib.ACK_EMPTY
-                    })
+                    Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
                 )
             );
             delete inFlightPacket[packetHash];
         } else {
             ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
             timeoutInternal(
-                ibcPacket, relayer, zkgmPacket.salt, zkgmPacket.syscall
+                ibcPacket, relayer, zkgmPacket.salt, zkgmPacket.instruction
             );
         }
     }
@@ -987,38 +957,38 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        SyscallPacket calldata syscallPacket
+        Instruction calldata instruction
     ) internal {
-        if (syscallPacket.version != ZkgmLib.ZKGM_VERSION_0) {
+        if (instruction.version != ZkgmLib.ZKGM_VERSION_0) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
-        if (syscallPacket.index == ZkgmLib.SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_TRANSFER) {
             timeoutFungibleAssetTransfer(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeFungibleAssetTransfer(syscallPacket.packet)
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_BATCH) {
+        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             timeoutBatch(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeBatch(syscallPacket.packet)
+                ZkgmLib.decodeBatch(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_FORWARD) {
+        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             timeoutForward(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeForward(syscallPacket.packet)
+                ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (syscallPacket.index == ZkgmLib.SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             timeoutMultiplex(
                 ibcPacket,
                 relayer,
                 salt,
-                ZkgmLib.decodeMultiplex(syscallPacket.packet)
+                ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
             revert ZkgmLib.ErrUnknownSyscall();
@@ -1029,15 +999,15 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        BatchPacket calldata batchPacket
+        Batch calldata batch
     ) internal {
-        uint256 l = batchPacket.syscallPackets.length;
+        uint256 l = batch.instructions.length;
         for (uint256 i = 0; i < l; i++) {
             timeoutInternal(
                 ibcPacket,
                 relayer,
                 keccak256(abi.encode(salt)),
-                batchPacket.syscallPackets[i]
+                batch.instructions[i]
             );
         }
     }
@@ -1046,27 +1016,26 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        ForwardPacket calldata forwardPacket
+        Forward calldata forward
     ) internal {}
 
     function timeoutMultiplex(
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        MultiplexPacket calldata multiplexPacket
+        Multiplex calldata multiplex
     ) internal {
-        if (!multiplexPacket.eureka) {
+        if (!multiplex.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
                 data: abi.encode(
-                    multiplexPacket.contractAddress,
-                    multiplexPacket.contractCalldata
+                    multiplex.contractAddress, multiplex.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
-            IIBCModule(address(bytes20(multiplexPacket.sender))).onTimeoutPacket(
+            IIBCModule(address(bytes20(multiplex.sender))).onTimeoutPacket(
                 multiplexIbcPacket, relayer
             );
         }
@@ -1076,28 +1045,22 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
-        FungibleAssetTransferPacket calldata assetTransferPacket
+        FungibleAssetOrder calldata order
     ) internal {
-        refund(ibcPacket.sourceChannelId, assetTransferPacket);
+        refund(ibcPacket.sourceChannelId, order);
     }
 
     function refund(
         uint32 sourceChannelId,
-        FungibleAssetTransferPacket calldata assetTransferPacket
+        FungibleAssetOrder calldata order
     ) internal {
-        address sender = address(bytes20(assetTransferPacket.sender));
-        address sentToken = address(bytes20(assetTransferPacket.sentToken));
-        if (
-            ZkgmLib.lastChannelFromPath(assetTransferPacket.sentTokenPrefix)
-                == sourceChannelId
-        ) {
-            IZkgmERC20(address(sentToken)).mint(
-                sender, assetTransferPacket.sentAmount
-            );
+        address sender = address(bytes20(order.sender));
+        address baseToken = address(bytes20(order.baseToken));
+        if (ZkgmLib.lastChannelFromPath(order.baseTokenPath) == sourceChannelId)
+        {
+            IZkgmERC20(address(baseToken)).mint(sender, order.baseAmount);
         } else {
-            SafeERC20.safeTransfer(
-                IERC20(sentToken), sender, assetTransferPacket.sentAmount
-            );
+            SafeERC20.safeTransfer(IERC20(baseToken), sender, order.baseAmount);
         }
     }
 
