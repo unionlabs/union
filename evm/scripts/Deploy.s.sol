@@ -331,7 +331,7 @@ contract DeployStateLensIcs23MptClient is UnionScript {
         vm.stopBroadcast();
 
         console.log(
-            "StateLensIcs23MptClient: ", address(statelensIcs23MptClient)
+            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
         );
     }
 }
@@ -570,7 +570,7 @@ contract GetDeployed is Script {
             string(
                 abi.encodePacked(
                     "StateLensIcs23Ics23Client: ",
-                    statelensIcs23Ics23Client.toHexString()
+                    stateLensIcs23Ics23Client.toHexString()
                 )
             )
         );
@@ -1078,7 +1078,7 @@ contract UpgradeStateLensIcs23MptClient is Script {
             string(
                 abi.encodePacked(
                     "StateLensIcs23MptClient: ",
-                    statelensIcs23MptClient.toHexString()
+                    stateLensIcs23MptClient.toHexString()
                 )
             )
         );

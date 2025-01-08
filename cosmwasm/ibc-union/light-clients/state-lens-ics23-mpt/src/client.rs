@@ -1,10 +1,10 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
+use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState, Header};
 use unionlabs::{
     encoding::Bincode,
     ethereum::{ibc_commitment_key, keccak256},
@@ -14,9 +14,9 @@ use unionlabs::{
 
 use crate::errors::Error;
 
-pub struct StateLensIcs23MptClient;
+pub struct StateLensIcs23MptLightClient;
 
-impl IbcClient for StateLensIcs23MptClient {
+impl IbcClient for StateLensIcs23MptLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;

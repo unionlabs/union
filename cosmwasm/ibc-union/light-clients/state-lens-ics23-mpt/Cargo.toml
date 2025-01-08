@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 cometbls-light-client             = { workspace = true, features = ["library"] }
 cosmwasm-std                      = { workspace = true, features = ["abort"] }
 ethereum-light-client-types       = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-evm-state-lens-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 evm-storage-verifier              = { workspace = true }
 ibc-union-light-client            = { workspace = true }
 ibc-union-msg                     = { workspace = true }

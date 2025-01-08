@@ -128,11 +128,6 @@ impl ClientType {
     /// [ICS23]: https://github.com/cosmos/ics23
     pub const STATE_LENS_ICS23_ICS23: &'static str = "state-lens/ics23/ics23";
 
-    /// Tendermint consensus specification, extracted from [CometBLS].
-    ///
-    /// [CometBLS]: https://github.com/unionlabs/cometbls
-    pub const STATE_LENS_ICS23_ICS23: &'static str = "state-lens/ics23-ics23";
-
     // lots more to come - near, linea, polygon - stay tuned
 }
 

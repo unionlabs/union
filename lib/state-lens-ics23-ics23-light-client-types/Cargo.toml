@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "cosmos-state-lens-light-client-types"
+name    = "state-lens-ics23-ics23-light-client-types"
 version = "0.1.0"
 
 [dependencies]

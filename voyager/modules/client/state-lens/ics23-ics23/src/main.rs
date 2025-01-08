@@ -1,5 +1,4 @@
 use alloy::sol_types::SolValue as _;
-use cosmos_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -7,6 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState, Header};
 use tracing::instrument;
 use unionlabs::{
     self,

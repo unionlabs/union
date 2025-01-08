@@ -8,7 +8,7 @@ alloy                                = { workspace = true, features = ["rpc", "r
 beacon-api                           = { workspace = true }
 beacon-api-types                     = { workspace = true, features = ["serde"] }
 cometbft-rpc                         = { workspace = true }
-cosmos-state-lens-light-client-types = { workspace = true, features = ["serde"] }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde"] }
 ibc-union-spec.workspace             = true
 jsonrpsee                            = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                                = { workspace = true, features = ["derive"] }

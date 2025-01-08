@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 alloy                                = { workspace = true, features = ["sol-types"] }
-cosmos-state-lens-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
 futures                              = { workspace = true }
 jsonrpsee                            = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                               = { workspace = true }

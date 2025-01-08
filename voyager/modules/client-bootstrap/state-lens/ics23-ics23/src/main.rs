@@ -1,10 +1,10 @@
-use cosmos_state_lens_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
 use tendermint_light_client_types::ConsensusState as TmConsensusState;
 use tracing::instrument;
 use unionlabs::{bech32::Bech32, ibc::core::client::height::Height, primitives::H256};

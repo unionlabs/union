@@ -1,13 +1,13 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use call::FetchUpdateAfterL1Update;
-use cosmos_state_lens_light_client_types::Header;
 use ibc_union_spec::{ConsensusStatePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
+use state_lens_ics23_ics23_light_client_types::Header;
 use tracing::{debug, instrument};
 use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 use voyager_message::{
