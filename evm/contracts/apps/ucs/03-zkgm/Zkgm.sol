@@ -722,8 +722,8 @@ contract UCS03Zkgm is
         }
         // The protocol can only wrap or unwrap an asset, hence 1:1 baked.
         // The fee is the difference, which can only be positive.
-        if (assetTransferPacket.askAmount > assetTransferPacket.sentAmount) {
-            revert ZkgmLib.ErrInvalidAmount();
+        if (assetTransfer.askAmount > assetTransfer.sentAmount) {
+            return ZkgmLib.ACK_ERR_ONLYMAKER;
         }
         (address wrappedToken, bytes32 wrappedTokenSalt) =
         internalPredictWrappedToken(
