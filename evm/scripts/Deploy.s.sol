@@ -16,8 +16,7 @@ import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
 import {StateLensIcs23Ics23Client} from
     "../contracts/clients/StateLensIcs23Ics23Client.sol";
-import {StateLensIcs23MptClient} from
-    "../contracts/clients/StateLensIcs23MptClient.sol";
+import {StateLensIcs23MptClient} from "../contracts/clients/StateLensIcs23MptClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
@@ -120,15 +119,14 @@ abstract contract UnionScript is UnionBase {
                 abi.encode(
                     address(new StateLensIcs23MptClient()),
                     abi.encodeCall(
-                        StateLensIcs23MptClient.initialize,
-                        (address(handler), owner)
+                        StateLensIcs23MptClient.initialize, (address(handler), owner)
                     )
                 )
             )
         );
     }
 
-    function deployCosmosLens(
+    function deployStateLensIcs23Ics23Client(
         IBCHandler handler,
         address owner
     ) internal returns (StateLensIcs23Ics23Client) {
@@ -244,7 +242,7 @@ abstract contract UnionScript is UnionBase {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient cometblsClient = deployCometbls(handler, owner);
         StateLensIcs23MptClient stateLensIcs23MptClient = deployStateLensIcs23MptClient(handler, owner);
-        StateLensIcs23Ics23Client stateLensIcs23Ics23Client = deployCosmosLens(handler, owner);
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client = deployStateLensIcs23Ics23Client(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
@@ -377,7 +375,7 @@ contract DeployUCS03 is UnionScript {
     }
 }
 
-contract DeployCosmosLens is UnionScript {
+contract DeployStateLensIcs23Ics23Client is UnionScript {
     using LibString for *;
 
     address immutable deployer;
@@ -411,7 +409,7 @@ contract DeployCosmosLens is UnionScript {
         vm.startBroadcast(privateKey);
 
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
-            deployCosmosLens(IBCHandler(handler), owner);
+            deployStateLensIcs23Ics23Client(IBCHandler(handler), owner);
 
         vm.stopBroadcast();
 
@@ -563,13 +561,13 @@ contract GetDeployed is Script {
         );
         console.log(
             string(
-                abi.encodePacked("StateLensIcs23MptClient: ", stateLensIcs23MptClient.toHexString())
+                abi.encodePacked("StateLensIcs23MptClientClient: ", stateLensIcs23MptClient.toHexString())
             )
         );
         console.log(
             string(
                 abi.encodePacked(
-                    "CosmosLensClient: ", stateLensIcs23Ics23Client.toHexString()
+                    "StateLensIcs23Ics23ClientClient: ", stateLensIcs23Ics23Client.toHexString()
                 )
             )
         );
@@ -726,9 +724,7 @@ contract GetDeployed is Script {
         string memory implStateLensIcs23MptClient = "implStateLensIcs23MptClient";
         implStateLensIcs23MptClient.serialize(
             "contract",
-            string(
-                "contracts/clients/StateLensIcs23MptClient.sol:StateLensIcs23MptClient"
-            )
+            string("contracts/clients/StateLensIcs23MptClient.sol:StateLensIcs23MptClient")
         );
         implStateLensIcs23MptClient = implStateLensIcs23MptClient.serialize("args", bytes(hex""));
         impls.serialize(implOf(stateLensIcs23MptClient).toHexString(), implStateLensIcs23MptClient);
@@ -1075,7 +1071,7 @@ contract UpgradeStateLensIcs23MptClient is Script {
             getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
         console.log(
             string(
-                abi.encodePacked("StateLensIcs23MptClient: ", stateLensIcs23MptClient.toHexString())
+                abi.encodePacked("StateLensIcs23MptClientClient: ", stateLensIcs23MptClient.toHexString())
             )
         );
         vm.startBroadcast(privateKey);
@@ -1115,7 +1111,7 @@ contract UpgradeStateLensIcs23Ics23Client is Script {
         console.log(
             string(
                 abi.encodePacked(
-                    "CosmosInCosmos: ", stateLensIcs23Ics23Client.toHexString()
+                    "StateLensIcs23Ics23Client: ", stateLensIcs23Ics23Client.toHexString()
                 )
             )
         );
