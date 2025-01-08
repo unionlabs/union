@@ -39,7 +39,7 @@ struct ConsensusState {
     bytes32 appHash;
 }
 
-library CosmosInCosmosLib {
+library StateLensIcs23Ics23Lib {
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -78,14 +78,14 @@ library CosmosInCosmosLib {
     }
 }
 
-contract CosmosInCosmosClient is
+contract StateLensIcs23Ics23Client is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    using CosmosInCosmosLib for *;
+    using StateLensIcs23Ics23Lib for *;
 
     address private ibcHandler;
 
@@ -120,7 +120,7 @@ contract CosmosInCosmosClient is
             consensusState := consensusStateBytes.offset
         }
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
-            revert CosmosInCosmosLib.ErrInvalidInitialConsensusState();
+            revert StateLensIcs23Ics23Lib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
@@ -165,7 +165,7 @@ contract CosmosInCosmosClient is
                 abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
-            revert CosmosInCosmosLib.ErrInvalidL1Proof();
+            revert StateLensIcs23Ics23Lib.ErrInvalidL1Proof();
         }
 
         TendermintConsensusState calldata l2ConsensusState;
@@ -203,7 +203,7 @@ contract CosmosInCosmosClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC {
-        revert CosmosInCosmosLib.ErrInvalidMisbehaviour();
+        revert StateLensIcs23Ics23Lib.ErrInvalidMisbehaviour();
     }
 
     function verifyMembership(
@@ -214,7 +214,7 @@ contract CosmosInCosmosClient is
         bytes calldata value
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert CosmosInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
         bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
@@ -236,7 +236,7 @@ contract CosmosInCosmosClient is
         bytes calldata path
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert CosmosInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
         bytes32 contractAddress = clientStates[clientId].contractAddress;
         bytes32 appHash = consensusStates[clientId][height].appHash;
@@ -295,7 +295,7 @@ contract CosmosInCosmosClient is
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
-            revert CosmosInCosmosLib.ErrNotIBC();
+            revert StateLensIcs23Ics23Lib.ErrNotIBC();
         }
     }
 

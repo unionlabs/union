@@ -35,7 +35,7 @@ struct ConsensusState {
     bytes32 storageRoot;
 }
 
-library EvmInCosmosLib {
+library StateLensIcs23MptLib {
     uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
 
     event CreateLensClient(
@@ -83,14 +83,14 @@ library EvmInCosmosLib {
     }
 }
 
-contract EvmInCosmosClient is
+contract StateLensIcs23MptClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    using EvmInCosmosLib for *;
+    using StateLensIcs23MptLib for *;
 
     address private ibcHandler;
 
@@ -123,12 +123,12 @@ contract EvmInCosmosClient is
             consensusState := consensusStateBytes.offset
         }
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
-            revert EvmInCosmosLib.ErrInvalidInitialConsensusState();
+            revert StateLensIcs23MptLib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit EvmInCosmosLib.CreateLensClient(
+        emit StateLensIcs23MptLib.CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -171,21 +171,21 @@ contract EvmInCosmosClient is
                 abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
-            revert EvmInCosmosLib.ErrInvalidL1Proof();
+            revert StateLensIcs23MptLib.ErrInvalidL1Proof();
         }
 
         bytes calldata rawL2ConsensusState = header.l2ConsensusState;
         uint64 l2Timestamp = uint64(
             uint256(
-                EvmInCosmosLib.extract(
+                StateLensIcs23MptLib.extract(
                     rawL2ConsensusState, clientState.timestampOffset
                 )
             )
         );
-        bytes32 l2StateRoot = EvmInCosmosLib.extract(
+        bytes32 l2StateRoot = StateLensIcs23MptLib.extract(
             rawL2ConsensusState, clientState.stateRootOffset
         );
-        bytes32 l2StorageRoot = EvmInCosmosLib.extract(
+        bytes32 l2StorageRoot = StateLensIcs23MptLib.extract(
             rawL2ConsensusState, clientState.storageRootOffset
         );
 
@@ -213,7 +213,7 @@ contract EvmInCosmosClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC {
-        revert EvmInCosmosLib.ErrUnsupported();
+        revert StateLensIcs23MptLib.ErrUnsupported();
     }
 
     function verifyMembership(
@@ -224,11 +224,11 @@ contract EvmInCosmosClient is
         bytes calldata value
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert EvmInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23MptLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
         );
         (bool exists, bytes calldata provenValue) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
@@ -245,11 +245,11 @@ contract EvmInCosmosClient is
         bytes calldata path
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert EvmInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23MptLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
         );
         (bool exists,) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
@@ -302,7 +302,7 @@ contract EvmInCosmosClient is
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
-            revert EvmInCosmosLib.ErrNotIBC();
+            revert StateLensIcs23MptLib.ErrNotIBC();
         }
     }
 

@@ -1,5 +1,8 @@
 group_imports       = "StdExternalCrate"
 imports_granularity = "Crate"
 reorder_imports     = true
+# this can also be ran on a specific file instead of the whole repo:
+# rustfmt --config 'wrap_comments=true,comment_width=100'
+#
 # wrap_comments = true
 # comment_width = 100

@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 import "../core/IBCHandler.sol";
 import "../core/Relay.sol";
-import "../../../contracts/clients/CosmosInCosmosClient.sol";
+import "../../../contracts/clients/StateLensIcs23Ics23Client.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
@@ -122,25 +122,25 @@ contract MockIbcStore {
     }
 }
 
-contract CosmosInCosmosClientTest is Test {
-    CosmosInCosmosClient client;
+contract StateLensIcs23Ics23ClientTest is Test {
+    StateLensIcs23Ics23Client client;
     address admin = address(0xABcD);
     address ibcHandler; // = address(0x1234);
     MockIbcStore ibcStore;
     MockLightClient lightClient;
 
     function setUp() public {
-        // Deploy and initialize the CosmosInCosmosClient contract
+        // Deploy and initialize the StateLensIcs23Ics23Client contract
         ibcStore = new MockIbcStore();
         ibcHandler = address(ibcStore);
-        CosmosInCosmosClient implementation = new CosmosInCosmosClient();
+        StateLensIcs23Ics23Client implementation = new StateLensIcs23Ics23Client();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                CosmosInCosmosClient.initialize.selector, ibcHandler, admin
+                StateLensIcs23Ics23Client.initialize.selector, ibcHandler, admin
             )
         );
-        client = CosmosInCosmosClient(address(proxy));
+        client = StateLensIcs23Ics23Client(address(proxy));
         lightClient = new MockLightClient();
         ibcStore.setClient(address(lightClient));
     }
@@ -238,7 +238,7 @@ contract CosmosInCosmosClientTest is Test {
         vm.prank(ibcHandler); // Simulate call from the IBC handler
         vm.expectRevert(
             abi.encodeWithSelector(
-                CosmosInCosmosLib.ErrInvalidInitialConsensusState.selector
+                StateLensIcs23Ics23Lib.ErrInvalidInitialConsensusState.selector
             )
         );
 
@@ -373,7 +373,7 @@ contract CosmosInCosmosClientTest is Test {
         // Update client
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(CosmosInCosmosLib.ErrInvalidL1Proof.selector)
+            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrInvalidL1Proof.selector)
         );
         client.updateClient(clientId, clientMessageBytes);
     }
@@ -382,7 +382,7 @@ contract CosmosInCosmosClientTest is Test {
         vm.prank(ibcHandler); // Simulate call from the IBC handler
         vm.expectRevert(
             abi.encodeWithSelector(
-                CosmosInCosmosLib.ErrInvalidMisbehaviour.selector
+                StateLensIcs23Ics23Lib.ErrInvalidMisbehaviour.selector
             )
         );
         client.misbehaviour(1, bytes(""));
@@ -497,7 +497,7 @@ contract CosmosInCosmosClientTest is Test {
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector)
+            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrClientFrozen.selector)
         );
         client.verifyMembership(1, 1, bytes(""), bytes(""), bytes(""));
     }
@@ -555,7 +555,7 @@ contract CosmosInCosmosClientTest is Test {
         lightClient.setIsFrozenReturn(true);
         vm.prank(address(ibcHandler));
         vm.expectRevert(
-            abi.encodeWithSelector(CosmosInCosmosLib.ErrClientFrozen.selector)
+            abi.encodeWithSelector(StateLensIcs23Ics23Lib.ErrClientFrozen.selector)
         );
         client.verifyNonMembership(1, 1, bytes(""), bytes(""));
     }

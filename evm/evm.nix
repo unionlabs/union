@@ -600,8 +600,8 @@ _: {
                     ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
 
                   jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosClient.json \
-                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosLib.json > evm-in-cosmos-client.json
+                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
+                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
                 ''
             );
 
@@ -755,7 +755,7 @@ _: {
             value = eth-upgrade (
               {
                 dry = false;
-                protocol = "EvmInCosmosClient";
+                protocol = "StateLensIcs23MptClient";
               }
               // args
             );

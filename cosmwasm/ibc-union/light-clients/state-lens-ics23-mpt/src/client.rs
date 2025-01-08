@@ -14,9 +14,9 @@ use unionlabs::{
 
 use crate::errors::Error;
 
-pub struct EvmInCosmosLightClient;
+pub struct StateLensIcs23MptClient;
 
-impl IbcClient for EvmInCosmosLightClient {
+impl IbcClient for StateLensIcs23MptClient {
     type Error = Error;
 
     type CustomQuery = Empty;

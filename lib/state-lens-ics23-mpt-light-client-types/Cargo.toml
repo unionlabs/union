@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "evm-state-lens-light-client-types"
+name    = "state-lens-ics23-mpt-light-client-types"
 version = "0.1.0"
 
 [dependencies]
