@@ -54,6 +54,14 @@ export function createValidationStore(
   const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const errors: FieldErrors = {}
 
+    if ($rawIntents.source) {
+      if (!$intents.sourceChain) errors.source = "Chain not supported"
+    }
+
+    if ($rawIntents.destination) {
+      if (!$intents.destinationChain) errors.destination = "Chain not supported"
+    }
+
     // Source chain wallet validation
     if ($intents.sourceChain) {
       if ($intents.sourceChain?.rpc_type === "evm" && !$context.userAddress.evm) {
@@ -73,6 +81,7 @@ export function createValidationStore(
 
     // Required fields when asset is selected
     if ($rawIntents.asset) {
+      if (!$intents.selectedAsset.address) errors.asset = "Asset not found in wallet"
       if (!$rawIntents.amount) errors.amount = "Amount is required"
       if (!$rawIntents.receiver) errors.receiver = "Receiver is required"
 

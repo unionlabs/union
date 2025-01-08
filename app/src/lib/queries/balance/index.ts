@@ -9,12 +9,37 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
+export type BalanceResult =
+  // EVM balance result (from multicall)
+  | {
+      balance: string | bigint
+      address: string
+      name?: string | null
+      symbol: string
+      gasToken?: boolean
+    }
+  // Cosmos balance result
+  | {
+      address: string
+      symbol: string
+      balance: string | number
+      decimals: number
+      gasToken?: boolean
+    }
+  // Aptos balance result
+  | {
+      balance: string | bigint
+      address: string
+      symbol: string
+      gasToken?: boolean
+    }
+
 export function userBalancesQuery({
   userAddr,
   chains,
   connected = true
 }: { userAddr: UserAddresses; chains: Array<Chain>; connected?: boolean }) {
-  return createQueries({
+  return createQueries<Array<BalanceResult>>({
     queries: chains.map(chain => ({
       queryKey: [
         "balances",
