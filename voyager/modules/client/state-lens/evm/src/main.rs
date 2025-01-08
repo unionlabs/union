@@ -79,16 +79,9 @@ impl ClientModule for Module {
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_EVM)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
-        // TODO(aeryz): impl a nice combinator
-        if info
-            .ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)
-            .is_err()
-            && info
-                .ensure_ibc_interface(IbcInterface::IBC_COSMWASM)
-                .is_err()
-        {
-            panic!("no no no")
-        }
+        info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)
+            .or(info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM))?;
+
         Ok(Self {
             ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
         })
@@ -279,9 +272,9 @@ impl ClientModuleServer for Module {
                 None::<()>,
             )
         })?;
-        // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
-        // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
         match self.ibc_interface {
+            // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
+            // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
             SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
             SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
         }

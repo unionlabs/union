@@ -22,8 +22,8 @@ pub mod msg;
 pub mod state;
 
 // These are only used for `key` calculation. We don't want this crate to depend on `ibc-union`.
-const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
-const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
+pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
+pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
 const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
 const QUERY_STORE: Item<Binary> = Item::new("query_store");
 

@@ -102,7 +102,7 @@ pub mod proto {
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(Error::ProofSpecs)?,
                 upgrade_path: value.upgrade_path,
-                // // FIXME: we need to define the tm proto ourself and regenerate
+                // contract address is not needed for native impl which uses proto
                 contract_address: H256::default(),
             })
         }
