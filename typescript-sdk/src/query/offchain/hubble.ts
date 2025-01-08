@@ -169,5 +169,5 @@ export interface Chain<
   logo_uri: string | null
   rpcs: IncludeEndpoints extends true ? Array<Rpc> : undefined
   assets: IncludeAssets extends true ? Array<Asset> : undefined
-  ucs1_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined
+  // ucs1_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined
 }

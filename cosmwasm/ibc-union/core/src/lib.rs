@@ -98,6 +98,23 @@ pub enum ContractError {
     AcknowledgementMismatch { found: Bytes, expected: Bytes },
     #[error("{} the packet already exist", ContractErrorKind::from(self))]
     PacketCommitmentAlreadyExist,
+    #[error(
+        "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}", ContractErrorKind::from(self)
+    )]
+    UnauthorizedMigration {
+        client_id: u32,
+        caller: Addr,
+        client: Addr,
+    },
+    #[error(
+        "{} cannot migrate the client {client_id} when there's no client state",
+        ContractErrorKind::from(self)
+    )]
+    CannotMigrateWithNoClientState { client_id: u32 },
+    #[error(
+        "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
+    )]
+    CannotMigrateWithNoConsensusState { client_id: u32, height: u64 },
 }
 
 impl ContractErrorKind {

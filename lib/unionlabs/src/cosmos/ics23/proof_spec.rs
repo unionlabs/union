@@ -10,6 +10,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::ProofSpec), into, from))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ProofSpec {
     pub leaf_spec: LeafOp,
     pub inner_spec: InnerSpec,

@@ -213,7 +213,7 @@ _: {
         }
         {
           network = "holesky";
-          rpc-url = "https://ethereum-holesky-rpc.publicnode.com";
+          rpc-url = "https://1rpc.io/holesky";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
@@ -594,6 +594,14 @@ _: {
                     ${contracts}/out/NFT.sol/NFTLib.json \
                     ${contracts}/out/NFT.sol/NFTPacketLib.json \
                     ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/Zkgm.sol/ZkgmLib.json \
+                    ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosClient.json \
+                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosLib.json > evm-in-cosmos-client.json
                 ''
             );
 
@@ -695,6 +703,12 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-deploy-${args.network}-ucs03";
+            value = eth-deploy-single ({ kind = "UCS03"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-multicall";
             value = eth-deploy-single ({ kind = "Multicall"; } // args);
           }) networks
@@ -718,6 +732,18 @@ _: {
               {
                 dry = true;
                 protocol = "CometblsClient";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ucs03";
+            value = eth-upgrade (
+              {
+                dry = false;
+                protocol = "UCS03";
               }
               // args
             );

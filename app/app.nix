@@ -19,7 +19,7 @@ _: {
     {
       packages = {
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-YAUgEe+4g4GbKprXJoeMKrkvhUqXZ6md5WJph2DGcEM=";
+          npmDepsHash = "sha256-5pT2cOd8DaPiLCIUvIGAVet8hvJ8Am/UZp07ySCiFtk=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [
@@ -50,7 +50,7 @@ _: {
               cd app/
 
               npm install
-              npm run dev
+              npm run dev -- --host
             '';
           };
         };

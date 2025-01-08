@@ -92,3 +92,29 @@ Gas used: 52087
   UCS01: 0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46
   UCS02: 0x524d4d28fc90dc5a257162abe37081f52681c7d6
 ```
+
+## Upgrading contracts
+
+To see all generated contract upgrade scripts
+
+```bash
+nix run .#eth-upgrade- <TAB>
+```
+
+To execute an upgrade (example values)
+
+```bash
+nix run .\#eth-upgrade-holesky-ucs03 -- --deployer_pk 0xa3cd41bff71ad19fddfd901a9773c975a0404d97 --sender_pk 0x153919669Edc8A5D0c8D1E4507c9CE60435A1177 --private_key omitted
+```
+
+To re-verify contracts after the upgrade:
+
+```bash
+nix run .\#eth-verify-holesky DEPLOYER_ADDR SENDER_ADDR ETHERSCAN_API_KEY
+```
+
+For example:
+
+```bash
+nix run .\#eth-verify-holesky 0xa3cd41bff71ad19fddfd901a9773c975a0404d97 0x153919669Edc8A5D0c8D1E4507c9CE60435A1177 omitted
+```

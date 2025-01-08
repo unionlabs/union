@@ -4,6 +4,7 @@ use unionlabs::primitives::{encoding::Base64, Bytes};
 // TODO: These are fixed sizes, not arbitrary bytes
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "value", rename_all = "snake_case")]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum PublicKey {
     #[serde(rename = "tendermint/PubKeyEd25519")]
     Ed25519(Bytes<Base64>),

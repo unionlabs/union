@@ -75,7 +75,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
         const pfmMemo = createPfmMemo({
           port: chainDetails.value.port,
-          channel: chainDetails.value.destinationChannel,
+          channel: chainDetails.value.destinationChannel.toString(),
           receiver: cosmosChainId.includes(destinationChainId)
             ? bech32AddressToHex({ address: receiver })
             : receiver
@@ -85,7 +85,6 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       }
 
       const sourceChannel = chainDetails.value.sourceChannel
-      destinationChainId = chainDetails.value.destinationChainId
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
       if (sourceChainId === "union-testnet-8") {
@@ -125,7 +124,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           gasPrice,
           messageTransfers: [
             {
-              sourceChannel,
+              sourceChannel: sourceChannel.toString(),
               sourcePort: "transfer",
               sender: account_?.address,
               token: { denom: denomAddress, amount: amount.toString() },
@@ -178,7 +177,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
         const pfmMemo = createPfmMemo({
           port: chainDetails.value.port,
-          channel: chainDetails.value.destinationChannel,
+          channel: chainDetails.value.destinationChannel.toString(),
           receiver: cosmosChainId.includes(destinationChainId)
             ? bech32AddressToHex({ address: receiver })
             : receiver
@@ -187,7 +186,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         memo = pfmMemo.value
       }
       const sourceChannel = chainDetails.value.sourceChannel
-      destinationChainId = chainDetails.value.destinationChainId
+      // destinationChainId = chainDetails.value.destinationChainId
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
       if (sourceChainId === "union-testnet-8") {
@@ -228,7 +227,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           rpcUrl,
           messageTransfers: [
             {
-              sourceChannel,
+              sourceChannel: sourceChannel.toString(),
               sourcePort: "transfer",
               sender: account_?.address,
               token: { denom: denomAddress, amount: amount.toString() },

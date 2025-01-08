@@ -3,12 +3,14 @@ use macros::model;
 use super::sparse_merkle_proof::SparseMerkleProof;
 
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StorageProof {
     pub state_value: Option<StateValue>,
     pub proof: SparseMerkleProof,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum StateValue {
     V0(Vec<u8>),
     WithMetadata {
@@ -27,6 +29,7 @@ impl StateValue {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum StateValueMetadata {
     V0 {
         deposit: u64,

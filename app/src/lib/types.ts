@@ -69,15 +69,17 @@ export type Chain = {
     address_url: string
   }>
   addr_prefix: string
-  assets: Array<{
-    denom: string
-    display_symbol: string
-    display_name: string | null
-    decimals: number
-    faucets: Array<{
-      url: string
-      display_name: string
-    }>
-    gas_token: boolean
+  assets: Array<ChainAsset>
+}
+
+export type ChainAsset = {
+  denom: string
+  display_symbol: string
+  display_name: string | null
+  decimals: number
+  faucets: Array<{
+    url: string
+    display_name: string
   }>
+  gas_token: boolean
 }

@@ -22,6 +22,7 @@ use crate::{
 /// or the latest [`LedgerInfoWithSignatures`] if the epoch changes get them into
 /// the most recent epoch.
 #[model]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StateProof {
     pub latest_li_w_sigs: LedgerInfoWithSignatures,
     pub epoch_changes: EpochChangeProof,

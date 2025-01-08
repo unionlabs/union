@@ -9,6 +9,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
+bincode     = { workspace = true, features = ["alloc", "derive"], optional = true }
 hex-literal = { workspace = true }
 serde       = { workspace = true, optional = true, features = ["derive"] }
 serde-utils = { workspace = true, optional = true }
@@ -18,6 +19,7 @@ typenum     = { workspace = true }
 unionlabs   = { workspace = true }
 
 [features]
+bincode = ["dep:bincode"]
 default = ["serde", "ssz"]
 serde = [
   "dep:serde",

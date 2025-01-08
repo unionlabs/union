@@ -14,6 +14,7 @@ use macros::model;
 #[derive(Default, Copy)]
 #[debug("Height({self})")]
 #[derive(Hash)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 // TODO: Implement Valuable via Display once https://github.com/tokio-rs/valuable/pull/133 is merged
 pub struct Height {
     revision: Option<NonZeroU64>,

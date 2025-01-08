@@ -97,7 +97,7 @@ pub mod bech32;
 #[cfg(feature = "proto")]
 pub use ::prost;
 
-#[cfg(any(feature = "test_utils", test))]
+#[cfg(any(feature = "test-utils", test))]
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;
 

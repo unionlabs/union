@@ -1,19 +1,27 @@
-import { ucs01RelayAbi } from "../abi/ucs-01.ts"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { timestamp } from "../utilities/index.ts"
 import { err, ok, type Result } from "neverthrow"
 import type { Hex, HexAddress } from "../types.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import { simulateTransaction } from "../query/offchain/tenderly.ts"
-import { erc20Abi, getAddress, type Account, type WalletClient, type PublicActions } from "viem"
+import {
+  erc20Abi,
+  getAddress,
+  type Account,
+  type WalletClient,
+  type PublicActions,
+  toHex
+} from "viem"
 
 export type EvmTransferParams = {
   memo?: string
+  askToken: HexAddress
   amount: bigint
   receiver: string
   account?: Account
   simulate?: boolean
   autoApprove?: boolean
-  sourceChannel: string
+  sourceChannel: number
   denomAddress: HexAddress
   relayContractAddress: HexAddress
 }
@@ -41,6 +49,7 @@ export async function transferAssetFromEvm(
     account,
     receiver,
     denomAddress,
+    askToken,
     sourceChannel,
     simulate = true,
     autoApprove = false,
@@ -66,32 +75,45 @@ export async function transferAssetFromEvm(
 
   memo ??= timestamp()
 
+  // add a salt to each transfer to prevent hash collisions
+  // important because ibc-union does not use sequence numbers
+  // such that intents are possible based on deterministic packet hashes
+  const salt = new Uint8Array(32)
+  crypto.getRandomValues(salt)
   /**
    * @dev
-   * `UCS01` contract `send` function:
-   * - https://github.com/unionlabs/union/blob/142e0af66a9b0218cf010e3f8d1138de9b778bb9/evm/contracts/apps/ucs/01-relay/Relay.sol#L51-L58
+   * `UCS03` zkgm contract `transfer` function:
+   * - https://github.com/unionlabs/union/blob/0a08c23df0360a345cde953cb97fe4c852fade9d/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L319
    */
   const writeContractParameters = {
     account,
-    abi: ucs01RelayAbi,
+    abi: ucs03ZkgmAbi,
     chain: client.chain,
-    functionName: "send",
+    functionName: "transfer",
     address: relayContractAddress,
     /**
-     * string calldata sourceChannel,
+     * uint32 channelId,
+     * uint64 timeoutHeight,
+     * uint64 timeoutTimestamp,
+     * bytes32 salt,
      * bytes calldata receiver,
-     * LocalToken[] calldata tokens,
-     * string calldata extension (memo),
-     * IbcCoreClientV1Height.Data calldata timeoutHeight,
-     * uint64 timeoutTimestamp
+     * address sentToken,
+     * uint256 sentAmount,
+     * bytes calldata askToken,
+     * uint256 askAmount,
+     * bool onlyMaker
      */
     args: [
       sourceChannel,
+      0n, // TODO: customize timeoutheight
+      "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
+      toHex(salt),
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
-      [{ denom: denomAddress, amount }],
-      memo,
-      { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-      0n
+      denomAddress,
+      amount,
+      askToken,
+      amount, // we want the same amount on dest as we send on the source
+      false
     ]
   } as const
   if (!simulate) {
@@ -236,7 +258,7 @@ export async function transferAssetFromEvmSimulate(
     receiver: string
     account?: HexAddress
     denomAddress: HexAddress
-    sourceChannel: string
+    sourceChannel: number
     relayContractAddress: HexAddress
   }
 ): Promise<Result<string, Error>> {
