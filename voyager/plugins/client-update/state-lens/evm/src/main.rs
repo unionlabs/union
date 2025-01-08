@@ -5,13 +5,13 @@ use alloy::{
     transports::BoxTransport,
 };
 use call::FetchUpdateAfterL1Update;
-use evm_state_lens_light_client_types::Header;
 use ibc_union_spec::{ConsensusStatePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
+use state_lens_ics23_mpt_light_client_types::Header;
 use tracing::{debug, instrument};
 use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 use voyager_message::{
@@ -102,7 +102,7 @@ impl Plugin for Module {
             name: plugin_name(&config.l2_chain_id),
             interest_filter: UpdateHook::filter(
                 &config.l2_chain_id,
-                &ClientType::new(ClientType::STATE_LENS_EVM),
+                &ClientType::new(ClientType::STATE_LENS_ICS23_MPT),
             ),
         }
     }
@@ -139,7 +139,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .map(|mut op| {
                     UpdateHook::new(
                         &self.l2_chain_id,
-                        &ClientType::new(ClientType::STATE_LENS_EVM),
+                        &ClientType::new(ClientType::STATE_LENS_ICS23_MPT),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),

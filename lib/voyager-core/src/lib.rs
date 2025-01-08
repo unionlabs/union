@@ -72,12 +72,14 @@ impl ClientType {
     /// [CometBLS]: https://github.com/unionlabs/cometbls
     pub const COMETBLS: &'static str = "cometbls";
 
-    /// A client tracking [CometBLS] consensus, verified with a ZK proof of the state transition created by galois.
+    /// A client tracking [CometBLS] consensus, verified with a ZK proof of the state transition
+    /// created by galois.
     ///
     /// [CometBLS]: https://github.com/unionlabs/cometbls
     pub const COMETBLS_GROTH16: &'static str = "cometbls";
 
-    /// A client tracking vanilla [CometBFT] (Tendermint) consensus, through the [`07-tendermint`] light client specification.
+    /// A client tracking vanilla [CometBFT] (Tendermint) consensus, through the [`07-tendermint`]
+    /// light client specification.
     ///
     /// [CometBFT]: https://github.com/cometbft/cometbft
     /// [`07-tendermint`]: https://github.com/cosmos/ibc/blob/main/spec/client/ics-007-tendermint-client/README.md
@@ -101,7 +103,8 @@ impl ClientType {
     /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
     pub const ARBITRUM: &'static str = "arbitrum";
 
-    /// A client tracking the state of a [BeaconKit] chain, verified by verifying the underlying [CometBFT] consensus.
+    /// A client tracking the state of a [BeaconKit] chain, verified by verifying the underlying
+    /// [CometBFT] consensus.
     ///
     /// [BeaconKit]: https://github.com/berachain/beacon-kit
     /// [CometBFT]: https://github.com/cometbft/cometbft
@@ -112,18 +115,18 @@ impl ClientType {
     /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";
 
-    // TODO: Update this doc comment and rename the client type to be more accurate
-    /// A client tracking the Ethereum beacon chain consensus verified through the
-    /// [Ethereum Proof-of-Stake Consensus Specifications](spec). As an L2 extracted from [CometBLS].
+    /// A client tracking an EVM-compatible chain utilizing [MPT] as the storage layer, verified
+    /// through that chain's consensus as settled on an intermediary [ICS-23] chain.
     ///
-    /// [spec]: https://github.com/ethereum/consensus-specs
-    /// [CometBLS]: https://github.com/unionlabs/cometbls
-    pub const STATE_LENS_EVM: &'static str = "state-lens/evm";
+    /// [MPT]: https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie
+    /// [ICS-23]: https://github.com/cosmos/ics23
+    pub const STATE_LENS_ICS23_MPT: &'static str = "state-lens/ics23/mpt";
 
-    /// Tendermint consensus specification, extracted from [CometBLS].
+    /// A client tracking an [ICS-23] chain, verified through that chain's consensus as
+    /// settled on an intermediary [ICS-23] chain.
     ///
-    /// [CometBLS]: https://github.com/unionlabs/cometbls
-    pub const STATE_LENS_ICS23_ICS23: &'static str = "state-lens/ics23-ics23";
+    /// [ICS23]: https://github.com/cosmos/ics23
+    pub const STATE_LENS_ICS23_ICS23: &'static str = "state-lens/ics23/ics23";
 
     // lots more to come - near, linea, polygon - stay tuned
 }
@@ -202,7 +205,8 @@ pub trait IbcSpec {
     fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
 }
 
-/// A subset of [`IbcSpec::StorePath`]. This should be implemented by all variants of the `StorePath` enum for an `IbcSpec` implementation.
+/// A subset of [`IbcSpec::StorePath`]. This should be implemented by all variants of the
+/// `StorePath` enum for an `IbcSpec` implementation.
 pub trait IbcStorePathKey:
     Member
     + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
@@ -211,7 +215,8 @@ pub trait IbcStorePathKey:
     /// The [`IbcSpec`] that this store path key indexes into.
     type Spec: IbcSpec;
 
-    /// The value stored under this key. Note that this is NOT the *commitment*, but rather the actual value.
+    /// The value stored under this key. Note that this is NOT the *commitment*, but rather the
+    /// actual value.
     type Value: Member;
 }
 
@@ -252,12 +257,11 @@ pub struct ChainId;
 ///
 /// # Examples
 ///
-/// - 08-wasm client on union, tracking ethereum mainnet: `(ibc-go-v8/08-wasm,
-///   ethereum_mainnet, {"checksum": "0x..."})`
-/// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native,
-///   tendermint)`
-/// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls,
-///   {"checksum": "0x..."}))`
+/// - 08-wasm client on union, tracking ethereum mainnet: `(ibc-go-v8/08-wasm, ethereum_mainnet,
+///   {"checksum": "0x..."})`
+/// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native, tendermint)`
+/// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum":
+///   "0x..."}))`
 /// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
 #[model]
 pub struct ClientInfo {

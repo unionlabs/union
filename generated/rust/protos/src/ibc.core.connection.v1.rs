@@ -443,28 +443,6 @@ impl ::prost::Name for QueryConnectionParamsResponse {
         ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
     }
 }
-/// GenesisState defines the ibc connection submodule's genesis state.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
-    #[prost(message, repeated, tag = "2")]
-    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
-    /// the sequence for the next generated connection identifier
-    #[prost(uint64, tag = "3")]
-    pub next_connection_sequence: u64,
-    #[prost(message, optional, tag = "4")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
 /// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
 /// initialize a connection with Chain B.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -688,6 +666,28 @@ impl ::prost::Name for MsgUpdateParams {
 pub struct MsgUpdateParamsResponse {}
 impl ::prost::Name for MsgUpdateParamsResponse {
     const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// GenesisState defines the ibc connection submodule's genesis state.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
+    #[prost(message, repeated, tag = "2")]
+    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
+    /// the sequence for the next generated connection identifier
+    #[prost(uint64, tag = "3")]
+    pub next_connection_sequence: u64,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
     const PACKAGE: &'static str = "ibc.core.connection.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)

@@ -10,7 +10,14 @@ import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
-import "../lib/MPTVerifier.sol";
+import "../lib/Common.sol";
+import "../lib/ICS23Verifier.sol";
+
+struct TendermintConsensusState {
+    uint64 timestamp;
+    bytes32 appHash;
+    bytes32 nextValidatorsHash;
+}
 
 struct Header {
     uint64 l1Height;
@@ -24,41 +31,38 @@ struct ClientState {
     uint32 l1ClientId;
     uint32 l2ClientId;
     uint64 l2LatestHeight;
-    uint16 timestampOffset;
-    uint16 stateRootOffset;
-    uint16 storageRootOffset;
+    bytes32 contractAddress;
 }
 
 struct ConsensusState {
     uint64 timestamp;
-    bytes32 stateRoot;
-    bytes32 storageRoot;
+    bytes32 appHash;
 }
 
-library EvmInCosmosLib {
-    uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
-
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
+library StateLensIcs23Ics23Lib {
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
     error ErrInvalidL1Proof();
     error ErrInvalidInitialConsensusState();
-    error ErrUnsupported();
+    error ErrInvalidMisbehaviour();
 
     function encode(
         ConsensusState memory consensusState
     ) internal pure returns (bytes memory) {
-        return abi.encode(consensusState);
+        return abi.encode(consensusState.timestamp, consensusState.appHash);
     }
 
     function encode(
         ClientState memory clientState
     ) internal pure returns (bytes memory) {
-        return abi.encode(clientState);
+        return abi.encode(
+            clientState.l2ChainId,
+            clientState.l1ClientId,
+            clientState.l2ClientId,
+            clientState.l2LatestHeight,
+            clientState.contractAddress
+        );
     }
 
     function commit(
@@ -72,30 +76,23 @@ library EvmInCosmosLib {
     ) internal pure returns (bytes32) {
         return keccak256(encode(clientState));
     }
-
-    function extract(
-        bytes calldata input,
-        uint16 offset
-    ) internal pure returns (bytes32 val) {
-        assembly {
-            val := calldataload(add(input.offset, offset))
-        }
-    }
 }
 
-contract EvmInCosmosClient is
+contract StateLensIcs23Ics23Client is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    using EvmInCosmosLib for *;
+    using StateLensIcs23Ics23Lib for *;
 
     address private ibcHandler;
 
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
+    mapping(uint32 => mapping(uint64 => ProcessedMoment)) private
+        processedMoments;
 
     constructor() {
         _disableInitializers();
@@ -123,18 +120,15 @@ contract EvmInCosmosClient is
             consensusState := consensusStateBytes.offset
         }
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
-            revert EvmInCosmosLib.ErrInvalidInitialConsensusState();
+            revert StateLensIcs23Ics23Lib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
-
-        emit EvmInCosmosLib.CreateLensClient(
-            clientId,
-            clientState.l1ClientId,
-            clientState.l2ClientId,
-            clientState.l2ChainId
-        );
-
+        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
+        processedMoments[clientId][clientState.l2LatestHeight] = ProcessedMoment({
+            timestamp: block.timestamp * 1e9,
+            height: block.number
+        });
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
@@ -171,23 +165,14 @@ contract EvmInCosmosClient is
                 abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
-            revert EvmInCosmosLib.ErrInvalidL1Proof();
+            revert StateLensIcs23Ics23Lib.ErrInvalidL1Proof();
         }
 
+        TendermintConsensusState calldata l2ConsensusState;
         bytes calldata rawL2ConsensusState = header.l2ConsensusState;
-        uint64 l2Timestamp = uint64(
-            uint256(
-                EvmInCosmosLib.extract(
-                    rawL2ConsensusState, clientState.timestampOffset
-                )
-            )
-        );
-        bytes32 l2StateRoot = EvmInCosmosLib.extract(
-            rawL2ConsensusState, clientState.stateRootOffset
-        );
-        bytes32 l2StorageRoot = EvmInCosmosLib.extract(
-            rawL2ConsensusState, clientState.storageRootOffset
-        );
+        assembly {
+            l2ConsensusState := rawL2ConsensusState.offset
+        }
 
         if (header.l2Height > clientState.l2LatestHeight) {
             clientState.l2LatestHeight = header.l2Height;
@@ -197,9 +182,14 @@ contract EvmInCosmosClient is
         // We use ethereum native encoding to make it more efficient.
         ConsensusState storage consensusState =
             consensusStates[clientId][header.l2Height];
-        consensusState.timestamp = l2Timestamp;
-        consensusState.stateRoot = l2StateRoot;
-        consensusState.storageRoot = l2StorageRoot;
+        consensusState.timestamp = l2ConsensusState.timestamp;
+        consensusState.appHash = l2ConsensusState.appHash;
+
+        // P[H₂] = now()
+        ProcessedMoment storage processed =
+            processedMoments[clientId][header.l2Height];
+        processed.timestamp = block.timestamp * 1e9;
+        processed.height = block.number;
 
         // commit(S₂)
         return ConsensusStateUpdate({
@@ -213,7 +203,7 @@ contract EvmInCosmosClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC {
-        revert EvmInCosmosLib.ErrUnsupported();
+        revert StateLensIcs23Ics23Lib.ErrInvalidMisbehaviour();
     }
 
     function verifyMembership(
@@ -224,18 +214,19 @@ contract EvmInCosmosClient is
         bytes calldata value
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert EvmInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
-        bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
-        bytes32 slot = keccak256(
-            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
+        bytes32 appHash = consensusStates[clientId][height].appHash;
+        return ICS23Verifier.verifyMembership(
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            ),
+            value
         );
-        (bool exists, bytes calldata provenValue) = MPTVerifier.verifyTrieValue(
-            proof, keccak256(abi.encodePacked(slot)), storageRoot
-        );
-        return exists
-            && keccak256(RLP.encodeUint(uint256(bytes32(value))))
-                == keccak256(provenValue);
     }
 
     function verifyNonMembership(
@@ -245,16 +236,18 @@ contract EvmInCosmosClient is
         bytes calldata path
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert EvmInCosmosLib.ErrClientFrozen();
+            revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
-        bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
-        bytes32 slot = keccak256(
-            abi.encodePacked(path, EvmInCosmosLib.EVM_IBC_COMMITMENT_SLOT)
+        bytes32 contractAddress = clientStates[clientId].contractAddress;
+        bytes32 appHash = consensusStates[clientId][height].appHash;
+        return ICS23Verifier.verifyNonMembership(
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            abi.encodePacked(
+                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+            )
         );
-        (bool exists,) = MPTVerifier.verifyTrieValue(
-            proof, keccak256(abi.encodePacked(slot)), storageRoot
-        );
-        return !exists;
     }
 
     function getClientState(
@@ -302,7 +295,7 @@ contract EvmInCosmosClient is
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
-            revert EvmInCosmosLib.ErrNotIBC();
+            revert StateLensIcs23Ics23Lib.ErrNotIBC();
         }
     }
 

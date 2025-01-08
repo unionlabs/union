@@ -628,7 +628,6 @@ files.extend-exclude = [
 "evenodd"                 = "evenodd"
 "evidencekeeper"          = "evidencekeeper"
 "evidencetypes"           = "evidencetypes"
-"evmincosmos"             = "evmincosmos"
 "evmos"                   = "evmos"
 "exff"                    = "exff"
 "extldflags"              = "extldflags"

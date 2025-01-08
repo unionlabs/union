@@ -1,5 +1,4 @@
 use ethereum_light_client_types::StorageProof;
-use evm_state_lens_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -7,6 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState, Header};
 use tracing::instrument;
 use unionlabs::{
     self,
@@ -77,7 +77,7 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(ClientType::STATE_LENS_EVM)?;
+        info.ensure_client_type(ClientType::STATE_LENS_ICS23_MPT)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)
             .or(info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM))?;

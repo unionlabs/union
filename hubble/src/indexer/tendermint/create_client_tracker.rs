@@ -144,7 +144,7 @@ pub fn schedule_create_client_checker(
 
                                 //     cs.execution_chain_id.to_string()
                                 // }
-                                // WasmClientType::EvmInCosmos => {
+                                // WasmClientType::StateLensIcs23Mpt => {
                                 //     todo!("We still need to add evm-in-cosmos")
                                 // }
                                 // WasmClientType::Movement => {

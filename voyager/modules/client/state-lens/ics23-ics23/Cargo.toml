@@ -4,18 +4,18 @@ name    = "voyager-client-module-state-lens-ics23-ics23"
 version = "0.1.0"
 
 [dependencies]
-alloy                                = { workspace = true, features = ["sol-types"] }
-cosmos-state-lens-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-futures                              = { workspace = true }
-jsonrpsee                            = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                               = { workspace = true }
-protos                               = { workspace = true }
-serde                                = { workspace = true, features = ["derive"] }
-serde_json                           = { workspace = true }
-thiserror                            = { workspace = true }
-tokio                                = { workspace = true }
-tracing                              = { workspace = true }
-tracing-subscriber                   = { workspace = true }
-unionlabs                            = { workspace = true }
-voyager-message                      = { workspace = true }
-voyager-vm                           = { workspace = true }
+alloy                                     = { workspace = true, features = ["sol-types"] }
+futures                                   = { workspace = true }
+jsonrpsee                                 = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                                    = { workspace = true }
+protos                                    = { workspace = true }
+serde                                     = { workspace = true, features = ["derive"] }
+serde_json                                = { workspace = true }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+thiserror                                 = { workspace = true }
+tokio                                     = { workspace = true }
+tracing                                   = { workspace = true }
+tracing-subscriber                        = { workspace = true }
+unionlabs                                 = { workspace = true }
+voyager-message                           = { workspace = true }
+voyager-vm                                = { workspace = true }

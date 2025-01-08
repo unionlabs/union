@@ -1,18 +1,19 @@
 [package]
 edition = "2021"
-name    = "evm-state-lens-light-client-types"
+name    = "state-lens-ics23-ics23-light-client-types"
 version = "0.1.0"
 
 [dependencies]
 alloy     = { workspace = true, features = ["sol-types"], optional = true }
-bincode   = { workspace = true, features = ["alloc", "derive"], optional = true }
 protos    = { workspace = true, optional = true, features = ["proto_full", "serde"] }
 serde     = { workspace = true, optional = true, features = ["derive"] }
 thiserror = { workspace = true }
 unionlabs = { workspace = true, features = ["ethabi", "proto"] }
 
+[dev-dependencies]
+hex-literal = { workspace = true }
+
 [features]
-bincode = ["dep:bincode", "unionlabs/bincode"]
 default = []
 ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]
 serde   = ["dep:serde"]

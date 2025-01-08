@@ -2248,7 +2248,6 @@ dependencies = [
  "beacon-api-types",
  "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
- "protos",
  "serde",
  "unionlabs",
 ]
@@ -3364,18 +3363,6 @@ version = "0.1.0"
 dependencies = [
  "cometbft-types",
  "enumorph",
- "serde",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
-name = "cosmos-state-lens-light-client-types"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "hex-literal",
- "protos",
  "serde",
  "thiserror",
  "unionlabs",
@@ -4910,7 +4897,6 @@ dependencies = [
  "cometbls-light-client",
  "cosmwasm-std 2.1.4",
  "ethereum-light-client-types",
- "evm-state-lens-light-client-types",
  "evm-storage-verifier",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -4918,18 +4904,7 @@ dependencies = [
  "ics23",
  "rlp",
  "serde",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
-name = "evm-state-lens-light-client-types"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "bincode 2.0.0-rc.3",
- "protos",
- "serde",
+ "state-lens-ics23-mpt-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -11346,6 +11321,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
+name = "state-lens-ics23-ics23-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "state-lens-ics23-mpt-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13069,11 +13068,11 @@ dependencies = [
  "beacon-api-types",
  "cometbft-rpc",
  "ethereum-light-client-types",
- "evm-state-lens-light-client-types",
  "ibc-union-spec",
  "jsonrpsee",
  "serde",
  "serde_json",
+ "state-lens-ics23-mpt-light-client-types",
  "tokio",
  "tracing",
  "unionlabs",
@@ -13089,11 +13088,11 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "cometbft-rpc",
- "cosmos-state-lens-light-client-types",
  "ibc-union-spec",
  "jsonrpsee",
  "serde",
  "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
  "tendermint-light-client-types",
  "tokio",
  "tracing",
@@ -13185,7 +13184,6 @@ dependencies = [
  "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
- "evm-state-lens-light-client-types",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13193,6 +13191,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "state-lens-ics23-mpt-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13207,13 +13206,13 @@ name = "voyager-client-module-state-lens-ics23-ics23"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "cosmos-state-lens-light-client-types",
  "futures",
  "jsonrpsee",
  "macros",
  "protos",
  "serde",
  "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13350,7 +13349,6 @@ dependencies = [
  "cometbft-types",
  "dashmap 5.5.3",
  "enumorph",
- "evm-state-lens-light-client-types",
  "futures",
  "ibc-union-spec",
  "ics23",
@@ -13361,6 +13359,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
+ "state-lens-ics23-mpt-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13377,7 +13376,6 @@ dependencies = [
  "alloy",
  "cometbft-rpc",
  "cometbft-types",
- "cosmos-state-lens-light-client-types",
  "dashmap 5.5.3",
  "enumorph",
  "futures",
@@ -13390,6 +13388,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
  "thiserror",
  "tokio",
  "tracing",

@@ -3,7 +3,7 @@ use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, uint::U256};
 
-use crate::client::EvmInCosmosLightClient;
+use crate::client::StateLensIcs23MptLightClient;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -44,7 +44,7 @@ pub enum Error {
     CounterpartyStorageNotNil,
 }
 
-impl From<Error> for IbcClientError<EvmInCosmosLightClient> {
+impl From<Error> for IbcClientError<StateLensIcs23MptLightClient> {
     fn from(value: Error) -> Self {
         IbcClientError::ClientSpecific(value)
     }

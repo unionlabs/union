@@ -77,8 +77,9 @@ members = [
   "lib/tendermint-light-client-types",
   "lib/linea-light-client-types",
   "lib/movement-light-client-types",
-  "lib/state-lens/evm-light-client-types",
-  "lib/state-lens/cosmos-light-client-types",
+  "lib/state-lens-ics23-mpt-light-client-types",
+  "lib/state-lens-ics23-mpt-light-client-types",
+  "lib/state-lens-ics23-ics23-light-client-types",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
@@ -86,7 +87,7 @@ members = [
   "cosmwasm/ibc-union/light-clients/arbitrum",
   "cosmwasm/ibc-union/light-clients/berachain",
   "cosmwasm/ibc-union/light-clients/cometbls",
-  "cosmwasm/ibc-union/light-clients/evm-in-cosmos",
+  "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
   # "cosmwasm/ibc-union/light-clients/scroll",
   "cosmwasm/ibc-union/light-clients/tendermint",
   # "cosmwasm/ibc-union/light-clients/linea",
@@ -218,8 +219,8 @@ scroll-api                   = { path = "lib/scroll-api", default-features = fal
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
 
-cosmos-state-lens-light-client-types = { path = "lib/state-lens/cosmos-light-client-types", default-features = false }
-evm-state-lens-light-client-types    = { path = "lib/state-lens/evm-light-client-types", default-features = false }
+state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
+state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }

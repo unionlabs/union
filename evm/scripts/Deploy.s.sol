@@ -14,9 +14,10 @@ import "@openzeppelin/access/Ownable.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
-import {CosmosInCosmosClient} from
-    "../contracts/clients/CosmosInCosmosClient.sol";
-import {EvmInCosmosClient} from "../contracts/clients/EvmInCosmosClient.sol";
+import {StateLensIcs23Ics23Client} from
+    "../contracts/clients/StateLensIcs23Ics23Client.sol";
+import {StateLensIcs23MptClient} from
+    "../contracts/clients/StateLensIcs23MptClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
@@ -109,34 +110,35 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployEvmLens(
+    function deployStateLensIcs23MptClient(
         IBCHandler handler,
         address owner
-    ) internal returns (EvmInCosmosClient) {
-        return EvmInCosmosClient(
+    ) internal returns (StateLensIcs23MptClient) {
+        return StateLensIcs23MptClient(
             deploy(
                 LightClients.make(LightClients.STATE_LENS_EVM),
                 abi.encode(
-                    address(new EvmInCosmosClient()),
+                    address(new StateLensIcs23MptClient()),
                     abi.encodeCall(
-                        EvmInCosmosClient.initialize, (address(handler), owner)
+                        StateLensIcs23MptClient.initialize,
+                        (address(handler), owner)
                     )
                 )
             )
         );
     }
 
-    function deployCosmosLens(
+    function deployStateLensIcs23Ics23Client(
         IBCHandler handler,
         address owner
-    ) internal returns (CosmosInCosmosClient) {
-        return CosmosInCosmosClient(
+    ) internal returns (StateLensIcs23Ics23Client) {
+        return StateLensIcs23Ics23Client(
             deploy(
                 LightClients.make(LightClients.STATE_LENS_COSMOS),
                 abi.encode(
-                    address(new CosmosInCosmosClient()),
+                    address(new StateLensIcs23Ics23Client()),
                     abi.encodeCall(
-                        CosmosInCosmosClient.initialize,
+                        StateLensIcs23Ics23Client.initialize,
                         (address(handler), owner)
                     )
                 )
@@ -231,8 +233,8 @@ abstract contract UnionScript is UnionBase {
         returns (
             IBCHandler,
             CometblsClient,
-            EvmInCosmosClient,
-            CosmosInCosmosClient,
+            StateLensIcs23MptClient,
+            StateLensIcs23Ics23Client,
             PingPong,
             UCS01Relay,
             UCS02NFT,
@@ -241,8 +243,10 @@ abstract contract UnionScript is UnionBase {
     {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient cometblsClient = deployCometbls(handler, owner);
-        EvmInCosmosClient evmLensClient = deployEvmLens(handler, owner);
-        CosmosInCosmosClient cosmosLensClient = deployCosmosLens(handler, owner);
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+            deployStateLensIcs23MptClient(handler, owner);
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+            deployStateLensIcs23Ics23Client(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
@@ -250,8 +254,8 @@ abstract contract UnionScript is UnionBase {
         return (
             handler,
             cometblsClient,
-            evmLensClient,
-            cosmosLensClient,
+            stateLensIcs23MptClient,
+            stateLensIcs23Ics23Client,
             pingpong,
             relay,
             nft,
@@ -292,7 +296,7 @@ contract DeployMulticall is UnionScript {
     }
 }
 
-contract DeployEvmLens is UnionScript {
+contract DeployStateLensIcs23MptClient is UnionScript {
     using LibString for *;
 
     address immutable deployer;
@@ -325,12 +329,14 @@ contract DeployEvmLens is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        EvmInCosmosClient evmLensClient =
-            deployEvmLens(IBCHandler(handler), owner);
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+            deployStateLensIcs23MptClient(IBCHandler(handler), owner);
 
         vm.stopBroadcast();
 
-        console.log("EvmInCosmosClient: ", address(evmLensClient));
+        console.log(
+            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
+        );
     }
 }
 
@@ -375,7 +381,7 @@ contract DeployUCS03 is UnionScript {
     }
 }
 
-contract DeployCosmosLens is UnionScript {
+contract DeployStateLensIcs23Ics23Client is UnionScript {
     using LibString for *;
 
     address immutable deployer;
@@ -408,12 +414,14 @@ contract DeployCosmosLens is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        CosmosInCosmosClient cosmosLensClient =
-            deployCosmosLens(IBCHandler(handler), owner);
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+            deployStateLensIcs23Ics23Client(IBCHandler(handler), owner);
 
         vm.stopBroadcast();
 
-        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
+        console.log(
+            "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+        );
     }
 }
 
@@ -435,16 +443,20 @@ contract DeployIBC is UnionScript {
         (
             IBCHandler handler,
             CometblsClient cometblsClient,
-            EvmInCosmosClient evmLensClient,
-            CosmosInCosmosClient cosmosLensClient,
+            StateLensIcs23MptClient stateLensIcs23MptClient,
+            StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
-        handler.registerClient(LightClients.STATE_LENS_EVM, evmLensClient);
-        handler.registerClient(LightClients.STATE_LENS_COSMOS, cosmosLensClient);
+        handler.registerClient(
+            LightClients.STATE_LENS_EVM, stateLensIcs23MptClient
+        );
+        handler.registerClient(
+            LightClients.STATE_LENS_COSMOS, stateLensIcs23Ics23Client
+        );
 
         vm.stopBroadcast();
 
@@ -452,8 +464,12 @@ contract DeployIBC is UnionScript {
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(cometblsClient));
-        console.log("EvmInCosmosClient: ", address(evmLensClient));
-        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
+        console.log(
+            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
+        );
+        console.log(
+            "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+        );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
@@ -478,16 +494,20 @@ contract DeployDeployerAndIBC is UnionScript {
         (
             IBCHandler handler,
             CometblsClient cometblsClient,
-            EvmInCosmosClient evmLensClient,
-            CosmosInCosmosClient cosmosLensClient,
+            StateLensIcs23MptClient stateLensIcs23MptClient,
+            StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
-        handler.registerClient(LightClients.STATE_LENS_EVM, evmLensClient);
-        handler.registerClient(LightClients.STATE_LENS_COSMOS, cosmosLensClient);
+        handler.registerClient(
+            LightClients.STATE_LENS_EVM, stateLensIcs23MptClient
+        );
+        handler.registerClient(
+            LightClients.STATE_LENS_COSMOS, stateLensIcs23Ics23Client
+        );
 
         vm.stopBroadcast();
 
@@ -495,8 +515,12 @@ contract DeployDeployerAndIBC is UnionScript {
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
         console.log("CometblsClient: ", address(cometblsClient));
-        console.log("EvmInCosmosClient: ", address(evmLensClient));
-        console.log("CosmosInCosmosClient: ", address(cosmosLensClient));
+        console.log(
+            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
+        );
+        console.log(
+            "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+        );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
         console.log("UCS02: ", address(nft));
@@ -537,9 +561,9 @@ contract GetDeployed is Script {
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
-        address evmLensClient =
+        address stateLensIcs23MptClient =
             getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
-        address cosmosLensClient =
+        address stateLensIcs23Ics23Client =
             getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
         address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
@@ -561,13 +585,17 @@ contract GetDeployed is Script {
         );
         console.log(
             string(
-                abi.encodePacked("EvmLensClient: ", evmLensClient.toHexString())
+                abi.encodePacked(
+                    "StateLensIcs23MptClient: ",
+                    stateLensIcs23MptClient.toHexString()
+                )
             )
         );
         console.log(
             string(
                 abi.encodePacked(
-                    "CosmosLensClient: ", cosmosLensClient.toHexString()
+                    "StateLensIcs23Ics23Client: ",
+                    stateLensIcs23Ics23Client.toHexString()
                 )
             )
         );
@@ -609,21 +637,26 @@ contract GetDeployed is Script {
         );
         impls.serialize(cometblsClient.toHexString(), proxyComet);
 
-        string memory proxyEvmLens = "proxyEvmLens";
-        proxyEvmLens.serialize(
+        string memory proxyStateLensIcs23MptClient =
+            "proxyStateLensIcs23MptClient";
+        proxyStateLensIcs23MptClient.serialize(
             "contract",
             string(
                 "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
-        proxyEvmLens = proxyEvmLens.serialize(
+        proxyStateLensIcs23MptClient = proxyStateLensIcs23MptClient.serialize(
             "args",
             abi.encode(
-                implOf(evmLensClient),
-                abi.encodeCall(EvmInCosmosClient.initialize, (handler, sender))
+                implOf(stateLensIcs23MptClient),
+                abi.encodeCall(
+                    StateLensIcs23MptClient.initialize, (handler, sender)
+                )
             )
         );
-        impls.serialize(evmLensClient.toHexString(), proxyEvmLens);
+        impls.serialize(
+            stateLensIcs23MptClient.toHexString(), proxyStateLensIcs23MptClient
+        );
 
         string memory proxyUCS00 = "proxyUCS00";
         proxyUCS00.serialize(
@@ -721,13 +754,20 @@ contract GetDeployed is Script {
         implComet = implComet.serialize("args", bytes(hex""));
         impls.serialize(implOf(cometblsClient).toHexString(), implComet);
 
-        string memory implEvmLens = "implEvmLens";
-        implEvmLens.serialize(
+        string memory implStateLensIcs23MptClient =
+            "implStateLensIcs23MptClient";
+        implStateLensIcs23MptClient.serialize(
             "contract",
-            string("contracts/clients/EvmInCosmosClient.sol:EvmInCosmosClient")
+            string(
+                "contracts/clients/StateLensIcs23MptClient.sol:StateLensIcs23MptClient"
+            )
         );
-        implEvmLens = implEvmLens.serialize("args", bytes(hex""));
-        impls.serialize(implOf(evmLensClient).toHexString(), implEvmLens);
+        implStateLensIcs23MptClient =
+            implStateLensIcs23MptClient.serialize("args", bytes(hex""));
+        impls.serialize(
+            implOf(stateLensIcs23MptClient).toHexString(),
+            implStateLensIcs23MptClient
+        );
 
         string memory implUCS00 = "implUCS00";
         implUCS00.serialize(
@@ -1044,7 +1084,7 @@ contract UpgradeCometblsClient is Script {
     }
 }
 
-contract UpgradeEvmInCosmosClient is Script {
+contract UpgradeStateLensIcs23MptClient is Script {
     using LibString for *;
 
     address immutable deployer;
@@ -1067,23 +1107,26 @@ contract UpgradeEvmInCosmosClient is Script {
     }
 
     function run() public {
-        address evmLensClient =
+        address stateLensIcs23MptClient =
             getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
         console.log(
             string(
-                abi.encodePacked("EvmLensClient: ", evmLensClient.toHexString())
+                abi.encodePacked(
+                    "StateLensIcs23MptClient: ",
+                    stateLensIcs23MptClient.toHexString()
+                )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new EvmInCosmosClient());
-        CometblsClient(evmLensClient).upgradeToAndCall(
+        address newImplementation = address(new StateLensIcs23MptClient());
+        CometblsClient(stateLensIcs23MptClient).upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
     }
 }
 
-contract UpgradeCosmosInCosmosClient is Script {
+contract UpgradeStateLensIcs23Ics23Client is Script {
     using LibString for *;
 
     address immutable deployer;
@@ -1106,18 +1149,19 @@ contract UpgradeCosmosInCosmosClient is Script {
     }
 
     function run() public {
-        address cosmosLensClient =
+        address stateLensIcs23Ics23Client =
             getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
         console.log(
             string(
                 abi.encodePacked(
-                    "CosmosInCosmos: ", cosmosLensClient.toHexString()
+                    "StateLensIcs23Ics23Client: ",
+                    stateLensIcs23Ics23Client.toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new CosmosInCosmosClient());
-        CosmosInCosmosClient(cosmosLensClient).upgradeToAndCall(
+        address newImplementation = address(new StateLensIcs23Ics23Client());
+        StateLensIcs23Ics23Client(stateLensIcs23Ics23Client).upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();

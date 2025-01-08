@@ -600,8 +600,8 @@ _: {
                     ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
 
                   jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosClient.json \
-                    ${contracts}/out/EvmInCosmosClient.sol/EvmInCosmosLib.json > evm-in-cosmos-client.json
+                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
+                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
                 ''
             );
 
@@ -697,8 +697,8 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
-            name = "eth-deploy-${args.network}-evm-lens";
-            value = eth-deploy-single ({ kind = "EvmLens"; } // args);
+            name = "eth-deploy-${args.network}-state-lens-ics23-mpt-client";
+            value = eth-deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
           }) networks
         )
         // builtins.listToAttrs (
@@ -751,11 +751,11 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
-            name = "eth-upgrade-${args.network}-evm-lens-client";
+            name = "eth-upgrade-${args.network}-state-lens-ics23-mpt-client";
             value = eth-upgrade (
               {
                 dry = false;
-                protocol = "EvmInCosmosClient";
+                protocol = "StateLensIcs23MptClient";
               }
               // args
             );
@@ -763,11 +763,11 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
-            name = "eth-upgrade-${args.network}-cosmos-lens-client";
+            name = "eth-upgrade-${args.network}-state-lens-ics23-ics23-client";
             value = eth-upgrade (
               {
                 dry = false;
-                protocol = "CosmosInCosmosClient";
+                protocol = "StateLensIcs23Ics23Client";
               }
               // args
             );

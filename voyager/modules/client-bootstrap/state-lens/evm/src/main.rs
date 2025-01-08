@@ -1,11 +1,11 @@
 use ethereum_light_client_types::ConsensusState as EthConsensusState;
-use evm_state_lens_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
