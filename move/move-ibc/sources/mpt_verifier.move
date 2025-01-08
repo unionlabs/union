@@ -351,7 +351,7 @@ module ibc::mpt_verifier {
         test_value == subkey
     }
 
-    fun load_u256_big_endian(data: &vector<u8>): u256 {
+    public fun load_u256_big_endian(data: &vector<u8>): u256 {
         let result = 0u256;
         let len = vector::length(data);
 
