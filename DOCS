@@ -1,0 +1,24 @@
+# cosmwasm
+
+- get contract binaries
+  - nix build github:unionlabs/union#ibc-union
+  - nix build github:unionlabs/union#cometbls-light-client
+  - outputs will be in ./result/
+
+- upload contracts to chain
+  - be sure to note the code ids for the uploaded code
+
+- instantiate ibc-union
+  - $NODED tx wasm instantiate IBC_UNION_CODE_ID '{}'
+    - note the contract address of the instantiated contract
+
+- instantiate cometbls-light-client
+  - $NODED tx wasm instantiate COMETBLS_LIGHT_CLIENT_CODE_ID '{"ibc_host":"IBC_UNION_CONTRACT_ADDRESS"}'
+    - note the contract address of the instantiated contract
+
+- register cometbls-light-client
+  - $NODED tx wasm execute IBC_UNION_CONTRACT_ADDRESS '{"register_client":{"client_type":"cometbls","client_address":"COMETBLS_LIGHT_CLIENT_CONTRACT_ADDRESS"}}'
+
+# voyager
+
+
