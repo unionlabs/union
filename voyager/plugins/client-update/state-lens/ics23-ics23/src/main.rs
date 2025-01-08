@@ -207,10 +207,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(continuation)
                     }
                     _ => Ok(conc([
-                        // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
+                        // Update the L2 (tm) client on L1 (union) and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
-                                client_type: ClientType::new(ClientType::ETHEREUM),
+                                client_type: ClientType::new(ClientType::TENDERMINT),
                                 chain_id: self.l2_chain_id.clone(),
                                 counterparty_chain_id: self.l1_chain_id.clone(),
                                 update_from,

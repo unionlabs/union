@@ -233,7 +233,7 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
-                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
     }
 
