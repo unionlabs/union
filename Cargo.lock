@@ -11345,6 +11345,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13359,7 +13371,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
- "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
  "thiserror",
  "tokio",
  "tracing",

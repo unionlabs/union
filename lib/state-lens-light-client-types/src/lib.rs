@@ -1,3 +1,3 @@
 mod header;
 
-pub use header::*;
+pub use header::Header;
