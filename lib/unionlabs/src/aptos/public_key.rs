@@ -2,7 +2,6 @@ use macros::model;
 
 /// A BLS12381 public key
 #[model(no_serde)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct PublicKey {
     // TODO: Use Bytes here and ensure the ser/de is the same
     pub pubkey: Vec<u8>,

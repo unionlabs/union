@@ -35,12 +35,6 @@ impl<E: Encoding> FromIterator<u8> for Bytes<E> {
     }
 }
 
-impl<'a, E: Encoding> FromIterator<&'a u8> for Bytes<E> {
-    fn from_iter<T: IntoIterator<Item = &'a u8>>(iter: T) -> Self {
-        Self::new(iter.into_iter().copied().collect::<Vec<_>>())
-    }
-}
-
 impl<E: Encoding> Bytes<E> {
     #[must_use = "constructing a Bytes has no effect"]
     pub fn new(bytes: impl Into<Cow<'static, [u8]>>) -> Self {
@@ -71,15 +65,6 @@ impl<E: Encoding> Bytes<E> {
     #[must_use = "converting to a vec has no effect"]
     pub fn into_vec(self) -> Vec<u8> {
         self.bytes.into()
-    }
-
-    // TODO: Benchmark and optimize if needed
-    pub fn extend_from_slice(&mut self, other: &[u8]) {
-        let mut vec = self.clone().into_vec();
-
-        vec.extend_from_slice(other);
-
-        *self = Self::new(vec);
     }
 }
 
@@ -173,34 +158,6 @@ impl<'de, E: Encoding> serde::Deserialize<'de> for Bytes<E> {
         } else {
             <&serde_bytes::Bytes>::deserialize(deserializer).map(|b| Bytes::new(b.to_vec()))
         }
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<Enc: Encoding> bincode::Encode for Bytes<Enc> {
-    fn encode<E: bincode::enc::Encoder>(
-        &self,
-        encoder: &mut E,
-    ) -> Result<(), bincode::error::EncodeError> {
-        self.bytes.encode(encoder)
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<Enc: Encoding> bincode::Decode for Bytes<Enc> {
-    fn decode<D: bincode::de::Decoder>(
-        decoder: &mut D,
-    ) -> Result<Self, bincode::error::DecodeError> {
-        Ok(Self::from(<Vec<u8> as bincode::Decode>::decode(decoder)?))
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<'de, Enc: Encoding> bincode::BorrowDecode<'de> for Bytes<Enc> {
-    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
-        decoder: &mut D,
-    ) -> Result<Self, bincode::error::DecodeError> {
-        bincode::Decode::decode(decoder)
     }
 }
 

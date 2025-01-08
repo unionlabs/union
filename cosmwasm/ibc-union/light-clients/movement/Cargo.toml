@@ -13,7 +13,7 @@ evm-storage-verifier        = { workspace = true }
 hex-literal                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
-movement-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+movement-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 rlp                         = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-utils                 = { workspace = true }

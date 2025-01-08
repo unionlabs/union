@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use crate::types::validator::Validator;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ValidatorSet {
     pub validators: Vec<Validator>,
     pub proposer: Validator,

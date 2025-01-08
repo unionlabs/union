@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use unionlabs::primitives::{encoding::HexUnprefixed, H256};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct PartSetHeader {
     pub total: u32,
     /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.

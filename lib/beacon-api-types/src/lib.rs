@@ -96,7 +96,6 @@ pub use crate::{
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Version(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
@@ -107,7 +106,6 @@ pub struct Version(pub FixedBytes<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct DomainType(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
@@ -118,7 +116,6 @@ pub struct DomainType(pub FixedBytes<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ForkDigest(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
@@ -129,7 +126,6 @@ pub struct ForkDigest(pub FixedBytes<4>);
     serde(transparent)
 )]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Domain(pub FixedBytes<32>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#domain-types>
@@ -163,7 +159,6 @@ pub struct Mainnet;
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case")
 )]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum PresetBaseKind {
     Minimal,
     Mainnet,

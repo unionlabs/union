@@ -7,7 +7,6 @@ use crate::{
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionInfoWithProof {
     /// The accumulator proof from ledger info root to leaf that authenticates the hash of the
     /// `TransactionInfo` object.
@@ -39,7 +38,6 @@ impl Default for TransactionInfoWithProof {
 }
 
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionAccumulatorProof {
     pub siblings: Vec<H256<HexUnprefixed>>,
     pub phantom: Null,
@@ -47,5 +45,4 @@ pub struct TransactionAccumulatorProof {
 
 // idk man, it's in the json
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Null;

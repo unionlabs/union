@@ -50,8 +50,8 @@ export const config = createConfig({
         key: "unstable_connector-injected-sepolia",
         name: "unstable_connector-injected-sepolia"
       }),
-      http(`https://rpc.11155111.sepolia.chain.kitchen`, {
-        name: "Chain Kitchen - Sepolia"
+      http(`https://special-summer-film.ethereum-sepolia.quiknode.pro/${KEY.RPC.QUICK_NODE}/`, {
+        name: "QuickNode - Sepolia"
       }),
       http(sepolia.rpcUrls.default.http.at(0), { name: "default Sepolia RPC" })
     ]),
@@ -80,6 +80,10 @@ export const config = createConfig({
         key: "unstable_connector-injected-scroll-sepolia",
         name: "unstable_connector-injected-scroll-sepolia"
       }),
+      http(
+        "https://sparkling-shy-hill.scroll-testnet.quiknode.pro/71674ce271d10786bb3e2fb69e8f788b784c2e89/",
+        { name: "QuickNode - Scroll Sepolia" }
+      ),
       http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
     ])
   },

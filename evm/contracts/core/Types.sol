@@ -31,8 +31,8 @@ struct IBCChannel {
 }
 
 struct IBCPacket {
-    uint32 sourceChannelId;
-    uint32 destinationChannelId;
+    uint32 sourceChannel;
+    uint32 destinationChannel;
     bytes data;
     uint64 timeoutHeight;
     uint64 timeoutTimestamp;

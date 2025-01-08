@@ -6,40 +6,25 @@ import {
   type HttpTransport,
   createWalletClient,
   type CustomTransport,
-  type FallbackTransport,
-  createPublicClient,
-  http
+  type FallbackTransport
 } from "viem"
 import {
-  // evmSameChainTransfer,
+  evmSameChainTransfer,
   transferAssetFromEvm,
   evmApproveTransferAsset,
   transferAssetFromEvmSimulate
 } from "./transfer.ts"
 import { err, ok, type Result } from "neverthrow"
-import { getHubbleChainDetails } from "../pfm.ts"
-import {
-  sepolia,
-  holesky,
-  scrollSepolia,
-  arbitrumSepolia,
-  berachainTestnetbArtio
-} from "viem/chains"
+import { bech32AddressToHex } from "../convert.ts"
+import { cosmosChainId } from "../cosmos/client.ts"
+import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
+import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
-import { ucs03ZkgmAbi } from "#abi/ucs-03.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
-export const evmChains = [
-  sepolia,
-  holesky,
-  scrollSepolia,
-  arbitrumSepolia,
-  berachainTestnetbArtio
-] as const
-
+export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 export const evmChainId = [
   `${sepolia.id}`,
-  `${holesky.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
   `${berachainTestnetbArtio.id}`
@@ -78,56 +63,40 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         account ||= client.account
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
         // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
-        // if (parameters.chainId === destinationChainId) {
-        //   const transfer = await evmSameChainTransfer(client, {
-        //     amount,
-        //     account,
-        //     simulate,
-        //     receiver,
-        //     denomAddress
-        //   })
-        //   if (transfer.isErr()) return err(transfer.error)
-        //   return ok(transfer.value)
-        // }
+        if (parameters.chainId === destinationChainId) {
+          const transfer = await evmSameChainTransfer(client, {
+            amount,
+            account,
+            simulate,
+            receiver,
+            denomAddress
+          })
+          if (transfer.isErr()) return err(transfer.error)
+          return ok(transfer.value)
+        }
 
         const chainDetails = await getHubbleChainDetails({
-          sourceChainId: parameters.chainId,
-          destinationChainId
+          destinationChainId,
+          sourceChainId: parameters.chainId
         })
 
         if (chainDetails.isErr()) return err(chainDetails.error)
 
-        // TODO: make resillient
-        const destinationChainClient = createPublicClient({
-          chain: evmChainFromChainId(destinationChainId),
-          transport: http()
-        })
+        if (chainDetails.value.transferType === "pfm") {
+          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+          const pfmMemo = createPfmMemo({
+            channel: chainDetails.value.destinationChannel,
+            port: chainDetails.value.port,
+            receiver: cosmosChainId.includes(destinationChainId)
+              ? bech32AddressToHex({ address: receiver })
+              : receiver
+          })
 
-        // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
-        // we do this by calling the ucs03 instance on the counterparty chain.
-        const [askToken, _] = (await destinationChainClient.readContract({
-          address: chainDetails.value.destinationUCS03Address as `0x${string}`,
-          abi: ucs03ZkgmAbi,
-          functionName: "predictWrappedToken",
-          args: [0, chainDetails.value.destinationChannel, denomAddress]
-        })) as ["0x${string}", string]
+          if (pfmMemo.isErr()) return err(pfmMemo.error)
+          memo = pfmMemo.value
+        }
 
-        console.log({ sentToken: denomAddress, askToken }) // useful for debugging app
-
-        // if (chainDetails.value.transferType === "pfm") {
-        //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-        //   const pfmMemo = createPfmMemo({
-        //     channel: chainDetails.value.destinationChannel,
-        //     port: chainDetails.value.port,
-        //     receiver: cosmosChainId.includes(destinationChainId)
-        //       ? bech32AddressToHex({ address: receiver })
-        //       : receiver
-        //   })
-
-        //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-        //   memo = pfmMemo.value
-        // }
-
+        destinationChainId ??= chainDetails.value.destinationChainId
         const sourceChannel = chainDetails.value.sourceChannel
         relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
 
@@ -139,7 +108,6 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           autoApprove,
           denomAddress,
-          askToken,
           sourceChannel,
           relayContractAddress
         })
@@ -157,13 +125,12 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
         // otherwise, it's the relayer contract address from ucs config
         if (parameters.chainId !== destinationChainId) {
-          // TODO: don't hardcode
           const ucsDetails = await getHubbleChainDetails({
             destinationChainId,
             sourceChainId: parameters.chainId
           })
           if (ucsDetails.isErr()) return err(ucsDetails.error)
-          _receiver = ucsDetails.value.relayContractAddress as `0x${string}`
+          _receiver = getAddress(ucsDetails.value.relayContractAddress)
         } else _receiver = getAddress(receiver)
 
         return await evmApproveTransferAsset(client, {
@@ -194,35 +161,26 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           })
           return ok(gas.toString())
         }
-
         const chainDetails = await getHubbleChainDetails({
-          sourceChainId: parameters.chainId,
-          destinationChainId
+          destinationChainId,
+          sourceChainId: parameters.chainId
         })
-        // const chainDetails = {
-        //   value: {
-        //     sourceChannel: "3",
-        //     relayContractAddress: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
-        //     transferType: "direct",
-        //     destinationChainId
-        //   }
-        // }
 
         if (chainDetails.isErr()) return err(chainDetails.error)
 
-        // if (chainDetails.value.transferType === "pfm") {
-        //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-        //   const pfmMemo = createPfmMemo({
-        //     port: chainDetails.value.port,
-        //     channel: chainDetails.value.destinationChannel,
-        //     receiver: cosmosChainId.includes(destinationChainId)
-        //       ? bech32AddressToHex({ address: receiver })
-        //       : receiver
-        //   })
+        if (chainDetails.value.transferType === "pfm") {
+          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+          const pfmMemo = createPfmMemo({
+            port: chainDetails.value.port,
+            channel: chainDetails.value.destinationChannel,
+            receiver: cosmosChainId.includes(destinationChainId)
+              ? bech32AddressToHex({ address: receiver })
+              : receiver
+          })
 
-        //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-        //   memo = pfmMemo.value
-        // }
+          if (pfmMemo.isErr()) return err(pfmMemo.error)
+          memo = pfmMemo.value
+        }
 
         const sourceChannel = chainDetails.value.sourceChannel
         relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)

@@ -1,5 +1,6 @@
+use alloc::borrow::Cow;
+
 use macros::model;
-use unionlabs_primitives::Bytes;
 
 use crate::{
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
@@ -7,13 +8,14 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::LeafOp), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LeafOp {
     pub hash: HashOp,
     pub prehash_key: HashOp,
     pub prehash_value: HashOp,
     pub length: LengthOp,
-    pub prefix: Bytes,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub prefix: Cow<'static, [u8]>,
 }
 
 impl From<LeafOp> for protos::cosmos::ics23::v1::LeafOp {

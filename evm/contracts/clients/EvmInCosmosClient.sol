@@ -38,10 +38,6 @@ struct ConsensusState {
 library EvmInCosmosLib {
     uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
 
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -127,14 +123,6 @@ contract EvmInCosmosClient is
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
-
-        emit EvmInCosmosLib.CreateLensClient(
-            clientId,
-            clientState.l1ClientId,
-            clientState.l2ClientId,
-            clientState.l2ChainId
-        );
-
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),

@@ -65,7 +65,7 @@ export async function simulateTransaction({
   receiver: string
   account?: Address
   denomAddress: Address
-  sourceChannel: number
+  sourceChannel: string
   sourceChainId?: ChainId
   destinationChainId?: ChainId
   relayContractAddress: Address
@@ -97,7 +97,7 @@ export async function simulateTransaction({
     abi: ucs01RelayAbi,
     functionName: "send",
     args: [
-      sourceChannel.toString(),
+      sourceChannel,
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       [{ denom: denomAddress, amount }],
       memo ?? "",

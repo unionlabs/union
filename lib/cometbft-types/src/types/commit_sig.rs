@@ -12,7 +12,6 @@ use crate::types::block_id_flag::BlockIdFlag;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "CommitSigRaw", into = "CommitSigRaw")]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum CommitSig {
     Absent,
     Commit {

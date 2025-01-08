@@ -30,8 +30,8 @@ impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {
         )?;
 
         Ok(Self {
-            prefix: value.prefix,
-            suffix: value.suffix,
+            prefix: value.prefix.into(),
+            suffix: value.suffix.into(),
         })
     }
 }
@@ -40,8 +40,8 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
     fn from(value: InnerOp) -> Self {
         crate::cosmos::ics23::inner_op::InnerOp {
             hash: EXPECTED_HASH_OP,
-            prefix: value.prefix,
-            suffix: value.suffix,
+            prefix: value.prefix.into(),
+            suffix: value.suffix.into(),
         }
         .into()
     }

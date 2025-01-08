@@ -8,7 +8,6 @@ use {alloy::core::primitives::FixedBytes, std::string::FromUtf8Error};
 ///
 /// The size limitation is required such that the entire ID will fit in the bn254 scalar field. The *actual* maximum size is 254 bits, but it's truncated down to 31 bytes for simplicity.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ChainId(String);
 
 impl ChainId {
@@ -54,7 +53,6 @@ impl Display for ChainId {
     }
 }
 
-// REVIEW: Should we use the fixed bytes representation for non-human readable formats?
 #[cfg(feature = "serde")]
 impl serde::Serialize for ChainId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -74,25 +72,5 @@ impl<'de> serde::Deserialize<'de> for ChainId {
         let s = <String as serde::Deserialize>::deserialize(deserializer)?;
 
         ChainId::from_string(s).map_err(serde::de::Error::custom)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use unionlabs::{
-        encoding::{Bincode, Json},
-        test_utils::assert_codec_iso,
-    };
-
-    use super::*;
-
-    #[test]
-    fn bincode_iso() {
-        assert_codec_iso::<_, Bincode>(&ChainId::from_string("oogabooga").unwrap());
-    }
-
-    #[test]
-    fn json_iso() {
-        assert_codec_iso::<_, Json>(&ChainId::from_string("oogabooga").unwrap());
     }
 }

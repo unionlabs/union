@@ -5,15 +5,13 @@ version = "0.1.0"
 
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"], optional = true }
-bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
 ethereum-light-client-types = { workspace = true }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
 unionlabs                   = { workspace = true }
 
 [features]
-bincode = ["dep:bincode", "unionlabs/bincode", "ethereum-light-client-types/bincode"]
-ethabi  = ["unionlabs/ethabi", "dep:alloy"]
-serde   = ["dep:serde", "ethereum-light-client-types/serde"]
+ethabi = ["unionlabs/ethabi", "dep:alloy"]
+serde  = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

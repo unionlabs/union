@@ -6,7 +6,6 @@ version = "0.1.0"
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types            = { workspace = true }
-bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
 ethereum-light-client-types = { workspace = true }
 protos                      = { workspace = true, optional = true, features = ["union+ibc+lightclients+berachain+v1"] }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
@@ -14,13 +13,6 @@ unionlabs                   = { workspace = true }
 
 [features]
 default = []
-
-bincode = [
-  "dep:bincode",
-  "unionlabs/bincode",
-  "ethereum-light-client-types/bincode",
-  "beacon-api-types/bincode",
-]
-ethabi = ["unionlabs/ethabi", "dep:alloy"]
-proto = ["dep:protos"]
-serde = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+proto   = ["dep:protos"]
+serde   = ["beacon-api-types/serde", "ethereum-light-client-types/serde", "dep:serde"]

@@ -13,7 +13,11 @@ export function userBalancesQuery({
   userAddr,
   chains,
   connected = true
-}: { userAddr: UserAddresses; chains: Array<Chain>; connected?: boolean }) {
+}: {
+  userAddr: UserAddresses
+  chains: Array<Chain>
+  connected?: boolean
+}) {
   return createQueries({
     queries: chains.map(chain => ({
       queryKey: [

@@ -12,7 +12,6 @@ use crate::{
     into,
     from
 ))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]

@@ -362,34 +362,6 @@ impl<E: Encoding, const BYTES: usize> rlp::Encodable for FixedBytes<BYTES, E> {
     }
 }
 
-#[cfg(feature = "bincode")]
-impl<Enc: Encoding, const BYTES: usize> bincode::Encode for FixedBytes<BYTES, Enc> {
-    fn encode<E: bincode::enc::Encoder>(
-        &self,
-        encoder: &mut E,
-    ) -> Result<(), bincode::error::EncodeError> {
-        self.get().encode(encoder)
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, Enc> {
-    fn decode<D: bincode::de::Decoder>(
-        decoder: &mut D,
-    ) -> Result<Self, bincode::error::DecodeError> {
-        Ok(Self::new(bincode::Decode::decode(decoder)?))
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for FixedBytes<BYTES, Enc> {
-    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
-        decoder: &mut D,
-    ) -> Result<Self, bincode::error::DecodeError> {
-        bincode::Decode::decode(decoder)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use hex::FromHexError;

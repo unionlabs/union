@@ -11,9 +11,7 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
-#[cfg(feature = "bincode")]
 pub enum Bincode {}
-#[cfg(feature = "bincode")]
 impl Encoding for Bincode {}
 
 impl<T> Encode<Ssz> for T
@@ -24,6 +22,16 @@ where
         ssz::Ssz::as_ssz_bytes(&self)
     }
 }
+
+// TODO: Figure out why this doesn't work, I'm not sure why it doesn't
+// impl<T> Encode<Ssz> for &'_ T
+// where
+//     T: ssz::Ssz,
+// {
+//     fn encode(self) -> Vec<u8> {
+//         ssz::Ssz::as_ssz_bytes(self)
+//     }
+// }
 
 impl<T> Decode<Ssz> for T
 where
@@ -62,26 +70,23 @@ where
     }
 }
 
-#[cfg(feature = "bincode")]
 impl<T> Encode<Bincode> for T
 where
-    T: bincode::Encode,
+    T: serde::Serialize,
 {
     fn encode(self) -> Vec<u8> {
-        bincode::encode_to_vec(self, bincode::config::legacy())
-            .expect("bincode encoding should be infallible")
+        bincode::serialize(&self).expect("bincode serialization should be infallible")
     }
 }
 
-#[cfg(feature = "bincode")]
 impl<T> Decode<Bincode> for T
 where
-    T: bincode::Decode,
+    T: serde::de::DeserializeOwned,
 {
-    type Error = bincode::error::DecodeError;
+    type Error = bincode::Error;
 
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        bincode::decode_from_slice(bytes, bincode::config::legacy()).map(|(t, _)| t)
+        bincode::deserialize(bytes)
     }
 }
 

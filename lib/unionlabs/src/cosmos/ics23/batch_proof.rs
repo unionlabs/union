@@ -3,7 +3,6 @@ use macros::model;
 use crate::cosmos::ics23::batch_entry::{BatchEntry, TryFromBatchEntryError};
 
 #[model(proto(raw(protos::cosmos::ics23::v1::BatchProof), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct BatchProof {
     pub entries: Vec<BatchEntry>,
 }

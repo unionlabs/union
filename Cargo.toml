@@ -280,12 +280,11 @@ aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
-bincode                  = { git = "https://github.com/bincode-org/bincode", default-features = false } # we use bincode 2 for the custom non-serde traits & derives
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
-clap                     = { version = "4.3.0", default-features = false, features = ["std"] }          # clap has a fake std feature that is required to be enabled by default
+clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "2.1.4", default-features = false }
 cosmwasm-std             = { version = "2.1.4", default-features = false }
@@ -315,15 +314,15 @@ rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.3", default-features = false }
 serde                    = { version = "1.0.0", default-features = false }
 serde-json-wasm          = { version = "1.0.0", default-features = false }
-serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }        # serde-json requires one of "std" or "alloc"
+serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }     # serde-json requires one of "std" or "alloc"
 serde_with               = { version = "3.7.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.7", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }
-static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                       # https://github.com/nvzqz/static-assertions/pull/28
+static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
 subtle-encoding          = { version = "0.5.1", default-features = false }
 thiserror                = { version = "1.0.0", default-features = false }
-time                     = { version = "0.3.36", default-features = false }                             # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
+time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
 tokio                    = { version = "1.33.0", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }
 tonic                    = { version = "0.10", default-features = false }

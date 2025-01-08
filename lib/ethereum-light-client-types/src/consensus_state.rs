@@ -1,4 +1,4 @@
-use unionlabs::primitives::{H256, H384};
+use unionlabs::{bls::BlsPublicKey, primitives::H256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -10,15 +10,17 @@ pub struct ConsensusState {
     /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
     pub timestamp: u64,
     /// aggregate public key of current sync committee
-    pub current_sync_committee: H384,
+    pub current_sync_committee: BlsPublicKey,
     /// aggregate public key of next sync committee
-    pub next_sync_committee: H384,
+    pub next_sync_committee: BlsPublicKey,
 }
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
+    use core::array::TryFromSliceError;
+
     use alloy::sol_types::SolValue;
-    use unionlabs::{impl_ethabi_via_try_from_into, primitives::FixedBytesError};
+    use unionlabs::impl_ethabi_via_try_from_into;
 
     use super::*;
 
@@ -42,8 +44,8 @@ pub mod ethabi {
                 state_root: value.state_root.get().into(),
                 storage_root: value.storage_root.get().into(),
                 timestamp: value.timestamp,
-                current_sync_committee: value.current_sync_committee.as_ref().to_vec().into(),
-                next_sync_committee: value.next_sync_committee.as_ref().to_vec().into(),
+                current_sync_committee: value.current_sync_committee.0.into(),
+                next_sync_committee: value.next_sync_committee.0.into(),
             }
         }
     }
@@ -51,9 +53,9 @@ pub mod ethabi {
     #[derive(Debug, thiserror::Error)]
     pub enum TryFromEthAbiError {
         #[error("invalid current sync committee")]
-        CurrentSyncCommittee(#[source] FixedBytesError),
+        CurrentSyncCommittee(#[source] TryFromSliceError),
         #[error("invalid next sync committee")]
-        NextSyncCommittee(#[source] FixedBytesError),
+        NextSyncCommittee(#[source] TryFromSliceError),
     }
 
     impl TryFrom<SolConsensusState> for ConsensusState {
@@ -65,49 +67,21 @@ pub mod ethabi {
                 state_root: H256::new(value.state_root.0),
                 storage_root: H256::new(value.storage_root.0),
                 timestamp: value.timestamp,
-                current_sync_committee: value
-                    .current_sync_committee
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiError::CurrentSyncCommittee)?,
-                next_sync_committee: value
-                    .next_sync_committee
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiError::NextSyncCommittee)?,
+                current_sync_committee: BlsPublicKey(
+                    value
+                        .current_sync_committee
+                        .as_ref()
+                        .try_into()
+                        .map_err(TryFromEthAbiError::CurrentSyncCommittee)?,
+                ),
+                next_sync_committee: BlsPublicKey(
+                    value
+                        .next_sync_committee
+                        .as_ref()
+                        .try_into()
+                        .map_err(TryFromEthAbiError::NextSyncCommittee)?,
+                ),
             })
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use unionlabs::{
-        encoding::{EthAbi, Json},
-        primitives::H256,
-        test_utils::assert_codec_iso,
-    };
-
-    use super::*;
-
-    fn mk_consensus_state() -> ConsensusState {
-        ConsensusState {
-            slot: 42,
-            state_root: H256::new([0xAA; 32]),
-            storage_root: H256::new([0xAA; 32]),
-            timestamp: 123_456_789,
-            current_sync_committee: H384::new([0xAA; 48]),
-            next_sync_committee: H384::new([0xAA; 48]),
-        }
-    }
-
-    #[test]
-    fn ethabi_iso() {
-        assert_codec_iso::<_, EthAbi>(&mk_consensus_state());
-    }
-
-    #[test]
-    fn json_iso() {
-        assert_codec_iso::<_, Json>(&mk_consensus_state());
     }
 }

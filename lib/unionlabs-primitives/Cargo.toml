@@ -7,8 +7,7 @@ version      = "0.0.1"
 
 [dependencies]
 alloy-primitives = { workspace = true, optional = true }
-base64           = { workspace = true, optional = true, features = ["std"] }
-bincode          = { workspace = true, optional = true, features = ["alloc"] }
+base64           = { workspace = true, optional = true }
 generic-array    = { workspace = true, optional = true }
 hex              = { workspace = true, features = ["std"] }
 primitive-types  = { workspace = true, optional = true }
@@ -24,10 +23,9 @@ workspace = true
 [features]
 default = ["serde", "base64"]
 
-base64  = ["dep:base64"]
-bincode = ["dep:bincode"]
-rlp     = ["dep:rlp"]
-serde   = ["dep:serde", "dep:serde_bytes"]
+base64 = ["dep:base64"]
+rlp    = ["dep:rlp"]
+serde  = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
 generic-array-compat    = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]

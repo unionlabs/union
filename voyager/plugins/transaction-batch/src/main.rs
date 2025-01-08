@@ -137,7 +137,7 @@ impl IbcSpecExt for IbcClassic {
             EventClassic::ChannelOpenTry(_) => "channel_open_try",
             EventClassic::ChannelOpenAck(_) => "channel_open_ack",
             EventClassic::SendPacket(_) => "send_packet",
-            EventClassic::WriteAcknowledgement(_) => "write_ack",
+            EventClassic::WriteAcknowledgement(_) => "write_acknowledgement",
         }
     }
 }
@@ -246,7 +246,7 @@ if ."@type" == "data" then
             $event_type == "send_packet"
             and ($event_data.packet.destination_channel.connection.client_id as $client_id | {clients_filter})
         ) or (
-            $event_type == "write_ack"
+            $event_type == "write_acknowledgement"
             and ($event_data.packet.source_channel.connection.client_id as $client_id | {clients_filter})
         ) or ($data."@type" == "plugin"
             and $data."@value".plugin == "{plugin_name}"

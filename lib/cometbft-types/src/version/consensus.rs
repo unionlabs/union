@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]
     pub block: u64,

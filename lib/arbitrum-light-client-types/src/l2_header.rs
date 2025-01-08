@@ -7,7 +7,6 @@ use unionlabs::{
 
 #[derive(Debug, Clone, PartialEq, rlp::RlpEncodable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct L2Header {
     pub parent_hash: H256,
     pub sha3_uncles: H256,

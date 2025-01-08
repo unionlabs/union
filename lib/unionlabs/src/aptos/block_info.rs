@@ -24,7 +24,6 @@ pub const GENESIS_TIMESTAMP_USECS: u64 = 0;
 /// without having access to the block or its execution output state. It
 /// assumes that the block is the last block executed within the ledger.
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
     pub epoch: u64,

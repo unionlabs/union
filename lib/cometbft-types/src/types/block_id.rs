@@ -4,7 +4,6 @@ use unionlabs::primitives::{encoding::HexUnprefixed, H256};
 use crate::types::part_set_header::PartSetHeader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct BlockId {
     /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
     pub hash: Option<H256<HexUnprefixed>>,

@@ -6,7 +6,6 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]

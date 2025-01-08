@@ -131,7 +131,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
             const pfmMemo = createPfmMemo({
               port: chainDetails.value.port,
-              channel: chainDetails.value.destinationChannel.toString(),
+              channel: chainDetails.value.destinationChannel,
               /**
                * TODO:
                * check if normal Aptos hex address is valid here or do we need to do some transformation
@@ -154,7 +154,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             simulate,
             receiver,
             denomAddress,
-            sourceChannel: sourceChannel.toString(),
+            sourceChannel,
             destinationChainId,
             relayContractAddress,
             ...aptosClient
@@ -199,7 +199,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
             const pfmMemo = createPfmMemo({
               port: chainDetails.value.port,
-              channel: chainDetails.value.destinationChannel.toString(),
+              channel: chainDetails.value.destinationChannel,
               /**
                * TODO:
                * check if normal Aptos hex address is valid here or do we need to do some transformation
@@ -221,7 +221,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             amount,
             receiver,
             denomAddress,
-            sourceChannel: sourceChannel.toString(),
+            sourceChannel,
             destinationChainId,
             relayContractAddress,
             ...aptosClient

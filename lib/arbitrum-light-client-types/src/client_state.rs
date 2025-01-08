@@ -1,12 +1,12 @@
 use unionlabs::{
-    bounded::BoundedU32, ibc::core::client::height::Height, primitives::H160, uint::U256,
+    bounded::BoundedU32, ibc::core::client::height::Height, id::ClientId, primitives::H160,
+    uint::U256,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
-    pub l1_client_id: u32,
+    pub l1_client_id: ClientId,
     pub chain_id: U256,
     pub l1_latest_slot: u64,
     pub l1_contract_address: H160,

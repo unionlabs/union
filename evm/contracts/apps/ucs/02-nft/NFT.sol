@@ -340,12 +340,12 @@ contract UCS02NFT is
         address receiver,
         string memory nftDenom
     ) internal returns (address) {
-        address nftClass = denomToNft[ibcPacket.destinationChannelId][nftDenom];
+        address nftClass = denomToNft[ibcPacket.destinationChannel][nftDenom];
         if (nftClass == address(0)) {
             nftClass =
                 address(new ERC721Denom(packet.className, packet.classSymbol));
-            denomToNft[ibcPacket.destinationChannelId][nftDenom] = nftClass;
-            nftToDenom[ibcPacket.destinationChannelId][nftClass] = nftDenom;
+            denomToNft[ibcPacket.destinationChannel][nftDenom] = nftClass;
+            nftToDenom[ibcPacket.destinationChannel][nftClass] = nftDenom;
             emit NFTLib.ClassCreated(ibcPacket, nftClass);
         }
         uint256 tokenIdsLength = packet.tokenIds.length;
@@ -369,7 +369,7 @@ contract UCS02NFT is
         address nftClass = Hex.hexToAddress(nftDenom);
         uint256 tokenIdsLength = packet.tokenIds.length;
         decreaseOutstanding(
-            ibcPacket.destinationChannelId, nftClass, tokenIdsLength
+            ibcPacket.destinationChannel, nftClass, tokenIdsLength
         );
         for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
@@ -391,7 +391,7 @@ contract UCS02NFT is
         // {src_channel}/denom
         // This will trim the denom in-place IFF it is prefixed
         strings.slice memory trimedClassId = packet.classId.toSlice().beyond(
-            NFTLib.makeDenomPrefix(ibcPacket.sourceChannelId).toSlice()
+            NFTLib.makeDenomPrefix(ibcPacket.sourceChannel).toSlice()
         );
         address receiver = Hex.hexToAddress(packet.receiver);
         address nftClass;
@@ -399,7 +399,7 @@ contract UCS02NFT is
             // In this branch the token was originating from the
             // counterparty chain. We need to mint the amount.
             string memory nftDenom = NFTLib.makeForeignDenom(
-                ibcPacket.destinationChannelId, packet.classId
+                ibcPacket.destinationChannel, packet.classId
             );
             receiveRemoteNative(ibcPacket, packet, receiver, nftDenom);
         } else {
@@ -441,12 +441,12 @@ contract UCS02NFT is
         address userToRefund = Hex.hexToAddress(packet.sender);
         // The nft class must exist as we previously created it.
         // If it does not, it means it was a originating from the local chain.
-        address nftClass = denomToNft[ibcPacket.sourceChannelId][packet.classId];
+        address nftClass = denomToNft[ibcPacket.sourceChannel][packet.classId];
         bool isLocal = nftClass == address(0);
         uint256 tokenIdsLength = packet.tokenIds.length;
         if (isLocal) {
             decreaseOutstanding(
-                ibcPacket.sourceChannelId, nftClass, tokenIdsLength
+                ibcPacket.sourceChannel, nftClass, tokenIdsLength
             );
         }
         for (uint256 i; i < tokenIdsLength; i++) {

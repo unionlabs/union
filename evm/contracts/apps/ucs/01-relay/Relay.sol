@@ -335,7 +335,7 @@ contract UCS01Relay is
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
             address denomAddress =
-                denomToAddress[ibcPacket.sourceChannelId][token.denom];
+                denomToAddress[ibcPacket.sourceChannel][token.denom];
             if (denomAddress != address(0)) {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
@@ -347,7 +347,7 @@ contract UCS01Relay is
                 // It's an ERC20 string 0x prefixed hex address
                 denomAddress = Hex.hexToAddress(token.denom);
                 decreaseOutstanding(
-                    ibcPacket.sourceChannelId, denomAddress, token.amount
+                    ibcPacket.sourceChannel, denomAddress, token.amount
                 );
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
@@ -398,13 +398,12 @@ contract UCS01Relay is
         address relayer,
         uint256 feeAmount
     ) internal returns (address) {
-        address denomAddress =
-            denomToAddress[packet.destinationChannelId][denom];
+        address denomAddress = denomToAddress[packet.destinationChannel][denom];
         if (denomAddress == address(0)) {
             denomAddress =
                 address(new ERC20Denom{salt: keccak256(bytes(denom))}(denom));
-            denomToAddress[packet.destinationChannelId][denom] = denomAddress;
-            addressToDenom[packet.destinationChannelId][denomAddress] = denom;
+            denomToAddress[packet.destinationChannel][denom] = denomAddress;
+            addressToDenom[packet.destinationChannel][denomAddress] = denom;
             emit RelayLib.DenomCreated(packet, denom, denomAddress);
         }
         IERC20Denom(denomAddress).mint(receiver, amount);
@@ -422,8 +421,7 @@ contract UCS01Relay is
             revert RelayLib.ErrUnauthorized();
         }
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
-        string memory prefix =
-            RelayLib.makeDenomPrefix(ibcPacket.sourceChannelId);
+        string memory prefix = RelayLib.makeDenomPrefix(ibcPacket.sourceChannel);
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
@@ -441,7 +439,7 @@ contract UCS01Relay is
                 // We need to unescrow the amount.
                 denom = token.denom.slice(bytes(prefix).length);
                 denomAddress = onRecvLocalTransfer(
-                    ibcPacket.destinationChannelId,
+                    ibcPacket.destinationChannel,
                     denom,
                     receiver,
                     actualAmount,
@@ -452,7 +450,7 @@ contract UCS01Relay is
                 // In this branch the token was originating from the
                 // counterparty chain. We need to prefix the denom and mint the amount.
                 denom = RelayLib.makeForeignDenom(
-                    ibcPacket.destinationChannelId, token.denom
+                    ibcPacket.destinationChannel, token.denom
                 );
                 denomAddress = onRecvRemoteTransfer(
                     ibcPacket, denom, receiver, actualAmount, relayer, feeAmount

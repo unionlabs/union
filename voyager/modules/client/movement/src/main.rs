@@ -66,7 +66,7 @@ impl Module {
         <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {err}"),
+                format!("unable to decode client state: {}", ErrorReporter(err)),
                 None::<()>,
             )
         })

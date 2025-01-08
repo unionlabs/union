@@ -218,6 +218,6 @@ impl ClientModuleServer for Module {
         })?;
         // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
         // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
-        Ok(proof.proof.into_iter().flatten().collect())
+        Ok(proof.proof.concat().into())
     }
 }

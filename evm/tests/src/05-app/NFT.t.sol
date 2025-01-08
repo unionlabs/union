@@ -14,8 +14,8 @@ contract MockIBCHandler {
         bytes calldata data
     ) external returns (IBCPacket memory packet) {
         return IBCPacket({
-            sourceChannelId: sourceChannel,
-            destinationChannelId: 0,
+            sourceChannel: sourceChannel,
+            destinationChannel: 0,
             data: bytes(""),
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
@@ -153,8 +153,8 @@ contract UCS02NFTTests is Test {
         vm.startPrank(address(mockIBCHandler));
         ucs02NFT.onRecvPacket(
             IBCPacket({
-                sourceChannelId: 1,
-                destinationChannelId: 1,
+                sourceChannel: 1,
+                destinationChannel: 1,
                 data: abi.encode(
                     NFTPacket({
                         classOwner: "",
@@ -197,8 +197,8 @@ contract UCS02NFTTests is Test {
         vm.startPrank(address(mockIBCHandler));
         ucs02NFT.onRecvPacket(
             IBCPacket({
-                sourceChannelId: 1,
-                destinationChannelId: 1,
+                sourceChannel: 1,
+                destinationChannel: 1,
                 data: NFTPacketLib.encode(
                     NFTPacket({
                         classOwner: "",
@@ -233,8 +233,8 @@ contract UCS02NFTTests is Test {
         vm.startPrank(address(mockIBCHandler));
         ucs02NFT.onAcknowledgementPacket(
             IBCPacket({
-                sourceChannelId: 1,
-                destinationChannelId: 1,
+                sourceChannel: 1,
+                destinationChannel: 1,
                 data: NFTPacketLib.encode(
                     NFTPacket({
                         classOwner: "",
@@ -299,8 +299,8 @@ contract UCS02NFTTests is Test {
         vm.startPrank(address(mockIBCHandler));
         ucs02NFT.onAcknowledgementPacket(
             IBCPacket({
-                sourceChannelId: 1,
-                destinationChannelId: 1,
+                sourceChannel: 1,
+                destinationChannel: 1,
                 data: NFTPacketLib.encode(
                     NFTPacket({
                         classOwner: "",

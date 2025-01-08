@@ -9,7 +9,6 @@ use crate::{
 /// Wrapper to support future upgrades, this is the data being persisted.
 #[model(no_serde)]
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }
@@ -20,7 +19,6 @@ pub enum LedgerInfoWithSignatures {
 /// again when the client performs a query, those are only there for the client
 /// to be able to verify the state
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LedgerInfoWithV0 {
     pub ledger_info: LedgerInfo,
     /// Aggregated BLS signature of all the validators that signed the message. The bitmask in the
@@ -29,7 +27,6 @@ pub struct LedgerInfoWithV0 {
 }
 
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LedgerInfo {
     pub commit_info: BlockInfo,
 

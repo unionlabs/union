@@ -7,7 +7,6 @@ use crate::Fraction;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,
@@ -97,73 +96,5 @@ pub mod proto {
                 upgrade_path: value.upgrade_path,
             })
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::num::NonZeroU64;
-
-    use unionlabs::{
-        cosmos::ics23::{
-            hash_op::HashOp, inner_spec::InnerSpec, leaf_op::LeafOp, length_op::LengthOp,
-        },
-        encoding::{Bincode, Json, Proto},
-        primitives::Bytes,
-        test_utils::assert_codec_iso,
-    };
-
-    use super::*;
-
-    fn mk_client_state() -> ClientState {
-        ClientState {
-            chain_id: "oogabooga".to_string(),
-            trust_level: Fraction {
-                numerator: 1,
-                denominator: NonZeroU64::new(3).unwrap(),
-            },
-            trusting_period: Duration::new(12, 345).unwrap(),
-            unbonding_period: Duration::new(67, 890).unwrap(),
-            max_clock_drift: Duration::new(543, 21).unwrap(),
-            frozen_height: Some(Height::default()),
-            latest_height: Height::new(1337),
-            proof_specs: [ProofSpec {
-                leaf_spec: LeafOp {
-                    hash: HashOp::Sha256,
-                    prehash_key: HashOp::Sha512,
-                    prehash_value: HashOp::Keccak256,
-                    length: LengthOp::VarProto,
-                    prefix: Bytes::new_static(&[1, 2, 3]),
-                },
-                inner_spec: InnerSpec {
-                    child_order: [0.try_into().unwrap()].into_iter().collect(),
-                    child_size: 123.try_into().unwrap(),
-                    min_prefix_length: 456.try_into().unwrap(),
-                    max_prefix_length: 789.try_into().unwrap(),
-                    empty_child: Bytes::new_static(&[10, 11, 12]),
-                    hash: HashOp::Bitcoin,
-                },
-                max_depth: None,
-                min_depth: None,
-                prehash_key_before_comparison: false,
-            }]
-            .to_vec(),
-            upgrade_path: ["upgrade".to_owned(), "path".to_owned()].to_vec(),
-        }
-    }
-
-    #[test]
-    fn bincode_iso() {
-        assert_codec_iso::<_, Bincode>(&mk_client_state());
-    }
-
-    #[test]
-    fn json_iso() {
-        assert_codec_iso::<_, Json>(&mk_client_state());
-    }
-
-    #[test]
-    fn proto_iso() {
-        assert_codec_iso::<_, Proto>(&mk_client_state());
     }
 }

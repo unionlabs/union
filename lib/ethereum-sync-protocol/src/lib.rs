@@ -17,8 +17,9 @@ use beacon_api_types::{
 use ssz::Ssz;
 use typenum::Unsigned;
 use unionlabs::{
+    bls::{BlsPublicKey, BlsSignature},
     ensure,
-    primitives::{H256, H384, H768},
+    primitives::H256,
     BytesBitIterator,
 };
 
@@ -36,9 +37,9 @@ pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: impl IntoIterator<Item = &'pk H384>,
+        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
         msg: Vec<u8>,
-        signature: H768,
+        signature: BlsSignature,
     ) -> Result<(), Error>;
 }
 

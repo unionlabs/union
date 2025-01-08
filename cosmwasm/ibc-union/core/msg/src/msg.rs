@@ -36,16 +36,6 @@ pub enum ExecuteMsg {
     BatchAcks(MsgBatchAcks),
     PacketSend(MsgSendPacket),
     WriteAcknowledgement(MsgWriteAcknowledgement),
-    MigrateState(MsgMigrateState),
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct MsgMigrateState {
-    pub client_id: u32,
-    pub client_state: Bytes,
-    pub consensus_state: Bytes,
-    pub height: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

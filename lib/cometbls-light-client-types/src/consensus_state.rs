@@ -101,38 +101,3 @@ pub mod ethabi {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use unionlabs::{
-        encoding::{EthAbi, Json, Proto},
-        test_utils::assert_codec_iso,
-    };
-
-    use super::*;
-
-    fn mk_consensus_state() -> ConsensusState {
-        ConsensusState {
-            timestamp: 123_456_789,
-            app_hash: MerkleRoot {
-                hash: H256::from([0xAA; 32]),
-            },
-            next_validators_hash: H256::from([0xAA; 32]),
-        }
-    }
-
-    #[test]
-    fn ethabi_iso() {
-        assert_codec_iso::<_, EthAbi>(&mk_consensus_state());
-    }
-
-    #[test]
-    fn json_iso() {
-        assert_codec_iso::<_, Json>(&mk_consensus_state());
-    }
-
-    #[test]
-    fn proto_iso() {
-        assert_codec_iso::<_, Proto>(&mk_consensus_state());
-    }
-}

@@ -9,7 +9,6 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::BatchEntry), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum BatchEntry {
     Exist(ExistenceProof),
     Nonexist(NonExistenceProof),

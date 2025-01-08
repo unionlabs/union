@@ -1,7 +1,6 @@
 use alloc::borrow::Cow;
 
 use macros::model;
-use unionlabs_primitives::Bytes;
 
 use crate::{
     bounded::{BoundedIntError, BoundedUsize},
@@ -12,48 +11,14 @@ use crate::{
 pub type PositiveI32AsUsize = BoundedUsize<0, { i32::MAX as usize }>;
 
 #[model(proto(raw(protos::cosmos::ics23::v1::InnerSpec), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode))]
 pub struct InnerSpec {
     pub child_order: Cow<'static, [PositiveI32AsUsize]>,
     pub child_size: PositiveI32AsUsize,
     pub min_prefix_length: PositiveI32AsUsize,
     pub max_prefix_length: PositiveI32AsUsize,
-    pub empty_child: Bytes,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub empty_child: Cow<'static, [u8]>,
     pub hash: HashOp,
-}
-
-// implemented manually for now bc Cow is weird, see https://github.com/bincode-org/bincode/issues/631
-#[cfg(feature = "bincode")]
-impl bincode::Decode for InnerSpec {
-    fn decode<D: bincode::de::Decoder>(
-        decoder: &mut D,
-    ) -> core::result::Result<Self, bincode::error::DecodeError> {
-        Ok(Self {
-            child_order: bincode::Decode::decode(decoder)?,
-            child_size: bincode::Decode::decode(decoder)?,
-            min_prefix_length: bincode::Decode::decode(decoder)?,
-            max_prefix_length: bincode::Decode::decode(decoder)?,
-            empty_child: bincode::Decode::decode(decoder)?,
-            hash: bincode::Decode::decode(decoder)?,
-        })
-    }
-}
-
-#[cfg(feature = "bincode")]
-impl<'de> bincode::BorrowDecode<'de> for InnerSpec {
-    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
-        decoder: &mut D,
-    ) -> core::result::Result<Self, bincode::error::DecodeError> {
-        Ok(Self {
-            // this is the only line that changed from the generated code in `target/generated/bincode/InnerSpec_Decode.rs` (borrow decode -> decode)
-            child_order: bincode::Decode::decode(decoder)?,
-            child_size: bincode::BorrowDecode::borrow_decode(decoder)?,
-            min_prefix_length: bincode::BorrowDecode::borrow_decode(decoder)?,
-            max_prefix_length: bincode::BorrowDecode::borrow_decode(decoder)?,
-            empty_child: bincode::BorrowDecode::borrow_decode(decoder)?,
-            hash: bincode::BorrowDecode::borrow_decode(decoder)?,
-        })
-    }
 }
 
 impl From<InnerSpec> for protos::cosmos::ics23::v1::InnerSpec {

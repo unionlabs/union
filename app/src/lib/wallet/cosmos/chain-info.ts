@@ -12,10 +12,10 @@ interface LeapExtendedInfo extends LeapChainInfo {
 
 //todo handle this for main-net
 export const unionKeplrChainInfo: KeplrChainInfo = {
-  chainId: "union-testnet-9",
+  chainId: "union-testnet-8",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
+  rest: "https://rest.testnet-8.union.build",
+  rpc: "https://rpc.testnet-8.union.build",
   bip44: {
     coinType: 118
   },
@@ -58,10 +58,10 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
 
 //todo handle this for main-net
 export const unionLeapChainInfo: LeapExtendedInfo = {
-  chainId: "union-testnet-9",
+  chainId: "union-testnet-8",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
+  rest: "https://rest.testnet-8.union.build",
+  rpc: "https://rpc.testnet-8.union.build",
   bip44: {
     coinType: 118
   },
@@ -232,12 +232,12 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
 }
 
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
-  "union-testnet-9": unionKeplrChainInfo,
+  "union-testnet-8": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
-  "union-testnet-9": unionLeapChainInfo,
+  "union-testnet-8": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo
 }
 

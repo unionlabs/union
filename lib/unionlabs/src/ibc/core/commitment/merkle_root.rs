@@ -3,7 +3,6 @@ use macros::model;
 use crate::primitives::{encoding::Base64, FixedBytesError, H256};
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct MerkleRoot {
     pub hash: H256<Base64>,
 }

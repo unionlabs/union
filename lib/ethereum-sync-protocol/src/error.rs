@@ -1,7 +1,7 @@
 use milagro_bls::AmclError;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    primitives::{H256, H384},
+    primitives::H256,
 };
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
@@ -92,7 +92,10 @@ pub enum Error {
     #[error(
         "next sync committee ({found}) does not match with the one in the current state ({expected})"
     )]
-    NextSyncCommitteeMismatch { expected: H384, found: H384 },
+    NextSyncCommitteeMismatch {
+        expected: BlsPublicKey,
+        found: BlsPublicKey,
+    },
     #[error("insufficient number of sync committee participants ({0})")]
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]

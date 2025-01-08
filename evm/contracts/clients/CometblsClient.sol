@@ -255,9 +255,9 @@ contract CometblsClient is
             consensusStates[clientId][headerB.trustedHeight];
 
         // Check that the headers would have been accepted in an update
-        (, uint64 untrustedTimestampA) =
+        (, uint64 untrustedTimestampA,) =
             verifyHeader(headerA, consensusStateA, clientState);
-        (, uint64 untrustedTimestampB) =
+        (, uint64 untrustedTimestampB,) =
             verifyHeader(headerB, consensusStateB, clientState);
 
         if (headerA.signedHeader.height == headerB.signedHeader.height) {
@@ -281,7 +281,7 @@ contract CometblsClient is
         Header calldata header,
         ConsensusState storage consensusState,
         ClientState storage clientState
-    ) internal returns (uint64, uint64) {
+    ) internal returns (uint64, uint64, bytes32) {
         if (consensusState.timestamp == 0) {
             revert CometblsClientLib.ErrTrustedConsensusStateNotFound();
         }
@@ -321,6 +321,7 @@ contract CometblsClient is
          In non adjacent verification, untrusted vals are coming from the untrusted header.
          */
         bytes32 trustedValidatorsHash = consensusState.nextValidatorsHash;
+        bytes32 untrustedValidatorsHash;
         bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
         if (adjacent) {
             if (header.signedHeader.validatorsHash != trustedValidatorsHash) {
@@ -338,7 +339,8 @@ contract CometblsClient is
             revert CometblsClientLib.ErrInvalidZKP();
         }
 
-        return (untrustedHeightNumber, untrustedTimestamp);
+        return
+            (untrustedHeightNumber, untrustedTimestamp, untrustedValidatorsHash);
     }
 
     function updateClient(
@@ -356,7 +358,7 @@ contract CometblsClient is
         ConsensusState storage consensusState =
             consensusStates[clientId][header.trustedHeight];
 
-        (uint64 untrustedHeightNumber, uint64 untrustedTimestamp) =
+        (uint64 untrustedHeightNumber, uint64 untrustedTimestamp,) =
             verifyHeader(header, consensusState, clientState);
 
         // Update states

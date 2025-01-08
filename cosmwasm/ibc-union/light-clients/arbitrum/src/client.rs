@@ -69,7 +69,7 @@ impl IbcClient for ArbitrumLightClient {
         let mut client_state = ctx.read_self_client_state()?;
         let l1_consensus_state = ctx
             .read_consensus_state::<EthereumLightClient>(
-                client_state.l1_client_id,
+                client_state.l1_client_id.id(),
                 header.l1_height.height(),
             )
             .map_err(Into::<Error>::into)?;

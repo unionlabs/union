@@ -1,14 +1,14 @@
-use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::light_header::LightHeader;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     pub signed_header: LightHeader,
     pub trusted_height: Height,
-    pub zero_knowledge_proof: Bytes,
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
+    pub zero_knowledge_proof: Vec<u8>,
 }
 
 #[cfg(feature = "proto")]
@@ -24,7 +24,7 @@ pub mod proto {
             Self {
                 signed_header: Some(value.signed_header.into()),
                 trusted_height: Some(value.trusted_height.into()),
-                zero_knowledge_proof: value.zero_knowledge_proof.into(),
+                zero_knowledge_proof: value.zero_knowledge_proof,
             }
         }
     }
@@ -46,7 +46,7 @@ pub mod proto {
             Ok(Self {
                 signed_header: required!(value.signed_header)?.try_into()?,
                 trusted_height: required!(value.trusted_height)?.into(),
-                zero_knowledge_proof: value.zero_knowledge_proof.into(),
+                zero_knowledge_proof: value.zero_knowledge_proof,
             })
         }
     }
@@ -159,55 +159,45 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
+    use hex_literal::hex;
+    use serde_utils::Hex;
     use unionlabs::{
-        encoding::{Bcs, Bincode, EthAbi, Json, Proto},
-        google::protobuf::timestamp::Timestamp,
+        encoding::{Bcs, DecodeAs, EncodeAs},
         primitives::H256,
-        test_utils::assert_codec_iso,
     };
 
     use super::*;
 
-    // pub for misbehaviour codec tests to use
-    pub(crate) fn mk_header() -> Header {
-        Header {
+    #[test]
+    fn bcs() {
+        let bz = hex!("630e0000000000002239df6600000000406dcb0b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500dfc45a4f41582fbfc1e3b7f79b0fd39d5f738133e68fdd47468fb037b0a44c9da01000000000000001d0900000000000080031c9bc15a0c4541aff1d12780d6cf4ae2bdc6e3afafceae9d4fa36209fa323b68002e9c77c223d830e5df6a80cdd683f0986353933ee3179970fccc5d893219d30726f3b8c0dbe630b815b01b5557228a0dfeb0e0435bb0d15d1ccff7f6133fc110937d9fceee2f9052468c198fafeca89d524142a0efa9dc4df445853ce617302059018fef03dc34456ad201d2a5420a7d1c8fac57cb48cbe6709ac4da27d1eb250f73eab007d26cbff41ceb4564ab1cdfa83e9ee88be4f816dc841bbf2e90c80186ad9437fce7655c71b54addae1ccea429da3edba3232d073cb7e89ff2d27218556f1af0c446962ace932f637279dd0ad3ef1501fb6da39d5f68282f54bcf6094999672f3d8cbbf0409aef1048175ffff50b03a5154016d307a2ef425ffee509cd447b22ce6331c7a3473b2c6da1f9d550e8c3ab19bde65e699e07f4f2886c03ec4ff2faa0e342de7ac5daf32025acd6070c19ed8b007c121db0d955472c7d2e38d5a943d15bc902613029e4baa8c26034ff280e3a4d5468fcd6745afe53b5");
+
+        let header = Header {
             signed_header: LightHeader {
-                height: 0xDEADC0DE.try_into().unwrap(),
-                time: Timestamp {
-                    seconds: 1.try_into().unwrap(),
-                    nanos: 1.try_into().unwrap(),
-                },
-                validators_hash: H256::from([0xAA; 32]),
-                next_validators_hash: H256::from([0xAA; 32]),
-                app_hash: H256::from([0xAA; 32]),
+                height: 3683.try_into().unwrap(),
+                time: "2024-09-09T18:06:26.197881152Z".parse().unwrap(),
+                validators_hash: H256::new(hex!(
+                    "2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
+                )),
+                next_validators_hash: H256::new(hex!(
+                    "2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
+                )),
+                app_hash: H256::new(hex!(
+                    "fc45a4f41582fbfc1e3b7f79b0fd39d5f738133e68fdd47468fb037b0a44c9da"
+                )),
             },
-            trusted_height: Height::new(100),
-            zero_knowledge_proof: b"zkp".into(),
-        }
-    }
+            trusted_height: Height::new_with_revision(1, 2333),
+            zero_knowledge_proof: hex!("1c9bc15a0c4541aff1d12780d6cf4ae2bdc6e3afafceae9d4fa36209fa323b68002e9c77c223d830e5df6a80cdd683f0986353933ee3179970fccc5d893219d30726f3b8c0dbe630b815b01b5557228a0dfeb0e0435bb0d15d1ccff7f6133fc110937d9fceee2f9052468c198fafeca89d524142a0efa9dc4df445853ce617302059018fef03dc34456ad201d2a5420a7d1c8fac57cb48cbe6709ac4da27d1eb250f73eab007d26cbff41ceb4564ab1cdfa83e9ee88be4f816dc841bbf2e90c80186ad9437fce7655c71b54addae1ccea429da3edba3232d073cb7e89ff2d27218556f1af0c446962ace932f637279dd0ad3ef1501fb6da39d5f68282f54bcf6094999672f3d8cbbf0409aef1048175ffff50b03a5154016d307a2ef425ffee509cd447b22ce6331c7a3473b2c6da1f9d550e8c3ab19bde65e699e07f4f2886c03ec4ff2faa0e342de7ac5daf32025acd6070c19ed8b007c121db0d955472c7d2e38d5a943d15bc902613029e4baa8c26034ff280e3a4d5468fcd6745afe53b5").to_vec(),
+        };
 
-    #[test]
-    fn ethabi_iso() {
-        assert_codec_iso::<_, EthAbi>(&mk_header());
-    }
+        dbg!(&header);
 
-    #[test]
-    fn bincode_iso() {
-        assert_codec_iso::<_, Bincode>(&mk_header());
-    }
+        let header_bz = header.encode_as::<Bcs>();
 
-    #[test]
-    fn bcs_iso() {
-        assert_codec_iso::<_, Bcs>(&mk_header());
-    }
+        dbg!(Hex(&header_bz));
 
-    #[test]
-    fn json_iso() {
-        assert_codec_iso::<_, Json>(&mk_header());
-    }
+        let header = Header::decode_as::<Bcs>(&bz).unwrap();
 
-    #[test]
-    fn proto_iso() {
-        assert_codec_iso::<_, Proto>(&mk_header());
+        dbg!(header);
     }
 }

@@ -43,4 +43,4 @@ tracing                                 = { workspace = true }
 [dev-dependencies]
 hex-literal        = { workspace = true }
 tracing-subscriber = "0.3.18"
-unionlabs          = { workspace = true, features = ["default", "test-utils"] }
+unionlabs          = { workspace = true, features = ["default", "test_utils"] }

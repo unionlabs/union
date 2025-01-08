@@ -13,7 +13,6 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchEntry), into, from))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum CompressedBatchEntry {
     Exist(CompressedExistenceProof),
     Nonexist(CompressedNonExistenceProof),

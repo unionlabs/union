@@ -468,7 +468,7 @@ impl IbcEvent {
             IbcEvent::ChannelOpenTry(_) => "channel_open_try",
             IbcEvent::ChannelOpenAck(_) => "channel_open_ack",
             IbcEvent::ChannelOpenConfirm(_) => "channel_open_confirm",
-            IbcEvent::WriteAcknowledgement(_) => "write_ack",
+            IbcEvent::WriteAcknowledgement(_) => "write_acknowledgement",
             IbcEvent::RecvPacket(_) => "recv_packet",
             IbcEvent::SendPacket(_) => "send_packet",
             IbcEvent::AcknowledgePacket(_) => "acknowledge_packet",

@@ -102,8 +102,8 @@ contract IBCPacketTests is Test {
         vm.prank(address(module));
         handler.sendPacket(channelId, timeoutHeight, timeoutTimestamp, message);
         IBCPacket memory packet = IBCPacket({
-            sourceChannelId: channelId,
-            destinationChannelId: COUNTERPARTY_CHANNEL_ID,
+            sourceChannel: channelId,
+            destinationChannel: COUNTERPARTY_CHANNEL_ID,
             data: message,
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
@@ -153,7 +153,7 @@ contract IBCPacketTests is Test {
     }
 
     function createReceivePacket(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgPacketRecv memory) {
@@ -161,8 +161,8 @@ contract IBCPacketTests is Test {
         bytes[] memory relayerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sourceChannelId: sourceChannelId,
-                destinationChannelId: channelId,
+                sourceChannel: sourceChannel,
+                destinationChannel: channelId,
                 data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
@@ -180,70 +180,70 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_ok_1(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 1);
+        test_recvPacket_ok(sourceChannel, message, 1);
     }
 
     function test_recvPacket_ok_5(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 5);
+        test_recvPacket_ok(sourceChannel, message, 5);
     }
 
     function test_recvPacket_ok_10(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 10);
+        test_recvPacket_ok(sourceChannel, message, 10);
     }
 
     function test_recvPacket_ok_15(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 15);
+        test_recvPacket_ok(sourceChannel, message, 15);
     }
 
     function test_recvPacket_ok_20(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 20);
+        test_recvPacket_ok(sourceChannel, message, 20);
     }
 
     function test_recvPacket_ok_25(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 25);
+        test_recvPacket_ok(sourceChannel, message, 25);
     }
 
     function test_recvPacket_ok_30(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 30);
+        test_recvPacket_ok(sourceChannel, message, 30);
     }
 
     function test_recvPacket_ok(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public returns (IBCMsgs.MsgPacketRecv memory) {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
@@ -261,43 +261,43 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_invalidProof(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.recvPacket(msg_);
     }
 
     function test_recvPacket_invalidChannelState(
-        uint32 sourceChannelId,
-        uint32 destinationChannelId,
+        uint32 sourceChannel,
+        uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
-        vm.assume(destinationChannelId != channelId);
+        vm.assume(destinationChannel != channelId);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // fake non existant channel
-        msg_.packets[0].destinationChannelId = destinationChannelId;
+        msg_.packets[0].destinationChannel = destinationChannel;
         vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.recvPacket(msg_);
     }
 
     function test_recvPacket_timeoutTimestamp(
         uint32 timeout,
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
@@ -308,14 +308,14 @@ contract IBCPacketTests is Test {
 
     function test_recvPacket_timeoutHeight(
         uint64 timeout,
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // fake non existant channel
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
@@ -325,13 +325,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_ackCommitmentSaved(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         handler.recvPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -348,13 +348,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_noAck_receiptCommitmentSaved(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.pauseAck();
         handler.recvPacket(msg_);
@@ -372,7 +372,7 @@ contract IBCPacketTests is Test {
     }
 
     function createReceiveIntentPacket(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgIntentPacketRecv memory) {
@@ -380,8 +380,8 @@ contract IBCPacketTests is Test {
         bytes[] memory marketMakerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sourceChannelId: sourceChannelId,
-                destinationChannelId: channelId,
+                sourceChannel: sourceChannel,
+                destinationChannel: channelId,
                 data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
@@ -398,70 +398,70 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvIntentPacket_ok_1(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 1);
+        test_recvIntentPacket_ok(sourceChannel, message, 1);
     }
 
     function test_recvIntentPacket_ok_5(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 5);
+        test_recvIntentPacket_ok(sourceChannel, message, 5);
     }
 
     function test_recvIntentPacket_ok_10(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 10);
+        test_recvIntentPacket_ok(sourceChannel, message, 10);
     }
 
     function test_recvIntentPacket_ok_15(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 15);
+        test_recvIntentPacket_ok(sourceChannel, message, 15);
     }
 
     function test_recvIntentPacket_ok_20(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 20);
+        test_recvIntentPacket_ok(sourceChannel, message, 20);
     }
 
     function test_recvIntentPacket_ok_25(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 25);
+        test_recvIntentPacket_ok(sourceChannel, message, 25);
     }
 
     function test_recvIntentPacket_ok_30(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 30);
+        test_recvIntentPacket_ok(sourceChannel, message, 30);
     }
 
     function test_recvIntentPacket_ok(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgIntentPacketRecv memory msg_ =
-            createReceiveIntentPacket(sourceChannelId, message, nbPackets);
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.IntentPacketRecv(
@@ -477,13 +477,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvIntentPacket_commitmentSaved(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgIntentPacketRecv memory msg_ =
-            createReceiveIntentPacket(sourceChannelId, message, nbPackets);
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         handler.recvIntentPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
@@ -500,14 +500,14 @@ contract IBCPacketTests is Test {
 
     function test_recvIntentPacket_timeoutTimestamp(
         uint32 timeout,
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgIntentPacketRecv memory msg_ =
-            createReceiveIntentPacket(sourceChannelId, message, nbPackets);
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
@@ -517,14 +517,14 @@ contract IBCPacketTests is Test {
 
     function test_recvIntentPacket_timeoutHeight(
         uint64 timeout,
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgIntentPacketRecv memory msg_ =
-            createReceiveIntentPacket(sourceChannelId, message, nbPackets);
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
@@ -541,8 +541,8 @@ contract IBCPacketTests is Test {
         bytes[] memory acknowledgements = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
-                sourceChannelId: channelId,
-                destinationChannelId: destinationChannel,
+                sourceChannel: channelId,
+                destinationChannel: destinationChannel,
                 data: abi.encodePacked(message, i),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: type(uint64).max
@@ -715,8 +715,8 @@ contract IBCPacketTests is Test {
         bytes calldata message
     ) internal view returns (IBCMsgs.MsgPacketTimeout memory) {
         IBCPacket memory packet = IBCPacket({
-            sourceChannelId: channelId,
-            destinationChannelId: destinationChannel,
+            sourceChannel: channelId,
+            destinationChannel: destinationChannel,
             data: message,
             timeoutHeight: type(uint64).max,
             timeoutTimestamp: type(uint64).max
@@ -899,14 +899,14 @@ contract IBCPacketTests is Test {
     }
 
     function test_writeAcknowledgement_ok(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public returns (IBCMsgs.MsgPacketRecv memory) {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.pauseAck();
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -929,15 +929,15 @@ contract IBCPacketTests is Test {
     }
 
     function test_writeAcknowledgement_ok_1(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_writeAcknowledgement_ok(sourceChannelId, message, 1);
+        test_writeAcknowledgement_ok(sourceChannel, message, 1);
     }
 
     function test_writeAcknowledgement_moduleIsntChannelOwner(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets,
         address malicious
@@ -945,7 +945,7 @@ contract IBCPacketTests is Test {
         vm.assume(nbPackets > 0);
         vm.assume(malicious != address(module));
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.pauseAck();
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -963,13 +963,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_writeAcknowledgement_packetNotReceived(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.pauseAck();
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -980,12 +980,12 @@ contract IBCPacketTests is Test {
     }
 
     function test_writeAcknowledgement_alreadyExists(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         IBCMsgs.MsgPacketRecv memory msg_ =
-            test_writeAcknowledgement_ok(sourceChannelId, message, nbPackets);
+            test_writeAcknowledgement_ok(sourceChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectRevert(IBCErrors.ErrAcknowledgementAlreadyExists.selector);
             vm.prank(address(module));
@@ -994,12 +994,12 @@ contract IBCPacketTests is Test {
     }
 
     function test_writeAcknowledgement_commitmentSaved(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         IBCMsgs.MsgPacketRecv memory msg_ =
-            test_writeAcknowledgement_ok(sourceChannelId, message, nbPackets);
+            test_writeAcknowledgement_ok(sourceChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
                 handler.commitments(
@@ -1029,8 +1029,8 @@ contract IBCPacketTests is Test {
                 channelId, timeoutHeight, timeoutTimestamp, message
             );
             IBCPacket memory packet = IBCPacket({
-                sourceChannelId: channelId,
-                destinationChannelId: COUNTERPARTY_CHANNEL_ID,
+                sourceChannel: channelId,
+                destinationChannel: COUNTERPARTY_CHANNEL_ID,
                 data: message,
                 timeoutHeight: timeoutHeight,
                 timeoutTimestamp: timeoutTimestamp
@@ -1039,7 +1039,7 @@ contract IBCPacketTests is Test {
         }
         vm.resumeGasMetering();
         handler.batchSend(
-            IBCMsgs.MsgBatchSend({sourceChannelId: channelId, packets: packets})
+            IBCMsgs.MsgBatchSend({sourceChannel: channelId, packets: packets})
         );
         vm.pauseGasMetering();
         return packets;
@@ -1134,8 +1134,8 @@ contract IBCPacketTests is Test {
                 channelId, timeoutHeight, timeoutTimestamp, message
             );
             IBCPacket memory packet = IBCPacket({
-                sourceChannelId: channelId,
-                destinationChannelId: COUNTERPARTY_CHANNEL_ID,
+                sourceChannel: channelId,
+                destinationChannel: COUNTERPARTY_CHANNEL_ID,
                 data: message,
                 timeoutHeight: timeoutHeight,
                 timeoutTimestamp: timeoutTimestamp
@@ -1147,12 +1147,12 @@ contract IBCPacketTests is Test {
         vm.resumeGasMetering();
         vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
         handler.batchSend(
-            IBCMsgs.MsgBatchSend({sourceChannelId: channelId, packets: packets})
+            IBCMsgs.MsgBatchSend({sourceChannel: channelId, packets: packets})
         );
     }
 
     function test_batchAcks_afterRecvPacket_ok(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets,
         bytes calldata ack
@@ -1161,7 +1161,7 @@ contract IBCPacketTests is Test {
         vm.assume(ack.length > 0);
         vm.assume(nbPackets > 1);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.setAck(ack);
         handler.recvPacket(msg_);
@@ -1172,7 +1172,7 @@ contract IBCPacketTests is Test {
         vm.resumeGasMetering();
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
+                sourceChannel: channelId,
                 packets: msg_.packets,
                 acks: acks
             })
@@ -1182,77 +1182,77 @@ contract IBCPacketTests is Test {
     }
 
     function test_batchAcks_afterRecvPacket_ok_2(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 2, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 2, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_5(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 5, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 5, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_10(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 10, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 10, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_15(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 15, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 15, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_20(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 20, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 20, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_25(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 25, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 25, ack);
     }
 
     function test_batchAcks_afterRecvPacket_ok_30(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         bytes calldata ack
     ) public {
         vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 30, ack);
+        test_batchAcks_afterRecvPacket_ok(sourceChannel, message, 30, ack);
     }
 
     function test_batchAcks_afterRecvPacket_commitmentSaved(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets,
         bytes calldata ack
     ) public {
         (IBCMsgs.MsgPacketRecv memory msg_, bytes[] memory acks) =
         test_batchAcks_afterRecvPacket_ok(
-            sourceChannelId, message, nbPackets, ack
+            sourceChannel, message, nbPackets, ack
         );
         assertEq(
             handler.commitments(
@@ -1265,7 +1265,7 @@ contract IBCPacketTests is Test {
     }
 
     function test_batchAcks_packetNotReceived(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets,
         bytes calldata ack
@@ -1273,7 +1273,7 @@ contract IBCPacketTests is Test {
         vm.assume(ack.length > 0);
         vm.assume(nbPackets > 1);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         module.setAck(ack);
         bytes[] memory acks = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -1282,7 +1282,7 @@ contract IBCPacketTests is Test {
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
+                sourceChannel: channelId,
                 packets: msg_.packets,
                 acks: acks
             })
@@ -1290,7 +1290,7 @@ contract IBCPacketTests is Test {
     }
 
     function test_batchAcks_afterRecvPacket_tamperedPacket(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets,
         bytes calldata ack
@@ -1298,7 +1298,7 @@ contract IBCPacketTests is Test {
         vm.assume(ack.length > 0);
         vm.assume(nbPackets > 1);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.setAck(ack);
         handler.recvPacket(msg_);
@@ -1311,7 +1311,7 @@ contract IBCPacketTests is Test {
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
+                sourceChannel: channelId,
                 packets: msg_.packets,
                 acks: acks
             })
@@ -1319,13 +1319,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_batchAcks_afterRecvPacket_asyncAck(
-        uint32 sourceChannelId,
+        uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 1);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         module.setAck(hex"");
         handler.recvPacket(msg_);
@@ -1333,7 +1333,7 @@ contract IBCPacketTests is Test {
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
+                sourceChannel: channelId,
                 packets: msg_.packets,
                 acks: acks
             })

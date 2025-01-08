@@ -6,7 +6,6 @@ use unionlabs::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LightHeader {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: BoundedI64<0, { i64::MAX }>,
