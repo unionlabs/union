@@ -330,7 +330,9 @@ contract DeployStateLensIcs23MptClient is UnionScript {
 
         vm.stopBroadcast();
 
-        console.log("StateLensIcs23MptClient: ", address(stateLensIcs23MptClient));
+        console.log(
+            "StateLensIcs23MptClient: ", address(statelensIcs23MptClient)
+        );
     }
 }
 
@@ -561,13 +563,14 @@ contract GetDeployed is Script {
         );
         console.log(
             string(
-                abi.encodePacked("StateLensIcs23MptClientClient: ", stateLensIcs23MptClient.toHexString())
+                abi.encodePacked("StateLensIcs23MptClient: ", stateLensIcs23MptClient.toHexString())
             )
         );
         console.log(
             string(
                 abi.encodePacked(
-                    "StateLensIcs23Ics23ClientClient: ", stateLensIcs23Ics23Client.toHexString()
+                    "StateLensIcs23Ics23Client: ",
+                    statelensIcs23Ics23Client.toHexString()
                 )
             )
         );
@@ -609,7 +612,8 @@ contract GetDeployed is Script {
         );
         impls.serialize(cometblsClient.toHexString(), proxyComet);
 
-        string memory proxyStateLensIcs23MptClient = "proxyStateLensIcs23MptClient";
+        string memory proxyStateLensIcs23MptClient =
+            "proxyStateLensIcs23MptClient";
         proxyStateLensIcs23MptClient.serialize(
             "contract",
             string(
@@ -721,7 +725,8 @@ contract GetDeployed is Script {
         implComet = implComet.serialize("args", bytes(hex""));
         impls.serialize(implOf(cometblsClient).toHexString(), implComet);
 
-        string memory implStateLensIcs23MptClient = "implStateLensIcs23MptClient";
+        string memory implStateLensIcs23MptClient =
+            "implStateLensIcs23MptClient";
         implStateLensIcs23MptClient.serialize(
             "contract",
             string("contracts/clients/StateLensIcs23MptClient.sol:StateLensIcs23MptClient")
@@ -1071,7 +1076,10 @@ contract UpgradeStateLensIcs23MptClient is Script {
             getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
         console.log(
             string(
-                abi.encodePacked("StateLensIcs23MptClientClient: ", stateLensIcs23MptClient.toHexString())
+                abi.encodePacked(
+                    "StateLensIcs23MptClient: ",
+                    statelensIcs23MptClient.toHexString()
+                )
             )
         );
         vm.startBroadcast(privateKey);
