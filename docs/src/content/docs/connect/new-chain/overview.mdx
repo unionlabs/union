@@ -1,0 +1,35 @@
+---
+title: "Connect a new Chain"
+---
+
+import { Tabs, LinkCard, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
+
+If your chain is not yet [connected to Union](/protocol/chains/overview/), then you can permissionlessly add support. Union supports L1s, L2s, L3s, and Rollups. The steps to connect are simple:
+
+<Steps>
+1. Upload `ibc-core` and `light-client` contracts.
+2. Configure the [Voyager](/architecture/voyager) relayer.
+3. Open the connection.
+4. Send assets and data.
+</Steps>
+
+We have guides for each execution environment:
+
+
+<LinkCard
+  title="EVM"
+  href="/connect/new-chain/evm"
+  description="Connect a new EVM chain."
+/>
+
+<LinkCard
+  title="CosmWasm"
+  href="/connect/new-chain/cosmwasm"
+  description="Connect a new CosmWasm chain."
+/>
+
+<LinkCard
+  title="Move"
+  href="/connect/new-chain/move"
+  description="Connect a new Move chain."
+/>
