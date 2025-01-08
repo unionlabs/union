@@ -10,6 +10,9 @@ serde     = { workspace = true, optional = true, features = ["derive"] }
 thiserror = { workspace = true }
 unionlabs = { workspace = true, features = ["ethabi", "proto"] }
 
+[dev-dependencies]
+hex-literal = { workspace = true }
+
 [features]
 default = []
 ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]

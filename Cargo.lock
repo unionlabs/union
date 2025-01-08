@@ -3374,6 +3374,7 @@ name = "cosmos-state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "hex-literal",
  "protos",
  "serde",
  "thiserror",

@@ -10,7 +10,7 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use unionlabs::{
     bounded::BoundedI64,
-    encoding::Proto,
+    encoding::Bincode,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     ibc::core::{
         client::height::Height,
@@ -45,7 +45,7 @@ impl IbcClient for TendermintLightClient {
 
     type StorageProof = MerkleProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,

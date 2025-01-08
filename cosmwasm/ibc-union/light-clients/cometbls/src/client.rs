@@ -9,7 +9,7 @@ use ibc_union_light_client::IbcClientCtx;
 use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
-    encoding::Proto,
+    encoding::Bincode,
     ibc::core::{
         client::height::Height,
         commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
@@ -38,7 +38,7 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
 
     type StorageProof = MerkleProof;
 
-    type Encoding = Proto;
+    type Encoding = Bincode;
 
     fn verify_membership(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
