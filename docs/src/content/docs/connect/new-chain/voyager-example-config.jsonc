@@ -133,7 +133,7 @@
         "config": {
           "chain_spec": "mainnet",
           "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen",
-          "eth_beacon_rpc_api": "http://localhost:9596"
+          "eth_beacon_rpc_api": "https://beacon.17000.holesky.chain.kitchen"
         }
       },
       // the consensus module for your tendermint-based chain.
@@ -250,16 +250,19 @@
         "enabled": true,
         "path": "./target/debug/voyager-client-bootstrap-module-state-lens-ics23-ics23",
         "info": {
+          // configure your chain id here.
           "chain_id": "",
-          "client_type": "state-lens/ics23-ics23"
+          "client_type": "state-lens/ics23/ics23"
         },
         "config": {
           "l1_client_id": 1,
           "l2_client_id": 2,
-          "l2_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm"
+          // the ibc-union contract address running on your chain.
+          "l2_contract_address": ""
         }
       },
       {
+        // preconfigured client bootstrap module for holesky.
         "enabled": true,
         "path": "./target/debug/voyager-client-bootstrap-module-ethereum",
         "info": {
@@ -267,13 +270,14 @@
           "client_type": "ethereum"
         },
         "config": {
-          "chain_spec": "minimal",
+          "chain_spec": "mainnet",
           "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
           "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen",
-          "eth_beacon_rpc_api": "http://localhost:9596"
+          "eth_beacon_rpc_api": "https://beacon.17000.holesky.chain.kitchen"
         }
       },
       {
+        // preconfigured client bootstrap module for union-testnet-9.
         "enabled": true,
         "path": "./target/debug/voyager-client-bootstrap-module-cometbls",
         "info": {
@@ -287,6 +291,7 @@
         }
       },
       {
+        // fill in the values for your chain here.
         "enabled": true,
         "path": "./target/debug/voyager-client-bootstrap-module-tendermint",
         "info": {
@@ -326,7 +331,7 @@
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
         "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen",
-        "eth_beacon_rpc_api": "http://localhost:9596"
+        "eth_beacon_rpc_api": "https://beacon.17000.holesky.chain.kitchen"
       }
     },
     {
@@ -340,8 +345,9 @@
           "keys": [
             {
               "type": "raw",
-              "name": "alice",
-              "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+              "name": "union-key-1",
+              // the private key of a funded account on union-testnet-9 to use for relaying.
+              "key": ""
             }
           ]
         },
@@ -359,21 +365,26 @@
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
+        // configure the chain id for your chain here.
         "chain_id": "",
-        "ibc_host_contract_address": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm",
+        // the ibc-union contract running on your chain.
+        "ibc_host_contract_address": "",
         "keyring": {
-          "name": "stars-testnet",
+          "name": "your-chain-testnet",
           "keys": [
             {
               "type": "raw",
-              "name": "alice",
-              "key": "0x089f6742fe5a3d9897695089ab5551a57af0bb503caedb471626f618f423eaa0"
+              // the name of this key. this will be used in logs.
+              "name": "your-chain-key-1",
+              // the private key of a funded account on your chain to use for relaying.
+              "key": ""
             }
           ]
         },
+        // configure the gas config accordingly for your chain.
         "gas_config": {
           "gas_price": "1.0",
-          "gas_denom": "ustars",
+          "gas_denom": "",
           "gas_multiplier": "1.1",
           "max_gas": 10000000
         },
@@ -387,41 +398,24 @@
       "config": {
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
-        "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
+        "multicall_address": "0x64A764A734648fA636525C7e4b3cE38Ca256b647",
         "keyring": {
-          "name": "ethereum-devnet",
+          "name": "holesky",
           "keys": [
             {
               "type": "raw",
-              "name": "dev-key0",
-              "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-            },
-            {
-              "type": "raw",
-              "name": "dev-key1",
-              "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-2",
-              "key": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-3",
-              "key": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-4",
-              "key": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
+              "name": "holesky-key-1",
+              // the full private key of a funded account on holesky to use for relaying.
+              "key": ""
             }
           ]
         },
         "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen"
       }
     },
+    // transaction batching plugins
     {
+      // preconfigured for union-testnet-9
       "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
@@ -436,10 +430,27 @@
         }
       }
     },
+    // preconfigured for holesky
     {
       "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
+        "chain_id": "17000",
+        "client_configs": {
+          "min_batch_size": 1,
+          "max_batch_size": 4,
+          "max_wait_time": {
+            "secs": 1,
+            "nanos": 0
+          }
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        // fill in the chain id of your chain here.
         "chain_id": "",
         "client_configs": {
           "min_batch_size": 1,
@@ -451,22 +462,9 @@
         }
       }
     },
+    // client update plugins
     {
-      "enabled": true,
-      "path": "./target/debug/voyager-plugin-transaction-batch",
-      "config": {
-        "chain_id": "17000",
-        "client_configs": {
-          "min_batch_size": 1,
-          "max_batch_size": 5,
-          "max_wait_time": {
-            "secs": 1,
-            "nanos": 0
-          }
-        }
-      }
-    },
-    {
+      // preconfigued for updating cometbls clients tracking union-testnet-9.
       "enabled": true,
       "path": "./target/debug/voyager-client-update-plugin-cometbls",
       "config": {
@@ -474,7 +472,7 @@
         "ws_url": "http://rpc.testnet-9.union.build",
         "grpc_url": "http://grpc.testnet-9.union.build",
         "prover_endpoints": [
-          "http://localhost:9999"
+          "https://galois.testnet-9.union.build:443"
         ]
       }
     },
@@ -504,22 +502,23 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-tendermint",
+      "path": "./target/debug/voyager-client-update-plugin-ethereum",
       "config": {
-        "chain_id": "",
-        "ws_url": "",
-        "grpc_url": ""
+        "chain_id": "17000",
+        "chain_spec": "mainnet",
+        "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
+        "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen",
+        "eth_beacon_rpc_api": "https://beacon.17000.holesky.chain.kitchen"
       }
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-ethereum",
+      "path": "./target/debug/voyager-client-update-plugin-tendermint",
+      // fill in the values for your chain here.
       "config": {
-        "chain_id": "17000",
-        "chain_spec": "minimal",
-        "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
-        "eth_rpc_api": "https://rpc.17000.holesky.chain.kitchen",
-        "eth_beacon_rpc_api": "http://localhost:9596"
+        "chain_id": "",
+        "ws_url": "",
+        "grpc_url": ""
       }
     }
   ],
