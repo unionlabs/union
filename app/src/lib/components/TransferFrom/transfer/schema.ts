@@ -62,7 +62,7 @@ export const transferSchema = v.pipe(
             }
           }
           const amountBigInt = parseAmount(input.amount, input.decimals)
-          return amountBigInt <= input.balance // input.balance is already BigInt
+          return amountBigInt > 0n && amountBigInt <= input.balance
         } catch (error) {
           console.error("Validation error:", error)
           return false

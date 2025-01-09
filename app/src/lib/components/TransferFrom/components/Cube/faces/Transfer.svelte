@@ -1,6 +1,5 @@
 <script lang="ts">
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
+import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { derived, get, type Readable, writable, type Writable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import { Button } from "$lib/components/ui/button"
@@ -26,20 +25,16 @@ import { cosmosStore, getCosmosOfflineSigner, userAddrCosmos } from "$lib/wallet
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { raise, sleep } from "$lib/utilities"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { userAddrOnChain } from "$lib/utilities/address.ts"
 import { toIsoString } from "$lib/utilities/date.ts"
 import { goto } from "$app/navigation"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 
 interface Props {
   stores: {
-    rawIntents: RawIntentsStore
-    intents: Readable<IntentsStore>
     context: Readable<ContextStore>
-    validation: ValidationStoreAndMethods
+    validation: Readable<ValidationStore>
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -47,35 +42,18 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { intents, context } = stores
+let { validation, context } = stores
 
 const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 const transfer = async () => {
-  if (!$intents.selectedAsset.address) return toast.error(`Please select a asset`)
-  if (!$intents.sourceChain?.chain_id) return toast.error("Please select a from chain")
-  if (!$intents.sourceChain) return toast.error("can't find chain in config")
-  if (!$intents.destinationChain) return toast.error("can't find chain in config")
-  if (!$intents.destinationChain.chain_id) return toast.error("Please select a to chain")
+  if (!$validation.isValid) return
 
-  if (!$intents.amount) return toast.error("Please select an amount")
-  if ($intents.sourceChain.rpc_type === "evm" && !$context.userAddress.evm)
-    return toast.error("No evm wallet connected")
-  if ($intents.sourceChain.rpc_type === "cosmos" && !$context.userAddress.cosmos)
-    return toast.error("No cosmos wallet connected")
-  if ($intents.sourceChain.rpc_type === "aptos" && !$context.userAddress.aptos)
-    return toast.error("No aptos wallet connected")
-
-  if (!$intents.receiver) return toast.error("Invalid receiver")
-
-  console.log("click")
-
-  let decimals = $intents.selectedAsset.decimals
-  let parsedAmount = parseUnits($intents.amount, decimals)
+  let parsedAmount = parseUnits($validation.transfer.amount, $validation.transfer.asset.decimals)
 
   /** --- APTOS START --- */
-  if ($intents.sourceChain?.rpc_type === "aptos") {
+  if ($validation.transfer.sourceChain.rpc_type === "aptos") {
     const { connectedWallet, connectionStatus } = get(aptosStore)
     if ($userAddressAptos === null) return toast.error("No aptos user address found")
 
@@ -99,13 +77,14 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    const rpcUrl = $intents.sourceChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${$intents.sourceChain?.display_name}`)
+    const rpcUrl = $validation.transfer.sourceChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl)
+      return toast.error(`no rpc available for ${$validation.transfer.sourceChain?.display_name}`)
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = await wallet.getNetwork()
 
-      if (chainInfo?.chainId.toString() !== $intents.sourceChain.chain_id) {
+      if (chainInfo?.chainId.toString() !== $validation.transfer.sourceChain.chain_id) {
         transferState.set({
           kind: "SWITCHING_TO_CHAIN",
           warning: new Error("Failed to switch chain")
@@ -127,11 +106,11 @@ const transfer = async () => {
 
         const transferPayload = {
           simulate: true,
-          receiver: $intents.receiver,
+          receiver: $validation.transfer.receiver,
           amount: parsedAmount,
           authAccess: "wallet",
-          denomAddress: $intents.selectedAsset.address,
-          destinationChainId: $intents.destinationChain.chain_id as ChainId
+          denomAddress: $validation.transfer.asset.address,
+          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         } satisfies TransferAssetsParameters<"2">
 
         const transfer = await client.transferAsset(transferPayload)
@@ -148,7 +127,7 @@ const transfer = async () => {
     }
 
     /** --- APTOS END --- */
-  } else if ($intents.sourceChain.rpc_type === "cosmos") {
+  } else if ($validation.transfer.sourceChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -173,11 +152,15 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    const rpcUrl = $intents.sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${$intents.sourceChain.display_name}`)
+    const rpcUrl = $validation.transfer.sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl)
+      return toast.error(`no rpc available for ${$validation.transfer.sourceChain.display_name}`)
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
-      const chainInfo = getCosmosChainInfo($intents.sourceChain.chain_id, connectedWallet)
+      const chainInfo = getCosmosChainInfo(
+        $validation.transfer.sourceChain.chain_id,
+        connectedWallet
+      )
 
       if (chainInfo === null) {
         transferState.set({
@@ -189,7 +172,7 @@ const transfer = async () => {
 
       try {
         await wallet.experimentalSuggestChain(chainInfo)
-        await wallet.enable([$intents.sourceChain.chain_id])
+        await wallet.enable([$validation.transfer.sourceChain.chain_id])
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
@@ -212,24 +195,24 @@ const transfer = async () => {
       try {
         const cosmosOfflineSigner = await getCosmosOfflineSigner({
           connectedWallet,
-          chainId: $intents.sourceChain.chain_id
+          chainId: $validation.transfer.sourceChain.chain_id
         })
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),
-          chainId: $intents.sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.0025", denom: $intents.selectedAsset.address }
+          chainId: $validation.transfer.sourceChain.chain_id as CosmosChainId,
+          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.address }
         })
 
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
-          receiver: $intents.receiver,
+          receiver: $validation.transfer.receiver,
           amount: parsedAmount,
-          denomAddress: $intents.selectedAsset.address,
+          denomAddress: $validation.transfer.asset.address,
           account: cosmosOfflineSigner,
           // TODO: verify chain id is correct
-          destinationChainId: $intents.destinationChain.chain_id as ChainId,
-          gasPrice: { amount: "0.0025", denom: $intents.selectedAsset.address }
+          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId,
+          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.address }
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
@@ -241,13 +224,13 @@ const transfer = async () => {
         return
       }
     }
-  } else if ($intents.sourceChain.rpc_type === "evm") {
+  } else if ($validation.transfer.sourceChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    const selectedChain = evmChainFromChainId($intents.sourceChain.chain_id)
+    const selectedChain = evmChainFromChainId($validation.transfer.sourceChain.chain_id)
 
     const unionClient = createUnionClient({
       account: connectorClient.account,
-      chainId: $intents.sourceChain.chain_id as EvmChainId,
+      chainId: $validation.transfer.sourceChain.chain_id as EvmChainId,
       transport: custom(window.ethereum) as unknown as HttpTransport
     })
 
@@ -289,10 +272,10 @@ const transfer = async () => {
       try {
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
-          receiver: $intents.receiver,
-          denomAddress: getAddress($intents.selectedAsset.address),
+          receiver: $validation.transfer.receiver,
+          denomAddress: getAddress($validation.transfer.asset.address),
           // TODO: verify chain id is correct
-          destinationChainId: $intents.destinationChain.chain_id as ChainId
+          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         })
 
         if (approve.isErr()) throw approve.error
@@ -350,10 +333,9 @@ const transfer = async () => {
         const transfer = await unionClient.transferAsset({
           autoApprove: false,
           amount: parsedAmount,
-          receiver: $intents.receiver,
-          denomAddress: getAddress($intents.selectedAsset.address),
-          // TODO: verify chain id is correct
-          destinationChainId: $intents.destinationChain.chain_id as ChainId
+          receiver: $validation.transfer.receiver,
+          denomAddress: getAddress($validation.transfer.asset.address),
+          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
@@ -393,22 +375,23 @@ const transfer = async () => {
     submittedTransfers.update(ts => {
       // @ts-ignore
       ts[$transferState.transferHash] = {
-        source_chain_id: $intents.sourceChain.chain_id,
-        destination_chain_id: $intents.destinationChain?.chain_id,
+        source_chain_id: $validation.transfer?.sourceChain.chain_id,
+        destination_chain_id: $validation.transfer?.destinationChain?.chain_id,
         source_transaction_hash: $transferState.transferHash,
-        hop_chain_id: $intents.destinationChain?.chain_id,
-        sender: userAddrOnChain($context.userAddress, $intents.sourceChain),
+        hop_chain_id: $validation.transfer?.destinationChain?.chain_id,
+        sender: $validation.transfer?.sender,
         normalized_sender:
-          $intents.sourceChain?.rpc_type === "cosmos"
+          $validation.transfer?.sourceChain?.rpc_type === "cosmos"
             ? $userAddrCosmos?.normalized
             : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
-        receiver: $intents.receiver,
+        receiver: $validation.transfer?.receiver,
         assets: {
-          [$intents.selectedAsset.address]: {
+          [$validation.transfer?.asset.address]: {
             info:
-              $intents.sourceChain?.assets?.find(d => d.denom === $intents.selectedAsset.address) ??
-              null,
+              $validation.transfer?.sourceChain?.assets?.find(
+                d => d.denom === $validation.transfer?.asset.address
+              ) ?? null,
             amount: parsedAmount
           }
         },
@@ -441,209 +424,239 @@ const stateToStatus = <K extends TransferState["kind"]>(
           ? errorFormatter(state as Extract<TransferState, { kind: K }>)
           : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
-let stepperSteps = derived([context, transferState], ([$context, $transferState]) => {
-  if ($transferState.kind === "PRE_TRANSFER") return [] // don"t generate steps before transfer is ready
-  if ($intents.sourceChain?.rpc_type === "evm") {
-    // TODO: Refactor this by implementing Ord for transferState
-    return [
-      // Do not uncomment
-      stateToStatus(
-        $transferState,
-        "SWITCHING_TO_CHAIN",
-        `Switch to ${$intents.sourceChain.display_name}`,
-        `Switched to ${$intents.sourceChain.display_name}`,
-        ts => ({
-          status: "ERROR",
-          title: `Error switching to ${$intents.sourceChain.display_name}`,
-          description: `There was an issue switching to ${$intents.sourceChain.display_name} to your wallet. ${ts.warning}`
-        }),
-        () => ({
-          status: "WARNING",
-          title: `Could not automatically switch chain.`,
-          description: `Please make sure your wallet is connected to  ${$intents.sourceChain.display_name}`
-        }),
-        () => ({
-          status: "IN_PROGRESS",
-          title: `Switching to ${$intents.sourceChain.display_name}`,
-          description: `Click "Approve" in wallet.`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "APPROVING_ASSET",
-        "Approve ERC20",
-        "Approved ERC20",
-        ts => ({
-          status: "ERROR",
-          title: `Error approving ERC20`,
-          description: `${ts.error}`
-        }),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Approving ERC20",
-          description: "Click 'Next' and 'Approve' in wallet."
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "AWAITING_APPROVAL_RECEIPT",
-        "Wait for approval receipt",
-        "Received approval receipt",
-        ts => ({
-          status: "ERROR",
-          title: `Error waiting for approval receipt`,
-          description: `${ts.error}`
-        }),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Awaiting approval receipt",
-          description: `Waiting on ${$intents.sourceChain.display_name}`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "SIMULATING_TRANSFER",
-        "Simulate transfer",
-        "Simulated transfer",
-        ts => ({
-          status: "ERROR",
-          title: `Error simulating transfer on ${$intents.sourceChain.display_name}`,
-          // @ts-expect-error
-          description: `${ts.error}`
-        }),
-        () => ({
-          status: "WARNING",
-          title: `Failed to simulate transfer`,
-          description: `You can still attempt to make this transfer in your wallet`
-        }),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Simulating transfer",
-          description: `Waiting on ${$intents.sourceChain.display_name}`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "CONFIRMING_TRANSFER",
-        "Confirm transfer",
-        "Confirmed transfer",
-        ts => ({
-          status: "ERROR",
-          title: "Error confirming transfer",
-          description: `${ts.error}`
-        }),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Confirming your transfer",
-          description: `Click "Confirm" in your wallet`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "AWAITING_TRANSFER_RECEIPT",
-        "Wait for transfer receipt",
-        "Confirmed transfer",
-        ts => ({
-          status: "ERROR",
-          title: "Error while waiting on transfer receipt",
-          description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
-        }),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Awaiting transfer receipt",
-          description: `Waiting on ${$intents.sourceChain.display_name}`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "TRANSFERRING",
-        "Transfer assets",
-        "Transferred assets",
-        () => ({}),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Transferring assets",
-          description: `Successfully initiated transfer`
-        })
-      )
-    ] as Array<Step>
+let stepperSteps = derived(
+  [context, transferState, validation],
+  ([$context, $transferState, $validation]) => {
+    if (!$validation.isValid) return []
+    if ($transferState.kind === "PRE_TRANSFER") return [] // don"t generate steps before transfer is ready
+    if ($validation.transfer.sourceChain?.rpc_type === "evm") {
+      // TODO: Refactor this by implementing Ord for transferState
+      return [
+        // Do not uncomment
+        stateToStatus(
+          $transferState,
+          "SWITCHING_TO_CHAIN",
+          `Switch to ${$validation.transfer.sourceChain.display_name}`,
+          `Switched to ${$validation.transfer.sourceChain.display_name}`,
+          ts => ({
+            status: "ERROR",
+            title: `Error switching to ${$validation.transfer.sourceChain.display_name}`,
+            description: `There was an issue switching to ${$validation.transfer.sourceChain.display_name} to your wallet. ${ts.warning}`
+          }),
+          () => ({
+            status: "WARNING",
+            title: `Could not automatically switch chain.`,
+            description: `Please make sure your wallet is connected to  ${$validation.transfer.sourceChain.display_name}`
+          }),
+          () => ({
+            status: "IN_PROGRESS",
+            title: `Switching to ${$validation.transfer.sourceChain.display_name}`,
+            description: `Click "Approve" in wallet.`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "APPROVING_ASSET",
+          "Approve ERC20",
+          "Approved ERC20",
+          ts => ({
+            status: "ERROR",
+            title: `Error approving ERC20`,
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Approving ERC20",
+            description: "Click 'Next' and 'Approve' in wallet."
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "AWAITING_APPROVAL_RECEIPT",
+          "Wait for approval receipt",
+          "Received approval receipt",
+          ts => ({
+            status: "ERROR",
+            title: `Error waiting for approval receipt`,
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Awaiting approval receipt",
+            description: `Waiting on ${$validation.transfer.sourceChain.display_name}`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "SIMULATING_TRANSFER",
+          "Simulate transfer",
+          "Simulated transfer",
+          ts => ({
+            status: "ERROR",
+            title: `Error simulating transfer on ${$validation.transfer.sourceChain.display_name}`,
+            // @ts-expect-error
+            description: `${ts.error}`
+          }),
+          () => ({
+            status: "WARNING",
+            title: `Failed to simulate transfer`,
+            description: `You can still attempt to make this transfer in your wallet`
+          }),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Simulating transfer",
+            description: `Waiting on ${$validation.transfer.sourceChain.display_name}`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "CONFIRMING_TRANSFER",
+          "Confirm transfer",
+          "Confirmed transfer",
+          ts => ({
+            status: "ERROR",
+            title: "Error confirming transfer",
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Confirming your transfer",
+            description: `Click "Confirm" in your wallet`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "AWAITING_TRANSFER_RECEIPT",
+          "Wait for transfer receipt",
+          "Confirmed transfer",
+          ts => ({
+            status: "ERROR",
+            title: "Error while waiting on transfer receipt",
+            description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Awaiting transfer receipt",
+            description: `Waiting on ${$validation.transfer.sourceChain.display_name}`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "TRANSFERRING",
+          "Transfer assets",
+          "Transferred assets",
+          () => ({}),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Transferring assets",
+            description: `Successfully initiated transfer`
+          })
+        )
+      ] as Array<Step>
+    }
+    if (
+      $validation.transfer.sourceChain?.rpc_type === "cosmos" ||
+      $validation.transfer.sourceChain?.rpc_type === "aptos"
+    ) {
+      return [
+        stateToStatus(
+          $transferState,
+          "SWITCHING_TO_CHAIN",
+          `Switch to ${$validation.transfer.sourceChain.display_name}`,
+          `Switched to ${$validation.transfer.sourceChain.display_name}`,
+          ts => ({
+            status: "ERROR",
+            title: `Error switching to ${$validation.transfer.sourceChain.display_name}`,
+            description: `There was an issue switching to ${$validation.transfer.sourceChain.display_name} to your wallet. ${ts.warning}`
+          }),
+          () => ({
+            status: "WARNING",
+            title: `Could not automatically switch chain.`,
+            description: `Please make sure your wallet is connected to  ${$validation.transfer.sourceChain.display_name}`
+          }),
+          () => ({
+            status: "IN_PROGRESS",
+            title: `Switching to ${$validation.transfer.sourceChain.display_name}`,
+            description: `Click "Approve" in wallet.`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "CONFIRMING_TRANSFER",
+          "Confirm transfer",
+          "Confirmed transfer",
+          ts => ({
+            status: "ERROR",
+            title: "Error confirming transfer",
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Confirming your transfer",
+            description: `Click "Approve" in your wallet`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "TRANSFERRING",
+          "Transfer assets",
+          "Transferred assets",
+          () => ({}),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Transferring assets",
+            description: `Successfully initiated transfer`
+          })
+        )
+      ] as Array<Step>
+    }
+    raise("trying to make stepper for unsupported chain")
   }
-  if ($intents.sourceChain?.rpc_type === "cosmos" || $intents.sourceChain?.rpc_type === "aptos") {
-    return [
-      stateToStatus(
-        $transferState,
-        "SWITCHING_TO_CHAIN",
-        `Switch to ${$intents.sourceChain.display_name}`,
-        `Switched to ${$intents.sourceChain.display_name}`,
-        ts => ({
-          status: "ERROR",
-          title: `Error switching to ${$intents.sourceChain.display_name}`,
-          description: `There was an issue switching to ${$intents.sourceChain.display_name} to your wallet. ${ts.warning}`
-        }),
-        () => ({
-          status: "WARNING",
-          title: `Could not automatically switch chain.`,
-          description: `Please make sure your wallet is connected to  ${$intents.sourceChain.display_name}`
-        }),
-        () => ({
-          status: "IN_PROGRESS",
-          title: `Switching to ${$intents.sourceChain.display_name}`,
-          description: `Click "Approve" in wallet.`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "CONFIRMING_TRANSFER",
-        "Confirm transfer",
-        "Confirmed transfer",
-        ts => ({
-          status: "ERROR",
-          title: "Error confirming transfer",
-          description: `${ts.error}`
-        }),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Confirming your transfer",
-          description: `Click "Approve" in your wallet`
-        })
-      ),
-      stateToStatus(
-        $transferState,
-        "TRANSFERRING",
-        "Transfer assets",
-        "Transferred assets",
-        () => ({}),
-        () => ({}),
-        () => ({
-          status: "IN_PROGRESS",
-          title: "Transferring assets",
-          description: `Successfully initiated transfer`
-        })
-      )
-    ] as Array<Step>
-  }
-  raise("trying to make stepper for unsupported chain")
-})
+)
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
-  <div>
-    <h2>Transfer</h2>
-    <p>RPC_TYPE: {$intents?.sourceChain?.rpc_type}</p>
-    <p>SOURCE: {$intents?.sourceChain?.display_name}</p>
-    <p>DESTINATION: {$intents?.destinationChain?.display_name}</p>
-    <p>ASSET: {$intents?.selectedAsset?.address ? truncate($intents.selectedAsset.address, 12) : ""}</p>
-    <p>AMOUNT: {$intents.amount}</p>
-    <p>RECEIVER: {truncateAddress({address: $intents.receiver})}</p>
-  </div>
+  {#if $validation.isValid}
+    <div>
+      <div class="flex justify-between">
+        <span>RPC_TYPE:</span>
+        <span>{$validation.transfer.sourceChain.rpc_type}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>SENDER:</span>
+        <span>{truncateAddress({address: $validation.transfer.sender})}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>SOURCE:</span>
+        <span>{$validation.transfer.sourceChain.display_name}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>DESTINATION:</span>
+        <span>{$validation.transfer.destinationChain.display_name}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>ASSET:</span>
+        <span>{truncate($validation.transfer.asset.address, 6)}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>AMOUNT:</span>
+        <span>{$validation.transfer.amount}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>RECEIVER:</span>
+        <span>{truncateAddress({address: $validation.transfer.receiver})}</span>
+      </div>
+    </div>
+  {/if}
 
-  {#if $intents.sourceChain}
+  {#if $validation.transfer?.sourceChain}
     <Stepper
             steps={stepperSteps}
             on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}

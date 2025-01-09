@@ -1,11 +1,9 @@
-import { derived, get, type Readable } from "svelte/store"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
-import { userAddrEvm } from "$lib/wallet/evm"
-import { userAddressAptos } from "$lib/wallet/aptos"
-import { userBalancesQuery } from "$lib/queries/balance"
+import { derived, type Readable } from "svelte/store"
 import type { Chain, UserAddresses } from "$lib/types"
-import { useQueryClient } from "@tanstack/svelte-query"
 import type { Address } from "$lib/wallet/types"
+import { balanceStore, userAddress } from "./balances.ts"
+import type { BalanceResult } from "$lib/queries/balance"
+import type { QueryObserverResult } from "@tanstack/query-core"
 
 export type BalanceRecord = {
   balance: bigint
@@ -27,31 +25,21 @@ export interface ContextStore {
   balances: BalancesList
 }
 
-export function createContextStore(): Readable<ContextStore> {
-  const queryClient = useQueryClient()
-
-  const queryData = <T extends Array<unknown>>(
-    key: Array<string>,
-    filter?: (value: T[number]) => boolean
-  ): T => {
-    const data = queryClient.getQueryData<T>(key) ?? []
-    return (filter ? data.filter(filter) : data) as T
-  }
-
-  const chains = queryData<Array<Chain>>(["chains"], chain => chain.enabled_staging)
-
-  const userAddress = derived(
-    [userAddrCosmos, userAddrEvm, userAddressAptos],
-    ([cosmos, evm, aptos]) => ({ evm, aptos, cosmos })
-  ) as Readable<UserAddresses>
-
+export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
   const balances = derived(
-    [userAddress, userBalancesQuery({ chains, connected: true, userAddr: get(userAddress) })],
-    ([_, $rawBalances]) => {
+    balanceStore as Readable<Array<QueryObserverResult<Array<BalanceResult>, Error>>>,
+    $rawBalances => {
+      if ($rawBalances?.length === 0) {
+        return chains.map(chain => ({
+          chainId: chain.chain_id,
+          balances: []
+        }))
+      }
+
       return chains.map((chain, chainIndex) => {
         const balanceResult = $rawBalances[chainIndex]
 
-        if (!balanceResult?.isSuccess || balanceResult.data instanceof Error) {
+        if (!(balanceResult?.isSuccess && balanceResult.data)) {
           console.log(`No balances fetched yet for chain ${chain.chain_id}`)
           return {
             chainId: chain.chain_id,
@@ -61,9 +49,12 @@ export function createContextStore(): Readable<ContextStore> {
 
         return {
           chainId: chain.chain_id,
-          balances: balanceResult.data.map(balance => ({
+          balances: balanceResult.data.map((balance: BalanceResult) => ({
             ...balance,
-            balance: BigInt(balance.balance)
+            balance: BigInt(balance.balance),
+            gasToken: "gasToken" in balance ? (balance.gasToken ?? false) : false,
+            address: balance.address as Address,
+            symbol: balance.symbol || balance.address
           }))
         }
       })

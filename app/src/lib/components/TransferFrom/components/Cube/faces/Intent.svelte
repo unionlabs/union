@@ -2,7 +2,10 @@
 import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
 import type { Readable } from "svelte/store"
-import type { ValidationStoreAndMethods } from "$lib/components/TransferFrom/transfer/validation.ts"
+import type {
+  ValidationStore,
+  ValidationStoreAndMethods
+} from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import { Button } from "$lib/components/ui/button"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
@@ -14,8 +17,7 @@ interface Props {
   stores: {
     rawIntents: RawIntentsStore
     intents: Readable<IntentsStore>
-    context: Readable<ContextStore>
-    validation: ValidationStoreAndMethods
+    validation: Readable<ValidationStore>
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -23,7 +25,7 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { rawIntents, intents, validation, context } = stores
+let { rawIntents, intents, validation } = stores
 </script>
 
 <div class="flex flex-col w-full h-full ">
@@ -33,8 +35,9 @@ let { rawIntents, intents, validation, context } = stores
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
     <div class="flex flex-col gap-4">
-      <Direction {intents} {validation} getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
-      <SelectedAsset {intents} onSelectAsset={() => rotateTo("assetsFace")}/>
+      <Direction {intents} {validation} {rawIntents} getSourceChain={() => rotateTo("sourceFace")}
+                 getDestinationChain={() => rotateTo("destinationFace")}/>
+      <SelectedAsset {intents} {validation} {rawIntents} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1">
         <Input
                 id="amount"

@@ -12,7 +12,6 @@ interface Props {
   stores: {
     rawIntents: RawIntentsStore
     intents: Readable<IntentsStore>
-    context: Readable<ContextStore>
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -20,7 +19,7 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { rawIntents, context, intents } = stores
+let { rawIntents, intents } = stores
 
 $: sortedAssets = [...($intents.sourceAssets ?? [])].sort((a, b) => {
   if (a.isSupported !== b.isSupported) {
