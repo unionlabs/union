@@ -14,9 +14,6 @@ import { userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
 export let chains: Array<Chain>
 
 const balances = allChainBalances(chains, userAddress)
-balances.subscribe(data => {
-  console.log(data)
-})
 
 const stores = createTransferStore(chains)
 </script>
