@@ -59,7 +59,7 @@ function toggleZeroBalances() {
 
   {#if $filteredAssets.length}
     <div class="flex-1 overflow-y-auto">
-      {#each $filteredAssets as asset (asset.metadata.denom)}
+      {#each $filteredAssets as asset (asset)}
         <div class="pb-2 flex flex-col justify-start">
           <Button
                   variant="ghost"

@@ -8,22 +8,13 @@ import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.sv
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 import type { Chain } from "$lib/types.ts"
-import { allChainBalances } from "$lib/queries/balance"
+import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
-import { onDestroy } from "svelte"
 
 export let chains: Array<Chain>
 
-const balances = allChainBalances(chains, userAddress)
-const unsubscribe = balances.subscribe($balances => {
-  console.log("breee", $balances)
-  balanceStore.set([...$balances])
-  console.log("bressssee", $balanceStore)
-})
-
-onDestroy(() => {
-  unsubscribe()
-})
+$: userBalancesQueries = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
+$: balanceStore.set($userBalancesQueries.map(query => query.data || []))
 
 const stores = createTransferStore(chains)
 </script>

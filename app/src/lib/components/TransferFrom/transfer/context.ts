@@ -18,6 +18,7 @@ export interface ContextStore {
 
 export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
   const balances = derived(balanceStore, ($rawBalances: Array<Array<BalanceData>>) => {
+    console.log("context", $rawBalances)
     if ($rawBalances?.length === 0) {
       return chains.map(chain => ({
         chainId: chain.chain_id,
