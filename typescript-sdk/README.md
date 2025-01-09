@@ -15,6 +15,7 @@ npm install @unionlabs/client
 Publish to npm registry:
 
 ```sh
+npm run build # important!
 npm publish --access='public' --no-git-tags
 ```
 
