@@ -56,16 +56,25 @@ contract TestLightClient is ILightClient {
         uint32,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    ) external returns (ConsensusStateUpdate memory) {
+    )
+        external
+        returns (
+            ConsensusStateUpdate memory,
+            string memory counterpartyClientId
+        )
+    {
         if (revertCreate) {
             revert();
         }
         clientState = clientStateBytes;
-        return ConsensusStateUpdate({
-            clientStateCommitment: keccak256(clientStateBytes),
-            consensusStateCommitment: keccak256(consensusStateBytes),
-            height: latestHeight
-        });
+        return (
+            ConsensusStateUpdate({
+                clientStateCommitment: keccak256(clientStateBytes),
+                consensusStateCommitment: keccak256(consensusStateBytes),
+                height: latestHeight
+            }),
+            ""
+        );
     }
 
     function getTimestampAtHeight(

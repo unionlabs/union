@@ -21,7 +21,12 @@ interface ILightClient {
         uint32 clientId,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    ) external returns (ConsensusStateUpdate memory update);
+    )
+        external
+        returns (
+            ConsensusStateUpdate memory update,
+            string memory counterpartyChainId
+        );
 
     /**
      * @dev getTimestampAtHeight returns the timestamp of the consensus state at the given height.

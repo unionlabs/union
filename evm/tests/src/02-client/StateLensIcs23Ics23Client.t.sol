@@ -28,12 +28,21 @@ contract MockLightClient is ILightClient {
         uint32 clientId,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    ) external returns (ConsensusStateUpdate memory update) {
-        return ConsensusStateUpdate({
-            clientStateCommitment: bytes32(0),
-            consensusStateCommitment: bytes32(0),
-            height: 0
-        });
+    )
+        external
+        returns (
+            ConsensusStateUpdate memory update,
+            string memory counterpartyChainId
+        )
+    {
+        return (
+            ConsensusStateUpdate({
+                clientStateCommitment: bytes32(0),
+                consensusStateCommitment: bytes32(0),
+                height: 0
+            }),
+            ""
+        );
     }
 
     function getClientState(

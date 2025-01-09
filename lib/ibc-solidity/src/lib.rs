@@ -151,7 +151,7 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event CreateClient(string clientType, uint32 client_id);
+            event CreateClient(string client_type, uint32 client_id, string counterparty_chain_id);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)

@@ -207,7 +207,15 @@ contract CometblsClient is
         uint32 clientId,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory update) {
+    )
+        external
+        override
+        onlyIBC
+        returns (
+            ConsensusStateUpdate memory update,
+            string memory counterpartyChainId
+        )
+    {
         ClientState calldata clientState = clientStateBytes.decodeClientState();
         ConsensusState calldata consensusState =
             consensusStateBytes.decodeConsensusState();
@@ -216,11 +224,14 @@ contract CometblsClient is
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.latestHeight] = consensusState;
-        return ConsensusStateUpdate({
-            clientStateCommitment: clientState.commit(),
-            consensusStateCommitment: consensusState.commit(),
-            height: clientState.latestHeight
-        });
+        return (
+            ConsensusStateUpdate({
+                clientStateCommitment: clientState.commit(),
+                consensusStateCommitment: consensusState.commit(),
+                height: clientState.latestHeight
+            }),
+            string(abi.encodePacked(clientState.chainId))
+        );
     }
 
     function misbehaviour(
