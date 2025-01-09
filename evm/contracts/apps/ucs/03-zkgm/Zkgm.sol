@@ -100,7 +100,7 @@ library ZkgmLib {
     error ErrUnsupportedVersion();
     error ErrUnimplemented();
     error ErrBatchMustBeSync();
-    error ErrUnknownSyscall();
+    error ErrUnknownOpcode();
     error ErrInfiniteGame();
     error ErrUnauthorized();
     error ErrInvalidAmount();
@@ -403,7 +403,7 @@ contract UCS03Zkgm is
                 channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -569,7 +569,7 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -825,7 +825,7 @@ contract UCS03Zkgm is
                 ack
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -991,7 +991,7 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 

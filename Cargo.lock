@@ -6318,6 +6318,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-union-ucs03-zkgm"
+version = "1.0.0"
+dependencies = [
+ "alloy",
+ "base58 0.2.0",
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "ethabi",
+ "hex",
+ "ibc-solidity",
+ "ibc-union-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "token-factory-api",
+ "unionlabs",
+]
+
+[[package]]
 name = "ics008-wasm-client"
 version = "0.1.0"
 dependencies = [
@@ -12026,8 +12046,8 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "token-factory-api"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
 ]
 
 [[package]]

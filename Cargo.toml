@@ -5,6 +5,7 @@ members = [
   "cosmwasm/token-factory-api",
   "cosmwasm/ucs00-pingpong",
   "cosmwasm/ibc-union/app/ucs00-pingpong",
+  "cosmwasm/ibc-union/app/ucs03-zkgm",
   "cosmwasm/ucs01-relay",
   "cosmwasm/ucs01-relay-api",
   "cosmwasm/ucs02-nft",

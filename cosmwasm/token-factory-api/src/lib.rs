@@ -16,7 +16,8 @@ pub enum TokenFactoryMsg {
     /// to calling SetMetadata directly on the returned denom.
     CreateDenom {
         subdenom: String,
-        metadata: Option<Metadata>,
+        // TODO: upgrade tokenfactory to handle this
+        // metadata: Option<Metadata>,
     },
     /// ChangeAdmin changes the admin for a factory denom.
     /// Can only be called by the current contract admin.
