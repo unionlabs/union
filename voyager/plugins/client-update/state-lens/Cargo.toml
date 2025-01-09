@@ -1,0 +1,22 @@
+[package]
+edition = "2021"
+name    = "voyager-client-update-plugin-state-lens"
+version = "0.1.0"
+
+[dependencies]
+alloy                         = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+enumorph                      = { workspace = true }
+ibc-union-spec                = { workspace = true }
+ics23                         = { workspace = true }
+jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                        = { workspace = true }
+protos                        = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+serde_json                    = { workspace = true }
+state-lens-light-client-types = { workspace = true, features = ["serde"] }
+tokio                         = { workspace = true }
+tracing                       = { workspace = true }
+tracing-subscriber            = { workspace = true }
+unionlabs                     = { workspace = true }
+voyager-message               = { workspace = true }
+voyager-vm                    = { workspace = true }
