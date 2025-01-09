@@ -11,14 +11,13 @@ export function createQueryClient() {
     defaultOptions: {
       queries: {
         enabled: browser,
-        gcTime: HOUR * 1, // 1 hour
-        refetchOnReconnect: () => !queryClient.isMutating()
+        gcTime: HOUR,
+        refetchOnReconnect: () => !queryClient.isMutating(),
+        staleTime: MINUTE,
+        refetchOnWindowFocus: true,
+        refetchOnMount: true
       }
     },
-    /**
-     * https://tkdodo.eu/blog/react-query-error-handling#putting-it-all-together
-     * note: only runs in development mode. Production unaffected.
-     */
     queryCache: new QueryCache({
       onError: (error, query) => {
         if (import.meta.env.MODE !== "development") return
