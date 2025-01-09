@@ -9,10 +9,6 @@ use voyager_message::{
 };
 use voyager_vm::{BoxDynError, Op};
 
-// use crate::cli::handshake::HandshakeCmd;
-
-// pub mod handshake;
-
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
 pub struct AppArgs {
@@ -60,7 +56,6 @@ pub enum Command {
     /// Config related subcommands.
     #[command(subcommand)]
     Config(ConfigCmd),
-    // Handshake(HandshakeCmd),
     /// Construct a `FetchBlocks` op to send to the specified chain.
     InitFetch {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
@@ -86,14 +81,6 @@ pub enum Command {
     Rpc(RpcCmd),
     #[command(subcommand)]
     Msg(MsgCmd),
-    // Query {
-    //     #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
-    //     on: ChainId,
-    //     #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
-    //     height: QueryHeight,
-    //     #[command(subcommand)]
-    //     path: ics24::Path,
-    // },
 }
 
 #[derive(Debug, Subcommand)]
