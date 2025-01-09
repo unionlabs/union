@@ -8,7 +8,7 @@ module ibc::move_in_cosmos_client {
     use std::bcs;
     use std::string::{String};
     use std::from_bcs;
-    use aptos_std::table::{Self, Table};
+    use aptos_std::smart_table::{Self, SmartTable};
     use ibc::mpt_verifier;
     use ibc::cometbls_lc;
     use ibc::commitment;
@@ -65,16 +65,16 @@ module ibc::move_in_cosmos_client {
     // Events
     #[event]
     struct CreateLensClient has copy, drop, store {
-        clientId: u32,
-        l1ClientId: u32,
-        l2ClientId: u32,
-        l2ChainId: String
+        client_id: u32,
+        l1_client_id: u32,
+        l2_client_id: u32,
+        l2_chain_id: String
     }
 
     /// Storage for the module
     struct EvmInCosmosStorage has key {
-        client_states: Table<u32, ClientState>,
-        consensus_states: Table<ConsensusStatesTuple, ConsensusState>
+        client_states: SmartTable<u32, ClientState>,
+        consensus_states: SmartTable<ConsensusStatesTuple, ConsensusState>
     }
 
     struct SignerRef has key {
@@ -101,8 +101,8 @@ module ibc::move_in_cosmos_client {
     fun init_module(account: &signer) {
         assert!(signer::address_of(account) == @ibc, ERR_NOT_IBC);
         let storage = EvmInCosmosStorage {
-            client_states: table::new(),
-            consensus_states: table::new()
+            client_states: smart_table::new(),
+            consensus_states: smart_table::new()
         };
 
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
@@ -139,7 +139,7 @@ module ibc::move_in_cosmos_client {
             client_id: client_id,
             l2_height: client_state.l2_latest_height
         };
-        table::add(
+        smart_table::upsert(
             &mut store.consensus_states,
             cons_state_tuple,
             consensus_state
@@ -147,16 +147,16 @@ module ibc::move_in_cosmos_client {
 
         let client_state_commitment = keccak256(bcs::to_bytes(&client_state));
 
-        table::add(&mut store.client_states, client_id, client_state);
+        smart_table::upsert(&mut store.client_states, client_id, client_state);
 
         let consensus_state_commitment = keccak256(bcs::to_bytes(&consensus_state));
 
         event::emit(
             CreateLensClient {
-                clientId: client_id,
-                l1ClientId: client_state.l1_client_id,
-                l2ClientId: client_state.l2_client_id,
-                l2ChainId: client_state.l2_chain_id
+                client_id: client_id,
+                l1_client_id: client_state.l1_client_id,
+                l2_client_id: client_state.l2_client_id,
+                l2_chain_id: client_state.l2_chain_id
             }
         );
         ConsensusStateUpdate {
@@ -199,7 +199,7 @@ module ibc::move_in_cosmos_client {
         };
 
         let cons_state: ConsensusState =
-            *table::borrow(&store.consensus_states, cons_state_tuple);
+            *smart_table::borrow(&store.consensus_states, cons_state_tuple);
         let storage_root = cons_state.storage_root;
 
         let (is_exist, proven_value) =
@@ -234,7 +234,7 @@ module ibc::move_in_cosmos_client {
         };
 
         let cons_state: ConsensusState =
-            *table::borrow(&store.consensus_states, cons_state_tuple);
+            *smart_table::borrow(&store.consensus_states, cons_state_tuple);
         let storage_root = cons_state.storage_root;
 
         let (is_exist, _proven_value) =
@@ -253,7 +253,7 @@ module ibc::move_in_cosmos_client {
 
         let header = copyable_any::unpack<Header>(header_bcs);
 
-        let client_state = table::borrow_mut(&mut store.client_states, client_id);
+        let client_state = smart_table::borrow_mut(&mut store.client_states, client_id);
 
         let proof =
             commitment::consensus_state_commitment_key(
@@ -304,7 +304,7 @@ module ibc::move_in_cosmos_client {
             client_id: client_id,
             l2_height: header.l2_height
         };
-        table::upsert(
+        smart_table::upsert(
             &mut store.consensus_states,
             cons_state_tuple,
             consensus_state
