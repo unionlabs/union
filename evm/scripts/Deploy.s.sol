@@ -769,6 +769,21 @@ contract GetDeployed is Script {
             implStateLensIcs23MptClient
         );
 
+        string memory implStateLensIcs23Ics23Client =
+            "implStateLensIcs23Ics23Client";
+        implStateLensIcs23Ics23Client.serialize(
+            "contract",
+            string(
+                "contracts/clients/StateLensIcs23Ics23Client.sol:StateLensIcs23Ics23Client"
+            )
+        );
+        implStateLensIcs23Ics23Client =
+            implStateLensIcs23Ics23Client.serialize("args", bytes(hex""));
+        impls.serialize(
+            implOf(stateLensIcs23Ics23Client).toHexString(),
+            implStateLensIcs23Ics23Client
+        );
+
         string memory implUCS00 = "implUCS00";
         implUCS00.serialize(
             "contract",
@@ -790,7 +805,7 @@ contract GetDeployed is Script {
             "contract", string("contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT")
         );
         implUCS02 = implUCS02.serialize("args", bytes(hex""));
-        impls = impls.serialize(implOf(ucs02).toHexString(), implUCS02);
+        impls.serialize(implOf(ucs02).toHexString(), implUCS02);
 
         string memory implUCS03 = "implUCS03";
         implUCS03.serialize(
