@@ -23,6 +23,59 @@
         "type": "github"
       }
     },
+    "babylon": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1736163423,
+        "narHash": "sha256-GtPuPFwjbxMx/fY+FXO8V3L+soYhA29ak8XbWBWO5Mk=",
+        "owner": "babylonlabs-io",
+        "repo": "babylon",
+        "rev": "b5646552a1606e38fcdfa97ed2606549b9a233f7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "babylonlabs-io",
+        "ref": "v1.0.0-rc.3",
+        "repo": "babylon",
+        "type": "github"
+      }
+    },
+    "bls-eth-go": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1704351134,
+        "narHash": "sha256-PpBs308170CHZt809QIdyy93D5x+5WTL7hlPytJrpXM=",
+        "ref": "refs/tags/v1.33.0",
+        "rev": "eb66a90ff51d7c982d668d6942e89815a8f7e323",
+        "revCount": 335,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/herumi/bls-eth-go-binary"
+      },
+      "original": {
+        "ref": "refs/tags/v1.33.0",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/herumi/bls-eth-go-binary"
+      }
+    },
+    "blst": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1691598027,
+        "narHash": "sha256-oqljy+ZXJAXEB/fJtmB8rlAr4UXM+Z2OkDa20gpILNA=",
+        "owner": "supranational",
+        "repo": "blst",
+        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "supranational",
+        "repo": "blst",
+        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
+        "type": "github"
+      }
+    },
     "cometbls": {
       "flake": false,
       "locked": {
@@ -548,6 +601,9 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "babylon": "babylon",
+        "bls-eth-go": "bls-eth-go",
+        "blst": "blst",
         "cometbls": "cometbls",
         "cosmosproto": "cosmosproto",
         "cosmossdk": "cosmossdk",
