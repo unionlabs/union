@@ -7,7 +7,7 @@ module ibc::move_in_cosmos_client {
     use std::object;
     use aptos_std::copyable_any;
     use std::bcs;
-    use std::string::{Self, String};
+    use std::string::{String};
     use std::from_bcs;
     use aptos_std::table::{Self, Table};
     use ibc::mpt_verifier;
@@ -58,8 +58,8 @@ module ibc::move_in_cosmos_client {
         height: u64,
     }
     struct ConsensusStatesTuple has copy, drop, store {
-        l2_height: u64,
-        consensus_state: ConsensusState,
+        client_id: u32,
+        l2_height: u64
     }
 
     // Events
@@ -74,7 +74,7 @@ module ibc::move_in_cosmos_client {
     /// Storage for the module
     struct EvmInCosmosStorage has key {
         client_states: Table<u32, ClientState>,
-        consensus_states: Table<u32, ConsensusStatesTuple>,
+        consensus_states: Table<ConsensusStatesTuple, ConsensusState>,
     }
 
     struct SignerRef has key {
@@ -140,13 +140,13 @@ module ibc::move_in_cosmos_client {
         assert!(consensus_state.timestamp > 0, ERR_INVALID_INITIAL_CONSENSUS_STATE);
 
         let cons_state_tuple = ConsensusStatesTuple {
-            l2_height: client_state.l2_latest_height,
-            consensus_state: consensus_state
+            client_id: client_id,
+            l2_height: client_state.l2_latest_height
         };
         table::add(
             &mut store.consensus_states,
-            client_id,
-            cons_state_tuple
+            cons_state_tuple,
+            consensus_state
         );
 
         let client_state_commitment = keccak256(bcs::to_bytes(&client_state));
@@ -200,9 +200,13 @@ module ibc::move_in_cosmos_client {
         vector::append(&mut appended_path, bcs::to_bytes(&0));
 
         let slot = keccak256(appended_path);
+        let cons_state_tuple = ConsensusStatesTuple {
+            client_id: client_id,
+            l2_height: height
+        };
 
-        let cons_state_tuple: ConsensusStatesTuple = *table::borrow(&store.consensus_states, client_id);
-        let storage_root = cons_state_tuple.consensus_state.storage_root;
+        let cons_state: ConsensusState = *table::borrow(&store.consensus_states, cons_state_tuple);
+        let storage_root = cons_state.storage_root;
 
         let (is_exist, proven_value) = mpt_verifier::verify_trie_value(proof, &keccak256(slot),  storage_root);
         
@@ -225,9 +229,14 @@ module ibc::move_in_cosmos_client {
         vector::append(&mut appended_path, bcs::to_bytes(&0));
 
         let slot = keccak256(appended_path);
+        let cons_state_tuple = ConsensusStatesTuple {
+            client_id: client_id,
+            l2_height: height
+        };
 
-        let cons_state_tuple: ConsensusStatesTuple = *table::borrow(&store.consensus_states, client_id);
-        let storage_root = cons_state_tuple.consensus_state.storage_root;
+        let cons_state: ConsensusState = *table::borrow(&store.consensus_states, cons_state_tuple);
+        let storage_root = cons_state.storage_root;
+
 
         let (is_exist, _proven_value) = mpt_verifier::verify_trie_value(proof, &keccak256(slot),  storage_root);
         
@@ -237,7 +246,7 @@ module ibc::move_in_cosmos_client {
 
     /// Update the client with a new header
     public fun update_client(
-        account: &signer, // TODO: not sure if this is needed
+        _account: &signer, // TODO: not sure if this is needed
         client_id: u32,
         header_bcs: copyable_any::Any
     ): ConsensusStateUpdate acquires EvmInCosmosStorage {
@@ -278,13 +287,13 @@ module ibc::move_in_cosmos_client {
             storage_root: l2_storage_root,
         };
         let cons_state_tuple = ConsensusStatesTuple {
-            l2_height: header.l2_height,
-            consensus_state: consensus_state
+            client_id: client_id,
+            l2_height: header.l2_height
         };
         table::upsert(
             &mut store.consensus_states,
-            client_id, 
-            cons_state_tuple
+            cons_state_tuple,
+            consensus_state
         );
 
         let client_state_commitment = keccak256(bcs::to_bytes(client_state));
