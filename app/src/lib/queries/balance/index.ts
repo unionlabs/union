@@ -1,4 +1,3 @@
-// balanceStore.ts
 import { isAddress, type Address } from "viem"
 import { bech32ToBech32Address } from "@unionlabs/client"
 import type { Chain, UserAddresses, ChainAsset } from "$lib/types"
