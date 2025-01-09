@@ -14,16 +14,15 @@ import {
 } from "viem"
 
 export type EvmTransferParams = {
-  memo?: string
-  baseAmount: bigint
+  sourceChannel: number
   receiver: string
+  baseToken: HexAddress
+  baseAmount: bigint
+  quoteToken: HexAddress
+  quoteAmount: bigint
   account?: Account
   simulate?: boolean
-  autoApprove?: boolean
-  sourceChannel: number
-  baseToken: HexAddress
-  quoteToken: HexAddress
-  relayContractAddress: HexAddress
+  ucs03address: HexAddress
 }
 
 /**
@@ -44,39 +43,19 @@ export type EvmTransferParams = {
 export async function transferAssetFromEvm(
   client: WalletClient & PublicActions,
   {
-    memo,
-    baseAmount,
     account,
     receiver,
     baseToken,
+    baseAmount,
     quoteToken,
+    quoteAmount,
     sourceChannel,
     simulate = true,
-    autoApprove = false,
-    relayContractAddress
+    ucs03address
   }: EvmTransferParams
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
-
-  // baseToken = getAddress(baseToken)
-  /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
-  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as HexAddress
-
-  if (autoApprove) {
-    const approveResponse = await evmApproveTransferAsset(client, {
-      amount: baseAmount,
-      account,
-      denomAddress: baseToken,
-      receiver: relayContractAddress
-    })
-    if (approveResponse.isErr()) return approveResponse
-  }
-
-  memo ??= timestamp()
-
-  // we want the same amount on dest as we send on the source
-  const quoteAmount = baseAmount
 
   // add a salt to each transfer to prevent hash collisions
   // important because ibc-union does not use sequence numbers
@@ -84,17 +63,18 @@ export async function transferAssetFromEvm(
   const rawSalt = new Uint8Array(32)
   crypto.getRandomValues(rawSalt)
   const salt = toHex(rawSalt)
+
   /**
    * @dev
    * `UCS03` zkgm contract `transfer` function:
-   * - https://github.com/unionlabs/union/blob/0a08c23df0360a345cde953cb97fe4c852fade9d/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L319
+   * - https://github.com/unionlabs/union/blob/0fd24893d4a1173e9c6e150c826c162871d63262/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L301
    */
   const writeContractParameters = {
     account,
     abi: ucs03ZkgmAbi,
     chain: client.chain,
     functionName: "transfer",
-    address: relayContractAddress,
+    address: ucs03address,
     /**
       "channelId": "uint32"
       "receiver": "bytes"
@@ -118,6 +98,7 @@ export async function transferAssetFromEvm(
       salt
     ]
   } as const
+
   if (!simulate) {
     const hash = await client.writeContract(writeContractParameters)
     return ok(hash)

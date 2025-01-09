@@ -65,7 +65,6 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
-        memo,
         amount,
         account,
         receiver,
@@ -101,22 +100,34 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           args: [0, chainDetails.value.destinationChannel, baseToken]
         })) as ["0x${string}", string]
 
-        console.log({ baseToken, quoteToken }) // useful for debugging app
-
         const sourceChannel = chainDetails.value.sourceChannel
-        const relayContractAddress = getAddress(chainDetails.value.relayContractAddress)
+        const ucs03address = getAddress(chainDetails.value.relayContractAddress)
+
+        if (autoApprove) {
+          const approveResponse = await evmApproveTransferAsset(client, {
+            amount,
+            account,
+            denomAddress: baseToken,
+            receiver: ucs03address
+          })
+          if (approveResponse.isErr()) {
+            return approveResponse
+          }
+          console.log("approval", approveResponse.value)
+        }
+
+        console.log({ sourceChannel, ucs03address, baseToken, quoteToken, amount }) // useful for debugging app
 
         return await transferAssetFromEvm(client, {
-          memo,
+          baseToken,
           baseAmount: amount,
           account,
           simulate,
           receiver,
-          autoApprove,
-          baseToken,
           quoteToken,
+          quoteAmount: amount,
           sourceChannel,
-          relayContractAddress
+          ucs03address
         })
       },
       approveTransaction: async ({
