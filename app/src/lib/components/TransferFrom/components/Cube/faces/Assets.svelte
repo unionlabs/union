@@ -1,29 +1,29 @@
 <script lang="ts">
-  import type { Readable } from "svelte/store"
-  import { truncate } from "$lib/utilities/format.ts"
-  import { formatUnits } from "viem"
-  import { Button } from "$lib/components/ui/button"
-  import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-  import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-  import type { IntentsStore, AssetListItem } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { Readable } from "svelte/store"
+import { truncate } from "$lib/utilities/format.ts"
+import { formatUnits } from "viem"
+import { Button } from "$lib/components/ui/button"
+import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { IntentsStore, AssetListItem } from "$lib/components/TransferFrom/transfer/intents.ts"
 
-  interface Props {
-    stores: {
-      rawIntents: RawIntentsStore
-      intents: Readable<IntentsStore>
-    }
-    rotateTo: (face: CubeFaces) => void
+interface Props {
+  stores: {
+    rawIntents: RawIntentsStore
+    intents: Readable<IntentsStore>
   }
+  rotateTo: (face: CubeFaces) => void
+}
 
-  export let stores: Props["stores"]
-  export let rotateTo: Props["rotateTo"]
+export let stores: Props["stores"]
+export let rotateTo: Props["rotateTo"]
 
-  let { rawIntents, intents } = stores
+let { rawIntents, intents } = stores
 
-  function setAsset(denom: string) {
-    rawIntents.updateField("asset", denom)
-    rotateTo("intentFace")
-  }
+function setAsset(denom: string) {
+  rawIntents.updateField("asset", denom)
+  rotateTo("intentFace")
+}
 </script>
 
 <div class="flex flex-col h-full w-full">

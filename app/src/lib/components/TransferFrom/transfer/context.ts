@@ -17,33 +17,30 @@ export interface ContextStore {
 }
 
 export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
-  const balances = derived(
-    balanceStore,
-    ($rawBalances: BalanceData[][]) => {
-      if ($rawBalances?.length === 0) {
-        return chains.map(chain => ({
-          chainId: chain.chain_id,
-          balances: []
-        }))
-      }
+  const balances = derived(balanceStore, ($rawBalances: Array<Array<BalanceData>>) => {
+    if ($rawBalances?.length === 0) {
+      return chains.map(chain => ({
+        chainId: chain.chain_id,
+        balances: []
+      }))
+    }
 
-      return chains.map((chain, chainIndex) => {
-        const chainBalances = $rawBalances[chainIndex]
+    return chains.map((chain, chainIndex) => {
+      const chainBalances = $rawBalances[chainIndex]
 
-        if (!chainBalances || chainBalances.length === 0) {
-          return {
-            chainId: chain.chain_id,
-            balances: []
-          }
-        }
-
+      if (!chainBalances || chainBalances.length === 0) {
         return {
           chainId: chain.chain_id,
-          balances: chainBalances
+          balances: []
         }
-      })
-    }
-  ) as Readable<BalancesList>
+      }
+
+      return {
+        chainId: chain.chain_id,
+        balances: chainBalances
+      }
+    })
+  }) as Readable<BalancesList>
 
   return derived([userAddress, balances], ([$userAddress, $balances]) => ({
     chains,

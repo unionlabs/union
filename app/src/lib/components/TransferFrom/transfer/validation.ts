@@ -81,7 +81,10 @@ export function createValidationStore(
       // Amount validation
       if ($rawIntents.amount && $intents.selectedAsset) {
         try {
-          const parsedAmount = parseUnits($rawIntents.amount, $intents.selectedAsset.metadata.decimals ?? 0)
+          const parsedAmount = parseUnits(
+            $rawIntents.amount,
+            $intents.selectedAsset.metadata.decimals ?? 0
+          )
           if (parsedAmount <= 0n) {
             errors.amount = "Amount must be greater than 0"
           }
@@ -120,13 +123,7 @@ export function createValidationStore(
     ([$rawIntents, $intents, $context, $errors]) => {
       if (Object.keys($errors).length > 0) return undefined
 
-      if (
-        !(
-          $intents.sourceChain &&
-          $intents.destinationChain &&
-          $intents.selectedAsset
-        )
-      ) {
+      if (!($intents.sourceChain && $intents.destinationChain && $intents.selectedAsset)) {
         return undefined
       }
 

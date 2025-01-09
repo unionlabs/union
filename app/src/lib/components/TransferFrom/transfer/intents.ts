@@ -49,12 +49,9 @@ export function createIntentStore(
       }))
   })
 
-  const selectedAsset = derived(
-    [sourceAssets, rawIntents],
-    ([$sourceAssets, $rawIntents]) => {
-      return $sourceAssets.find(x => x.metadata.denom === $rawIntents.asset) ?? null
-    }
-  )
+  const selectedAsset = derived([sourceAssets, rawIntents], ([$sourceAssets, $rawIntents]) => {
+    return $sourceAssets.find(x => x.metadata.denom === $rawIntents.asset) ?? null
+  })
 
   return derived(
     [sourceChain, destinationChain, selectedAsset, sourceAssets, rawIntents],

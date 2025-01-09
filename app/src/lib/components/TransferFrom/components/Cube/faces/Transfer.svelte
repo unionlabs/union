@@ -50,7 +50,10 @@ let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 const transfer = async () => {
   if (!$validation.isValid) return
 
-  let parsedAmount = parseUnits($validation.transfer.amount, $validation.transfer.asset.metadata.decimals)
+  let parsedAmount = parseUnits(
+    $validation.transfer.amount,
+    $validation.transfer.asset.metadata.decimals
+  )
 
   /** --- APTOS START --- */
   if ($validation.transfer.sourceChain.rpc_type === "aptos") {

@@ -1,37 +1,37 @@
 <!-- ChainSelector.svelte -->
 <script lang="ts">
-  import type { Readable } from "svelte/store"
-  import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-  import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-  import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-  import { Button } from "$lib/components/ui/button"
-  import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
+import type { Readable } from "svelte/store"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
+import { Button } from "$lib/components/ui/button"
+import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
 
-  interface Props {
-    stores: {
-      rawIntents: RawIntentsStore
-      context: Readable<ContextStore>
-    }
-    rotateTo: (face: CubeFaces) => void
-    selected: "source" | "destination"
+interface Props {
+  stores: {
+    rawIntents: RawIntentsStore
+    context: Readable<ContextStore>
   }
+  rotateTo: (face: CubeFaces) => void
+  selected: "source" | "destination"
+}
 
-  export let stores: Props["stores"]
-  export let rotateTo: Props["rotateTo"]
-  export let selected: Props["selected"]
+export let stores: Props["stores"]
+export let rotateTo: Props["rotateTo"]
+export let selected: Props["selected"]
 
-  let expandedChainId: string | null = null
+let expandedChainId: string | null = null
 
-  let { rawIntents, context } = stores
+let { rawIntents, context } = stores
 
-  function setChain(selected: "source" | "destination", chainId: string) {
-    rawIntents.updateField(selected, chainId)
-    rotateTo("intentFace")
-  }
+function setChain(selected: "source" | "destination", chainId: string) {
+  rawIntents.updateField(selected, chainId)
+  rotateTo("intentFace")
+}
 
-  function toggleExpand(chainId: string) {
-    expandedChainId = expandedChainId === chainId ? null : chainId
-  }
+function toggleExpand(chainId: string) {
+  expandedChainId = expandedChainId === chainId ? null : chainId
+}
 </script>
 
 <div class="flex flex-col h-full w-full">

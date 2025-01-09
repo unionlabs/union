@@ -1,44 +1,44 @@
 <script lang="ts">
-  import { derived, type Readable, writable } from "svelte/store"
-  import type { Chain, UserAddresses } from "$lib/types"
-  import { userAddressAptos } from "$lib/wallet/aptos"
-  import { userAddrCosmos } from "$lib/wallet/cosmos"
-  import { userAddrEvm } from "$lib/wallet/evm"
-  import { allChainBalances } from "$lib/queries/balance"
+import { derived, type Readable, writable } from "svelte/store"
+import type { Chain, UserAddresses } from "$lib/types"
+import { userAddressAptos } from "$lib/wallet/aptos"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
+import { userAddrEvm } from "$lib/wallet/evm"
+import { allChainBalances } from "$lib/queries/balance"
 
-  export let chains: Array<Chain>
+export let chains: Array<Chain>
 
-  let userAddress: Readable<UserAddresses> = derived(
-    [userAddrCosmos, userAddrEvm, userAddressAptos],
-    ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
-      evm: $userAddrEvm,
-      cosmos: $userAddrCosmos,
-      aptos: $userAddressAptos
-    })
-  )
+let userAddress: Readable<UserAddresses> = derived(
+  [userAddrCosmos, userAddrEvm, userAddressAptos],
+  ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
+    evm: $userAddrEvm,
+    cosmos: $userAddrCosmos,
+    aptos: $userAddressAptos
+  })
+)
 
-  $: chainBalances = allChainBalances(chains, userAddress)
+$: chainBalances = allChainBalances(chains, userAddress)
 
-  let hideZeroBalances = writable(true)
+let hideZeroBalances = writable(true)
 
-  $: filteredChainBalances = derived(
-    [chainBalances, hideZeroBalances],
-    ([$chainBalances, $hideZeroBalances]) => {
-      if (!$hideZeroBalances) return $chainBalances
-      return $chainBalances.map(chainAssets =>
-        chainAssets.filter(asset => BigInt(asset.balance) > 0n)
-      )
-    }
-  )
-
-  function formatBalance(balance: string, decimals: number | null): string {
-    if (!decimals) return balance
-    const num = Number(balance) / 10 ** decimals
-    return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6
-    }).format(num)
+$: filteredChainBalances = derived(
+  [chainBalances, hideZeroBalances],
+  ([$chainBalances, $hideZeroBalances]) => {
+    if (!$hideZeroBalances) return $chainBalances
+    return $chainBalances.map(chainAssets =>
+      chainAssets.filter(asset => BigInt(asset.balance) > 0n)
+    )
   }
+)
+
+function formatBalance(balance: string, decimals: number | null): string {
+  if (!decimals) return balance
+  const num = Number(balance) / 10 ** decimals
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  }).format(num)
+}
 </script>
 
 <div class="space-y-6">

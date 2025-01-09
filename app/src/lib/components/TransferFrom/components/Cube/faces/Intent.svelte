@@ -2,9 +2,7 @@
 import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
 import type { Readable } from "svelte/store"
-import type {
-  ValidationStore,
-} from "$lib/components/TransferFrom/transfer/validation.ts"
+import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { Button } from "$lib/components/ui/button"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
