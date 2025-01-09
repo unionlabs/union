@@ -1,6 +1,6 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
-import type { IntentsStore, SelectedAsset } from "./intents.ts"
+import type { IntentsStore } from "./intents.ts"
 import type { Chain } from "$lib/types"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { isHex, parseUnits } from "viem"
@@ -13,13 +13,14 @@ import {
 } from "@unionlabs/client"
 import type { FormFields, RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
+import type { BalanceData } from "$lib/queries/balance"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
 export interface ValidTransfer {
   sourceChain: Chain
   destinationChain: Chain
-  asset: SelectedAsset
+  asset: BalanceData
   receiver: string
   amount: string
   sender: string

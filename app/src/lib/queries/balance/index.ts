@@ -25,7 +25,7 @@ function normalizeAddress(denom: string): string {
   return isAddress(denom) ? denom.toLowerCase() : denom
 }
 
-async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMetadata> {
+export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMetadata> {
   try {
     const normalizedDenom = normalizeAddress(denom)
     const configAsset = chain.assets.find(

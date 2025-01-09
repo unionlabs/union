@@ -5,7 +5,7 @@ import { formatUnits } from "viem"
 import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { IntentsStore, AssetListItem } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import { derived, writable } from "svelte/store"
 
 interface Props {
