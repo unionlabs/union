@@ -100,5 +100,4 @@ function toggleExpand(chainId: string) {
       {/each}
     </div>
   </div>
-
 </div>

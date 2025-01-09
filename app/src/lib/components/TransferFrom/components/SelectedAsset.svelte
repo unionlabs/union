@@ -28,10 +28,13 @@ export let onSelectAsset: Props["onSelectAsset"]
           class="border-2 font-bold"
           on:click={onSelectAsset}
   >
-    {$intents.selectedAsset.symbol ?
-      truncate($intents.selectedAsset.symbol, 18) :
-      $rawIntents.asset ? truncate($rawIntents.asset, 6) :
-        "Select Asset"}
+    {#if $intents.selectedAsset}
+      {truncate($intents.selectedAsset.metadata.display_symbol || $intents.selectedAsset.metadata.denom, 18)}
+    {:else if $rawIntents.asset}
+      {truncate($rawIntents.asset, 6)}
+    {:else}
+      Select Asset
+    {/if}
   </Button>
   {#if $validation.errors.asset}
     <p class="text-red-500 text-sm">{$validation.errors.asset}</p>

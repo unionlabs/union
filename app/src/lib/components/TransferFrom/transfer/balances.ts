@@ -1,10 +1,9 @@
-import { derived, type Readable, writable } from "svelte/store"
 import type { UserAddresses } from "$lib/types.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
-import type { QueryObserverResult } from "@tanstack/query-core"
-import type { BalanceResult } from "$lib/queries/balance"
+import type { BalanceData } from "$lib/queries/balance"
+import { derived, type Readable, writable } from "svelte/store"
 
 export let userAddress: Readable<UserAddresses> = derived(
   [userAddrCosmos, userAddrEvm, userAddressAptos],
@@ -15,4 +14,4 @@ export let userAddress: Readable<UserAddresses> = derived(
   })
 )
 
-export const balanceStore = writable<Array<QueryObserverResult<Array<BalanceResult>, Error>>>()
+export const balanceStore = writable<Array<Array<BalanceData>>>([])

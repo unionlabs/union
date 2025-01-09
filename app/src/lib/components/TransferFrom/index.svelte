@@ -7,19 +7,14 @@ import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.sv
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
-import type { Chain, UserAddresses } from "$lib/types.ts"
+import type { Chain } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
-import { balanceStore, userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
+import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export let chains: Array<Chain>
 
-$: userBalancesQuery({
-  chains,
-  userAddr: $userAddress,
-  connected: true
-}).subscribe(x => {
-  balanceStore.set(x)
-})
+$: userBalancesQueries = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
+$: balanceStore.set($userBalancesQueries.map(query => query.data || []))
 
 const stores = createTransferStore(chains)
 </script>
@@ -30,11 +25,11 @@ const stores = createTransferStore(chains)
   </div>
 
   <div slot="source" let:rotateTo class="w-full h-full">
-    <Chains {stores} {rotateTo} selected="source" />
+    <Chains {stores} {rotateTo} selected="source"/>
   </div>
 
   <div slot="destination" let:rotateTo class="w-full h-full">
-    <Chains {stores} {rotateTo} selected="destination" />
+    <Chains {stores} {rotateTo} selected="destination"/>
   </div>
 
   <div slot="assets" let:rotateTo class="w-full h-full">
@@ -48,6 +43,6 @@ const stores = createTransferStore(chains)
 
 <div class="absolute bottom-0 inset-x-0 text-center py-2">
   {#if TRANSFER_DEBUG}
-    <DebugBox {stores} />
+    <DebugBox {stores}/>
   {/if}
 </div>

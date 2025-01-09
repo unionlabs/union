@@ -2,11 +2,7 @@
 import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
 import type { Readable } from "svelte/store"
-import type {
-  ValidationStore,
-  ValidationStoreAndMethods
-} from "$lib/components/TransferFrom/transfer/validation.ts"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { Button } from "$lib/components/ui/button"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
@@ -46,7 +42,7 @@ let { rawIntents, intents, validation } = stores
                 minlength={1}
                 maxlength={64}
                 required={true}
-                disabled={!$intents.selectedAsset.address}
+                disabled={!$intents.selectedAsset?.metadata.denom}
                 autocorrect="off"
                 placeholder="0.00"
                 spellcheck="false"
