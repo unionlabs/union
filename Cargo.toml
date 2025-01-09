@@ -139,8 +139,7 @@ members = [
   "voyager/plugins/client-update/ethereum",
   "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
-  "voyager/plugins/client-update/state-lens/evm",
-  "voyager/plugins/client-update/state-lens/ics23-ics23",
+  "voyager/plugins/client-update/state-lens",
 
   "voyager/plugins/periodic-client-update",
 
@@ -171,7 +170,8 @@ members = [
   "mpc/coordinator",
 
   "lib/ibc-union-spec",
-  "lib/ibc-classic-spec", "lib/state-lens-light-client-types",
+  "lib/ibc-classic-spec",
+  "lib/state-lens-light-client-types",
 ]
 
 [workspace.package]

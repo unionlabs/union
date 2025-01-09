@@ -1,9 +1,9 @@
 [package]
-name = "state-lens-light-client-types"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "state-lens-light-client-types"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
 alloy     = { workspace = true, features = ["sol-types"], optional = true }

@@ -13353,55 +13353,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-update-plugin-state-lens-evm"
+name = "voyager-client-update-plugin-state-lens"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "cometbft-rpc",
- "cometbft-types",
- "dashmap 5.5.3",
  "enumorph",
- "futures",
  "ibc-union-spec",
  "ics23",
  "jsonrpsee",
  "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",
  "state-lens-light-client-types",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-update-plugin-state-lens-ics23-ics23"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "cometbft-rpc",
- "cometbft-types",
- "dashmap 5.5.3",
- "enumorph",
- "futures",
- "ibc-union-spec",
- "ics23",
- "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "serde",
- "serde_json",
- "state-lens-ics23-ics23-light-client-types",
- "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",

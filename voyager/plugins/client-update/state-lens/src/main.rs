@@ -7,7 +7,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use state_lens_ics23_ics23_light_client_types::Header;
+use state_lens_light_client_types::Header;
 use tracing::{debug, instrument};
 use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 use voyager_message::{
@@ -41,6 +41,8 @@ pub struct Module {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
+    pub l2_client_type: String,
+    pub state_lens_client_type: ClientType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +51,8 @@ pub struct Config {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
+    pub l2_client_type: String,
+    pub state_lens_client_type: ClientType,
 }
 
 impl Plugin for Module {
@@ -64,6 +68,8 @@ impl Plugin for Module {
             l1_client_id: config.l1_client_id,
             l1_chain_id: config.l1_chain_id,
             l2_chain_id: config.l2_chain_id,
+            l2_client_type: config.l2_client_type,
+            state_lens_client_type: config.state_lens_client_type,
         })
     }
 
@@ -72,7 +78,7 @@ impl Plugin for Module {
             name: plugin_name(&config.l2_chain_id),
             interest_filter: UpdateHook::filter(
                 &config.l2_chain_id,
-                &ClientType::new(ClientType::STATE_LENS_ICS23_ICS23),
+                &config.state_lens_client_type,
             ),
         }
     }
@@ -107,20 +113,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(
-                        &self.l2_chain_id,
-                        &ClientType::new(ClientType::STATE_LENS_ICS23_ICS23),
-                        |fetch| {
-                            Call::Plugin(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(FetchUpdate {
-                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
-                                    update_from: fetch.update_from,
-                                    update_to: fetch.update_to,
-                                }),
-                            ))
-                        },
-                    )
+                    UpdateHook::new(&self.l2_chain_id, &self.state_lens_client_type, |fetch| {
+                        Call::Plugin(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchUpdate {
+                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                update_from: fetch.update_from,
+                                update_to: fetch.update_to,
+                            }),
+                        ))
+                    })
                     .visit_op(&mut op);
 
                     op
@@ -176,10 +178,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(continuation)
                     }
                     _ => Ok(conc([
-                        // Update the L2 (tm) client on L1 (union) and then dispatch the continuation
+                        // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
-                                client_type: ClientType::new(ClientType::TENDERMINT),
+                                client_type: ClientType::new(self.l2_client_type.clone()),
                                 chain_id: self.l2_chain_id.clone(),
                                 counterparty_chain_id: self.l1_chain_id.clone(),
                                 update_from,
@@ -230,11 +232,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .await?;
                 // The client has been updated to at least update_to
                 let update_to = l1_client_meta.counterparty_height;
-                debug!("l0 client meta {:#?}", l0_client_meta);
+                debug!("l0 client meta {:?}", l0_client_meta);
+
                 let l2_consensus_state_path = ConsensusStatePath {
                     client_id: self.l1_client_id,
                     height: update_to.height(),
                 };
+
                 let l2_consensus_state = voy_client
                     .query_ibc_state(
                         self.l1_chain_id.clone(),
@@ -243,20 +247,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     )
                     .await?
                     .state;
-                debug!("l2 consensus state {:#?}", l2_consensus_state);
-                let l2_consensus_state_proof = serde_json::from_value::<MerkleProof>(
-                    voy_client
-                        .query_ibc_proof(
-                            self.l1_chain_id.clone(),
-                            QueryHeight::Specific(l1_latest_height),
-                            l2_consensus_state_path,
-                        )
-                        .await
-                        .expect("big trouble")
-                        .proof,
-                )
-                .expect("impossible");
-                debug!("l2 consensus state proof {:#?}", l2_consensus_state_proof);
+
+                debug!("l2 consensus state {:?}", l2_consensus_state);
+
+                let l2_consensus_state_proof = voy_client
+                    .query_ibc_proof(
+                        self.l1_chain_id.clone(),
+                        QueryHeight::Specific(l1_latest_height),
+                        l2_consensus_state_path,
+                    )
+                    .await
+                    .expect("big trouble")
+                    .proof;
+
+                let state_lens_client = voy_client
+                    .client_info::<IbcUnion>(counterparty_chain_id.clone(), self.l0_client_id)
+                    .await?;
+
+                debug!("l2 consensus state proof {:?}", l2_consensus_state_proof);
+
+                let l2_consensus_state_proof_bytes = voy_client
+                    .encode_proof::<IbcUnion>(
+                        self.state_lens_client_type.clone(),
+                        state_lens_client.ibc_interface,
+                        l2_consensus_state_proof,
+                    )
+                    .await?;
+
                 // Dispatch an update for the L1 on the destination, then dispatch the L2 update on the destination
                 Ok(conc([
                     promise(
@@ -288,7 +305,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 into_value(Header {
                                     l1_height: l1_latest_height,
                                     l2_height: update_to,
-                                    l2_consensus_state_proof,
+                                    l2_consensus_state_proof: l2_consensus_state_proof_bytes,
                                     l2_consensus_state,
                                 }),
                             )],
