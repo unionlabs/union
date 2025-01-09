@@ -50,7 +50,7 @@ let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 const transfer = async () => {
   if (!$validation.isValid) return
 
-  let parsedAmount = parseUnits($validation.transfer.amount, $validation.transfer.asset.decimals)
+  let parsedAmount = parseUnits($validation.transfer.amount, $validation.transfer.asset.metadata.decimals)
 
   /** --- APTOS START --- */
   if ($validation.transfer.sourceChain.rpc_type === "aptos") {
@@ -109,7 +109,7 @@ const transfer = async () => {
           receiver: $validation.transfer.receiver,
           amount: parsedAmount,
           authAccess: "wallet",
-          denomAddress: $validation.transfer.asset.address,
+          denomAddress: $validation.transfer.asset?.balance,
           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         } satisfies TransferAssetsParameters<"2">
 
@@ -201,18 +201,18 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),
           chainId: $validation.transfer.sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.address }
+          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.metadata.denom }
         })
 
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
           receiver: $validation.transfer.receiver,
           amount: parsedAmount,
-          denomAddress: $validation.transfer.asset.address,
+          denomAddress: $validation.transfer.asset.metadata.denom,
           account: cosmosOfflineSigner,
           // TODO: verify chain id is correct
           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId,
-          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.address }
+          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.metadata.denom }
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
@@ -273,7 +273,7 @@ const transfer = async () => {
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
           receiver: $validation.transfer.receiver,
-          denomAddress: getAddress($validation.transfer.asset.address),
+          denomAddress: getAddress($validation.transfer.asset.metadata.denom),
           // TODO: verify chain id is correct
           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         })
@@ -334,7 +334,7 @@ const transfer = async () => {
           autoApprove: false,
           amount: parsedAmount,
           receiver: $validation.transfer.receiver,
-          denomAddress: getAddress($validation.transfer.asset.address),
+          denomAddress: getAddress($validation.transfer.asset.metadata.denom),
           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
         })
         if (transfer.isErr()) throw transfer.error
@@ -387,10 +387,10 @@ const transfer = async () => {
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
         receiver: $validation.transfer?.receiver,
         assets: {
-          [$validation.transfer?.asset.address]: {
+          [$validation.transfer?.asset.metadata.denom]: {
             info:
               $validation.transfer?.sourceChain?.assets?.find(
-                d => d.denom === $validation.transfer?.asset.address
+                d => d.denom === $validation.transfer?.asset.metadata.denom
               ) ?? null,
             amount: parsedAmount
           }
@@ -643,7 +643,7 @@ let stepperSteps = derived(
       </div>
       <div class="flex justify-between">
         <span>ASSET:</span>
-        <span>{truncate($validation.transfer.asset.address, 6)}</span>
+        <span>{truncate($validation.transfer.asset.metadata.denom, 6)}</span>
       </div>
       <div class="flex justify-between">
         <span>AMOUNT:</span>

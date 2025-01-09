@@ -7,18 +7,14 @@ import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.sv
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
-import type { Chain, UserAddresses } from "$lib/types.ts"
-import { userBalancesQuery } from "$lib/queries/balance"
+import type { Chain } from "$lib/types.ts"
+import { allChainBalances } from "$lib/queries/balance"
 import { balanceStore, userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export let chains: Array<Chain>
 
-$: userBalancesQuery({
-  chains,
-  userAddr: $userAddress,
-  connected: true
-}).subscribe(x => {
-  balanceStore.set(x)
+$: allChainBalances(chains, userAddress).subscribe(data => {
+  balanceStore.set(data)
 })
 
 const stores = createTransferStore(chains)
@@ -34,7 +30,7 @@ const stores = createTransferStore(chains)
   </div>
 
   <div slot="destination" let:rotateTo class="w-full h-full">
-    <Chains {stores} {rotateTo} selected="destination" />
+    <Chains {stores}  {rotateTo} selected="destination" />
   </div>
 
   <div slot="assets" let:rotateTo class="w-full h-full">

@@ -1,7 +1,7 @@
 import type { Readable } from "svelte/store"
 import { derived } from "svelte/store"
-import type { IntentsStore } from "./intents.ts"
-import type { Chain, ChainAsset } from "$lib/types"
+import type { IntentsStore, SelectedAsset } from "./intents.ts"
+import type { Chain } from "$lib/types"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
 import { isHex, parseUnits } from "viem"
 import {
@@ -19,14 +19,7 @@ export type FieldErrors = Partial<Record<keyof FormFields, string>>
 export interface ValidTransfer {
   sourceChain: Chain
   destinationChain: Chain
-  asset: {
-    address: string
-    balance: bigint
-    symbol: string
-    decimals: number
-    gasToken: boolean
-    supported: ChainAsset
-  }
+  asset: SelectedAsset
   receiver: string
   amount: string
   sender: string
@@ -81,18 +74,18 @@ export function createValidationStore(
 
     // Required fields when asset is selected
     if ($rawIntents.asset) {
-      if (!$intents.selectedAsset.address) errors.asset = "Asset not found in wallet"
+      if (!$intents.selectedAsset) errors.asset = "Asset not found in wallet"
       if (!$rawIntents.amount) errors.amount = "Amount is required"
       if (!$rawIntents.receiver) errors.receiver = "Receiver is required"
 
       // Amount validation
-      if ($rawIntents.amount) {
+      if ($rawIntents.amount && $intents.selectedAsset) {
         try {
-          const parsedAmount = parseUnits($rawIntents.amount, $intents.selectedAsset.decimals ?? 0)
+          const parsedAmount = parseUnits($rawIntents.amount, $intents.selectedAsset.metadata.decimals ?? 0)
           if (parsedAmount <= 0n) {
             errors.amount = "Amount must be greater than 0"
           }
-          if (parsedAmount > ($intents.selectedAsset.balance ?? 0n)) {
+          if (parsedAmount > BigInt($intents.selectedAsset.balance)) {
             errors.amount = "Amount exceeds balance"
           }
         } catch {
@@ -131,10 +124,7 @@ export function createValidationStore(
         !(
           $intents.sourceChain &&
           $intents.destinationChain &&
-          $intents.selectedAsset.address &&
-          $intents.selectedAsset.balance &&
-          $intents.selectedAsset.symbol &&
-          $intents.selectedAsset.supported
+          $intents.selectedAsset
         )
       ) {
         return undefined
@@ -146,20 +136,14 @@ export function createValidationStore(
       return {
         sourceChain: $intents.sourceChain,
         destinationChain: $intents.destinationChain,
-        asset: {
-          address: $intents.selectedAsset.address,
-          balance: $intents.selectedAsset.balance,
-          symbol: $intents.selectedAsset.symbol,
-          decimals: $intents.selectedAsset.decimals,
-          gasToken: $intents.selectedAsset.gasToken,
-          supported: $intents.selectedAsset.supported
-        },
+        asset: $intents.selectedAsset,
         receiver: $rawIntents.receiver,
         amount: $rawIntents.amount,
         sender
       } as ValidTransfer
     }
   )
+
   return derived([transfer, errors], ([$transfer, $errors]): ValidationStore => {
     const isValid = $transfer !== undefined
 

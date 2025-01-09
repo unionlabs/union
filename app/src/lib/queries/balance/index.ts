@@ -1,26 +1,25 @@
-import { writable, derived, type Readable } from "svelte/store"
-import { bech32ToBech32Address } from "@unionlabs/client"
-import { type Address, isAddress } from "viem"
-import type { Chain, ChainAsset, UserAddresses } from "$lib/types"
-import { erc20ReadMulticall } from "./evm/multicall.ts"
-import { getCosmosChainBalances } from "./cosmos.ts"
-import { getAptosChainBalances } from "./aptos.ts"
-import { createQueries } from "@tanstack/svelte-query"
-import type { QueryObserverResult } from "@tanstack/query-core"
+import {derived, type Readable, writable} from "svelte/store"
+import {bech32ToBech32Address} from "@unionlabs/client"
+import {type Address, isAddress} from "viem"
+import type {Chain, ChainAsset, UserAddresses} from "$lib/types"
+import {erc20ReadMulticall} from "./evm/multicall.ts"
+import {getCosmosChainBalances} from "./cosmos.ts"
+import {getAptosChainBalances} from "./aptos.ts"
+import {createQueries} from "@tanstack/svelte-query"
+import type {QueryObserverResult} from "@tanstack/query-core"
 
 export type AssetMetadata = {
-  balance: string
   denom: string
   display_symbol: string | null
   display_name: string | null
-  decimals: number | null
+  decimals: number
   gasToken: boolean
+  chain_id: string
   metadata_level: "graphql" | "onchain" | "none"
 }
-
 export type BalanceData = {
-  denom: string
-  balance: string
+  balance: string;
+  metadata: AssetMetadata
 }
 
 function normalizeAddress(denom: string): string {
@@ -36,7 +35,7 @@ export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMe
 
     if (configAsset) {
       return {
-        balance: "0",
+        chain_id: chain.chain_id,  // Add this line
         denom: normalizedDenom,
         display_symbol: configAsset.display_symbol,
         display_name: configAsset.display_name,
@@ -56,7 +55,7 @@ export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMe
         })
 
         return {
-          balance: "0",
+          chain_id: chain.chain_id,  // Add this line
           denom: normalizedDenom,
           display_symbol: results[0].symbol ?? null,
           display_name: results[0].name ?? null,
@@ -71,22 +70,22 @@ export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMe
 
     // Fallback
     return {
-      balance: "0",
+      chain_id: chain.chain_id,  // Add this line
       denom: normalizedDenom,
       display_symbol: null,
       display_name: null,
-      decimals: null,
+      decimals: 0,
       gasToken: false,
       metadata_level: "none"
     }
   } catch (error) {
     console.error("Unexpected error in getAssetInfo:", error)
     return {
-      balance: "0",
+      chain_id: chain.chain_id,  // Add this line
       denom: normalizeAddress(denom),
       display_symbol: null,
       display_name: null,
-      decimals: null,
+      decimals: 0,
       gasToken: false,
       metadata_level: "none"
     }
@@ -103,8 +102,8 @@ export async function getUserBalances(
       const contractAddresses = denoms
         ? denoms.filter((denom): denom is Address => isAddress(denom)).map(normalizeAddress)
         : chain.assets
-            .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
-            .map(asset => normalizeAddress(asset.denom))
+          .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
+          .map(asset => normalizeAddress(asset.denom))
 
       const results = await erc20ReadMulticall({
         chainId: chain.chain_id,
@@ -113,12 +112,16 @@ export async function getUserBalances(
         contractAddresses: contractAddresses as Array<Address>
       })
 
-      return results
-        .map((result, index) => ({
-          denom: normalizeAddress(contractAddresses[index]),
-          balance: result.balance?.toString() ?? "0"
-        }))
-        .filter(result => BigInt(result.balance) > 0n)
+      const balances = await Promise.all(results
+        .map(async (result, index) => {
+          const denom = normalizeAddress(contractAddresses[index]);
+          const balance = result.balance?.toString() ?? "0";
+          const metadata = await getAssetInfo(chain, denom);
+          return { balance, metadata };
+        })
+      );
+
+      return balances.filter(result => BigInt(result.balance) > 0n);
     }
 
     if (chain.rpc_type === "cosmos") {
@@ -138,10 +141,10 @@ export async function getUserBalances(
         walletAddress: bech32Address
       })
 
-      return balances.map(balance => ({
-        denom: normalizeAddress(balance.address),
-        balance: balance.balance.toString()
-      }))
+      return Promise.all(balances.map(async balance => ({
+        balance: balance.balance.toString(),
+        metadata: await getAssetInfo(chain, normalizeAddress(balance.address))
+      })))
     }
 
     if (chain.rpc_type === "aptos") {
@@ -156,10 +159,10 @@ export async function getUserBalances(
         walletAddress: address
       })
 
-      return balances.map(balance => ({
-        denom: normalizeAddress(balance.address),
-        balance: balance.balance.toString()
-      }))
+      return Promise.all(balances.map(async balance => ({
+        balance: balance.balance.toString(),
+        metadata: await getAssetInfo(chain, normalizeAddress(balance.address))
+      })))
     }
 
     return []
@@ -185,10 +188,10 @@ function getAddressForChain(chain: Chain, addresses: UserAddresses): string | nu
 export function createChainBalances(
   chain: Chain,
   addressStore: Readable<UserAddresses>
-): Readable<Array<AssetMetadata>> {
-  const balanceStore = writable<Array<AssetMetadata>>([])
+): Readable<Array<BalanceData>> {
+  const balanceStore = writable<Array<BalanceData>>([])
 
-  return derived<Readable<UserAddresses>, Array<AssetMetadata>>(
+  return derived<Readable<UserAddresses>, Array<BalanceData>>(
     addressStore,
     ($addresses, set) => {
       const address = getAddressForChain(chain, $addresses)
@@ -198,14 +201,17 @@ export function createChainBalances(
         return
       }
 
-      const initialBalances: Array<AssetMetadata> = chain.assets.map(asset => ({
+      const initialBalances: Array<BalanceData> = chain.assets.map(asset => ({
         balance: "0",
-        denom: asset.denom,
-        display_symbol: asset.display_symbol || null,
-        display_name: asset.display_name || null,
-        decimals: asset.decimals !== undefined ? asset.decimals : null,
-        gasToken: asset.gas_token,
-        metadata_level: "none"
+        metadata: {
+          denom: asset.denom,
+          display_symbol: asset.display_symbol || null,
+          display_name: asset.display_name || null,
+          decimals: asset.decimals !== undefined ? asset.decimals : 0,
+          gasToken: asset.gas_token,
+          chain_id: chain.chain_id,
+          metadata_level: "none"
+        }
       }))
       balanceStore.set(initialBalances)
       set(initialBalances)
@@ -218,23 +224,17 @@ export function createChainBalances(
             queryFn: async () => {
               try {
                 const balances = await getUserBalances(chain, address)
-                const enrichedBalances = await Promise.all(
-                  balances.map(async ({ denom, balance }) => {
-                    const assetInfo = await getAssetInfo(chain, denom)
-                    return { ...assetInfo, balance, denom }
-                  })
-                )
 
                 // Merge with placeholder balances to ensure all assets are represented
                 const mergedBalances = initialBalances.map(placeholder => {
-                  const enriched = enrichedBalances.find(b => b.denom === placeholder.denom)
+                  const enriched = balances.find(b => b.metadata.denom === placeholder.metadata.denom)
                   return enriched || placeholder
                 })
 
                 // Add any new tokens discovered that weren't in the original asset list
-                enrichedBalances.forEach(enriched => {
-                  if (!mergedBalances.some(b => b.denom === enriched.denom)) {
-                    mergedBalances.push(enriched)
+                balances.forEach(balance => {
+                  if (!mergedBalances.some(b => b.metadata.denom === balance.metadata.denom)) {
+                    mergedBalances.push(balance)
                   }
                 })
 
@@ -243,11 +243,14 @@ export function createChainBalances(
                   .map(balance => ({
                     ...balance,
                     balance: balance.balance === "Loading..." ? "0" : balance.balance,
-                    decimals: balance.decimals !== null ? balance.decimals : 18 // Default to 18 if decimals is null
+                    metadata: {
+                      ...balance.metadata,
+                      decimals: balance.metadata.decimals !== null ? balance.metadata.decimals : 18 // Default to 18 if decimals is null
+                    }
                   }))
                   .sort((a, b) => {
-                    const aValue = BigInt(a.balance) * BigInt(10 ** (18 - a.decimals))
-                    const bValue = BigInt(b.balance) * BigInt(10 ** (18 - b.decimals))
+                    const aValue = BigInt(a.balance) * BigInt(10 ** (18 - (a.metadata.decimals ?? 18)))
+                    const bValue = BigInt(b.balance) * BigInt(10 ** (18 - (b.metadata.decimals ?? 18)))
                     return bValue > aValue ? 1 : -1
                   })
               } catch (error) {
@@ -259,7 +262,7 @@ export function createChainBalances(
           }
         ]
       }).subscribe(results => {
-        const queryResult = results[0] as QueryObserverResult<Array<AssetMetadata>, Error>
+        const queryResult = results[0] as QueryObserverResult<Array<BalanceData>, Error>
         if (queryResult.data) {
           balanceStore.set(queryResult.data)
           set(queryResult.data)
@@ -268,7 +271,7 @@ export function createChainBalances(
 
       return balanceStore.subscribe(set)
     },
-    [] as Array<AssetMetadata>
+    [] as Array<BalanceData>
   )
 }
 
