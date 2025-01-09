@@ -50,28 +50,28 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
-    name: "SYSCALL_BATCH",
+    name: "OP_BATCH",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "SYSCALL_FORWARD",
+    name: "OP_FORWARD",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "SYSCALL_FUNGIBLE_ASSET_TRANSFER",
+    name: "OP_FUNGIBLE_ASSET_TRANSFER",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
   },
   {
     type: "function",
-    name: "SYSCALL_MULTIPLEX",
+    name: "OP_MULTIPLEX",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
@@ -291,7 +291,7 @@ export const ucs03ZkgmAbi = [
     name: "onRecvPacket",
     inputs: [
       {
-        name: "packet",
+        name: "operand",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
@@ -380,13 +380,13 @@ export const ucs03ZkgmAbi = [
       { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
       { name: "salt", type: "bytes32", internalType: "bytes32" },
       {
-        name: "syscallPacket",
+        name: "instruction",
         type: "tuple",
-        internalType: "struct SyscallPacket",
+        internalType: "struct Instruction",
         components: [
           { name: "version", type: "uint8", internalType: "uint8" },
-          { name: "index", type: "uint8", internalType: "uint8" },
-          { name: "packet", type: "bytes", internalType: "bytes" }
+          { name: "opcode", type: "uint8", internalType: "uint8" },
+          { name: "operand", type: "bytes", internalType: "bytes" }
         ]
       }
     ],
@@ -405,15 +405,14 @@ export const ucs03ZkgmAbi = [
     name: "transfer",
     inputs: [
       { name: "channelId", type: "uint32", internalType: "uint32" },
+      { name: "receiver", type: "bytes", internalType: "bytes" },
+      { name: "baseToken", type: "address", internalType: "address" },
+      { name: "baseAmount", type: "uint256", internalType: "uint256" },
+      { name: "quoteToken", type: "bytes", internalType: "bytes" },
+      { name: "quoteAmount", type: "uint256", internalType: "uint256" },
       { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
       { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
-      { name: "salt", type: "bytes32", internalType: "bytes32" },
-      { name: "receiver", type: "bytes", internalType: "bytes" },
-      { name: "sentToken", type: "address", internalType: "address" },
-      { name: "sentAmount", type: "uint256", internalType: "uint256" },
-      { name: "askToken", type: "bytes", internalType: "bytes" },
-      { name: "askAmount", type: "uint256", internalType: "uint256" },
-      { name: "onlyMaker", type: "bool", internalType: "bool" }
+      { name: "salt", type: "bytes32", internalType: "bytes32" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
