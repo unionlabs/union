@@ -3,7 +3,8 @@ import { page } from "$app/stores"
 import request from "graphql-request"
 import {
   transfersBySourceHashBaseQueryDocument,
-  transfersBySourceHashTracesAndHopsQueryDocument
+  transfersBySourceHashTracesAndHopsQueryDocument,
+  ucs03OrdersBySourceHashQueryDocument
 } from "$lib/graphql/queries/transfer-details.ts"
 import DetailsHeading from "$lib/components/details-heading.svelte"
 import { createQuery } from "@tanstack/svelte-query"
@@ -26,6 +27,19 @@ import PacketPath from "./packet-path.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
+
+let ucs03Orders = createQuery({
+  queryKey: ["ucs03-orders-by-source", source],
+  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
+  placeholderData: (previousData, _) => previousData,
+  queryFn: async () => {
+    const response = await request(URLS().GRAPHQL, ucs03OrdersBySourceHashQueryDocument, {
+      source_transaction_hash: source
+    })
+
+    return response.v1_ibc_union_fungible_asset_order_view
+  }
+})
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
@@ -382,6 +396,10 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 <h1 class="font-bold text-md">Transfer for <span class="font-mono">{source}</span></h1>
 <a href="/explorer/transfers">Back to all transfers </a>
 !-->
+
+<div>
+<pre>{JSON.stringify($ucs03Orders.data, null, 2)}</pre>
+</div>
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
   <div class="flex flex-col w-full items-center gap-6">
