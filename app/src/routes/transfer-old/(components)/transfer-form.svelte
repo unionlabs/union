@@ -396,6 +396,7 @@ const transfer = async () => {
     const connectorClient = await getConnectorClient(config)
     const selectedChain = evmChainFromChainId($fromChainId)
 
+    console.log(connectorClient.account)
     const unionClient = createUnionClient({
       account: connectorClient.account,
       chainId: $fromChain.chain_id as EvmChainId,
