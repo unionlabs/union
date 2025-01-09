@@ -5,7 +5,8 @@ import { formatUnits } from "viem"
 import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
+import type { IntentsStore, AssetListItem } from "$lib/components/TransferFrom/transfer/intents.ts"
+import { derived, writable } from "svelte/store"
 
 interface Props {
   stores: {
@@ -20,15 +21,35 @@ export let rotateTo: Props["rotateTo"]
 
 let { rawIntents, intents } = stores
 
+const showZeroBalances = writable(false)
+
+$: filteredAssets = derived([intents, showZeroBalances], ([$intents, $showZeroBalances]) =>
+  $showZeroBalances
+    ? $intents.sourceAssets
+    : $intents.sourceAssets.filter(asset => BigInt(asset.balance) > 0n)
+)
+
 function setAsset(denom: string) {
   rawIntents.updateField("asset", denom)
   rotateTo("intentFace")
+}
+
+function toggleZeroBalances() {
+  showZeroBalances.update(value => !value)
 }
 </script>
 
 <div class="flex flex-col h-full w-full">
   <div class="text-primary p-2 px-4 flex items-center justify-between border-b-2">
-    <span class="font-bold uppercase">Assets</span>
+    <div class="flex items-center gap-2">
+      <span class="font-bold uppercase">Assets</span>
+      <button
+              class="text-xs border px-2 py-1 rounded"
+              on:click={toggleZeroBalances}
+      >
+        {$showZeroBalances ? 'Hide' : 'Show'} Zero Balances
+      </button>
+    </div>
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
             on:click={() => rotateTo("intentFace")}
@@ -36,9 +57,9 @@ function setAsset(denom: string) {
     </button>
   </div>
 
-  {#if $intents.sourceAssets.length}
+  {#if $filteredAssets.length}
     <div class="flex-1 overflow-y-auto">
-      {#each $intents.sourceAssets as asset (asset)}
+      {#each $filteredAssets as asset (asset.metadata.denom)}
         <div class="pb-2 flex flex-col justify-start">
           <Button
                   variant="ghost"
