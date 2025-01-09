@@ -350,7 +350,19 @@ impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
         let ibc_handler = self.ibc_handler();
-        let client_type = ibc_handler.clientTypes(client_id).call().await.unwrap()._0;
+        let client_type = ibc_handler
+            .clientTypes(client_id)
+            .call()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching client info: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            ._0;
+
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_SOLIDITY),
