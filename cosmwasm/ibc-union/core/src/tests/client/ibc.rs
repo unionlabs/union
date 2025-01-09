@@ -1,10 +1,10 @@
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env},
-    to_json_binary, Addr, DepsMut, Event, Response,
+    to_json_binary, Addr, Event,
 };
 use union_ibc_msg::{
     lightclient::{QueryMsg as LightClientQueryMsg, VerifyClientMessageUpdate},
-    msg::{ExecuteMsg, InitMsg, MsgCreateClient, MsgRegisterClient, MsgUpdateClient},
+    msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
 };
 
 use super::*;
@@ -31,34 +31,10 @@ fn new_client_created_event(client_type: &str, client_id: u32) -> Event {
     ])
 }
 
-fn register_client(deps: DepsMut) -> Result<Response, ContractError> {
-    let register_msg = ExecuteMsg::RegisterClient(MsgRegisterClient {
-        client_type: CLIENT_TYPE.into(),
-        client_address: mock_addr(CLIENT_ADDRESS).to_string(),
-    });
-    let sender = mock_addr(SENDER);
-
-    execute(deps, mock_env(), message_info(&sender, &[]), register_msg)
-}
-
-fn create_client(mut deps: DepsMut) -> Result<Response, ContractError> {
-    let _ = register_client(deps.branch())?;
-
-    let execute_msg = ExecuteMsg::CreateClient(MsgCreateClient {
-        client_type: CLIENT_TYPE.into(),
-        client_state_bytes: vec![1, 2, 3].into(),
-        consensus_state_bytes: vec![1, 2, 3].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
-    let sender = mock_addr(SENDER);
-
-    execute(deps, mock_env(), message_info(&sender, &[]), execute_msg)
-}
-
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
-    let res = register_client(deps.as_mut()).unwrap();
+    let res = register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER).unwrap();
 
     assert!(res
         .events
@@ -77,9 +53,9 @@ fn register_client_ok() {
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
-    register_client(deps.as_mut()).unwrap();
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER).unwrap();
     assert_eq!(
-        register_client(deps.as_mut()),
+        register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER),
         Err(ContractError::ClientTypeAlreadyExists)
     );
 }
@@ -102,7 +78,9 @@ fn create_client_ok() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    assert!(create_client(deps.as_mut()).is_ok())
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
+        .expect("register client ok");
+    assert!(create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).is_ok())
 }
 
 #[test]
@@ -123,7 +101,9 @@ fn create_client_commitments_saved() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    let res = create_client(deps.as_mut()).expect("create client ok");
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
+        .expect("register client ok");
+    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -194,7 +174,9 @@ fn update_client_ok() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    let res = create_client(deps.as_mut()).expect("create client ok");
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
+        .expect("register client ok");
+    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -241,7 +223,9 @@ fn update_client_ko() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    let res = create_client(deps.as_mut()).expect("create client ok");
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
+        .expect("register client ok");
+    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -294,7 +278,9 @@ fn update_client_commitments_saved() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    let res = create_client(deps.as_mut()).expect("create client ok");
+    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
+        .expect("register client ok");
+    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
