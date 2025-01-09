@@ -28,56 +28,68 @@ function normalizeAddress(denom: string): string {
 }
 
 export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMetadata> {
-  const normalizedDenom = normalizeAddress(denom)
-  const configAsset = chain.assets.find(
-    (asset: { denom: string }) => normalizeAddress(asset.denom) === normalizedDenom
-  )
+  try {
+    const normalizedDenom = normalizeAddress(denom)
+    const configAsset = chain.assets.find(
+      (asset: { denom: string }) => normalizeAddress(asset.denom) === normalizedDenom
+    )
 
-  if (configAsset) {
-    return {
-      balance: "0",
-      denom: normalizedDenom,
-      display_symbol: configAsset.display_symbol,
-      display_name: configAsset.display_name,
-      decimals: configAsset.decimals,
-      gasToken: configAsset.gas_token,
-      metadata_level: "graphql"
-    }
-  }
-
-  if (chain.rpc_type === "evm" && isAddress(normalizedDenom)) {
-    try {
-      console.log("here")
-      const results = await erc20ReadMulticall({
-        chainId: chain.chain_id,
-        functionNames: ["decimals", "symbol", "name"],
-        address: normalizedDenom as Address,
-        contractAddresses: [normalizedDenom] as Array<Address>
-      })
-
+    if (configAsset) {
       return {
         balance: "0",
         denom: normalizedDenom,
-        display_symbol: results[0].symbol ?? null,
-        display_name: results[0].name ?? null,
-        decimals: results[0].decimals ?? null,
-        gasToken: false,
-        metadata_level: "onchain"
+        display_symbol: configAsset.display_symbol,
+        display_name: configAsset.display_name,
+        decimals: configAsset.decimals,
+        gasToken: configAsset.gas_token,
+        metadata_level: "graphql"
       }
-    } catch (e) {
-      console.error("Multicall metadata fetch failed:", e)
     }
-  }
 
-  // Fallback
-  return {
-    balance: "0",
-    denom: normalizedDenom,
-    display_symbol: null,
-    display_name: null,
-    decimals: null,
-    gasToken: false,
-    metadata_level: "none"
+    if (chain.rpc_type === "evm" && isAddress(normalizedDenom)) {
+      try {
+        const results = await erc20ReadMulticall({
+          chainId: chain.chain_id,
+          functionNames: ["decimals", "symbol", "name"],
+          address: normalizedDenom as Address,
+          contractAddresses: [normalizedDenom] as Array<Address>
+        })
+
+        return {
+          balance: "0",
+          denom: normalizedDenom,
+          display_symbol: results[0].symbol ?? null,
+          display_name: results[0].name ?? null,
+          decimals: results[0].decimals ?? null,
+          gasToken: false,
+          metadata_level: "onchain"
+        }
+      } catch (e) {
+        console.error("Multicall metadata fetch failed:", e)
+      }
+    }
+
+    // Fallback
+    return {
+      balance: "0",
+      denom: normalizedDenom,
+      display_symbol: null,
+      display_name: null,
+      decimals: null,
+      gasToken: false,
+      metadata_level: "none"
+    }
+  } catch (error) {
+    console.error("Unexpected error in getAssetInfo:", error)
+    return {
+      balance: "0",
+      denom: normalizeAddress(denom),
+      display_symbol: null,
+      display_name: null,
+      decimals: null,
+      gasToken: false,
+      metadata_level: "none"
+    }
   }
 }
 
@@ -86,68 +98,75 @@ export async function getUserBalances(
   address: string,
   denoms?: Array<string>
 ): Promise<Array<BalanceData>> {
-  if (chain.rpc_type === "evm") {
-    const contractAddresses = denoms
-      ? denoms.filter((denom): denom is Address => isAddress(denom)).map(normalizeAddress)
-      : chain.assets
-          .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
-          .map(asset => normalizeAddress(asset.denom))
+  try {
+    if (chain.rpc_type === "evm") {
+      const contractAddresses = denoms
+        ? denoms.filter((denom): denom is Address => isAddress(denom)).map(normalizeAddress)
+        : chain.assets
+            .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
+            .map(asset => normalizeAddress(asset.denom))
 
-    const results = await erc20ReadMulticall({
-      chainId: chain.chain_id,
-      functionNames: ["balanceOf"],
-      address: address as Address,
-      contractAddresses: contractAddresses as Array<Address>
-    })
+      const results = await erc20ReadMulticall({
+        chainId: chain.chain_id,
+        functionNames: ["balanceOf"],
+        address: address as Address,
+        contractAddresses: contractAddresses as Array<Address>
+      })
 
-    return results
-      .map((result, index) => ({
-        denom: normalizeAddress(contractAddresses[index]),
-        balance: result.balance?.toString() ?? "0"
+      return results
+        .map((result, index) => ({
+          denom: normalizeAddress(contractAddresses[index]),
+          balance: result.balance?.toString() ?? "0"
+        }))
+        .filter(result => BigInt(result.balance) > 0n)
+    }
+
+    if (chain.rpc_type === "cosmos") {
+      const restEndpoint = chain.rpcs.find(rpc => rpc.type === "rest")?.url
+      if (!restEndpoint) {
+        console.error(`No REST endpoint found for chain ${chain.chain_id}`)
+        return []
+      }
+
+      const bech32Address = bech32ToBech32Address({
+        toPrefix: chain.addr_prefix,
+        address
+      })
+
+      const balances = await getCosmosChainBalances({
+        url: restEndpoint,
+        walletAddress: bech32Address
+      })
+
+      return balances.map(balance => ({
+        denom: normalizeAddress(balance.address),
+        balance: balance.balance.toString()
       }))
-      .filter(result => BigInt(result.balance) > 0n)
-  }
-
-  if (chain.rpc_type === "cosmos") {
-    const restEndpoint = chain.rpcs.find(rpc => rpc.type === "rest")?.url
-    if (!restEndpoint) {
-      throw new Error(`No REST endpoint found for chain ${chain.chain_id}`)
     }
 
-    const bech32Address = bech32ToBech32Address({
-      toPrefix: chain.addr_prefix,
-      address
-    })
+    if (chain.rpc_type === "aptos") {
+      const graphqlEndpoint = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
+      if (!graphqlEndpoint) {
+        console.error(`No GraphQL endpoint found for chain ${chain.chain_id}`)
+        return []
+      }
 
-    const balances = await getCosmosChainBalances({
-      url: restEndpoint,
-      walletAddress: bech32Address
-    })
+      const balances = await getAptosChainBalances({
+        url: graphqlEndpoint,
+        walletAddress: address
+      })
 
-    return balances.map(balance => ({
-      denom: normalizeAddress(balance.address),
-      balance: balance.balance.toString()
-    }))
-  }
-
-  if (chain.rpc_type === "aptos") {
-    const graphqlEndpoint = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!graphqlEndpoint) {
-      throw new Error(`No GraphQL endpoint found for chain ${chain.chain_id}`)
+      return balances.map(balance => ({
+        denom: normalizeAddress(balance.address),
+        balance: balance.balance.toString()
+      }))
     }
 
-    const balances = await getAptosChainBalances({
-      url: graphqlEndpoint,
-      walletAddress: address
-    })
-
-    return balances.map(balance => ({
-      denom: normalizeAddress(balance.address),
-      balance: balance.balance.toString()
-    }))
+    return []
+  } catch (error) {
+    console.error("Error in getUserBalances:", error)
+    return []
   }
-
-  return []
 }
 
 function getAddressForChain(chain: Chain, addresses: UserAddresses): string | null {
@@ -197,39 +216,44 @@ export function createChainBalances(
           {
             queryKey: ["balances", chain.chain_id, address],
             queryFn: async () => {
-              const balances = await getUserBalances(chain, address)
-              const enrichedBalances = await Promise.all(
-                balances.map(async ({ denom, balance }) => {
-                  const assetInfo = await getAssetInfo(chain, denom)
-                  return { ...assetInfo, balance, denom }
+              try {
+                const balances = await getUserBalances(chain, address)
+                const enrichedBalances = await Promise.all(
+                  balances.map(async ({ denom, balance }) => {
+                    const assetInfo = await getAssetInfo(chain, denom)
+                    return { ...assetInfo, balance, denom }
+                  })
+                )
+
+                // Merge with placeholder balances to ensure all assets are represented
+                const mergedBalances = initialBalances.map(placeholder => {
+                  const enriched = enrichedBalances.find(b => b.denom === placeholder.denom)
+                  return enriched || placeholder
                 })
-              )
 
-              // Merge with placeholder balances to ensure all assets are represented
-              const mergedBalances = initialBalances.map(placeholder => {
-                const enriched = enrichedBalances.find(b => b.denom === placeholder.denom)
-                return enriched || placeholder
-              })
-
-              // Add any new tokens discovered that weren't in the original asset list
-              enrichedBalances.forEach(enriched => {
-                if (!mergedBalances.some(b => b.denom === enriched.denom)) {
-                  mergedBalances.push(enriched)
-                }
-              })
-
-              // Ensure all balance values are valid numbers and sort the balances
-              return mergedBalances
-                .map(balance => ({
-                  ...balance,
-                  balance: balance.balance === "Loading..." ? "0" : balance.balance,
-                  decimals: balance.decimals !== null ? balance.decimals : 18 // Default to 18 if decimals is null
-                }))
-                .sort((a, b) => {
-                  const aValue = BigInt(a.balance) * BigInt(10 ** (18 - a.decimals))
-                  const bValue = BigInt(b.balance) * BigInt(10 ** (18 - b.decimals))
-                  return bValue > aValue ? 1 : -1
+                // Add any new tokens discovered that weren't in the original asset list
+                enrichedBalances.forEach(enriched => {
+                  if (!mergedBalances.some(b => b.denom === enriched.denom)) {
+                    mergedBalances.push(enriched)
+                  }
                 })
+
+                // Ensure all balance values are valid numbers and sort the balances
+                return mergedBalances
+                  .map(balance => ({
+                    ...balance,
+                    balance: balance.balance === "Loading..." ? "0" : balance.balance,
+                    decimals: balance.decimals !== null ? balance.decimals : 18 // Default to 18 if decimals is null
+                  }))
+                  .sort((a, b) => {
+                    const aValue = BigInt(a.balance) * BigInt(10 ** (18 - a.decimals))
+                    const bValue = BigInt(b.balance) * BigInt(10 ** (18 - b.decimals))
+                    return bValue > aValue ? 1 : -1
+                  })
+              } catch (error) {
+                console.error("Error fetching balances:", error)
+                return initialBalances
+              }
             },
             refetchInterval: 4000
           }
