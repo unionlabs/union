@@ -8,7 +8,9 @@ import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
     event RegisterClient(string clientType, address clientAddress);
-    event CreateClient(string clientType, uint32 clientId);
+    event CreateClient(
+        string clientType, uint32 clientId, string counterpartyChainId
+    );
     event UpdateClient(uint32 clientId, uint64 height);
     event Misbehaviour(uint32 clientId);
 }
@@ -44,14 +46,18 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         uint32 clientId = generateClientIdentifier();
         clientTypes[clientId] = msg_.clientType;
         clientImpls[clientId] = clientImpl;
-        ConsensusStateUpdate memory update = ILightClient(clientImpl)
-            .createClient(clientId, msg_.clientStateBytes, msg_.consensusStateBytes);
+        (ConsensusStateUpdate memory update, string memory counterpartyChainId)
+        = ILightClient(clientImpl).createClient(
+            clientId, msg_.clientStateBytes, msg_.consensusStateBytes
+        );
         commitments[IBCCommitment.clientStateCommitmentKey(clientId)] =
             update.clientStateCommitment;
         commitments[IBCCommitment.consensusStateCommitmentKey(
             clientId, update.height
         )] = update.consensusStateCommitment;
-        emit IBCClientLib.CreateClient(msg_.clientType, clientId);
+        emit IBCClientLib.CreateClient(
+            msg_.clientType, clientId, counterpartyChainId
+        );
         return clientId;
     }
 

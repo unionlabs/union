@@ -110,7 +110,15 @@ contract StateLensIcs23Ics23Client is
         uint32 clientId,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory update) {
+    )
+        external
+        override
+        onlyIBC
+        returns (
+            ConsensusStateUpdate memory update,
+            string memory counterpartyChainId
+        )
+    {
         ClientState calldata clientState;
         assembly {
             clientState := clientStateBytes.offset
@@ -129,11 +137,14 @@ contract StateLensIcs23Ics23Client is
             timestamp: block.timestamp * 1e9,
             height: block.number
         });
-        return ConsensusStateUpdate({
-            clientStateCommitment: clientState.commit(),
-            consensusStateCommitment: consensusState.commit(),
-            height: clientState.l2LatestHeight
-        });
+        return (
+            ConsensusStateUpdate({
+                clientStateCommitment: clientState.commit(),
+                consensusStateCommitment: consensusState.commit(),
+                height: clientState.l2LatestHeight
+            }),
+            clientState.l2ChainId
+        );
     }
 
     /*

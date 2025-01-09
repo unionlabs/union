@@ -272,14 +272,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .client_info::<IbcUnion>(self.chain_id.clone(), raw_event.client_id)
                             .await?;
 
-                        let client_meta = voyager_client
-                            .client_meta::<IbcUnion>(
-                                self.chain_id.clone(),
-                                provable_height.into(),
-                                raw_event.client_id,
-                            )
-                            .await?;
-
                         let event = CreateClient {
                             client_id: raw_event.client_id,
                             client_type: client_info.client_type.clone(),
@@ -291,7 +283,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info: client_info.clone(),
-                            counterparty_chain_id: client_meta.chain_id,
+                            counterparty_chain_id: ChainId::new(raw_event.counterparty_chain_id),
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
