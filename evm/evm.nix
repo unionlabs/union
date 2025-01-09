@@ -703,6 +703,12 @@ _: {
         )
         // builtins.listToAttrs (
           builtins.map (args: {
+            name = "eth-deploy-${args.network}-state-lens-ics23-ics23-client";
+            value = eth-deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
             name = "eth-deploy-${args.network}-ucs03";
             value = eth-deploy-single ({ kind = "UCS03"; } // args);
           }) networks
