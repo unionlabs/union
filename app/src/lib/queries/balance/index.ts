@@ -1,13 +1,11 @@
-import {derived, get, type Readable} from "svelte/store"
-import {bech32ToBech32Address} from "@unionlabs/client"
-import {type Address, isAddress} from "viem"
-import type {Chain, ChainAsset, UserAddresses} from "$lib/types"
-import {erc20ReadMulticall} from "./evm/multicall.ts"
-import {getCosmosChainBalances} from "./cosmos.ts"
-import {getAptosChainBalances} from "./aptos.ts"
-import {createQueries} from "@tanstack/svelte-query"
-import type {QueryObserverResult} from "@tanstack/query-core"
-import {balanceStore} from "$lib/components/TransferFrom/transfer/balances.ts"
+import { derived, type Readable } from "svelte/store"
+import { bech32ToBech32Address } from "@unionlabs/client"
+import { type Address, isAddress } from "viem"
+import type { Chain, ChainAsset, UserAddresses } from "$lib/types"
+import { erc20ReadMulticall } from "./evm/multicall.ts"
+import { getCosmosChainBalances } from "./cosmos.ts"
+import { getAptosChainBalances } from "./aptos.ts"
+import { balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export type AssetMetadata = {
   denom: string
@@ -103,8 +101,8 @@ export async function getUserBalances(
       const contractAddresses = denoms
         ? denoms.filter((denom): denom is Address => isAddress(denom)).map(normalizeAddress)
         : chain.assets
-          .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
-          .map(asset => normalizeAddress(asset.denom))
+            .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
+            .map(asset => normalizeAddress(asset.denom))
 
       const results = await erc20ReadMulticall({
         chainId: chain.chain_id,
@@ -221,93 +219,60 @@ let querySubscription: (() => void) | undefined
 let lastData: Array<Array<BalanceData>> = []
 
 export function allChainBalances(chains: Array<Chain>, addressStore: Readable<UserAddresses>) {
-  if (querySubscription) {
-    querySubscription()
-    querySubscription = undefined
+  const clearAndResetData = () => {
+    if (querySubscription) {
+      querySubscription()
+      querySubscription = undefined
+    }
+    lastData = new Array(chains.length).fill([])
+    balanceStore.set(lastData)
   }
 
-  lastData = Array(chains.length).fill([])
-  balanceStore.set(lastData)
+  return derived(
+    addressStore,
+    ($addresses, set) => {
+      clearAndResetData()
 
-  const chainStores = chains.map((chain, chainIndex) => {
-    const store = createChainBalances(chain, addressStore)
-
-    const address = getAddressForChain(chain, get(addressStore))
-    if (!address) {
-      lastData[chainIndex] = []
-      balanceStore.set([...lastData])
-      return store
-    }
-
-    querySubscription = createQueries({
-      queries: [
-        {
-          queryKey: ["balances", chain.chain_id, address],
-          queryFn: async () => {
-            try {
-              const balances = await getUserBalances(chain, address)
-              const initialBalances = get(store)
-
-              const mergedBalances = initialBalances.map(placeholder => {
-                const enriched = balances.find(
-                  b => b.metadata.denom === placeholder.metadata.denom
-                )
-                return enriched || placeholder
-              })
-
-              balances.forEach(balance => {
-                if (!mergedBalances.some(b => b.metadata.denom === balance.metadata.denom)) {
-                  mergedBalances.push(balance)
-                }
-              })
-
-              const sortedBalances = mergedBalances
-                .map(balance => ({
-                  ...balance,
-                  balance: balance.balance === "Loading..." ? "0" : balance.balance,
-                  metadata: {
-                    ...balance.metadata,
-                    decimals: balance.metadata.decimals !== null ? balance.metadata.decimals : 18,
-                    metadata_level: balance.metadata.metadata_level as "graphql" | "onchain" | "none"
-                  }
-                }))
-                .sort((a, b) => {
-                  const aValue =
-                    BigInt(a.balance) * BigInt(10 ** (18 - (a.metadata.decimals ?? 18)))
-                  const bValue =
-                    BigInt(b.balance) * BigInt(10 ** (18 - (b.metadata.decimals ?? 18)))
-                  return bValue > aValue ? 1 : -1
-                })
-
-              lastData[chainIndex] = sortedBalances
-              balanceStore.set([...lastData])
-              return sortedBalances
-
-            } catch (error) {
-              console.error("Error fetching balances:", error)
-              return get(store)
-            }
-          },
-          refetchInterval: 4000
+      const chainStores = chains.map((chain, chainIndex) => {
+        const address = getAddressForChain(chain, $addresses)
+        if (!address) {
+          lastData[chainIndex] = []
+          balanceStore.set([...lastData])
+          return []
         }
-      ]
-    }).subscribe(results => {
-      const queryResult = results[0] as QueryObserverResult<Array<BalanceData>, Error>
-      if (queryResult.data) {
-        lastData[chainIndex] = queryResult.data
-        balanceStore.set([...lastData])
-      }
-    })
 
-    return store
-  })
+        return getUserBalances(chain, address)
+          .then(balances => {
+            const sortedBalances = balances
+              .map(balance => ({
+                ...balance,
+                balance: balance.balance === "Loading..." ? "0" : balance.balance,
+                metadata: {
+                  ...balance.metadata,
+                  decimals: balance.metadata.decimals !== null ? balance.metadata.decimals : 18,
+                  metadata_level: balance.metadata.metadata_level as "graphql" | "onchain" | "none"
+                }
+              }))
+              .sort((a, b) => {
+                const aValue = BigInt(a.balance) * BigInt(10 ** (18 - (a.metadata.decimals ?? 18)))
+                const bValue = BigInt(b.balance) * BigInt(10 ** (18 - (b.metadata.decimals ?? 18)))
+                return bValue > aValue ? 1 : -1
+              })
 
-  return derived([addressStore, ...chainStores], ([$addresses, ...$chainStores]) => {
-    const hasAddress = chains.some(chain => getAddressForChain(chain, $addresses))
-    if (!hasAddress) {
-      lastData = Array(chains.length).fill([])
-      balanceStore.set(lastData)
-    }
-    return $chainStores
-  })
+            lastData[chainIndex] = sortedBalances
+            balanceStore.set([...lastData])
+            return sortedBalances
+          })
+          .catch(error => {
+            console.error("Error fetching balances:", error)
+            return []
+          })
+      })
+
+      Promise.all(chainStores).then(results => {
+        set(results)
+      })
+    },
+    [] as Array<Array<BalanceData>>
+  )
 }

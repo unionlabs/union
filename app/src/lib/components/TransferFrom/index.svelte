@@ -9,12 +9,13 @@ import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfe
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 import type { Chain } from "$lib/types.ts"
 import { allChainBalances } from "$lib/queries/balance"
-import { balanceStore, userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
+import { userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export let chains: Array<Chain>
 
-$: allChainBalances(chains, userAddress).subscribe(data => {
-  balanceStore.set(data)
+const balances = allChainBalances(chains, userAddress)
+balances.subscribe(data => {
+  console.log(data)
 })
 
 const stores = createTransferStore(chains)

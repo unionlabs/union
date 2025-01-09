@@ -47,12 +47,12 @@ export function createValidationStore(
   const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const errors: FieldErrors = {}
 
-    if ($rawIntents.source) {
-      if (!$intents.sourceChain) errors.source = "Chain not supported"
+    if ($rawIntents.source && !$intents.sourceChain) {
+      errors.source = "Chain not supported"
     }
 
-    if ($rawIntents.destination) {
-      if (!$intents.destinationChain) errors.destination = "Chain not supported"
+    if ($rawIntents.destination && !$intents.destinationChain) {
+      errors.destination = "Chain not supported"
     }
 
     // Source chain wallet validation
