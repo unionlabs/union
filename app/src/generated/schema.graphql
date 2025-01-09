@@ -741,6 +741,46 @@ type query_root {
   ): [v1_health_check!]!
 
   """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_view"
+  """
+  v1_ibc_union_fungible_asset_order_view(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_view_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_view_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_view_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_view!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.packets_view"
+  """
+  v1_ibc_union_packets_view(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_packets_view_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_packets_view_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_packets_view_bool_exp
+  ): [v1_ibc_union_packets_view!]!
+
+  """
   fetch data from the table: "v1.index_status"
   """
   v1_index_status(
@@ -1745,6 +1785,74 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_health_check_bool_exp
   ): [v1_health_check!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_view"
+  """
+  v1_ibc_union_fungible_asset_order_view(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_view_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_view_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_view_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_view!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.fungible_asset_order_view"
+  """
+  v1_ibc_union_fungible_asset_order_view_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_fungible_asset_order_view_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_view_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_view!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.packets_view"
+  """
+  v1_ibc_union_packets_view(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_packets_view_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_packets_view_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_packets_view_bool_exp
+  ): [v1_ibc_union_packets_view!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.packets_view"
+  """
+  v1_ibc_union_packets_view_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_packets_view_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_packets_view_bool_exp
+  ): [v1_ibc_union_packets_view!]!
 
   """
   fetch data from the table: "v1.index_status"
@@ -3390,38 +3498,18 @@ type v1_channels {
 
   """An object relationship"""
   destination_chain: v1_chains
-
-  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
-
-  """Channel-id (of the destination)."""
   destination_channel_id: String
-
-  """Connection-id (of the destination)."""
   destination_connection_id: String
-
-  """Port-id (of the destination)."""
   destination_port_id: String
 
   """An object relationship"""
   source_chain: v1_chains
-
-  """Blockchain network identifier (of the source)."""
   source_chain_id: String
-
-  """Channel-id (of the source)."""
   source_channel_id: String
-
-  """Connection-id (of the source)."""
   source_connection_id: String
-
-  """Port-id (of the source)."""
   source_port_id: String
-
-  """Channel status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
-
-  """Opaque-channel version."""
   version: String
 }
 
@@ -3512,34 +3600,15 @@ input v1_channels_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_channels_stream_cursor_value_input {
-  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
-
-  """Channel-id (of the destination)."""
   destination_channel_id: String
-
-  """Connection-id (of the destination)."""
   destination_connection_id: String
-
-  """Port-id (of the destination)."""
   destination_port_id: String
-
-  """Blockchain network identifier (of the source)."""
   source_chain_id: String
-
-  """Channel-id (of the source)."""
   source_channel_id: String
-
-  """Connection-id (of the source)."""
   source_connection_id: String
-
-  """Port-id (of the source)."""
   source_port_id: String
-
-  """Channel status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
-
-  """Opaque-channel version."""
   version: String
 }
 
@@ -4209,29 +4278,15 @@ input v1_connection_open_try_stream_cursor_value_input {
 type v1_connections {
   """An object relationship"""
   destination_chain: v1_chains
-
-  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
-
-  """Client-id (of the destination)."""
   destination_client_id: String
-
-  """Connection-id (of the destination)."""
   destination_connection_id: String
 
   """An object relationship"""
   source_chain: v1_chains
-
-  """Blockchain network identifier (of the source)."""
   source_chain_id: String
-
-  """Client-id (of the source)."""
   source_client_id: String
-
-  """Connection-id (of the source)."""
   source_connection_id: String
-
-  """Connection status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
 }
 
@@ -4305,25 +4360,12 @@ input v1_connections_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_connections_stream_cursor_value_input {
-  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
-
-  """Client-id (of the destination)."""
   destination_client_id: String
-
-  """Connection-id (of the destination)."""
   destination_connection_id: String
-
-  """Blockchain network identifier (of the source)."""
   source_chain_id: String
-
-  """Client-id (of the source)."""
   source_client_id: String
-
-  """Connection-id (of the source)."""
   source_connection_id: String
-
-  """Connection status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
 }
 
@@ -4884,6 +4926,510 @@ input v1_health_check_stream_cursor_input {
 input v1_health_check_stream_cursor_value_input {
   result: String
   test: String
+}
+
+"""
+columns and relationships of "v1_ibc_union.fungible_asset_order_view"
+"""
+type v1_ibc_union_fungible_asset_order_view {
+  ack_fill_type: String
+  ack_market_maker: String
+  ack_tag: String
+  base_amount: String
+  base_token: String
+  base_token_name: String
+  base_token_path: String
+  base_token_symbol: String
+
+  """An object relationship"""
+  packet: v1_ibc_union_packets_view
+  quote_amount: String
+  quote_token: String
+  receiver: String
+  sender: String
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.fungible_asset_order_view". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_fungible_asset_order_view_bool_exp {
+  _and: [v1_ibc_union_fungible_asset_order_view_bool_exp!]
+  _not: v1_ibc_union_fungible_asset_order_view_bool_exp
+  _or: [v1_ibc_union_fungible_asset_order_view_bool_exp!]
+  ack_fill_type: String_comparison_exp
+  ack_market_maker: String_comparison_exp
+  ack_tag: String_comparison_exp
+  base_amount: String_comparison_exp
+  base_token: String_comparison_exp
+  base_token_name: String_comparison_exp
+  base_token_path: String_comparison_exp
+  base_token_symbol: String_comparison_exp
+  packet: v1_ibc_union_packets_view_bool_exp
+  quote_amount: String_comparison_exp
+  quote_token: String_comparison_exp
+  receiver: String_comparison_exp
+  sender: String_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.fungible_asset_order_view".
+"""
+input v1_ibc_union_fungible_asset_order_view_order_by {
+  ack_fill_type: order_by
+  ack_market_maker: order_by
+  ack_tag: order_by
+  base_amount: order_by
+  base_token: order_by
+  base_token_name: order_by
+  base_token_path: order_by
+  base_token_symbol: order_by
+  packet: v1_ibc_union_packets_view_order_by
+  quote_amount: order_by
+  quote_token: order_by
+  receiver: order_by
+  sender: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.fungible_asset_order_view"
+"""
+enum v1_ibc_union_fungible_asset_order_view_select_column {
+  """column name"""
+  ack_fill_type
+
+  """column name"""
+  ack_market_maker
+
+  """column name"""
+  ack_tag
+
+  """column name"""
+  base_amount
+
+  """column name"""
+  base_token
+
+  """column name"""
+  base_token_name
+
+  """column name"""
+  base_token_path
+
+  """column name"""
+  base_token_symbol
+
+  """column name"""
+  quote_amount
+
+  """column name"""
+  quote_token
+
+  """column name"""
+  receiver
+
+  """column name"""
+  sender
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_fungible_asset_order_view"
+"""
+input v1_ibc_union_fungible_asset_order_view_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_fungible_asset_order_view_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_fungible_asset_order_view_stream_cursor_value_input {
+  ack_fill_type: String
+  ack_market_maker: String
+  ack_tag: String
+  base_amount: String
+  base_token: String
+  base_token_name: String
+  base_token_path: String
+  base_token_symbol: String
+  quote_amount: String
+  quote_token: String
+  receiver: String
+  sender: String
+}
+
+"""
+columns and relationships of "v1_ibc_union.packets_view"
+"""
+type v1_ibc_union_packets_view {
+  acknowledgement: String
+  acknowledgement_decoded(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  channel_version: String
+  data: String
+  data_decoded(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_connection_id: Int
+  destination_port_id: String
+  packet_ack_block_hash: String
+  packet_ack_event_index: Int
+  packet_ack_height: bigint
+  packet_ack_maker: String
+  packet_ack_timestamp: timestamptz
+  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_hash: String
+  packet_ack_transaction_index: Int
+  packet_recv_block_hash: String
+  packet_recv_event_index: Int
+  packet_recv_height: bigint
+  packet_recv_maker: String
+  packet_recv_maker_msg: String
+  packet_recv_timestamp: timestamptz
+  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_hash: String
+  packet_recv_transaction_index: Int
+  packet_send_block_hash: String
+  packet_send_event_index: Int
+  packet_send_height: bigint
+  packet_send_timestamp: timestamptz
+  packet_send_transaction_event_index: Int
+  packet_send_transaction_hash: String
+  packet_send_transaction_index: Int
+  source_chain_id: String
+  source_channel_id: bigint
+  source_connection_id: Int
+  source_port_id: String
+  status: String
+  timeout_height: bigint
+  timeout_timestamp: numeric
+  write_ack_block_hash: String
+  write_ack_event_index: Int
+  write_ack_height: bigint
+  write_ack_timestamp: timestamptz
+  write_ack_transaction_event_index: Int
+  write_ack_transaction_hash: String
+  write_ack_transaction_index: Int
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.packets_view". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_packets_view_bool_exp {
+  _and: [v1_ibc_union_packets_view_bool_exp!]
+  _not: v1_ibc_union_packets_view_bool_exp
+  _or: [v1_ibc_union_packets_view_bool_exp!]
+  acknowledgement: String_comparison_exp
+  acknowledgement_decoded: jsonb_comparison_exp
+  channel_version: String_comparison_exp
+  data: String_comparison_exp
+  data_decoded: jsonb_comparison_exp
+  destination_chain_id: String_comparison_exp
+  destination_channel_id: Int_comparison_exp
+  destination_connection_id: Int_comparison_exp
+  destination_port_id: String_comparison_exp
+  packet_ack_block_hash: String_comparison_exp
+  packet_ack_event_index: Int_comparison_exp
+  packet_ack_height: bigint_comparison_exp
+  packet_ack_maker: String_comparison_exp
+  packet_ack_timestamp: timestamptz_comparison_exp
+  packet_ack_transaction_event_index: Int_comparison_exp
+  packet_ack_transaction_hash: String_comparison_exp
+  packet_ack_transaction_index: Int_comparison_exp
+  packet_recv_block_hash: String_comparison_exp
+  packet_recv_event_index: Int_comparison_exp
+  packet_recv_height: bigint_comparison_exp
+  packet_recv_maker: String_comparison_exp
+  packet_recv_maker_msg: String_comparison_exp
+  packet_recv_timestamp: timestamptz_comparison_exp
+  packet_recv_transaction_event_index: Int_comparison_exp
+  packet_recv_transaction_hash: String_comparison_exp
+  packet_recv_transaction_index: Int_comparison_exp
+  packet_send_block_hash: String_comparison_exp
+  packet_send_event_index: Int_comparison_exp
+  packet_send_height: bigint_comparison_exp
+  packet_send_timestamp: timestamptz_comparison_exp
+  packet_send_transaction_event_index: Int_comparison_exp
+  packet_send_transaction_hash: String_comparison_exp
+  packet_send_transaction_index: Int_comparison_exp
+  source_chain_id: String_comparison_exp
+  source_channel_id: bigint_comparison_exp
+  source_connection_id: Int_comparison_exp
+  source_port_id: String_comparison_exp
+  status: String_comparison_exp
+  timeout_height: bigint_comparison_exp
+  timeout_timestamp: numeric_comparison_exp
+  write_ack_block_hash: String_comparison_exp
+  write_ack_event_index: Int_comparison_exp
+  write_ack_height: bigint_comparison_exp
+  write_ack_timestamp: timestamptz_comparison_exp
+  write_ack_transaction_event_index: Int_comparison_exp
+  write_ack_transaction_hash: String_comparison_exp
+  write_ack_transaction_index: Int_comparison_exp
+}
+
+"""Ordering options when selecting data from "v1_ibc_union.packets_view"."""
+input v1_ibc_union_packets_view_order_by {
+  acknowledgement: order_by
+  acknowledgement_decoded: order_by
+  channel_version: order_by
+  data: order_by
+  data_decoded: order_by
+  destination_chain_id: order_by
+  destination_channel_id: order_by
+  destination_connection_id: order_by
+  destination_port_id: order_by
+  packet_ack_block_hash: order_by
+  packet_ack_event_index: order_by
+  packet_ack_height: order_by
+  packet_ack_maker: order_by
+  packet_ack_timestamp: order_by
+  packet_ack_transaction_event_index: order_by
+  packet_ack_transaction_hash: order_by
+  packet_ack_transaction_index: order_by
+  packet_recv_block_hash: order_by
+  packet_recv_event_index: order_by
+  packet_recv_height: order_by
+  packet_recv_maker: order_by
+  packet_recv_maker_msg: order_by
+  packet_recv_timestamp: order_by
+  packet_recv_transaction_event_index: order_by
+  packet_recv_transaction_hash: order_by
+  packet_recv_transaction_index: order_by
+  packet_send_block_hash: order_by
+  packet_send_event_index: order_by
+  packet_send_height: order_by
+  packet_send_timestamp: order_by
+  packet_send_transaction_event_index: order_by
+  packet_send_transaction_hash: order_by
+  packet_send_transaction_index: order_by
+  source_chain_id: order_by
+  source_channel_id: order_by
+  source_connection_id: order_by
+  source_port_id: order_by
+  status: order_by
+  timeout_height: order_by
+  timeout_timestamp: order_by
+  write_ack_block_hash: order_by
+  write_ack_event_index: order_by
+  write_ack_height: order_by
+  write_ack_timestamp: order_by
+  write_ack_transaction_event_index: order_by
+  write_ack_transaction_hash: order_by
+  write_ack_transaction_index: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.packets_view"
+"""
+enum v1_ibc_union_packets_view_select_column {
+  """column name"""
+  acknowledgement
+
+  """column name"""
+  acknowledgement_decoded
+
+  """column name"""
+  channel_version
+
+  """column name"""
+  data
+
+  """column name"""
+  data_decoded
+
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_channel_id
+
+  """column name"""
+  destination_connection_id
+
+  """column name"""
+  destination_port_id
+
+  """column name"""
+  packet_ack_block_hash
+
+  """column name"""
+  packet_ack_event_index
+
+  """column name"""
+  packet_ack_height
+
+  """column name"""
+  packet_ack_maker
+
+  """column name"""
+  packet_ack_timestamp
+
+  """column name"""
+  packet_ack_transaction_event_index
+
+  """column name"""
+  packet_ack_transaction_hash
+
+  """column name"""
+  packet_ack_transaction_index
+
+  """column name"""
+  packet_recv_block_hash
+
+  """column name"""
+  packet_recv_event_index
+
+  """column name"""
+  packet_recv_height
+
+  """column name"""
+  packet_recv_maker
+
+  """column name"""
+  packet_recv_maker_msg
+
+  """column name"""
+  packet_recv_timestamp
+
+  """column name"""
+  packet_recv_transaction_event_index
+
+  """column name"""
+  packet_recv_transaction_hash
+
+  """column name"""
+  packet_recv_transaction_index
+
+  """column name"""
+  packet_send_block_hash
+
+  """column name"""
+  packet_send_event_index
+
+  """column name"""
+  packet_send_height
+
+  """column name"""
+  packet_send_timestamp
+
+  """column name"""
+  packet_send_transaction_event_index
+
+  """column name"""
+  packet_send_transaction_hash
+
+  """column name"""
+  packet_send_transaction_index
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_channel_id
+
+  """column name"""
+  source_connection_id
+
+  """column name"""
+  source_port_id
+
+  """column name"""
+  status
+
+  """column name"""
+  timeout_height
+
+  """column name"""
+  timeout_timestamp
+
+  """column name"""
+  write_ack_block_hash
+
+  """column name"""
+  write_ack_event_index
+
+  """column name"""
+  write_ack_height
+
+  """column name"""
+  write_ack_timestamp
+
+  """column name"""
+  write_ack_transaction_event_index
+
+  """column name"""
+  write_ack_transaction_hash
+
+  """column name"""
+  write_ack_transaction_index
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_packets_view"
+"""
+input v1_ibc_union_packets_view_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_packets_view_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_packets_view_stream_cursor_value_input {
+  acknowledgement: String
+  acknowledgement_decoded: jsonb
+  channel_version: String
+  data: String
+  data_decoded: jsonb
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_connection_id: Int
+  destination_port_id: String
+  packet_ack_block_hash: String
+  packet_ack_event_index: Int
+  packet_ack_height: bigint
+  packet_ack_maker: String
+  packet_ack_timestamp: timestamptz
+  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_hash: String
+  packet_ack_transaction_index: Int
+  packet_recv_block_hash: String
+  packet_recv_event_index: Int
+  packet_recv_height: bigint
+  packet_recv_maker: String
+  packet_recv_maker_msg: String
+  packet_recv_timestamp: timestamptz
+  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_hash: String
+  packet_recv_transaction_index: Int
+  packet_send_block_hash: String
+  packet_send_event_index: Int
+  packet_send_height: bigint
+  packet_send_timestamp: timestamptz
+  packet_send_transaction_event_index: Int
+  packet_send_transaction_hash: String
+  packet_send_transaction_index: Int
+  source_chain_id: String
+  source_channel_id: bigint
+  source_connection_id: Int
+  source_port_id: String
+  status: String
+  timeout_height: bigint
+  timeout_timestamp: numeric
+  write_ack_block_hash: String
+  write_ack_event_index: Int
+  write_ack_height: bigint
+  write_ack_timestamp: timestamptz
+  write_ack_transaction_event_index: Int
+  write_ack_transaction_hash: String
+  write_ack_transaction_index: Int
 }
 
 """
