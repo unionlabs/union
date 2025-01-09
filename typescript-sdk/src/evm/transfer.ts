@@ -92,28 +92,26 @@ export async function transferAssetFromEvm(
     functionName: "transfer",
     address: relayContractAddress,
     /**
-     * uint32 channelId,
-     * uint64 timeoutHeight,
-     * uint64 timeoutTimestamp,
-     * bytes32 salt,
-     * bytes calldata receiver,
-     * address sentToken,
-     * uint256 sentAmount,
-     * bytes calldata askToken,
-     * uint256 askAmount,
-     * bool onlyMaker
+      "channelId": "uint32"
+      "receiver": "bytes"
+      "baseToken": "address"
+      "baseAmount": "uint256"
+      "quoteToken": "bytes"
+      "quoteAmount": "uint256"
+      "timeoutHeight": "uint64"
+      "timeoutTimestamp": "uint64"
+      "salt": "bytes32"
      */
     args: [
       sourceChannel,
-      0n, // TODO: customize timeoutheight
-      "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-      toHex(salt),
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       denomAddress,
       amount,
       askToken,
       amount, // we want the same amount on dest as we send on the source
-      false
+      0n, // TODO: customize timeoutheight
+      "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
+      toHex(salt)
     ]
   } as const
   if (!simulate) {
