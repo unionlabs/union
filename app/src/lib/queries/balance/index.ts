@@ -127,7 +127,6 @@ export async function getUserBalances(
     if (chain.rpc_type === "cosmos") {
       const restEndpoint = chain.rpcs.find(rpc => rpc.type === "rest")?.url
       if (!restEndpoint) {
-        console.error(`No REST endpoint found for chain ${chain.chain_id}`)
         return []
       }
 
