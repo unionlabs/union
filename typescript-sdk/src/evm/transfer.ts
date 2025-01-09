@@ -15,14 +15,14 @@ import {
 
 export type EvmTransferParams = {
   memo?: string
-  askToken: HexAddress
-  amount: bigint
+  baseAmount: bigint
   receiver: string
   account?: Account
   simulate?: boolean
   autoApprove?: boolean
   sourceChannel: number
-  denomAddress: HexAddress
+  baseToken: HexAddress
+  quoteToken: HexAddress
   relayContractAddress: HexAddress
 }
 
@@ -45,11 +45,11 @@ export async function transferAssetFromEvm(
   client: WalletClient & PublicActions,
   {
     memo,
-    amount,
+    baseAmount,
     account,
     receiver,
-    denomAddress,
-    askToken,
+    baseToken,
+    quoteToken,
     sourceChannel,
     simulate = true,
     autoApprove = false,
@@ -59,15 +59,15 @@ export async function transferAssetFromEvm(
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
-  denomAddress = getAddress(denomAddress)
+  // baseToken = getAddress(baseToken)
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
   relayContractAddress = getAddress(relayContractAddress).toLowerCase() as HexAddress
 
   if (autoApprove) {
     const approveResponse = await evmApproveTransferAsset(client, {
-      amount,
+      amount: baseAmount,
       account,
-      denomAddress,
+      denomAddress: baseToken,
       receiver: relayContractAddress
     })
     if (approveResponse.isErr()) return approveResponse
@@ -75,11 +75,15 @@ export async function transferAssetFromEvm(
 
   memo ??= timestamp()
 
+  // we want the same amount on dest as we send on the source
+  const quoteAmount = baseAmount
+
   // add a salt to each transfer to prevent hash collisions
   // important because ibc-union does not use sequence numbers
   // such that intents are possible based on deterministic packet hashes
-  const salt = new Uint8Array(32)
-  crypto.getRandomValues(salt)
+  const rawSalt = new Uint8Array(32)
+  crypto.getRandomValues(rawSalt)
+  const salt = toHex(rawSalt)
   /**
    * @dev
    * `UCS03` zkgm contract `transfer` function:
@@ -105,13 +109,13 @@ export async function transferAssetFromEvm(
     args: [
       sourceChannel,
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
-      denomAddress,
-      amount,
-      askToken,
-      amount, // we want the same amount on dest as we send on the source
+      baseToken,
+      baseAmount,
+      quoteToken,
+      quoteAmount,
       0n, // TODO: customize timeoutheight
       "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-      toHex(salt)
+      salt
     ]
   } as const
   if (!simulate) {
@@ -125,10 +129,13 @@ export async function transferAssetFromEvm(
   return ok(hash)
 }
 
-export type EvmApproveTransferParams = Pick<
-  EvmTransferParams,
-  "amount" | "account" | "simulate" | "denomAddress" | "receiver"
->
+export type EvmApproveTransferParams = {
+  amount: bigint
+  account?: Account
+  receiver: HexAddress
+  denomAddress: HexAddress
+  simulate?: boolean
+}
 
 /**
  * approve a transfer asset from evm
@@ -183,10 +190,10 @@ export async function evmApproveTransferAsset(
 export async function evmSameChainTransfer(
   client: WalletClient & PublicActions,
   {
-    amount,
+    baseAmount: amount,
     account,
     receiver,
-    denomAddress,
+    baseToken: denomAddress,
     simulate = true
   }: Omit<EvmTransferParams, "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove">
 ): Promise<Result<Hex, Error>> {

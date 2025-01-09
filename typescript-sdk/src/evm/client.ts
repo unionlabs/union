@@ -72,23 +72,12 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         simulate = true,
         destinationChainId,
-        autoApprove = false,
-        relayContractAddress
+        autoApprove = false
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
-        // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
-        // if (parameters.chainId === destinationChainId) {
-        //   const transfer = await evmSameChainTransfer(client, {
-        //     amount,
-        //     account,
-        //     simulate,
-        //     receiver,
-        //     denomAddress
-        //   })
-        //   if (transfer.isErr()) return err(transfer.error)
-        //   return ok(transfer.value)
-        // }
+
+        const baseToken = denomAddress
 
         const chainDetails = await getHubbleChainDetails({
           sourceChainId: parameters.chainId,
@@ -105,41 +94,27 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
 
         // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
         // we do this by calling the ucs03 instance on the counterparty chain.
-        const [askToken, _] = (await destinationChainClient.readContract({
+        const [quoteToken, _] = (await destinationChainClient.readContract({
           address: chainDetails.value.destinationUCS03Address as `0x${string}`,
           abi: ucs03ZkgmAbi,
           functionName: "predictWrappedToken",
-          args: [0, chainDetails.value.destinationChannel, denomAddress]
+          args: [0, chainDetails.value.destinationChannel, baseToken]
         })) as ["0x${string}", string]
 
-        console.log({ sentToken: denomAddress, askToken }) // useful for debugging app
-
-        // if (chainDetails.value.transferType === "pfm") {
-        //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-        //   const pfmMemo = createPfmMemo({
-        //     channel: chainDetails.value.destinationChannel,
-        //     port: chainDetails.value.port,
-        //     receiver: cosmosChainId.includes(destinationChainId)
-        //       ? bech32AddressToHex({ address: receiver })
-        //       : receiver
-        //   })
-
-        //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-        //   memo = pfmMemo.value
-        // }
+        console.log({ baseToken, quoteToken }) // useful for debugging app
 
         const sourceChannel = chainDetails.value.sourceChannel
-        relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
+        const relayContractAddress = getAddress(chainDetails.value.relayContractAddress)
 
         return await transferAssetFromEvm(client, {
           memo,
-          amount,
+          baseAmount: amount,
           account,
           simulate,
           receiver,
           autoApprove,
-          denomAddress,
-          askToken,
+          baseToken,
+          quoteToken,
           sourceChannel,
           relayContractAddress
         })
