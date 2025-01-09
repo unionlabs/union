@@ -187,25 +187,39 @@ pub enum RpcCmd {
     ClientState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
-        client_id: RawClientId,
         #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
         ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[arg(long, short = 'd', default_value_t = false)]
         decode: bool,
     },
-    ConsensusState {
+    ClientMeta {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        // #[arg(value_parser(|s: &str| ok(RawClientId::new(s.parse::<Value>().unwrap_or_else(|_| Value::String(s.to_owned()))))))]
+        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+    },
+    ClientInfo {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
         client_id: RawClientId,
         #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
         ibc_spec_id: IbcSpecId,
+    },
+    ConsensusState {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+        trusted_height: Height,
         #[arg(long, default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
-        trusted_height: Height,
         #[arg(long, short = 'd', default_value_t = false)]
         decode: bool,
     },

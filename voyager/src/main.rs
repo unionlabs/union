@@ -500,8 +500,38 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 get_voyager_config()?.voyager.rpc_laddr
             ))?;
 
+            let ibc_handlers = [
+                (IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>()),
+                (IbcUnion::ID, IbcSpecHandler::new::<IbcUnion>()),
+            ]
+            .into_iter()
+            .collect::<HashMap<_, _>>();
+
             match rpc {
                 RpcCmd::Info => print_json(&voyager_client.info().await?),
+                RpcCmd::ClientMeta {
+                    on,
+                    client_id,
+                    ibc_spec_id,
+                    height,
+                } => {
+                    let client_meta = voyager_client
+                        .client_meta(on.clone(), ibc_spec_id.clone(), height, client_id.clone())
+                        .await?;
+
+                    print_json(&client_meta);
+                }
+                RpcCmd::ClientInfo {
+                    on,
+                    client_id,
+                    ibc_spec_id,
+                } => {
+                    let client_info = voyager_client
+                        .client_info(on.clone(), ibc_spec_id.clone(), client_id.clone())
+                        .await?;
+
+                    print_json(&client_info);
+                }
                 RpcCmd::ClientState {
                     on,
                     client_id,
@@ -509,13 +539,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     height,
                     decode,
                 } => {
-                    let ibc_handlers = [
-                            (IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>()),
-                            (IbcUnion::ID, IbcSpecHandler::new::<IbcUnion>())
-                         ]
-                        .into_iter()
-                        .collect::<HashMap<_, _>>();
-
                     let ibc_state = voyager_client
                         .query_ibc_state(
                             on.clone(),
@@ -550,45 +573,47 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     }
                 }
                 RpcCmd::ConsensusState {
-                    // on,
-                    // client_id,
-                    // ibc_spec_id,
-                    // trusted_height,
-                    // height,
-                    // decode,
+                    on,
+                    client_id,
+                    ibc_spec_id,
+                    trusted_height,
+                    height,
+                    decode,
                     ..
                 } => {
-                    // let ibc_state = voyager_client
-                    //     .query_client_consensus_state(
-                    //         on.clone(),
-                    //         height,
-                    //         client_id.clone(),
-                    //         trusted_height,
-                    //     )
-                    //     .await?;
+                    let ibc_state = voyager_client
+                        .query_ibc_state(
+                            on.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            (ibc_handlers.get(&ibc_spec_id).unwrap().consensus_state_path)(
+                                client_id.clone(),
+                                trusted_height.to_string(),
+                            )?,
+                        )
+                        .await?;
 
-                    // if decode {
-                    //     let client_info = voyager_client
-                    //         .client_info(on, ibc_spec_id, client_id)
-                    //         .await?;
+                    if decode {
+                        let client_info = voyager_client
+                            .client_info(on, ibc_spec_id.clone(), client_id)
+                            .await?;
 
-                    //     let decoded = voyager_client
-                    //         .decode_consensus_state(
-                    //             client_info.client_type,
-                    //             client_info.ibc_interface,
-                    //             ibc_state.state,
-                    //         )
-                    //         .await?;
+                        let decoded = voyager_client
+                            .decode_consensus_state(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                ibc_spec_id,
+                                serde_json::from_value(ibc_state.state).unwrap(),
+                            )
+                            .await?;
 
-                    //     print_json(&IbcState {
-                    //         height: ibc_state.height,
-                    //         state: decoded,
-                    //     });
-                    // } else {
-                    //     print_json(&ibc_state);
-                    // }
-
-                    todo!()
+                        print_json(&IbcState {
+                            height: ibc_state.height,
+                            state: decoded,
+                        });
+                    } else {
+                        print_json(&ibc_state);
+                    }
                 }
             }
         }

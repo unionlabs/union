@@ -272,7 +272,7 @@ pub struct ClientInfo {
     /// This is currently only used for threading the checksum for ibc-go
     /// 08-wasm clients, and can likely be removed when support for that IBC
     /// interface is dropped.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Value::is_null")]
     pub metadata: Value,
 }
 
