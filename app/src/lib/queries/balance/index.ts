@@ -1,13 +1,13 @@
-import {derived, get, type Readable} from "svelte/store"
-import {bech32ToBech32Address} from "@unionlabs/client"
-import {type Address, isAddress} from "viem"
-import type {Chain, ChainAsset, UserAddresses} from "$lib/types"
-import {erc20ReadMulticall} from "./evm/multicall.ts"
-import {getCosmosChainBalances} from "./cosmos.ts"
-import {getAptosChainBalances} from "./aptos.ts"
-import {createQueries} from "@tanstack/svelte-query"
-import type {QueryObserverResult} from "@tanstack/query-core"
-import {balanceStore} from "$lib/components/TransferFrom/transfer/balances.ts"
+import { derived, get, type Readable } from "svelte/store"
+import { bech32ToBech32Address } from "@unionlabs/client"
+import { type Address, isAddress } from "viem"
+import type { Chain, ChainAsset, UserAddresses } from "$lib/types"
+import { erc20ReadMulticall } from "./evm/multicall.ts"
+import { getCosmosChainBalances } from "./cosmos.ts"
+import { getAptosChainBalances } from "./aptos.ts"
+import { createQueries } from "@tanstack/svelte-query"
+import type { QueryObserverResult } from "@tanstack/query-core"
+import { balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export type AssetMetadata = {
   denom: string
@@ -103,8 +103,8 @@ export async function getUserBalances(
       const contractAddresses = denoms
         ? denoms.filter((denom): denom is Address => isAddress(denom)).map(normalizeAddress)
         : chain.assets
-          .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
-          .map(asset => normalizeAddress(asset.denom))
+            .filter((asset): asset is ChainAsset & { denom: Address } => isAddress(asset.denom))
+            .map(asset => normalizeAddress(asset.denom))
 
       const results = await erc20ReadMulticall({
         chainId: chain.chain_id,
@@ -226,7 +226,7 @@ export function allChainBalances(chains: Array<Chain>, addressStore: Readable<Us
     querySubscription = undefined
   }
 
-  lastData = Array(chains.length).fill([])
+  lastData = new Array(chains.length).fill([])
   balanceStore.set(lastData)
 
   const chainStores = chains.map((chain, chainIndex) => {
@@ -249,9 +249,7 @@ export function allChainBalances(chains: Array<Chain>, addressStore: Readable<Us
               const initialBalances = get(store)
 
               const mergedBalances = initialBalances.map(placeholder => {
-                const enriched = balances.find(
-                  b => b.metadata.denom === placeholder.metadata.denom
-                )
+                const enriched = balances.find(b => b.metadata.denom === placeholder.metadata.denom)
                 return enriched || placeholder
               })
 
@@ -268,7 +266,10 @@ export function allChainBalances(chains: Array<Chain>, addressStore: Readable<Us
                   metadata: {
                     ...balance.metadata,
                     decimals: balance.metadata.decimals !== null ? balance.metadata.decimals : 18,
-                    metadata_level: balance.metadata.metadata_level as "graphql" | "onchain" | "none"
+                    metadata_level: balance.metadata.metadata_level as
+                      | "graphql"
+                      | "onchain"
+                      | "none"
                   }
                 }))
                 .sort((a, b) => {
@@ -282,7 +283,6 @@ export function allChainBalances(chains: Array<Chain>, addressStore: Readable<Us
               lastData[chainIndex] = sortedBalances
               balanceStore.set([...lastData])
               return sortedBalances
-
             } catch (error) {
               console.error("Error fetching balances:", error)
               return get(store)
@@ -305,7 +305,7 @@ export function allChainBalances(chains: Array<Chain>, addressStore: Readable<Us
   return derived([addressStore, ...chainStores], ([$addresses, ...$chainStores]) => {
     const hasAddress = chains.some(chain => getAddressForChain(chain, $addresses))
     if (!hasAddress) {
-      lastData = Array(chains.length).fill([])
+      lastData = new Array(chains.length).fill([])
       balanceStore.set(lastData)
     }
     return $chainStores
