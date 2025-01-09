@@ -11,28 +11,14 @@ import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
 export type BalanceResult =
   // EVM balance result (from multicall)
-  | {
-      balance: string | bigint
-      address: string
-      name?: string | null
-      symbol: string
-      gasToken?: boolean
-    }
-  // Cosmos balance result
-  | {
-      address: string
-      symbol: string
-      balance: string | number
-      decimals: number
-      gasToken?: boolean
-    }
-  // Aptos balance result
-  | {
-      balance: string | bigint
-      address: string
-      symbol: string
-      gasToken?: boolean
-    }
+  {
+    balance: string
+    address: string
+    symbol: string | null
+    name: string | null
+    decimals: number | null
+    gasToken: boolean
+  }
 
 export function userBalancesQuery({
   userAddr,
@@ -54,23 +40,6 @@ export function userBalancesQuery({
         if (!connected) return []
 
         if (chain.rpc_type === "evm" && userAddr.evm) {
-          const rpc = chain.rpcs
-            .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
-            .at(0)
-
-          if (rpc?.type === "alchemy") {
-            return await getBalancesFromAlchemy({
-              url: rpc.url,
-              walletAddress: userAddr.evm.canonical
-            })
-          }
-          if (rpc?.type === "routescan") {
-            return await getBalancesFromRoutescan({
-              url: rpc.url,
-              walletAddress: userAddr.evm.canonical
-            })
-          }
-
           const tokenList = chain.assets.filter(asset => isAddress(asset.denom))
 
           const multicallResults = await erc20ReadMulticall({
