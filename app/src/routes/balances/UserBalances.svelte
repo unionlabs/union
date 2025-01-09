@@ -4,7 +4,6 @@ import type { Chain, UserAddresses } from "$lib/types"
 import { userAddressAptos } from "$lib/wallet/aptos"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
-import { allChainBalances } from "$lib/queries/balance"
 
 export let chains: Array<Chain>
 
