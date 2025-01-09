@@ -44,8 +44,8 @@ library IBC {
 library LightClients {
     string constant NAMESPACE = "lightclients";
     string constant COMETBLS = "cometbls";
-    string constant STATE_LENS_EVM = "state-lens/evm";
-    string constant STATE_LENS_COSMOS = "state-lens/ics23-ics23";
+    string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
+    string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
 
     function make(
         string memory lightClient
@@ -116,7 +116,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23MptClient) {
         return StateLensIcs23MptClient(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_EVM),
+                LightClients.make(LightClients.STATE_LENS_ICS23_MPT),
                 abi.encode(
                     address(new StateLensIcs23MptClient()),
                     abi.encodeCall(
@@ -134,7 +134,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23Ics23Client) {
         return StateLensIcs23Ics23Client(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_COSMOS),
+                LightClients.make(LightClients.STATE_LENS_ICS23_ICS23),
                 abi.encode(
                     address(new StateLensIcs23Ics23Client()),
                     abi.encodeCall(
@@ -452,10 +452,10 @@ contract DeployIBC is UnionScript {
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
-            LightClients.STATE_LENS_EVM, stateLensIcs23MptClient
+            LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
         );
         handler.registerClient(
-            LightClients.STATE_LENS_COSMOS, stateLensIcs23Ics23Client
+            LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
         );
 
         vm.stopBroadcast();
@@ -503,10 +503,10 @@ contract DeployDeployerAndIBC is UnionScript {
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
-            LightClients.STATE_LENS_EVM, stateLensIcs23MptClient
+            LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
         );
         handler.registerClient(
-            LightClients.STATE_LENS_COSMOS, stateLensIcs23Ics23Client
+            LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
         );
 
         vm.stopBroadcast();
@@ -562,9 +562,9 @@ contract GetDeployed is Script {
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
         address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
         address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
         address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
@@ -1108,7 +1108,7 @@ contract UpgradeStateLensIcs23MptClient is Script {
 
     function run() public {
         address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_EVM));
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
         console.log(
             string(
                 abi.encodePacked(
@@ -1150,7 +1150,7 @@ contract UpgradeStateLensIcs23Ics23Client is Script {
 
     function run() public {
         address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_COSMOS));
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
         console.log(
             string(
                 abi.encodePacked(
