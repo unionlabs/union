@@ -287,6 +287,11 @@ module ibc::cometbls_lc {
         0
     }
 
+    public fun is_frozen(_client_id: u32): bool {
+        // TODO: Implement this
+        false
+    }
+
     public fun status(_client_id: u32): u64 {
         // TODO(aeryz): fetch these status from proper exported consts
         0
