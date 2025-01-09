@@ -2,7 +2,6 @@ module ibc::move_in_cosmos_client {
     use std::signer;
     use aptos_std::vector;
     use aptos_std::aptos_hash::keccak256;
-    use aptos_std::error;
     use std::event;
     use std::object;
     use aptos_std::copyable_any;
@@ -33,14 +32,14 @@ module ibc::move_in_cosmos_client {
         l2_latest_height: u64,
         timestamp_offset: u16,
         state_root_offset: u16,
-        storage_root_offset: u16,
+        storage_root_offset: u16
     }
 
     /// Consensus State
     struct ConsensusState has copy, drop, store {
         timestamp: u64,
         state_root: vector<u8>,
-        storage_root: vector<u8>,
+        storage_root: vector<u8>
     }
 
     /// Header
@@ -48,15 +47,16 @@ module ibc::move_in_cosmos_client {
         l1_height: u64,
         l2_height: u64,
         l2_inclusion_proof: vector<u8>,
-        l2_consensus_state: vector<u8>,
+        l2_consensus_state: vector<u8>
     }
 
     /// ConsensusStateUpdate
     struct ConsensusStateUpdate has copy, drop, store {
         client_state_commitment: vector<u8>,
         consensus_state_commitment: vector<u8>,
-        height: u64,
+        height: u64
     }
+
     struct ConsensusStatesTuple has copy, drop, store {
         client_id: u32,
         l2_height: u64
@@ -74,7 +74,7 @@ module ibc::move_in_cosmos_client {
     /// Storage for the module
     struct EvmInCosmosStorage has key {
         client_states: Table<u32, ClientState>,
-        consensus_states: Table<ConsensusStatesTuple, ConsensusState>,
+        consensus_states: Table<ConsensusStatesTuple, ConsensusState>
     }
 
     struct SignerRef has key {
@@ -99,12 +99,10 @@ module ibc::move_in_cosmos_client {
 
     /// Initialize the module storage
     fun init_module(account: &signer) {
-        assert!(
-            signer::address_of(account) == @ibc, ERR_NOT_IBC
-        );
+        assert!(signer::address_of(account) == @ibc, ERR_NOT_IBC);
         let storage = EvmInCosmosStorage {
             client_states: table::new(),
-            consensus_states: table::new(),
+            consensus_states: table::new()
         };
 
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
@@ -125,12 +123,10 @@ module ibc::move_in_cosmos_client {
     public fun create_client(
         account: &signer,
         client_id: u32,
-        client_state_bcs: copyable_any::Any,//vector<u8>,
+        client_state_bcs: copyable_any::Any, //vector<u8>,
         consensus_state_bcs: copyable_any::Any //vector<u8>
-    ): ConsensusStateUpdate acquires  EvmInCosmosStorage{
-        assert!(
-            signer::address_of(account) == @ibc, ERR_NOT_IBC
-        );
+    ): ConsensusStateUpdate acquires EvmInCosmosStorage {
+        assert!(signer::address_of(account) == @ibc, ERR_NOT_IBC);
         let store = borrow_global_mut<EvmInCosmosStorage>(get_vault_addr());
 
         let client_state = copyable_any::unpack<ClientState>(client_state_bcs);
@@ -166,20 +162,17 @@ module ibc::move_in_cosmos_client {
         ConsensusStateUpdate {
             client_state_commitment,
             consensus_state_commitment,
-            height: client_state.l2_latest_height,
+            height: client_state.l2_latest_height
         }
     }
 
     public fun misbehaviour(
-        _client_id: u32,
-        _client_msg_bytes: vector<u8>
+        _client_id: u32, _client_msg_bytes: vector<u8>
     ) {
-       abort ERR_UNSUPPORTED
+        abort ERR_UNSUPPORTED
     }
 
-    public fun is_frozen(
-        client_id: u32
-    ): bool {
+    public fun is_frozen(client_id: u32): bool {
         cometbls_lc::is_frozen(client_id)
     }
 
@@ -189,9 +182,9 @@ module ibc::move_in_cosmos_client {
         height: u64,
         proof: &vector<u8>,
         path: &vector<u8>,
-        value: &vector<u8>,
+        value: &vector<u8>
     ): bool acquires EvmInCosmosStorage {
-        if(is_frozen(client_id)) {
+        if (is_frozen(client_id)) {
             abort ERR_CLIENT_FROZEN
         };
         let store = borrow_global<EvmInCosmosStorage>(get_vault_addr());
@@ -205,12 +198,18 @@ module ibc::move_in_cosmos_client {
             l2_height: height
         };
 
-        let cons_state: ConsensusState = *table::borrow(&store.consensus_states, cons_state_tuple);
+        let cons_state: ConsensusState =
+            *table::borrow(&store.consensus_states, cons_state_tuple);
         let storage_root = cons_state.storage_root;
 
-        let (is_exist, proven_value) = mpt_verifier::verify_trie_value(proof, &keccak256(slot),  storage_root);
-        
-        is_exist && (mpt_verifier::encode_uint(mpt_verifier::load_u256_big_endian(value)) == keccak256(proven_value))
+        let (is_exist, proven_value) =
+            mpt_verifier::verify_trie_value(proof, &keccak256(slot), storage_root);
+
+        is_exist
+            && (
+                mpt_verifier::encode_uint(mpt_verifier::load_u256_big_endian(value))
+                    == keccak256(proven_value)
+            )
     }
 
     /// Verify non-membership in the trie
@@ -218,9 +217,9 @@ module ibc::move_in_cosmos_client {
         client_id: u32,
         height: u64,
         proof: &vector<u8>,
-        path: &vector<u8>,
+        path: &vector<u8>
     ): bool acquires EvmInCosmosStorage {
-        if(is_frozen(client_id)) {
+        if (is_frozen(client_id)) {
             abort ERR_CLIENT_FROZEN
         };
         let store = borrow_global<EvmInCosmosStorage>(get_vault_addr());
@@ -234,15 +233,15 @@ module ibc::move_in_cosmos_client {
             l2_height: height
         };
 
-        let cons_state: ConsensusState = *table::borrow(&store.consensus_states, cons_state_tuple);
+        let cons_state: ConsensusState =
+            *table::borrow(&store.consensus_states, cons_state_tuple);
         let storage_root = cons_state.storage_root;
 
+        let (is_exist, _proven_value) =
+            mpt_verifier::verify_trie_value(proof, &keccak256(slot), storage_root);
 
-        let (is_exist, _proven_value) = mpt_verifier::verify_trie_value(proof, &keccak256(slot),  storage_root);
-        
-        !is_exist 
+        !is_exist
     }
-
 
     /// Update the client with a new header
     public fun update_client(
@@ -253,29 +252,44 @@ module ibc::move_in_cosmos_client {
         let store = borrow_global_mut<EvmInCosmosStorage>(get_vault_addr());
 
         let header = copyable_any::unpack<Header>(header_bcs);
-        
+
         let client_state = table::borrow_mut(&mut store.client_states, client_id);
 
-        let proof = commitment::consensus_state_commitment_key(
-            client_state.l2_client_id,
-            header.l2_height
-        );
+        let proof =
+            commitment::consensus_state_commitment_key(
+                client_state.l2_client_id, header.l2_height
+            );
 
-        if(cometbls_lc::verify_membership(
+        if (cometbls_lc::verify_membership(
             client_state.l1_client_id,
             header.l1_height,
             header.l2_inclusion_proof,
             proof,
             keccak256(header.l2_consensus_state)
-        ) != 0 ) { // TODO: its returning u64 not bool
+        ) != 0) { // TODO: its returning u64 not bool
             abort ERR_INVALID_L1_PROOF
         };
 
         let raw_l2_consensus_state = &header.l2_consensus_state;
         // TODO: Not sure about the below
-        let l2_timestamp = from_bcs::to_u64(vector::slice(raw_l2_consensus_state, (client_state.timestamp_offset as u64), (client_state.timestamp_offset as u64) + 8));
-        let l2_state_root = vector::slice(raw_l2_consensus_state, (client_state.state_root_offset as u64), (client_state.state_root_offset as u64) + 32);
-        let l2_storage_root = vector::slice(raw_l2_consensus_state, (client_state.storage_root_offset as u64), (client_state.storage_root_offset as u64) + 32);
+        let l2_timestamp =
+            from_bcs::to_u64(
+                vector::slice(
+                    raw_l2_consensus_state,
+                    (client_state.timestamp_offset as u64),
+                    (client_state.timestamp_offset as u64) + 8
+                )
+            );
+        let l2_state_root = vector::slice(
+            raw_l2_consensus_state,
+            (client_state.state_root_offset as u64),
+            (client_state.state_root_offset as u64) + 32
+        );
+        let l2_storage_root = vector::slice(
+            raw_l2_consensus_state,
+            (client_state.storage_root_offset as u64),
+            (client_state.storage_root_offset as u64) + 32
+        );
 
         if (header.l2_height > client_state.l2_latest_height) {
             client_state.l2_latest_height = header.l2_height;
@@ -284,7 +298,7 @@ module ibc::move_in_cosmos_client {
         let consensus_state = ConsensusState {
             timestamp: l2_timestamp,
             state_root: l2_state_root,
-            storage_root: l2_storage_root,
+            storage_root: l2_storage_root
         };
         let cons_state_tuple = ConsensusStatesTuple {
             client_id: client_id,
@@ -297,16 +311,13 @@ module ibc::move_in_cosmos_client {
         );
 
         let client_state_commitment = keccak256(bcs::to_bytes(client_state));
-        let consensus_state_commitment = keccak256(bcs::to_bytes<ConsensusState>(&consensus_state));
+        let consensus_state_commitment =
+            keccak256(bcs::to_bytes<ConsensusState>(&consensus_state));
 
         ConsensusStateUpdate {
             client_state_commitment,
             consensus_state_commitment,
-            height: header.l2_height,
+            height: header.l2_height
         }
     }
-
-
-
-
 }
