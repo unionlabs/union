@@ -4801,6 +4801,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client-types",
  "evm-storage-verifier",
+ "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -4808,6 +4809,7 @@ dependencies = [
  "rlp",
  "serde",
  "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
 ]

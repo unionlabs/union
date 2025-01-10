@@ -4,10 +4,12 @@ use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::ConsensusStatePath;
-use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState, Header};
+use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
+use state_lens_light_client_types::Header;
 use unionlabs::{
-    encoding::Bincode,
+    encoding::{Bincode, DecodeAs},
     ethereum::{ibc_commitment_key, keccak256},
+    ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::H256,
     uint::U256,
 };
@@ -112,6 +114,9 @@ impl IbcClient for StateLensIcs23MptLightClient {
     > {
         let mut client_state = ctx.read_self_client_state()?;
 
+        let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
+            .map_err(|_| Error::ProofDecode(header.l2_consensus_state_proof))?;
+
         ctx.verify_membership::<CometblsLightClient>(
             client_state.l1_client_id,
             header.l1_height.height(),
@@ -121,7 +126,7 @@ impl IbcClient for StateLensIcs23MptLightClient {
             }
             .key()
             .into_bytes(),
-            header.l2_consensus_state_proof.clone(),
+            storage_proof,
             keccak256(&header.l2_consensus_state).into(),
         )
         .map_err(Error::L1Error)?;

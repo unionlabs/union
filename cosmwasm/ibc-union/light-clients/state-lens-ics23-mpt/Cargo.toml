@@ -24,8 +24,12 @@ ics23                                   = { workspace = true }
 rlp                                     = { workspace = true }
 serde                                   = { workspace = true, features = ["derive"] }
 state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 thiserror                               = { workspace = true }
 unionlabs                               = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
 
 [features]
 default = []
