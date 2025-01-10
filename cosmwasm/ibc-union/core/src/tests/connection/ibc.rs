@@ -316,12 +316,12 @@ fn connection_open_confirm_ok() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(dbg!(execute(
+    assert!(execute(
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ConnectionOpenConfirm(msg),
-    ))
+    )
     .is_ok());
 }
 
@@ -350,20 +350,7 @@ fn connection_open_try_confirm_commitment_saved() {
     create_client(deps.as_mut()).expect("create client ok");
     connection_open_try(deps.as_mut()).expect("connection open try is ok");
 
-    let msg = MsgConnectionOpenConfirm {
-        connection_id: 1,
-        proof_ack: vec![1, 2, 3].into(),
-        proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
-    };
-
-    execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenConfirm(msg),
-    )
-    .expect("connection_open_confirm is ok");
+    connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     assert_eq!(
         crate::state::CONNECTIONS.load(&deps.storage, 1).unwrap(),

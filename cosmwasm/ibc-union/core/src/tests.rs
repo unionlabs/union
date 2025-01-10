@@ -7,7 +7,8 @@ use cosmwasm_std::{
 use union_ibc_msg::{
     lightclient::QueryMsg as LightClientQueryMsg,
     msg::{
-        ExecuteMsg, MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
+        ExecuteMsg, MsgChannelOpenAck, MsgChannelOpenInit, MsgConnectionOpenConfirm,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
     },
 };
 
@@ -21,6 +22,7 @@ const CLIENT_TYPE: &str = "union";
 const CLIENT_ADDRESS: &str = "unionclient";
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
+const VERSION: &str = "version";
 
 /// Creates a mock address from a given string.
 /// Addresses are prefixed with the default [`MockApi`] prefix.
@@ -96,6 +98,56 @@ fn connection_open_try(deps: DepsMut) -> Result<Response, ContractError> {
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ConnectionOpenTry(msg),
+    )
+}
+
+fn connection_open_confirm(deps: DepsMut) -> Result<Response, ContractError> {
+    let msg = MsgConnectionOpenConfirm {
+        connection_id: 1,
+        proof_ack: vec![1, 2, 3].into(),
+        proof_height: 1,
+        relayer: mock_addr(RELAYER).into_string(),
+    };
+
+    execute(
+        deps,
+        mock_env(),
+        message_info(&mock_addr(SENDER), &[]),
+        ExecuteMsg::ConnectionOpenConfirm(msg),
+    )
+}
+
+fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
+    let msg = MsgChannelOpenInit {
+        port_id: mock_addr(SENDER).to_string(),
+        counterparty_port_id: vec![1].into(),
+        connection_id: 1,
+        version: VERSION.to_owned(),
+        relayer: mock_addr(RELAYER).to_string(),
+    };
+    execute(
+        deps,
+        mock_env(),
+        message_info(&mock_addr(SENDER), &[]),
+        ExecuteMsg::ChannelOpenInit(msg),
+    )
+}
+
+fn channel_open_ack(deps: DepsMut) -> Result<Response, ContractError> {
+    let msg = MsgChannelOpenAck {
+        channel_id: 1,
+        counterparty_version: VERSION.to_owned(),
+        counterparty_channel_id: 0,
+        proof_try: vec![1, 2, 3].into(),
+        proof_height: 1,
+        relayer: mock_addr(RELAYER).to_string(),
+    };
+
+    execute(
+        deps,
+        mock_env(),
+        message_info(&mock_addr(SENDER), &[]),
+        ExecuteMsg::ChannelOpenAck(msg),
     )
 }
 
