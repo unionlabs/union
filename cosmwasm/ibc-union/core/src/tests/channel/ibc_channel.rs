@@ -92,9 +92,8 @@ fn channel_open_init_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -133,9 +132,8 @@ fn channel_open_init_channel_claimed() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -165,9 +163,8 @@ fn channel_open_init_commitment_saved() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -203,9 +200,8 @@ fn channel_open_try_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -251,9 +247,8 @@ fn channel_open_try_invalid_state() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -308,9 +303,8 @@ fn channel_open_try_channel_claimed() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -361,9 +355,8 @@ fn channel_open_try_commitment_saved() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -420,9 +413,8 @@ fn channel_open_ack_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -478,9 +470,8 @@ fn channel_open_ack_not_found() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -528,9 +519,8 @@ fn channel_open_ack_commitment_saved() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -597,9 +587,8 @@ fn channel_open_confirm_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -659,9 +648,8 @@ fn channel_open_confirm_not_found() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");
@@ -706,9 +694,8 @@ fn channel_open_confirm_commitment_saved() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut(), 2_u32, 1_u32, 1_u32, 1_u64, RELAYER, SENDER)
         .expect("connection open try is ok");

@@ -34,7 +34,7 @@ fn new_client_created_event(client_type: &str, client_id: u32) -> Event {
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
-    let res = register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER).unwrap();
+    let res = register_client(deps.as_mut()).unwrap();
 
     assert!(res
         .events
@@ -53,9 +53,9 @@ fn register_client_ok() {
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER).unwrap();
+    register_client(deps.as_mut()).unwrap();
     assert_eq!(
-        register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER),
+        register_client(deps.as_mut()),
         Err(ContractError::ClientTypeAlreadyExists)
     );
 }
@@ -78,9 +78,8 @@ fn create_client_ok() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    assert!(create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).is_ok())
+    register_client(deps.as_mut()).expect("register client ok");
+    assert!(create_client(deps.as_mut()).is_ok())
 }
 
 #[test]
@@ -101,9 +100,8 @@ fn create_client_commitments_saved() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    let res = create_client(deps.as_mut()).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -174,9 +172,8 @@ fn update_client_ok() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    let res = create_client(deps.as_mut()).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -223,9 +220,8 @@ fn update_client_ko() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    let res = create_client(deps.as_mut()).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
@@ -278,9 +274,8 @@ fn update_client_commitments_saved() {
             msg => panic!("should not be called: {:?}", msg),
         }));
 
-    register_client(deps.as_mut(), CLIENT_TYPE, CLIENT_ADDRESS, SENDER)
-        .expect("register client ok");
-    let res = create_client(deps.as_mut(), CLIENT_TYPE, SENDER, RELAYER).expect("create client ok");
+    register_client(deps.as_mut()).expect("register client ok");
+    let res = create_client(deps.as_mut()).expect("create client ok");
     let client_id: u32 = res
         .events
         .iter()
