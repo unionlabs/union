@@ -10,7 +10,8 @@
 )]
 
 use std::{
-    collections::HashMap, fmt::Write, fs::read_to_string, iter, net::SocketAddr, process::ExitCode,
+    collections::HashMap, ffi::OsStr, fmt::Write, fs::read_to_string, iter, net::SocketAddr,
+    path::PathBuf, process::ExitCode,
 };
 
 use anyhow::{anyhow, Context as _};
@@ -102,21 +103,31 @@ fn main() -> ExitCode {
 // NOTE: This function is a mess, will be cleaned up
 async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
     let get_voyager_config = || match &args.config_file_path {
-        Some(config_file_path) => read_to_string(config_file_path)
-            .with_context(|| {
-                format!(
-                    "unable to read the config file at `{}`",
-                    config_file_path.to_string_lossy()
-                )
-            })
-            .and_then(|s| {
-                serde_json::from_str::<Config>(&s).with_context(|| {
+        Some(config_file_path) => {
+            let config_file_path = PathBuf::from(config_file_path);
+            let ext = config_file_path.extension();
+            read_to_string(&config_file_path)
+                .with_context(|| {
                     format!(
-                        "unable to parse the config file at `{}`",
+                        "unable to read the config file at `{}`",
                         config_file_path.to_string_lossy()
                     )
                 })
-            }),
+                .and_then(|s| match ext.map(OsStr::as_encoded_bytes) {
+                    Some(b"jsonc") => serde_jsonc::from_str::<Config>(&s).with_context(|| {
+                        format!(
+                            "unable to parse the config file at `{}`",
+                            config_file_path.to_string_lossy()
+                        )
+                    }),
+                    _ => serde_json::from_str::<Config>(&s).with_context(|| {
+                        format!(
+                            "unable to parse the config file at `{}`",
+                            config_file_path.to_string_lossy()
+                        )
+                    }),
+                })
+        }
         None => Err(anyhow!("config file must be specified")),
     };
 

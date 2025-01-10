@@ -16,12 +16,15 @@ use jsonrpsee::{
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE, PARSE_ERROR_CODE},
-        ErrorObject,
+        ErrorObject, Response, ResponsePayload,
     },
-    Extensions, RpcModule,
+    Extensions, MethodResponse, RpcModule,
 };
 use macros::model;
-use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
+use reth_ipc::{
+    client::IpcClientBuilder,
+    server::{RpcService, RpcServiceBuilder},
+};
 use rpc::{SelfClientState, SelfConsensusState};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, value::RawValue, Value};
@@ -841,12 +844,18 @@ async fn run_server<
         }
     };
 
+    let id_ = id.clone();
     let ipc_server = reth_ipc::server::Builder::default()
         .set_rpc_middleware(
-            RpcServiceBuilder::new().layer_fn(move |service| InjectClient {
-                client: voyager_client.clone(),
-                service,
-            }),
+            RpcServiceBuilder::new()
+                .layer_fn(move |service| InjectClient {
+                    client: voyager_client.clone(),
+                    service,
+                })
+                .layer_fn(move |service: RpcService| ErrorContext {
+                    service,
+                    id: id_.clone(),
+                }),
         )
         .build(socket);
 
@@ -908,6 +917,48 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
         }));
 
         self.service.call(request).right_future()
+    }
+}
+
+struct ErrorContext<S> {
+    service: S,
+    id: String,
+}
+
+impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for ErrorContext<S> {
+    type Future = futures::future::Map<
+        S::Future,
+        Box<dyn Fn(MethodResponse) -> MethodResponse + Send + Sync>,
+    >;
+
+    fn call(&self, request: jsonrpsee::types::Request<'a>) -> Self::Future {
+        let id = self.id.clone();
+        self.service
+            .call(request)
+            .map(Box::new(move |method_response| {
+                if method_response.is_error() {
+                    dbg!(&method_response);
+
+                    let result = method_response.into_result();
+
+                    let response = serde_json::from_str::<Response<()>>(&result).unwrap();
+
+                    let ResponsePayload::Error(error) = response.payload else {
+                        panic!();
+                    };
+
+                    let error = ErrorObject::owned(
+                        error.code(),
+                        format!("error in {}: {}", id, error.message()),
+                        error.data(),
+                    )
+                    .into_owned();
+
+                    MethodResponse::error(response.id, error)
+                } else {
+                    method_response
+                }
+            }))
     }
 }
 
