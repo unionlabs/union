@@ -31,6 +31,7 @@ reqwest                    = { workspace = true, features = ["tokio-rustls"] }
 schemars                   = { workspace = true }
 serde                      = { workspace = true, features = ["derive"] }
 serde_json                 = { workspace = true }
+serde_jsonc                = "1.0.108"
 sqlx                       = { workspace = true, features = ["postgres", "migrate", "tls-rustls"] }
 thiserror                  = { workspace = true }
 tikv-jemallocator          = "0.5"
