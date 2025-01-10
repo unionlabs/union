@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-contract SparseMerkleVerifier {
+library SparseMerkleVerifier {
     struct SparseMerkleLeafNode {
         bytes32 key;
         bytes32 valueHash;
