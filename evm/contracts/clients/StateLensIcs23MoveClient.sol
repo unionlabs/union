@@ -10,7 +10,7 @@ import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
-import "../lib/StateLensHelper.sol";
+import "../lib/SparseMerkleVerifier.sol";
 
 struct Header {
     uint64 l1Height;
@@ -35,7 +35,7 @@ struct ConsensusState {
     bytes32 storageRoot;
 }
 
-library StateLensIcs23MptLib {
+library StateLensIcs23MoveLib {
     uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
 
     event CreateLensClient(
@@ -83,7 +83,7 @@ library StateLensIcs23MptLib {
     }
 }
 
-contract StateLensIcs23MoveLib is
+contract StateLensIcs23MoveClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
@@ -131,12 +131,12 @@ contract StateLensIcs23MoveLib is
             consensusState := consensusStateBytes.offset
         }
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
-            revert StateLensIcs23MptLib.ErrInvalidInitialConsensusState();
+            revert StateLensIcs23MoveLib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23MptLib.CreateLensClient(
+        emit StateLensIcs23MoveLib.CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -182,21 +182,21 @@ contract StateLensIcs23MoveLib is
                 abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
-            revert StateLensIcs23MptLib.ErrInvalidL1Proof();
+            revert StateLensIcs23MoveLib.ErrInvalidL1Proof();
         }
 
         bytes calldata rawL2ConsensusState = header.l2ConsensusState;
         uint64 l2Timestamp = uint64(
             uint256(
-                StateLensIcs23MptLib.extract(
+                StateLensIcs23MoveLib.extract(
                     rawL2ConsensusState, clientState.timestampOffset
                 )
             )
         );
-        bytes32 l2StateRoot = StateLensIcs23MptLib.extract(
+        bytes32 l2StateRoot = StateLensIcs23MoveLib.extract(
             rawL2ConsensusState, clientState.stateRootOffset
         );
-        bytes32 l2StorageRoot = StateLensIcs23MptLib.extract(
+        bytes32 l2StorageRoot = StateLensIcs23MoveLib.extract(
             rawL2ConsensusState, clientState.storageRootOffset
         );
 
@@ -224,7 +224,7 @@ contract StateLensIcs23MoveLib is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC {
-        revert StateLensIcs23MptLib.ErrUnsupported();
+        revert StateLensIcs23MoveLib.ErrUnsupported();
     }
 
     function verifyMembership(
@@ -235,11 +235,13 @@ contract StateLensIcs23MoveLib is
         bytes calldata value
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert StateLensIcs23MptLib.ErrClientFrozen();
+            revert StateLensIcs23MoveLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(
+                path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
+            )
         );
         bool exists = SparseMerkleVerifier.verifyExistenceProof(
             proof, value, keccak256(abi.encodePacked(slot)), storageRoot
@@ -251,14 +253,17 @@ contract StateLensIcs23MoveLib is
         uint32 clientId,
         uint64 height,
         SparseMerkleVerifier.SparseMerkleProof calldata proof,
-        bytes calldata path
+        bytes calldata path,
+        bytes calldata value
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
-            revert StateLensIcs23MptLib.ErrClientFrozen();
+            revert StateLensIcs23MoveLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(
+                path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
+            )
         );
         bool exists = SparseMerkleVerifier.verifyExistenceProof(
             proof, value, keccak256(abi.encodePacked(slot)), storageRoot
@@ -311,7 +316,7 @@ contract StateLensIcs23MoveLib is
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
-            revert StateLensIcs23MptLib.ErrNotIBC();
+            revert StateLensIcs23MoveLib.ErrNotIBC();
         }
     }
 
