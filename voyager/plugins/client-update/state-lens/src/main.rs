@@ -41,7 +41,7 @@ pub struct Module {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-    pub l2_client_type: String,
+    pub l2_client_type: ClientType,
     pub state_lens_client_type: ClientType,
 }
 
@@ -51,7 +51,7 @@ pub struct Config {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
-    pub l2_client_type: String,
+    pub l2_client_type: ClientType,
     pub state_lens_client_type: ClientType,
 }
 
@@ -181,7 +181,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
-                                client_type: ClientType::new(self.l2_client_type.clone()),
+                                client_type: self.l2_client_type.clone(),
                                 chain_id: self.l2_chain_id.clone(),
                                 counterparty_chain_id: self.l1_chain_id.clone(),
                                 update_from,
@@ -268,7 +268,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let l2_consensus_state_proof_bytes = voy_client
                     .encode_proof::<IbcUnion>(
-                        self.state_lens_client_type.clone(),
+                        ClientType::new(ClientType::COMETBLS),
                         state_lens_client.ibc_interface,
                         l2_consensus_state_proof,
                     )
