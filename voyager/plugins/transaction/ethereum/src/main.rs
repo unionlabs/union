@@ -21,7 +21,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
+use tracing::{debug, error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
@@ -307,7 +307,7 @@ impl Module {
 
         let msgs = process_msgs(&ibc, ibc_messages, wallet.address().0.into())?;
 
-        dbg!(&msgs);
+        debug!(?msgs);
 
         let msg_names = msgs
             .iter()

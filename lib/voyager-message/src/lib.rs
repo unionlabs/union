@@ -937,8 +937,6 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for ErrorContext<S> {
             .call(request)
             .map(Box::new(move |method_response| {
                 if method_response.is_error() {
-                    dbg!(&method_response);
-
                     let result = method_response.into_result();
 
                     let response = serde_json::from_str::<Response<()>>(&result).unwrap();
@@ -972,8 +970,6 @@ struct ParamsWithItemId<'a> {
 
 impl ToRpcParams for ParamsWithItemId<'_> {
     fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, serde_json::Error> {
-        debug!("to_rpc_params");
-
         Ok(Some(
             RawValue::from_string(serde_json::to_string(&self)?).unwrap(),
         ))

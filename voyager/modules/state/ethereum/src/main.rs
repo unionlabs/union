@@ -233,8 +233,6 @@ impl Module {
             .await
             .unwrap();
 
-        dbg!(&raw);
-
         let channel = ibc_solidity::Channel::abi_decode_params(&raw, true).unwrap();
 
         Ok(Some(channel))
