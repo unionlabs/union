@@ -11,6 +11,7 @@ use union_ibc_msg::{
 
 use super::*;
 
+mod channel;
 mod client;
 mod connection;
 
