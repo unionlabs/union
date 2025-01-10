@@ -23,8 +23,7 @@
       voy-modules-list = builtins.filter (
         member:
         (pkgs.lib.hasPrefix "voyager/modules" member) || (pkgs.lib.hasPrefix "voyager/plugins" member)
-      )
-      (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
+      ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
       voyager-modules = crane.buildWorkspaceMember {
         crateDirFromRoot = voy-modules-list;
@@ -43,7 +42,11 @@
         voyager.packages
         // {
           voyager-modules-names = builtins.toFile "voyager-modules-list.json" (
-            builtins.toJSON (map (p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name) voy-modules-list)
+            builtins.toJSON (
+              map (
+                p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
+              ) voy-modules-list
+            )
           );
           voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
         }
