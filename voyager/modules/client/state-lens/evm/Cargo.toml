@@ -16,6 +16,7 @@ serde                                   = { workspace = true, features = ["deriv
 serde-utils                             = { workspace = true }
 serde_json                              = { workspace = true }
 state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 thiserror                               = { workspace = true }
 tokio                                   = { workspace = true }
 tracing                                 = { workspace = true }
