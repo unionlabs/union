@@ -123,7 +123,7 @@
     "client": [
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-module-state-lens-evm",
+        "path": "./target/debug/voyager-client-module-state-lens-ics23-mpt",
         "info": {
           "client_type": "state-lens/evm",
           "consensus_type": "ethereum",
@@ -208,7 +208,7 @@
     "client_bootstrap": [
       {
         "enabled": true,
-        "path": "./target/debug/voyager-client-bootstrap-module-state-lens-evm",
+        "path": "./target/debug/voyager-client-bootstrap-module-state-lens-ics23-mpt",
         "info": {
           "chain_id": "32382",
           "client_type": "state-lens/evm"
