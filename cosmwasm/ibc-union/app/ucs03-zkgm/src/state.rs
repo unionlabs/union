@@ -17,4 +17,6 @@ pub const CHANNEL_BALANCE: Map<(u32, String), Uint256> = Map::new("channel_balan
 
 pub const EXECUTING_PACKET: Item<Packet> = Item::new("executing_packet");
 
+pub const EXECUTION_ACK: Item<Bytes> = Item::new("execution_ack");
+
 pub const HASH_TO_FOREIGN_TOKEN: Map<String, Bytes> = Map::new("hash_to_foreign_token");

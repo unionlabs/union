@@ -13,7 +13,7 @@ use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use token_factory_api::{MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
+use token_factory_api::{Metadata, MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -26,7 +26,10 @@ use crate::{
         TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
     msg::{ExecuteMsg, InitMsg, MigrateMsg},
-    state::{CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, HASH_TO_FOREIGN_TOKEN, TOKEN_ORIGIN},
+    state::{
+        CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
+        TOKEN_ORIGIN,
+    },
     ContractError,
 };
 
@@ -271,7 +274,8 @@ fn execute_fungible_asset_order(
     order: FungibleAssetOrder,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     if order.quote_amount > order.base_amount {
-        return Ok(Response::new().set_data(ACK_ERR_ONLY_MAKER));
+        EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
+        return Ok(Response::new());
     }
     let wrapped_denom = predict_wrapped_denom(
         path,
@@ -292,7 +296,7 @@ fn execute_fungible_asset_order(
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
         let subdenom = factory_denom(&wrapped_denom, env.contract.address.as_str());
-        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
+        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, subdenom.clone()) {
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
                 subdenom.clone(),
@@ -301,15 +305,22 @@ fn execute_fungible_asset_order(
             messages.push(
                 TokenFactoryMsg::CreateDenom {
                     subdenom: wrapped_denom,
-                    // TODO: not handled by the current tokenfactory version, require an upgrade!!!
-                    // metadata: Some(Metadata {
-                    //     description: None,
-                    //     denom_units: vec![],
-                    //     base: None,
-                    //     display: None,
-                    //     name: Some(order.base_token_name),
-                    //     symbol: Some(order.base_token_symbol),
-                    // }),
+                }
+                .into(),
+            );
+            messages.push(
+                TokenFactoryMsg::SetDenomMetadata {
+                    denom: subdenom.clone(),
+                    metadata: Metadata {
+                        description: None,
+                        denom_units: vec![],
+                        base: None,
+                        display: None,
+                        name: Some(order.base_token_name),
+                        symbol: Some(order.base_token_symbol),
+                        uri: None,
+                        uri_hash: None,
+                    },
                 }
                 .into(),
             );
@@ -374,16 +385,20 @@ fn execute_fungible_asset_order(
                 );
             }
         } else {
-            return Ok(Response::new().set_data(ACK_ERR_ONLY_MAKER));
+            EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
+            return Ok(Response::new());
         }
     };
-    Ok(Response::new().add_messages(messages).set_data(
-        FungibleAssetOrderAck {
+    EXECUTION_ACK.save(
+        deps.storage,
+        &FungibleAssetOrderAck {
             fill_type: FILL_TYPE_PROTOCOL,
             market_maker: Default::default(),
         }
-        .abi_encode_params(),
-    ))
+        .abi_encode_params()
+        .into(),
+    )?;
+    Ok(Response::new().add_messages(messages))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -399,13 +414,16 @@ pub fn reply(
     let packet = EXECUTING_PACKET.load(deps.storage)?;
     EXECUTING_PACKET.remove(deps.storage);
     match reply.result {
-        SubMsgResult::Ok(response) => {
-            match response.data {
+        SubMsgResult::Ok(_) => {
+            // If the execution succedeed ack is guaranteed to exist.
+            let execution_ack = EXECUTION_ACK.load(deps.storage)?;
+            EXECUTION_ACK.remove(deps.storage);
+            match execution_ack {
                 // Specific value when the execution must be replayed by a MM. No
                 // side effects were executed. We break the TX for MMs to be able to
                 // replay the packet.
-                Some(ack) if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
-                Some(ack) if !ack.is_empty() => {
+                ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
+                ack if !ack.is_empty() => {
                     let zkgm_ack = Ack {
                         tag: TAG_ACK_SUCCESS,
                         inner_ack: Vec::from(ack).into(),
@@ -435,7 +453,7 @@ pub fn reply(
             }
             .abi_encode_params();
             Ok(Response::new()
-                .add_attribute("failure", to_json_string(&e)?)
+                .add_attribute("fatal_error", to_json_string(&e)?)
                 .add_message(wasm_execute(
                     &ibc_host,
                     &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
