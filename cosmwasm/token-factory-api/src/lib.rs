@@ -16,7 +16,8 @@ pub enum TokenFactoryMsg {
     /// to calling SetMetadata directly on the returned denom.
     CreateDenom {
         subdenom: String,
-        metadata: Option<Metadata>,
+        // TODO: upgrade tokenfactory to handle this
+        // metadata: Option<Metadata>,
     },
     /// ChangeAdmin changes the admin for a factory denom.
     /// Can only be called by the current contract admin.
@@ -40,10 +41,9 @@ pub enum TokenFactoryMsg {
         amount: Uint128,
         burn_from_address: String,
     },
-    SetMetadata {
-        denom: String,
-        metadata: Metadata,
-    },
+    /// Contracts can set metadata for an existing factory denom that they are
+    /// admin of.
+    SetDenomMetadata { denom: String, metadata: Metadata },
 }
 
 /// This maps to cosmos.bank.v1beta1.Metadata protobuf struct
@@ -61,6 +61,10 @@ pub struct Metadata {
     /// symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
     /// be the same as the display.
     pub symbol: Option<String>,
+    /// URI to a document (on or off-chain) that contains additional information. Optional.
+    pub uri: Option<String>,
+    /// URIHash is a sha256 hash of a document pointed by URI. It's used to verify that the document didn't change. Optional.
+    pub uri_hash: Option<String>,
 }
 
 /// This maps to cosmos.bank.v1beta1.DenomUnit protobuf struct

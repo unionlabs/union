@@ -100,7 +100,7 @@ library ZkgmLib {
     error ErrUnsupportedVersion();
     error ErrUnimplemented();
     error ErrBatchMustBeSync();
-    error ErrUnknownSyscall();
+    error ErrUnknownOpcode();
     error ErrInfiniteGame();
     error ErrUnauthorized();
     error ErrInvalidAmount();
@@ -213,10 +213,10 @@ library ZkgmLib {
             transfer.sender,
             transfer.receiver,
             transfer.baseToken,
-            transfer.baseTokenPath,
+            transfer.baseAmount,
             transfer.baseTokenSymbol,
             transfer.baseTokenName,
-            transfer.baseAmount,
+            transfer.baseTokenPath,
             transfer.quoteToken,
             transfer.quoteAmount
         );
@@ -403,7 +403,7 @@ contract UCS03Zkgm is
                 channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -569,7 +569,7 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -757,7 +757,7 @@ contract UCS03Zkgm is
         bytes calldata ack,
         address relayer
     ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacketMemory(ibcPacket);
+        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
         IBCPacket memory parent = inFlightPacket[packetHash];
         // Specific case of forwarding where the ack is threaded back directly.
         if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
@@ -825,7 +825,7 @@ contract UCS03Zkgm is
                 ack
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 
@@ -934,7 +934,7 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer
     ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacketMemory(ibcPacket);
+        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
         IBCPacket memory parent = inFlightPacket[packetHash];
         // Specific case of forwarding where the failure is threaded back directly.
         if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
@@ -991,7 +991,7 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
-            revert ZkgmLib.ErrUnknownSyscall();
+            revert ZkgmLib.ErrUnknownOpcode();
         }
     }
 

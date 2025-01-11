@@ -1,0 +1,40 @@
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
+use ibc_solidity::Packet;
+use token_factory_api::TokenFactoryMsg;
+use unionlabs::primitives::{Bytes, H256};
+
+use crate::state::Config;
+
+#[cw_serde]
+pub struct InitMsg {
+    pub config: Config,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecuteMsg {
+    Transfer {
+        channel_id: u32,
+        receiver: Bytes,
+        base_token: String,
+        base_amount: Uint128,
+        quote_token: Bytes,
+        quote_amount: Uint256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: H256,
+    },
+    BatchExecute {
+        msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
+    },
+    ExecutePacket {
+        packet: Packet,
+        relayer: Addr,
+        relayer_msg: Bytes,
+    },
+    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+}
+
+#[cw_serde]
+pub struct MigrateMsg {}

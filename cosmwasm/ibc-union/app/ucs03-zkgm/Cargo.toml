@@ -1,0 +1,34 @@
+[package]
+authors      = ["Union.fi Labs"]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ibc-union-ucs03-zkgm"
+repository   = "https://github.com/unionlabs/union"
+version      = "1.0.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+alloy             = { workspace = true, features = ["sol-types"] }
+base58            = { version = "0.2" }
+cosmwasm-schema   = { version = "1.5" }
+cosmwasm-std      = { version = "1.5" }
+cw-storage-plus   = { version = "1.2" }
+ethabi            = { workspace = true }
+ibc-solidity      = { workspace = true, features = ["serde"] }
+ibc-union-msg     = { workspace = true }
+serde             = { workspace = true, features = ["derive"] }
+thiserror         = { workspace = true }
+token-factory-api = { workspace = true }
+unionlabs         = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+hex        = { workspace = true }
+serde_json = { workspace = true }

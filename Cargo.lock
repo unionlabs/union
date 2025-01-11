@@ -3864,45 +3864,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-controllers"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50c1804013d21060b994dea28a080f9eab78a3bcb6b617f05e7634b0600bf7b1"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw-multi-test"
-version = "2.1.0-rc.1"
-source = "git+https://github.com/CosmWasm/cw-multi-test.git?rev=e1a2f587c7f9d723444ec93ad8fa48f1d88b65bc#e1a2f587c7f9d723444ec93ad8fa48f1d88b65bc"
-dependencies = [
- "anyhow",
- "bech32 0.11.0",
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw20-ics20",
- "derivative",
- "hex",
- "itertools 0.13.0",
- "log",
- "prost 0.12.6",
- "schemars",
- "serde",
- "serde_json",
- "sha2 0.10.8",
- "thiserror",
-]
-
-[[package]]
 name = "cw-ownable"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4014,19 +3975,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-utils"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07dfee7f12f802431a856984a32bce1cb7da1e6c006b5409e3981035ce562dec"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw2"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4048,53 +3996,6 @@ dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
  "cw-storage-plus 1.2.0",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw2"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b04852cd38f044c0751259d5f78255d07590d136b8a86d4e09efdd7666bd6d27"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw20"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a42212b6bf29bbdda693743697c621894723f35d3db0d5df930be22903d0e27c"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-utils 2.0.0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw20-ics20"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80a9e377dbbd1ffb3b6a8a2dbf9128609a6458a3292f88f99e0b6840a7e9762e"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-controllers",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
- "cw20",
  "schemars",
  "semver 1.0.22",
  "serde",
@@ -5592,12 +5493,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "go-parse-duration"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "558b88954871f5e5b2af0e62e2e176c8bde7a6c2c4ed41b13d138d96da2e2cbd"
-
-[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6315,6 +6210,26 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "ibc-union-ucs03-zkgm"
+version = "1.0.0"
+dependencies = [
+ "alloy",
+ "base58 0.2.0",
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "ethabi",
+ "hex",
+ "ibc-solidity",
+ "ibc-union-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "token-factory-api",
+ "unionlabs",
 ]
 
 [[package]]
@@ -12026,8 +11941,8 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "token-factory-api"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
 ]
 
 [[package]]
@@ -12619,46 +12534,6 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "ethabi",
  "thiserror",
-]
-
-[[package]]
-name = "ucs01-relay"
-version = "1.0.1"
-dependencies = [
- "base58 0.2.0",
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-controllers",
- "cw-multi-test",
- "cw-storage-plus 2.0.0",
- "cw2 2.0.0",
- "hex",
- "ibc-solidity",
- "ibc-union-msg",
- "prost 0.12.6",
- "protos",
- "serde",
- "serde-json-wasm 1.0.1",
- "sha2 0.10.8",
- "thiserror",
- "token-factory-api",
- "ucs01-relay-api",
- "unionlabs",
-]
-
-[[package]]
-name = "ucs01-relay-api"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "ethabi",
- "go-parse-duration",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "thiserror",
- "unionlabs",
 ]
 
 [[package]]

@@ -7,5 +7,5 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true }
+cosmwasm-schema = { version = "1.5" }
+cosmwasm-std    = { version = "1.5" }
