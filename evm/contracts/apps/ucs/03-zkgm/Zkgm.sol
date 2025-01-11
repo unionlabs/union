@@ -213,10 +213,10 @@ library ZkgmLib {
             transfer.sender,
             transfer.receiver,
             transfer.baseToken,
-            transfer.baseTokenPath,
+            transfer.baseAmount,
             transfer.baseTokenSymbol,
             transfer.baseTokenName,
-            transfer.baseAmount,
+            transfer.baseTokenPath,
             transfer.quoteToken,
             transfer.quoteAmount
         );
