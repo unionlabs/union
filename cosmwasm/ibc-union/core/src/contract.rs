@@ -1509,6 +1509,10 @@ fn write_acknowledgement(
     packet: Packet,
     acknowledgement: Vec<u8>,
 ) -> ContractResult {
+    if acknowledgement.is_empty() {
+        return Err(ContractError::AcknowledgementIsEmpty);
+    }
+
     // make sure the caller owns the channel
     let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
     if port_id != sender {
