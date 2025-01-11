@@ -78,6 +78,10 @@ impl ibc_union_light_client::IbcClient for EthereumLightClient {
         client_state.latest_height
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.to_string()
+    }
+
     fn status(client_state: &Self::ClientState) -> Status {
         if client_state.frozen_height.height() != 0 {
             Status::Frozen

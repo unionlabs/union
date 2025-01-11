@@ -711,7 +711,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.source_channel,
+                                event.packet.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -748,7 +748,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.source_channel,
+                                event.packet.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -785,7 +785,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.source_channel,
+                                event.packet.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -824,7 +824,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -862,7 +862,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 provable_height,
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;

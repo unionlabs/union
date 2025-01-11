@@ -9,7 +9,9 @@ use cosmwasm_std::{
 use cw_storage_plus::Item;
 use ibc_solidity::{Channel, ChannelState, Connection, ConnectionState, Packet};
 use ibc_union_msg::{
-    lightclient::{QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate},
+    lightclient::{
+        QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+    },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
@@ -85,6 +87,7 @@ pub mod events {
         pub const ACKNOWLEDGEMENT: &str = "acknowledgement";
         pub const CLIENT_TYPE: &str = "client_type";
         pub const CLIENT_ADDRESS: &str = "client_address";
+        pub const COUNTERPARTY_CHAIN_ID: &str = "counterparty_chain_id";
         pub const COUNTERPARTY_CLIENT_ID: &str = "counterparty_client_id";
         pub const COUNTERPARTY_CONNECTION_ID: &str = "counterparty_connection_id";
         pub const PORT_ID: &str = "port_id";
@@ -559,8 +562,8 @@ fn timeout_packet(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    let source_channel = packet.source_channel;
-    let destination_channel = packet.destination_channel;
+    let source_channel = packet.source_channel_id;
+    let destination_channel = packet.destination_channel_id;
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
@@ -629,8 +632,8 @@ fn acknowledge_packet(
 ) -> ContractResult {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
 
-    let source_channel = first.source_channel;
-    let destination_channel = first.destination_channel;
+    let source_channel = first.source_channel_id;
+    let destination_channel = first.destination_channel_id;
 
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
@@ -745,7 +748,7 @@ fn create_client(
     let client_id = next_client_id(deps.branch())?;
     CLIENT_TYPES.save(deps.storage, client_id, &client_type)?;
     CLIENT_IMPLS.save(deps.storage, client_id, &client_impl)?;
-    let latest_height = deps.querier.query_wasm_smart(
+    let verify_creation_response = deps.querier.query_wasm_smart::<VerifyCreationResponse>(
         &client_impl,
         &LightClientQuery::VerifyCreation {
             client_id,
@@ -756,7 +759,7 @@ fn create_client(
     CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
     CLIENT_CONSENSUS_STATES.save(
         deps.storage,
-        (client_id, latest_height),
+        (client_id, verify_creation_response.latest_height),
         &consensus_state_bytes.to_vec().into(),
     )?;
     store_commit(
@@ -768,7 +771,7 @@ fn create_client(
         deps,
         &ConsensusStatePath {
             client_id,
-            height: latest_height,
+            height: verify_creation_response.latest_height,
         }
         .key(),
         &commit(consensus_state_bytes),
@@ -777,6 +780,10 @@ fn create_client(
         Response::new().add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),
             (events::attribute::CLIENT_ID, client_id.to_string()),
+            (
+                events::attribute::COUNTERPARTY_CHAIN_ID,
+                verify_creation_response.counterparty_chain_id,
+            ),
         ])),
     )
 }
@@ -1396,8 +1403,8 @@ fn process_receive(
     intent: bool,
 ) -> Result<Response, ContractError> {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
-    let source_channel = first.source_channel;
-    let destination_channel = first.destination_channel;
+    let source_channel = first.source_channel_id;
+    let destination_channel = first.destination_channel_id;
 
     let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
@@ -1562,7 +1569,7 @@ fn write_acknowledgement(
 fn send_packet(
     mut deps: DepsMut,
     sender: Addr,
-    source_channel: u32,
+    source_channel_id: u32,
     timeout_height: u64,
     timeout_timestamp: u64,
     data: Vec<u8>,
@@ -1571,26 +1578,26 @@ fn send_packet(
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel_id)?;
     if port_id != sender {
         return Err(ContractError::Unauthorized {
-            channel_id: source_channel,
+            channel_id: source_channel_id,
             owner: port_id,
             caller: sender,
         });
     }
 
-    let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+    let channel = ensure_channel_state(deps.as_ref(), source_channel_id)?;
     let packet = Packet {
-        source_channel,
-        destination_channel: channel.counterparty_channel_id,
+        source_channel_id,
+        destination_channel_id: channel.counterparty_channel_id,
         data: data.into(),
         timeout_height,
         timeout_timestamp,
     };
 
     let commitment_key = BatchPacketsPath {
-        channel_id: source_channel,
+        channel_id: source_channel_id,
         batch_hash: commit_packet(&packet),
     }
     .key();

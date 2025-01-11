@@ -741,8 +741,8 @@ async fn do_make_msg_union(
 
         EventUnion::PacketSend(event) => {
             let packet = Packet {
-                source_channel: event.packet.source_channel.channel_id,
-                destination_channel: event.packet.destination_channel.channel_id,
+                source_channel_id: event.packet.source_channel.channel_id,
+                destination_channel_id: event.packet.destination_channel.channel_id,
                 data: event.packet_data.into(),
                 timeout_height: event.packet.timeout_height,
                 timeout_timestamp: event.packet.timeout_timestamp,
@@ -785,8 +785,8 @@ async fn do_make_msg_union(
 
         EventUnion::WriteAck(event) => {
             let packet = Packet {
-                source_channel: event.packet.source_channel.channel_id,
-                destination_channel: event.packet.destination_channel.channel_id,
+                source_channel_id: event.packet.source_channel.channel_id,
+                destination_channel_id: event.packet.destination_channel.channel_id,
                 data: event.packet_data.into(),
                 timeout_height: event.packet.timeout_height,
                 timeout_timestamp: event.packet.timeout_timestamp,

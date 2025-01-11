@@ -52,15 +52,18 @@ pub fn execute(
         ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket { packet, .. }) => {
             let ping_packet = UCS00PingPong::decode(&packet.data)?;
             let config = CONFIG.load(deps.storage)?;
-            let msg =
-                ping_packet.reverse(&config, env.block.time.nanos(), packet.destination_channel);
+            let msg = ping_packet.reverse(
+                &config,
+                env.block.time.nanos(),
+                packet.destination_channel_id,
+            );
 
             Ok(Response::default()
                 .add_message(wasm_execute(
                     &config.ibc_host,
                     &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel,
+                            channel_id: packet.destination_channel_id,
                             packet,
                             acknowledgement: ack_success().into(),
                         },

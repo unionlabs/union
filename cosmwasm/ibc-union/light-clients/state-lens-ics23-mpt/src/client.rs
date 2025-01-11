@@ -68,6 +68,10 @@ impl IbcClient for StateLensIcs23MptLightClient {
         client_state.l2_latest_height
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.l2_chain_id.clone()
+    }
+
     fn status(_client_state: &Self::ClientState) -> Status {
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always

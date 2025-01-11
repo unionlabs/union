@@ -1446,7 +1446,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                 },
                             )
                             .await?
@@ -1484,7 +1484,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             packet_data: packet.data.into(),
                             packet: ibc_union_spec::PacketMetadata {
                                 source_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: source_connection.client_id,
@@ -1492,7 +1492,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     },
                                 },
                                 destination_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                     version: source_channel.version,
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: source_connection.counterparty_client_id,
@@ -1525,7 +1525,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                 },
                             )
                             .await?
@@ -1563,7 +1563,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             packet_data: packet.data.into(),
                             packet: ibc_union_spec::PacketMetadata {
                                 source_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: source_connection.client_id,
@@ -1571,7 +1571,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     },
                                 },
                                 destination_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                     version: source_channel.version,
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: source_connection.counterparty_client_id,
@@ -1605,7 +1605,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                 },
                             )
                             .await?
@@ -1644,7 +1644,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 client_meta.chain_id.clone(),
                                 QueryHeight::Latest,
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                 },
                             )
                             .await?
@@ -1655,7 +1655,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             packet_data: packet.data.into(),
                             packet: ibc_union_spec::PacketMetadata {
                                 source_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: destination_connection.counterparty_client_id,
@@ -1664,7 +1664,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     },
                                 },
                                 destination_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                     version: destination_channel.version.clone(),
 
                                     connection: ibc_union_spec::ConnectionMetadata {
@@ -1699,7 +1699,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                 },
                             )
                             .await?
@@ -1738,7 +1738,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 client_meta.chain_id.clone(),
                                 QueryHeight::Latest,
                                 ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                 },
                             )
                             .await?
@@ -1749,7 +1749,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             packet_data: packet.data.into(),
                             packet: ibc_union_spec::PacketMetadata {
                                 source_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.source_channel,
+                                    channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
                                     connection: ibc_union_spec::ConnectionMetadata {
                                         client_id: destination_connection.counterparty_client_id,
@@ -1758,7 +1758,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     },
                                 },
                                 destination_channel: ibc_union_spec::ChannelMetadata {
-                                    channel_id: packet.destination_channel,
+                                    channel_id: packet.destination_channel_id,
                                     version: destination_channel.version.clone(),
 
                                     connection: ibc_union_spec::ConnectionMetadata {

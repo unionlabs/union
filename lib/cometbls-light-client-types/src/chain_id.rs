@@ -14,6 +14,10 @@ pub struct ChainId(String);
 impl ChainId {
     pub const MAX_LEN: usize = 31;
 
+    pub fn into_string(self) -> String {
+        self.0
+    }
+
     pub fn from_string(s: impl Into<String>) -> Result<Self, InvalidLength> {
         let s = s.into();
 

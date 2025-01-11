@@ -223,7 +223,7 @@ fn timeout_internal(
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
             let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
-            refund(deps, packet.source_channel, order)
+            refund(deps, packet.source_channel_id, order)
         }
         _ => {
             return Err(ContractError::UnknownOpcode {
@@ -366,7 +366,7 @@ fn acknowledge_fungible_asset_order(
                     let base_denom = String::from_utf8(order.base_token.to_vec())
                         .map_err(|_| ContractError::InvalidBaseToken)?;
                     // TODO: handle forward path
-                    if order.base_token_path == packet.source_channel.try_into().unwrap() {
+                    if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
                         messages.push(
                             TokenFactoryMsg::MintTokens {
                                 denom: base_denom,
@@ -393,7 +393,7 @@ fn acknowledge_fungible_asset_order(
             Ok(Response::new().add_messages(messages))
         }
         // Transfer failed, refund
-        None => refund(deps, packet.source_channel, order),
+        None => refund(deps, packet.source_channel_id, order),
     }
 }
 
@@ -503,7 +503,7 @@ fn execute_fungible_asset_order(
     }
     let wrapped_denom = predict_wrapped_denom(
         path,
-        packet.destination_channel,
+        packet.destination_channel_id,
         Bytes::from(order.base_token.to_vec()),
     );
     let quote_amount =
@@ -551,7 +551,7 @@ fn execute_fungible_asset_order(
             TOKEN_ORIGIN.save(
                 deps.storage,
                 subdenom.clone(),
-                &Uint256::from_u128(packet.destination_channel as _),
+                &Uint256::from_u128(packet.destination_channel_id as _),
             )?;
         };
         messages.push(
@@ -573,12 +573,12 @@ fn execute_fungible_asset_order(
             );
         }
     } else {
-        if order.base_token_path == packet.source_channel.try_into().unwrap() {
+        if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
             let quote_token = String::from_utf8(order.quote_token.to_vec())
                 .map_err(|_| ContractError::InvalidQuoteToken)?;
             CHANNEL_BALANCE.update(
                 deps.storage,
-                (packet.destination_channel, quote_token.clone()),
+                (packet.destination_channel_id, quote_token.clone()),
                 |balance| match balance {
                     Some(value) => value
                         .checked_sub(quote_amount.into())
@@ -657,7 +657,7 @@ pub fn reply(
                         &ibc_host,
                         &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                             MsgWriteAcknowledgement {
-                                channel_id: packet.destination_channel,
+                                channel_id: packet.destination_channel_id,
                                 packet,
                                 acknowledgement: zkgm_ack.into(),
                             },
@@ -682,7 +682,7 @@ pub fn reply(
                     &ibc_host,
                     &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel,
+                            channel_id: packet.destination_channel_id,
                             packet,
                             acknowledgement: zkgm_ack.into(),
                         },

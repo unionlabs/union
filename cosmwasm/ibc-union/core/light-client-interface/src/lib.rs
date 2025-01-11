@@ -8,7 +8,7 @@ use cosmwasm_std::{
 };
 use cw_storage_plus::{Item, Map};
 use ibc_union_msg::lightclient::{
-    MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate,
+    MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
 };
 use msg::InstantiateMsg;
 use state::IBC_HOST;
@@ -205,6 +205,9 @@ pub trait IbcClient: Sized {
     /// Get the height
     fn get_latest_height(client_state: &Self::ClientState) -> u64;
 
+    /// Get the tracked (counterparty) chain id.
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String;
+
     /// Get the status of the client
     fn status(client_state: &Self::ClientState) -> Status;
 
@@ -276,7 +279,13 @@ pub fn query<T: IbcClient>(
                 .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
 
             T::verify_creation(&client_state, &consensus_state)?;
-            to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
+
+            let response = VerifyCreationResponse {
+                latest_height: T::get_latest_height(&client_state),
+                counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
+            };
+
+            to_json_binary(&response).map_err(Into::into)
         }
         QueryMsg::VerifyMembership {
             client_id,

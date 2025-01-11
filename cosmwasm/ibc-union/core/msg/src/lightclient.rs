@@ -24,6 +24,13 @@ pub struct MisbehaviourResponse {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct VerifyCreationResponse {
+    pub latest_height: u64,
+    pub counterparty_chain_id: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     GetTimestamp {
         client_id: u32,
