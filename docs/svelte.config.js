@@ -4,7 +4,6 @@ import { vitePreprocess } from "@astrojs/svelte"
 export default {
   preprocess: [vitePreprocess()],
   compilerOptions: {
-    hydratable: true,
     dev: process.env.NODE_ENV !== "production"
   }
 }
