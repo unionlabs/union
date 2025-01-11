@@ -41,30 +41,15 @@
       packages =
         voyager.packages
         // {
-          # voyager-modules-names = builtins.toFile "voyager-modules-list.json" (
-          #   builtins.toJSON (map (p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name) voy-modules-list)
+          # voyager-modules-names = (
+          #   builtins.toFile "voyager-modules-list.json" (
+          #     builtins.toJSON (
+          #       map (
+          #         p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
+          #       ) voy-modules-list
+          #     )
+          #   )
           # );
-          ethereum-multi-send = pkgs.writeShellApplication {
-            name = "ethereum-multi-send";
-            runtimeInputs = [ self'.packages.forge ];
-            text = ''
-              set -e
-
-              PRIVATE_KEY="''${PRIVATE_KEY:?private key is unset}"
-              echo "$PRIVATE_KEY"
-
-              RPC_URL="''${RPC_URL:?rpc url is unset}"
-              echo "$RPC_URL"
-
-              VALUE="''${VALUE:?value is unset}"
-              echo "$VALUE"
-
-              for var in "$@"
-              do
-                  cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --value "$VALUE" "$var"
-              done
-            '';
-          };
           voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
         }
         // voyager-modules.packages;

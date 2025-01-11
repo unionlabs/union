@@ -13084,27 +13084,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-bootstrap-module-state-lens-evm"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "beacon-api",
- "beacon-api-types",
- "cometbft-rpc",
- "ethereum-light-client-types",
- "ibc-union-spec",
- "jsonrpsee",
- "serde",
- "serde_json",
- "state-lens-ics23-mpt-light-client-types",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
 version = "0.1.0"
 dependencies = [
@@ -13118,6 +13097,27 @@ dependencies = [
  "serde_json",
  "state-lens-ics23-ics23-light-client-types",
  "tendermint-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-state-lens-ics23-mpt"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "ethereum-light-client-types",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-mpt-light-client-types",
  "tokio",
  "tracing",
  "unionlabs",
@@ -13201,7 +13201,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-module-state-lens-evm"
+name = "voyager-client-module-state-lens-ics23-ics23"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "protos",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-state-lens-ics23-mpt"
 version = "0.1.0"
 dependencies = [
  "beacon-api-types",
@@ -13216,27 +13237,6 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "state-lens-ics23-mpt-light-client-types",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-module-state-lens-ics23-ics23"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "futures",
- "jsonrpsee",
- "macros",
- "protos",
- "serde",
- "serde_json",
- "state-lens-ics23-ics23-light-client-types",
  "thiserror",
  "tokio",
  "tracing",

@@ -406,49 +406,13 @@ event! {
             acknowledgement: Bytes,
         },
 
-        // #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
-        // AcknowledgePacket {
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(NonZeroU64::from_str)]
-        //     packet_sequence: NonZeroU64,
-        //     #[parse(String::from_str)]
-        //     packet_src_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_src_channel: u32,
-        //     #[parse(String::from_str)]
-        //     packet_dst_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_dst_channel: u32,
-        //     #[parse(Order::from_str)]
-        //     packet_channel_ordering: Order,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
-
-        // #[event(tag = "timeout_packet")]
-        // TimeoutPacket {
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_height: Height,
-        //     #[parse(u64::from_str)]
-        //     packet_timeout_timestamp: u64,
-        //     #[parse(NonZeroU64::from_str)]
-        //     packet_sequence: NonZeroU64,
-        //     #[parse(String::from_str)]
-        //     packet_src_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_src_channel: u32,
-        //     #[parse(String::from_str)]
-        //     packet_dst_port: String,
-        //     #[parse(u32::from_str)]
-        //     packet_dst_channel: u32,
-        //     #[parse(Order::from_str)]
-        //     packet_channel_ordering: Order,
-        //     #[parse(u32::from_str)]
-        //     connection_id: u32,
-        // },
+        #[event(tag = "wasm-write_ack")]
+        UnionWriteAck {
+            #[parse(serde_json::from_str)]
+            packet: ibc_solidity::Packet,
+            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
+            acknowledgement: Bytes,
+        },
     }
 }
 
@@ -486,10 +450,10 @@ impl IbcEvent {
             IbcEvent::UnionChannelOpenTry(_) => "channel_open_try",
             IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
             IbcEvent::UnionChannelOpenConfirm(_) => "channel_open_confirm",
-            // IbcEvent::UnionWriteAcknowledgement(_) => "write_acknowledgement",
             IbcEvent::UnionRecvPacket(_) => "recv_packet",
             IbcEvent::UnionSendPacket(_) => "send_packet",
             IbcEvent::UnionAcknowledgePacket(_) => "acknowledge_packet",
+            IbcEvent::UnionWriteAck(_) => "write_ack",
             // IbcEvent::UnionTimeoutPacket(_) => "timeout_packet",
         }
     }

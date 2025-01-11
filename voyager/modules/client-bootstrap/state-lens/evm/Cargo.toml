@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-client-bootstrap-module-state-lens-evm"
+name    = "voyager-client-bootstrap-module-state-lens-ics23-mpt"
 version = "0.1.0"
 
 [dependencies]
