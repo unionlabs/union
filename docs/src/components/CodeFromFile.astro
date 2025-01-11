@@ -1,15 +1,15 @@
 ---
-import '#/styles/fonts.css'
+import "#/styles/fonts.css"
 
-import { Code } from '@astrojs/starlight/components'
-import { getFileContent } from '#/lib/node-utilities.ts'
+import { Code } from "@astrojs/starlight/components"
+import { getFileContent } from "#/lib/node-utilities.ts"
 
 type CodeProps = Parameters<typeof Code>[0]
 
-interface Props extends Omit<CodeProps, 'code' | 'lang'> {
+interface Props extends Omit<CodeProps, "code" | "lang"> {
   filepath: string
   filename: string
-  language: CodeProps['lang']
+  language: CodeProps["lang"]
 }
 
 const { filepath, filename, title, language, ...remainingProps } = Astro.props
