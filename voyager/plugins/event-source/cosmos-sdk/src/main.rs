@@ -1600,18 +1600,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     IbcEvent::UnionRecvPacket(recv_packet) => {
                         let packet = recv_packet.packet;
 
-                        let source_channel = voyager_client
-                            .query_ibc_state(
-                                self.chain_id.clone(),
-                                QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
-                                },
-                            )
-                            .await?
-                            .state
-                            .unwrap();
-
                         let destination_channel = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -1650,6 +1638,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 destination_connection.client_id,
                             )
                             .await?;
+
+                        let source_channel = voyager_client
+                            .query_ibc_state(
+                                client_meta.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                ibc_union_spec::ChannelPath {
+                                    channel_id: packet.source_channel,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
 
                         let event = ibc_union_spec::PacketRecv {
                             packet_data: packet.data.into(),
@@ -1694,18 +1694,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     IbcEvent::UnionWriteAck(write_ack) => {
                         let packet = write_ack.packet;
 
-                        let source_channel = voyager_client
-                            .query_ibc_state(
-                                self.chain_id.clone(),
-                                QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
-                                    channel_id: packet.source_channel,
-                                },
-                            )
-                            .await?
-                            .state
-                            .unwrap();
-
                         let destination_channel = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -1744,6 +1732,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 destination_connection.client_id,
                             )
                             .await?;
+
+                        let source_channel = voyager_client
+                            .query_ibc_state(
+                                client_meta.chain_id.clone(),
+                                QueryHeight::Specific(height),
+                                ibc_union_spec::ChannelPath {
+                                    channel_id: packet.source_channel,
+                                },
+                            )
+                            .await?
+                            .state
+                            .unwrap();
 
                         let event = ibc_union_spec::WriteAck {
                             packet_data: packet.data.into(),
