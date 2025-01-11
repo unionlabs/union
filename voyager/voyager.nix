@@ -41,11 +41,13 @@
       packages =
         voyager.packages
         // {
-          voyager-modules-names = builtins.toFile "voyager-modules-list.json" (
-            builtins.toJSON (
-              map (
-                p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
-              ) voy-modules-list
+          voyager-modules-names = mkCi false (
+            builtins.toFile "voyager-modules-list.json" (
+              builtins.toJSON (
+                map (
+                  p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
+                ) voy-modules-list
+              )
             )
           );
           voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
