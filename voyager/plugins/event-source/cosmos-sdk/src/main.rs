@@ -1642,7 +1642,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let source_channel = voyager_client
                             .query_ibc_state(
                                 client_meta.chain_id.clone(),
-                                QueryHeight::Specific(height),
+                                QueryHeight::Latest,
                                 ibc_union_spec::ChannelPath {
                                     channel_id: packet.source_channel,
                                 },
@@ -1736,7 +1736,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let source_channel = voyager_client
                             .query_ibc_state(
                                 client_meta.chain_id.clone(),
-                                QueryHeight::Specific(height),
+                                QueryHeight::Latest,
                                 ibc_union_spec::ChannelPath {
                                     channel_id: packet.source_channel,
                                 },
