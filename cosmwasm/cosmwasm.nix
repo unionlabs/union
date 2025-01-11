@@ -35,9 +35,6 @@
         // ibc-union.packages
         // multicall.packages
         // ibc-union-ucs03-zkgm.packages;
-      checks =
-        ucs02-nft.checks
-        // ucs00-pingpong.checks
-        // ibc-union-ucs03-zkgm.checks;
+      checks = ucs02-nft.checks // ucs00-pingpong.checks // ibc-union-ucs03-zkgm.checks;
     };
 }

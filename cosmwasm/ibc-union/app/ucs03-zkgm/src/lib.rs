@@ -31,6 +31,8 @@ pub enum ContractError {
     AmountOverflow,
     #[error("the quote token must be a valid utf8 denom")]
     InvalidQuoteToken,
+    #[error("the base token must be a valid utf8 denom")]
+    InvalidBaseToken,
     #[error("invalid channel balance, counterparty has been taken over?")]
     InvalidChannelBalance,
     #[error("amount must be non zero")]
@@ -39,8 +41,16 @@ pub enum ContractError {
     MissingFunds,
     #[error("receiver must be a valid address")]
     InvalidReceiver,
+    #[error("receiver must be a valid address")]
+    InvalidSender,
     #[error(
         "the receiver can't be validated, make sure the bech prefix matches the current chain"
     )]
     UnableToValidateReceiver,
+    #[error(
+        "the receiver can't be validated, make sure the bech prefix matches the current chain"
+    )]
+    UnableToValidateMarketMaker,
+    #[error("the sender can't be validated, make sure the bech prefix matches the current chain")]
+    UnableToValidateSender,
 }

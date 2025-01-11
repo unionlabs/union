@@ -22,8 +22,8 @@ use unionlabs::{
 use crate::{
     com::{
         Ack, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, ZkgmPacket,
-        ACK_ERR_ONLY_MAKER, FILL_TYPE_PROTOCOL, OP_FUNGIBLE_ASSET_ORDER, TAG_ACK_FAILURE,
-        TAG_ACK_SUCCESS, ZKGM_VERSION_0,
+        ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_FUNGIBLE_ASSET_ORDER,
+        TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
     msg::{ExecuteMsg, InitMsg, MigrateMsg},
     state::{
@@ -103,6 +103,18 @@ pub fn execute(
                         )))
                     }
                 }
+                IbcUnionMsg::OnAcknowledgementPacket {
+                    packet,
+                    acknowledgement,
+                    relayer,
+                } => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    acknowledge_packet(deps, env, info, packet, relayer, acknowledgement)
+                }
+                IbcUnionMsg::OnTimeoutPacket { packet, relayer } => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    timeout_packet(deps, env, info, packet, relayer)
+                }
                 IbcUnionMsg::OnChannelCloseInit { .. }
                 | IbcUnionMsg::OnChannelCloseConfirm { .. } => {
                     Err(StdError::generic_err("the show must go on").into())
@@ -171,6 +183,218 @@ fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<
         }
     }
     Ok(())
+}
+
+fn timeout_packet(
+    deps: DepsMut<TokenFactoryQuery>,
+    env: Env,
+    info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    timeout_internal(
+        deps,
+        env,
+        info,
+        packet,
+        relayer,
+        zkgm_packet.salt.into(),
+        zkgm_packet.path,
+        zkgm_packet.instruction,
+    )
+}
+
+fn timeout_internal(
+    deps: DepsMut<TokenFactoryQuery>,
+    _env: Env,
+    _info: MessageInfo,
+    packet: Packet,
+    _relayer: Addr,
+    _salt: H256,
+    _path: alloy::primitives::U256,
+    instruction: Instruction,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    if instruction.version != ZKGM_VERSION_0 {
+        return Err(ContractError::UnsupportedVersion {
+            version: instruction.version,
+        });
+    }
+    match instruction.opcode {
+        OP_FUNGIBLE_ASSET_ORDER => {
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            refund(deps, packet.source_channel, order)
+        }
+        _ => {
+            return Err(ContractError::UnknownOpcode {
+                opcode: instruction.opcode,
+            })
+        }
+    }
+}
+
+fn acknowledge_packet(
+    deps: DepsMut<TokenFactoryQuery>,
+    env: Env,
+    info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+    ack: Bytes,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    acknowledge_internal(
+        deps,
+        env,
+        info,
+        packet,
+        relayer,
+        zkgm_packet.salt.into(),
+        zkgm_packet.path,
+        zkgm_packet.instruction,
+        ack,
+    )
+}
+
+fn acknowledge_internal(
+    deps: DepsMut<TokenFactoryQuery>,
+    env: Env,
+    info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+    salt: H256,
+    path: alloy::primitives::U256,
+    instruction: Instruction,
+    ack: Bytes,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    if instruction.version != ZKGM_VERSION_0 {
+        return Err(ContractError::UnsupportedVersion {
+            version: instruction.version,
+        });
+    }
+    let ack = Ack::abi_decode_params(&ack, true)?;
+    match instruction.opcode {
+        OP_FUNGIBLE_ASSET_ORDER => {
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order_ack = if ack.tag == TAG_ACK_SUCCESS {
+                Some(FungibleAssetOrderAck::abi_decode_params(
+                    &ack.inner_ack,
+                    true,
+                )?)
+            } else {
+                None
+            };
+            acknowledge_fungible_asset_order(
+                deps, env, info, packet, relayer, salt, path, order, order_ack,
+            )
+        }
+        _ => {
+            return Err(ContractError::UnknownOpcode {
+                opcode: instruction.opcode,
+            })
+        }
+    }
+}
+
+fn refund(
+    deps: DepsMut<TokenFactoryQuery>,
+    source_channel: u32,
+    order: FungibleAssetOrder,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    let sender = deps
+        .api
+        .addr_validate(str::from_utf8(&order.sender).map_err(|_| ContractError::InvalidSender)?)
+        .map_err(|_| ContractError::UnableToValidateSender)?;
+    let base_amount =
+        u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+    let base_denom = String::from_utf8(order.base_token.to_vec())
+        .map_err(|_| ContractError::InvalidBaseToken)?;
+    let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+    // TODO: handle forward path
+    if order.base_token_path == source_channel.try_into().unwrap() {
+        messages.push(
+            TokenFactoryMsg::MintTokens {
+                denom: base_denom,
+                amount: base_amount.into(),
+                mint_to_address: sender.into_string(),
+            }
+            .into(),
+        );
+    } else {
+        messages.push(
+            BankMsg::Send {
+                to_address: sender.into_string(),
+                amount: vec![Coin {
+                    denom: base_denom,
+                    amount: base_amount.into(),
+                }],
+            }
+            .into(),
+        );
+    }
+    Ok(Response::new().add_messages(messages))
+}
+
+fn acknowledge_fungible_asset_order(
+    deps: DepsMut<TokenFactoryQuery>,
+    _env: Env,
+    _info: MessageInfo,
+    packet: Packet,
+    _relayer: Addr,
+    _salt: H256,
+    _path: alloy::primitives::U256,
+    order: FungibleAssetOrder,
+    order_ack: Option<FungibleAssetOrderAck>,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    match order_ack {
+        Some(successful_ack) => {
+            let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+            match successful_ack.fill_type {
+                FILL_TYPE_PROTOCOL => {
+                    // Protocol filled, fee was paid on destination to the relayer.
+                }
+                FILL_TYPE_MARKETMAKER => {
+                    // A market maker filled, we pay (unescrow|mint) with the base asset.
+                    let base_amount = u128::try_from(order.base_amount)
+                        .map_err(|_| ContractError::AmountOverflow)?;
+                    let market_maker = deps
+                        .api
+                        .addr_validate(
+                            str::from_utf8(successful_ack.market_maker.as_ref())
+                                .map_err(|_| ContractError::InvalidReceiver)?,
+                        )
+                        .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                    let base_denom = String::from_utf8(order.base_token.to_vec())
+                        .map_err(|_| ContractError::InvalidBaseToken)?;
+                    // TODO: handle forward path
+                    if order.base_token_path == packet.source_channel.try_into().unwrap() {
+                        messages.push(
+                            TokenFactoryMsg::MintTokens {
+                                denom: base_denom,
+                                amount: base_amount.into(),
+                                mint_to_address: market_maker.into_string(),
+                            }
+                            .into(),
+                        );
+                    } else {
+                        messages.push(
+                            BankMsg::Send {
+                                to_address: market_maker.into_string(),
+                                amount: vec![Coin {
+                                    denom: base_denom,
+                                    amount: base_amount.into(),
+                                }],
+                            }
+                            .into(),
+                        );
+                    }
+                }
+                _ => return Err(StdError::generic_err("unknown fill_type, impossible?").into()),
+            }
+            Ok(Response::new().add_messages(messages))
+        }
+        // Transfer failed, refund
+        None => refund(deps, packet.source_channel, order),
+    }
 }
 
 fn execute_packet(
@@ -494,7 +718,7 @@ fn transfer(
         return Err(ContractError::MissingFunds);
     }
     let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
-    // TODO: handle path properly
+    // TODO: handle forward path
     let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
@@ -513,7 +737,7 @@ fn transfer(
                     Some(value) => value
                         .checked_add(base_amount.into())
                         .map_err(|_| ContractError::InvalidChannelBalance),
-                    None => Err(ContractError::InvalidChannelBalance),
+                    None => Ok(base_amount.into()),
                 }
             })?;
         }
@@ -553,7 +777,6 @@ fn transfer(
                         operand: FungibleAssetOrder {
                             sender: info.sender.as_bytes().to_vec().into(),
                             receiver: receiver.into_vec().into(),
-                            // TODO: remove base_token prefix?
                             base_token: base_token.as_bytes().to_vec().into(),
                             base_amount: base_amount.u128().try_into().expect("u256>u128"),
                             base_token_symbol,
@@ -579,65 +802,3 @@ fn transfer(
     );
     Ok(Response::new().add_messages(messages))
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::marker::PhantomData;
-
-//     use cosmwasm_std::{
-//         testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-//         Addr, Api, CanonicalAddr, OwnedDeps,
-//     };
-//     use ibc_solidity::Packet;
-//     use token_factory_api::TokenFactoryQuery;
-
-//     use super::execute_packet;
-//     use crate::{
-//         com::{FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS},
-//         contract::predict_wrapped_denom,
-//     };
-
-//     #[test]
-//     fn test() {
-//         let mut deps = OwnedDeps::<_, _, _, TokenFactoryQuery> {
-//             storage: MockStorage::default(),
-//             api: MockApi::default(),
-//             querier: MockQuerier::default(),
-//             custom_query_type: PhantomData,
-//         };
-
-//         let env = mock_env();
-//         let info = mock_info("", &[]);
-//         let zkgm_packet = hex::decode("00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014153919669edc8a5d0c8d1e4507c9ce60435a1177000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e3164383467743663777839333873616e306874687a37793666307234663030676a71776835397700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014685ce6742351ae9b618f383883d6d1e0c5a31b4b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000044c494e4b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f436861696e4c696e6b20546f6b656e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c426763464b6d70457437547872713151576a59386e6e4e4e6e363259754542555a365577483143466f79666a0000000000000000000000000000000000000000").unwrap();
-//         let packet = Packet {
-//             source_channel: 8,
-//             destination_channel: 7,
-//             data: zkgm_packet.into(),
-//             timeout_height: 0,
-//             timeout_timestamp: 0,
-//         };
-//         println!(
-//             "{:#?}",
-//             execute_packet(
-//                 deps.as_mut(),
-//                 env,
-//                 info,
-//                 packet,
-//                 Addr::unchecked(""),
-//                 Default::default(),
-//             )
-//             .unwrap()
-//         );
-//         panic!();
-//         // panic!(
-//         //     "{}",
-//         //     predict_wrapped_denom(
-//         //         Default::default(),
-//         //         7,
-//         //         hex::decode("685ce6742351ae9b618f383883d6d1e0c5a31b4b")
-//         //             .unwrap()
-//         //             .into()
-//         //     )
-//         // );
-//     }
-// }
