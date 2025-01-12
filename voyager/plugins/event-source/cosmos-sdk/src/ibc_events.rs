@@ -1,4 +1,4 @@
-use std::{num::NonZeroU64, str::FromStr};
+use std::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -8,6 +8,7 @@ use unionlabs::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
 pub enum IbcEvent {
     // standard ibc-go events for IBC classic
     // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
