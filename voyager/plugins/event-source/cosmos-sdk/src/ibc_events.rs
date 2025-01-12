@@ -1,418 +1,390 @@
-use std::{num::NonZeroU64, str::FromStr};
+use std::num::NonZeroU64;
 
-use cosmos_sdk_event::event;
+use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     primitives::{encoding::HexUnprefixed, Bytes},
 };
 
-event! {
-    pub enum IbcEvent {
-        // standard ibc-go events for IBC classic
-        // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
-        #[event(tag = "create_client")]
-        CreateClient {
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            // TODO: Figure out if there's a better type we can use than string
-            client_type: String,
-            #[parse(Height::from_str_allow_zero_revision)]
-            consensus_height: Height,
-        },
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+pub enum IbcEvent {
+    // standard ibc-go events for IBC classic
+    // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
+    #[serde(rename = "create_client")]
+    CreateClient {
+        client_id: ClientId,
+        // TODO: Figure out if there's a better type we can use than string
+        client_type: String,
+        consensus_height: Height,
+    },
 
-        #[event(tag = "update_client", deprecated("consensus_height", "header"))]
-        UpdateClient {
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            client_type: String,
-            #[parse(|s: &str| s.split(',').map(Height::from_str_allow_zero_revision).collect::<Result<_, _>>())]
-            consensus_heights: Vec<Height>,
-        },
+    #[serde(rename = "update_client")]
+    UpdateClient {
+        client_id: ClientId,
+        client_type: String,
+        #[serde(with = "height_list_comma_separated")]
+        consensus_heights: Vec<Height>,
+    },
 
-        #[event(tag = "client_misbehaviour")]
-        ClientMisbehaviour {
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            client_type: String,
-            #[parse(Height::from_str_allow_zero_revision)]
-            consensus_height: Height,
-        },
+    #[serde(rename = "client_misbehaviour")]
+    ClientMisbehaviour {
+        client_id: ClientId,
+        client_type: String,
+        consensus_height: Height,
+    },
 
-        #[event(tag = "submit_evidence")]
-        SubmitEvidence { evidence_hash: String },
+    #[serde(rename = "connection_open_init")]
+    ConnectionOpenInit {
+        connection_id: ConnectionId,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
+    },
 
-        #[event(tag = "connection_open_init", deprecated("counterparty_connection_id"))]
-        ConnectionOpenInit {
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            #[parse(ClientId::from_str)]
-            counterparty_client_id: ClientId,
-        },
+    #[serde(rename = "connection_open_try")]
+    ConnectionOpenTry {
+        connection_id: ConnectionId,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
+        counterparty_connection_id: ConnectionId,
+    },
 
-        #[event(tag = "connection_open_try")]
-        ConnectionOpenTry {
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            #[parse(ClientId::from_str)]
-            counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            counterparty_connection_id: ConnectionId,
-        },
+    #[serde(rename = "connection_open_ack")]
+    ConnectionOpenAck {
+        connection_id: ConnectionId,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
+        counterparty_connection_id: ConnectionId,
+    },
 
-        #[event(tag = "connection_open_ack")]
-        ConnectionOpenAck {
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            #[parse(ClientId::from_str)]
-            counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            counterparty_connection_id: ConnectionId,
-        },
+    #[serde(rename = "connection_open_confirm")]
+    ConnectionOpenConfirm {
+        connection_id: ConnectionId,
+        client_id: ClientId,
+        counterparty_client_id: ClientId,
+        counterparty_connection_id: ConnectionId,
+    },
 
-        #[event(tag = "connection_open_confirm")]
-        ConnectionOpenConfirm {
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            #[parse(ClientId::from_str)]
-            client_id: ClientId,
-            #[parse(ClientId::from_str)]
-            counterparty_client_id: ClientId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            counterparty_connection_id: ConnectionId,
-        },
+    #[serde(rename = "channel_open_init")]
+    ChannelOpenInit {
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
+        connection_id: ConnectionId,
+        version: String,
+    },
 
-        #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
-        ChannelOpenInit {
-            #[parse(PortId::from_str)]
-            port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            channel_id: ChannelId,
-            #[parse(PortId::from_str)]
-            counterparty_port_id: PortId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            version: String,
-        },
+    #[serde(rename = "channel_open_try")]
+    ChannelOpenTry {
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
+        counterparty_channel_id: ChannelId,
+        connection_id: ConnectionId,
+        version: String,
+    },
 
-        #[event(tag = "channel_open_try")]
-        ChannelOpenTry {
-            #[parse(PortId::from_str)]
-            port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            channel_id: ChannelId,
-            #[parse(PortId::from_str)]
-            counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-            version: String,
-        },
+    #[serde(rename = "channel_open_ack")]
+    ChannelOpenAck {
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
+        counterparty_channel_id: ChannelId,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "channel_open_ack")]
-        ChannelOpenAck {
-            #[parse(PortId::from_str)]
-            port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            channel_id: ChannelId,
-            #[parse(PortId::from_str)]
-            counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "channel_open_confirm")]
+    ChannelOpenConfirm {
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_port_id: PortId,
+        counterparty_channel_id: ChannelId,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "channel_open_confirm")]
-        ChannelOpenConfirm {
-            #[parse(PortId::from_str)]
-            port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            channel_id: ChannelId,
-            #[parse(PortId::from_str)]
-            counterparty_port_id: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            counterparty_channel_id: ChannelId,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "write_acknowledgement")]
+    WriteAcknowledgement {
+        packet_data_hex: Bytes<HexUnprefixed>,
+        packet_timeout_height: Height,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        packet_ack_hex: Bytes<HexUnprefixed>,
+        connection_id: ConnectionId,
+    },
 
-        #[event(
-            tag = "write_acknowledgement",
-            deprecated("packet_data", "packet_ack", "packet_connection")
-        )]
-        WriteAcknowledgement {
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            packet_data_hex: Bytes,
-            #[parse(Height::from_str_allow_zero_revision)]
-            packet_timeout_height: Height,
-            #[parse(u64::from_str)]
-            packet_timeout_timestamp: u64,
-            #[parse(NonZeroU64::from_str)]
-            packet_sequence: NonZeroU64,
-            #[parse(PortId::from_str)]
-            packet_src_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_src_channel: ChannelId,
-            #[parse(PortId::from_str)]
-            packet_dst_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_dst_channel: ChannelId,
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            packet_ack_hex: Bytes,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "recv_packet")]
+    RecvPacket {
+        packet_data_hex: Bytes<HexUnprefixed>,
+        packet_timeout_height: Height,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_channel_ordering: Order,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "recv_packet", deprecated("packet_data", "packet_connection"))]
-        RecvPacket {
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            packet_data_hex: Bytes,
-            #[parse(Height::from_str_allow_zero_revision)]
-            packet_timeout_height: Height,
-            #[parse(u64::from_str)]
-            packet_timeout_timestamp: u64,
-            #[parse(NonZeroU64::from_str)]
-            packet_sequence: NonZeroU64,
-            #[parse(PortId::from_str)]
-            packet_src_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_src_channel: ChannelId,
-            #[parse(PortId::from_str)]
-            packet_dst_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_dst_channel: ChannelId,
-            #[parse(Order::from_str)]
-            packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "send_packet")]
+    SendPacket {
+        packet_data_hex: Bytes<HexUnprefixed>,
+        packet_timeout_height: Height,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_channel_ordering: Order,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "send_packet", deprecated("packet_data", "packet_connection"))]
-        SendPacket {
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            packet_data_hex: Bytes,
-            #[parse(Height::from_str_allow_zero_revision)]
-            packet_timeout_height: Height,
-            #[parse(u64::from_str)]
-            packet_timeout_timestamp: u64,
-            #[parse(NonZeroU64::from_str)]
-            packet_sequence: NonZeroU64,
-            #[parse(PortId::from_str)]
-            packet_src_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_src_channel: ChannelId,
-            #[parse(PortId::from_str)]
-            packet_dst_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_dst_channel: ChannelId,
-            #[parse(Order::from_str)]
-            packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "acknowledge_packet")]
+    AcknowledgePacket {
+        packet_timeout_height: Height,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_channel_ordering: Order,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
-        AcknowledgePacket {
-            #[parse(Height::from_str_allow_zero_revision)]
-            packet_timeout_height: Height,
-            #[parse(u64::from_str)]
-            packet_timeout_timestamp: u64,
-            #[parse(NonZeroU64::from_str)]
-            packet_sequence: NonZeroU64,
-            #[parse(PortId::from_str)]
-            packet_src_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_src_channel: ChannelId,
-            #[parse(PortId::from_str)]
-            packet_dst_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_dst_channel: ChannelId,
-            #[parse(Order::from_str)]
-            packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    #[serde(rename = "timeout_packet")]
+    TimeoutPacket {
+        packet_timeout_height: Height,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_sequence: NonZeroU64,
+        packet_src_port: PortId,
+        packet_src_channel: ChannelId,
+        packet_dst_port: PortId,
+        packet_dst_channel: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_channel_ordering: Order,
+        connection_id: ConnectionId,
+    },
 
-        #[event(tag = "timeout_packet")]
-        TimeoutPacket {
-            #[parse(Height::from_str_allow_zero_revision)]
-            packet_timeout_height: Height,
-            #[parse(u64::from_str)]
-            packet_timeout_timestamp: u64,
-            #[parse(NonZeroU64::from_str)]
-            packet_sequence: NonZeroU64,
-            #[parse(PortId::from_str)]
-            packet_src_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_src_channel: ChannelId,
-            #[parse(PortId::from_str)]
-            packet_dst_port: PortId,
-            #[parse(ChannelId::from_str_prefixed)]
-            packet_dst_channel: ChannelId,
-            #[parse(Order::from_str)]
-            packet_channel_ordering: Order,
-            #[parse(ConnectionId::from_str_prefixed)]
-            connection_id: ConnectionId,
-        },
+    // events for the union IBC specification, emitted by the cosmwasm contract implementation.
+    #[serde(rename = "wasm-create_client")]
+    UnionCreateClient {
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        // TODO: Figure out if there's a better type we can use than string
+        client_type: String,
+        // #[serde(with = "serde_utils::string")]
+        // height: u64,
+    },
 
-        // events for the union IBC specification, emitted by the cosmwasm contract implementation.
+    #[serde(rename = "wasm-update_client")]
+    UnionUpdateClient {
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_height: u64,
+    },
 
-        #[event(tag = "wasm-create_client")]
-        UnionCreateClient {
-            #[parse(u32::from_str)]
-            client_id: u32,
-            // TODO: Figure out if there's a better type we can use than string
-            client_type: String,
-            // #[parse(u64::from_str)]
-            // height: u64,
-        },
+    #[serde(rename = "wasm-connection_open_init")]
+    UnionConnectionOpenInit {
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_client_id: u32,
+    },
 
-        #[event(tag = "wasm-update_client")]
-        UnionUpdateClient {
-            #[parse(u32::from_str)]
-            client_id: u32,
-            #[parse(u64::from_str)]
-            counterparty_height: u64,
-        },
+    #[serde(rename = "wasm-connection_open_try")]
+    UnionConnectionOpenTry {
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_connection_id: u32,
+    },
 
-        #[event(tag = "wasm-connection_open_init")]
-        UnionConnectionOpenInit {
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            #[parse(u32::from_str)]
-            client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_client_id: u32,
-        },
+    #[serde(rename = "wasm-connection_open_ack")]
+    UnionConnectionOpenAck {
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_connection_id: u32,
+    },
 
-        #[event(tag = "wasm-connection_open_try")]
-        UnionConnectionOpenTry {
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            #[parse(u32::from_str)]
-            client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_connection_id: u32,
-        },
+    #[serde(rename = "wasm-connection_open_confirm")]
+    UnionConnectionOpenConfirm {
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        #[serde(with = "serde_utils::string")]
+        client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_client_id: u32,
+        #[serde(with = "serde_utils::string")]
+        counterparty_connection_id: u32,
+    },
 
-        #[event(tag = "wasm-connection_open_ack")]
-        UnionConnectionOpenAck {
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            #[parse(u32::from_str)]
-            client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_connection_id: u32,
-        },
+    #[serde(rename = "wasm-channel_open_init")]
+    UnionChannelOpenInit {
+        port_id: String,
+        #[serde(with = "serde_utils::string")]
+        channel_id: u32,
+        counterparty_port_id: Bytes<HexUnprefixed>,
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        version: String,
+    },
 
-        #[event(tag = "wasm-connection_open_confirm")]
-        UnionConnectionOpenConfirm {
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            #[parse(u32::from_str)]
-            client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_client_id: u32,
-            #[parse(u32::from_str)]
-            counterparty_connection_id: u32,
-        },
+    #[serde(rename = "wasm-channel_open_try")]
+    UnionChannelOpenTry {
+        port_id: String,
+        #[serde(with = "serde_utils::string")]
+        channel_id: u32,
+        counterparty_port_id: Bytes<HexUnprefixed>,
+        #[serde(with = "serde_utils::string")]
+        counterparty_channel_id: u32,
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+        counterparty_version: String,
+    },
 
-        #[event(tag = "wasm-channel_open_init")]
-        UnionChannelOpenInit {
-            #[parse(String::from_str)]
-            port_id: String,
-            #[parse(u32::from_str)]
-            channel_id: u32,
-            #[parse(<Bytes<HexUnprefixed>>::from_str)]
-            counterparty_port_id: Bytes<HexUnprefixed>,
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            version: String,
-        },
+    #[serde(rename = "wasm-channel_open_ack")]
+    UnionChannelOpenAck {
+        port_id: String,
+        #[serde(with = "serde_utils::string")]
+        channel_id: u32,
+        counterparty_port_id: Bytes<HexUnprefixed>,
+        #[serde(with = "serde_utils::string")]
+        counterparty_channel_id: u32,
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+    },
 
-        #[event(tag = "wasm-channel_open_try")]
-        UnionChannelOpenTry {
-            port_id: String,
-            #[parse(u32::from_str)]
-            channel_id: u32,
-            #[parse(<Bytes<HexUnprefixed>>::from_str)]
-            counterparty_port_id: Bytes<HexUnprefixed>,
-            #[parse(u32::from_str)]
-            counterparty_channel_id: u32,
-            #[parse(u32::from_str)]
-            connection_id: u32,
-            counterparty_version: String,
-        },
+    #[serde(rename = "wasm-channel_open_confirm")]
+    UnionChannelOpenConfirm {
+        port_id: String,
+        #[serde(with = "serde_utils::string")]
+        channel_id: u32,
+        counterparty_port_id: Bytes<HexUnprefixed>,
+        #[serde(with = "serde_utils::string")]
+        counterparty_channel_id: u32,
+        #[serde(with = "serde_utils::string")]
+        connection_id: u32,
+    },
 
-        #[event(tag = "wasm-channel_open_ack")]
-        UnionChannelOpenAck {
-            #[parse(String::from_str)]
-            port_id: String,
-            #[parse(u32::from_str)]
-            channel_id: u32,
-            #[parse(<Bytes<HexUnprefixed>>::from_str)]
-            counterparty_port_id: Bytes<HexUnprefixed>,
-            #[parse(u32::from_str)]
-            counterparty_channel_id: u32,
-            #[parse(u32::from_str)]
-            connection_id: u32,
-        },
+    #[serde(rename = "wasm-send_packet")]
+    UnionSendPacket {
+        #[serde(with = "stringified_json")]
+        packet: ibc_solidity::Packet,
+    },
 
-        #[event(tag = "wasm-channel_open_confirm")]
-        UnionChannelOpenConfirm {
-            #[parse(String::from_str)]
-            port_id: String,
-            #[parse(u32::from_str)]
-            channel_id: u32,
-            #[parse(<Bytes<HexUnprefixed>>::from_str)]
-            counterparty_port_id: Bytes<HexUnprefixed>,
-            #[parse(u32::from_str)]
-            counterparty_channel_id: u32,
-            #[parse(u32::from_str)]
-            connection_id: u32,
-        },
+    #[serde(rename = "wasm-recv_packet")]
+    UnionRecvPacket {
+        #[serde(with = "stringified_json")]
+        packet: ibc_solidity::Packet,
+        relayer_msg: Bytes<HexUnprefixed>,
+    },
 
-        #[event(tag = "wasm-packet_send")]
-        UnionSendPacket {
-            #[parse(serde_json::from_str)]
-            packet: ibc_solidity::Packet,
-        },
+    #[serde(rename = "wasm-acknowledge_packet")]
+    UnionAcknowledgePacket {
+        #[serde(with = "stringified_json")]
+        packet: ibc_solidity::Packet,
+        acknowledgement: Bytes<HexUnprefixed>,
+    },
 
-        #[event(tag = "wasm-recv_packet")]
-        UnionRecvPacket {
-            #[parse(serde_json::from_str)]
-            packet: ibc_solidity::Packet,
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            relayer_msg: Bytes,
-        },
+    #[serde(rename = "wasm-write_ack")]
+    UnionWriteAck {
+        #[serde(with = "stringified_json")]
+        packet: ibc_solidity::Packet,
+        acknowledgement: Bytes<HexUnprefixed>,
+    },
+}
 
-        #[event(tag = "wasm-acknowledge_packet")]
-        UnionAcknowledgePacket {
-            #[parse(serde_json::from_str)]
-            packet: ibc_solidity::Packet,
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            acknowledgement: Bytes,
-        },
+// TODO: Check if human readable
+pub mod stringified_json {
+    use std::string::String;
 
-        #[event(tag = "wasm-write_ack")]
-        UnionWriteAck {
-            #[parse(serde_json::from_str)]
-            packet: ibc_solidity::Packet,
-            #[parse(|s: &str| s.parse::<Bytes<HexUnprefixed>>().map(|b| b.into_encoding()))]
-            acknowledgement: Bytes,
-        },
+    use serde::{
+        de::{Deserialize, DeserializeOwned},
+        Deserializer, Serialize, Serializer,
+    };
+
+    pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        serde_json::to_string(&data)
+            .expect("serialization is infallible; qed;")
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: DeserializeOwned,
+    {
+        String::deserialize(deserializer)
+            .and_then(|s| serde_json::from_str(&s).map_err(serde::de::Error::custom))
+    }
+}
+
+// TODO: Check if human readable
+pub mod height_list_comma_separated {
+    use std::string::String;
+
+    use serde::{
+        de::{self, Deserialize},
+        Deserializer, Serialize, Serializer,
+    };
+    use unionlabs::ibc::core::client::height::Height;
+
+    pub fn serialize<S>(data: &Vec<Height>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        data.into_iter()
+            .map(|height| format!("{height:#}"))
+            .collect::<Vec<_>>()
+            .join(",")
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Height>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .split(',')
+            .map(Height::from_str_allow_zero_revision)
+            .collect::<Result<_, _>>()
+            .map_err(de::Error::custom)
     }
 }
 
@@ -420,41 +392,40 @@ impl IbcEvent {
     #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
-            IbcEvent::CreateClient(_) => "create_client",
-            IbcEvent::UpdateClient(_) => "update_client",
-            IbcEvent::ClientMisbehaviour(_) => "client_misbehaviour",
-            IbcEvent::SubmitEvidence(_) => "submit_evidence",
-            IbcEvent::ConnectionOpenInit(_) => "connection_open_init",
-            IbcEvent::ConnectionOpenTry(_) => "connection_open_try",
-            IbcEvent::ConnectionOpenAck(_) => "connection_open_ack",
-            IbcEvent::ConnectionOpenConfirm(_) => "connection_open_confirm",
-            IbcEvent::ChannelOpenInit(_) => "channel_open_init",
-            IbcEvent::ChannelOpenTry(_) => "channel_open_try",
-            IbcEvent::ChannelOpenAck(_) => "channel_open_ack",
-            IbcEvent::ChannelOpenConfirm(_) => "channel_open_confirm",
-            IbcEvent::WriteAcknowledgement(_) => "write_ack",
-            IbcEvent::RecvPacket(_) => "recv_packet",
-            IbcEvent::SendPacket(_) => "send_packet",
-            IbcEvent::AcknowledgePacket(_) => "acknowledge_packet",
-            IbcEvent::TimeoutPacket(_) => "timeout_packet",
+            IbcEvent::CreateClient { .. } => "create_client",
+            IbcEvent::UpdateClient { .. } => "update_client",
+            IbcEvent::ClientMisbehaviour { .. } => "client_misbehaviour",
+            IbcEvent::ConnectionOpenInit { .. } => "connection_open_init",
+            IbcEvent::ConnectionOpenTry { .. } => "connection_open_try",
+            IbcEvent::ConnectionOpenAck { .. } => "connection_open_ack",
+            IbcEvent::ConnectionOpenConfirm { .. } => "connection_open_confirm",
+            IbcEvent::ChannelOpenInit { .. } => "channel_open_init",
+            IbcEvent::ChannelOpenTry { .. } => "channel_open_try",
+            IbcEvent::ChannelOpenAck { .. } => "channel_open_ack",
+            IbcEvent::ChannelOpenConfirm { .. } => "channel_open_confirm",
+            IbcEvent::WriteAcknowledgement { .. } => "write_ack",
+            IbcEvent::RecvPacket { .. } => "recv_packet",
+            IbcEvent::SendPacket { .. } => "send_packet",
+            IbcEvent::AcknowledgePacket { .. } => "acknowledge_packet",
+            IbcEvent::TimeoutPacket { .. } => "timeout_packet",
 
-            IbcEvent::UnionCreateClient(_) => "create_client",
-            IbcEvent::UnionUpdateClient(_) => "update_client",
-            // IbcEvent::UnionClientMisbehaviour(_) => "client_misbehaviour",
-            // IbcEvent::UnionSubmitEvidence(_) => "submit_evidence",
-            IbcEvent::UnionConnectionOpenInit(_) => "connection_open_init",
-            IbcEvent::UnionConnectionOpenTry(_) => "connection_open_try",
-            IbcEvent::UnionConnectionOpenAck(_) => "connection_open_ack",
-            IbcEvent::UnionConnectionOpenConfirm(_) => "connection_open_confirm",
-            IbcEvent::UnionChannelOpenInit(_) => "channel_open_init",
-            IbcEvent::UnionChannelOpenTry(_) => "channel_open_try",
-            IbcEvent::UnionChannelOpenAck(_) => "channel_open_ack",
-            IbcEvent::UnionChannelOpenConfirm(_) => "channel_open_confirm",
-            IbcEvent::UnionRecvPacket(_) => "recv_packet",
-            IbcEvent::UnionSendPacket(_) => "send_packet",
-            IbcEvent::UnionAcknowledgePacket(_) => "acknowledge_packet",
-            IbcEvent::UnionWriteAck(_) => "write_ack",
-            // IbcEvent::UnionTimeoutPacket(_) => "timeout_packet",
+            IbcEvent::UnionCreateClient { .. } => "create_client",
+            IbcEvent::UnionUpdateClient { .. } => "update_client",
+            // IbcEvent::UnionClientMisbehaviour{..} => "client_misbehaviour",
+            // IbcEvent::UnionSubmitEvidence{..} => "submit_evidence",
+            IbcEvent::UnionConnectionOpenInit { .. } => "connection_open_init",
+            IbcEvent::UnionConnectionOpenTry { .. } => "connection_open_try",
+            IbcEvent::UnionConnectionOpenAck { .. } => "connection_open_ack",
+            IbcEvent::UnionConnectionOpenConfirm { .. } => "connection_open_confirm",
+            IbcEvent::UnionChannelOpenInit { .. } => "channel_open_init",
+            IbcEvent::UnionChannelOpenTry { .. } => "channel_open_try",
+            IbcEvent::UnionChannelOpenAck { .. } => "channel_open_ack",
+            IbcEvent::UnionChannelOpenConfirm { .. } => "channel_open_confirm",
+            IbcEvent::UnionRecvPacket { .. } => "recv_packet",
+            IbcEvent::UnionSendPacket { .. } => "send_packet",
+            IbcEvent::UnionAcknowledgePacket { .. } => "acknowledge_packet",
+            IbcEvent::UnionWriteAck { .. } => "write_ack",
+            // IbcEvent::UnionTimeoutPacket{..} => "timeout_packet",
         }
     }
 }

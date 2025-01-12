@@ -508,7 +508,6 @@ pub mod hex_string_list {
     }
 }
 
-// TODO: Check if human readable
 pub mod string {
     use alloc::string::String;
     use core::{fmt::Display, str::FromStr};
@@ -545,6 +544,7 @@ pub mod string {
     }
 }
 
+// TODO: Check if human readable
 pub mod string_list {
     use alloc::{format, string::String, vec::Vec};
     use core::{fmt::Debug, str::FromStr};

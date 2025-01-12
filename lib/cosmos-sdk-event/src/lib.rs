@@ -1,403 +1,436 @@
-#[doc(hidden)]
-pub use cometbft_types;
-use cometbft_types::abci::event::Event;
+#![feature(extract_if)]
 
-#[macro_export]
-macro_rules! event {
-    (
-        pub enum $Enum:ident {
-            $(
-                #[event(tag = $tag:literal $(, deprecated($($dep:literal),+)$(,)?)?)]
-                $Struct:ident {
-                    $(
-                        $(#[doc = $doc:literal])*
-                        $(#[parse($parse:expr)])?
-                        $(#[serde($serde:meta)])?
-                        $field:ident: $field_ty:ty
-                    ),+$(,)?
-                },
-            )+
-        }
-    ) => {
-        #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
-        #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
-        pub enum $Enum {
-            $(
-                $Struct($Struct),
-            )+
-        }
+use std::{collections::BTreeMap, fmt::Display, str::FromStr};
 
-        impl $Enum {
-            #[must_use]
-            pub fn try_from_tendermint_event(
-                event: $crate::cometbft_types::abci::event::Event,
-            ) -> Option<Result<Self, $crate::TryFromTendermintEventError>> {
-                // to silence unused variable warnings on the last repetition of the following block
-                let _event = event;
+use cometbft_types::abci::event_attribute::EventAttribute;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use unionlabs::{bech32::Bech32, primitives::H256};
 
-                $(
-                    let _event = match $Struct::try_from(_event) {
-                        Ok(ok) => return Some(Ok(Self::$Struct(ok))),
-                        Err(err) => match err {
-                            $crate::TryFromTendermintEventError::IncorrectType { expected: _, found } => found,
-                            _ => return Some(Err(err)),
-                        },
-                    };
-                )+
+/// Wrapper around a strongly-typed enum of on-chain events, containing well-known attributes that
+/// are added automatically by various modules in the Cosmos SDK.
+///
+/// The event enum must be an [adjacently tagged], with `tag = "type", content = "attributes"`.
+///
+/// # Example
+///
+/// ```rust
+/// use cosmos_sdk_event::CosmosSdkEvent;
+/// use cometbft_types::abci::{event::Event, event_attribute::EventAttribute};
+///
+/// #[derive(serde::Deserialize)]
+/// #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+/// pub enum MyEvent {
+///     #[serde(rename = "wasm-update_client")]
+///     WasmUpdateClient(WasmUpdateClient),
+/// }
+///
+/// #[derive(serde::Deserialize)]
+/// pub struct WasmUpdateClient {
+///     #[serde(with = "::serde_utils::string")]
+///     pub client_id: u32,
+///     #[serde(with = "::serde_utils::string")]
+///     pub counterparty_height: u64,
+/// }
+///
+/// let raw_event = Event {
+///     ty: "wasm-update_client".to_owned(),
+///     attributes: [
+///         EventAttribute {
+///             key: "_contract_address".to_owned(),
+///             value: "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_owned(),
+///             index: true,
+///         },
+///         EventAttribute {
+///             key: "client_id".to_owned(),
+///             value: "7".to_owned(),
+///             index: true,
+///         },
+///         EventAttribute {
+///             key: "counterparty_height".to_owned(),
+///             value: "7340414".to_owned(),
+///             index: true,
+///         },
+///         EventAttribute {
+///             key: "event_index".to_owned(),
+///             value: "2".to_owned(),
+///             index: true,
+///         },
+///         EventAttribute {
+///             key: "msg_index".to_owned(),
+///             value: "0".to_owned(),
+///             index: true,
+///         },
+///         EventAttribute {
+///             key: "tx_index".to_owned(),
+///             value: "0".to_owned(),
+///             index: false,
+///         }
+///     ].to_vec()
+/// };
+///
+/// let event = CosmosSdkEvent::<MyEvent>::new(raw_event).unwrap();
+///
+/// assert!(matches!(event.event, MyEvent::WasmUpdateClient(..)));
+/// ```
+///
+/// [adjacently tagged]: https://serde.rs/enum-representations.html#adjacently-tagged
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct CosmosSdkEvent<T> {
+    pub msg_index: Option<u32>,
+    pub event_index: Option<u32>,
+    pub tx_index: Option<u32>,
+    /// If this event was emitted by a cosmwasm contract, `_contract_address` is added as an
+    /// attribute, with the value corresponding to the address that emitted the event.
+    pub contract_address: Option<Bech32<H256>>,
+    pub event: T,
+}
 
-                None
-            }
-        }
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+enum MyEvents {
+    ConnectionOpenConfirm(),
+}
 
-        $(
-            #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-            #[serde(deny_unknown_fields)]
-            pub struct $Struct {
-                $(
-                    $(#[doc = $doc])*
-                    $(#[serde($serde)])?
-                    pub $field: $field_ty,
-                )+
-            }
+impl<T: DeserializeOwned> CosmosSdkEvent<T> {
+    pub fn new(mut raw: cometbft_types::abci::event::Event) -> Result<Self, Error> {
+        Ok(Self {
+            msg_index: pull_attr(&mut raw.attributes, "msg_index")?,
+            event_index: pull_attr(&mut raw.attributes, "event_index")?,
+            tx_index: pull_attr(&mut raw.attributes, "tx_index")?,
+            contract_address: pull_attr(&mut raw.attributes, "_contract_address")?,
+            event: {
+                let map = raw
+                    .attributes
+                    .into_iter()
+                    .map(|attr| (attr.key, attr.value))
+                    .collect::<BTreeMap<String, String>>();
 
-
-            impl TryFrom<$crate::cometbft_types::abci::event::Event> for $Struct {
-                type Error = $crate::TryFromTendermintEventError;
-
-                fn try_from(value: $crate::cometbft_types::abci::event::Event) -> Result<Self, Self::Error> {
-                    const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
-
-                    if value.ty != $tag {
-                        return Err($crate::TryFromTendermintEventError::IncorrectType {
-                            expected: $tag,
-                            found: value,
-                        });
-                    }
-
-                    $(
-                        let mut $field = None::<(usize, _)>;
-                    )+
-
-                    for (idx, attr) in value.attributes.into_iter().enumerate() {
-                        match &*attr.key {
-                            $(
-                                stringify!($field) => match $field {
-                                    Some(first_occurrence) => {
-                                        return Err($crate::TryFromTendermintEventError::DuplicateField {
-                                            key: attr.key,
-                                            first_occurrence: first_occurrence.0,
-                                            second_occurrence: idx,
-                                        })
-                                    }
-                                    None => $field = Some((
-                                        idx,
-                                        (Ok(attr.value)$(
-                                            .and_then(|value: String| {
-                                                #[allow(clippy::redundant_closure_call)]
-                                                (($parse)(&value))
-                                                .map_err(|err| {
-                                                    $crate::TryFromTendermintEventError::AttributeValueParse {
-                                                        field: stringify!($field),
-                                                        error: unionlabs::ErrorReporter(err).to_string(),
-                                                    }
-                                                })
-                                            }))?
-                                        )?
-                                    ))
-                                },
-                            )+
-                            // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
-                            "msg_index" => {}
-                            "event_index" => {}
-                            "tx_index" => {}
-                            "_contract_address" => {}
-                            key => {
-                                if !DEPRECATED.contains(&key) {
-                                    return Err($crate::TryFromTendermintEventError::UnknownAttribute(attr.key))
-                                }
-                            },
-                        }
-                    }
-
-                    Ok(Self {
-                        $(
-                            $field: $field
-                                .ok_or($crate::TryFromTendermintEventError::MissingAttribute(stringify!($field)))?
-                                .1
-                        ),+
-                    })
-                }
-            }
-        )+
+                serde_json::from_value(serde_json::json!({
+                    "type": raw.ty,
+                    "attributes": map,
+                }))?
+            },
+        })
     }
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromTendermintEventError {
-    #[error("incorrect type, expected `{expected}` but found `{}`", found.ty)]
-    IncorrectType {
-        expected: &'static str,
-        found: Event,
-    },
-    #[error(
-        "duplicate field `{key}` (first occurrence index {first_occurrence}, \
-        second occurrence index {second_occurrence})"
-    )]
-    DuplicateField {
-        key: String,
-        first_occurrence: usize,
-        second_occurrence: usize,
-    },
-    #[error("missing attribute `{0}`")]
-    MissingAttribute(&'static str),
-    #[error("unknown attribute `{0}`")]
-    UnknownAttribute(String),
-    #[error("unable to parse value for attribute `{field}`: {error}")]
-    AttributeValueParse {
-        field: &'static str,
-        /// The stringified parse error.
-        // NOTE: Basically just `Box<dyn Error + Send + Sync>` with `+ Clone + PartialEq`
-        error: String,
-    },
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("error parsing well-known key `{key}`: {error}")]
+    WellKnownKeyParse { key: &'static str, error: String },
+    #[error("duplicate well-known key `{key}`")]
+    DuplicateWellKnownKey { key: &'static str },
+    #[error("error deserializing event")]
+    Deserialize(#[from] serde_json::Error),
 }
 
-// #[cfg(test)]
-// mod tests {
-//     mod event_conversion {
-//         use cometbft_types::abci::{event::Event, event_attribute::EventAttribute};
-//         use unionlabs::{ibc::core::client::height::Height, id::ConnectionId};
+fn pull_attr<T: FromStr<Err: Display>>(
+    attrs: &mut Vec<EventAttribute>,
+    key: &'static str,
+) -> Result<Option<T>, Error> {
+    let mut found = attrs.extract_if(|attr| attr.key == key).collect::<Vec<_>>();
 
-//         use crate::{
-//             ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
-//         };
+    match found.pop() {
+        Some(attr) => {
+            if found.is_empty() {
+                attr.value
+                    .parse()
+                    .map_err(|e: T::Err| Error::WellKnownKeyParse {
+                        key,
+                        error: e.to_string(),
+                    })
+                    .map(Some)
+            } else {
+                Err(Error::DuplicateWellKnownKey { key })
+            }
+        }
+        None => Ok(None),
+    }
+}
 
-//         #[test]
-//         fn success() {
-//             assert_eq!(
-//                 ConnectionOpenConfirm::try_from(Event {
-//                     ty: "connection_open_confirm".to_string(),
-//                     attributes: vec![
-//                         EventAttribute {
-//                             key: "connection_id".to_string(),
-//                             value: "connection-11".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "client_id".to_string(),
-//                             value: "08-wasm-1".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "counterparty_client_id".to_string(),
-//                             value: "cometbls-new-0".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "counterparty_connection_id".to_string(),
-//                             value: "connection-6".to_string(),
-//                             index: true,
-//                         },
-//                     ],
-//                 }),
-//                 Ok(ConnectionOpenConfirm {
-//                     connection_id: ConnectionId::new(11),
-//                     client_id: "08-wasm-1".parse().unwrap(),
-//                     counterparty_client_id: "cometbls-new-0".parse().unwrap(),
-//                     counterparty_connection_id: ConnectionId::new(6),
-//                 })
-//             );
-//         }
+#[cfg(test)]
+mod tests {
+    use cometbft_types::abci::{event::Event, event_attribute::EventAttribute};
+    use serde::{Deserialize, Serialize};
 
-//         #[test]
-//         fn deprecated_field() {
-//             let attributes = vec![
-//                 EventAttribute {
-//                     key: "client_id".to_string(),
-//                     value: "client_id-1".to_string(),
-//                     index: true,
-//                 },
-//                 EventAttribute {
-//                     key: "client_type".to_string(),
-//                     value: "client_type".to_string(),
-//                     index: true,
-//                 },
-//                 EventAttribute {
-//                     key: "consensus_heights".to_string(),
-//                     value: "1-1".to_string(),
-//                     index: true,
-//                 },
-//                 EventAttribute {
-//                     key: "header".to_string(),
-//                     value: "01".to_string(),
-//                     index: true,
-//                 },
-//             ];
+    use crate::CosmosSdkEvent;
 
-//             let deprecated_attr = EventAttribute {
-//                 key: "consensus_height".to_string(),
-//                 value: "this can be anything because it's ignored anyways".to_string(),
-//                 index: true,
-//             };
+    #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+    #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+    pub enum MyEvent {
+        ConnectionOpenConfirm(ConnectionOpenConfirm),
+    }
 
-//             let expected_event = UpdateClient {
-//                 client_id: "client_id-1".parse().unwrap(),
-//                 client_type: "client_type".to_string(),
-//                 consensus_heights: vec![Height::new_with_revision(1, 1)],
-//             };
+    #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+    pub struct ConnectionOpenConfirm {
+        #[serde(with = "::serde_utils::string")]
+        pub connection_id: u32,
+        #[serde(with = "::serde_utils::string")]
+        pub client_id: u32,
+        #[serde(with = "::serde_utils::string")]
+        pub counterparty_client_id: u32,
+        #[serde(with = "::serde_utils::string")]
+        pub counterparty_connection_id: u32,
+    }
 
-//             assert_eq!(
-//                 UpdateClient::try_from(Event {
-//                     ty: "update_client".to_string(),
-//                     attributes: attributes.clone(),
-//                 }),
-//                 Ok(expected_event.clone())
-//             );
+    #[test]
+    fn success() {
+        assert_eq!(
+            CosmosSdkEvent::<MyEvent>::new(Event {
+                ty: "connection_open_confirm".to_string(),
+                attributes: vec![
+                    EventAttribute {
+                        index: true,
+                        key: "_contract_address".to_string(),
+                        value: "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                            .to_string(),
+                    },
+                    EventAttribute {
+                        index: true,
+                        key: "event_index".to_string(),
+                        value: "3".to_string(),
+                    },
+                    EventAttribute {
+                        index: true,
+                        key: "msg_index".to_string(),
+                        value: "0".to_string(),
+                    },
+                    EventAttribute {
+                        index: false,
+                        key: "tx_index".to_string(),
+                        value: "0".to_string(),
+                    },
+                    EventAttribute {
+                        key: "connection_id".to_string(),
+                        value: "11".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "client_id".to_string(),
+                        value: "1".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "counterparty_client_id".to_string(),
+                        value: "0".to_string(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "counterparty_connection_id".to_string(),
+                        value: "6".to_string(),
+                        index: true,
+                    },
+                ],
+            })
+            .unwrap(),
+            CosmosSdkEvent {
+                msg_index: Some(0),
+                event_index: Some(3),
+                tx_index: Some(0),
+                contract_address: Some(
+                    "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                        .parse()
+                        .unwrap()
+                ),
+                event: MyEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
+                    connection_id: 11,
+                    client_id: 1,
+                    counterparty_client_id: 0,
+                    counterparty_connection_id: 6,
+                })
+            }
+        );
+    }
 
-//             assert_eq!(
-//                 UpdateClient::try_from(Event {
-//                     ty: "update_client".to_string(),
-//                     attributes: attributes.into_iter().chain([deprecated_attr]).collect(),
-//                 }),
-//                 Ok(expected_event)
-//             );
-//         }
+    // #[test]
+    // fn deprecated_field() {
+    //     let attributes = vec![
+    //         EventAttribute {
+    //             key: "client_id".to_string(),
+    //             value: "client_id-1".to_string(),
+    //             index: true,
+    //         },
+    //         EventAttribute {
+    //             key: "client_type".to_string(),
+    //             value: "client_type".to_string(),
+    //             index: true,
+    //         },
+    //         EventAttribute {
+    //             key: "consensus_heights".to_string(),
+    //             value: "1-1".to_string(),
+    //             index: true,
+    //         },
+    //         EventAttribute {
+    //             key: "header".to_string(),
+    //             value: "01".to_string(),
+    //             index: true,
+    //         },
+    //     ];
 
-//         #[test]
-//         fn parse() {
-//             assert_eq!(
-//                 UpdateClient::try_from(Event {
-//                     ty: "update_client".to_string(),
-//                     attributes: vec![
-//                         EventAttribute {
-//                             key: "client_id".to_string(),
-//                             value: "client_id-1".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "client_type".to_string(),
-//                             value: "client_type".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "consensus_heights".to_string(),
-//                             value: "180cm".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "header".to_string(),
-//                             value: "header".to_string(),
-//                             index: true,
-//                         },
-//                     ],
-//                 }),
-//                 Err(TryFromTendermintEventError::AttributeValueParse {
-//                     field: "consensus_heights",
-//                     error: "invalid height string".to_owned()
-//                 })
-//             );
-//         }
+    //     let deprecated_attr = EventAttribute {
+    //         key: "consensus_height".to_string(),
+    //         value: "this can be anything because it's ignored anyways".to_string(),
+    //         index: true,
+    //     };
 
-//         #[test]
-//         fn missing_field() {
-//             assert_eq!(
-//                 ConnectionOpenConfirm::try_from(Event {
-//                     ty: "connection_open_confirm".to_string(),
-//                     attributes: vec![
-//                         EventAttribute {
-//                             key: "connection_id".to_string(),
-//                             value: "connection-11".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "counterparty_client_id".to_string(),
-//                             value: "cometbls-new-0".to_string(),
-//                             index: true,
-//                         },
-//                         EventAttribute {
-//                             key: "counterparty_connection_id".to_string(),
-//                             value: "connection-6".to_string(),
-//                             index: true,
-//                         },
-//                     ],
-//                 }),
-//                 Err(TryFromTendermintEventError::MissingAttribute("client_id"))
-//             );
-//         }
+    //     let expected_event = UpdateClient {
+    //         client_id: "client_id-1".parse().unwrap(),
+    //         client_type: "client_type".to_string(),
+    //         consensus_heights: vec![Height::new_with_revision(1, 1)],
+    //     };
 
-//         #[test]
-//         fn incorrect_type() {
-//             let event = Event {
-//                 ty: "really_cool_event".to_string(),
-//                 attributes: vec![],
-//             };
+    //     assert_eq!(
+    //         UpdateClient::try_from(Event {
+    //             ty: "update_client".to_string(),
+    //             attributes: attributes.clone(),
+    //         }),
+    //         Ok(expected_event.clone())
+    //     );
 
-//             assert_eq!(
-//                 ConnectionOpenConfirm::try_from(event.clone()),
-//                 Err(TryFromTendermintEventError::IncorrectType {
-//                     expected: "connection_open_confirm",
-//                     found: event,
-//                 })
-//             );
-//         }
+    //     assert_eq!(
+    //         UpdateClient::try_from(Event {
+    //             ty: "update_client".to_string(),
+    //             attributes: attributes.into_iter().chain([deprecated_attr]).collect(),
+    //         }),
+    //         Ok(expected_event)
+    //     );
+    // }
 
-//         #[test]
-//         fn unknown_field() {
-//             assert_eq!(
-//                 ConnectionOpenConfirm::try_from(Event {
-//                     ty: "connection_open_confirm".to_string(),
-//                     attributes: vec![EventAttribute {
-//                         key: "abracadabra".to_string(),
-//                         value: "doesn't matter".to_string(),
-//                         index: true,
-//                     },],
-//                 }),
-//                 Err(TryFromTendermintEventError::UnknownAttribute(
-//                     "abracadabra".to_string()
-//                 ))
-//             );
-//         }
+    // #[test]
+    // fn parse() {
+    //     assert_eq!(
+    //         UpdateClient::try_from(Event {
+    //             ty: "update_client".to_string(),
+    //             attributes: vec![
+    //                 EventAttribute {
+    //                     key: "client_id".to_string(),
+    //                     value: "client_id-1".to_string(),
+    //                     index: true,
+    //                 },
+    //                 EventAttribute {
+    //                     key: "client_type".to_string(),
+    //                     value: "client_type".to_string(),
+    //                     index: true,
+    //                 },
+    //                 EventAttribute {
+    //                     key: "consensus_heights".to_string(),
+    //                     value: "180cm".to_string(),
+    //                     index: true,
+    //                 },
+    //                 EventAttribute {
+    //                     key: "header".to_string(),
+    //                     value: "header".to_string(),
+    //                     index: true,
+    //                 },
+    //             ],
+    //         }),
+    //         Err(TryFromTendermintEventError::AttributeValueParse {
+    //             field: "consensus_heights",
+    //             error: "invalid height string".to_owned()
+    //         })
+    //     );
+    // }
 
-//         #[test]
-//         fn create() {
-//             let client_type = "07-tendermint";
-//             let client_id = "07-tendermint-0";
-//             let consensus_height = "1-88";
+    // #[test]
+    // fn missing_field() {
+    //     assert_eq!(
+    //         ConnectionOpenConfirm::try_from(Event {
+    //             ty: "connection_open_confirm".to_string(),
+    //             attributes: vec![
+    //                 EventAttribute {
+    //                     key: "connection_id".to_string(),
+    //                     value: "connection-11".to_string(),
+    //                     index: true,
+    //                 },
+    //                 EventAttribute {
+    //                     key: "counterparty_client_id".to_string(),
+    //                     value: "cometbls-new-0".to_string(),
+    //                     index: true,
+    //                 },
+    //                 EventAttribute {
+    //                     key: "counterparty_connection_id".to_string(),
+    //                     value: "connection-6".to_string(),
+    //                     index: true,
+    //                 },
+    //             ],
+    //         }),
+    //         Err(TryFromTendermintEventError::MissingAttribute("client_id"))
+    //     );
+    // }
 
-//             let create_client_event = Event {
-//                 ty: "create_client".to_owned(),
-//                 attributes: [
-//                     EventAttribute {
-//                         key: "client_id".to_owned(),
-//                         value: client_id.to_owned(),
-//                         index: true,
-//                     },
-//                     EventAttribute {
-//                         key: "client_type".to_owned(),
-//                         value: client_type.to_owned(),
-//                         index: true,
-//                     },
-//                     EventAttribute {
-//                         key: "consensus_height".to_owned(),
-//                         value: consensus_height.to_owned(),
-//                         index: true,
-//                     },
-//                     EventAttribute {
-//                         key: "msg_index".to_owned(),
-//                         value: "0".to_owned(),
-//                         index: true,
-//                     },
-//                 ]
-//                 .to_vec(),
-//             };
+    // #[test]
+    // fn incorrect_type() {
+    //     let event = Event {
+    //         ty: "really_cool_event".to_string(),
+    //         attributes: vec![],
+    //     };
 
-//             assert_eq!(
-//                 CreateClient::try_from(create_client_event).unwrap(),
-//                 CreateClient {
-//                     client_id: client_id.parse().unwrap(),
-//                     client_type: client_type.to_owned(),
-//                     consensus_height: consensus_height.parse().unwrap(),
-//                 }
-//             );
-//         }
-//     }
-// }
+    //     assert_eq!(
+    //         ConnectionOpenConfirm::try_from(event.clone()),
+    //         Err(TryFromTendermintEventError::IncorrectType {
+    //             expected: "connection_open_confirm",
+    //             found: event,
+    //         })
+    //     );
+    // }
+
+    // #[test]
+    // fn unknown_field() {
+    //     assert_eq!(
+    //         ConnectionOpenConfirm::try_from(Event {
+    //             ty: "connection_open_confirm".to_string(),
+    //             attributes: vec![EventAttribute {
+    //                 key: "abracadabra".to_string(),
+    //                 value: "doesn't matter".to_string(),
+    //                 index: true,
+    //             },],
+    //         }),
+    //         Err(TryFromTendermintEventError::UnknownAttribute(
+    //             "abracadabra".to_string()
+    //         ))
+    //     );
+    // }
+
+    // #[test]
+    // fn create() {
+    //     let client_type = "07-tendermint";
+    //     let client_id = "07-tendermint-0";
+    //     let consensus_height = "1-88";
+
+    //     let create_client_event = Event {
+    //         ty: "create_client".to_owned(),
+    //         attributes: [
+    //             EventAttribute {
+    //                 key: "client_id".to_owned(),
+    //                 value: client_id.to_owned(),
+    //                 index: true,
+    //             },
+    //             EventAttribute {
+    //                 key: "client_type".to_owned(),
+    //                 value: client_type.to_owned(),
+    //                 index: true,
+    //             },
+    //             EventAttribute {
+    //                 key: "consensus_height".to_owned(),
+    //                 value: consensus_height.to_owned(),
+    //                 index: true,
+    //             },
+    //             EventAttribute {
+    //                 key: "msg_index".to_owned(),
+    //                 value: "0".to_owned(),
+    //                 index: true,
+    //             },
+    //         ]
+    //         .to_vec(),
+    //     };
+
+    //     assert_eq!(
+    //         CreateClient::try_from(create_client_event).unwrap(),
+    //         CreateClient {
+    //             client_id: client_id.parse().unwrap(),
+    //             client_type: client_type.to_owned(),
+    //             consensus_height: consensus_height.parse().unwrap(),
+    //         }
+    //     );
+    // }
+}

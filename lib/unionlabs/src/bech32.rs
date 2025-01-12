@@ -4,7 +4,7 @@ use serde::{de, Deserialize, Serialize};
 
 use crate::{primitives::Bytes, ErrorReporter};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bech32<Data = Bytes, Hrp = String> {
     // TODO: Validate the HRP
     hrp: Hrp,
