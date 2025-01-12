@@ -1,31 +1,21 @@
 <script lang="ts">
-import { derived, type Readable, writable } from "svelte/store"
-import type { Chain, UserAddresses } from "$lib/types"
-import { userAddressAptos } from "$lib/wallet/aptos"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
-import { userAddrEvm } from "$lib/wallet/evm"
+import { writable, derived } from "svelte/store"
+import type { Chain } from "$lib/types"
+import { userBalancesQuery } from "$lib/queries/balance"
+import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export let chains: Array<Chain>
 
-let userAddress: Readable<UserAddresses> = derived(
-  [userAddrCosmos, userAddrEvm, userAddressAptos],
-  ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
-    evm: $userAddrEvm,
-    cosmos: $userAddrCosmos,
-    aptos: $userAddressAptos
-  })
-)
-
-$: chainBalances = allChainBalances(chains, userAddress)
+$: userBalancesQueries = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
+$: balanceStore.set($userBalancesQueries.map(query => query.data || []))
 
 let hideZeroBalances = writable(true)
 
-$: filteredChainBalances = derived(
-  [chainBalances, hideZeroBalances],
-  ([$chainBalances, $hideZeroBalances]) => {
-    if (!$hideZeroBalances) return $chainBalances
-    return $chainBalances.map(chainAssets =>
-      chainAssets.filter(asset => BigInt(asset.balance) > 0n)
+$: filteredBalanceStore = derived(
+  [balanceStore, hideZeroBalances],
+  ([$balanceStore, $hideZeroBalances]) => {
+    return $balanceStore.map(chainAssets =>
+      $hideZeroBalances ? chainAssets.filter(asset => BigInt(asset.balance) > 0n) : chainAssets
     )
   }
 )
@@ -46,7 +36,7 @@ function formatBalance(balance: string, decimals: number | null): string {
     <label for="hideZeroBalances">Hide zero balances</label>
   </div>
 
-  {#each $filteredChainBalances as chainAssets, chainIndex}
+  {#each $filteredBalanceStore as chainAssets, chainIndex}
     {#if chainAssets?.length}
       <div class="rounded-lg border p-4">
         <h2 class="text-lg font-semibold mb-3">
@@ -54,7 +44,8 @@ function formatBalance(balance: string, decimals: number | null): string {
         </h2>
         <div class="space-y-2">
           {#each chainAssets as asset}
-            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                 class:opacity-50={BigInt(asset.balance) === 0n}>
               <div class="flex items-center space-x-2">
                 <span class="font-medium">{asset.metadata.display_symbol ?? asset.metadata.denom}</span>
                 {#if asset.metadata.display_name}
