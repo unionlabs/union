@@ -1,9 +1,10 @@
+use beacon_api_types::Slot;
 use unionlabs::primitives::{H256, H384};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
-    pub slot: u64,
+    pub slot: Slot,
     /// The state root for this chain, used for L2s to verify against this contract.
     pub state_root: H256,
     pub storage_root: H256,
@@ -38,7 +39,7 @@ pub mod ethabi {
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                slot: value.slot,
+                slot: value.slot.get(),
                 state_root: value.state_root.get().into(),
                 storage_root: value.storage_root.get().into(),
                 timestamp: value.timestamp,
@@ -61,7 +62,7 @@ pub mod ethabi {
 
         fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
             Ok(Self {
-                slot: value.slot,
+                slot: Slot::new(value.slot),
                 state_root: H256::new(value.state_root.0),
                 storage_root: H256::new(value.storage_root.0),
                 timestamp: value.timestamp,
@@ -92,7 +93,7 @@ mod tests {
 
     fn mk_consensus_state() -> ConsensusState {
         ConsensusState {
-            slot: 42,
+            slot: Slot::new(42),
             state_root: H256::new([0xAA; 32]),
             storage_root: H256::new([0xAA; 32]),
             timestamp: 123_456_789,

@@ -2,7 +2,7 @@ use unionlabs::primitives::H256;
 
 use crate::{
     consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
-    LightClientHeader, SyncAggregate, SyncCommittee,
+    LightClientHeader, Slot, SyncAggregate, SyncCommittee,
 };
 
 pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
@@ -21,6 +21,5 @@ pub struct LightClientUpdate {
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate,
     /// Slot at which the aggregate signature was created (untrusted)
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub signature_slot: u64,
+    pub signature_slot: Slot,
 }

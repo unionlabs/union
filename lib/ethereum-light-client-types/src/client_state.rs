@@ -23,7 +23,7 @@ pub struct ClientState {
 
 #[cfg(test)]
 mod tests {
-    use beacon_api_types::{Fork, Version};
+    use beacon_api_types::{Fork, Slot, Version};
     use unionlabs::{
         encoding::{Bincode, Json},
         primitives::{FixedBytes, H256},
@@ -40,7 +40,7 @@ mod tests {
             genesis_time: 123,
             fork_parameters: ForkParameters {
                 genesis_fork_version: Version(FixedBytes::new([1, 2, 3, 4])),
-                genesis_slot: 1,
+                genesis_slot: Slot::new(1),
                 altair: Fork {
                     version: Version(FixedBytes::new([2, 3, 4, 5])),
                     epoch: 2,

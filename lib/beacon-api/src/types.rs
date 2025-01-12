@@ -1,6 +1,6 @@
 use beacon_api_types::{
     fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader, ForkParameters,
-    PresetBaseKind, Version,
+    PresetBaseKind, Slot, Version,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{bls::BlsSignature, primitives::H256};
@@ -81,8 +81,7 @@ pub struct Spec {
     // MAX_EFFECTIVE_BALANCE: 32000000000,
     // EFFECTIVE_BALANCE_INCREMENT: 1000000000,
     // MIN_ATTESTATION_INCLUSION_DELAY: 1,
-    #[serde(with = "::serde_utils::string")]
-    pub slots_per_epoch: u64,
+    pub slots_per_epoch: Slot,
     // MIN_SEED_LOOKAHEAD: 1,
     // MAX_SEED_LOOKAHEAD: 4,
     // EPOCHS_PER_ETH1_VOTING_PERIOD: 64,
@@ -124,8 +123,7 @@ pub struct Spec {
     // MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP: 16384,
     // FIELD_ELEMENTS_PER_BLOB: 4096,
     // MAX_BLOBS_PER_BLOCK: 4,
-    #[serde(with = "::serde_utils::string")]
-    pub genesis_slot: u64,
+    pub genesis_slot: Slot,
     // GENESIS_EPOCH: 0,
     // FAR_FUTURE_EPOCH: 18446744073709551615,
     // BASE_REWARDS_PER_EPOCH: 4,
@@ -190,6 +188,6 @@ impl Spec {
     }
 
     pub fn period(&self) -> u64 {
-        self.epochs_per_sync_committee_period * self.slots_per_epoch
+        self.epochs_per_sync_committee_period * self.slots_per_epoch.get()
     }
 }

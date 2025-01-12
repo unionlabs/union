@@ -20,7 +20,7 @@ pub struct Header {
 mod tests {
     use beacon_api_types::{
         execution_payload_header::ExecutionPayloadHeader, BeaconBlockHeader, LightClientHeader,
-        SyncAggregate, SyncCommittee,
+        Slot, SyncAggregate, SyncCommittee,
     };
     use unionlabs::{
         encoding::{Bincode, Json},
@@ -48,7 +48,7 @@ mod tests {
                 update_data: LightClientUpdateData {
                     attested_header: LightClientHeader {
                         beacon: BeaconBlockHeader {
-                            slot: 123,
+                            slot: Slot::new(123),
                             proposer_index: 456,
                             parent_root: H256::new([0xAA; 32]),
                             state_root: H256::new([0xBB; 32]),
@@ -77,7 +77,7 @@ mod tests {
                     },
                     finalized_header: LightClientHeader {
                         beacon: BeaconBlockHeader {
-                            slot: 123,
+                            slot: Slot::new(123),
                             proposer_index: 456,
                             parent_root: H256::new([0xAA; 32]),
                             state_root: H256::new([0xBB; 32]),
@@ -109,7 +109,7 @@ mod tests {
                         sync_committee_bits: [1, 2, 3].to_vec(),
                         sync_committee_signature: H768::new([0xAA; 96]),
                     },
-                    signature_slot: 123,
+                    signature_slot: Slot::new(123),
                 },
             })),
             ibc_account_proof: AccountProof {

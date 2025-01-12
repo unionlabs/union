@@ -1,6 +1,6 @@
 use beacon_api_types::{
     light_client_update::{FinalityBranch, NextSyncCommitteeBranch},
-    LightClientHeader, SyncAggregate, SyncCommittee,
+    LightClientHeader, Slot, SyncAggregate, SyncCommittee,
 };
 
 /// Common data required for all light client updates.
@@ -16,7 +16,7 @@ pub struct LightClientUpdateData {
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate,
     /// Slot at which the aggregate signature was created (untrusted)
-    pub signature_slot: u64,
+    pub signature_slot: Slot,
 }
 
 impl LightClientUpdateData {

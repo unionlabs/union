@@ -1,5 +1,5 @@
 use beacon_api_types::{
-    Domain, DomainType, ForkData, ForkParameters, SigningData, Version,
+    Domain, DomainType, ForkData, ForkParameters, SigningData, Slot, Version,
     EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
 };
 use sha2::{Digest, Sha256};
@@ -36,7 +36,7 @@ pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Ver
 pub fn compute_sync_committee_period_at_slot<
     C: SLOTS_PER_EPOCH + EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
 >(
-    slot: u64,
+    slot: Slot,
 ) -> u64 {
     compute_sync_committee_period::<C>(compute_epoch_at_slot::<C>(slot))
 }
@@ -44,8 +44,8 @@ pub fn compute_sync_committee_period_at_slot<
 /// Returns the epoch at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_epoch_at_slot)
-pub fn compute_epoch_at_slot<C: SLOTS_PER_EPOCH>(slot: u64) -> u64 {
-    slot / C::SLOTS_PER_EPOCH::U64
+pub fn compute_epoch_at_slot<C: SLOTS_PER_EPOCH>(slot: Slot) -> u64 {
+    slot.get() / C::SLOTS_PER_EPOCH::U64
 }
 
 /// Returns the sync committee period at a given `epoch`.
@@ -58,10 +58,10 @@ pub fn compute_sync_committee_period<C: EPOCHS_PER_SYNC_COMMITTEE_PERIOD>(epoch:
 /// Returns the timestamp at a `slot`, respect to `genesis_time`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot)
-pub fn compute_timestamp_at_slot<C: SECONDS_PER_SLOT>(genesis_time: u64, slot: u64) -> u64 {
+pub fn compute_timestamp_at_slot<C: SECONDS_PER_SLOT>(genesis_time: u64, slot: Slot) -> u64 {
     // REVIEW: Should genesis slot be a config param or a constant?
     let slots_since_genesis = slot - GENESIS_SLOT;
-    genesis_time + (slots_since_genesis * C::SECONDS_PER_SLOT::U64)
+    genesis_time + (slots_since_genesis.get() * C::SECONDS_PER_SLOT::U64)
 }
 
 /// Return the domain for the `domain_type` and `fork_version`.
@@ -111,11 +111,12 @@ pub fn compute_signing_root<T: Ssz>(ssz_object: &T, domain: Domain) -> H256 {
 pub fn compute_slot_at_timestamp<C: SECONDS_PER_SLOT>(
     genesis_time: u64,
     timestamp_seconds: u64,
-) -> Option<u64> {
+) -> Option<Slot> {
     timestamp_seconds
         .checked_sub(genesis_time)?
         .checked_div(C::SECONDS_PER_SLOT::U64)?
-        .checked_add(GENESIS_SLOT)
+        .checked_add(GENESIS_SLOT.get())
+        .map(Slot::new)
 }
 
 // Returns if at least 2/3 of the sync committee signed

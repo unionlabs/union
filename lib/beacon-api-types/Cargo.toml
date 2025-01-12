@@ -19,7 +19,7 @@ typenum     = { workspace = true }
 unionlabs   = { workspace = true }
 
 [features]
-bincode = ["dep:bincode"]
+bincode = ["dep:bincode", "unionlabs/bincode"]
 default = ["serde", "ssz"]
 serde = [
   "dep:serde",

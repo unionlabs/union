@@ -11,7 +11,7 @@ use beacon_api_types::{
         NEXT_SYNC_COMMITTEE_INDEX,
     },
     light_client_update::LightClientUpdate,
-    ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader,
+    ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader, Slot,
     SyncCommittee, SyncCommitteeSsz,
 };
 use ssz::Ssz;
@@ -30,7 +30,7 @@ use crate::{
     },
 };
 
-pub const GENESIS_SLOT: u64 = 0;
+pub const GENESIS_SLOT: Slot = Slot::new(0);
 pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 pub trait BlsVerify {
@@ -65,8 +65,8 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     update: &LightClientUpdate,
     current_sync_committee: Option<&SyncCommittee>,
     next_sync_committee: Option<&SyncCommittee>,
-    current_slot: u64,
-    finalized_slot: u64,
+    current_slot: Slot,
+    finalized_slot: Slot,
     genesis_validators_root: H256,
     fork_parameters: &ForkParameters,
     bls_verifier: V,
@@ -214,7 +214,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         .filter_map(|(included, pubkey)| if included { Some(pubkey) } else { None })
         .collect::<Vec<_>>();
 
-    let fork_version_slot = std::cmp::max(update.signature_slot, 1) - 1;
+    let fork_version_slot = Slot::new(std::cmp::max(update.signature_slot.get(), 1) - 1);
     let fork_version = compute_fork_version(
         fork_parameters,
         compute_epoch_at_slot::<C>(fork_version_slot),
