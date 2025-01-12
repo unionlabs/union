@@ -9,7 +9,7 @@ use alloy::{
 };
 use beacon_api::{client::BeaconApiClient, types::Spec};
 use beacon_api_types::{
-    light_client_update::NextSyncCommitteeBranch, PresetBaseKind, SyncCommittee,
+    light_client_update::NextSyncCommitteeBranch, PresetBaseKind, Slot, SyncCommittee,
 };
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{
@@ -258,7 +258,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 }
 
 impl Module {
-    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<u64> {
+    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
         let block = self
             .provider
             .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
@@ -363,7 +363,7 @@ impl Module {
 
         if does_not_have_has_supermajority {
             info!(
-                signature_slot = finality_update.signature_slot,
+                signature_slot = %finality_update.signature_slot,
                 "signature supermajority not hit"
             );
 
@@ -536,7 +536,8 @@ impl Module {
                 chain_id: counterparty_chain_id.clone(),
                 // we wait for one more block just to be sure the counterparty's block time has caught up
                 timestamp: Timestamp::from_secs(
-                    (genesis.genesis_time + (last_update_signature_slot * spec.seconds_per_slot))
+                    (genesis.genesis_time
+                        + (last_update_signature_slot.get() * spec.seconds_per_slot))
                         + spec.seconds_per_slot,
                 ),
                 finalized: false,
@@ -585,7 +586,7 @@ impl Module {
         // be the current sync committee of the period that we want to update to.
         let previous_period = u64::max(
             1,
-            light_client_update_data.finalized_header.beacon.slot / spec.period(),
+            light_client_update_data.finalized_header.beacon.slot.get() / spec.period(),
         ) - 1;
 
         let ibc_account_proof = self
@@ -642,6 +643,6 @@ impl Module {
 }
 
 // REVIEW: Does this function exist anywhere else?
-fn sync_committee_period(slot: u64, period: u64) -> u64 {
-    slot.div(period)
+fn sync_committee_period(slot: Slot, period: u64) -> u64 {
+    slot.get().div(period)
 }

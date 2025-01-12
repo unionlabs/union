@@ -1,4 +1,5 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
+use beacon_api_types::Slot;
 
 #[tokio::main]
 async fn main() {
@@ -13,7 +14,10 @@ async fn do_main() {
         .unwrap();
 
     // genesis
-    let block = client.block(BlockId::Slot(5772606)).await.unwrap();
+    let block = client
+        .block(BlockId::Slot(Slot::new(5772606)))
+        .await
+        .unwrap();
 
     dbg!(block);
 

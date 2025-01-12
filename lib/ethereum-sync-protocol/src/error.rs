@@ -1,3 +1,4 @@
+use beacon_api_types::Slot;
 use milagro_bls::AmclError;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
@@ -49,8 +50,8 @@ pub enum Error {
         next_sync_committee must be unset (was set: {trusted_next_sync_committee_is_set})"
     )]
     IrrelevantUpdate {
-        update_attested_slot: u64,
-        trusted_finalized_slot: u64,
+        update_attested_slot: Slot,
+        trusted_finalized_slot: Slot,
         update_attested_period: u64,
         stored_period: u64,
         update_sync_committee_is_set: bool,
@@ -61,17 +62,17 @@ pub enum Error {
         found: ({update_signature_slot} > {update_attested_slot} >= {update_finalized_slot})"
     )]
     InvalidSlots {
-        update_signature_slot: u64,
-        update_attested_slot: u64,
-        update_finalized_slot: u64,
+        update_signature_slot: Slot,
+        update_attested_slot: Slot,
+        update_finalized_slot: Slot,
     },
     #[error(
         "update slot {update_signature_slot} is more recent than the \
         calculated current slot {current_slot}"
     )]
     UpdateMoreRecentThanCurrentSlot {
-        current_slot: u64,
-        update_signature_slot: u64,
+        current_slot: Slot,
+        update_signature_slot: Slot,
     },
     #[error(
         "signature period ({signature_period}) must be equal to `store_period` \

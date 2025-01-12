@@ -1,3 +1,4 @@
+use beacon_api_types::Slot;
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::{primitives::H256, uint::U256};
@@ -34,7 +35,7 @@ pub enum Error {
     IntegerOverflow,
 
     #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
-    MisbehaviourCannotExist(u64, u64),
+    MisbehaviourCannotExist(Slot, Slot),
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },

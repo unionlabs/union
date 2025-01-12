@@ -6,7 +6,7 @@ use alloy::{
     transports::BoxTransport,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::PresetBaseKind;
+use beacon_api_types::{PresetBaseKind, Slot};
 use ethereum_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -63,7 +63,7 @@ pub struct Config {
 impl Module {
     // TODO: Deduplicate this from ethereum client-update plugin
     #[instrument(skip_all, fields(block_number))]
-    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<u64> {
+    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
         trace!("fetching beacon slot of execution block {block_number}");
 
         let block = self
@@ -209,7 +209,7 @@ impl ClientBootstrapModuleServer for Module {
         assert_eq!(bootstrap.header.execution.block_number, height.height());
 
         let light_client_update = {
-            let current_period = beacon_slot.div(spec.period());
+            let current_period = beacon_slot.get().div(spec.period());
 
             debug!(%current_period);
 

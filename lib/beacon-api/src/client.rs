@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use beacon_api_types::{
-    GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock,
+    GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock, Slot,
 };
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -118,18 +118,20 @@ impl BeaconApiClient {
         Ok(height)
     }
 
-    pub async fn bootstrap_for_slot(&self, slot: u64) -> Result<Response<LightClientBootstrap>> {
+    pub async fn bootstrap_for_slot(&self, slot: Slot) -> Result<Response<LightClientBootstrap>> {
         // NOTE(benluelo): While this is technically two actions, I consider it to be one
         // action - if the beacon chain doesn't have the header, it won't have the bootstrap
         // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
         // functionality; I'm surprised it doesn't.
 
-        let mut amount_of_slots_back: u64 = 0;
+        let mut amount_of_slots_back = Slot::new(0);
 
         let spec = self.spec().await?.data;
 
-        let floored_slot = slot / (spec.slots_per_epoch * spec.epochs_per_sync_committee_period)
-            * (spec.slots_per_epoch * spec.epochs_per_sync_committee_period);
+        let floored_slot = Slot::new(
+            slot.get() / (spec.slots_per_epoch.get() * spec.epochs_per_sync_committee_period)
+                * (spec.slots_per_epoch.get() * spec.epochs_per_sync_committee_period),
+        );
 
         info!("fetching bootstrap at {}", floored_slot);
 
@@ -145,7 +147,7 @@ impl BeaconApiClient {
                     error: _,
                     message,
                 })) if message.starts_with("No block found for id") => {
-                    amount_of_slots_back += 1;
+                    amount_of_slots_back = Slot::new(amount_of_slots_back.get() + 1);
                     continue;
                 }
 
@@ -162,7 +164,7 @@ impl BeaconApiClient {
                         error: _,
                         message,
                     }) if message.starts_with("syncCommitteeWitness not available") => {
-                        amount_of_slots_back += 1;
+                        amount_of_slots_back = Slot::new(amount_of_slots_back.get() + 1);
                     }
                     _ => return Err(err),
                 },
@@ -260,12 +262,12 @@ pub enum BlockId {
     Head,
     Genesis,
     Finalized,
-    Slot(u64),
+    Slot(Slot),
     Hash(H256),
 }
 
-impl From<u64> for BlockId {
-    fn from(slot: u64) -> Self {
+impl From<Slot> for BlockId {
+    fn from(slot: Slot) -> Self {
         BlockId::Slot(slot)
     }
 }

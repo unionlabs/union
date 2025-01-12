@@ -1,6 +1,6 @@
 use unionlabs::primitives::H256;
 
-use crate::BeaconBlockBody;
+use crate::{BeaconBlockBody, Slot};
 #[cfg(feature = "ssz")]
 use crate::{
     BeaconBlockBodySsz, BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
@@ -13,8 +13,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BeaconBlock {
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub slot: u64,
+    pub slot: Slot,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_index: u64,
     pub parent_root: H256,
@@ -46,8 +45,7 @@ pub struct BeaconBlockSsz<
         + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub slot: u64,
+    pub slot: Slot,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_index: u64,
     pub parent_root: H256,

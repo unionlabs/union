@@ -5,7 +5,7 @@ use alloy::{
     transports::BoxTransport,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::PresetBaseKind;
+use beacon_api_types::{PresetBaseKind, Slot};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -50,7 +50,7 @@ pub struct Config {
 impl Module {
     // TODO: Deduplicate this from ethereum client-update plugin
     #[instrument(skip_all, fields(block_number))]
-    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<u64> {
+    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
         trace!("fetching beacon slot of execution block {block_number}");
 
         let block = self
