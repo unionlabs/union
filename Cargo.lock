@@ -12879,7 +12879,6 @@ dependencies = [
  "axum 0.6.20",
  "clap 4.5.4",
  "derive_more 0.99.17",
- "frame-support-procedural",
  "futures",
  "ibc-classic-spec",
  "ibc-union-spec",

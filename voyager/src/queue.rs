@@ -3,7 +3,6 @@
 use std::{fmt::Debug, net::SocketAddr, panic::AssertUnwindSafe};
 
 use anyhow::{bail, Context as _};
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{future::BoxFuture, stream::FuturesUnordered, Future, FutureExt, StreamExt};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
@@ -41,13 +40,13 @@ pub enum QueueConfig {
     PgQueue(PgQueueConfig),
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub enum QueueImpl {
     InMemory(InMemoryQueue<VoyagerMessage>),
     PgQueue(PgQueue<VoyagerMessage>),
 }
 
-#[derive(DebugNoBound, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub enum AnyQueueError {
     InMemory(std::convert::Infallible),
