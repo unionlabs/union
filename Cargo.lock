@@ -13402,6 +13402,7 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror",
  "tokio",

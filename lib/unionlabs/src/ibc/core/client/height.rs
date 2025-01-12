@@ -83,6 +83,14 @@ impl Height {
         }
     }
 
+    #[must_use]
+    pub const fn increment_by(self, height: u64) -> Self {
+        Self {
+            revision: self.revision,
+            height: self.height + height,
+        }
+    }
+
     pub fn from_str_allow_zero_revision(s: &str) -> Result<Self, HeightFromStrError> {
         match s.split_once('-') {
             Some((n, h)) => Ok(Self::new_with_revision(n.parse()?, h.parse()?)),

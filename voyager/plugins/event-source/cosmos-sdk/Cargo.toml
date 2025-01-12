@@ -17,6 +17,7 @@ macros                     = { workspace = true }
 prost                      = { workspace = true }
 protos                     = { workspace = true }
 serde                      = { workspace = true, features = ["derive"] }
+serde-utils.workspace      = true
 serde_json                 = { workspace = true }
 thiserror                  = { workspace = true }
 tokio                      = { workspace = true }
