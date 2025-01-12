@@ -77,6 +77,10 @@ impl ibc_union_light_client::IbcClient for MovementLightClient {
         client_state.latest_block_num
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.clone()
+    }
+
     fn status(client_state: &Self::ClientState) -> Status {
         if client_state.frozen_height.height() != 0 {
             Status::Frozen

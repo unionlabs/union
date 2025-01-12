@@ -74,6 +74,10 @@ impl IbcClient for BerachainLightClient {
         client_state.latest_height
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.to_string()
+    }
+
     fn status(_client_state: &Self::ClientState) -> Status {
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always

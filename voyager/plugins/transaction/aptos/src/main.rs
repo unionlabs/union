@@ -436,9 +436,9 @@ async fn process_msgs<
                     .into_iter()
                     .map(|p| {
                         (
-                            p.source_channel,
+                            p.source_channel_id,
                             (
-                                p.destination_channel,
+                                p.destination_channel_id,
                                 (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
                             ),
                         )
@@ -472,7 +472,7 @@ async fn process_msgs<
                 let (source_channels, destination_channels) = data
                     .packets
                     .into_iter()
-                    .map(|p| (p.source_channel, p.destination_channel))
+                    .map(|p| (p.source_channel_id, p.destination_channel_id))
                     .collect::<(Vec<u32>, Vec<u32>)>();
 
                 let port_id = client

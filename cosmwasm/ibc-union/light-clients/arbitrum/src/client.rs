@@ -118,6 +118,10 @@ impl IbcClient for ArbitrumLightClient {
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
         client_state.l1_latest_slot
     }
+
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.to_string()
+    }
 }
 
 // #[cfg(test)]

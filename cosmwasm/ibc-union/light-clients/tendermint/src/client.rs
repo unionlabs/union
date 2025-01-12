@@ -149,6 +149,10 @@ impl IbcClient for TendermintLightClient {
         client_state.latest_height.height()
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.clone()
+    }
+
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,

@@ -92,6 +92,10 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
         client_state.latest_height.height()
     }
 
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        client_state.chain_id.clone().into_string()
+    }
+
     // TODO(aeryz): pass ctx
     fn status(client_state: &Self::ClientState) -> ibc_union_msg::lightclient::Status {
         if client_state.frozen_height.height() != 0 {

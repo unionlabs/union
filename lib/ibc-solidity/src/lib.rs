@@ -391,8 +391,8 @@ maybe_sol_attr! {
             serde(deny_unknown_fields)
         )]
         struct Packet {
-            uint32 source_channel;
-            uint32 destination_channel;
+            uint32 source_channel_id;
+            uint32 destination_channel_id;
             bytes data;
             uint64 timeout_height;
             uint64 timeout_timestamp;
@@ -690,8 +690,8 @@ mod tests {
     fn packet_hash() {
         dbg!(keccak256(
             Packet {
-                source_channel: 1,
-                destination_channel: 1,
+                source_channel_id: 1,
+                destination_channel_id: 1,
                 data: bytes!("0000000000000000000000000000000000000000000000000000000000000000"),
                 timeout_height: 0,
                 timeout_timestamp: 1733160153000000000
