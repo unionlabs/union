@@ -3364,6 +3364,8 @@ dependencies = [
  "cometbft-types",
  "enumorph",
  "serde",
+ "serde-utils",
+ "serde_json",
  "thiserror",
  "unionlabs",
 ]
