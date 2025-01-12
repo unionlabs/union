@@ -1,5 +1,5 @@
 #![feature(trait_alias, try_find)]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::unwrap_used)]
 #![allow(
     // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
@@ -79,7 +79,7 @@ fn main() -> ExitCode {
         .enable_all()
         .thread_stack_size(args.stack_size)
         .build()
-        .unwrap()
+        .expect("building the tokio runtime is infallible; qed;")
         .block_on(do_main(args));
 
     match res {
@@ -248,63 +248,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             ModuleCmd::Consensus(_) => todo!(),
             ModuleCmd::Client(_) => todo!(),
         },
-        // Command::Query { on, height, path } => {
-        //     let voyager = Voyager::new(get_voyager_config()?).await?;
-
-        //     let height = voyager.context.rpc_server.query_height(&on, height).await?;
-
-        //     let state = voyager
-        //         .context
-        //         .rpc_server
-        //         .query_ibc_state(&on, height, path.clone())
-        //         .await?
-        //         .state;
-
-        //     let state = match &path {
-        //         ics24::Path::ClientState(path) => {
-        //             let client_info = voyager
-        //                 .context
-        //                 .rpc_server
-        //                 .client_info(&on, path.client_id.clone())
-        //                 .await?;
-
-        //             voyager
-        //                 .context
-        //                 .rpc_server
-        //                 .decode_client_state(
-        //                     &client_info.client_type,
-        //                     &client_info.ibc_interface,
-        //                     serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
-        //                 )
-        //                 .await?
-        //         }
-        //         ics24::Path::ClientConsensusState(path) => {
-        //             let client_info = voyager
-        //                 .context
-        //                 .rpc_server
-        //                 .client_info(&on, path.client_id.clone())
-        //                 .await?;
-
-        //             voyager
-        //                 .context
-        //                 .rpc_server
-        //                 .decode_consensus_state(
-        //                     &client_info.client_type,
-        //                     &client_info.ibc_interface,
-        //                     serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
-        //                 )
-        //                 .await?
-        //         }
-        //         _ => state,
-        //     };
-
-        //     voyager.shutdown().await;
-
-        //     print_json(&json!({
-        //        "path": path.to_string(),
-        //        "state": state,
-        //     }));
-        // }
         Command::Queue(cli_msg) => {
             let db = || {
                 Ok(match get_voyager_config()?.voyager.queue {
@@ -358,8 +301,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     if requeue {
                         if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
-                            q.enqueue(record, &JaqInterestFilter::new(vec![]).unwrap())
-                                .await?;
+                            q.enqueue(
+                                record,
+                                &JaqInterestFilter::new(vec![]).expect("empty filter can be built"),
+                            )
+                            .await?;
                         }
                     }
 
@@ -367,87 +313,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 }
             }
         }
-        // Command::Handshake(HandshakeCmd {
-        //     chain_a,
-        //     chain_b,
-        //     ty,
-        // }) => {
-        //     let chain_a = voyager_config.get_chain(&chain_a).await?;
-        //     let chain_b = voyager_config.get_chain(&chain_b).await?;
-
-        //     let chains = Arc::new(chains_from_config(voyager_config.chain).await.unwrap());
-
-        //     let all_msgs = match (chain_a, chain_b) {
-        //         (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
-        //             mk_handshake::<Union, Wasm<Cosmos>>(&union, &Wasm(cosmos), ty, chains).await
-        //         }
-        //         (AnyChain::Union(union), AnyChain::EthereumMainnet(ethereum)) => {
-        //             mk_handshake::<Wasm<Union>, Ethereum<Mainnet>>(
-        //                 &Wasm(union),
-        //                 &ethereum,
-        //                 ty,
-        //                 chains,
-        //             )
-        //             .await
-        //         }
-        //         (AnyChain::Union(union), AnyChain::EthereumMinimal(ethereum)) => {
-        //             mk_handshake::<Wasm<Union>, Ethereum<Minimal>>(
-        //                 &Wasm(union),
-        //                 &ethereum,
-        //                 ty,
-        //                 chains,
-        //             )
-        //             .await
-        //         }
-        //         (AnyChain::Union(union), AnyChain::Scroll(scroll)) => {
-        //             mk_handshake::<Wasm<Union>, Scroll>(&Wasm(union), &scroll, ty, chains).await
-        //         }
-        //         (AnyChain::Union(union), AnyChain::Arbitrum(scroll)) => {
-        //             mk_handshake::<Wasm<Union>, Arbitrum>(&Wasm(union), &scroll, ty, chains).await
-        //         }
-        //         (AnyChain::Union(union), AnyChain::Berachain(berachain)) => {
-        //             mk_handshake::<Wasm<Union>, Berachain>(&Wasm(union), &berachain, ty, chains)
-        //                 .await
-        //         }
-        //         (AnyChain::Cosmos(cosmos), AnyChain::Union(union)) => {
-        //             mk_handshake::<Wasm<Cosmos>, Union>(&Wasm(cosmos), &union, ty, chains).await
-        //         }
-        //         (AnyChain::Cosmos(cosmos_a), AnyChain::Cosmos(cosmos_b)) => {
-        //             mk_handshake::<Cosmos, Cosmos>(&cosmos_a, &cosmos_b, ty, chains).await
-        //         }
-        //         (AnyChain::EthereumMainnet(ethereum), AnyChain::Union(union)) => {
-        //             mk_handshake::<Ethereum<Mainnet>, Wasm<Union>>(
-        //                 &ethereum,
-        //                 &Wasm(union),
-        //                 ty,
-        //                 chains,
-        //             )
-        //             .await
-        //         }
-        //         (AnyChain::EthereumMinimal(ethereum), AnyChain::Union(union)) => {
-        //             mk_handshake::<Ethereum<Minimal>, Wasm<Union>>(
-        //                 &ethereum,
-        //                 &Wasm(union),
-        //                 ty,
-        //                 chains,
-        //             )
-        //             .await
-        //         }
-        //         (AnyChain::Scroll(scroll), AnyChain::Union(union)) => {
-        //             mk_handshake::<Scroll, Wasm<Union>>(&scroll, &Wasm(union), ty, chains).await
-        //         }
-        //         (AnyChain::Arbitrum(scroll), AnyChain::Union(union)) => {
-        //             mk_handshake::<Arbitrum, Wasm<Union>>(&scroll, &Wasm(union), ty, chains).await
-        //         }
-        //         (AnyChain::Berachain(berachain), AnyChain::Union(union)) => {
-        //             mk_handshake::<Berachain, Wasm<Union>>(&berachain, &Wasm(union), ty, chains)
-        //                 .await
-        //         }
-        //         _ => panic!("invalid"),
-        //     };
-
-        //     print_json(&all_msgs);
-        // }
         Command::InitFetch {
             chain_id,
             height,
@@ -555,9 +420,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                             on.clone(),
                             ibc_spec_id.clone(),
                             height,
-                            (ibc_handlers.get(&ibc_spec_id).unwrap().client_state_path)(
-                                client_id.clone(),
-                            )?,
+                            (ibc_handlers
+                                .get(&ibc_spec_id)
+                                .context(anyhow!("unknown IBC spec `{ibc_spec_id}`"))?
+                                .client_state_path)(client_id.clone())?,
                         )
                         .await?;
 
@@ -571,7 +437,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                                 client_info.client_type,
                                 client_info.ibc_interface,
                                 ibc_spec_id,
-                                serde_json::from_value(ibc_state.state).unwrap(),
+                                serde_json::from_value(ibc_state.state)
+                                    .expect("serialization is infallible; qed;"),
                             )
                             .await?;
 
@@ -597,7 +464,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                             on.clone(),
                             ibc_spec_id.clone(),
                             height,
-                            (ibc_handlers.get(&ibc_spec_id).unwrap().consensus_state_path)(
+                            (ibc_handlers
+                                .get(&ibc_spec_id)
+                                .context(anyhow!("unknown IBC spec `{ibc_spec_id}`"))?
+                                .consensus_state_path)(
                                 client_id.clone(),
                                 trusted_height.to_string(),
                             )?,
@@ -614,7 +484,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                                 client_info.client_type,
                                 client_info.ibc_interface,
                                 ibc_spec_id,
-                                serde_json::from_value(ibc_state.state).unwrap(),
+                                serde_json::from_value(ibc_state.state)
+                                    .expect("serialization is infallible; qed;"),
                             )
                             .await?;
 
@@ -747,7 +618,10 @@ async fn send_enqueue(
 }
 
 fn print_json<T: Serialize>(t: &T) {
-    println!("{}", serde_json::to_string(&t).unwrap());
+    println!(
+        "{}",
+        serde_json::to_string(&t).expect("serialization is infallible; qed;")
+    );
 }
 
 // TODO: Extract all logic here to a plugin
