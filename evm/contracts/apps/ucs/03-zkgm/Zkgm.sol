@@ -12,6 +12,7 @@ import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
+import "solady/utils/LibBytes.sol";
 
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
@@ -276,6 +277,7 @@ contract UCS03Zkgm is
 {
     using ZkgmLib for *;
     using LibString for *;
+    using LibBytes for *;
 
     IIBCPacket public ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -327,6 +329,8 @@ contract UCS03Zkgm is
         ) {
             IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
         } else {
+            // We reset the origin, the asset will not be unescrowed on the destination
+            origin = 0;
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
