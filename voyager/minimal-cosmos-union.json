@@ -9,7 +9,7 @@
           "chain_id": "union-devnet-1"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090"
         }
       },
@@ -20,7 +20,7 @@
           "chain_id": "stargaze-devnet-1"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090"
         }
       }
@@ -35,7 +35,7 @@
         },
         "config": {
           "chain_id": "union-devnet-1",
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090"
         }
       },
@@ -48,7 +48,7 @@
         },
         "config": {
           "chain_id": "stargaze-devnet-1",
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090"
         }
       }
@@ -80,7 +80,7 @@
       "path": "./target/debug/voyager-client-update-plugin-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090",
         "prover_endpoints": ["https://galois.testnet-8.union.build:443"]
       }
@@ -90,7 +90,7 @@
       "path": "./target/debug/voyager-client-update-plugin-tendermint",
       "config": {
         "chain_id": "stargaze-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -115,7 +115,7 @@
           "gas_multiplier": "1.1",
           "max_gas": 60000000
         },
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -140,7 +140,7 @@
           "gas_multiplier": "1.1",
           "max_gas": 60000000
         },
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -192,7 +192,7 @@
       "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -201,7 +201,7 @@
       "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "stargaze-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     }

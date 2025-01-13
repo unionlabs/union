@@ -26,7 +26,7 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
     pub grpc_url: String,
 
@@ -35,7 +35,7 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub ws_url: String,
+    pub rpc_url: String,
     pub grpc_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
@@ -45,7 +45,7 @@ impl ConsensusModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
@@ -66,7 +66,7 @@ impl ConsensusModule for Module {
             })?;
 
         Ok(Self {
-            tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
@@ -93,7 +93,7 @@ impl Module {
     }
 
     async fn latest_height(&self, finalized: bool) -> Result<Height, cometbft_rpc::JsonRpcError> {
-        let commit_response = self.tm_client.commit(None).await?;
+        let commit_response = self.cometbft_client.commit(None).await?;
 
         let mut height = commit_response
             .signed_header
@@ -136,7 +136,7 @@ impl ConsensusModuleServer for Module {
         finalized: bool,
     ) -> RpcResult<Timestamp> {
         let mut commit_response = self
-            .tm_client
+            .cometbft_client
             .commit(None)
             .await
             .map_err(json_rpc_error_to_error_object)?;
@@ -147,7 +147,7 @@ impl ConsensusModuleServer for Module {
                 requested, fetching commit at previous block"
             );
             commit_response = self
-                .tm_client
+                .cometbft_client
                 .commit(Some(
                     (u64::try_from(commit_response.signed_header.header.height.inner() - 1)
                         .expect("should be fine"))

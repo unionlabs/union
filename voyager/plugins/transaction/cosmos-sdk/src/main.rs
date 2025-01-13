@@ -64,7 +64,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: CosmosKeyring,
-    pub tm_client: cometbft_rpc::Client,
+    pub comtbft_client: cometbft_rpc::Client,
     pub grpc_url: String,
     pub gas_config: GasConfig,
     pub bech32_prefix: String,
@@ -75,7 +75,7 @@ pub struct Config {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
-    pub ws_url: String,
+    pub rpc_url: String,
     pub grpc_url: String,
     pub gas_config: GasConfig,
 }
@@ -88,7 +88,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
@@ -123,7 +123,7 @@ impl Plugin for Module {
                     }
                 }),
             ),
-            tm_client,
+            comtbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             grpc_url: config.grpc_url,
             gas_config: config.gas_config,
@@ -376,13 +376,13 @@ impl Module {
             .finalize()
             .into();
 
-        if let Ok(tx) = self.tm_client.tx(tx_hash, false).await {
+        if let Ok(tx) = self.comtbft_client.tx(tx_hash, false).await {
             debug!(%tx_hash, "tx already included");
             return Ok((tx_hash, tx.tx_result.gas_used));
         }
 
         let response = self
-            .tm_client
+            .comtbft_client
             .broadcast_tx_sync(&tx_raw_bytes)
             .await
             .map_err(BroadcastTxCommitError::BroadcastTxSync)
@@ -405,7 +405,7 @@ impl Module {
         };
 
         let mut target_height = self
-            .tm_client
+            .comtbft_client
             .block(None)
             .await
             .map_err(BroadcastTxCommitError::QueryLatestHeight)?
@@ -418,7 +418,7 @@ impl Module {
         loop {
             let reached_height = 'l: loop {
                 let current_height = self
-                    .tm_client
+                    .comtbft_client
                     .block(None)
                     .await
                     .map_err(BroadcastTxCommitError::QueryLatestHeight)?
@@ -432,7 +432,7 @@ impl Module {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
-            let tx_inclusion = self.tm_client.tx(tx_hash, false).await;
+            let tx_inclusion = self.comtbft_client.tx(tx_hash, false).await;
 
             debug!(?tx_inclusion);
 

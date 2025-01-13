@@ -39,7 +39,7 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
     pub grpc_url: String,
 }
@@ -48,7 +48,7 @@ pub struct Module {
 pub struct Config {
     pub chain_id: ChainId,
 
-    pub ws_url: String,
+    pub rpc_url: String,
     pub grpc_url: String,
 }
 
@@ -60,7 +60,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
@@ -86,7 +86,7 @@ impl Plugin for Module {
             })?;
 
         Ok(Self {
-            tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
@@ -172,25 +172,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 update_to,
             }) => {
                 let trusted_commit = self
-                    .tm_client
+                    .cometbft_client
                     .commit(Some(update_from.height().try_into().unwrap()))
                     .await
                     .unwrap();
 
                 let untrusted_commit = self
-                    .tm_client
+                    .cometbft_client
                     .commit(Some(update_to.height().try_into().unwrap()))
                     .await
                     .unwrap();
 
                 let trusted_validators = self
-                    .tm_client
+                    .cometbft_client
                     .all_validators(Some(update_from.height().try_into().unwrap()))
                     .await
                     .unwrap();
 
                 let untrusted_validators = self
-                    .tm_client
+                    .cometbft_client
                     .all_validators(Some(update_to.height().try_into().unwrap()))
                     .await
                     .unwrap();
