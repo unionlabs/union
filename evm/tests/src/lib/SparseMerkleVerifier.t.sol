@@ -52,20 +52,24 @@ contract SparseMerkleVerifierTests is Test {
     ///         and checks it returns true (membership verified).
     function checkExistence(
         SparseMerkleVerifier.SparseMerkleProof memory proof,
-        bytes32 expectedRootHash,
+        bytes32 finalRootHash,
         bytes32 elementKey,
         bytes32 elementHash
     ) public {
         // Resume gas metering before the library call
         vm.resumeGasMetering();
 
-        bool exists = proof.verifyExistenceProof(
-            expectedRootHash, elementKey, elementHash
-        );
+        (bool exists, bytes32 currentValue) =
+            proof.verifyExistenceProof(elementKey, elementHash);
         assertEq(
             exists,
             true,
             "SparseMerkleVerifier: expected membership proof to succeed"
+        );
+        assertEq(
+            finalRootHash == currentValue,
+            true,
+            "SparseMerkleVerifier: expected membership proof to succeed - value"
         );
     }
 }

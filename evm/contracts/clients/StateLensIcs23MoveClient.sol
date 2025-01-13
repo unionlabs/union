@@ -81,6 +81,17 @@ library StateLensIcs23MoveLib {
             val := calldataload(add(input.offset, offset))
         }
     }
+
+    function extractMemory(
+        bytes memory input,
+        uint16 offset
+    ) internal pure returns (bytes32 val) {
+        assembly {
+            // For "bytes memory", the first 32 bytes is the length.
+            // Then actual data starts at `add(input, 32)`.
+            val := mload(add(input, add(32, offset)))
+        }
+    }
 }
 
 contract StateLensIcs23MoveClient is
@@ -109,6 +120,22 @@ contract StateLensIcs23MoveClient is
         ibcHandler = _ibcHandler;
     }
 
+    function encodeProof(
+        SparseMerkleVerifier.SparseMerkleProof memory ack
+    ) internal pure returns (bytes memory) {
+        return abi.encode(ack);
+    }
+
+    function decodeProof(
+        bytes calldata stream
+    ) internal pure returns (SparseMerkleVerifier.SparseMerkleProof calldata) {
+        SparseMerkleVerifier.SparseMerkleProof calldata proof;
+        assembly {
+            proof := stream.offset
+        }
+        return proof;
+    }
+
     function createClient(
         uint32 clientId,
         bytes calldata clientStateBytes,
@@ -122,14 +149,19 @@ contract StateLensIcs23MoveClient is
             string memory counterpartyChainId
         )
     {
-        ClientState calldata clientState;
-        assembly {
-            clientState := clientStateBytes.offset
-        }
-        ConsensusState calldata consensusState;
-        assembly {
-            consensusState := consensusStateBytes.offset
-        }
+        // ClientState calldata clientState;
+        // assembly {
+        //     clientState := clientStateBytes.offset
+        // }
+        // ConsensusState calldata consensusState;
+        // assembly {
+        //     consensusState := consensusStateBytes.offset
+        // }
+        ClientState memory clientState =
+            abi.decode(clientStateBytes, (ClientState));
+        ConsensusState memory consensusState =
+            abi.decode(consensusStateBytes, (ConsensusState));
+
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
             revert StateLensIcs23MoveLib.ErrInvalidInitialConsensusState();
         }
@@ -161,10 +193,8 @@ contract StateLensIcs23MoveClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC returns (ConsensusStateUpdate memory) {
-        Header calldata header;
-        assembly {
-            header := clientMessageBytes.offset
-        }
+        Header memory header = abi.decode(clientMessageBytes, (Header));
+
         ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
             IBCStore(ibcHandler).getClient(clientState.l1ClientId);
@@ -185,18 +215,18 @@ contract StateLensIcs23MoveClient is
             revert StateLensIcs23MoveLib.ErrInvalidL1Proof();
         }
 
-        bytes calldata rawL2ConsensusState = header.l2ConsensusState;
+        bytes memory rawL2ConsensusState = header.l2ConsensusState;
         uint64 l2Timestamp = uint64(
             uint256(
-                StateLensIcs23MoveLib.extract(
+                StateLensIcs23MoveLib.extractMemory(
                     rawL2ConsensusState, clientState.timestampOffset
                 )
             )
         );
-        bytes32 l2StateRoot = StateLensIcs23MoveLib.extract(
+        bytes32 l2StateRoot = StateLensIcs23MoveLib.extractMemory(
             rawL2ConsensusState, clientState.stateRootOffset
         );
-        bytes32 l2StorageRoot = StateLensIcs23MoveLib.extract(
+        bytes32 l2StorageRoot = StateLensIcs23MoveLib.extractMemory(
             rawL2ConsensusState, clientState.storageRootOffset
         );
 
@@ -230,10 +260,12 @@ contract StateLensIcs23MoveClient is
     function verifyMembership(
         uint32 clientId,
         uint64 height,
-        SparseMerkleVerifier.SparseMerkleProof calldata proof,
+        bytes calldata proof_stream,
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
+        SparseMerkleVerifier.SparseMerkleProof calldata proof =
+            decodeProof(proof_stream);
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MoveLib.ErrClientFrozen();
         }
@@ -243,19 +275,22 @@ contract StateLensIcs23MoveClient is
                 path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
             )
         );
-        bool exists = SparseMerkleVerifier.verifyExistenceProof(
-            proof, value, keccak256(abi.encodePacked(slot)), storageRoot
+        (bool exists, bytes32 currentValue) = SparseMerkleVerifier
+            .verifyExistenceProof(
+            proof, keccak256(abi.encodePacked(slot)), storageRoot
         );
-        return exists;
+        return exists
+            && keccak256(abi.encodePacked(currentValue)) == keccak256(value);
     }
 
     function verifyNonMembership(
         uint32 clientId,
         uint64 height,
-        SparseMerkleVerifier.SparseMerkleProof calldata proof,
-        bytes calldata path,
-        bytes calldata value
+        bytes calldata proof_stream,
+        bytes calldata path
     ) external virtual returns (bool) {
+        SparseMerkleVerifier.SparseMerkleProof calldata proof =
+            decodeProof(proof_stream);
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MoveLib.ErrClientFrozen();
         }
@@ -265,8 +300,9 @@ contract StateLensIcs23MoveClient is
                 path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
             )
         );
-        bool exists = SparseMerkleVerifier.verifyExistenceProof(
-            proof, value, keccak256(abi.encodePacked(slot)), storageRoot
+        (bool exists, bytes32 _currentValue) = SparseMerkleVerifier
+            .verifyExistenceProof(
+            proof, keccak256(abi.encodePacked(slot)), storageRoot
         );
         return !exists;
     }

@@ -59,10 +59,9 @@ library SparseMerkleVerifier {
 
     function verifyExistenceProof(
         SparseMerkleProof memory proof,
-        bytes32 expectedRootHash,
         bytes32 elementKey,
         bytes32 elementHash
-    ) public pure returns (bool) {
+    ) public pure returns (bool, bytes32) {
         if (proof.siblings.length > 256) {
             revert MaxSiblingsExceeded(256, proof.siblings.length);
         }
@@ -97,10 +96,6 @@ library SparseMerkleVerifier {
             }
         }
 
-        if (currentHash != expectedRootHash) {
-            revert RootHashMismatch(expectedRootHash, currentHash);
-        }
-
-        return true;
+        return (true, currentHash);
     }
 }
