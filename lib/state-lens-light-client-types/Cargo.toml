@@ -13,6 +13,9 @@ serde     = { workspace = true, optional = true, features = ["derive"] }
 thiserror = { workspace = true }
 unionlabs = { workspace = true, features = ["ethabi", "proto"] }
 
+[dev-dependencies]
+hex-literal = { workspace = true }
+
 [features]
 bincode = ["dep:bincode", "unionlabs/bincode"]
 default = []

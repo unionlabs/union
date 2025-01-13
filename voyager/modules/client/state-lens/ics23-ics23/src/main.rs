@@ -6,7 +6,8 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState, Header};
+use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
+use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     self,

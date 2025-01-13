@@ -1,7 +1,11 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, uint::U256};
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{Bytes, H256},
+    uint::U256,
+};
 
 use crate::client::StateLensIcs23MptLightClient;
 
@@ -42,6 +46,9 @@ pub enum Error {
 
     #[error("counterparty storage not nil")]
     CounterpartyStorageNotNil,
+
+    #[error("could not decode the proof: {0}")]
+    ProofDecode(Bytes),
 }
 
 impl From<Error> for IbcClientError<StateLensIcs23MptLightClient> {

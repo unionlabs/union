@@ -14,21 +14,18 @@ pub struct Header {
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::sol_types::SolValue;
-    use unionlabs::{
-        encoding::{Encode, EthAbi},
-        impl_ethabi_via_try_from_into,
-        union::ics23,
-    };
+    use unionlabs::encoding::{Encode, EthAbi};
 
     use crate::Header;
-
-    impl_ethabi_via_try_from_into!(Header => SolHeader);
 
     impl Encode<EthAbi> for Header {
         fn encode(self) -> Vec<u8> {
             Into::<SolHeader>::into(self).abi_encode_params()
         }
     }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {}
 
     alloy::sol! {
         struct SolHeader {

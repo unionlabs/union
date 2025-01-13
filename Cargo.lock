@@ -4794,25 +4794,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
-name = "evm-in-cosmos-light-client"
-version = "0.1.0"
-dependencies = [
- "cometbls-light-client",
- "cosmwasm-std 2.1.4",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "ibc-union-light-client",
- "ibc-union-msg",
- "ibc-union-spec",
- "ics23",
- "rlp",
- "serde",
- "state-lens-ics23-mpt-light-client-types",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "evm-storage-verifier"
 version = "0.1.0"
 dependencies = [
@@ -11261,11 +11242,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-ics23-mpt-light-client"
+version = "0.1.0"
+dependencies = [
+ "cometbls-light-client",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "ics23",
+ "rlp",
+ "serde",
+ "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-ics23-mpt-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
+ "hex-literal",
  "protos",
  "serde",
  "thiserror",
@@ -11278,6 +11281,7 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
+ "hex-literal",
  "protos",
  "serde",
  "thiserror",
@@ -13088,6 +13092,7 @@ dependencies = [
  "serde",
  "serde_json",
  "state-lens-ics23-ics23-light-client-types",
+ "state-lens-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13113,6 +13118,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
