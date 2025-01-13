@@ -73,7 +73,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub chain_revision: u64,
 
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
     pub chunk_block_fetch_size: u64,
@@ -87,7 +87,7 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
-    pub ws_url: String,
+    pub rpc_url: String,
     #[serde(default = "default_chunk_block_fetch_size")]
     pub chunk_block_fetch_size: u64,
     pub grpc_url: String,
@@ -108,7 +108,7 @@ impl Plugin for Module {
     type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
 
@@ -126,7 +126,7 @@ impl Plugin for Module {
             })?;
 
         Ok(Self {
-            tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
@@ -290,7 +290,7 @@ impl Module {
     }
 
     async fn latest_height(&self) -> Result<Height, cometbft_rpc::JsonRpcError> {
-        let commit_response = self.tm_client.commit(None).await?;
+        let commit_response = self.cometbft_client.commit(None).await?;
 
         let mut height = commit_response
             .signed_header
@@ -463,7 +463,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 info!(%height, %page, "fetching events in block");
 
                 let response = self
-                    .tm_client
+                    .cometbft_client
                     .tx_search(
                         format!("tx.height={}", height.height()),
                         false,

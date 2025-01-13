@@ -9,7 +9,7 @@
           "ibc_spec_id": "1.0.0"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090"
         }
       },
@@ -21,7 +21,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
@@ -48,7 +48,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
@@ -75,7 +75,7 @@
           "consensus_type": "cometbls"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "rpc_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
           "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
         }
@@ -148,7 +148,7 @@
       "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -184,7 +184,7 @@
           "gas_multiplier": "1.1",
           "max_gas": 10000000
         },
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -263,7 +263,7 @@
       "path": "./target/debug/voyager-client-update-plugin-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
-        "ws_url": "http://localhost:26657",
+        "rpc_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090",
         "prover_endpoints": ["http://localhost:9999"]
       }

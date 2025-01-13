@@ -36,7 +36,7 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
     pub grpc_url: String,
 
@@ -45,7 +45,7 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub ws_url: String,
+    pub rpc_url: String,
     pub grpc_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
@@ -58,7 +58,7 @@ impl ClientBootstrapModule for Module {
         config: Self::Config,
         info: ClientBootstrapModuleInfo,
     ) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
@@ -79,7 +79,7 @@ impl ClientBootstrapModule for Module {
             })?;
 
         Ok(Self {
-            tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
@@ -123,7 +123,7 @@ impl ClientBootstrapModuleServer for Module {
         .unwrap();
 
         let commit = self
-            .tm_client
+            .cometbft_client
             .commit(Some(height.height().try_into().unwrap()))
             .await
             .unwrap();
@@ -191,7 +191,7 @@ impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let commit = self
-            .tm_client
+            .cometbft_client
             .commit(Some(height.height().try_into().unwrap()))
             .await
             .map_err(|e| {

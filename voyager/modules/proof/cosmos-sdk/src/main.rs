@@ -46,7 +46,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub chain_revision: u64,
 
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub grpc_url: String,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
@@ -55,7 +55,7 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub ws_url: String,
+    pub rpc_url: String,
     pub grpc_url: String,
 }
 
@@ -63,7 +63,7 @@ impl ProofModule<IbcClassic> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
 
@@ -83,7 +83,7 @@ impl ProofModule<IbcClassic> for Module {
             })?;
 
         Ok(Self {
-            tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
@@ -121,7 +121,7 @@ impl ProofModuleServer<IbcClassic> for Module {
         let path_string = path.to_string();
 
         let query_result = self
-            .tm_client
+            .cometbft_client
             .abci_query(
                 IBC_STORE_PATH,
                 &path_string,
