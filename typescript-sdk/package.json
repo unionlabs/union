@@ -38,21 +38,21 @@
     "@scure/base": "^1.2.1",
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
-    "ox": "^0.6.0",
+    "ox": "^0.6.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.22.3"
+    "viem": "^2.22.8"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.15",
+    "@types/bun": "^1.1.16",
     "@types/node": "^22.10.5",
     "consola": "^3.3.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "knip": "^5.41.1",
+    "knip": "^5.42.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"
   },
