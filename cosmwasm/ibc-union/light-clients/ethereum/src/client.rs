@@ -100,6 +100,7 @@ impl ibc_union_light_client::IbcClient for EthereumLightClient {
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Header,
+        _caller: cosmwasm_std::Addr,
     ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;

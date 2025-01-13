@@ -99,6 +99,7 @@ impl ibc_union_light_client::IbcClient for MovementLightClient {
     fn verify_header(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
+        _caller: cosmwasm_std::Addr,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
         ibc_union_light_client::IbcClientError<Self>,

@@ -108,6 +108,7 @@ impl IbcClient for StateLensIcs23MptLightClient {
     fn verify_header(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
+        _caller: cosmwasm_std::Addr,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
         ibc_union_light_client::IbcClientError<Self>,

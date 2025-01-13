@@ -222,6 +222,7 @@ pub trait IbcClient: Sized {
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
+        caller: Addr,
     ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>>;
 
     fn misbehaviour(
@@ -327,14 +328,17 @@ pub fn query<T: IbcClient>(
 
             to_json_binary(&()).map_err(Into::into)
         }
-        QueryMsg::VerifyClientMessage { client_id } => {
+        QueryMsg::VerifyClientMessage { client_id, caller } => {
             let ibc_host = IBC_HOST.load(deps.storage)?;
             let message = QUERY_STORE.query(&deps.querier, ibc_host.clone())?;
             let header =
                 T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
 
-            let (height, client_state, consensus_state) =
-                T::verify_header(IbcClientCtx::new(client_id, ibc_host, deps, env), header)?;
+            let (height, client_state, consensus_state) = T::verify_header(
+                IbcClientCtx::new(client_id, ibc_host, deps, env),
+                header,
+                Addr::unchecked(caller),
+            )?;
 
             to_json_binary(&VerifyClientMessageUpdate {
                 height,
