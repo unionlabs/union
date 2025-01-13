@@ -602,6 +602,10 @@ _: {
                   jq --compact-output --slurp 'map(.abi) | add' \
                     ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
                     ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
+                    ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > state-lens-ics23-ics23-client.json
                 ''
             );
 
