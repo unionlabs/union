@@ -370,11 +370,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 print_json(&op);
             }
         }
-        Command::Rpc(rpc) => {
-            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(format!(
-                "http://{}",
-                get_voyager_config()?.voyager.rpc_laddr
-            ))?;
+        Command::Rpc { cmd, rpc_url: url } => {
+            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(url)?;
 
             let ibc_handlers = [
                 (IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>()),
@@ -383,7 +380,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             .into_iter()
             .collect::<HashMap<_, _>>();
 
-            match rpc {
+            match cmd {
                 RpcCmd::Info => print_json(&voyager_client.info().await?),
                 RpcCmd::ClientMeta {
                     on,

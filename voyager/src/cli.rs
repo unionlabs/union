@@ -9,6 +9,8 @@ use voyager_message::{
 };
 use voyager_vm::{BoxDynError, Op};
 
+use crate::config::default_rpc_laddr;
+
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
 pub struct AppArgs {
@@ -77,8 +79,19 @@ pub enum Command {
     #[command(subcommand)]
     Module(ModuleCmd),
     /// Call into the JSON-RPC of a running voyager instance.
-    #[command(subcommand)]
-    Rpc(RpcCmd),
+    Rpc {
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rpc_laddr()
+            )
+        )]
+        rpc_url: String,
+        #[command(subcommand)]
+        cmd: RpcCmd,
+    },
     #[command(subcommand)]
     Msg(MsgCmd),
 }
