@@ -792,7 +792,7 @@ fn update_client(
     mut deps: DepsMut,
     client_id: u32,
     client_message: Vec<u8>,
-    _relayer: Addr,
+    relayer: Addr,
 ) -> Result<Response, ContractError> {
     let client_impl = client_impl(deps.as_ref(), client_id)?;
     let update = {
@@ -801,7 +801,10 @@ fn update_client(
         QUERY_STORE.save(deps.storage, &client_message.into())?;
         let update = deps.querier.query_wasm_smart::<VerifyClientMessageUpdate>(
             &client_impl,
-            &LightClientQuery::VerifyClientMessage { client_id },
+            &LightClientQuery::VerifyClientMessage {
+                client_id,
+                caller: relayer.into(),
+            },
         )?;
         QUERY_STORE.remove(deps.storage);
         update

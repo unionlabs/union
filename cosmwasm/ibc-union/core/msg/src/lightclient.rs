@@ -62,6 +62,7 @@ pub enum QueryMsg {
     },
     VerifyClientMessage {
         client_id: u32,
+        caller: String,
     },
     Misbehaviour {
         client_id: u32,
