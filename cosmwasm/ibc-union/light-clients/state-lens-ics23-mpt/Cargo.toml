@@ -2,7 +2,7 @@
 authors      = ["Union Labs"]
 edition      = "2021"
 license-file = { workspace = true }
-name         = "evm-in-cosmos-light-client"
+name         = "state-lens-ics23-mpt-light-client"
 publish      = false
 version      = "0.1.0"
 
