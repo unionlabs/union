@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument};
 use unionlabs::{
+    bech32::Bech32,
     ibc::core::{
         channel::{self},
         client::height::Height,
@@ -78,6 +79,8 @@ pub struct Module {
     pub chunk_block_fetch_size: u64,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
+
+    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,6 +91,9 @@ pub struct Config {
     #[serde(default = "default_chunk_block_fetch_size")]
     pub chunk_block_fetch_size: u64,
     pub grpc_url: String,
+
+    #[serde(default)]
+    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 fn default_chunk_block_fetch_size() -> u64 {
@@ -126,6 +132,8 @@ impl Plugin for Module {
             grpc_url: config.grpc_url,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
             checksum_cache: Arc::new(DashMap::default()),
+
+            ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
 
@@ -476,8 +484,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .flat_map(|txr| {
                             txr.tx_result.events.into_iter().filter_map(move |event| {
                                 debug!(%event.ty, "observed event");
-                                CosmosSdkEvent::<IbcEvent>::new(event.clone())
-                                    .map(|event| (event, txr.hash))
+                                let event = CosmosSdkEvent::<IbcEvent>::new(event.clone())
                                     .inspect_err(|e| match e {
                                         cosmos_sdk_event::Error::Deserialize(error) => {
                                             debug!("unable to parse event: {error}")
@@ -486,7 +493,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                             error!("{e}");
                                         }
                                     })
-                                    .ok()
+                                    .ok()?;
+
+                                match (&event.contract_address, &self.ibc_host_contract_address) {
+                                    (None, None) => Some((event, txr.hash)),
+                                    (None, Some(_)) => Some((event, txr.hash)),
+                                    (Some(_), None) => None,
+                                    (Some(a), Some(b)) => {
+                                        if a == b {
+                                            Some((event, txr.hash))
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                }
                             })
                         })
                         // .collect::<Result<Vec<_>, _>>()
