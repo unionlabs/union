@@ -289,6 +289,7 @@ impl Module {
             ))
     }
 
+    // TODO: Remove
     async fn latest_height(&self) -> Result<Height, cometbft_rpc::JsonRpcError> {
         let commit_response = self.cometbft_client.commit(None).await?;
 
@@ -484,6 +485,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .flat_map(|txr| {
                             txr.tx_result.events.into_iter().filter_map(move |event| {
                                 debug!(%event.ty, "observed event");
+
                                 let event = CosmosSdkEvent::<IbcEvent>::new(event.clone())
                                     .inspect_err(|e| match e {
                                         cosmos_sdk_event::Error::Deserialize(error) => {
@@ -578,7 +580,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         info!("batch fetching blocks in range {height}..{next_height}");
 
                         Ok(conc(
-                            ((height.height() + 1)..next_height)
+                            (height.height()..next_height)
                                 .map(|h| {
                                     call(PluginMessage::new(
                                         self.plugin_name(),
@@ -1160,7 +1162,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ),
                         }))
                     }
-                    IbcEvent::UnionCreateClient {
+                    IbcEvent::WasmCreateClient {
                         client_id,
                         client_type,
                     } => {
@@ -1194,7 +1196,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionUpdateClient {
+                    IbcEvent::WasmUpdateClient {
                         client_id,
                         counterparty_height,
                     } => {
@@ -1229,7 +1231,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionConnectionOpenInit {
+                    IbcEvent::WasmConnectionOpenInit {
                         connection_id,
                         client_id,
                         counterparty_client_id,
@@ -1265,7 +1267,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionConnectionOpenTry {
+                    IbcEvent::WasmConnectionOpenTry {
                         connection_id,
                         client_id,
                         counterparty_client_id,
@@ -1303,7 +1305,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionConnectionOpenAck {
+                    IbcEvent::WasmConnectionOpenAck {
                         connection_id,
                         client_id,
                         counterparty_client_id,
@@ -1341,7 +1343,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionConnectionOpenConfirm {
+                    IbcEvent::WasmConnectionOpenConfirm {
                         connection_id,
                         client_id,
                         counterparty_client_id,
@@ -1379,7 +1381,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionChannelOpenInit {
+                    IbcEvent::WasmChannelOpenInit {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -1439,7 +1441,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionChannelOpenTry {
+                    IbcEvent::WasChannelOpenTry {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -1491,7 +1493,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionChannelOpenAck {
+                    IbcEvent::WasmChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -1553,7 +1555,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
 
-                    IbcEvent::UnionChannelOpenConfirm {
+                    IbcEvent::WasmChannelOpenConfirm {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -1614,7 +1616,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionSendPacket { packet } => {
+                    IbcEvent::WasmPacketSend { packet } => {
                         let source_channel = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -1691,7 +1693,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionAcknowledgePacket {
+                    IbcEvent::WasmPacketAck {
                         packet,
                         acknowledgement,
                     } => {
@@ -1772,7 +1774,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionRecvPacket {
+                    IbcEvent::WasmPacketRecv {
                         packet,
                         relayer_msg,
                     } => {
@@ -1867,7 +1869,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::UnionWriteAck {
+                    IbcEvent::WasmWriteAck {
                         packet,
                         acknowledgement,
                     } => {
