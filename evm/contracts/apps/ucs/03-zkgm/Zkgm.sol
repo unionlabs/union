@@ -685,6 +685,17 @@ contract UCS03Zkgm is
         return (wrappedToken, wrappedTokenSalt);
     }
 
+    function internalPredictWrappedTokenMemory(
+        uint256 path,
+        uint32 channel,
+        bytes memory token
+    ) internal view returns (address, bytes32) {
+        bytes32 wrappedTokenSalt = keccak256(abi.encode(path, channel, token));
+        address wrappedToken =
+            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
+        return (wrappedToken, wrappedTokenSalt);
+    }
+
     function predictWrappedToken(
         uint256 path,
         uint32 channel,
