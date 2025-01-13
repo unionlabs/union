@@ -187,7 +187,7 @@ pub enum IbcEvent {
 
     // events for the union IBC specification, emitted by the cosmwasm contract implementation.
     #[serde(rename = "wasm-create_client")]
-    UnionCreateClient {
+    WasmCreateClient {
         #[serde(with = "serde_utils::string")]
         client_id: u32,
         // TODO: Figure out if there's a better type we can use than string
@@ -197,7 +197,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-update_client")]
-    UnionUpdateClient {
+    WasmUpdateClient {
         #[serde(with = "serde_utils::string")]
         client_id: u32,
         #[serde(with = "serde_utils::string")]
@@ -205,7 +205,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-connection_open_init")]
-    UnionConnectionOpenInit {
+    WasmConnectionOpenInit {
         #[serde(with = "serde_utils::string")]
         connection_id: u32,
         #[serde(with = "serde_utils::string")]
@@ -215,7 +215,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-connection_open_try")]
-    UnionConnectionOpenTry {
+    WasmConnectionOpenTry {
         #[serde(with = "serde_utils::string")]
         connection_id: u32,
         #[serde(with = "serde_utils::string")]
@@ -227,7 +227,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-connection_open_ack")]
-    UnionConnectionOpenAck {
+    WasmConnectionOpenAck {
         #[serde(with = "serde_utils::string")]
         connection_id: u32,
         #[serde(with = "serde_utils::string")]
@@ -239,7 +239,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-connection_open_confirm")]
-    UnionConnectionOpenConfirm {
+    WasmConnectionOpenConfirm {
         #[serde(with = "serde_utils::string")]
         connection_id: u32,
         #[serde(with = "serde_utils::string")]
@@ -251,7 +251,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-channel_open_init")]
-    UnionChannelOpenInit {
+    WasmChannelOpenInit {
         port_id: String,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
@@ -262,7 +262,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-channel_open_try")]
-    UnionChannelOpenTry {
+    WasChannelOpenTry {
         port_id: String,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
@@ -275,7 +275,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-channel_open_ack")]
-    UnionChannelOpenAck {
+    WasmChannelOpenAck {
         port_id: String,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
@@ -287,7 +287,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-channel_open_confirm")]
-    UnionChannelOpenConfirm {
+    WasmChannelOpenConfirm {
         port_id: String,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
@@ -298,28 +298,28 @@ pub enum IbcEvent {
         connection_id: u32,
     },
 
-    #[serde(rename = "wasm-send_packet")]
-    UnionSendPacket {
+    #[serde(rename = "wasm-packet_send")]
+    WasmPacketSend {
         #[serde(with = "stringified_json")]
         packet: ibc_solidity::Packet,
     },
 
-    #[serde(rename = "wasm-recv_packet")]
-    UnionRecvPacket {
+    #[serde(rename = "wasm-packet_recv")]
+    WasmPacketRecv {
         #[serde(with = "stringified_json")]
         packet: ibc_solidity::Packet,
         relayer_msg: Bytes<HexUnprefixed>,
     },
 
-    #[serde(rename = "wasm-acknowledge_packet")]
-    UnionAcknowledgePacket {
+    #[serde(rename = "wasm-packet_ack")]
+    WasmPacketAck {
         #[serde(with = "stringified_json")]
         packet: ibc_solidity::Packet,
         acknowledgement: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-write_ack")]
-    UnionWriteAck {
+    WasmWriteAck {
         #[serde(with = "stringified_json")]
         packet: ibc_solidity::Packet,
         acknowledgement: Bytes<HexUnprefixed>,
@@ -365,11 +365,12 @@ pub mod height_list_comma_separated {
     };
     use unionlabs::ibc::core::client::height::Height;
 
+    #[allow(clippy::ptr_arg)] // required by serde
     pub fn serialize<S>(data: &Vec<Height>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        data.into_iter()
+        data.iter()
             .map(|height| format!("{height:#}"))
             .collect::<Vec<_>>()
             .join(",")
@@ -409,22 +410,22 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket { .. } => "acknowledge_packet",
             IbcEvent::TimeoutPacket { .. } => "timeout_packet",
 
-            IbcEvent::UnionCreateClient { .. } => "create_client",
-            IbcEvent::UnionUpdateClient { .. } => "update_client",
+            IbcEvent::WasmCreateClient { .. } => "create_client",
+            IbcEvent::WasmUpdateClient { .. } => "update_client",
             // IbcEvent::UnionClientMisbehaviour{..} => "client_misbehaviour",
             // IbcEvent::UnionSubmitEvidence{..} => "submit_evidence",
-            IbcEvent::UnionConnectionOpenInit { .. } => "connection_open_init",
-            IbcEvent::UnionConnectionOpenTry { .. } => "connection_open_try",
-            IbcEvent::UnionConnectionOpenAck { .. } => "connection_open_ack",
-            IbcEvent::UnionConnectionOpenConfirm { .. } => "connection_open_confirm",
-            IbcEvent::UnionChannelOpenInit { .. } => "channel_open_init",
-            IbcEvent::UnionChannelOpenTry { .. } => "channel_open_try",
-            IbcEvent::UnionChannelOpenAck { .. } => "channel_open_ack",
-            IbcEvent::UnionChannelOpenConfirm { .. } => "channel_open_confirm",
-            IbcEvent::UnionRecvPacket { .. } => "recv_packet",
-            IbcEvent::UnionSendPacket { .. } => "send_packet",
-            IbcEvent::UnionAcknowledgePacket { .. } => "acknowledge_packet",
-            IbcEvent::UnionWriteAck { .. } => "write_ack",
+            IbcEvent::WasmConnectionOpenInit { .. } => "connection_open_init",
+            IbcEvent::WasmConnectionOpenTry { .. } => "connection_open_try",
+            IbcEvent::WasmConnectionOpenAck { .. } => "connection_open_ack",
+            IbcEvent::WasmConnectionOpenConfirm { .. } => "connection_open_confirm",
+            IbcEvent::WasmChannelOpenInit { .. } => "channel_open_init",
+            IbcEvent::WasChannelOpenTry { .. } => "channel_open_try",
+            IbcEvent::WasmChannelOpenAck { .. } => "channel_open_ack",
+            IbcEvent::WasmChannelOpenConfirm { .. } => "channel_open_confirm",
+            IbcEvent::WasmPacketRecv { .. } => "recv_packet",
+            IbcEvent::WasmPacketSend { .. } => "send_packet",
+            IbcEvent::WasmPacketAck { .. } => "acknowledge_packet",
+            IbcEvent::WasmWriteAck { .. } => "write_ack",
             // IbcEvent::UnionTimeoutPacket{..} => "timeout_packet",
         }
     }
