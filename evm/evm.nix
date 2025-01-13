@@ -441,389 +441,392 @@ _: {
         );
     in
     {
-      packages =
-        {
-          # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-          generate-sol-proto = mkCi false (
-            pkgs.writeShellApplication {
-              name = "generate-sol-proto";
-              runtimeInputs = [ pkgs.protobuf ];
-              text =
-                let
-                  solidity-protobuf = pkgs.stdenv.mkDerivation {
-                    name = "solidity-protobuf";
-                    version = "0.0.1";
-                    src = pkgs.fetchFromGitHub {
-                      owner = "CyrusVorwald";
-                      repo = "solidity-protobuf";
-                      rev = "1c323bed92d373d6c4d6c728c8dd9f76cf4b5a0c";
-                      hash = "sha256-1obEhMjaLToaSk920CiJwfhkw+LDgY5Y/b7SpkeuqDE=";
-                    };
-                    buildInputs = [
-                      (pkgs.python3.withPackages (
-                        ps: with ps; [
-                          protobuf
-                          wrapt
-                        ]
-                      ))
-                    ];
-                    buildPhase = "true";
-                    installPhase = ''
-                      mkdir $out
-                      cp -r $src/* $out
-                    '';
+      packages = {
+        # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
+        generate-sol-proto = mkCi false (
+          pkgs.writeShellApplication {
+            name = "generate-sol-proto";
+            runtimeInputs = [ pkgs.protobuf ];
+            text =
+              let
+                solidity-protobuf = pkgs.stdenv.mkDerivation {
+                  name = "solidity-protobuf";
+                  version = "0.0.1";
+                  src = pkgs.fetchFromGitHub {
+                    owner = "CyrusVorwald";
+                    repo = "solidity-protobuf";
+                    rev = "1c323bed92d373d6c4d6c728c8dd9f76cf4b5a0c";
+                    hash = "sha256-1obEhMjaLToaSk920CiJwfhkw+LDgY5Y/b7SpkeuqDE=";
                   };
-                  protoIncludes = ''-I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
-                in
-                ''
-                  plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
-                  # find ${proto.ibc-go}/proto -name "$1" |\
-                  # while read -r file; do
-                  #   echo "Generating $file"
-                  #   protoc \
-                  #     ${protoIncludes} \
-                  #    -I"$plugindir/include" \
-                  #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                  #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                  #     "$file"
-                  # done
-                  # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
-                  # while read -r file; do
-                  #   echo "Generating $file"
-                  #   protoc \
-                  #     ${protoIncludes} \
-                  #    -I"$plugindir/include" \
-                  #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                  #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                  #     "$file"
-                  # done
+                  buildInputs = [
+                    (pkgs.python3.withPackages (
+                      ps: with ps; [
+                        protobuf
+                        wrapt
+                      ]
+                    ))
+                  ];
+                  buildPhase = "true";
+                  installPhase = ''
+                    mkdir $out
+                    cp -r $src/* $out
+                  '';
+                };
+                protoIncludes = ''-I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
+              in
+              ''
+                plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
+                # find ${proto.ibc-go}/proto -name "$1" |\
+                # while read -r file; do
+                #   echo "Generating $file"
+                #   protoc \
+                #     ${protoIncludes} \
+                #    -I"$plugindir/include" \
+                #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                #     "$file"
+                # done
+                # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
+                # while read -r file; do
+                #   echo "Generating $file"
+                #   protoc \
+                #     ${protoIncludes} \
+                #    -I"$plugindir/include" \
+                #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                #     "$file"
+                # done
 
-                  find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
-                  while read -r file; do
-                    echo "Generating $file"
-                    protoc \
-                      ${protoIncludes} \
-                     -I"$plugindir/include" \
-                     --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                     --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                      "$file"
-                  done
-                '';
-            }
-          );
+                find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
+                while read -r file; do
+                  echo "Generating $file"
+                  protoc \
+                    ${protoIncludes} \
+                   -I"$plugindir/include" \
+                   --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                   --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                    "$file"
+                done
+              '';
+          }
+        );
 
-          evm-contracts = mkCi (system == "x86_64-linux") (
-            pkgs.stdenv.mkDerivation {
-              name = "evm-contracts";
-              src = evmSources;
-              buildInputs = [
-                wrappedForge
-                pkgs.solc
-              ];
-              buildPhase = ''
-                forge --version
-                FOUNDRY_PROFILE=script forge build --sizes
-              '';
-              doCheck = true;
-              checkPhase = ''
-                FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
-              '';
-              installPhase = ''
+        evm-contracts = mkCi (system == "x86_64-linux") (
+          pkgs.stdenv.mkDerivation {
+            name = "evm-contracts";
+            src = evmSources;
+            buildInputs = [
+              wrappedForge
+              pkgs.solc
+            ];
+            buildPhase = ''
+              forge --version
+              FOUNDRY_PROFILE=script forge build --sizes
+            '';
+            doCheck = true;
+            checkPhase = ''
+              FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
+            '';
+            installPhase = ''
+              mkdir -p $out
+              mv out $out
+              mv cache $out
+            '';
+          }
+        );
+
+        # Stack too deep :), again
+        #
+        # solidity-coverage =
+        #   pkgs.runCommand "solidity-coverage"
+        #     {
+        #       buildInputs = [
+        #         self'.packages.forge
+        #         pkgs.lcov
+        #       ];
+        #     }
+        #     ''
+        #         cp --no-preserve=mode -r ${evmSources}/* .
+        #         FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+        #         lcov --remove ./lcov.info -o ./lcov.info.pruned \
+        #           'contracts/Multicall.sol' \
+        #           'contracts/apps/ucs/00-pingpong/*' \
+        #           'contracts/lib/*' \
+        #           'contracts/core/OwnableIBCHandler.sol' \
+        #           'contracts/core/24-host/IBCCommitment.sol' \
+        #           'contracts/core/25-handler/IBCHandler.sol' \
+        #           'tests/*'
+        #         genhtml lcov.info.pruned -o $out --branch-coverage
+        #       mv lcov.info.pruned $out/lcov.info
+        #     '';
+        # show-solidity-coverage = pkgs.writeShellApplication {
+        #   name = "show-solidity-coverage";
+        #   runtimeInputs = [ ];
+        #   text = ''
+        #     xdg-open ${self'.packages.solidity-coverage}/index.html
+        #   '';
+        # };
+
+        hubble-abis =
+          let
+            contracts = self'.packages.evm-contracts;
+          in
+          mkCi false (
+            pkgs.runCommand "hubble-abis"
+              {
+                buildInputs = [ pkgs.jq ];
+              }
+              ''
                 mkdir -p $out
-                mv out $out
-                mv cache $out
-              '';
-            }
+                cd $out
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > ibc-handler.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/Relay.sol/IRelay.json \
+                  ${contracts}/out/Relay.sol/UCS01Relay.json \
+                  ${contracts}/out/Relay.sol/RelayLib.json \
+                  ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/NFT.sol/NFTLib.json \
+                  ${contracts}/out/NFT.sol/NFTPacketLib.json \
+                  ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/Zkgm.sol/ZkgmLib.json \
+                  ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
+                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
+                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > state-lens-ics23-ics23-client.json
+              ''
           );
 
-          # Stack too deep :), again
-          #
-          # solidity-coverage =
-          #   pkgs.runCommand "solidity-coverage"
-          #     {
-          #       buildInputs = [
-          #         self'.packages.forge
-          #         pkgs.lcov
-          #       ];
-          #     }
-          #     ''
-          #         cp --no-preserve=mode -r ${evmSources}/* .
-          #         FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-          #         lcov --remove ./lcov.info -o ./lcov.info.pruned \
-          #           'contracts/Multicall.sol' \
-          #           'contracts/apps/ucs/00-pingpong/*' \
-          #           'contracts/lib/*' \
-          #           'contracts/core/OwnableIBCHandler.sol' \
-          #           'contracts/core/24-host/IBCCommitment.sol' \
-          #           'contracts/core/25-handler/IBCHandler.sol' \
-          #           'tests/*'
-          #         genhtml lcov.info.pruned -o $out --branch-coverage
-          #       mv lcov.info.pruned $out/lcov.info
-          #     '';
-          # show-solidity-coverage = pkgs.writeShellApplication {
-          #   name = "show-solidity-coverage";
-          #   runtimeInputs = [ ];
-          #   text = ''
-          #     xdg-open ${self'.packages.solidity-coverage}/index.html
-          #   '';
-          # };
+        solidity-build-tests = pkgs.writeShellApplication {
+          name = "run-solidity-build-tests";
+          runtimeInputs = [ self'.packages.forge ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
+          '';
+        };
 
-          hubble-abis =
-            let
-              contracts = self'.packages.evm-contracts;
-            in
-            mkCi false (
-              pkgs.runCommand "hubble-abis"
-                {
-                  buildInputs = [ pkgs.jq ];
-                }
-                ''
-                  mkdir -p $out
-                  cd $out
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > ibc-handler.json
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/Relay.sol/IRelay.json \
-                    ${contracts}/out/Relay.sol/UCS01Relay.json \
-                    ${contracts}/out/Relay.sol/RelayLib.json \
-                    ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/NFT.sol/NFTLib.json \
-                    ${contracts}/out/NFT.sol/NFTPacketLib.json \
-                    ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/Zkgm.sol/ZkgmLib.json \
-                    ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
-                    ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
-
-                  jq --compact-output --slurp 'map(.abi) | add' \
-                    ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
-                    ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > state-lens-ics23-ics23-client.json
-                ''
-            );
-
-          solidity-build-tests = pkgs.writeShellApplication {
-            name = "run-solidity-build-tests";
-            runtimeInputs = [ self'.packages.forge ];
+        evm-contracts-addresses = mkCi false (
+          pkgs.writeShellApplication {
+            name = "evm-contracts-addresses";
+            runtimeInputs = [
+              self'.packages.forge
+              pkgs.jq
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
-              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              DEPLOYER="$1" \
+                SENDER="$2" \
+                OUTPUT="contracts.json" \
+                FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
+
+              popd
+              cp "$OUT"/contracts.json contracts.json
+              rm -rf "$OUT"
             '';
-          };
+          }
+        );
 
-          evm-contracts-addresses = mkCi false (
-            pkgs.writeShellApplication {
-              name = "evm-contracts-addresses";
-              runtimeInputs = [
-                self'.packages.forge
-                pkgs.jq
-              ];
+        forge = wrappedForge;
+
+        evm-sources = evmSources;
+
+        evm-deployer-image =
+          let
+            forge-deploy = pkgs.writeShellApplication {
+              name = "forge-deploy";
+              runtimeInputs = [ self'.packages.forge ];
               text = ''
-                ${ensureAtRepositoryRoot}
-                OUT="$(mktemp -d)"
-                pushd "$OUT"
+                mkdir -p /evm
+                cd /evm
                 cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-                cp --no-preserve=mode -r ${evmSources}/* .
-
-                DEPLOYER="$1" \
-                  SENDER="$2" \
-                  OUTPUT="contracts.json" \
-                  FOUNDRY_PROFILE="script" \
-                  forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
-
-                popd
-                cp "$OUT"/contracts.json contracts.json
-                rm -rf "$OUT"
+                cp --no-preserve=mode -r ${self'.packages.evm-sources}/* .
+                FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url "$RPC_URL" --broadcast
               '';
+            };
+          in
+          mkCi (system == "x86_64-linux") (
+            pkgs.dockerTools.buildLayeredImage {
+              name = "evm-deployer-image";
+              contents = [
+                pkgs.coreutils
+                pkgs.curl
+                pkgs.jq
+                forge-deploy
+                self'.packages.evm-sources
+                self'.packages.evm-contracts
+              ];
+              config = {
+                Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
+                Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+              };
             }
           );
-
-          forge = wrappedForge;
-
-          evm-sources = evmSources;
-
-          evm-deployer-image =
-            let
-              forge-deploy = pkgs.writeShellApplication {
-                name = "forge-deploy";
-                runtimeInputs = [ self'.packages.forge ];
-                text = ''
-                  mkdir -p /evm
-                  cd /evm
-                  cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-                  cp --no-preserve=mode -r ${self'.packages.evm-sources}/* .
-                  FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url "$RPC_URL" --broadcast
-                '';
-              };
-            in
-            mkCi (system == "x86_64-linux") (
-              pkgs.dockerTools.buildLayeredImage {
-                name = "evm-deployer-image";
-                contents = [
-                  pkgs.coreutils
-                  pkgs.curl
-                  pkgs.jq
-                  forge-deploy
-                  self'.packages.evm-sources
-                  self'.packages.evm-contracts
-                ];
-                config = {
-                  Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
-                  Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
-                };
-              }
-            );
-        }
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-verify-${args.network}";
-            value = eth-verify args;
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}-full";
-            value = eth-deploy-full args;
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}";
-            value = eth-deploy args;
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}-state-lens-ics23-mpt-client";
-            value = eth-deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}-state-lens-ics23-ics23-client";
-            value = eth-deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}-ucs03";
-            value = eth-deploy-single ({ kind = "UCS03"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-deploy-${args.network}-multicall";
-            value = eth-deploy-single ({ kind = "Multicall"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-dryupgrade-${args.network}-ucs01";
-            value = eth-upgrade (
-              {
-                dry = true;
-                protocol = "UCS01";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-dryupgrade-${args.network}-cometbls-client";
-            value = eth-upgrade (
-              {
-                dry = true;
-                protocol = "CometblsClient";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-ucs03";
-            value = eth-upgrade (
-              {
-                dry = false;
-                protocol = "UCS03";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-state-lens-ics23-mpt-client";
-            value = eth-upgrade (
-              {
-                dry = false;
-                protocol = "StateLensIcs23MptClient";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-state-lens-ics23-ics23-client";
-            value = eth-upgrade (
-              {
-                dry = false;
-                protocol = "StateLensIcs23Ics23Client";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-dryupgrade-${args.network}-ibc";
-            value = eth-upgrade (
-              {
-                dry = true;
-                protocol = "IBCHandler";
-              }
-              // args
-            );
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-ucs00";
-            value = eth-upgrade ({ protocol = "UCS00"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-ucs01";
-            value = eth-upgrade ({ protocol = "UCS01"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-ucs00";
-            value = eth-upgrade ({ protocol = "UCS00"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-cometbls-client";
-            value = eth-upgrade ({ protocol = "CometblsClient"; } // args);
-          }) networks
-        )
-        // builtins.listToAttrs (
-          builtins.map (args: {
-            name = "eth-upgrade-${args.network}-ibc";
-            value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
-          }) networks
-        );
+        eth-scripts =
+          (derivation {
+            name = "eth-scripts-empty-derivation-to-make-top-level-packages-happy";
+          })
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-verify-${args.network}";
+              value = eth-verify args;
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}-full";
+              value = eth-deploy-full args;
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}";
+              value = eth-deploy args;
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}-state-lens-ics23-mpt-client";
+              value = eth-deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}-state-lens-ics23-ics23-client";
+              value = eth-deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}-ucs03";
+              value = eth-deploy-single ({ kind = "UCS03"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-deploy-${args.network}-multicall";
+              value = eth-deploy-single ({ kind = "Multicall"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-dryupgrade-${args.network}-ucs01";
+              value = eth-upgrade (
+                {
+                  dry = true;
+                  protocol = "UCS01";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-dryupgrade-${args.network}-cometbls-client";
+              value = eth-upgrade (
+                {
+                  dry = true;
+                  protocol = "CometblsClient";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-ucs03";
+              value = eth-upgrade (
+                {
+                  dry = false;
+                  protocol = "UCS03";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-state-lens-ics23-mpt-client";
+              value = eth-upgrade (
+                {
+                  dry = false;
+                  protocol = "StateLensIcs23MptClient";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-state-lens-ics23-ics23-client";
+              value = eth-upgrade (
+                {
+                  dry = false;
+                  protocol = "StateLensIcs23Ics23Client";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-dryupgrade-${args.network}-ibc";
+              value = eth-upgrade (
+                {
+                  dry = true;
+                  protocol = "IBCHandler";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-ucs00";
+              value = eth-upgrade ({ protocol = "UCS00"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-ucs01";
+              value = eth-upgrade ({ protocol = "UCS01"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-ucs00";
+              value = eth-upgrade ({ protocol = "UCS00"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-cometbls-client";
+              value = eth-upgrade ({ protocol = "CometblsClient"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-ibc";
+              value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
+            }) networks
+          );
+      };
     };
 }
