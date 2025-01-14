@@ -32,6 +32,39 @@ module ucs03::ethabi {
         vector::append(buf, padding);
     }
 
+    public fun encode_bytes32(buf: &mut vector<u8>, bytes: &vector<u8>) {
+        let len = vector::length(bytes);
+        vector::append(buf, *bytes);
+        // Calculate padding to align to 32 bytes
+        let padding_len = (32 - (len % 32)) % 32;
+        let padding = vector::empty<u8>();
+        let i = 0;
+        while (i < padding_len) {
+            vector::push_back(&mut padding, 0);
+            i = i + 1;
+        };
+        // Append the padding
+        vector::append(buf, padding);
+    }
+
+    public fun decode_bytes32(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        // Decode the length of the bytes array
+        // let len_bytes = vector::slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
+        // vector::reverse(&mut len_bytes); // Convert to big-endian format
+        // let len: u64 = (from_bcs::to_u256(len_bytes) as u64); // Convert the length bytes to u64
+        // *index = *index + 32; // Move the index forward after reading the length
+        // Decode the actual bytes
+        let len: u64 = 32;
+        let byte_data = vector::slice(buf, *index, *index + len); // Extract the bytes of the given length
+        *index = *index + len; // Move the index forward after reading the byte data
+
+        // Skip padding to align to 32-byte boundary
+        let padding_len = (32 - (len % 32)) % 32;
+        *index = *index + padding_len; // Adjust the index to skip the padding
+
+        byte_data // Return the decoded bytes
+    }
+
     public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
         // Decode the length of the bytes array
         let len_bytes = vector::slice(buf, *index, *index + 32); // Extract the next 32 bytes for length

@@ -67,7 +67,7 @@ module ucs03::zkgm_relay {
     struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,
-        syscall: vector<u8>
+        instruction: Instruction
     }
 
     struct Instruction has copy, drop, store {
@@ -630,60 +630,37 @@ module ucs03::zkgm_relay {
     //     }
     // }
 
-    // public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
-    //     let buf = vector::empty<u8>();
-    //     ethabi::encode_uint<u8>(&mut buf, 0x20);
-    //     ethabi::encode_uint<u8>(&mut buf, 0x60);
-    //     ethabi::encode_uint<u256>(&mut buf, packet.path);
+    public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
+        let buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        ethabi::encode_bytes32(&mut buf, &packet.salt);
+        ethabi::encode_uint<u256>(&mut buf, packet.path);
+        ethabi::encode_uint<u8>(&mut buf, 0x60);
 
-    //     let version_offset = 0x20 * 4;
-    //     ethabi::encode_uint<u32>(
-    //         &mut buf,
-    //         version_offset + ((vector::length(&packet.salt) * 0x20) as u32)
-    //     );
+	    let ins_buf = encode_instruction(packet.instruction);
+	    vector::append(&mut buf, ins_buf);
 
-    //     ethabi::encode_vector<u8>(
-    //         &mut buf,
-    //         &packet.salt,
-    //         |some_variable, data| {
-    //             ethabi::encode_uint<u8>(some_variable, *data);
-    //         }
-    //     );
+        buf
+    }
 
-    //     ethabi::encode_vector<u8>(
-    //         &mut buf,
-    //         &packet.syscall,
-    //         |some_variable, data| {
-    //             ethabi::encode_uint<u8>(some_variable, *data);
-    //         }
-    //     );
+    public fun decode_packet(buf: vector<u8>): ZkgmPacket {
+        let index = 0x20;
+        let salt = ethabi::decode_bytes32(&buf, &mut index);
+        let path = ethabi::decode_uint(&buf, &mut index);
+        index = index + 0x20;
+        let version = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+        index = index + 0x20;
+        let operand = ethabi::decode_bytes(&buf, &mut index);
 
-    //     buf
-    // }
+        let instruction = Instruction {
+            version: version,
+            opcode: opcode,
+            operand: operand
+        };
 
-    // public fun decode_packet(buf: vector<u8>): ZkgmPacket {
-    //     let index = 0x40;
-    //     let packet_path = ethabi::decode_uint(&buf, &mut index);
-    //     index = index + 0x20;
-    //     let salt =
-    //         ethabi::decode_vector<u8>(
-    //             &buf,
-    //             &mut index,
-    //             |buf, index| {
-    //                 (ethabi::decode_uint(buf, index) as u8)
-    //             }
-    //         );
-    //     let syscall =
-    //         ethabi::decode_vector<u8>(
-    //             &buf,
-    //             &mut index,
-    //             |buf, index| {
-    //                 (ethabi::decode_uint(buf, index) as u8)
-    //             }
-    //         );
-
-    //     ZkgmPacket { salt: salt, path: packet_path, syscall: syscall }
-    // }
+        ZkgmPacket { salt: salt, path: path, instruction: instruction }
+    }
 
     // public fun predict_wrapped_token(
     //     path: u256, destination_channel: u32, token: vector<u8>
@@ -1801,20 +1778,28 @@ module ucs03::zkgm_relay {
     //     assert!(update_channel_path(44, 22) == 94489280556, 1);
     // }
 
-    // #[test]
-    // fun test_zkgm_encode_decode() {
-    //     let output =
-    //         x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-    //     let zkgm_data = ZkgmPacket { salt: b"helloo", path: 3333334, syscall: b"hellloo" };
+    #[test]
+    fun test_zkgm_encode_decode() {
+        let output =
+            x"000000000000000000000000000000000000000000000000000000000000002068656c6c6f6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
 
-    //     let zkgm_bytes = encode_packet(&zkgm_data);
-    //     assert!(zkgm_bytes == output, 0);
+        let instruction1 = Instruction {
+            version: 111,
+            opcode: 222,
+            operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
+        };
 
-    //     let zkgm_data_decoded = decode_packet(zkgm_bytes);
-    //     assert!(zkgm_data_decoded.salt == b"helloo", 1);
-    //     assert!(zkgm_data_decoded.path == 3333334, 2);
-    //     assert!(zkgm_data_decoded.syscall == b"hellloo", 3);
-    // }
+        let zkgm_data = ZkgmPacket { salt: x"68656c6c6f6f0000000000000000000000000000000000000000000000000000", path: 3333334, instruction: instruction1 };
+
+        let zkgm_bytes = encode_packet(&zkgm_data);
+        assert!(zkgm_bytes == output, 0);
+
+        let zkgm_data_decoded = decode_packet(zkgm_bytes);
+
+        assert!(zkgm_data_decoded.salt == x"68656c6c6f6f0000000000000000000000000000000000000000000000000000", 1);
+        assert!(zkgm_data_decoded.path == 3333334, 2);
+        assert!(zkgm_data_decoded.instruction == instruction1, 3);
+    }
 
     // #[test]
     // fun test_decode_syscall() {
