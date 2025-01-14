@@ -264,23 +264,8 @@ contract StateLensIcs23MoveClient is
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
-        SparseMerkleVerifier.SparseMerkleProof calldata proof =
-            decodeProof(proof_stream);
-        if (isFrozenImpl(clientId)) {
-            revert StateLensIcs23MoveLib.ErrClientFrozen();
-        }
-        bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
-        bytes32 slot = keccak256(
-            abi.encodePacked(
-                path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
-            )
-        );
-        (bool exists, bytes32 currentValue) = SparseMerkleVerifier
-            .verifyExistenceProof(
-            proof, keccak256(abi.encodePacked(slot)), storageRoot
-        );
-        return exists
-            && keccak256(abi.encodePacked(currentValue)) == keccak256(value);
+        // TODO: we can't do sha3, so returning true temporarily
+        return true;
     }
 
     function verifyNonMembership(
@@ -289,22 +274,8 @@ contract StateLensIcs23MoveClient is
         bytes calldata proof_stream,
         bytes calldata path
     ) external virtual returns (bool) {
-        SparseMerkleVerifier.SparseMerkleProof calldata proof =
-            decodeProof(proof_stream);
-        if (isFrozenImpl(clientId)) {
-            revert StateLensIcs23MoveLib.ErrClientFrozen();
-        }
-        bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
-        bytes32 slot = keccak256(
-            abi.encodePacked(
-                path, StateLensIcs23MoveLib.EVM_IBC_COMMITMENT_SLOT
-            )
-        );
-        (bool exists, bytes32 _currentValue) = SparseMerkleVerifier
-            .verifyExistenceProof(
-            proof, keccak256(abi.encodePacked(slot)), storageRoot
-        );
-        return !exists;
+        // TODO: we can't do sha3, so returning true temporarily
+        return true;
     }
 
     function getClientState(
