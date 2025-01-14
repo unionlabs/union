@@ -451,7 +451,8 @@ module ucs03::zkgm_relay {
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
                 ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                let instructions_encoded = encode_instruction(*vector::borrow(&pack.instructions, 0));
+                let instructions_encoded =
+                    encode_instruction(*vector::borrow(&pack.instructions, 0));
                 vector::append(&mut buf, instructions_encoded);
                 // ethabi::encode_vector<u8>(
                 //     &mut buf,
@@ -470,17 +471,22 @@ module ucs03::zkgm_relay {
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
-            let prev_length = ((vector::length(
-                &vector::borrow(&pack.instructions, idx - 1).operand
-            ) / 32) as u32) + 1;
-            ethabi::encode_uint<u32>(&mut buf, prev_val
-                + (0x20 * 4) + ((prev_length * 0x20) as u32));
+            let prev_length =
+                ((
+                    vector::length(&vector::borrow(&pack.instructions, idx - 1).operand)
+                        / 32
+                ) as u32) + 1;
+            ethabi::encode_uint<u32>(
+                &mut buf,
+                prev_val + (0x20 * 4) + ((prev_length * 0x20) as u32)
+            );
             prev_val = prev_val + (4 * 0x20) + (((prev_length * 0x20) as u32));
             idx = idx + 1;
         };
         idx = 0;
         while (idx < ack_arr_len) {
-            let instructions_encoded = encode_instruction(*vector::borrow(&pack.instructions, idx));
+            let instructions_encoded =
+                encode_instruction(*vector::borrow(&pack.instructions, idx));
             vector::append(&mut buf, instructions_encoded);
             // ethabi::encode_vector<u8>(
             //     &mut buf,
@@ -557,12 +563,8 @@ module ucs03::zkgm_relay {
         let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
         index = index + 0x20;
         let operand = ethabi::decode_bytes(&buf, &mut index);
-        
-        let instruction = Instruction {
-            version: version,
-            opcode: opcode,
-            operand: operand
-        };
+
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
 
         ForwardPacket {
             channel_id: (channel_id as u32),
@@ -637,8 +639,8 @@ module ucs03::zkgm_relay {
         ethabi::encode_uint<u256>(&mut buf, packet.path);
         ethabi::encode_uint<u8>(&mut buf, 0x60);
 
-	    let ins_buf = encode_instruction(packet.instruction);
-	    vector::append(&mut buf, ins_buf);
+        let ins_buf = encode_instruction(packet.instruction);
+        vector::append(&mut buf, ins_buf);
 
         buf
     }
@@ -653,11 +655,7 @@ module ucs03::zkgm_relay {
         index = index + 0x20;
         let operand = ethabi::decode_bytes(&buf, &mut index);
 
-        let instruction = Instruction {
-            version: version,
-            opcode: opcode,
-            operand: operand
-        };
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
 
         ZkgmPacket { salt: salt, path: path, instruction: instruction }
     }
@@ -1045,10 +1043,7 @@ module ucs03::zkgm_relay {
         }
     }
 
-    public fun on_timeout_packet(
-        ibc_packet: Packet,
-        relayer: address
-    ) acquires RelayStore, SignerRef {
+    public fun on_timeout_packet(ibc_packet: Packet, relayer: address) acquires RelayStore, SignerRef {
         // TODO: Missing functionalities here
         // Decode the packet data
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
@@ -1060,17 +1055,14 @@ module ucs03::zkgm_relay {
                 packet_hash,
                 packet::default()
             );
-    
+
         if (packet::timeout_timestamp(parent) != 0
             || packet::timeout_height(parent) != 0) {
-                let ack = Acknowledgement { 
-                    tag: ACK_FAILURE,
-                    inner_ack: ACK_EMPTY
-                };
-                ibc::ibc::write_acknowledgement(*parent, encode_ack(&ack));
-                smart_table::upsert(
-                    &mut store.in_flight_packet, packet_hash, packet::default()
-                );
+            let ack = Acknowledgement { tag: ACK_FAILURE, inner_ack: ACK_EMPTY };
+            ibc::ibc::write_acknowledgement(*parent, encode_ack(&ack));
+            smart_table::upsert(
+                &mut store.in_flight_packet, packet_hash, packet::default()
+            );
         } else {
             let packet_data = ibc::packet::data(&ibc_packet);
 
@@ -1171,7 +1163,7 @@ module ucs03::zkgm_relay {
                 ibc_packet,
                 relayer,
                 salt,
-                *vector::borrow(&batch_packet.instructions, i),
+                *vector::borrow(&batch_packet.instructions, i)
             );
         };
     }
@@ -1500,11 +1492,7 @@ module ucs03::zkgm_relay {
         opcode: u8,
         operand: vector<u8>
     ) acquires SignerRef, RelayStore {
-        let instruction = Instruction {
-            version: version,
-            opcode: opcode,
-            operand: operand
-        };
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
         verify_internal(sender, channel_id, 0, instruction);
         ibc::ibc::send_packet(
             &get_signer(),
@@ -1810,14 +1798,22 @@ module ucs03::zkgm_relay {
             operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
         };
 
-        let zkgm_data = ZkgmPacket { salt: x"68656c6c6f6f0000000000000000000000000000000000000000000000000000", path: 3333334, instruction: instruction1 };
+        let zkgm_data = ZkgmPacket {
+            salt: x"68656c6c6f6f0000000000000000000000000000000000000000000000000000",
+            path: 3333334,
+            instruction: instruction1
+        };
 
         let zkgm_bytes = encode_packet(&zkgm_data);
         assert!(zkgm_bytes == output, 0);
 
         let zkgm_data_decoded = decode_packet(zkgm_bytes);
 
-        assert!(zkgm_data_decoded.salt == x"68656c6c6f6f0000000000000000000000000000000000000000000000000000", 1);
+        assert!(
+            zkgm_data_decoded.salt
+                == x"68656c6c6f6f0000000000000000000000000000000000000000000000000000",
+            1
+        );
         assert!(zkgm_data_decoded.path == 3333334, 2);
         assert!(zkgm_data_decoded.instruction == instruction1, 3);
     }
@@ -1948,7 +1944,7 @@ module ucs03::zkgm_relay {
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002668686820776f726c6468656c6c6f20777777776c6f20776f726c6468656c6c6f20776f726c64000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000370000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000086272726168686868000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
-        
+
         let instruction1 = Instruction {
             version: 111,
             opcode: 222,
@@ -1961,11 +1957,7 @@ module ucs03::zkgm_relay {
             operand: b"hhh worldhello wwwwlo worldhello world"
         };
 
-        let instruction3 = Instruction {
-            version: 55,
-            opcode: 66,
-            operand: b"brrahhhh"
-        };
+        let instruction3 = Instruction { version: 55, opcode: 66, operand: b"brrahhhh" };
         vector::push_back(&mut outer_arr, instruction1);
         vector::push_back(&mut outer_arr, instruction2);
         vector::push_back(&mut outer_arr, instruction3);
@@ -1977,23 +1969,15 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 2) == instruction3, 4);
-    
+
         // ---------------- TEST 2 ----------------
         let output2 =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000162000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
 
-        let instruction1 = Instruction {
-            version: 3,
-            opcode: 5,
-            operand: b"b"
-        };
+        let instruction1 = Instruction { version: 3, opcode: 5, operand: b"b" };
 
-        let instruction2 = Instruction {
-            version: 2,
-            opcode: 4,
-            operand: b""
-        };
+        let instruction2 = Instruction { version: 2, opcode: 4, operand: b"" };
         vector::push_back(&mut outer_arr, instruction1);
         vector::push_back(&mut outer_arr, instruction2);
         let ack_data2 = Batch { instructions: outer_arr };
@@ -2004,13 +1988,11 @@ module ucs03::zkgm_relay {
         assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
 
-    
-
         // ---------------- TEST 3 ----------------
         let output3 =
             x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000df000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000bd617764617764617764617764776164616161616161612061616161616161616161616161616161616161616120626262622064616477647720772077777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000000";
         let outer_arr = vector::empty();
-        
+
         let instruction1 = Instruction {
             version: 123,
             opcode: 223,
@@ -2018,7 +2000,7 @@ module ucs03::zkgm_relay {
         };
 
         vector::push_back(&mut outer_arr, instruction1);
-        
+
         let ack_data3 = Batch { instructions: outer_arr };
         let ack_bytes3 = encode_batch_packet(&ack_data3);
         assert!(ack_bytes3 == output3, 0);
@@ -2030,7 +2012,7 @@ module ucs03::zkgm_relay {
         let output4 =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
         let outer_arr = vector::empty();
-        
+
         let ack_data4 = Batch { instructions: outer_arr };
         let ack_bytes4 = encode_batch_packet(&ack_data4);
         assert!(ack_bytes4 == output4, 0);
@@ -2043,7 +2025,7 @@ module ucs03::zkgm_relay {
     fun test_encode_decode_forward_packet() {
         let output =
             x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000003700000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
-        
+
         let instruction = Instruction {
             version: 111,
             opcode: 222,
@@ -2058,7 +2040,7 @@ module ucs03::zkgm_relay {
         };
 
         let ack_bytes = encode_forward(&forward_data);
-        std::debug::print(&string::utf8(b"ack bytes: " ));
+        std::debug::print(&string::utf8(b"ack bytes: "));
         std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 
