@@ -130,6 +130,7 @@ const transfer = async () => {
     }
 
     /** --- APTOS END --- */
+    /** --- COSOS START --- */
   } else if ($validation.transfer.sourceChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
@@ -202,7 +203,7 @@ const transfer = async () => {
         })
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
-          transport: http(`https://${rpcUrl}`),
+          transport: http(`${rpcUrl}`),
           chainId: $validation.transfer.sourceChain.chain_id as CosmosChainId,
           gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.metadata.denom }
         })
@@ -215,7 +216,7 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           // TODO: verify chain id is correct
           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId,
-          gasPrice: { amount: "0.0025", denom: $validation.transfer.asset.metadata.denom }
+          gasPrice: { amount: "0.025", denom: $validation.transfer.asset.metadata.denom }
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })

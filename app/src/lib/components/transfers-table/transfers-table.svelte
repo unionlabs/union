@@ -44,4 +44,5 @@ const columns: Array<ColumnDef<DataRow>> = [
 ]
 </script>
 
+
 <ExplorerTablePaginated queryResult={transfers} dataStore={transfersDataStore} {columns} />

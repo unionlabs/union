@@ -49,20 +49,6 @@ export type Chain = {
     type: string
     url: string
   }>
-  ucs1_configurations: Record<
-    string,
-    {
-      contract_address: string
-      channel_id: string
-      forwards: Record<
-        string,
-        {
-          channel_id: string
-          port_id: string
-        }
-      >
-    }
-  >
   explorers: Array<{
     tx_url: string
     block_url: string
