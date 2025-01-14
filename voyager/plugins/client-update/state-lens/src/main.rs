@@ -75,7 +75,11 @@ impl Plugin for Module {
 
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
-            name: plugin_name(&config.l2_chain_id),
+            name: plugin_name(
+                config.l0_client_id,
+                config.l1_client_id,
+                &config.l2_chain_id,
+            ),
             interest_filter: UpdateHook::filter(
                 &config.l2_chain_id,
                 &config.state_lens_client_type,
@@ -88,15 +92,15 @@ impl Plugin for Module {
     }
 }
 
-fn plugin_name(chain_id: &ChainId) -> String {
+fn plugin_name(l0_client_id: u32, l1_client_id: u32, l2_chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
-    format!("{PLUGIN_NAME}/{}", chain_id)
+    format!("{PLUGIN_NAME}/{l0_client_id}/{l1_client_id}/{l2_chain_id}")
 }
 
 impl Module {
     fn plugin_name(&self) -> String {
-        plugin_name(&self.l2_chain_id)
+        plugin_name(self.l0_client_id, self.l1_client_id, &self.l2_chain_id)
     }
 }
 
