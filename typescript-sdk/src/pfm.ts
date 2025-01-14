@@ -82,7 +82,21 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "0x7b7872fec715c787a1be3f062adedc82b3b06144",
         channels: {
-          [sepolia.id.toString()]: 9
+          [sepolia.id.toString()]: 9,
+          "union-testnet-9": 8
+        }
+      }
+    },
+    {
+      testnet: true,
+      chain_id: "union-testnet-9",
+      rpc_type: "cosmos",
+      addr_prefix: "union",
+      display_name: "Union Testnet 9",
+      ucs3_config: {
+        address: "union19hspxmypfxsdsnxttma8rxvp7dtcmzhl9my0ee64avg358vlpawsdvucqa",
+        channels: {
+          [holesky.id.toString()]: 7
         }
       }
     }
