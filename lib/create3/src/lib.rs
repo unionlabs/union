@@ -1,4 +1,4 @@
-use alloy_primitives::hex;
+use alloy_primitives::{hex, Address, B256};
 use sha3::{Digest, Keccak256};
 
 const PROXY_INITCODE_HASH: [u8; 32] =
@@ -6,11 +6,11 @@ const PROXY_INITCODE_HASH: [u8; 32] =
 
 /// Use to obtain the address using the CREATE3 algorithm from solady's assembly optimized implementation
 /// https://github.com/Vectorized/solady/blob/de9aee59648862bb98affd578248d1e75c7073ad/src/utils/CREATE3.sol#L106
-pub fn predict_deterministic_address(deployer: &[u8], salt: &[u8; 32]) -> [u8; 20] {
+pub fn predict_deterministic_address(deployer: Address, salt: B256) -> Address {
     let mut bytes: Vec<u8> = Vec::new();
     bytes.push(0xff);
-    bytes.extend_from_slice(deployer);
-    bytes.extend_from_slice(salt);
+    bytes.extend_from_slice(deployer.as_slice());
+    bytes.extend_from_slice(salt.as_slice());
     bytes.extend_from_slice(&PROXY_INITCODE_HASH);
 
     let hash = Keccak256::digest(&bytes);
@@ -29,9 +29,7 @@ pub fn predict_deterministic_address(deployer: &[u8], salt: &[u8; 32]) -> [u8; 2
     let hash2 = Keccak256::digest(&bytes2);
 
     // resulting hash -> The last 20 bytes (40 characters) of the hash.
-    let mut address = [0u8; 20];
-    address.copy_from_slice(&hash2[12..]);
-    address
+    Address::from_slice(&hash2[12..])
 }
 
 #[cfg(test)]
@@ -57,14 +55,14 @@ mod tests {
         let token = bytes!("779877A7B0D9E8603169DdbD7836e478b4624789");
         let params = (U256::from(0), 5, token);
         let encoded = params.abi_encode_params();
-        let salt = keccak256(encoded);
+        let salt: B256 = keccak256(encoded).into();
         assert_eq!(
             hex::encode(salt),
             "c5e2ad25b6b23cf40cd46a140eac9ce56464d944c28b449d79c57067b90477e8"
         );
         println!("Salt: {}", salt);
 
-        let address = predict_deterministic_address(deployer.into_array().as_slice(), &salt);
+        let address = predict_deterministic_address(deployer, salt);
         assert_eq!(
             address,
             address!("d1b482d1b947a96e96c9b76d15de34f7f70a20a1"),
