@@ -100,7 +100,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 receiver: receiver,
                 base_token: denomAddress,
                 base_amount: amount,
-                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
+                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84", // TODO: don't hardcode
                 quote_amount: amount,
                 timeout_height: 1000000000,
                 timeout_timestamp: 0,
