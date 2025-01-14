@@ -90,8 +90,8 @@ module ucs03::zkgm_relay {
         contract_calldata: vector<u8>
     }
 
-    struct BatchPacket has copy, drop, store {
-        syscall_packets: vector<vector<u8>>
+    struct Batch has copy, drop, store {
+        instructions: vector<Instruction>
     }
 
     struct OnZkgmParams has copy, drop, store {
@@ -409,45 +409,57 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun decode_batch_packet(buf: vector<u8>): BatchPacket {
-        let index = 0x40;
+    public fun decode_batch_packet(buf: vector<u8>): Batch {
+        let index = 0x20;
         let main_arr_length = ethabi::decode_uint(&buf, &mut index);
         index = index + (0x20 * main_arr_length as u64);
 
         let idx = 0;
-        let syscall_packets = vector::empty();
+        let instructions = vector::empty();
         while (idx < main_arr_length) {
-            let inner_vec =
-                ethabi::decode_vector<u8>(
-                    &buf,
-                    &mut index,
-                    |buf, index| {
-                        (ethabi::decode_uint(buf, index) as u8)
-                    }
-                );
-            vector::push_back(&mut syscall_packets, inner_vec);
+            let version = (ethabi::decode_uint(&buf, &mut index) as u8);
+            let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+            index = index + 0x20;
+            let operand = ethabi::decode_bytes(&buf, &mut index);
+
+            let instruction = Instruction {
+                version: (version as u8),
+                opcode: (opcode as u8),
+                operand: operand
+            };
+            // let inner_vec =
+            //     ethabi::decode_vector<u8>(
+            //         &buf,
+            //         &mut index,
+            //         |buf, index| {
+            //             (ethabi::decode_uint(buf, index) as u8)
+            //         }
+            //     );
+            vector::push_back(&mut instructions, instruction);
             idx = idx + 1;
         };
 
-        BatchPacket { syscall_packets: syscall_packets }
+        Batch { instructions: instructions }
     }
 
-    public fun encode_batch_packet(ack: &BatchPacket): vector<u8> {
+    public fun encode_batch_packet(pack: &Batch): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        let ack_arr_len = vector::length(&ack.syscall_packets);
+        // ethabi::encode_uint<u8>(&mut buf, 0x20);
+        let ack_arr_len = vector::length(&pack.instructions);
         ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
                 ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                ethabi::encode_vector<u8>(
-                    &mut buf,
-                    vector::borrow(&ack.syscall_packets, 0),
-                    |some_variable, data| {
-                        ethabi::encode_uint<u8>(some_variable, *data);
-                    }
-                );
+                let instructions_encoded = encode_instruction(*vector::borrow(&pack.instructions, 0));
+                vector::append(&mut buf, instructions_encoded);
+                // ethabi::encode_vector<u8>(
+                //     &mut buf,
+                //     vector::borrow(&ack.syscall_packets, 0),
+                //     |some_variable, data| {
+                //         ethabi::encode_uint<u8>(some_variable, *data);
+                //     }
+                // );
                 return buf
             };
             return buf
@@ -458,23 +470,25 @@ module ucs03::zkgm_relay {
         let prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
-            let prev_length = vector::length(
-                vector::borrow(&ack.syscall_packets, idx - 1)
-            );
+            let prev_length = ((vector::length(
+                &vector::borrow(&pack.instructions, idx - 1).operand
+            ) / 32) as u32) + 1;
             ethabi::encode_uint<u32>(&mut buf, prev_val
-                + 0x20 * (prev_length + 1 as u32));
-            prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
+                + (0x20 * 4) + ((prev_length * 0x20) as u32));
+            prev_val = prev_val + (4 * 0x20) + (((prev_length * 0x20) as u32));
             idx = idx + 1;
         };
         idx = 0;
         while (idx < ack_arr_len) {
-            ethabi::encode_vector<u8>(
-                &mut buf,
-                vector::borrow(&ack.syscall_packets, idx),
-                |some_variable, data| {
-                    ethabi::encode_uint<u8>(some_variable, *data);
-                }
-            );
+            let instructions_encoded = encode_instruction(*vector::borrow(&pack.instructions, idx));
+            vector::append(&mut buf, instructions_encoded);
+            // ethabi::encode_vector<u8>(
+            //     &mut buf,
+            //     vector::borrow(&ack.syscall_packets, idx),
+            //     |some_variable, data| {
+            //         ethabi::encode_uint<u8>(some_variable, *data);
+            //     }
+            // );
             idx = idx + 1;
         };
 
@@ -1922,83 +1936,102 @@ module ucs03::zkgm_relay {
 
     // }
 
-    // #[test]
-    // fun test_encode_decode_batch_packet() {
-    //     // ---------------- TEST 1 ----------------
-    //     let output =
-    //         x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
-    //     let outer_arr = vector::empty();
-    //     vector::push_back(&mut outer_arr, b"hello");
-    //     vector::push_back(&mut outer_arr, b"hi");
-    //     vector::push_back(&mut outer_arr, b"hehe");
-    //     let ack_data = BatchPacket { syscall_packets: outer_arr };
-    //     let ack_bytes = encode_batch_packet(&ack_data);
-    //     assert!(ack_bytes == output, 0);
-    //     let ack_data_decoded = decode_batch_packet(ack_bytes);
-    //     assert!(vector::length(&ack_data_decoded.syscall_packets) == 3, 1);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"hello", 2);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 2) == b"hehe", 4);
+    #[test]
+    fun test_encode_decode_batch_packet() {
+        // ---------------- TEST 1 ----------------
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002668686820776f726c6468656c6c6f20777777776c6f20776f726c6468656c6c6f20776f726c64000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000370000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000086272726168686868000000000000000000000000000000000000000000000000";
+        let outer_arr = vector::empty();
+        
+        let instruction1 = Instruction {
+            version: 111,
+            opcode: 222,
+            operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
+        };
 
-    //     // ---------------- TEST 2 ----------------
-    //     let output2 =
-    //         x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
-    //     let outer_arr = vector::empty();
-    //     vector::push_back(&mut outer_arr, b"hello");
-    //     vector::push_back(&mut outer_arr, b"hi");
-    //     let ack_data2 = BatchPacket { syscall_packets: outer_arr };
-    //     let ack_bytes2 = encode_batch_packet(&ack_data2);
-    //     assert!(ack_bytes2 == output2, 0);
-    //     let ack_data_decoded = decode_batch_packet(ack_bytes2);
-    //     assert!(vector::length(&ack_data_decoded.syscall_packets) == 2, 1);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"hello", 2);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
+        let instruction2 = Instruction {
+            version: 1,
+            opcode: 2,
+            operand: b"hhh worldhello wwwwlo worldhello world"
+        };
 
-    //     // ---------------- TEST 3 ----------------
-    //     let output3 =
-    //         x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-    //     let outer_arr = vector::empty();
-    //     let idx = 0;
-    //     vector::push_back(&mut outer_arr, b"xdddd");
-    //     vector::push_back(&mut outer_arr, b"test");
-    //     while (idx < 10) {
-    //         vector::push_back(&mut outer_arr, b"");
-    //         idx = idx + 1;
-    //     };
+        let instruction3 = Instruction {
+            version: 55,
+            opcode: 66,
+            operand: b"brrahhhh"
+        };
+        vector::push_back(&mut outer_arr, instruction1);
+        vector::push_back(&mut outer_arr, instruction2);
+        vector::push_back(&mut outer_arr, instruction3);
+        let ack_data = Batch { instructions: outer_arr };
+        let ack_bytes = encode_batch_packet(&ack_data);
+        assert!(ack_bytes == output, 0);
+        let ack_data_decoded = decode_batch_packet(ack_bytes);
+        assert!(vector::length(&ack_data_decoded.instructions) == 3, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 2) == instruction3, 4);
+    
+        // ---------------- TEST 2 ----------------
+        let output2 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000162000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000";
+        let outer_arr = vector::empty();
 
-    //     let ack_data3 = BatchPacket { syscall_packets: outer_arr };
-    //     let ack_bytes3 = encode_batch_packet(&ack_data3);
-    //     assert!(ack_bytes3 == output3, 0);
-    //     let ack_data_decoded = decode_batch_packet(ack_bytes3);
-    //     assert!(vector::length(&ack_data_decoded.syscall_packets) == 12, 1);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"test", 3);
+        let instruction1 = Instruction {
+            version: 3,
+            opcode: 5,
+            operand: b"b"
+        };
 
-    //     // ---------------- TEST 4 ----------------
-    //     let output4 =
-    //         x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
-    //     let outer_arr = vector::empty();
-    //     vector::push_back(&mut outer_arr, b"xdddd");
+        let instruction2 = Instruction {
+            version: 2,
+            opcode: 4,
+            operand: b""
+        };
+        vector::push_back(&mut outer_arr, instruction1);
+        vector::push_back(&mut outer_arr, instruction2);
+        let ack_data2 = Batch { instructions: outer_arr };
+        let ack_bytes2 = encode_batch_packet(&ack_data2);
+        assert!(ack_bytes2 == output2, 0);
+        let ack_data_decoded = decode_batch_packet(ack_bytes2);
+        assert!(vector::length(&ack_data_decoded.instructions) == 2, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
 
-    //     let ack_data4 = BatchPacket { syscall_packets: outer_arr };
-    //     let ack_bytes4 = encode_batch_packet(&ack_data4);
-    //     assert!(ack_bytes4 == output4, 0);
-    //     let ack_data_decoded = decode_batch_packet(ack_bytes4);
-    //     assert!(vector::length(&ack_data_decoded.syscall_packets) == 1, 1);
-    //     assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
+    
 
-    //     // ---------------- TEST 5 ----------------
-    //     let output5 =
-    //         x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
-    //     let outer_arr = vector::empty();
+        // ---------------- TEST 3 ----------------
+        let output3 =
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000df000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000bd617764617764617764617764776164616161616161612061616161616161616161616161616161616161616120626262622064616477647720772077777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000000";
+        let outer_arr = vector::empty();
+        
+        let instruction1 = Instruction {
+            version: 123,
+            opcode: 223,
+            operand: b"awdawdawdawdwadaaaaaaa aaaaaaaaaaaaaaaaaaaaa bbbb dadwdw w wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+        };
 
-    //     let ack_data5 = BatchPacket { syscall_packets: outer_arr };
-    //     let ack_bytes5 = encode_batch_packet(&ack_data5);
-    //     assert!(ack_bytes5 == output5, 0);
-    //     let ack_data_decoded = decode_batch_packet(ack_bytes5);
-    //     assert!(vector::length(&ack_data_decoded.syscall_packets) == 0, 1);
+        vector::push_back(&mut outer_arr, instruction1);
+        
+        let ack_data3 = Batch { instructions: outer_arr };
+        let ack_bytes3 = encode_batch_packet(&ack_data3);
+        assert!(ack_bytes3 == output3, 0);
+        let ack_data_decoded = decode_batch_packet(ack_bytes3);
+        assert!(vector::length(&ack_data_decoded.instructions) == 1, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
 
-    // }
+        // ---------------- TEST 4 ----------------
+        let output4 =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+        let outer_arr = vector::empty();
+        
+        let ack_data4 = Batch { instructions: outer_arr };
+        let ack_bytes4 = encode_batch_packet(&ack_data4);
+        assert!(ack_bytes4 == output4, 0);
+        let ack_data_decoded = decode_batch_packet(ack_bytes4);
+        assert!(vector::length(&ack_data_decoded.instructions) == 0, 1);
+
+    }
 
     #[test]
     fun test_encode_decode_forward_packet() {
@@ -2010,7 +2043,6 @@ module ucs03::zkgm_relay {
             opcode: 222,
             operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
         };
-
 
         let forward_data = ForwardPacket {
             channel_id: 44,
