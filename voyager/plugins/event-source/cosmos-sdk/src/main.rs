@@ -1386,7 +1386,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         channel_id,
                         counterparty_port_id,
                         connection_id,
-                        version: _,
+                        version,
                     } => {
                         let connection = voyager_client
                             .query_ibc_state(
@@ -1410,22 +1410,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let channel = voyager_client
-                            .query_ibc_state(
-                                self.chain_id.clone(),
-                                provable_height.into(),
-                                ChannelPath { channel_id },
-                            )
-                            .await?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
                         let event = ibc_union_spec::ChannelOpenInit {
                             port_id: port_id.into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
                             connection,
-                            version: channel.version,
+                            version,
                         }
                         .into();
 
@@ -1441,7 +1431,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             event: into_value::<ibc_union_spec::FullEvent>(event),
                         }))
                     }
-                    IbcEvent::WasChannelOpenTry {
+                    IbcEvent::WasmChannelOpenTry {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -1525,7 +1515,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let channel = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
-                                provable_height.into(),
+                                height.into(),
                                 ChannelPath { channel_id },
                             )
                             .await?

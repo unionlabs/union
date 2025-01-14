@@ -79,6 +79,9 @@ pub fn execute(
                     enforce_version(&version, Some(&counterparty_version))?;
                     Ok(Response::default())
                 }
+                IbcUnionMsg::OnChannelOpenAck { .. } | IbcUnionMsg::OnChannelOpenConfirm { .. } => {
+                    Ok(Response::default())
+                }
                 IbcUnionMsg::OnRecvPacket {
                     packet,
                     relayer,
