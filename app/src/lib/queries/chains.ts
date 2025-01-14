@@ -8,7 +8,8 @@ export const chainsQuery = () =>
   createQuery({
     queryKey: ["chains"],
     placeholderData: (previousData, _) => previousData,
-    queryFn: async () => (await request(URLS().GRAPHQL, chainsQueryDocument, {})).v1_ibc_union_chains,
+    queryFn: async () =>
+      (await request(URLS().GRAPHQL, chainsQueryDocument, {})).v1_ibc_union_chains,
     enabled: true,
     refetchInterval: 6_000,
     refetchOnWindowFocus: false

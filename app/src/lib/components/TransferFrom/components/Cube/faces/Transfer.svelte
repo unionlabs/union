@@ -165,7 +165,6 @@ const transfer = async () => {
         $validation.transfer.sourceChain.chain_id,
         connectedWallet
       )
-      console.log({chainInfo});
 
       if (chainInfo === null) {
         transferState.set({
