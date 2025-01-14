@@ -10,7 +10,6 @@ import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
-import "../lib/SparseMerkleVerifier.sol";
 
 struct Header {
     uint64 l1Height;
@@ -118,22 +117,6 @@ contract StateLensIcs23MoveClient is
     ) public initializer {
         __Ownable_init(admin);
         ibcHandler = _ibcHandler;
-    }
-
-    function encodeProof(
-        SparseMerkleVerifier.SparseMerkleProof memory ack
-    ) internal pure returns (bytes memory) {
-        return abi.encode(ack);
-    }
-
-    function decodeProof(
-        bytes calldata stream
-    ) internal pure returns (SparseMerkleVerifier.SparseMerkleProof calldata) {
-        SparseMerkleVerifier.SparseMerkleProof calldata proof;
-        assembly {
-            proof := stream.offset
-        }
-        return proof;
     }
 
     function createClient(
