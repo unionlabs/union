@@ -54,16 +54,16 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      if (sourceChainId === destinationChainId) {
-        const transfer = await cosmosSameChainTransfer({
-          rpcUrl,
-          account,
-          gasPrice,
-          receiver,
-          asset: { denom: denomAddress, amount: amount.toString() }
-        })
-        return transfer
-      }
+      // if (sourceChainId === destinationChainId) {
+      //   const transfer = await cosmosSameChainTransfer({
+      //     rpcUrl,
+      //     account,
+      //     gasPrice,
+      //     receiver,
+      //     asset: { denom: denomAddress, amount: amount.toString() }
+      //   })
+      //   return transfer
+      // }
 
       const stamp = timestamp()
       const chainDetails = await getHubbleChainDetails({
@@ -73,19 +73,6 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
 
       if (chainDetails.isErr()) return err(chainDetails.error)
 
-      // if (chainDetails.value.transferType === "pfm") {
-      //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-      //   const pfmMemo = createPfmMemo({
-      //     port: chainDetails.value.port,
-      //     channel: chainDetails.value.destinationChannel.toString(),
-      //     receiver: cosmosChainId.includes(destinationChainId)
-      //       ? bech32AddressToHex({ address: receiver })
-      //       : receiver
-      //   })
-      //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-      //   memo = pfmMemo.value
-      // }
-
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
@@ -93,6 +80,31 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!sourceChannel) return err(new Error("Source channel not found"))
       if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
+      console.log({
+        account,
+        rpcUrl,
+        gasPrice,
+        instructions: [
+          {
+            contractAddress: relayContractAddress,
+            msg: {
+              transfer: {
+                channel_id: sourceChannel,
+                receiver: receiver,
+                base_token: denomAddress,
+                base_amount: amount,
+                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
+                quote_amount: amount,
+                timeout_height: 0,
+                timeout_timestamp: "18446744073709551610",
+                salt: "0x69fce040a41930d779c972da6cc8b8b418d86e1e41199f51ec71c864e1412099" //TODO: don't hardcode
+                // memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+              }
+            },
+            funds: [{ amount: amount.toString(), denom: denomAddress }]
+          }
+        ]
+      })
       const transfer = await cosmwasmTransfer({
         account,
         rpcUrl,
@@ -106,7 +118,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 receiver: receiver,
                 base_token: denomAddress,
                 base_amount: amount,
-                quote_token: "muno",
+                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
                 quote_amount: amount,
                 timeout_height: 0,
                 timeout_timestamp: "18446744073709551610",
