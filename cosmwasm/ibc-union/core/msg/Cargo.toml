@@ -13,3 +13,6 @@ workspace = true
 ibc-solidity         = { workspace = true, features = ["serde"] }
 serde                = { workspace = true, features = ["derive"] }
 unionlabs-primitives = { workspace = true, features = ["serde"] }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-orch = "0.27.0"

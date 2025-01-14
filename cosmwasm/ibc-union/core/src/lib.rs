@@ -2,6 +2,7 @@
 
 pub mod contract;
 pub mod state;
+pub mod interface;
 
 use cosmwasm_std::{Addr, StdError};
 use ibc_solidity::{ChannelState, ConnectionState};
