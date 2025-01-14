@@ -238,12 +238,12 @@ module ucs03::zkgm_relay {
             }
         );
 
-        let cb =
-            function_info::new_function_info(
-                account,
-                string::utf8(b"zkgm_relay"),
-                string::utf8(b"on_packet")
-            );
+        // let cb =
+        //     function_info::new_function_info(
+        //         account,
+        //         string::utf8(b"zkgm_relay"),
+        //         string::utf8(b"on_packet")
+        //     );
 
         // dispatcher::register<ZKGMProof>(
         //     cb,

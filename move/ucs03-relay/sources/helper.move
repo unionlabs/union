@@ -1,6 +1,5 @@
 module ucs03::zkgm_helpers {
     use ibc::packet::Packet;
-    use std::string::{Self, String};
     use std::copyable_any;
 
     struct RecvPacketParamsZKGM has copy, drop, store {

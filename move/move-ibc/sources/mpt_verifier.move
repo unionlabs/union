@@ -647,7 +647,7 @@ module ibc::mpt_verifier {
         let slot = x"0000000000000000000000000000000000000000000000000000000000000000";
         let key = keccak256(slot);
 
-        let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
+        let (is_exists, _value) = verify_trie_value(&proofChain, &key, storage_root);
         assert!(is_exists, 1001);
     }
 
