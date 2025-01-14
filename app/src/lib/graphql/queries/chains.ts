@@ -1,7 +1,7 @@
 import { graphql } from "gql.tada"
 
 export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cached(ttl: 30) {
-  v1_chains(order_by: {display_name: asc}) {
+  v1_ibc_union_chains(order_by: {display_name: asc}) {
     display_name
     testnet
     chain_id
@@ -13,20 +13,6 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
     rpcs(where: {enabled: {_eq: true}}) {
       url
       type
-    }
-    ucs1_configurations {
-      channel_id
-      contract_address
-      destination_chain {
-        chain_id
-      }
-      forwards {
-        channel_id
-        destination_chain {
-          chain_id
-        }
-        port_id
-      }
     }
     explorers {
       tx_url

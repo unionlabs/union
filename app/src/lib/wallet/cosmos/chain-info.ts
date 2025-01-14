@@ -174,6 +174,53 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
   features: []
 }
 
+export const elgafarKeplrChainInfo: KeplrChainInfo = {
+  "rpc": "https://rpc.elgafar-1.stargaze-apis.com",
+  "rest": "https://rest.elgafar-1.stargaze-apis.com",
+  "chainId": "elgafar-1",
+  "chainName": "Stargaze Testnet",
+  "nodeProvider": {
+    "name": "Stargaze",
+    "email": "admin@stargaze.zone",
+    "website":"https://www.stargaze.zone/"
+  },
+  "chainSymbolImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/chain.png",
+  "stakeCurrency": {
+    "coinDenom": "STARS",
+    "coinMinimalDenom": "ustars",
+    "coinDecimals": 6,
+    "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
+  },
+  "bip44": {
+    "coinType": 118
+  },
+  "bech32Config": {
+    "bech32PrefixAccAddr": "stars",
+    "bech32PrefixAccPub": "starspub",
+    "bech32PrefixValAddr": "starsvaloper",
+    "bech32PrefixValPub": "starsvaloperpub",
+    "bech32PrefixConsAddr": "starsvalcons",
+    "bech32PrefixConsPub": "starsvalconspub"
+  },
+  "currencies": [
+    {
+      "coinDenom": "STARS",
+      "coinMinimalDenom": "ustars",
+      "coinDecimals": 6,
+      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
+    }
+  ],
+  "feeCurrencies": [
+    {
+      "coinDenom": "STARS",
+      "coinMinimalDenom": "ustars",
+      "coinDecimals": 6,
+      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
+    }
+  ],
+  "features": []
+}
+
 export const strideLeapChainInfo: LeapExtendedInfo = {
   chainId: "stride-internal-1",
   chainName: "Stride Testnet",
@@ -233,12 +280,14 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
 
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-9": unionKeplrChainInfo,
-  "stride-internal-1": strideKeplrChainInfo
+  "stride-internal-1": strideKeplrChainInfo,
+  "elgafar-1": elgafarKeplrChainInfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "union-testnet-9": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo
+  // TODO: add stargaze leap definition
 }
 
 export function getCosmosChainInfo(
