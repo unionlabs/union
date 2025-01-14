@@ -237,20 +237,6 @@ module ucs03::zkgm_relay {
                 self_address: signer::address_of(account)
             }
         );
-
-        // let cb =
-        //     function_info::new_function_info(
-        //         account,
-        //         string::utf8(b"zkgm_relay"),
-        //         string::utf8(b"on_packet")
-        //     );
-
-        // dispatcher::register<ZKGMProof>(
-        //     cb,
-        //     new_ucs_relay_proof(),
-        //     bcs::to_bytes(&signer::address_of(account))
-        // );
-        // ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
     }
 
     public fun register_application<T: key + store + drop>(
@@ -427,14 +413,7 @@ module ucs03::zkgm_relay {
                 opcode: (opcode as u8),
                 operand: operand
             };
-            // let inner_vec =
-            //     ethabi::decode_vector<u8>(
-            //         &buf,
-            //         &mut index,
-            //         |buf, index| {
-            //             (ethabi::decode_uint(buf, index) as u8)
-            //         }
-            //     );
+
             vector::push_back(&mut instructions, instruction);
             idx = idx + 1;
         };
@@ -454,13 +433,7 @@ module ucs03::zkgm_relay {
                 let instructions_encoded =
                     encode_instruction(*vector::borrow(&pack.instructions, 0));
                 vector::append(&mut buf, instructions_encoded);
-                // ethabi::encode_vector<u8>(
-                //     &mut buf,
-                //     vector::borrow(&ack.syscall_packets, 0),
-                //     |some_variable, data| {
-                //         ethabi::encode_uint<u8>(some_variable, *data);
-                //     }
-                // );
+
                 return buf
             };
             return buf
@@ -488,13 +461,7 @@ module ucs03::zkgm_relay {
             let instructions_encoded =
                 encode_instruction(*vector::borrow(&pack.instructions, idx));
             vector::append(&mut buf, instructions_encoded);
-            // ethabi::encode_vector<u8>(
-            //     &mut buf,
-            //     vector::borrow(&ack.syscall_packets, idx),
-            //     |some_variable, data| {
-            //         ethabi::encode_uint<u8>(some_variable, *data);
-            //     }
-            // );
+
             idx = idx + 1;
         };
 
@@ -525,18 +492,11 @@ module ucs03::zkgm_relay {
 
     public fun encode_instruction(instruction: Instruction): vector<u8> {
         let buf = vector::empty<u8>();
-        // ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u8>(&mut buf, instruction.version);
         ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
         ethabi::encode_uint<u8>(&mut buf, 0x60);
         ethabi::encode_bytes(&mut buf, &instruction.operand);
-        // ethabi::encode_vector<u8>(
-        //     &mut buf,
-        //     &instruction.operand,
-        //     |some_variable, data| {
-        //         ethabi::encode_uint<u8>(some_variable, *data);
-        //     }
-        // );
+
         buf
     }
 
@@ -1044,7 +1004,6 @@ module ucs03::zkgm_relay {
     }
 
     public fun on_timeout_packet(ibc_packet: Packet, relayer: address) acquires RelayStore, SignerRef {
-        // TODO: Missing functionalities here
         // Decode the packet data
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
@@ -1817,17 +1776,6 @@ module ucs03::zkgm_relay {
         assert!(zkgm_data_decoded.path == 3333334, 2);
         assert!(zkgm_data_decoded.instruction == instruction1, 3);
     }
-
-    // #[test]
-    // fun test_decode_syscall() {
-    //     let output =
-    //         x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007100000000000000000000000000000000000000000000000000000000000000f40000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-
-    //     let syscall_data_decoded = decode_syscall(output);
-    //     assert!(syscall_data_decoded.version == 113, 1);
-    //     assert!(syscall_data_decoded.index == 244, 2);
-    //     assert!(syscall_data_decoded.packet == b"hellloo", 3);
-    // }
 
     #[test]
     fun test_encode_decode_ack() {
