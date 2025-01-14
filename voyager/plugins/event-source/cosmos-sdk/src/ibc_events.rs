@@ -262,7 +262,7 @@ pub enum IbcEvent {
     },
 
     #[serde(rename = "wasm-channel_open_try")]
-    WasChannelOpenTry {
+    WasmChannelOpenTry {
         port_id: String,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
@@ -419,7 +419,7 @@ impl IbcEvent {
             IbcEvent::WasmConnectionOpenAck { .. } => "connection_open_ack",
             IbcEvent::WasmConnectionOpenConfirm { .. } => "connection_open_confirm",
             IbcEvent::WasmChannelOpenInit { .. } => "channel_open_init",
-            IbcEvent::WasChannelOpenTry { .. } => "channel_open_try",
+            IbcEvent::WasmChannelOpenTry { .. } => "channel_open_try",
             IbcEvent::WasmChannelOpenAck { .. } => "channel_open_ack",
             IbcEvent::WasmChannelOpenConfirm { .. } => "channel_open_confirm",
             IbcEvent::WasmPacketRecv { .. } => "recv_packet",
