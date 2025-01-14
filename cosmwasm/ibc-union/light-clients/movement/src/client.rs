@@ -98,12 +98,22 @@ impl ibc_union_light_client::IbcClient for MovementLightClient {
     fn verify_header(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
+        caller: cosmwasm_std::Addr,
     ) -> Result<
         (u64, Self::ClientState, Self::ConsensusState),
         ibc_union_light_client::IbcClientError<Self>,
     > {
         let client_state = ctx.read_self_client_state()?;
+        // Check if caller is whitelisted
+        if !client_state
+            .whitelisted_relayers
+            .contains(&caller.to_string())
+        {
+            return Err(ibc_union_light_client::IbcClientError::UnauthorizedCaller(
+                caller.to_string(),
+            ));
+        }
+
         // NOTE(aeryz): FOR AUDITORS and NERDS:
         // Movement's current REST API's don't provide state and transaction proofs. We added those to our custom
         // Movement node which we also work on getting them to be upstreamed. Hence, we use the following feature-flag with
@@ -269,7 +279,9 @@ mod tests {
 
     #[test]
     fn test_proto() {
-        let channel_end = hex!("6d080110011a470a457761736d2e756e696f6e3134686a32746176713866706573647778786375343472747933686839307668756a7276636d73746c347a723374786d6676773973336539666532220c636f6e6e656374696f6e2d302a1075637330302d70696e67706f6e672d31");
+        let channel_end = hex!(
+            "6d080110011a470a457761736d2e756e696f6e3134686a32746176713866706573647778786375343472747933686839307668756a7276636d73746c347a723374786d6676773973336539666532220c636f6e6e656374696f6e2d302a1075637330302d70696e67706f6e672d31"
+        );
         println!(
             "end 1: {:?}",
             Channel::decode_as::<Proto>(&channel_end).unwrap()
