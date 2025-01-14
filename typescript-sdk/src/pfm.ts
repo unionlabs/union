@@ -69,7 +69,7 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
         channels: {
-          [holesky.id.toString()]: 3
+          [holesky.id.toString()]: 4
         }
       }
     },
@@ -82,7 +82,7 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "0x7b7872fec715c787a1be3f062adedc82b3b06144",
         channels: {
-          [sepolia.id.toString()]: 5
+          [sepolia.id.toString()]: 9
         }
       }
     }

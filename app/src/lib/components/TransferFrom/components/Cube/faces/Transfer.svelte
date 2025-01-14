@@ -273,6 +273,14 @@ const transfer = async () => {
       let hash: `0x${string}` | null = null
 
       try {
+        console.log({
+          amount: parsedAmount,
+          receiver: $validation.transfer.receiver,
+          denomAddress: getAddress($validation.transfer.asset.metadata.denom),
+          // TODO: verify chain id is correct
+          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
+        })
+
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
           receiver: $validation.transfer.receiver,
