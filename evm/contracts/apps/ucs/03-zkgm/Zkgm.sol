@@ -12,6 +12,7 @@ import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
+import "solady/utils/LibBytes.sol";
 
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
@@ -276,6 +277,7 @@ contract UCS03Zkgm is
 {
     using ZkgmLib for *;
     using LibString for *;
+    using LibBytes for *;
 
     IIBCPacket public ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -317,9 +319,18 @@ contract UCS03Zkgm is
         string memory tokenName = sentTokenMeta.name();
         string memory tokenSymbol = sentTokenMeta.symbol();
         uint256 origin = tokenOrigin[baseToken];
-        if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
+        // Verify the unwrap
+        (address wrappedToken,) =
+            internalPredictWrappedTokenMemory(0, channelId, quoteToken);
+        // Only allow unwrapping if the quote asset is the unwrapped asset.
+        if (
+            ZkgmLib.lastChannelFromPath(origin) == channelId
+                && abi.encodePacked(baseToken).eq(abi.encodePacked(wrappedToken))
+        ) {
             IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
         } else {
+            // We reset the origin, the asset will not be unescrowed on the destination
+            origin = 0;
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
@@ -671,6 +682,17 @@ contract UCS03Zkgm is
         uint256 path,
         uint32 channel,
         bytes calldata token
+    ) internal view returns (address, bytes32) {
+        bytes32 wrappedTokenSalt = keccak256(abi.encode(path, channel, token));
+        address wrappedToken =
+            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
+        return (wrappedToken, wrappedTokenSalt);
+    }
+
+    function internalPredictWrappedTokenMemory(
+        uint256 path,
+        uint32 channel,
+        bytes memory token
     ) internal view returns (address, bytes32) {
         bytes32 wrappedTokenSalt = keccak256(abi.encode(path, channel, token));
         address wrappedToken =
