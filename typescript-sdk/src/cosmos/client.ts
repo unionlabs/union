@@ -10,7 +10,7 @@ import { err, type Result } from "neverthrow"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
-import { fallback, createClient, type HttpTransport } from "viem"
+import { fallback, createClient, type HttpTransport, toHex } from "viem"
 import type { OfflineSigner, TransferAssetsParameters } from "../types.ts"
 
 export const cosmosChainId = [
@@ -80,31 +80,13 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!sourceChannel) return err(new Error("Source channel not found"))
       if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
-      console.log({
-        account,
-        rpcUrl,
-        gasPrice,
-        instructions: [
-          {
-            contractAddress: relayContractAddress,
-            msg: {
-              transfer: {
-                channel_id: sourceChannel,
-                receiver: receiver,
-                base_token: denomAddress,
-                base_amount: amount,
-                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
-                quote_amount: amount,
-                timeout_height: 100000000,
-                timeout_timestamp: 0,
-                salt: "0x69fce040a41930d779c972da6cc8b8b418d86e1e41199f51ec71c864e1412099" //TODO: don't hardcode
-                // memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
-              }
-            },
-            funds: [{ amount: amount.toString(), denom: denomAddress }]
-          }
-        ]
-      })
+      // add a salt to each transfer to prevent hash collisions
+      // important because ibc-union does not use sequence numbers
+      // such that intents are possible based on deterministic packet hashes
+      const rawSalt = new Uint8Array(32)
+      crypto.getRandomValues(rawSalt)
+      const salt = toHex(rawSalt)
+
       const transfer = await cosmwasmTransfer({
         account,
         rpcUrl,
@@ -122,8 +104,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 quote_amount: amount,
                 timeout_height: 1000000000,
                 timeout_timestamp: 0,
-                salt: "0x69fce040a41930d779c972da6cc8b8b418d86e1e41199f51ec71c864e1412099" //TODO: don't hardcode
-                // memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+                salt
               }
             },
             funds: [{ amount: amount.toString(), denom: denomAddress }]
