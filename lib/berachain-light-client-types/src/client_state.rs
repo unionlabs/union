@@ -1,4 +1,4 @@
-use unionlabs::{primitives::H160, uint::U256};
+use unionlabs::primitives::{H160, U256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

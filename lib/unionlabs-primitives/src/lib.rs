@@ -15,11 +15,15 @@ mod fixed_bytes;
 
 mod bytes;
 
+// TODO: Replace with something like <https://github.com/recmo/uint>
+pub mod uint;
+
 mod compat;
 
 pub use crate::{
     bytes::Bytes,
     fixed_bytes::{FixedBytes, FixedBytesError},
+    uint::U256,
 };
 
 pub type H64<E = HexPrefixed> = FixedBytes<8, E>;

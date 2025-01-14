@@ -15,6 +15,7 @@ test-include = ["lib/scroll-verifier/tests"]
 evm-storage-verifier     = { workspace = true }
 gnark-mimc               = { workspace = true }
 linea-light-client-types = { workspace = true }
+linea-types              = { workspace = true }
 linea-zktrie             = { workspace = true }
 rlp                      = { workspace = true }
 thiserror                = { workspace = true }

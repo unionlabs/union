@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{Bytes, H256},
-    uint::U256,
+    primitives::{Bytes, H256, U256},
 };
 use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
 

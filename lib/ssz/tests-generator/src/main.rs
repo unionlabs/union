@@ -11,7 +11,7 @@ use hex::ToHex;
 use serde::{de::DeserializeOwned, Deserialize};
 use ssz::types::{BitList, BitVector, List, Vector};
 use typenum::{NonZero, Unsigned};
-use unionlabs::{primitives::H256, uint::U256};
+use unionlabs::primitives::{H256, U256};
 
 // alias primitive types to their respective eth names, as that's whats used in the testdata folder names
 type uint8 = u8;
@@ -93,8 +93,7 @@ const HEADER: &str = r#"
 use hex_literal::hex;
 use ssz::types::*;
 use ssz::Ssz;
-use unionlabs::uint::U256;
-use unionlabs::primitives::H256;
+use unionlabs::primitives::{H256, U256};
 use typenum::U;
 
 pub mod container_types {

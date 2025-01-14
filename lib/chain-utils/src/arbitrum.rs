@@ -17,8 +17,7 @@ use unionlabs::{
             ethereum::{self, storage_proof::StorageProof},
         },
     },
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
     validated::ValidateT,
 };
 

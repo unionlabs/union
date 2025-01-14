@@ -5,8 +5,7 @@ use rlp::RlpDecodable;
 use trie_db::{Trie, TrieDBBuilder};
 use unionlabs::{
     ensure,
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
 };
 
 use crate::rlp_node_codec::{keccak_256, EthLayout, KeccakHasher};

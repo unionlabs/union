@@ -11,12 +11,18 @@ base64           = { workspace = true, optional = true, features = ["std"] }
 bincode          = { workspace = true, optional = true, features = ["alloc"] }
 generic-array    = { workspace = true, optional = true }
 hex              = { workspace = true, features = ["std"] }
-primitive-types  = { workspace = true, optional = true }
+primitive-types  = { workspace = true }
 rlp              = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }
 serde_bytes      = { version = "0.11.15", optional = true }
 thiserror        = { workspace = true }
 typenum          = { workspace = true, optional = true }
+
+# TODO: This is only used for uint, replace with ruint
+uint = "0.9.0"
+
+[dev-dependencies]
+unionlabs = { workspace = true, features = ["test-utils"] }
 
 [lints]
 workspace = true
@@ -30,5 +36,8 @@ rlp     = ["dep:rlp"]
 serde   = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
-generic-array-compat    = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
-primitive-types-compat  = ["dep:primitive-types"]
+generic-array-compat = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
+primitive-types-compat = [
+  # TODO: Make this dep optional again once we switch to ruint
+  # "dep:primitive-types"
+]

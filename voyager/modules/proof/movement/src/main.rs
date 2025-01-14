@@ -18,8 +18,7 @@ use unionlabs::{
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
     ibc::core::client::height::Height,
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
     ErrorReporter,
 };
 use voyager_message::{

@@ -10,8 +10,7 @@ use unionlabs::{
     encoding::{Bincode, DecodeAs},
     ethereum::{ibc_commitment_key, keccak256},
     ibc::core::commitment::merkle_proof::MerkleProof,
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
 };
 
 use crate::errors::Error;

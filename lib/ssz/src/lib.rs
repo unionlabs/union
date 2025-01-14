@@ -465,6 +465,44 @@ where
     }
 }
 
+impl Ssz for unionlabs_primitives::U256 {
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(option_unwrap!(NonZeroUsize::new(32)));
+
+    const TREE_HASH_TYPE: TreeHashType = TreeHashType::Basic { size: 32 };
+
+    fn tree_hash_root(&self) -> H256 {
+        let mut result = [0; 32];
+        self.0.to_little_endian(&mut result[..]);
+        H256::new(result)
+    }
+
+    fn ssz_bytes_len(&self) -> NonZeroUsize {
+        option_unwrap!(NonZeroUsize::new(32))
+    }
+
+    fn ssz_append(&self, buf: &mut Vec<u8>) {
+        let n = 32;
+        let s = buf.len();
+
+        buf.resize(s + n, 0);
+        self.0.to_little_endian(&mut buf[s..]);
+    }
+
+    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let len = bytes.len();
+        let expected = 32;
+
+        if len == expected {
+            Ok(Self::from_le_bytes(bytes.try_into().unwrap()))
+        } else {
+            Err(DecodeError::InvalidByteLength {
+                found: len,
+                expected,
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

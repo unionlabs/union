@@ -40,7 +40,6 @@ static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-uint                     = "0.9.0"
 wasmparser               = { version = "0.113" }
 
 alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }

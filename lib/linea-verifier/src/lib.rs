@@ -3,11 +3,10 @@ use core::fmt::Debug;
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use linea_light_client_types::{ClientState, Header};
+use linea_types::account::ZkAccount;
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
-    linea::account::ZkAccount,
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -94,7 +93,7 @@ pub fn state_root_hashes_mapping_key(slot: &U256, l2_block_number: &U256) -> U25
 // mod tests {
 //     use hex_literal::hex;
 //     use linea_light_client_types::{ClientState, Header};
-//     use unionlabs::{ibc::core::client::height::Height, uint::U256};
+//     use unionlabs::{ibc::core::client::height::Height, primitives::U256};
 
 //     use crate::{state_root_hashes_mapping_key, verify_header};
 
