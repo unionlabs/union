@@ -90,9 +90,8 @@ mod tests {
     };
     use unionlabs::{
         encoding::{Bincode, Json},
-        primitives::{H160, H256, H384, H768},
+        primitives::{H160, H256, H384, H768, U256},
         test_utils::assert_codec_iso,
-        uint::U256,
     };
 
     use super::*;

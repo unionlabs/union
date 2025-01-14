@@ -3,8 +3,7 @@ use sha3::Keccak256;
 
 use crate::{
     ethereum::slot::{MappingKey, Slot},
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
 };
 
 pub mod slot;

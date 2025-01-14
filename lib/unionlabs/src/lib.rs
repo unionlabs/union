@@ -54,9 +54,6 @@ pub mod union;
 /// Types specific to the scroll protocol.
 pub mod scroll;
 
-/// Types specific to the linea protocol.
-pub mod linea;
-
 /// Types specific to the berachain protocol.
 pub mod berachain;
 
@@ -84,9 +81,6 @@ pub mod id;
 pub mod signer;
 
 pub mod traits;
-
-// TODO: Replace with something like <https://github.com/recmo/uint>
-pub mod uint;
 
 pub(crate) mod macros;
 

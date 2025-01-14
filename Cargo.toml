@@ -172,6 +172,7 @@ members = [
   "lib/ibc-classic-spec",
   "lib/state-lens-light-client-types",
   "lib/create3",
+  "lib/linea-types",
 ]
 
 [workspace.package]
@@ -229,6 +230,7 @@ tendermint-light-client-types = { path = "lib/tendermint-light-client-types", de
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
 linea-light-client-types = { path = "lib/linea-light-client-types", default-features = false }
+linea-types              = { path = "lib/linea-types", default-features = false }
 linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
 ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
@@ -272,8 +274,6 @@ voyager-core    = { path = "lib/voyager-core", default-features = false }
 voyager-message = { path = "lib/voyager-message", default-features = false }
 voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 
-voyager-consensus-module-tendermint = { path = "voyager/modules/consensus/tendermint", default-features = false }
-
 # external dependencies
 milagro_bls    = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
@@ -307,7 +307,6 @@ ethabi                   = { version = "18.0.0", default-features = false }
 frame-support-procedural = { version = "30.0.0", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
 generic-array            = { version = "0.14.7", default-features = false }
-go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 jsonrpsee                = { version = "0.24.2", default-features = false }
@@ -322,7 +321,6 @@ ripemd                   = { version = "0.1.3", default-features = false }
 rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.3", default-features = false }
 serde                    = { version = "1.0.0", default-features = false }
-serde-json-wasm          = { version = "1.0.0", default-features = false }
 serde_json               = { version = "1.0.0", default-features = false, features = ["alloc"] }        # serde-json requires one of "std" or "alloc"
 serde_with               = { version = "3.7.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.7", default-features = false }

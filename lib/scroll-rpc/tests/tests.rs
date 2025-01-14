@@ -1,5 +1,5 @@
 use scroll_rpc::{BlockId, JsonRpcClient};
-use unionlabs::uint::U256;
+use unionlabs::primitives::U256;
 
 #[tokio::test]
 #[ignore = "needs network"]

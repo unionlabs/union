@@ -8,8 +8,7 @@ use unionlabs::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
     encoding::Bincode,
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
 };
 
 use crate::error::Error;

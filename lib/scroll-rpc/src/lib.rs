@@ -7,10 +7,7 @@ use jsonrpsee::{
     ws_client::{WsClient, WsClientBuilder},
 };
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    primitives::{H160, H256},
-    uint::U256,
-};
+use unionlabs::primitives::{H160, H256, U256};
 
 #[derive(macros::Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -19,11 +16,11 @@ pub struct ScrollEip1186ProofResponse {
     #[debug(wrap = ::serde_utils::fmt::DebugListAsHex)]
     pub account_proof: Vec<Vec<u8>>,
     pub address: H160,
-    #[serde(with = "unionlabs::uint::u256_big_endian_hex")]
+    #[serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")]
     pub balance: U256,
     pub poseidon_code_hash: H256,
     pub keccak_code_hash: H256,
-    #[serde(with = "unionlabs::uint::u256_big_endian_hex")]
+    #[serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")]
     pub code_size: U256,
     #[serde(with = "::serde_utils::u64_hex")]
     pub nonce: u64,

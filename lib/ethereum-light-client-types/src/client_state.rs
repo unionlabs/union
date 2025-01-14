@@ -1,8 +1,7 @@
 use beacon_api_types::{ForkParameters, PresetBaseKind};
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
 };
 
 #[derive(Debug, Clone, PartialEq)]

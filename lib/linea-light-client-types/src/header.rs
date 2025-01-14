@@ -1,5 +1,6 @@
 use ethereum_light_client_types::{AccountProof, StorageProof};
-use unionlabs::{ibc::core::client::height::Height, linea::proof::InclusionProof};
+use linea_types::proof::InclusionProof;
+use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

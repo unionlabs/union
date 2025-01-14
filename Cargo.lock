@@ -4897,6 +4897,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastrlp"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce8dba4714ef14b8274c371879b175aa55b16b30f269663f19d576f380018dc4"
+dependencies = [
+ "arrayvec 0.7.4",
+ "auto_impl",
+ "bytes",
+]
+
+[[package]]
 name = "ff"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7001,6 +7012,15 @@ version = "0.1.0"
 dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
+ "linea-types",
+ "serde",
+ "unionlabs",
+]
+
+[[package]]
+name = "linea-types"
+version = "0.1.0"
+dependencies = [
  "serde",
  "unionlabs",
 ]
@@ -7012,6 +7032,7 @@ dependencies = [
  "evm-storage-verifier",
  "gnark-mimc",
  "linea-light-client-types",
+ "linea-types",
  "linea-zktrie",
  "rlp",
  "thiserror",
@@ -7025,6 +7046,7 @@ dependencies = [
  "gnark-mimc",
  "hex",
  "hex-literal",
+ "linea-types",
  "serde",
  "serde_json",
  "thiserror",
@@ -9207,9 +9229,9 @@ dependencies = [
 
 [[package]]
 name = "proptest"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31b476131c3c86cb68032fdc5cb6d5a1045e3e42d96b69fa599fd77701e1f5bf"
+checksum = "b4c2511913b88df1637da85cc8d96ec8e43a3f8bb8ccb71ee1ac240d6f3df58d"
 dependencies = [
  "bit-set",
  "bit-vec",
@@ -9947,16 +9969,18 @@ dependencies = [
 
 [[package]]
 name = "ruint"
-version = "1.12.3"
+version = "1.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c3cc4c2511671f327125da14133d0c5c5d137f006a1017a16f557bc85b16286"
+checksum = "f5ef8fb1dd8de3870cb8400d51b4c2023854bbafd5431a3ac7e7317243e22d2f"
 dependencies = [
  "alloy-rlp",
  "ark-ff 0.3.0",
  "ark-ff 0.4.2",
  "bytes",
- "fastrlp",
+ "fastrlp 0.3.1",
+ "fastrlp 0.4.0",
  "num-bigint 0.4.6",
+ "num-integer",
  "num-traits",
  "parity-scale-codec 3.6.9",
  "primitive-types 0.12.2",
@@ -12707,7 +12731,6 @@ dependencies = [
  "subtle-encoding",
  "thiserror",
  "typenum",
- "uint",
  "unionlabs-primitives",
  "wasmparser",
 ]
@@ -12727,6 +12750,8 @@ dependencies = [
  "serde_bytes",
  "thiserror",
  "typenum",
+ "uint",
+ "unionlabs",
 ]
 
 [[package]]

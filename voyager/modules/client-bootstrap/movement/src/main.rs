@@ -14,8 +14,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::{FixedBytes, H160},
-    uint::U256,
+    primitives::{FixedBytes, H160, U256},
 };
 use voyager_message::{
     core::{ChainId, ClientType},

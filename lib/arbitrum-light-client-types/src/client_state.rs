@@ -1,5 +1,7 @@
 use unionlabs::{
-    bounded::BoundedU32, ibc::core::client::height::Height, primitives::H160, uint::U256,
+    bounded::BoundedU32,
+    ibc::core::client::height::Height,
+    primitives::{H160, U256},
 };
 
 #[derive(Debug, Clone, PartialEq)]
