@@ -317,7 +317,14 @@ contract UCS03Zkgm is
         string memory tokenName = sentTokenMeta.name();
         string memory tokenSymbol = sentTokenMeta.symbol();
         uint256 origin = tokenOrigin[baseToken];
-        if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
+        // Verify the unwrap
+        (address wrappedToken,) =
+            internalPredictWrappedTokenMemory(0, channelId, quoteToken);
+        // Only allow unwrapping if the quote asset is the unwrapped asset.
+        if (
+            ZkgmLib.lastChannelFromPath(origin) == channelId
+                && abi.encodePacked(baseToken).eq(abi.encodePacked(wrappedToken))
+        ) {
             IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
         } else {
             // TODO: extract this as a step before verifying to allow for ERC777

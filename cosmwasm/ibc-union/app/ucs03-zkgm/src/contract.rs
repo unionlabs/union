@@ -717,21 +717,29 @@ fn transfer(
     if !contains_base_token {
         return Err(ContractError::MissingFunds);
     }
+    // If the origin exists, the preimage exists
+    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
     let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
     // TODO: handle forward path
-    let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
+    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
-        Some(path) if path == Uint256::from(channel_id) => messages.push(
-            TokenFactoryMsg::BurnTokens {
-                denom: base_token.clone(),
-                amount: base_amount,
-                burn_from_address: env.contract.address.into_string(),
-            }
-            .into(),
-        ),
+        Some(path)
+            if path == Uint256::from(channel_id)
+                && unwrapped_asset == Some(quote_token.clone()) =>
+        {
+            messages.push(
+                TokenFactoryMsg::BurnTokens {
+                    denom: base_token.clone(),
+                    amount: base_amount,
+                    burn_from_address: env.contract.address.into_string(),
+                }
+                .into(),
+            )
+        }
         // Escrow and update the balance, the counterparty will mint the token
         _ => {
+            origin = None;
             CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
                 match balance {
                     Some(value) => value
