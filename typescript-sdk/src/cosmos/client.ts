@@ -1,8 +1,6 @@
 import {
-  ibcTransfer,
   cosmwasmTransfer,
   ibcTransferSimulate,
-  cosmosSameChainTransfer,
   cosmwasmTransferSimulate,
   cosmosSameChainTransferSimulate
 } from "./transfer.ts"
