@@ -1,0 +1,14 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "create3"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+alloy-primitives = { workspace = true }
+alloy-sol-types  = "0.8.12"
+sha3.workspace   = true
+
+[lints]
+workspace = true

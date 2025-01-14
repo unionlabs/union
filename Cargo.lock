@@ -3565,6 +3565,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "create3"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "sha3 0.10.8",
+]
+
+[[package]]
 name = "criterion"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
