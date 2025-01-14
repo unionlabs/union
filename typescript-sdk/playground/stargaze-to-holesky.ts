@@ -35,7 +35,7 @@ try {
   const client = createUnionClient({
     account: cosmosAccount,
     chainId: "elgafar-1",
-    gasPrice: { amount: "0.0025", denom: "ustars" },
+    gasPrice: { amount: "0.025", denom: "ustars" },
     transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
   })
 

@@ -95,8 +95,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 base_amount: amount,
                 quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
                 quote_amount: amount,
-                timeout_height: 0,
-                timeout_timestamp: "18446744073709551610",
+                timeout_height: 100000000,
+                timeout_timestamp: 0,
                 salt: "0x69fce040a41930d779c972da6cc8b8b418d86e1e41199f51ec71c864e1412099" //TODO: don't hardcode
                 // memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
               }
@@ -120,8 +120,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 base_amount: amount,
                 quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84",
                 quote_amount: amount,
-                timeout_height: 0,
-                timeout_timestamp: "18446744073709551610",
+                timeout_height: 1000000000,
+                timeout_timestamp: 0,
                 salt: "0x69fce040a41930d779c972da6cc8b8b418d86e1e41199f51ec71c864e1412099" //TODO: don't hardcode
                 // memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
               }
