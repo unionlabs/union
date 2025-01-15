@@ -164,6 +164,7 @@ impl ClientBootstrapModuleServer for Module {
             )),
             frozen_height: Height::new(0),
             latest_block_num: height.height(),
+            whitelisted_relayers: vec![],
         })
         .expect("infallible"))
     }
