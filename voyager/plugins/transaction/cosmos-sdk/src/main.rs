@@ -71,6 +71,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,

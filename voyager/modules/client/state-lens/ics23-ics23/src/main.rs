@@ -37,6 +37,7 @@ async fn main() {
 pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 impl ClientModule for Module {

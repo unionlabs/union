@@ -31,6 +31,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub connection_event_filters: Vec<ConnectionEventFilter>,
     pub channel_event_filters: Vec<ChannelEventFilter>,

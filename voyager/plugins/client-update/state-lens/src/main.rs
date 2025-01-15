@@ -46,6 +46,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub l0_client_id: u32,
     pub l1_client_id: u32,
