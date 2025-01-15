@@ -34,16 +34,16 @@ const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
       port_id: packet.destination_port_id ?? "unknown",
       sequence: packet.packet_recv_transaction_hash ?? "unknown"
     },
-    source_sequence: {
+    send: {
       transaction_hash: packet.packet_send_transaction_hash,
       timestamp: packet.packet_send_timestamp
     },
-    destination_sequence: {
-      sequence: packet.packet_send_transaction_hash,
+    recv: {
+      transaction_hash: packet.packet_recv_transaction_hash,
       timestamp: packet.packet_recv_timestamp
     },
     timestamp: packet.packet_send_timestamp,
-    destination_time: packet.packet_recv_transaction_hash
+    destination_time: packet.packet_recv_timestamp
   }
 }
 
