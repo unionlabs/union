@@ -287,10 +287,10 @@ export const packetDetailsQuery = (
   chain_id: string,
   connection_id: number,
   channel_id: number,
-  sequence: number
+  packet_send_transaction_hash: string
 ) =>
   createQuery({
-    queryKey: ["packets", chain_id, connection_id, channel_id, sequence],
+    queryKey: ["packets", chain_id, connection_id, channel_id, packet_send_transaction_hash],
     refetchInterval: 5_000,
     placeholderData: keepPreviousData,
     queryFn: async () =>
@@ -298,6 +298,6 @@ export const packetDetailsQuery = (
         chain_id,
         connection_id,
         channel_id,
-        sequence
+        packet_send_transaction_hash
       })
   })
