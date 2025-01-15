@@ -6126,6 +6126,7 @@ type v1_ibc_union_channels {
   """An object relationship"""
   destination_chain: v1_ibc_union_chains
   destination_chain_id: String
+  destination_channel_id: Int
   destination_connection_id: Int
   destination_port_id: String
   internal_source_chain_id: Int
@@ -6150,6 +6151,7 @@ input v1_ibc_union_channels_bool_exp {
   connection: v1_ibc_union_connections_bool_exp
   destination_chain: v1_ibc_union_chains_bool_exp
   destination_chain_id: String_comparison_exp
+  destination_channel_id: Int_comparison_exp
   destination_connection_id: Int_comparison_exp
   destination_port_id: String_comparison_exp
   internal_source_chain_id: Int_comparison_exp
@@ -6167,6 +6169,7 @@ input v1_ibc_union_channels_order_by {
   connection: v1_ibc_union_connections_order_by
   destination_chain: v1_ibc_union_chains_order_by
   destination_chain_id: order_by
+  destination_channel_id: order_by
   destination_connection_id: order_by
   destination_port_id: order_by
   internal_source_chain_id: order_by
@@ -6185,6 +6188,9 @@ select columns of table "v1_ibc_union.channels"
 enum v1_ibc_union_channels_select_column {
   """column name"""
   destination_chain_id
+
+  """column name"""
+  destination_channel_id
 
   """column name"""
   destination_connection_id
@@ -6228,6 +6234,7 @@ input v1_ibc_union_channels_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_channels_stream_cursor_value_input {
   destination_chain_id: String
+  destination_channel_id: Int
   destination_connection_id: Int
   destination_port_id: String
   internal_source_chain_id: Int
@@ -6915,6 +6922,9 @@ type v1_ibc_union_fungible_asset_orders {
   ): jsonb
   base_amount: String
   base_token: String
+
+  """An object relationship"""
+  base_token_details: v1_ibc_union_assets
   base_token_name: String
   base_token_path: String
   base_token_symbol: String
@@ -6962,6 +6972,9 @@ type v1_ibc_union_fungible_asset_orders {
   path: String
   quote_amount: String
   quote_token: String
+
+  """An object relationship"""
+  quote_token_details: v1_ibc_union_assets
   receiver: String
   salt: String
   sender: String
@@ -7016,6 +7029,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   acknowledgement_decoded: jsonb_comparison_exp
   base_amount: String_comparison_exp
   base_token: String_comparison_exp
+  base_token_details: v1_ibc_union_assets_bool_exp
   base_token_name: String_comparison_exp
   base_token_path: String_comparison_exp
   base_token_symbol: String_comparison_exp
@@ -7056,6 +7070,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   path: String_comparison_exp
   quote_amount: String_comparison_exp
   quote_token: String_comparison_exp
+  quote_token_details: v1_ibc_union_assets_bool_exp
   receiver: String_comparison_exp
   salt: String_comparison_exp
   sender: String_comparison_exp
@@ -7088,6 +7103,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   acknowledgement_decoded: order_by
   base_amount: order_by
   base_token: order_by
+  base_token_details: v1_ibc_union_assets_order_by
   base_token_name: order_by
   base_token_path: order_by
   base_token_symbol: order_by
@@ -7128,6 +7144,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   path: order_by
   quote_amount: order_by
   quote_token: order_by
+  quote_token_details: v1_ibc_union_assets_order_by
   receiver: order_by
   salt: order_by
   sender: order_by
@@ -8043,9 +8060,12 @@ input v1_ibc_union_statistics_stream_cursor_value_input {
 columns and relationships of "v1_ibc_union.traces"
 """
 type v1_ibc_union_traces {
+  block_hash: String
+
+  """An object relationship"""
+  chain: v1_ibc_union_chains
   height: bigint
   initiating_transaction_hash: String
-  order: Int
   timestamp: timestamptz
   transaction_hash: String
   type: String
@@ -8073,7 +8093,6 @@ order by avg() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_avg_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8083,9 +8102,10 @@ input v1_ibc_union_traces_bool_exp {
   _and: [v1_ibc_union_traces_bool_exp!]
   _not: v1_ibc_union_traces_bool_exp
   _or: [v1_ibc_union_traces_bool_exp!]
+  block_hash: String_comparison_exp
+  chain: v1_ibc_union_chains_bool_exp
   height: bigint_comparison_exp
   initiating_transaction_hash: String_comparison_exp
-  order: Int_comparison_exp
   timestamp: timestamptz_comparison_exp
   transaction_hash: String_comparison_exp
   type: String_comparison_exp
@@ -8095,9 +8115,9 @@ input v1_ibc_union_traces_bool_exp {
 order by max() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_max_order_by {
+  block_hash: order_by
   height: order_by
   initiating_transaction_hash: order_by
-  order: order_by
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
@@ -8107,9 +8127,9 @@ input v1_ibc_union_traces_max_order_by {
 order by min() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_min_order_by {
+  block_hash: order_by
   height: order_by
   initiating_transaction_hash: order_by
-  order: order_by
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
@@ -8117,9 +8137,10 @@ input v1_ibc_union_traces_min_order_by {
 
 """Ordering options when selecting data from "v1_ibc_union.traces"."""
 input v1_ibc_union_traces_order_by {
+  block_hash: order_by
+  chain: v1_ibc_union_chains_order_by
   height: order_by
   initiating_transaction_hash: order_by
-  order: order_by
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
@@ -8130,13 +8151,13 @@ select columns of table "v1_ibc_union.traces"
 """
 enum v1_ibc_union_traces_select_column {
   """column name"""
+  block_hash
+
+  """column name"""
   height
 
   """column name"""
   initiating_transaction_hash
-
-  """column name"""
-  order
 
   """column name"""
   timestamp
@@ -8153,7 +8174,6 @@ order by stddev() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_stddev_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8161,7 +8181,6 @@ order by stddev_pop() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_stddev_pop_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8169,7 +8188,6 @@ order by stddev_samp() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_stddev_samp_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8185,9 +8203,9 @@ input v1_ibc_union_traces_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_traces_stream_cursor_value_input {
+  block_hash: String
   height: bigint
   initiating_transaction_hash: String
-  order: Int
   timestamp: timestamptz
   transaction_hash: String
   type: String
@@ -8198,7 +8216,6 @@ order by sum() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_sum_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8206,7 +8223,6 @@ order by var_pop() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_var_pop_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8214,7 +8230,6 @@ order by var_samp() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_var_samp_order_by {
   height: order_by
-  order: order_by
 }
 
 """
@@ -8222,7 +8237,6 @@ order by variance() on columns of table "v1_ibc_union.traces"
 """
 input v1_ibc_union_traces_variance_order_by {
   height: order_by
-  order: order_by
 }
 
 """

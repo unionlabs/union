@@ -13,7 +13,7 @@ query ConnectionsQuery($limit: Int = 100) @cached(ttl: 30) {
     {destination_connection_id: asc}
   ], 
   limit: $limit, 
-  where: { status: {_eq: "CONFIRM"}, source_chain: {enabled: {_eq: true}}, destination_chain: {enabled: {_eq: true}}}) {
+  where: { status: {_eq: "CONFIRM"}, }) {
     source_chain_id
     destination_chain_id
     source_client_id

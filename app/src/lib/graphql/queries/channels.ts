@@ -2,7 +2,7 @@ import { graphql } from "gql.tada"
 
 export const channelsQuery =
   graphql(/* GraphQL */ `query ChannelsQuery($limit: Int = 500) @cached(ttl: 30) {
-  v1_channels(
+  v1_ibc_union_channels(
     where: {source_chain: {enabled: {_eq: true}}, destination_chain: {enabled: {_eq: true}}},
     order_by: [
     {status: asc}, 
