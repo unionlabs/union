@@ -49,16 +49,14 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
 }
 
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let chain_id = provider.get_chain_id().await?;
 

@@ -52,7 +52,7 @@ pub struct Module {
     pub l2_chain_id: ChainId,
     pub ibc_handler_address: H160,
     pub eth_provider: RootProvider<BoxTransport>,
-    pub tm_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,8 +62,8 @@ pub struct Config {
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
     pub ibc_handler_address: H160,
-    pub comet_ws_url: String,
-    pub eth_rpc_api: String,
+    pub comet_rpc_url: String,
+    pub eth_rpc_url: String,
 }
 
 impl Plugin for Module {
@@ -75,7 +75,7 @@ impl Plugin for Module {
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let eth_provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
+            .on_builtin(&config.eth_rpc_url)
             .await?;
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
@@ -88,7 +88,7 @@ impl Plugin for Module {
             .into());
         }
 
-        let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
+        let tm_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
 
         Ok(Self {
             l1_client_id: config.l1_client_id,
@@ -96,7 +96,7 @@ impl Plugin for Module {
             l1_chain_id: config.l1_chain_id,
             ibc_handler_address: config.ibc_handler_address,
             eth_provider,
-            tm_client,
+            cometbft_client: tm_client,
         })
     }
 
@@ -209,7 +209,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 // cometbft/beacon/execution heights are guaranteed to be the
                 // same
                 let query_result = self
-                    .tm_client
+                    .cometbft_client
                     .abci_query(
                         "store/beacon/key",
                         [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX],
