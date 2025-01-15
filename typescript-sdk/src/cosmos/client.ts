@@ -82,7 +82,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       // important because ibc-union does not use sequence numbers
       // such that intents are possible based on deterministic packet hashes
       const rawSalt = new Uint8Array(32)
-      crypto.getRandomValues(rawSalt)
+      // Here we DISABLE salt randomization
+      // crypto.getRandomValues(rawSalt)
       const salt = toHex(rawSalt)
 
       const transfer = await cosmwasmTransfer({
