@@ -236,6 +236,32 @@ impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for FixedByte
     }
 }
 
+#[cfg(feature = "schemars")]
+impl<const BYTES: usize, E: Encoding> schemars::JsonSchema for FixedBytes<BYTES, E> {
+    fn schema_name() -> String {
+        "Hash".to_string()
+    }
+
+    /// The `FixedBytes` object is serialized as an array in JSON
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        let mut schema_object = schemars::schema::SchemaObject {
+            instance_type: Some(schemars::schema::InstanceType::Array.into()),
+            ..Default::default()
+        };
+
+        schema_object.array = Some(Box::new(schemars::schema::ArrayValidation {
+            items: Some(schemars::schema::SingleOrVec::Single(Box::new(
+                gen.subschema_for::<u8>(),
+            ))),
+            min_items: Some(BYTES.try_into().unwrap()),
+            max_items: Some(BYTES.try_into().unwrap()),
+            ..Default::default()
+        }));
+
+        schemars::schema::Schema::Object(schema_object)
+    }
+}
+
 impl<const BYTES: usize, E: Encoding> FromStr for FixedBytes<BYTES, E> {
     type Err = E::Error;
 

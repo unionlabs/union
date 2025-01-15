@@ -14,7 +14,7 @@ pub struct MsgRegisterClient {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-#[derive(cw_orch::ExecuteFns)] // cw-orch automatic
+#[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),

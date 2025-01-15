@@ -344,6 +344,9 @@ maybe_sol_attr! {
             feature = "serde", derive(serde::Serialize, serde::Deserialize),
             serde(deny_unknown_fields)
         )]
+        #[cfg_attr(
+            feature = "schemars", derive(schemars::JsonSchema),
+        )]
         enum ConnectionState {
             Unspecified,
             Init,
@@ -355,6 +358,9 @@ maybe_sol_attr! {
             feature = "serde", derive(serde::Serialize, serde::Deserialize),
             serde(deny_unknown_fields)
         )]
+        #[cfg_attr(
+            feature = "schemars", derive(schemars::JsonSchema),
+        )]
         struct Connection {
             ConnectionState state;
             uint32 client_id;
@@ -365,6 +371,9 @@ maybe_sol_attr! {
         #[cfg_attr(
             feature = "serde", derive(serde::Serialize, serde::Deserialize),
             serde(deny_unknown_fields)
+        )]
+        #[cfg_attr(
+            feature = "schemars", derive(schemars::JsonSchema),
         )]
         enum ChannelState {
             Unspecified,
@@ -610,6 +619,64 @@ maybe_sol_attr! {
                 uint32 client_id
             ) external view returns (bool);
         }
+    }
+}
+
+#[cfg(feature = "schemars")]
+/// We need a custom implementation because alloy::Bytes doesn't implement JsonSchema
+impl schemars::JsonSchema for Channel {
+    fn schema_name() -> String {
+        "Channel".to_string()
+    }
+    fn schema_id() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("ibc_solidity::Channel")
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        let mut schema_object = schemars::schema::SchemaObject {
+            instance_type: Some(schemars::schema::InstanceType::Object.into()),
+            ..Default::default()
+        };
+        let object_validation = schema_object.object();
+        {
+            schemars::_private::insert_object_property::<ChannelState>(
+                object_validation,
+                "state",
+                false,
+                true,
+                gen.subschema_for::<ChannelState>(),
+            );
+            schemars::_private::insert_object_property::<u32>(
+                object_validation,
+                "connection_id",
+                false,
+                true,
+                gen.subschema_for::<u32>(),
+            );
+            schemars::_private::insert_object_property::<u32>(
+                object_validation,
+                "counterparty_channel_id",
+                false,
+                true,
+                gen.subschema_for::<u32>(),
+            );
+            schemars::_private::insert_object_property::<Vec<u8>>(
+                object_validation,
+                "counterparty_port_id",
+                false,
+                true,
+                gen.subschema_for::<Vec<u8>>(),
+            );
+            schemars::_private::insert_object_property::<String>(
+                object_validation,
+                "version",
+                false,
+                true,
+                gen.subschema_for::<String>(),
+            );
+        }
+
+        schemars::schema::Schema::Object(schema_object)
     }
 }
 

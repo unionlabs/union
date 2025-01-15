@@ -9,10 +9,24 @@ version      = "1.0.0"
 [lints]
 workspace = true
 
+[features]
+cw-orch-interface = [
+    "dep:cw-orch",
+    "dep:schemars",
+    "dep:cosmwasm-std",
+    "dep:cosmwasm-schema",
+    "unionlabs-primitives/schemars",
+    "ibc-solidity/schemars",
+]
+schemars = []
+
 [dependencies]
 ibc-solidity         = { workspace = true, features = ["serde"] }
 serde                = { workspace = true, features = ["derive"] }
 unionlabs-primitives = { workspace = true, features = ["serde"] }
-cosmwasm-std = { workspace = true }
-cosmwasm-schema = { workspace = true }
-cw-orch = "0.27.0"
+
+
+cosmwasm-schema = { workspace = true, optional = true }
+cosmwasm-std    = { workspace = true, optional = true }
+cw-orch         = { workspace = true, optional = true }
+schemars        = { workspace = true, optional = true }

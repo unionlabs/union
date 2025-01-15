@@ -6397,6 +6397,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "cw-orch",
  "ibc-solidity",
+ "schemars",
  "serde",
  "unionlabs-primitives",
 ]
@@ -12979,6 +12980,7 @@ dependencies = [
  "hex",
  "primitive-types 0.12.2",
  "rlp",
+ "schemars",
  "serde",
  "serde_bytes",
  "thiserror",

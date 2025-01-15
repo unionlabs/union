@@ -1,8 +1,9 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 pub mod contract;
-pub mod state;
+#[cfg(feature = "cw-orch-interface")]
 pub mod interface;
+pub mod state;
 
 use cosmwasm_std::{Addr, StdError};
 use ibc_solidity::{ChannelState, ConnectionState};
