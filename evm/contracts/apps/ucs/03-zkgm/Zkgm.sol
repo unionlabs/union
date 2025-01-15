@@ -113,6 +113,7 @@ library ZkgmLib {
     error ErrInvalidAssetSymbol();
     error ErrInvalidAssetName();
     error ErrInvalidBatchInstruction();
+    error ErrInvalidMultiplexSender();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
@@ -489,7 +490,11 @@ contract UCS03Zkgm is
         uint32 channelId,
         uint256 path,
         Multiplex calldata multiplex
-    ) internal {}
+    ) internal {
+        if(!multiplex.sender.eq(abi.encodePacked(msg.sender))) {
+            revert ZkgmLib.ErrInvalidMultiplexSender();
+        }
+    }
 
     function onRecvPacket(
         IBCPacket calldata operand,
