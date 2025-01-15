@@ -17,6 +17,8 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
             destination_chain_id
             destination_connection_id
             destination_channel_id
+            packet_send_timestamp
+            packet_recv_timestamp
             base_token
             base_token_details {
               decimals
@@ -54,28 +56,6 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
                      chain_id
                  }
             }
-
-            # tokens {
-            #     denom
-            #     amount
-            #     asset {
-            #         denom
-            #         decimals
-            #         display_name
-            #         display_symbol
-            #     }
-            # }
-            packet_send_timestamp
-            packet_recv_timestamp
-            # forwards {
-            #     source_connection_id
-            #     source_channel_id
-            #     destination_connection_id
-            #     destination_channel_id
-            #     destination_chain_id
-            #     source_channel_id
-            #     receiver
-            # }
         }
     }
 `)
