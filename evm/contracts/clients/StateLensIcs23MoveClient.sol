@@ -25,13 +25,11 @@ struct ClientState {
     uint64 l2LatestHeight;
     uint16 timestampOffset;
     uint16 stateRootOffset;
-    uint16 storageRootOffset;
 }
 
 struct ConsensusState {
     uint64 timestamp;
     bytes32 stateRoot;
-    bytes32 storageRoot;
 }
 
 library StateLensIcs23MoveLib {
@@ -209,9 +207,6 @@ contract StateLensIcs23MoveClient is
         bytes32 l2StateRoot = StateLensIcs23MoveLib.extractMemory(
             rawL2ConsensusState, clientState.stateRootOffset
         );
-        bytes32 l2StorageRoot = StateLensIcs23MoveLib.extractMemory(
-            rawL2ConsensusState, clientState.storageRootOffset
-        );
 
         if (header.l2Height > clientState.l2LatestHeight) {
             clientState.l2LatestHeight = header.l2Height;
@@ -223,7 +218,6 @@ contract StateLensIcs23MoveClient is
             consensusStates[clientId][header.l2Height];
         consensusState.timestamp = l2Timestamp;
         consensusState.stateRoot = l2StateRoot;
-        consensusState.storageRoot = l2StorageRoot;
 
         // commit(S₂)
         return ConsensusStateUpdate({

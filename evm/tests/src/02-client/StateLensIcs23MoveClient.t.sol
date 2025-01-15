@@ -187,15 +187,13 @@ contract StateLensIcs23MoveClientTest is Test {
             l2ClientId: 20,
             l2LatestHeight: 100,
             timestampOffset: 0,
-            stateRootOffset: 32,
-            storageRootOffset: 64
+            stateRootOffset: 32
         });
         bytes memory clientStateBytes = abi.encode(cState);
 
         ConsensusState memory consState = ConsensusState({
             timestamp: 12345,
-            stateRoot: keccak256("fake-root"),
-            storageRoot: keccak256("fake-storage")
+            stateRoot: keccak256("fake-root")
         });
         bytes memory consStateBytes = abi.encode(consState);
 
@@ -227,16 +225,12 @@ contract StateLensIcs23MoveClientTest is Test {
             l2ClientId: 22,
             l2LatestHeight: 0,
             timestampOffset: 0,
-            stateRootOffset: 32,
-            storageRootOffset: 64
+            stateRootOffset: 32
         });
         bytes memory cStateBytes = abi.encode(cState);
 
-        ConsensusState memory consState = ConsensusState({
-            timestamp: 1234,
-            stateRoot: keccak256("x"),
-            storageRoot: keccak256("y")
-        });
+        ConsensusState memory consState =
+            ConsensusState({timestamp: 1234, stateRoot: keccak256("x")});
         bytes memory consStateBytes = abi.encode(consState);
 
         vm.prank(ibcHandler);
@@ -256,13 +250,11 @@ contract StateLensIcs23MoveClientTest is Test {
                 l2ClientId: 20,
                 l2LatestHeight: 100,
                 timestampOffset: 0,
-                stateRootOffset: 32,
-                storageRootOffset: 64
+                stateRootOffset: 32
             });
             ConsensusState memory cs = ConsensusState({
                 timestamp: 9999,
-                stateRoot: keccak256("old-root"),
-                storageRoot: keccak256("old-storage")
+                stateRoot: keccak256("old-root")
             });
 
             vm.prank(ibcHandler);
@@ -289,9 +281,6 @@ contract StateLensIcs23MoveClientTest is Test {
 
         assertEq(dec.timestamp, 8888, "timestamp mismatch");
         assertEq(dec.stateRoot, keccak256("new-root"), "stateRoot mismatch");
-        assertEq(
-            dec.storageRoot, keccak256("new-storage"), "storageRoot mismatch"
-        );
     }
 
     function test_updateClient_revert_invalidProof() public {
@@ -302,13 +291,11 @@ contract StateLensIcs23MoveClientTest is Test {
                 l2ClientId: 20,
                 l2LatestHeight: 100,
                 timestampOffset: 0,
-                stateRootOffset: 32,
-                storageRootOffset: 64
+                stateRootOffset: 32
             });
             ConsensusState memory cs = ConsensusState({
                 timestamp: 9999,
-                stateRoot: keccak256("old-root"),
-                storageRoot: keccak256("old-storage")
+                stateRoot: keccak256("old-root")
             });
 
             vm.prank(ibcHandler);
@@ -354,13 +341,11 @@ contract StateLensIcs23MoveClientTest is Test {
                 l2ClientId: 20,
                 l2LatestHeight: 100,
                 timestampOffset: 0,
-                stateRootOffset: 32,
-                storageRootOffset: 64
+                stateRootOffset: 32
             });
             ConsensusState memory cs = ConsensusState({
                 timestamp: 9999,
-                stateRoot: keccak256("old-root"),
-                storageRoot: keccak256("old-storage")
+                stateRoot: keccak256("old-root")
             });
             vm.prank(ibcHandler);
             client.createClient(999, abi.encode(cState), abi.encode(cs));
@@ -381,13 +366,11 @@ contract StateLensIcs23MoveClientTest is Test {
                 l2ClientId: 20,
                 l2LatestHeight: 100,
                 timestampOffset: 0,
-                stateRootOffset: 32,
-                storageRootOffset: 64
+                stateRootOffset: 32
             });
             ConsensusState memory cs = ConsensusState({
                 timestamp: 9999,
-                stateRoot: keccak256("old-root"),
-                storageRoot: keccak256("old-storage")
+                stateRoot: keccak256("old-root")
             });
             vm.prank(ibcHandler);
             client.createClient(2, abi.encode(cState), abi.encode(cs));
@@ -416,13 +399,11 @@ contract StateLensIcs23MoveClientTest is Test {
                 l2ClientId: 20,
                 l2LatestHeight: 100,
                 timestampOffset: 0,
-                stateRootOffset: 32,
-                storageRootOffset: 64
+                stateRootOffset: 32
             });
             ConsensusState memory cs = ConsensusState({
                 timestamp: 9999,
-                stateRoot: keccak256("old-root"),
-                storageRoot: keccak256("old-storage")
+                stateRoot: keccak256("old-root")
             });
             vm.prank(ibcHandler);
             client.createClient(3, abi.encode(cState), abi.encode(cs));
