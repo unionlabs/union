@@ -11309,6 +11309,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-ics23-smt-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
