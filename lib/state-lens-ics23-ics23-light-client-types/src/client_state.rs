@@ -76,10 +76,12 @@ pub mod ethabi {
 
     #[cfg(test)]
     mod test {
+        #[test]
         fn test_decode() {
             // TODO(aeryz): impl
         }
 
+        #[test]
         fn test_encode() {
             // TODO(aeryz): impl
         }

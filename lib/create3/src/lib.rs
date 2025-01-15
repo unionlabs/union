@@ -4,7 +4,8 @@ use sha3::{Digest, Keccak256};
 const PROXY_INITCODE_HASH: [u8; 32] =
     hex!("21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f");
 
-/// Use to obtain the address using the CREATE3 algorithm from solady's assembly optimized implementation
+/// Use to obtain the address using the CREATE3 algorithm from solady's assembly optimized implementation.
+///
 /// https://github.com/Vectorized/solady/blob/de9aee59648862bb98affd578248d1e75c7073ad/src/utils/CREATE3.sol#L106
 pub fn predict_deterministic_address(deployer: Address, salt: B256) -> Address {
     let mut bytes: Vec<u8> = Vec::new();
@@ -55,7 +56,7 @@ mod tests {
         let token = bytes!("779877A7B0D9E8603169DdbD7836e478b4624789");
         let params = (U256::from(0), 5, token);
         let encoded = params.abi_encode_params();
-        let salt: B256 = keccak256(encoded).into();
+        let salt: B256 = keccak256(encoded);
         assert_eq!(
             hex::encode(salt),
             "c5e2ad25b6b23cf40cd46a140eac9ce56464d944c28b449d79c57067b90477e8"

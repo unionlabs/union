@@ -208,6 +208,7 @@ fn timeout_packet(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn timeout_internal(
     deps: DepsMut<TokenFactoryQuery>,
     _env: Env,
@@ -228,11 +229,9 @@ fn timeout_internal(
             let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             refund(deps, packet.source_channel_id, order)
         }
-        _ => {
-            return Err(ContractError::UnknownOpcode {
-                opcode: instruction.opcode,
-            })
-        }
+        _ => Err(ContractError::UnknownOpcode {
+            opcode: instruction.opcode,
+        }),
     }
 }
 
@@ -258,6 +257,7 @@ fn acknowledge_packet(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn acknowledge_internal(
     deps: DepsMut<TokenFactoryQuery>,
     env: Env,
@@ -290,11 +290,9 @@ fn acknowledge_internal(
                 deps, env, info, packet, relayer, salt, path, order, order_ack,
             )
         }
-        _ => {
-            return Err(ContractError::UnknownOpcode {
-                opcode: instruction.opcode,
-            })
-        }
+        _ => Err(ContractError::UnknownOpcode {
+            opcode: instruction.opcode,
+        }),
     }
 }
 
@@ -337,6 +335,7 @@ fn refund(
     Ok(Response::new().add_messages(messages))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn acknowledge_fungible_asset_order(
     deps: DepsMut<TokenFactoryQuery>,
     _env: Env,
@@ -422,6 +421,7 @@ fn execute_packet(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_internal(
     deps: DepsMut<TokenFactoryQuery>,
     env: Env,
@@ -453,11 +453,9 @@ fn execute_internal(
                 order,
             )
         }
-        _ => {
-            return Err(ContractError::UnknownOpcode {
-                opcode: instruction.opcode,
-            })
-        }
+        _ => Err(ContractError::UnknownOpcode {
+            opcode: instruction.opcode,
+        }),
     }
 }
 
@@ -489,6 +487,7 @@ fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Byt
     token_hash.to_string()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
     deps: DepsMut<TokenFactoryQuery>,
     env: Env,
@@ -575,46 +574,44 @@ fn execute_fungible_asset_order(
                 .into(),
             );
         }
-    } else {
-        if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
-            let quote_token = String::from_utf8(order.quote_token.to_vec())
-                .map_err(|_| ContractError::InvalidQuoteToken)?;
-            CHANNEL_BALANCE.update(
-                deps.storage,
-                (packet.destination_channel_id, quote_token.clone()),
-                |balance| match balance {
-                    Some(value) => value
-                        .checked_sub(quote_amount.into())
-                        .map_err(|_| ContractError::InvalidChannelBalance),
-                    None => Err(ContractError::InvalidChannelBalance),
-                },
-            )?;
+    } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
+        let quote_token = String::from_utf8(order.quote_token.to_vec())
+            .map_err(|_| ContractError::InvalidQuoteToken)?;
+        CHANNEL_BALANCE.update(
+            deps.storage,
+            (packet.destination_channel_id, quote_token.clone()),
+            |balance| match balance {
+                Some(value) => value
+                    .checked_sub(quote_amount.into())
+                    .map_err(|_| ContractError::InvalidChannelBalance),
+                None => Err(ContractError::InvalidChannelBalance),
+            },
+        )?;
+        messages.push(
+            BankMsg::Send {
+                to_address: receiver.into_string(),
+                amount: vec![Coin {
+                    denom: quote_token.clone(),
+                    amount: quote_amount.into(),
+                }],
+            }
+            .into(),
+        );
+        if fee_amount > 0 {
             messages.push(
                 BankMsg::Send {
-                    to_address: receiver.into_string(),
+                    to_address: relayer.into_string(),
                     amount: vec![Coin {
-                        denom: quote_token.clone(),
-                        amount: quote_amount.into(),
+                        denom: quote_token,
+                        amount: fee_amount.into(),
                     }],
                 }
                 .into(),
             );
-            if fee_amount > 0 {
-                messages.push(
-                    BankMsg::Send {
-                        to_address: relayer.into_string(),
-                        amount: vec![Coin {
-                            denom: quote_token,
-                            amount: fee_amount.into(),
-                        }],
-                    }
-                    .into(),
-                );
-            }
-        } else {
-            EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
-            return Ok(Response::new());
         }
+    } else {
+        EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
+        return Ok(Response::new());
     };
     EXECUTION_ACK.save(
         deps.storage,
@@ -696,6 +693,7 @@ pub fn reply(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn transfer(
     deps: DepsMut<TokenFactoryQuery>,
     env: Env,
