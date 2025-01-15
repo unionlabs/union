@@ -203,7 +203,11 @@ contract PingPong is
         zkgmProtocol = zkgm;
     }
 
-    function onZkgm(uint32 channelId, bytes calldata sender, bytes calldata message) public {
+    function onZkgm(
+        uint32 channelId,
+        bytes calldata sender,
+        bytes calldata message
+    ) public {
         if (msg.sender != zkgmProtocol) {
             revert PingPongLib.ErrOnlyZKGM();
         }

@@ -179,6 +179,12 @@ library ZkgmLib {
         return operand;
     }
 
+    function encodeBatch(
+        Batch memory batch
+    ) internal pure returns (bytes memory) {
+        return abi.encode(batch.instructions);
+    }
+
     function decodeBatch(
         bytes calldata stream
     ) internal pure returns (Batch calldata) {
@@ -197,6 +203,17 @@ library ZkgmLib {
             operand := stream.offset
         }
         return operand;
+    }
+
+    function encodeMultiplex(
+        Multiplex memory multiplex
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            multiplex.sender,
+            multiplex.eureka,
+            multiplex.contractAddress,
+            multiplex.contractCalldata
+        );
     }
 
     function decodeMultiplex(
@@ -306,6 +323,129 @@ contract UCS03Zkgm is
 
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
+    }
+
+    function transferAndCall(
+        uint32 channelId,
+        bytes calldata receiver,
+        address baseToken,
+        uint256 baseAmount,
+        bytes calldata quoteToken,
+        uint256 quoteAmount,
+        bytes calldata contractAddress,
+        bytes calldata contractCalldata,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt
+    ) public {
+        if (baseAmount == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
+        // TODO: make this non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
+        string memory tokenName = sentTokenMeta.name();
+        string memory tokenSymbol = sentTokenMeta.symbol();
+        uint256 origin = tokenOrigin[baseToken];
+        // Verify the unwrap
+        (address wrappedToken,) =
+            internalPredictWrappedTokenMemory(0, channelId, quoteToken);
+        // Only allow unwrapping if the quote asset is the unwrapped asset.
+        if (
+            ZkgmLib.lastChannelFromPath(origin) == channelId
+                && abi.encodePacked(baseToken).eq(abi.encodePacked(wrappedToken))
+        ) {
+            IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
+        } else {
+            // We reset the origin, the asset will not be unescrowed on the destination
+            origin = 0;
+            // TODO: extract this as a step before verifying to allow for ERC777
+            // send hook
+            SafeERC20.safeTransferFrom(
+                sentTokenMeta, msg.sender, address(this), baseAmount
+            );
+            channelBalance[channelId][address(baseToken)] += baseAmount;
+        }
+        Instruction[] memory instructions = new Instruction[](2);
+        instructions[0] = Instruction({
+            version: ZkgmLib.ZKGM_VERSION_0,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrder(
+                FungibleAssetOrder({
+                    sender: abi.encodePacked(msg.sender),
+                    receiver: receiver,
+                    baseToken: abi.encodePacked(baseToken),
+                    baseTokenPath: origin,
+                    baseTokenSymbol: tokenSymbol,
+                    baseTokenName: tokenName,
+                    baseAmount: baseAmount,
+                    quoteToken: quoteToken,
+                    quoteAmount: quoteAmount
+                })
+            )
+        });
+        instructions[1] = Instruction({
+            version: ZkgmLib.ZKGM_VERSION_0,
+            opcode: ZkgmLib.OP_MULTIPLEX,
+            operand: ZkgmLib.encodeMultiplex(
+                Multiplex({
+                    sender: abi.encodePacked(msg.sender),
+                    eureka: true,
+                    contractAddress: contractAddress,
+                    contractCalldata: contractCalldata
+                })
+            )
+        });
+        ibcHandler.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: salt,
+                    path: 0,
+                    instruction: Instruction({
+                        version: ZkgmLib.ZKGM_VERSION_0,
+                        opcode: ZkgmLib.OP_BATCH,
+                        operand: ZkgmLib.encodeBatch(
+                            Batch({instructions: instructions})
+                        )
+                    })
+                })
+            )
+        );
+    }
+
+    function call(
+        uint32 channelId,
+        bytes calldata contractAddress,
+        bytes calldata contractCalldata,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt
+    ) public {
+        ibcHandler.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: keccak256(abi.encodePacked(msg.sender, salt)),
+                    path: 0,
+                    instruction: Instruction({
+                        version: ZkgmLib.ZKGM_VERSION_0,
+                        opcode: ZkgmLib.OP_MULTIPLEX,
+                        operand: ZkgmLib.encodeMultiplex(
+                            Multiplex({
+                                sender: abi.encodePacked(msg.sender),
+                                eureka: true,
+                                contractAddress: contractAddress,
+                                contractCalldata: contractCalldata
+                            })
+                        )
+                    })
+                })
+            )
+        );
     }
 
     function transfer(
@@ -491,7 +631,7 @@ contract UCS03Zkgm is
         uint256 path,
         Multiplex calldata multiplex
     ) internal {
-        if(!multiplex.sender.eq(abi.encodePacked(msg.sender))) {
+        if (!multiplex.sender.eq(abi.encodePacked(msg.sender))) {
             revert ZkgmLib.ErrInvalidMultiplexSender();
         }
     }
