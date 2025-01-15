@@ -17,7 +17,7 @@ module ucs03::zkgm_relay {
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
-    const ACK_FAILURE: u8 = 0;
+    const ACK_FAILURE: u256 = 0;
     const ACK_LENGTH: u64 = 1;
     const ZKGM_VERSION_0: u8 = 0x00;
     const SYSCALL_FORWARD: u8 = 0x00;
@@ -1589,16 +1589,36 @@ module ucs03::zkgm_relay {
             next_sequence_receive
         );
 
-        let zkgm_packet = decode_packet(packet_data);
+        let packet_hash = commitment::commit_packet(&packet);
 
-        timeout_internal(
-            ibc_store,
-            relay_store,
-            packet,
-            relayer,
-            zkgm_packet.instruction,
-            ctx
-        )
+        let parent = relay_store.in_flight_packet.borrow(packet_hash);
+        let parent = relay_store.in_flight_packet.borrow(packet_hash);
+        if (packet::timeout_timestamp(parent) != 0 ||
+            packet::timeout_height(parent) != 0) {
+                let ack = Acknowledgement { tag: ACK_FAILURE, inner_ack: ACK_EMPTY };
+                ibc::write_acknowledgement(
+                    ibc_store,
+                    *parent,
+                    encode_ack(&ack)
+                );
+                add_or_update_table<vector<u8>, Packet>(
+                    &mut relay_store.in_flight_packet,
+                    packet_hash,
+                    packet::default()
+                );
+        } else {
+
+            let zkgm_packet = decode_packet(packet_data);
+
+            timeout_internal(
+                ibc_store,
+                relay_store,
+                packet,
+                relayer,
+                zkgm_packet.instruction,
+                ctx
+            )
+        }
     }
 
     fun timeout_internal(
