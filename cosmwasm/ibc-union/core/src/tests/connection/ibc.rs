@@ -1,9 +1,12 @@
 use contract::instantiate;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use ibc_solidity::Connection;
-use union_ibc_msg::msg::{
-    ExecuteMsg, InitMsg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-    MsgConnectionOpenTry,
+use ibc_union_msg::{
+    lightclient::VerifyCreationResponse,
+    msg::{
+        ExecuteMsg, InitMsg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+        MsgConnectionOpenTry,
+    },
 };
 
 use super::*;
@@ -20,7 +23,10 @@ fn connection_open_init_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -52,7 +58,10 @@ fn connection_open_init_commitment_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -82,7 +91,10 @@ fn connection_open_try_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -119,7 +131,10 @@ fn connection_open_try_client_not_found() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -165,7 +180,10 @@ fn connection_open_try_commitment_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -212,7 +230,10 @@ fn connection_open_ack_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -254,7 +275,10 @@ fn connection_open_ack_commitment_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -301,7 +325,10 @@ fn connection_open_confirm_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -342,7 +369,10 @@ fn connection_open_try_confirm_commitment_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
         }));

@@ -1,11 +1,11 @@
 use contract::instantiate;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use ibc_solidity::Packet;
-use ibc_union_spec::COMMITMENT_MAGIC;
-use union_ibc_msg::msg::{
+use ibc_union_msg::msg::{
     InitMsg, MsgBatchAcks, MsgBatchSend, MsgIntentPacketRecv, MsgPacketAcknowledgement,
     MsgPacketRecv, MsgPacketTimeout, MsgSendPacket, MsgWriteAcknowledgement,
 };
+use ibc_union_spec::COMMITMENT_MAGIC;
 
 use super::*;
 

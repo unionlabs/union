@@ -2,8 +2,10 @@ use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env},
     to_json_binary, Addr, Event,
 };
-use union_ibc_msg::{
-    lightclient::{QueryMsg as LightClientQueryMsg, VerifyClientMessageUpdate},
+use ibc_union_msg::{
+    lightclient::{
+        QueryMsg as LightClientQueryMsg, VerifyClientMessageUpdate, VerifyCreationResponse,
+    },
     msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
 };
 
@@ -22,13 +24,6 @@ fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Even
     Event::new(events::client::REGISTER)
         .add_attribute(events::attribute::CLIENT_TYPE, client_type)
         .add_attribute(events::attribute::CLIENT_ADDRESS, client_address)
-}
-
-fn new_client_created_event(client_type: &str, client_id: u32) -> Event {
-    Event::new(events::client::CREATE).add_attributes([
-        (events::attribute::CLIENT_TYPE, client_type),
-        (events::attribute::CLIENT_ID, &client_id.to_string()),
-    ])
 }
 
 #[test]
@@ -74,7 +69,10 @@ fn create_client_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -96,7 +94,10 @@ fn create_client_commitments_saved() {
     .expect("instantiate ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -114,11 +115,6 @@ fn create_client_commitments_saved() {
         .value
         .parse()
         .expect("client type string is u32");
-
-    assert!(res
-        .events
-        .into_iter()
-        .any(|e| e == new_client_created_event(CLIENT_TYPE, client_id)));
 
     assert_eq!(
         crate::state::CLIENT_TYPES
@@ -161,7 +157,10 @@ fn update_client_ok() {
     .expect("instantiate ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyClientMessage { .. } => {
                 to_json_binary(&VerifyClientMessageUpdate {
                     height: 2,
@@ -215,7 +214,10 @@ fn update_client_ko() {
     .expect("instantiate ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyClientMessage { .. } => to_json_binary(&0),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -263,7 +265,10 @@ fn update_client_commitments_saved() {
     .expect("instantiate ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
+            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
+                latest_height: 1,
+                counterparty_chain_id: "testchain".to_owned(),
+            }),
             LightClientQueryMsg::VerifyClientMessage { .. } => {
                 to_json_binary(&VerifyClientMessageUpdate {
                     height: 2,

@@ -6128,8 +6128,10 @@ name = "ibc-union"
 version = "1.0.0"
 dependencies = [
  "alloy",
+ "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
+ "ethabi",
  "hex",
  "ibc-solidity",
  "ibc-union-msg",

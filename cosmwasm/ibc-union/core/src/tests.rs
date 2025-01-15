@@ -4,11 +4,11 @@ use cosmwasm_std::{
     testing::{message_info, mock_env, MockApi},
     Addr, Binary, DepsMut, QuerierResult, Response, StdResult, WasmQuery,
 };
-use union_ibc_msg::{
+use ibc_union_msg::{
     lightclient::QueryMsg as LightClientQueryMsg,
     msg::{
-        ExecuteMsg, MsgChannelOpenAck, MsgChannelOpenInit, MsgConnectionOpenConfirm,
-        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
+        ExecuteMsg, MsgChannelOpenInit, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+        MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
     },
 };
 
@@ -130,24 +130,6 @@ fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
-    )
-}
-
-fn channel_open_ack(deps: DepsMut) -> Result<Response, ContractError> {
-    let msg = MsgChannelOpenAck {
-        channel_id: 1,
-        counterparty_version: VERSION.to_owned(),
-        counterparty_channel_id: 0,
-        proof_try: vec![1, 2, 3].into(),
-        proof_height: 1,
-        relayer: mock_addr(RELAYER).to_string(),
-    };
-
-    execute(
-        deps,
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
     )
 }
 
