@@ -6,12 +6,14 @@ export const packetListDataFragment = graphql(/* GraphQL */ `
       source_connection_id
       source_channel_id
       source_port_id
+      packet_send_transaction_hash
       packet_send_block_hash
       packet_send_timestamp
       destination_chain_id
       destination_connection_id
       destination_channel_id
       destination_port_id
+      packet_recv_transaction_hash
       packet_recv_block_hash
       packet_recv_timestamp
       source_chain {
