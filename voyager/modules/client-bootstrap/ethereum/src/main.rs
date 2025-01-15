@@ -56,9 +56,9 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
     /// The RPC endpoint for the beacon chain.
-    pub eth_beacon_rpc_api: String,
+    pub beacon_rpc_url: String,
 }
 
 impl Module {
@@ -116,16 +116,14 @@ impl ClientBootstrapModule for Module {
         config: Self::Config,
         info: ClientBootstrapModuleInfo,
     ) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
         info.ensure_client_type(ClientType::ETHEREUM)?;
 
-        let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
+        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url).await?;
 
         let spec = beacon_api_client.spec().await.unwrap().data;
 

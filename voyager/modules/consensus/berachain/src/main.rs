@@ -45,7 +45,7 @@ pub struct Config {
     pub l1_client_id: u32,
     pub l1_chain_id: ChainId,
     pub ibc_handler_address: H160,
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
     pub comet_ws_url: String,
 }
 
@@ -55,9 +55,7 @@ impl ConsensusModule for Module {
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
 
-        let eth_provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let eth_provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let l2_chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 

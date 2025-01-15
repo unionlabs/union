@@ -76,7 +76,7 @@ pub struct Config {
     pub multicall_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
 
     pub keyring: KeyringConfig,
 
@@ -95,9 +95,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let raw_chain_id = provider.get_chain_id().await?;
         let chain_id = ChainId::new(raw_chain_id.to_string());

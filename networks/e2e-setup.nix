@@ -353,8 +353,8 @@ _: {
   #                 "signer": {
   #                   "raw": "0x'"$EVM_WALLET"'"
   #                 },
-  #                 "eth_rpc_api": "'"$EVM_WS_URL"'",
-  #                 "eth_beacon_rpc_api": "'"$EVM_BEACON_RPC_URL"'",
+  #                 "rpc_url": "'"$EVM_WS_URL"'",
+  #                 "beacon_rpc_url": "'"$EVM_BEACON_RPC_URL"'",
   #                 "wasm_code_id": "0x'"$WASM_CODE_ID"'"
   #               },
   #               "union-devnet": {
