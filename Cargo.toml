@@ -87,6 +87,7 @@ members = [
   "cosmwasm/ibc-union/light-clients/berachain",
   "cosmwasm/ibc-union/light-clients/cometbls",
   "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
+  "cosmwasm/ibc-union/light-clients/state-lens-ics23-smt",
   # "cosmwasm/ibc-union/light-clients/scroll",
   "cosmwasm/ibc-union/light-clients/tendermint",
   # "cosmwasm/ibc-union/light-clients/linea",

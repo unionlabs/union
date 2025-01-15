@@ -11309,10 +11309,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-ics23-smt-light-client"
+version = "0.1.0"
+dependencies = [
+ "aptos-verifier",
+ "bcs 0.1.6",
+ "cometbls-light-client",
+ "cosmwasm-std 2.1.4",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "ics23",
+ "movement-light-client-types",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "state-lens-ics23-smt-light-client-types",
+ "state-lens-light-client-types",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-ics23-smt-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "hex-literal",
  "protos",
  "serde",
