@@ -298,9 +298,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 <a
                   href={`/explorer/address/${transfer.sender}`}
                   class="block text-sm underline break-words"
-                  >{transfer.sender}
+                  ><Truncate class="underline" value={transfer.sender} type="address"/>
                 </a>{:else}<p class="text-sm break-words">
-                  {transfer.sender}
+                  <Truncate value={transfer.sender} type="address"/>
                 </p>{/if}
               <p
                 class={cn(
@@ -320,9 +320,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 <a
                   href={`/explorer/address/${transfer.receiver}`}
                   class="block text-sm underline break-words"
-                  >{transfer.receiver}
+                  ><Truncate class="underline" value={transfer.receiver} type="address"/>
                 </a>{:else}<p class="text-sm break-words">
-                  {transfer.receiver}
+                  <Truncate value={transfer.receiver} type="address"/>
                 </p>{/if}
               <p
                 class={cn(
