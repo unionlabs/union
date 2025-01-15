@@ -7,6 +7,7 @@ import { truncate } from "$lib/utilities/format.ts"
 import { copyTextAction } from "$lib/actions/copy.ts"
 
 export let value: string
+export let label: string | null = null
 export let trunc = 0
 
 let copyClicked = false
@@ -18,6 +19,7 @@ export { buttonClass as class }
 </script>
 
 <div class="text-start flex items-center gap-2 group cursor-default">
+  {#if label}<span class="text-muted-foreground">{label}</span>{/if}
   {#if trunc}
     {truncate(value, trunc)}
   {:else}

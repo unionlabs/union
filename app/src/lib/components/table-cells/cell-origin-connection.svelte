@@ -12,7 +12,7 @@ export let value: {
 
 <div  class={cn("flex flex-col ")} {...$$restProps}>
   <CellCopy value={value.chain_display_name}/>
-  <CellCopy value={value.chain_id}/>
-  <CellCopy value={value.connection_id}/>
-  <CellCopy value={value.client_id}/>
+  <CellCopy label="Chain ID:"  value={value.chain_id}/>
+  <CellCopy label="Connection ID:" value={value.connection_id}/>
+  <CellCopy label="Client ID:" value={value.client_id}/>
 </div>

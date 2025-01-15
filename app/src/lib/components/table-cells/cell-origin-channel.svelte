@@ -13,8 +13,8 @@ export let value: {
 
 <div {...$$restProps} class={cn("flex flex-col ")}>
   {#if value.chain_display_name}<CellCopy value={value.chain_display_name}/>{/if}
-  {#if value.chain_id}<CellCopy value={value.chain_id}/>{/if}
-  {#if value.connection_id}<CellCopy value={value.connection_id}/>{/if}
-  {#if value.channel_id}<CellCopy value={value.channel_id}/>{/if}
-  <div class="text-muted-foreground">{#if value.port_id}<CellCopy trunc={10} value={value.port_id}/>{/if}</div>
+  {#if value.chain_id}<CellCopy label="Chain ID: " value={value.chain_id}/>{/if}
+  {#if value.connection_id}<CellCopy label="Connection ID: " value={value.connection_id}/>{/if}
+  {#if value.channel_id}<CellCopy label="Channel ID: " value={value.channel_id}/>{/if}
+  {#if value.port_id}<CellCopy label="Port: " trunc={10} value={value.port_id}/>{/if}
 </div>
