@@ -243,7 +243,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         </Card.Header>
         <Card.Content class="flex flex-col gap-8">
           <section class="flex justify-between">
-
             <div>
             <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
               <Truncate
@@ -251,7 +250,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 type="full"
               />
               <Truncate
-                value={transfer.base_token_details ? transfer.base_token_details.display_symbol : transfer.base_token}
+                value={(transfer.base_token_details && transfer.base_token_details.display_symbol) ? transfer.base_token_details.display_symbol : transfer.base_token}
                 type="address"
               />
             </h2>
@@ -259,7 +258,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             <Truncate
               value={transfer.base_token}
               type="address"
-            />
+            /> | {#if transfer.base_token_details}{transfer.base_token_details?.origin}{:else}NO DETAILS{/if}
             </p>
 
             </div>
@@ -272,7 +271,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               type="full"
             />
             <Truncate
-              value={transfer.quote_token_details ? transfer.quote_token_details.display_symbol : transfer.quote_token}
+                value={(transfer.quote_token_details && transfer.quote_token_details.display_symbol) ? transfer.quote_token_details.display_symbol : transfer.quote_token}
               type="address"
             />
             </h2>
@@ -280,7 +279,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             <Truncate
               value={transfer.quote_token}
               type="address"
-            />
+            /> | {#if transfer.quote_token_details}{transfer.quote_token_details?.origin}{:else}NO DETAILS{/if}
 
             </p>
             </div>
@@ -311,7 +310,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                     : "text-transparent"
                 )}
               >
-                raw: {transfer.normalized_sender}
               </p>
             </div>
             <div class="flex-1 lg:text-right flex-col text-muted-foreground">
@@ -334,7 +332,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                     : "text-transparent"
                 )}
               >
-                raw: {transfer.normalized_receiver}
               </p>
             </div>
           </section>
@@ -368,7 +365,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 {/if}
 
 <pre>
-{JSON.stringify($processedTransfers, null, 2)}
+{JSON.stringify($transfers, null, 2)}
 </pre>
 
 
