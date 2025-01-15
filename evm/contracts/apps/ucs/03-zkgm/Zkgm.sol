@@ -664,7 +664,9 @@ contract UCS03Zkgm is
         address contractAddress = address(bytes20(multiplex.contractAddress));
         if (multiplex.eureka) {
             IEurekaModule(contractAddress).onZkgm(
-                multiplex.sender, multiplex.contractCalldata
+                ibcPacket.destinationChannelId,
+                multiplex.sender,
+                multiplex.contractCalldata
             );
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {

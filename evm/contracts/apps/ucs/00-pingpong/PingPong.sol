@@ -26,7 +26,7 @@ library PingPongLib {
     event Ring(bool ping);
     event TimedOut();
     event Acknowledged();
-    event Zkgoblim(bytes sender, bytes message);
+    event Zkgoblim(uint32 channelId, bytes sender, bytes message);
 
     function encode(
         PingPongPacket memory packet
@@ -203,10 +203,10 @@ contract PingPong is
         zkgmProtocol = zkgm;
     }
 
-    function onZkgm(bytes calldata sender, bytes calldata message) public {
+    function onZkgm(uint32 channelId, bytes calldata sender, bytes calldata message) public {
         if (msg.sender != zkgmProtocol) {
             revert PingPongLib.ErrOnlyZKGM();
         }
-        emit PingPongLib.Zkgoblim(sender, message);
+        emit PingPongLib.Zkgoblim(channelId, sender, message);
     }
 }
