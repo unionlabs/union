@@ -21,7 +21,7 @@ export const statsQuery = (): Readable<QueryObserverResult<Array<Statistic>, Err
     queryKey: ["stats"],
     queryFn: async () => {
       const response = await request(URLS().GRAPHQL, statsQueryDocument, {})
-      return response.v1_statistics
+      return response.v1_ibc_union_statistics
     },
     enabled: true,
     refetchInterval: 5_000,
@@ -35,7 +35,7 @@ export const transfersPerDayQuery = (
     queryKey: ["transfer-per-day"],
     queryFn: async () => {
       const response = await request(URLS().GRAPHQL, transfersPerDayQueryDocument, { limit })
-      return response.v1_daily_transfers
+      return response.v1_ibc_union_daily_transfers
     },
     enabled: true,
     refetchInterval: 6_000,
