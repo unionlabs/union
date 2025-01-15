@@ -83,6 +83,7 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: AccountAddress,

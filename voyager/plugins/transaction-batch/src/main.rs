@@ -72,12 +72,14 @@ pub enum ClientConfigs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub client_configs: ClientConfigsSerde,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ClientConfig {
     pub min_batch_size: usize,
     pub max_batch_size: usize,
@@ -92,6 +94,7 @@ pub enum ClientConfigsSerde {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SpecificClientConfig {
     pub client_id: RawClientId,
     pub min_batch_size: usize,

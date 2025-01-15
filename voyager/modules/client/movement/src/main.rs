@@ -34,6 +34,7 @@ async fn main() {
 pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 type SelfConsensusState = movement_light_client_types::consensus_state::ConsensusState;
