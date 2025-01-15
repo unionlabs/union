@@ -51,7 +51,19 @@ module ucs03::zkgm_relay {
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,
-        syscall: vector<u8>
+        instruction: Instruction
+    }
+
+    // struct Instruction has copy, drop, store {
+    //     version: u8,
+    //     opcode: u8,
+    //     operand: vector<u8>
+    // }
+
+    public struct Instruction has copy, drop, store {
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>
     }
 
     public struct SyscallPacket has copy, drop, store {
@@ -64,7 +76,7 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
-        syscall_packet: vector<u8>
+        instruction: Instruction
     }
 
     public struct MultiplexPacket has copy, drop, store {
@@ -81,8 +93,8 @@ module ucs03::zkgm_relay {
         contract_address: vector<u8>
     }
 
-    public struct BatchPacket has copy, drop, store {
-        syscall_packets: vector<vector<u8>>
+    public struct Batch has copy, drop, store {
+        instructions: vector<Instruction>
     }
 
     public struct OnZkgmParams has copy, drop, store {
@@ -169,7 +181,7 @@ module ucs03::zkgm_relay {
         channel_balance: Table<ChannelBalancePair, u256>,
         token_origin: Table<address, u256>,
         address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>,
-        address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
+        // address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
 
     }
 
@@ -220,27 +232,27 @@ module ucs03::zkgm_relay {
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
             address_to_treasurycap: table::new(ctx),
-            address_to_coin: table::new(ctx)
+            // address_to_coin: table::new(ctx)
         });
     }
     fun get_treasury_cap_mut(relay_store: &mut RelayStore, denom_address: address): &mut TreasuryCap<FUNGIBLE_TOKEN> {
         relay_store.address_to_treasurycap.borrow_mut(denom_address)
     }
 
-    fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
-        relay_store.address_to_coin.borrow_mut(denom_address)
-    }
+    // fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
+    //     relay_store.address_to_coin.borrow_mut(denom_address)
+    // }
 
 
-    public entry fun insert_pair(
-        relay_store: &mut RelayStore,
-        denom_address: address,
-        treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
-        coin: Coin<FUNGIBLE_TOKEN>
-    ) {
-        relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
-        relay_store.address_to_coin.add(denom_address, coin);
-    }
+    // public entry fun insert_pair(
+    //     relay_store: &mut RelayStore,
+    //     denom_address: address,
+    //     treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
+    //     coin: Coin<FUNGIBLE_TOKEN>
+    // ) {
+    //     relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
+    //     relay_store.address_to_coin.add(denom_address, coin);
+    // }
 
     public fun decode_ack(buf: vector<u8>): Acknowledgement {
         let mut index = 0x20;
@@ -386,45 +398,44 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun decode_batch_packet(buf: vector<u8>): BatchPacket {
-        let mut index = 0x40;
+    public fun decode_batch_packet(buf: vector<u8>): Batch {
+        let mut index = 0x20;
         let main_arr_length = ethabi::decode_uint(&buf, &mut index);
         index = index + (0x20 * main_arr_length as u64);
 
         let mut idx = 0;
-        let mut syscall_packets = vector::empty();
+        let mut instructions = vector::empty<Instruction>();
         while (idx < main_arr_length) {
-            let inner_vec =
-                ethabi::decode_vector!<u8>(
-                    &buf,
-                    &mut index,
-                    |buf, index| {
-                        (ethabi::decode_uint(buf, index) as u8)
-                    }
-                );
-            vector::push_back(&mut syscall_packets, inner_vec);
+            let version = (ethabi::decode_uint(&buf, &mut index) as u8);
+            let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+            index = index + 0x20;
+            let operand = ethabi::decode_bytes(&buf, &mut index);
+
+            let instruction = Instruction {
+                version: (version as u8),
+                opcode: (opcode as u8),
+                operand: operand
+            };
+
+            vector::push_back(&mut instructions, instruction);
             idx = idx + 1;
         };
 
-        BatchPacket { syscall_packets: syscall_packets }
+        Batch { instructions: instructions }
     }
 
-    public fun encode_batch_packet(ack: &BatchPacket): vector<u8> {
+    public fun encode_batch_packet(pack: &Batch): vector<u8> {
         let mut buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        let ack_arr_len = vector::length(&ack.syscall_packets);
+
+        let ack_arr_len = vector::length(&pack.instructions);
         ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
                 ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                ethabi::encode_vector!<u8>(
-                    &mut buf,
-                    vector::borrow(&ack.syscall_packets, 0),
-                    |some_variable, data| {
-                        ethabi::encode_uint<u8>(some_variable, *data);
-                    }
-                );
+                let instructions_encoded =
+                    encode_instruction(*vector::borrow(&pack.instructions, 0));
+                vector::append(&mut buf, instructions_encoded);
                 return buf
             };
             return buf
@@ -435,23 +446,23 @@ module ucs03::zkgm_relay {
         let mut prev_val = initial_stage;
         ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
-            let prev_length = vector::length(
-                vector::borrow(&ack.syscall_packets, idx - 1)
+            let prev_length =
+                ((
+                    vector::length(&vector::borrow(&pack.instructions, idx - 1).operand)
+                        / 32
+                ) as u32) + 1;
+            ethabi::encode_uint<u32>(
+                &mut buf,
+                prev_val + (0x20 * 4) + ((prev_length * 0x20) as u32)
             );
-            ethabi::encode_uint<u32>(&mut buf, prev_val
-                + 0x20 * (prev_length + 1 as u32));
-            prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
+            prev_val = prev_val + (4 * 0x20) + (((prev_length * 0x20) as u32));
             idx = idx + 1;
         };
         idx = 0;
         while (idx < ack_arr_len) {
-            ethabi::encode_vector!<u8>(
-                &mut buf,
-                vector::borrow(&ack.syscall_packets, idx),
-                |some_variable, data| {
-                    ethabi::encode_uint<u8>(some_variable, *data);
-                }
-            );
+            let instructions_encoded =
+                encode_instruction(*vector::borrow(&pack.instructions, idx));
+            vector::append(&mut buf, instructions_encoded);
             idx = idx + 1;
         };
 
@@ -487,7 +498,8 @@ module ucs03::zkgm_relay {
         ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
         ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
         ethabi::encode_uint<u8>(&mut buf, 0x80);
-        ethabi::encode_bytes(&mut buf, &packet.syscall_packet);
+        let ins_buf = encode_instruction(packet.instruction);
+        vector::append(&mut buf, ins_buf);
         buf
     }
 
@@ -497,13 +509,19 @@ module ucs03::zkgm_relay {
         let timeout_height = ethabi::decode_uint(&buf, &mut index);
         let timeout_timestamp = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let syscall_packet = ethabi::decode_bytes(&buf, &mut index);
+
+        let version = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+        index = index + 0x20;
+        let operand = ethabi::decode_bytes(&buf, &mut index);
+
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
 
         ForwardPacket {
             channel_id: (channel_id as u32),
             timeout_height: (timeout_height as u64),
             timeout_timestamp: (timeout_timestamp as u64),
-            syscall_packet: syscall_packet
+            instruction: instruction
         }
     }
 
@@ -565,59 +583,43 @@ module ucs03::zkgm_relay {
         }
     }
 
+    public fun encode_instruction(instruction: Instruction): vector<u8> {
+        let mut buf = vector::empty<u8>();
+        ethabi::encode_uint<u8>(&mut buf, instruction.version);
+        ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
+        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        ethabi::encode_bytes(&mut buf, &instruction.operand);
+
+        buf
+    }
+
+
     public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
         let mut buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        ethabi::encode_bytes32(&mut buf, &packet.salt);
         ethabi::encode_uint<u256>(&mut buf, packet.path);
+        ethabi::encode_uint<u8>(&mut buf, 0x60);
 
-        let version_offset = 0x20 * 4;
-        ethabi::encode_uint<u32>(
-            &mut buf,
-            version_offset + ((vector::length(&packet.salt) * 0x20) as u32)
-        );
-
-        ethabi::encode_vector!<u8>(
-            &mut buf,
-            &packet.salt,
-            |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
-
-        ethabi::encode_vector!<u8>(
-            &mut buf,
-            &packet.syscall,
-            |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
+        let ins_buf = encode_instruction(packet.instruction);
+        vector::append(&mut buf, ins_buf);
 
         buf
     }
 
     public fun decode_packet(buf: vector<u8>): ZkgmPacket {
-        let mut index = 0x40;
-        let packet_path = ethabi::decode_uint(&buf, &mut index);
+        let mut index = 0x20;
+        let salt = ethabi::decode_bytes32(&buf, &mut index);
+        let path = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let salt =
-            ethabi::decode_vector!<u8>(
-                &buf,
-                &mut index,
-                |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
-                }
-            );
-        let syscall =
-            ethabi::decode_vector!<u8>(
-                &buf,
-                &mut index,
-                |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
-                }
-            );
+        let version = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+        index = index + 0x20;
+        let operand = ethabi::decode_bytes(&buf, &mut index);
 
-        ZkgmPacket { salt: salt, path: packet_path, syscall: syscall }
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
+
+        ZkgmPacket { salt: salt, path: path, instruction: instruction }
     }
     
     public fun is_valid_version(version_bytes: String): bool {
@@ -896,7 +898,7 @@ module ucs03::zkgm_relay {
                     relayer_msg,
                     zkgm_packet.salt,
                     zkgm_packet.path,
-                    decode_syscall(zkgm_packet.syscall),
+                    zkgm_packet.instruction,
                     ctx
                 );
 
@@ -927,14 +929,14 @@ module ucs03::zkgm_relay {
         relayer_msg: vector<u8>,
         salt: vector<u8>,
         path: u256,
-        syscall_packet: SyscallPacket,
+        instruction: Instruction,
         ctx: &mut TxContext
     ): (vector<u8>)  {
-        if (syscall_packet.version != ZKGM_VERSION_0) {
+        if (instruction.version != ZKGM_VERSION_0) {
             abort E_UNSUPPORTED_VERSION
         };
 
-        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
             execute_fungible_asset_transfer(
                 ibc_store,
                 relay_store,
@@ -943,10 +945,10 @@ module ucs03::zkgm_relay {
                 relayer_msg,
                 salt,
                 path,
-                decode_fungible_asset_transfer(syscall_packet.packet),
+                decode_fungible_asset_transfer(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_BATCH) {
+        } else if (instruction.opcode == SYSCALL_BATCH) {
             execute_batch(
                 ibc_store,
                 relay_store,
@@ -955,10 +957,10 @@ module ucs03::zkgm_relay {
                 relayer_msg,
                 salt,
                 path,
-                decode_batch_packet(syscall_packet.packet),
+                decode_batch_packet(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+        } else if (instruction.opcode == SYSCALL_FORWARD) {
             execute_forward(
                 ibc_store,
                 relay_store,
@@ -966,10 +968,10 @@ module ucs03::zkgm_relay {
                 relayer_msg,
                 salt,
                 path,
-                decode_forward(syscall_packet.packet),
+                decode_forward(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
             execute_multiplex(
                 ibc_store,
                 relay_store,
@@ -977,7 +979,7 @@ module ucs03::zkgm_relay {
                 relayer,
                 relayer_msg,
                 salt,
-                decode_multiplex(syscall_packet.packet),
+                decode_multiplex(instruction.operand),
                 ctx
             )
         } else {
@@ -1019,15 +1021,14 @@ module ucs03::zkgm_relay {
         relayer_msg: vector<u8>,
         salt: vector<u8>,
         path: u256,
-        batch_packet: BatchPacket,
+        batch_packet: Batch,
         ctx: &mut TxContext
     ): (vector<u8>) {
-        let l = vector::length(&batch_packet.syscall_packets);
+        let l = vector::length(&batch_packet.instructions);
         let mut acks = vector::empty();
         let mut i = 0;
         while (i < l) {
-            let syscall_packet =
-                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i));
+            let instruction = *vector::borrow(&batch_packet.instructions, i);
             vector::push_back(
                 &mut acks,
                 execute_internal(
@@ -1038,7 +1039,7 @@ module ucs03::zkgm_relay {
                     relayer_msg,
                     salt,
                     path,
-                    syscall_packet,
+                    instruction,
                     ctx
                 )
             );
@@ -1072,7 +1073,7 @@ module ucs03::zkgm_relay {
                         path: update_channel_path(
                             path, packet::destination_channel(&ibc_packet)
                         ),
-                        syscall: forward_packet.syscall_packet
+                        instruction: forward_packet.instruction
                     }
                 )
             );
@@ -1159,18 +1160,20 @@ module ucs03::zkgm_relay {
         timeout_height: u64,
         timeout_timestamp: u64,
         salt: vector<u8>,
-        raw_syscall: vector<u8>,
-        coin: Coin<FUNGIBLE_TOKEN>,
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>,
         ctx: &mut TxContext
     ) {
+        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
         let sender = tx_context::sender(ctx);
-        verify_internal(ibc_store, relay_store, sender, channel_id, 0, raw_syscall, coin, ctx);
+        verify_internal(ibc_store, relay_store, sender, channel_id, 0, instruction, ctx);
         ibc::send_packet(
             ibc_store,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            encode_packet(&ZkgmPacket { salt: salt, path: 0, syscall: raw_syscall }),
+            encode_packet(&ZkgmPacket { salt: salt, path: 0, instruction }),
         );
     }
     fun verify_internal(
@@ -1179,55 +1182,50 @@ module ucs03::zkgm_relay {
         sender: address,
         channel_id: u32,
         path: u256,
-        raw_syscall: vector<u8>,
-        coin: Coin<FUNGIBLE_TOKEN>,
+        instruction: Instruction,
         ctx: &mut TxContext
     ){
-        let syscall_packet = decode_syscall(raw_syscall);
-        if (syscall_packet.version != ZKGM_VERSION_0) {
+        if (instruction.version != ZKGM_VERSION_0) {
             abort E_UNSUPPORTED_VERSION
         };
-        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
             verify_fungible_asset_transfer(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_fungible_asset_transfer(syscall_packet.packet),
-                coin,
+                decode_fungible_asset_transfer(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_BATCH) {
+        } else if (instruction.opcode == SYSCALL_BATCH) {
             verify_batch(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_batch_packet(syscall_packet.packet),
-                coin,
+                decode_batch_packet(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+        } else if (instruction.opcode == SYSCALL_FORWARD) {
             verify_forward(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_forward(syscall_packet.packet),
-                coin,
+                decode_forward(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
             verify_multiplex(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_multiplex(syscall_packet.packet),
+                decode_multiplex(instruction.operand),
                 ctx
             )
         } else {
@@ -1242,7 +1240,6 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         transfer_packet: FungibleAssetTransferPacket,
-        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
         let sent_token = transfer_packet.sent_token;
@@ -1259,14 +1256,11 @@ module ucs03::zkgm_relay {
         sender: address,
         channel_id: u32,
         path: u256,
-        batch_packet: BatchPacket,
-        coin: Coin<FUNGIBLE_TOKEN>,
+        batch_packet: Batch,
         ctx: &mut TxContext
     ){
-        let l = vector::length(&batch_packet.syscall_packets);
-        // if (l != vector::length(&coins)) {
-        //     abort E_BATCH_MISMATCH
-        // };
+        let l = vector::length(&batch_packet.instructions);
+
         let mut i = 0;
         while (i < l) {
             verify_internal(
@@ -1275,9 +1269,7 @@ module ucs03::zkgm_relay {
                 sender,
                 channel_id,
                 path,
-                batch_packet.syscall_packets[i],
-                // coins[i],
-                coin,
+                *vector::borrow(&batch_packet.instructions, i),
                 ctx
             );
             i = i + 1;
@@ -1292,7 +1284,6 @@ module ucs03::zkgm_relay {
         channel_id: u32,
         path: u256,
         forward_packet: ForwardPacket,
-        coin: Coin<FUNGIBLE_TOKEN>,
         ctx: &mut TxContext
     ){
         verify_internal(
@@ -1301,8 +1292,7 @@ module ucs03::zkgm_relay {
             sender,
             channel_id,
             update_channel_path(path, forward_packet.channel_id),
-            forward_packet.syscall_packet,
-            coin,
+            forward_packet.instruction,
             ctx
         );
     }
@@ -1384,7 +1374,7 @@ module ucs03::zkgm_relay {
                     ibc_packet,
                     relayer,
                     zkgm_packet.salt,
-                    decode_syscall(zkgm_packet.syscall),
+                    zkgm_packet.instruction,
                     zkgm_ack.tag == ACK_SUCCESS,
                     zkgm_ack.inner_ack,
                     ctx
@@ -1400,58 +1390,58 @@ module ucs03::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         salt: vector<u8>,
-        syscall_packet: SyscallPacket,
+        instruction: Instruction,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-        if (syscall_packet.version != ZKGM_VERSION_0) {
+        if (instruction.version != ZKGM_VERSION_0) {
             abort E_UNSUPPORTED_VERSION
         };
-        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
             acknowledge_fungible_asset_transfer(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
                 salt,
-                decode_fungible_asset_transfer(syscall_packet.packet),
+                decode_fungible_asset_transfer(instruction.operand),
                 success,
                 ack,
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_BATCH) {
+        } else if (instruction.opcode == SYSCALL_BATCH) {
             acknowledge_batch(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
                 salt,
-                decode_batch_packet(syscall_packet.packet),
+                decode_batch_packet(instruction.operand),
                 success,
                 ack,
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+        } else if (instruction.opcode == SYSCALL_FORWARD) {
             acknowledge_forward(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
                 salt,
-                decode_forward(syscall_packet.packet),
+                decode_forward(instruction.operand),
                 success,
                 ack,
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
             acknowledge_multiplex(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
                 salt,
-                decode_multiplex(syscall_packet.packet),
+                decode_multiplex(instruction.operand),
                 success,
                 ack,
                 ctx
@@ -1481,12 +1471,12 @@ module ucs03::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         salt: vector<u8>,
-        batch_packet: BatchPacket,
+        batch_packet: Batch,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let l = vector::length(&batch_packet.syscall_packets);
+        let l = vector::length(&batch_packet.instructions);
         let batch_ack = decode_batch_ack(ack);
         let mut i = 0;
         while (i < l) {
@@ -1500,7 +1490,7 @@ module ucs03::zkgm_relay {
                 ibc_packet,
                 relayer,
                 salt,
-                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i)),
+                *vector::borrow(&batch_packet.instructions, i),
                 success,
                 syscall_ack,
                 ctx
@@ -1606,7 +1596,7 @@ module ucs03::zkgm_relay {
             relay_store,
             packet,
             relayer,
-            decode_syscall(zkgm_packet.syscall),
+            zkgm_packet.instruction,
             ctx
         )
     }
@@ -1616,46 +1606,46 @@ module ucs03::zkgm_relay {
         relay_store: &mut RelayStore,
         packet: Packet,
         relayer: address,
-        syscall_packet: SyscallPacket,
+        instruction: Instruction,
         ctx: &mut TxContext
     ) {
-        if (syscall_packet.version != ZKGM_VERSION_0) {
+        if (instruction.version != ZKGM_VERSION_0) {
             abort E_UNSUPPORTED_VERSION
         };
-        if (syscall_packet.index == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
+        if (instruction.opcode == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
             timeout_fungible_asset_transfer(
                 ibc_store,
                 relay_store,
                 packet,
                 relayer,
-                decode_fungible_asset_transfer(syscall_packet.packet),
+                decode_fungible_asset_transfer(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_BATCH) {
+        } else if (instruction.opcode == SYSCALL_BATCH) {
             timeout_batch(
                 ibc_store,
                 relay_store,
                 packet,
                 relayer,
-                decode_batch_packet(syscall_packet.packet),
+                decode_batch_packet(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_FORWARD) {
+        } else if (instruction.opcode == SYSCALL_FORWARD) {
             timeout_forward(
                 ibc_store,
                 relay_store,
                 packet,
                 relayer,
-                decode_forward(syscall_packet.packet),
+                decode_forward(instruction.operand),
                 ctx
             )
-        } else if (syscall_packet.index == SYSCALL_MULTIPLEX) {
+        } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
             timeout_multiplex(
                 ibc_store,
                 relay_store,
                 packet,
                 relayer,
-                decode_multiplex(syscall_packet.packet),
+                decode_multiplex(instruction.operand),
                 ctx
             )
         } else {
@@ -1687,10 +1677,10 @@ module ucs03::zkgm_relay {
         relay_store: &mut RelayStore,
         packet: Packet,
         relayer: address,
-        batch_packet: BatchPacket,
+        batch_packet: Batch,
         ctx: &mut TxContext
     ) {
-        let l = vector::length(&batch_packet.syscall_packets);
+        let l = vector::length(&batch_packet.instructions);
         let mut i = 0;
         while (i < l) {
             timeout_internal(
@@ -1698,7 +1688,7 @@ module ucs03::zkgm_relay {
                 relay_store,
                 packet,
                 relayer,
-                decode_syscall(*vector::borrow(&batch_packet.syscall_packets, i)),
+                 *vector::borrow(&batch_packet.instructions, i),
                 ctx
             );
             i = i + 1;
@@ -1790,7 +1780,7 @@ module ucs03::zkgm_relay {
             relayer_msg,
             zkgm_packet.salt,
             zkgm_packet.path,
-            decode_syscall(zkgm_packet.syscall),
+            zkgm_packet.instruction,
             ctx
         );
     }
@@ -1799,28 +1789,34 @@ module ucs03::zkgm_relay {
     #[test]
     fun test_zkgm_encode_decode() {
         let output =
-            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let zkgm_data = ZkgmPacket { salt: b"helloo", path: 3333334, syscall: b"hellloo" };
+            x"000000000000000000000000000000000000000000000000000000000000002068656c6c6f6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032dcd60000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
+
+        let instruction1 = Instruction {
+            version: 111,
+            opcode: 222,
+            operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
+        };
+
+        let zkgm_data = ZkgmPacket {
+            salt: x"68656c6c6f6f0000000000000000000000000000000000000000000000000000",
+            path: 3333334,
+            instruction: instruction1
+        };
 
         let zkgm_bytes = encode_packet(&zkgm_data);
         assert!(zkgm_bytes == output, 0);
 
         let zkgm_data_decoded = decode_packet(zkgm_bytes);
-        assert!(zkgm_data_decoded.salt == b"helloo", 1);
+
+        assert!(
+            zkgm_data_decoded.salt
+                == x"68656c6c6f6f0000000000000000000000000000000000000000000000000000",
+            1
+        );
         assert!(zkgm_data_decoded.path == 3333334, 2);
-        assert!(zkgm_data_decoded.syscall == b"hellloo", 3);
+        assert!(zkgm_data_decoded.instruction == instruction1, 3);
     }
 
-    #[test]
-    fun test_decode_syscall() {
-        let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007100000000000000000000000000000000000000000000000000000000000000f40000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-
-        let syscall_data_decoded = decode_syscall(output);
-        assert!(syscall_data_decoded.version == 113, 1);
-        assert!(syscall_data_decoded.index == 244, 2);
-        assert!(syscall_data_decoded.packet == b"hellloo", 3);
-    }
 
     #[test]
     fun test_encode_decode_ack() {
@@ -1935,92 +1931,106 @@ module ucs03::zkgm_relay {
     fun test_encode_decode_batch_packet() {
         // ---------------- TEST 1 ----------------
         let output =
-            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006900000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000068000000000000000000000000000000000000000000000000000000000000006500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065";
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002668686820776f726c6468656c6c6f20777777776c6f20776f726c6468656c6c6f20776f726c64000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000370000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000086272726168686868000000000000000000000000000000000000000000000000";
         let mut outer_arr = vector::empty();
-        vector::push_back(&mut outer_arr, b"hello");
-        vector::push_back(&mut outer_arr, b"hi");
-        vector::push_back(&mut outer_arr, b"hehe");
-        let ack_data = BatchPacket { syscall_packets: outer_arr };
+
+        let instruction1 = Instruction {
+            version: 111,
+            opcode: 222,
+            operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
+        };
+
+        let instruction2 = Instruction {
+            version: 1,
+            opcode: 2,
+            operand: b"hhh worldhello wwwwlo worldhello world"
+        };
+
+        let instruction3 = Instruction { version: 55, opcode: 66, operand: b"brrahhhh" };
+        vector::push_back(&mut outer_arr, instruction1);
+        vector::push_back(&mut outer_arr, instruction2);
+        vector::push_back(&mut outer_arr, instruction3);
+        let ack_data = Batch { instructions: outer_arr };
         let ack_bytes = encode_batch_packet(&ack_data);
         assert!(ack_bytes == output, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes);
-        assert!(vector::length(&ack_data_decoded.syscall_packets) == 3, 1);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"hello", 2);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 2) == b"hehe", 4);
+        assert!(vector::length(&ack_data_decoded.instructions) == 3, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 2) == instruction3, 4);
 
         // ---------------- TEST 2 ----------------
         let output2 =
-            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000069";
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000162000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000";
         let mut outer_arr = vector::empty();
-        vector::push_back(&mut outer_arr, b"hello");
-        vector::push_back(&mut outer_arr, b"hi");
-        let ack_data2 = BatchPacket { syscall_packets: outer_arr };
+
+        let instruction1 = Instruction { version: 3, opcode: 5, operand: b"b" };
+
+        let instruction2 = Instruction { version: 2, opcode: 4, operand: b"" };
+        vector::push_back(&mut outer_arr, instruction1);
+        vector::push_back(&mut outer_arr, instruction2);
+        let ack_data2 = Batch { instructions: outer_arr };
         let ack_bytes2 = encode_batch_packet(&ack_data2);
         assert!(ack_bytes2 == output2, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes2);
-        assert!(vector::length(&ack_data_decoded.syscall_packets) == 2, 1);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"hello", 2);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"hi", 3);
+        assert!(vector::length(&ack_data_decoded.instructions) == 2, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
 
         // ---------------- TEST 3 ----------------
         let output3 =
-            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000003e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000007300000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000df000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000bd617764617764617764617764776164616161616161612061616161616161616161616161616161616161616120626262622064616477647720772077777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000000";
         let mut outer_arr = vector::empty();
-        let mut idx = 0;
-        vector::push_back(&mut outer_arr, b"xdddd");
-        vector::push_back(&mut outer_arr, b"test");
-        while (idx < 10) {
-            vector::push_back(&mut outer_arr, b"");
-            idx = idx + 1;
+
+        let instruction1 = Instruction {
+            version: 123,
+            opcode: 223,
+            operand: b"awdawdawdawdwadaaaaaaa aaaaaaaaaaaaaaaaaaaaa bbbb dadwdw w wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
         };
 
-        let ack_data3 = BatchPacket { syscall_packets: outer_arr };
+        vector::push_back(&mut outer_arr, instruction1);
+
+        let ack_data3 = Batch { instructions: outer_arr };
         let ack_bytes3 = encode_batch_packet(&ack_data3);
         assert!(ack_bytes3 == output3, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes3);
-        assert!(vector::length(&ack_data_decoded.syscall_packets) == 12, 1);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 1) == b"test", 3);
+        assert!(vector::length(&ack_data_decoded.instructions) == 1, 1);
+        assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
 
         // ---------------- TEST 4 ----------------
         let output4 =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000064";
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
         let mut outer_arr = vector::empty();
-        vector::push_back(&mut outer_arr, b"xdddd");
 
-        let ack_data4 = BatchPacket { syscall_packets: outer_arr };
+        let ack_data4 = Batch { instructions: outer_arr };
         let ack_bytes4 = encode_batch_packet(&ack_data4);
         assert!(ack_bytes4 == output4, 0);
         let ack_data_decoded = decode_batch_packet(ack_bytes4);
-        assert!(vector::length(&ack_data_decoded.syscall_packets) == 1, 1);
-        assert!(*vector::borrow(&ack_data_decoded.syscall_packets, 0) == b"xdddd", 2);
-
-        // ---------------- TEST 5 ----------------
-        let output5 =
-            x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
-        let mut outer_arr = vector::empty();
-
-        let ack_data5 = BatchPacket { syscall_packets: outer_arr };
-        let ack_bytes5 = encode_batch_packet(&ack_data5);
-        assert!(ack_bytes5 == output5, 0);
-        let ack_data_decoded = decode_batch_packet(ack_bytes5);
-        assert!(vector::length(&ack_data_decoded.syscall_packets) == 0, 1);
+        assert!(vector::length(&ack_data_decoded.instructions) == 0, 1);
 
     }
 
     #[test]
     fun test_encode_decode_forward_packet() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000005161500000000000000000000000000000000000000000000000000000000000056ce0000000000000000000000000000000000000000000000000000000000002b670000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
+            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000003700000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
+
+        let instruction = Instruction {
+            version: 111,
+            opcode: 222,
+            operand: b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
+        };
+
         let forward_data = ForwardPacket {
-            channel_id: 333333,
-            timeout_height: 22222,
-            timeout_timestamp: 11111,
-            syscall_packet: b"ExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallData"
+            channel_id: 44,
+            timeout_height: 55,
+            timeout_timestamp: 66,
+            instruction: instruction
         };
 
         let ack_bytes = encode_forward(&forward_data);
+        std::debug::print(&string::utf8(b"ack bytes: "));
+        std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 
         let forward_data_decoded = decode_forward(ack_bytes);
@@ -2029,7 +2039,7 @@ module ucs03::zkgm_relay {
         assert!(
             forward_data_decoded.timeout_timestamp == forward_data.timeout_timestamp, 2
         );
-        assert!(forward_data_decoded.syscall_packet == forward_data.syscall_packet, 3);
+        assert!(forward_data_decoded.instruction == forward_data.instruction, 3);
     }
 
     #[test]
@@ -2052,35 +2062,46 @@ module ucs03::zkgm_relay {
         );
     }
 
-    #[test]
-    fun test_decode_fungible_asset_transfer_pack() {
+    // #[test]
+    // fun test_decode_fungible_asset_transfer_pack() {
 
+    //     let output =
+    //         x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000007c37bdc730000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f307853656e646572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001130785265636569766572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012307853656e74546f6b656e4164647265737300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014535353535353535353535353535353594d424f4c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000155454545454545454545454546f6b656e204e616d6500000000000000000000000000000000000000000000000000000000000000000000000000000000000011307841736b546f6b656e41646472657373000000000000000000000000000000";
+    //     let fatp = FungibleAssetTransferPacket {
+    //         sender: b"0xSenderAddress",
+    //         receiver: b"0xReceiverAddress",
+    //         sent_token: b"0xSentTokenAddress",
+    //         sent_token_prefix: 33344445555,
+    //         sent_symbol: string::utf8(b"SSSSSSSSSSSSSSSYMBOL"),
+    //         sent_name: string::utf8(b"TTTTTTTTTTTToken Name"),
+    //         sent_amount: 1000000, // Example token amount
+    //         ask_token: b"0xAskTokenAddress",
+    //         ask_amount: 500000, // Example ask amount
+    //         only_maker: false
+    //     };
+
+    //     let fatp_decoded = decode_fungible_asset_transfer(output);
+    //     assert!(fatp.sender == fatp_decoded.sender, 0);
+    //     assert!(fatp.receiver == fatp_decoded.receiver, 0);
+    //     assert!(fatp.sent_token == fatp_decoded.sent_token, 0);
+    //     assert!(fatp.sent_token_prefix == fatp_decoded.sent_token_prefix, 0);
+    //     assert!(fatp.sent_symbol == fatp_decoded.sent_symbol, 0);
+    //     assert!(fatp.sent_name == fatp_decoded.sent_name, 0);
+    //     assert!(fatp.sent_amount == fatp_decoded.sent_amount, 0);
+    //     assert!(fatp.ask_token == fatp_decoded.ask_token, 0);
+    //     assert!(fatp.ask_amount == fatp_decoded.ask_amount, 0);
+    //     assert!(fatp.only_maker == fatp_decoded.only_maker, 0);
+    // }
+
+    fun test_encode_multiplex_sender_and_calldata() {
         let output =
-            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000007c37bdc730000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f307853656e646572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001130785265636569766572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012307853656e74546f6b656e4164647265737300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014535353535353535353535353535353594d424f4c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000155454545454545454545454546f6b656e204e616d6500000000000000000000000000000000000000000000000000000000000000000000000000000000000011307841736b546f6b656e41646472657373000000000000000000000000000000";
-        let fatp = FungibleAssetTransferPacket {
-            sender: b"0xSenderAddress",
-            receiver: b"0xReceiverAddress",
-            sent_token: @0xdeadbeef,
-            sent_token_prefix: 33344445555,
-            sent_symbol: string::utf8(b"SSSSSSSSSSSSSSSYMBOL"),
-            sent_name: string::utf8(b"TTTTTTTTTTTToken Name"),
-            sent_amount: 1000000, // Example token amount
-            ask_token: b"0xAskTokenAddress",
-            ask_amount: 500000, // Example ask amount
-            only_maker: false
-        };
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000d23078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443343078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010e4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000000000000000000000000000";
 
-        let fatp_decoded = decode_fungible_asset_transfer(output);
-        assert!(fatp.sender == fatp_decoded.sender, 0);
-        assert!(fatp.receiver == fatp_decoded.receiver, 0);
-        assert!(fatp.sent_token == fatp_decoded.sent_token, 0);
-        assert!(fatp.sent_token_prefix == fatp_decoded.sent_token_prefix, 0);
-        assert!(fatp.sent_symbol == fatp_decoded.sent_symbol, 0);
-        assert!(fatp.sent_name == fatp_decoded.sent_name, 0);
-        assert!(fatp.sent_amount == fatp_decoded.sent_amount, 0);
-        assert!(fatp.ask_token == fatp_decoded.ask_token, 0);
-        assert!(fatp.ask_amount == fatp_decoded.ask_amount, 0);
-        assert!(fatp.only_maker == fatp_decoded.only_maker, 0);
+        let ack_bytes =
+            encode_multiplex_sender_and_calldata(
+                b"0x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC40x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+                b"ExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallDataExampleSyscallData"
+            );
+        assert!(ack_bytes == output, 0);
     }
-
 }

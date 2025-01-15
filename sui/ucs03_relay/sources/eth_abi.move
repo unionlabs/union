@@ -31,6 +31,37 @@ module ucs03::ethabi {
         // Append the padding
         vector::append(buf, padding);
     }
+
+    public fun encode_bytes32(buf: &mut vector<u8>, bytes: &vector<u8>) {
+        let len = vector::length(bytes);
+        vector::append(buf, *bytes);
+
+        // Calculate padding to align to 32 bytes
+        let padding_len = (32 - (len % 32)) % 32;
+        let mut padding = vector::empty<u8>();
+        let mut i = 0;
+        while (i < padding_len) {
+            vector::push_back(&mut padding, 0);
+            i = i + 1;
+        };
+        // Append the padding
+        vector::append(buf, padding);
+    }
+
+    public fun decode_bytes32(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        // Decode the length of the bytes array
+        let len: u64 = 32;
+        // Decode the actual bytes
+        let byte_data = vector_slice(buf, *index, *index + len); // Extract the bytes of the given length
+        *index = *index + len; // Move the index forward after reading the byte data
+
+        // Skip padding to align to 32-byte boundary
+        let padding_len = (32 - (len % 32)) % 32;
+        *index = *index + padding_len; // Adjust the index to skip the padding
+
+        byte_data // Return the decoded bytes
+    }
+
     public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
         // Decode the length of the bytes array
         let mut len_bytes = vector_slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
@@ -193,24 +224,25 @@ module ucs03::ethabi {
     }
 
     public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
-        // Read the first 32 bytes to get the length of the string
-        let mut len_bytes = vector_slice(buf, *index, *index + 32);
+        string::utf8(decode_bytes(buf, index))
+        // // Read the first 32 bytes to get the length of the string
+        // let mut len_bytes = vector_slice(buf, *index, *index + 32);
 
-        vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        let str_len: u256 = bcs::new(len_bytes).peel_u256();
+        // vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
+        // let str_len: u256 = bcs::new(len_bytes).peel_u256();
 
-        *index = *index + 32; // Move the index forward after reading the length
+        // *index = *index + 32; // Move the index forward after reading the length
 
-        // // Read the actual string bytes
-        let str_bytes = vector_slice(buf, *index, *index + (str_len as u64));
-        *index = *index + (str_len as u64); // Move the index forward after reading the string
+        // // // Read the actual string bytes
+        // let str_bytes = vector_slice(buf, *index, *index + (str_len as u64));
+        // *index = *index + (str_len as u64); // Move the index forward after reading the string
 
-        // Calculate padding to skip (align to 32-byte boundary)
-        let padding_len = (32 - ((str_len as u64) % 32)) % 32;
-        *index = *index + padding_len; // Skip the padding bytes
+        // // Calculate padding to skip (align to 32-byte boundary)
+        // let padding_len = (32 - ((str_len as u64) % 32)) % 32;
+        // *index = *index + padding_len; // Skip the padding bytes
 
-        // Convert the string bytes back to a String
-        string::utf8(str_bytes)
+        // // Convert the string bytes back to a String
+        // string::utf8(str_bytes)
     }
 
     // Decoding an Ethereum address (20 bytes)
