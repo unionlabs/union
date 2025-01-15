@@ -1,38 +1,42 @@
 import { graphql } from "gql.tada"
 
 export const packetListDataFragment = graphql(/* GraphQL */ `
-  fragment PacketListData on v1_packets {
+  fragment PacketListData on v1_ibc_union_packets {
       source_chain_id
       source_connection_id
       source_channel_id
       source_port_id
-      source_block_hash
-      source_timestamp
-      source_sequence
+      packet_send_block_hash
+      packet_send_timestamp
       destination_chain_id
       destination_connection_id
       destination_channel_id
       destination_port_id
-      destination_block_hash
-      destination_timestamp
-      destination_sequence
+      packet_recv_block_hash
+      packet_recv_timestamp
+      source_chain {
+          chain_id
+      }
+      destination_chain {
+          chain_id
+      }
   }
 `)
 
 export const packetDetailsFragment = graphql(/* GraphQL */ `
-    fragment PacketDetails on v1_packets {
+    fragment PacketDetails on v1_ibc_union_packets {
         source_chain_id,
-        source_block_hash,
-        source_height,
-        source_timestamp,
-        source_transaction_hash,
-        source_transaction_index,
-        source_sequence,
+        packet_send_block_hash,
+        packet_send_height,
+        packet_send_timestamp,
+        packet_send_transaction_hash,
+        packet_send_transaction_index,
         source_port_id,
         source_channel_id,
-        source_timeout_timestamp,
-        source_event_json,
-        source_packet_data,
+        timeout_timestamp
+        timeout_height
+        data
+        data_decoded
         source_chain_id,
         source_connection_id,
         source_channel_id,
@@ -42,16 +46,18 @@ export const packetDetailsFragment = graphql(/* GraphQL */ `
         destination_channel_id,
         destination_port_id,
         destination_chain_id,
-        destination_block_hash,
-        destination_height,
-        destination_timestamp,
-        destination_transaction_hash,
-        destination_transaction_index,
-        destination_sequence,
+        packet_recv_block_hash,
+        packet_recv_height,
+        packet_recv_timestamp,
+        packet_recv_transaction_hash,
+        packet_recv_transaction_index,
         destination_port_id,
         destination_channel_id,
-        destination_timeout_timestamp,
-        destination_event_json,
-        destination_packet_data
+        source_chain {
+            chain_id
+        }
+        destination_chain {
+            chain_id
+        }
     }
 `)

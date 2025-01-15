@@ -4,7 +4,7 @@ import { packetListDataFragment } from "$lib/graphql/fragments/packets"
 export const packetsLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsLatestQuery($limit: Int = 100) {
-      v1_packets(limit: $limit, order_by: { source_timestamp: desc_nulls_last }) {
+      v1_ibc_union_packets(limit: $limit, order_by: { packet_send_timestamp: desc_nulls_last }) {
         ...PacketListData
       }
     }
@@ -16,20 +16,20 @@ export const packetsTimestampQuery = graphql(
   /* GraphQL */ `
   query PacketsTimestampQuery($limit: Int! = 100, $timestamp: timestamptz!)
     @cached(ttl: 1000) {
-      newer: v1_packets(
+      newer: v1_ibc_union_packets(
         limit: $limit
-        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
-        where: { source_timestamp: { _gte: $timestamp } }
+        order_by: [{ packet_send_timestamp: asc }, { packet_recv_timestamp: asc }]
+        where: { packet_send_timestamp: { _gte: $timestamp } }
       ) {
         ...PacketListData
       }
-      older: v1_packets(
+      older: v1_ibc_union_packets(
         limit: $limit
         order_by: [
-          { source_timestamp: desc }
-          { destination_timestamp: desc }
+          { packet_send_timestamp: desc }
+          { packet_recv_timestamp: desc }
         ]
-        where: { source_timestamp: { _lt: $timestamp } }
+        where: { packet_send_timestamp: { _lt: $timestamp } }
       ) {
         ...PacketListData
       }
@@ -41,12 +41,12 @@ export const packetsTimestampQuery = graphql(
 export const packetsByChainLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsByChainLatestQuery($limit: Int, $chain_id: String!) {
-      v1_packets(
+      v1_ibc_union_packets(
         limit: $limit 
-        order_by: { source_timestamp: desc_nulls_last }
+        order_by: { packet_send_timestamp: desc_nulls_last }
         where: { _or: [
-          { source_chain_id: { _eq: $chain_id }}
-          { destination_chain_id: { _eq: $chain_id }}
+          { source_chain: {chain_id: { _eq: $chain_id }}}
+          { destination_chain: {chain_id: { _eq: $chain_id }}}
         ]}
         ) {
         ...PacketListData
@@ -59,16 +59,16 @@ export const packetsByChainLatestQuery = graphql(
 export const packetsByChainTimestampQuery = graphql(
   /* GraphQL */ `
     query PacketsByChainTimestampQuery($limit: Int!, $chain_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v1_packets(
+      newer: v1_ibc_union_packets(
         limit: $limit
-        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
+        order_by: [{ packet_send_timestamp: asc }, { packet_recv_timestamp: asc }]
         where: {
           _and: [
-            { source_timestamp: { _gte: $timestamp } }
+            { packet_send_timestamp: { _gte: $timestamp } }
             {
               _or: [
-                { source_chain_id: { _eq: $chain_id }}
-                { destination_chain_id: { _eq: $chain_id }}
+                { source_chain: {chain_id: { _eq: $chain_id }}}
+                { destination_chain: {chain_id: { _eq: $chain_id }}}
               ]
             }
           ]
@@ -77,12 +77,12 @@ export const packetsByChainTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v1_packets(
+      older: v1_ibc_union_packets(
         limit: $limit
-        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
+        order_by: [ { packet_send_timestamp: desc } { packet_recv_timestamp: desc } ]
         where: {
           _and: [
-            { source_timestamp: { _lt: $timestamp } }
+            { packet_send_timestamp: { _lt: $timestamp } }
             {
               _or: [
                 { source_chain_id: { _eq: $chain_id }}
@@ -101,10 +101,10 @@ export const packetsByChainTimestampQuery = graphql(
 
 export const packetsByConnectionIdLatestQuery = graphql(
   /* GraphQL */ `
-    query PacketsByConnectionIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: String!) {
-      v1_packets(
+    query PacketsByConnectionIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: Int!) {
+      v1_ibc_union_packets(
         limit: $limit 
-        order_by: { source_timestamp: desc_nulls_last }
+        order_by: { packet_send_timestamp: desc_nulls_last }
         where: { 
           _or: [
             { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
@@ -121,13 +121,13 @@ export const packetsByConnectionIdLatestQuery = graphql(
 
 export const packetsByConnectionIdTimestampQuery = graphql(
   /* GraphQL */ `
-    query PacketsByConnectionIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v1_packets(
+    query PacketsByConnectionIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: Int!, $timestamp: timestamptz!) @cached(ttl: 1000) {
+      newer: v1_ibc_union_packets(
         limit: $limit
-        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
+        order_by: [{ packet_send_timestamp: asc }, { packet_recv_timestamp: asc }]
         where: {
           _and: [
-            { source_timestamp: { _gte: $timestamp } }
+            { packet_send_timestamp: { _gte: $timestamp } }
             {
               _or: [
                 { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
@@ -140,12 +140,12 @@ export const packetsByConnectionIdTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v1_packets(
+      older: v1_ibc_union_packets(
         limit: $limit
-        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
+        order_by: [ { packet_send_timestamp: desc } { packet_recv_timestamp: desc } ]
         where: {
           _and: [
-            { source_timestamp: { _lt: $timestamp } }
+            { packet_send_timestamp: { _lt: $timestamp } }
             {
               _or: [
                 { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
@@ -164,10 +164,10 @@ export const packetsByConnectionIdTimestampQuery = graphql(
 
 export const packetsByChannelIdLatestQuery = graphql(
   /* GraphQL */ `
-    query PacketsByChannelIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $channel_id: String!) {
-      v1_packets(
+    query PacketsByChannelIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: Int!, $channel_id: Int!) {
+      v1_ibc_union_packets(
         limit: $limit 
-        order_by: { source_timestamp: desc_nulls_last }
+        order_by: { packet_send_timestamp: desc_nulls_last }
         where: { 
           _or: [
             { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
@@ -184,13 +184,13 @@ export const packetsByChannelIdLatestQuery = graphql(
 
 export const packetsByChannelIdTimestampQuery = graphql(
   /* GraphQL */ `
-    query PacketsByChannelIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $channel_id: String!,  $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v1_packets(
+    query PacketsByChannelIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: Int!, $channel_id: Int!,  $timestamp: timestamptz!) @cached(ttl: 1000) {
+      newer: v1_ibc_union_packets(
         limit: $limit
-        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
+        order_by: [{ packet_send_timestamp: asc }, { packet_recv_timestamp: asc }]
         where: {
           _and: [
-            { source_timestamp: { _gte: $timestamp } }
+            { packet_send_timestamp: { _gte: $timestamp } }
             {
               _or: [
                 { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
@@ -203,12 +203,12 @@ export const packetsByChannelIdTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v1_packets(
+      older: v1_ibc_union_packets(
         limit: $limit
-        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
+        order_by: [ { packet_send_timestamp: desc } { packet_recv_timestamp: desc } ]
         where: {
           _and: [
-            { source_timestamp: { _lt: $timestamp } }
+            { packet_send_timestamp: { _lt: $timestamp } }
             {
               _or: [
                 { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
