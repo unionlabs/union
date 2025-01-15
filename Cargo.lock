@@ -13076,6 +13076,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-state-lens-ics23-smt"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "movement-light-client-types",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-smt-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-tendermint"
 version = "0.1.0"
 dependencies = [
