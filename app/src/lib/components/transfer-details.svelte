@@ -6,6 +6,7 @@ import {
   // transfersBySourceHashTracesAndHopsQueryDocument
 } from "$lib/graphql/queries/transfer-details.ts"
 import DetailsHeading from "$lib/components/details-heading.svelte"
+import MoveRightIcon from "virtual:icons/lucide/move-right"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -241,41 +242,56 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           />
         </Card.Header>
         <Card.Content class="flex flex-col gap-8">
-          <section class="mt-6">
-            {#if transfer.tokens}
-              <ul
-                class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl"
-              >
-                {#each transfer.tokens as token}
-                  {#if token.asset}
-                    <li>
-                      <Truncate
-                        value={formatUnits(token.amount, token.asset.decimals)}
-                        type="full"
-                      />
-                      <Truncate
-                        value={token.asset.display_symbol}
-                        type="address"
-                      />
-                    </li>
-                  {:else}
-                    <li>
-                      <Truncate value={token.amount} type="full" />
-                      <Truncate value={token.denom} type="address" />
-                    </li>
-                  {/if}
-                {/each}
-              </ul>
-            {:else}
-              No assets in transfer
-            {/if}
+          <section class="flex justify-between">
+
+            <div>
+            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
+              <Truncate
+                value={transfer.base_token_details ? formatUnits(transfer.base_amount, transfer.base_token_details.decimals) : transfer.base_amount}
+                type="full"
+              />
+              <Truncate
+                value={transfer.base_token_details ? transfer.base_token_details.display_symbol : transfer.base_token}
+                type="address"
+              />
+            </h2>
+            <p class="text-muted-foreground text-sm break-words">
+            <Truncate
+              value={transfer.base_token}
+              type="address"
+            />
+            </p>
+
+            </div>
+
+            
+            <div class="flex flex-col items-end">
+            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
+            <Truncate
+              value={transfer.quote_token_details ? formatUnits(transfer.quote_amount, transfer.quote_token_details.decimals) : transfer.quote_amount}
+              type="full"
+            />
+            <Truncate
+              value={transfer.quote_token_details ? transfer.quote_token_details.display_symbol : transfer.quote_token}
+              type="address"
+            />
+            </h2>
+            <p class="text-muted-foreground text-sm break-words">
+            <Truncate
+              value={transfer.quote_token}
+              type="address"
+            />
+
+            </p>
+            </div>
+            
           </section>
 
           <section>
             <PacketPath packet={transfer} {chains}/>
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
-            <div class=" lex-col text-muted-foreground">
+            <div class="flex-col text-muted-foreground">
               <DetailsHeading>
                 Sender
               </DetailsHeading>
