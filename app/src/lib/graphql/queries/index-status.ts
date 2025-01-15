@@ -2,7 +2,7 @@ import { graphql } from "gql.tada"
 
 export const indexStatusQuery = graphql(/* GraphQL */ `
     query IndexStatusQuery {
-        chains: v1_ibc_union_chains(where: {enabled:{_eq:true}}) {
+        chains: v1_ibc_union_chains {
             chain_id
         }
         statuses: v1_ibc_union_index_status(order_by: {status: desc}) {
