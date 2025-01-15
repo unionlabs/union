@@ -35,7 +35,7 @@ export const transfersPerDayQuery = (
     queryKey: ["transfer-per-day"],
     queryFn: async () => {
       const response = await request(URLS().GRAPHQL, transfersPerDayQueryDocument, { limit })
-      return response.v1_ibc_union_daily_transfers
+      return response.v1_ibc_union_daily_fungible_asset_orders
     },
     enabled: true,
     refetchInterval: 6_000,

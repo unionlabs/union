@@ -11,7 +11,7 @@ export const statsQueryDocument = graphql(/* GraphQL */ `
 
 export const transfersPerDayQueryDocument = graphql(/* GraphQL */ `
     query TransfersPerDay($limit: Int!) @cached(ttl: 60) {
-        v1_ibc_union_daily_transfers(limit: $limit, order_by: {day: desc}) {
+        v1_ibc_union_daily_fungible_asset_orders(limit: $limit, order_by: {day: desc}) {
             count
             day
         }
