@@ -6,13 +6,11 @@ import MoveRightIcon from "virtual:icons/lucide/move-right"
 export let chains: Array<Chain>
 export let packet: {
   source_chain_id: string
-  source_connection_id: string
-  source_channel_id: string
-  source_sequence: string
+  source_connection_id: number
+  source_channel_id: number
   destination_chain_id: string
-  destination_connection_id: string
-  destination_channel_id: string
-  destination_sequence: string
+  destination_connection_id: number
+  destination_channel_id: number
 }
 </script>
 
@@ -50,17 +48,6 @@ export let packet: {
       )}
     >
       {packet.source_channel_id}
-    </a>
-    <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`}
-      class={cn(
-        "text-sm block underline",
-        packet.source_sequence
-          ? "text-muted-foreground"
-          : "text-transparent"
-      )}
-    >
-      {packet.source_sequence}
     </a>
   </div>
   <div class="flex items-center justify-center px-8">
