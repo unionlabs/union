@@ -117,14 +117,14 @@ members = [
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
-  "voyager/modules/client/state-lens/evm",
+  "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
 
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
-  "voyager/modules/client-bootstrap/state-lens/evm",
+  "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
 
   "voyager/modules/consensus/berachain",
