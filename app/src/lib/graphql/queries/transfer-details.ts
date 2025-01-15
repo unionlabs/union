@@ -18,11 +18,42 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
             destination_connection_id
             destination_channel_id
             base_token
+            base_token_details {
+              decimals
+              denom
+              display_name
+              display_symbol
+              gas_token
+              logo_uri
+              origin
+              unwrapped_denom
+            }
             base_token_name
             base_token_symbol
             base_amount
             quote_amount
             quote_token
+            quote_token_details {
+              decimals
+              denom
+              display_name
+              display_symbol
+              gas_token
+              logo_uri
+              origin
+              unwrapped_denom
+            }
+
+            traces {
+                type
+                height
+                block_hash
+                timestamp
+                transaction_hash
+                 chain {
+                     chain_id
+                 }
+            }
 
             # tokens {
             #     denom
