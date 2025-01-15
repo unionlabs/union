@@ -185,7 +185,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         (() => {
           let status = onDestination("WRITE_ACK")
             ? "COMPLETED"
-            : onDestination("PAKET_RECV")
+            : onDestination("PACKET_RECV")
               ? "IN_PROGRESS"
               : "PENDING"
           return {
