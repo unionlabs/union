@@ -30,6 +30,7 @@ import { goto } from "$app/navigation"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
+import Truncate from "$lib/components/truncate.svelte"
 
 interface Props {
   stores: {
@@ -47,7 +48,10 @@ let { validation, context } = stores
 const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
+let confirmed = false
+
 const transfer = async () => {
+  confirmed = true
   if (!$validation.isValid) return
 
   let parsedAmount = parseUnits(
@@ -631,35 +635,19 @@ let stepperSteps = derived(
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
-  {#if $validation.isValid}
+  {#if $validation.isValid && !confirmed}
     <div>
       <div class="flex justify-between">
-        <span>RPC_TYPE:</span>
-        <span>{$validation.transfer.sourceChain.rpc_type}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>SENDER:</span>
-        <span>{truncateAddress({address: $validation.transfer.sender})}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>SOURCE:</span>
         <span>{$validation.transfer.sourceChain.display_name}</span>
+        <Truncate value={$validation.transfer.sender} type="address"/>
       </div>
       <div class="flex justify-between">
-        <span>DESTINATION:</span>
         <span>{$validation.transfer.destinationChain.display_name}</span>
+        <Truncate value={$validation.transfer.receiver} type="address"/>
       </div>
       <div class="flex justify-between">
-        <span>ASSET:</span>
-        <span>{truncate($validation.transfer.asset.metadata.denom, 6)}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>AMOUNT:</span>
         <span>{$validation.transfer.amount}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>RECEIVER:</span>
-        <span>{truncateAddress({address: $validation.transfer.receiver})}</span>
+        <Truncate value={$validation.transfer.asset.metadata.denom} type="address"/>
       </div>
     </div>
   {/if}
@@ -679,8 +667,10 @@ let stepperSteps = derived(
     />
   {/if}
 
+  {#if !confirmed}
   <div class="flex flex-col gap-2">
     <Button on:click={transfer}>Confirm</Button>
     <Button variant="outline" on:click={() => rotateTo("intentFace")}>CANCEL</Button>
   </div>
+  {/if}
 </div>
