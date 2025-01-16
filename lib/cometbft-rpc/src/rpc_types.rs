@@ -67,7 +67,9 @@ pub struct StatusResponse {
 #[serde(deny_unknown_fields)]
 pub struct SyncInfo {
     pub catching_up: bool,
+    #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
     pub earliest_app_hash: Option<H256<HexUnprefixed>>,
+    #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
     pub earliest_block_hash: Option<H256<HexUnprefixed>>,
     #[serde(with = "::serde_utils::string")]
     pub earliest_block_height: u64,

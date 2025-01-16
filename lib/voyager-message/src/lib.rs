@@ -839,7 +839,7 @@ async fn run_server<
     let module_server = match new(new_t).await {
         Ok(ctx) => ctx,
         Err(err) => {
-            error!("startup error: {err:?}");
+            error!("startup error in {id}: {err:?}");
             std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
         }
     };

@@ -6,6 +6,7 @@ use unionlabs::primitives::{encoding::HexUnprefixed, H256};
 pub struct PartSetHeader {
     pub total: u32,
     /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
+    #[serde(with = "crate::serde::maybe_empty_h256")]
     pub hash: Option<H256<HexUnprefixed>>,
 }
 
@@ -13,7 +14,7 @@ pub struct PartSetHeader {
 pub mod proto {
     use unionlabs::errors::InvalidLength;
 
-    use crate::types::{block_id::proto::maybe_empty_h256, part_set_header::PartSetHeader};
+    use crate::{types::part_set_header::PartSetHeader, utils::maybe_empty_h256};
 
     impl TryFrom<protos::cometbft::types::v1::PartSetHeader> for PartSetHeader {
         type Error = Error;
