@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO hubble.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token, source)\n        SELECT \n            unnest($1::bigint[]), \n            unnest($2::text[]), \n            unnest($3::text[]), \n            unnest($4::bigint[]), \n            unnest($5::text[]), \n            unnest($6::text[]), \n            false,\n            unnest($7::text[])\n        ON CONFLICT (chain_id, denom) DO UPDATE SET\n            display_symbol = EXCLUDED.display_symbol,\n            decimals = EXCLUDED.decimals,\n            logo_uri = EXCLUDED.logo_uri,\n            display_name = EXCLUDED.display_name,\n            source = EXCLUDED.source\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "TextArray",
+        "TextArray",
+        "Int8Array",
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7d45eb5768183f155030039b08328c72a49c1c513a8b1458c52ffab12c8c46e8"
+}

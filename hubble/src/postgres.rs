@@ -151,21 +151,22 @@ pub async fn get_chain_ids_and_ids<'a, A: Acquire<'a, Database = Postgres>>(
 #[allow(clippy::type_complexity)] // it's just kind of a mess
 pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
     db: A,
-    tokens: &[(i64, String, String, i64, Option<String>, String)],
+    tokens: &[(i64, String, String, i64, Option<String>, String, String)],
 ) -> sqlx::Result<()> {
     let mut conn = db.acquire().await?;
 
-    let (chain_ids, denoms, display_symbols, decimals, logo_uris, display_names): (
+    let (chain_ids, denoms, display_symbols, decimals, logo_uris, display_names, sources): (
         Vec<i64>,
         Vec<String>,
         Vec<String>,
         Vec<i64>,
         Vec<Option<String>>,
         Vec<String>,
+        Vec<String>,
     ) = tokens
         .iter()
         .map(
-            |(chain_id, denom, display_symbol, decimals, logo_uri, display_name)| {
+            |(chain_id, denom, display_symbol, decimals, logo_uri, display_name, source)| {
                 (
                     *chain_id,
                     denom.clone(),
@@ -173,6 +174,7 @@ pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
                     *decimals,
                     logo_uri.clone(),
                     display_name.clone(),
+                    source.clone(),
                 )
             },
         )
@@ -180,7 +182,7 @@ pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
 
     sqlx::query!(
         r#"
-        INSERT INTO hubble.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token)
+        INSERT INTO hubble.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token, source)
         SELECT 
             unnest($1::bigint[]), 
             unnest($2::text[]), 
@@ -188,19 +190,22 @@ pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
             unnest($4::bigint[]), 
             unnest($5::text[]), 
             unnest($6::text[]), 
-            false
+            false,
+            unnest($7::text[])
         ON CONFLICT (chain_id, denom) DO UPDATE SET
             display_symbol = EXCLUDED.display_symbol,
             decimals = EXCLUDED.decimals,
             logo_uri = EXCLUDED.logo_uri,
-            display_name = EXCLUDED.display_name
+            display_name = EXCLUDED.display_name,
+            source = EXCLUDED.source
         "#,
         &chain_ids,
         &denoms,
         &display_symbols,
         &decimals,
         &logo_uris as _,
-        &display_names
+        &display_names,
+        &sources,
     )
     .execute(&mut *conn)
     .await?;
