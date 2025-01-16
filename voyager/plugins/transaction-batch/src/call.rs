@@ -117,6 +117,7 @@ where
                         client_type: client_info.client_type,
                         counterparty_chain_id: module.chain_id.clone(),
                         chain_id: client_meta.chain_id,
+                        client_id: RawClientId::new(self.client_id.clone()),
                         update_from: client_meta.counterparty_height,
                         update_to: latest_height,
                     })],

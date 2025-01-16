@@ -1,6 +1,12 @@
 #![feature(trait_alias)]
 
-use std::{borrow::Cow, env::VarError, fmt::Debug, future::Future, time::Duration};
+use std::{
+    borrow::Cow,
+    env::VarError,
+    fmt::{self, Debug},
+    future::Future,
+    time::Duration,
+};
 
 use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
@@ -108,6 +114,12 @@ impl TypedValueParser for RawClientIdValueParser {
             s.parse::<Value>()
                 .unwrap_or_else(|_| Value::String(s.to_owned())),
         ))
+    }
+}
+
+impl fmt::Display for RawClientId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -648,6 +660,21 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)?;
 
         Ok(proof)
+    }
+
+    pub async fn decode_client_state<V: IbcSpec>(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        client_state_bytes: Bytes,
+    ) -> RpcResult<Value> {
+        let client_state = self
+            .0
+            .decode_client_state(client_type, ibc_interface, V::ID, client_state_bytes)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(client_state)
     }
 
     pub async fn query_ibc_state<P: IbcStorePathKey>(
