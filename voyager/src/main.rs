@@ -579,6 +579,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         client_type: client_info.client_type,
                         chain_id: client_meta.chain_id,
                         counterparty_chain_id: on.clone(),
+                        client_id: client_id.clone(),
                         update_from: client_meta.counterparty_height,
                         update_to,
                     })],

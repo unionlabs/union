@@ -167,10 +167,16 @@ impl IbcState<Value> {
 
 #[model]
 pub struct IbcProof {
+    // pub proof_type: ProofType,
     /// The height that the proof was read at.
     pub height: Height,
     pub proof: Value,
 }
+
+// enum ProofType {
+//     Membership,
+//     NonMembership,
+// }
 
 #[model]
 pub struct SelfClientState {

@@ -103,7 +103,7 @@ impl ClientStatePath {
 impl IbcStorePathKey for ClientStatePath {
     type Spec = IbcUnion;
 
-    type Value = Bytes;
+    type Value = Option<Bytes>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -127,7 +127,7 @@ impl ConsensusStatePath {
 impl IbcStorePathKey for ConsensusStatePath {
     type Spec = IbcUnion;
 
-    type Value = Bytes;
+    type Value = Option<Bytes>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

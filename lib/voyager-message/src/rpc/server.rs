@@ -283,7 +283,7 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(skip_all, fields(%chain_id, %height, ?path))]
     pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: &ChainId,
@@ -317,7 +317,15 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(
+        skip_all,
+        fields(
+            %chain_id,
+            ibc_spec_id = %P::Spec::ID,
+            %height,
+            path = %into_value(path.clone())
+        )
+    )]
     pub async fn query_ibc_proof<P: IbcStorePathKey>(
         &self,
         chain_id: &ChainId,
@@ -572,7 +580,7 @@ impl VoyagerRpcServer for Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
     async fn query_ibc_state(
         &self,
         chain_id: ChainId,
@@ -602,7 +610,7 @@ impl VoyagerRpcServer for Server {
         Ok(IbcState { height, state })
     }
 
-    #[instrument(skip_all, fields(%chain_id, %height))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,

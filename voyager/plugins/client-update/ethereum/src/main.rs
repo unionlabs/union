@@ -36,7 +36,7 @@ use voyager_message::{
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};
 
@@ -211,6 +211,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     from_height: fetch.update_from,
                                     to_height: fetch.update_to,
                                     counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                    client_id: fetch.client_id.clone(),
                                 }),
                             ))
                         },
@@ -232,8 +233,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 from_height,
                 to_height,
                 counterparty_chain_id,
+                client_id,
             }) => self
-                .fetch_update(from_height, to_height, counterparty_chain_id)
+                .fetch_update(from_height, to_height, counterparty_chain_id, client_id)
                 .await
                 .map_err(|e| {
                     ErrorObject::owned(
@@ -318,6 +320,7 @@ impl Module {
         update_from_block_number: Height,
         update_to_block_number: Height,
         counterparty_chain_id: ChainId,
+        client_id: RawClientId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         let finality_update = self
             .beacon_api_client
@@ -371,6 +374,7 @@ impl Module {
                 call(FetchUpdateHeaders {
                     client_type: ClientType::new(ClientType::ETHEREUM),
                     chain_id: self.chain_id.clone(),
+                    client_id,
                     counterparty_chain_id,
                     update_from: update_from_block_number,
                     update_to: update_to_block_number,
