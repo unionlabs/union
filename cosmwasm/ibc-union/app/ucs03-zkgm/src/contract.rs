@@ -21,11 +21,11 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, ZkgmPacket,
-        ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_FUNGIBLE_ASSET_ORDER,
-        TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
+        Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, Multiplex,
+        ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_BATCH,
+        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
-    msg::{ExecuteMsg, InitMsg, MigrateMsg},
+    msg::{EurekaMsg, ExecuteMsg, InitMsg, MigrateMsg},
     state::{
         CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
         TOKEN_ORIGIN,
@@ -210,12 +210,12 @@ fn timeout_packet(
 
 #[allow(clippy::too_many_arguments)]
 fn timeout_internal(
-    deps: DepsMut<TokenFactoryQuery>,
-    _env: Env,
-    _info: MessageInfo,
+    mut deps: DepsMut<TokenFactoryQuery>,
+    env: Env,
+    info: MessageInfo,
     packet: Packet,
-    _relayer: Addr,
-    _salt: H256,
+    relayer: Addr,
+    salt: H256,
     _path: alloy::primitives::U256,
     instruction: Instruction,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
@@ -228,6 +228,38 @@ fn timeout_internal(
         OP_FUNGIBLE_ASSET_ORDER => {
             let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             refund(deps, packet.source_channel_id, order)
+        }
+        OP_BATCH => {
+            let mut response = Response::new();
+            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            for (i, instruction) in batch.instructions.into_iter().enumerate() {
+                let sub_response = timeout_internal(
+                    deps.branch(),
+                    env.clone(),
+                    info.clone(),
+                    packet.clone(),
+                    relayer.clone(),
+                    keccak256(
+                        (alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode(),
+                    ),
+                    _path,
+                    instruction,
+                )?;
+                response = response
+                    .add_events(sub_response.events)
+                    .add_attributes(sub_response.attributes)
+                    .add_submessages(sub_response.messages)
+            }
+            Ok(response)
+        }
+        OP_MULTIPLEX => {
+            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            if !multiplex.eureka {
+                // TODO: implement when execute is implemented
+                Err(ContractError::Unimplemented)
+            } else {
+                Ok(Response::new())
+            }
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -244,6 +276,7 @@ fn acknowledge_packet(
     ack: Bytes,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    let ack = Ack::abi_decode_params(&ack, true)?;
     acknowledge_internal(
         deps,
         env,
@@ -253,13 +286,14 @@ fn acknowledge_packet(
         zkgm_packet.salt.into(),
         zkgm_packet.path,
         zkgm_packet.instruction,
-        ack,
+        ack.tag == TAG_ACK_SUCCESS,
+        Vec::from(ack.inner_ack).into(),
     )
 }
 
 #[allow(clippy::too_many_arguments)]
 fn acknowledge_internal(
-    deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut<TokenFactoryQuery>,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -267,6 +301,7 @@ fn acknowledge_internal(
     salt: H256,
     path: alloy::primitives::U256,
     instruction: Instruction,
+    successful: bool,
     ack: Bytes,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     if instruction.version != ZKGM_VERSION_0 {
@@ -274,21 +309,59 @@ fn acknowledge_internal(
             version: instruction.version,
         });
     }
-    let ack = Ack::abi_decode_params(&ack, true)?;
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
             let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
-            let order_ack = if ack.tag == TAG_ACK_SUCCESS {
-                Some(FungibleAssetOrderAck::abi_decode_params(
-                    &ack.inner_ack,
-                    true,
-                )?)
+            let order_ack = if successful {
+                Some(FungibleAssetOrderAck::abi_decode_params(&ack, true)?)
             } else {
                 None
             };
             acknowledge_fungible_asset_order(
                 deps, env, info, packet, relayer, salt, path, order, order_ack,
             )
+        }
+        OP_BATCH => {
+            let mut response = Response::new();
+            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            let batch_ack = if successful {
+                Some(BatchAck::abi_decode_params(&ack, true)?)
+            } else {
+                None
+            };
+            for (i, instruction) in batch.instructions.into_iter().enumerate() {
+                let sub_response = acknowledge_internal(
+                    deps.branch(),
+                    env.clone(),
+                    info.clone(),
+                    packet.clone(),
+                    relayer.clone(),
+                    keccak256(
+                        (alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode(),
+                    ),
+                    path,
+                    instruction,
+                    successful,
+                    batch_ack
+                        .as_ref()
+                        .map(|batch_ack| Vec::from(batch_ack.acknowledgements[i].clone()).into())
+                        .unwrap_or_default(),
+                )?;
+                response = response
+                    .add_attributes(sub_response.attributes)
+                    .add_events(sub_response.events)
+                    .add_submessages(sub_response.messages);
+            }
+            Ok(response)
+        }
+        OP_MULTIPLEX => {
+            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            if !multiplex.eureka {
+                // TODO: implement when execute is implemented
+                Err(ContractError::Unimplemented)
+            } else {
+                Ok(Response::new())
+            }
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -400,7 +473,7 @@ fn acknowledge_fungible_asset_order(
 }
 
 fn execute_packet(
-    deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut<TokenFactoryQuery>,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -408,8 +481,8 @@ fn execute_packet(
     relayer_msg: Bytes,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
-    execute_internal(
-        deps,
+    let (ack, response) = execute_internal(
+        deps.branch(),
         env,
         info,
         packet,
@@ -418,7 +491,9 @@ fn execute_packet(
         zkgm_packet.salt.into(),
         zkgm_packet.path,
         zkgm_packet.instruction,
-    )
+    )?;
+    EXECUTION_ACK.save(deps.storage, &ack)?;
+    Ok(response)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -432,7 +507,7 @@ fn execute_internal(
     salt: H256,
     path: alloy::primitives::U256,
     instruction: Instruction,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
     if instruction.version != ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
@@ -451,6 +526,34 @@ fn execute_internal(
                 salt,
                 path,
                 order,
+            )
+        }
+        OP_BATCH => {
+            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            execute_batch(
+                deps,
+                env,
+                info,
+                packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                batch,
+            )
+        }
+        OP_MULTIPLEX => {
+            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            execute_multiplex(
+                deps,
+                env,
+                info,
+                packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                multiplex,
             )
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -488,6 +591,90 @@ fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Byt
 }
 
 #[allow(clippy::too_many_arguments)]
+fn execute_multiplex(
+    deps: DepsMut<TokenFactoryQuery>,
+    _env: Env,
+    _info: MessageInfo,
+    packet: Packet,
+    _relayer: Addr,
+    _relayer_msg: Bytes,
+    _salt: H256,
+    _path: alloy::primitives::U256,
+    multiplex: Multiplex,
+) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+    let contract_address = deps
+        .api
+        .addr_validate(
+            str::from_utf8(&multiplex.contract_address)
+                .map_err(|_| ContractError::InvalidContractAddress)?,
+        )
+        .map_err(|_| ContractError::UnableToValidateMultiplexTarget)?;
+    if multiplex.eureka {
+        Ok((
+            TAG_ACK_SUCCESS.abi_encode().into(),
+            Response::new().add_message(wasm_execute(
+                contract_address,
+                &EurekaMsg::OnZkgm {
+                    channel_id: packet.destination_channel_id,
+                    sender: multiplex.sender.to_vec().into(),
+                    message: multiplex.contract_calldata.to_vec().into(),
+                },
+                vec![],
+            )?),
+        ))
+    } else {
+        // TODO: implement non eureka multiplexing, add a new msg `WriteAck` by
+        // maintaining the hashing from packet to ack or thread the ack back
+        // from the events directly? Beware we'll need to use submessage+reply
+        // for execute_batch when implementing this as we need the ack to yield
+        // the batch ack
+        Err(ContractError::Unimplemented)
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn execute_batch(
+    mut deps: DepsMut<TokenFactoryQuery>,
+    env: Env,
+    info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+    relayer_msg: Bytes,
+    salt: H256,
+    path: alloy::primitives::U256,
+    batch: Batch,
+) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+    let mut response = Response::new();
+    let mut acks = Vec::<Bytes>::with_capacity(batch.instructions.len());
+    for (i, instruction) in batch.instructions.into_iter().enumerate() {
+        let (ack, sub_response) = execute_internal(
+            deps.branch(),
+            env.clone(),
+            info.clone(),
+            packet.clone(),
+            relayer.clone(),
+            relayer_msg.clone(),
+            keccak256((alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode()),
+            path,
+            instruction,
+        )?;
+        response = response
+            .add_attributes(sub_response.attributes)
+            .add_events(sub_response.events)
+            .add_submessages(sub_response.messages);
+        acks.push(ack);
+    }
+    Ok((
+        BatchAck {
+            acknowledgements: acks.into_iter().map(Into::into).collect(),
+        }
+        .abi_encode_params()
+        .into(),
+        response,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
     deps: DepsMut<TokenFactoryQuery>,
     env: Env,
@@ -498,15 +685,14 @@ fn execute_fungible_asset_order(
     _salt: H256,
     path: alloy::primitives::U256,
     order: FungibleAssetOrder,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
     if order.quote_amount > order.base_amount {
-        EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
-        return Ok(Response::new());
+        return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
     }
     let wrapped_denom = predict_wrapped_denom(
         path,
         packet.destination_channel_id,
-        Bytes::from(order.base_token.to_vec()),
+        Vec::from(order.base_token.clone()).into(),
     );
     let quote_amount =
         u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
@@ -526,7 +712,7 @@ fn execute_fungible_asset_order(
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
                 subdenom.clone(),
-                &Bytes::from(order.base_token.to_vec()),
+                &Vec::from(order.base_token.clone()).into(),
             )?;
             messages.push(
                 TokenFactoryMsg::CreateDenom {
@@ -575,7 +761,7 @@ fn execute_fungible_asset_order(
             );
         }
     } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
-        let quote_token = String::from_utf8(order.quote_token.to_vec())
+        let quote_token = String::from_utf8(Vec::from(order.quote_token))
             .map_err(|_| ContractError::InvalidQuoteToken)?;
         CHANNEL_BALANCE.update(
             deps.storage,
@@ -610,19 +796,17 @@ fn execute_fungible_asset_order(
             );
         }
     } else {
-        EXECUTION_ACK.save(deps.storage, &ACK_ERR_ONLY_MAKER.into())?;
-        return Ok(Response::new());
+        return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
     };
-    EXECUTION_ACK.save(
-        deps.storage,
-        &FungibleAssetOrderAck {
+    Ok((
+        FungibleAssetOrderAck {
             fill_type: FILL_TYPE_PROTOCOL,
             market_maker: Default::default(),
         }
         .abi_encode_params()
         .into(),
-    )?;
-    Ok(Response::new().add_messages(messages))
+        Response::new().add_messages(messages),
+    ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -785,7 +969,7 @@ fn transfer(
                         opcode: OP_FUNGIBLE_ASSET_ORDER,
                         operand: FungibleAssetOrder {
                             sender: info.sender.as_bytes().to_vec().into(),
-                            receiver: receiver.into_vec().into(),
+                            receiver: Vec::from(receiver).into(),
                             base_token: base_token.as_bytes().to_vec().into(),
                             base_amount: base_amount.u128().try_into().expect("u256>u128"),
                             base_token_symbol,
@@ -793,7 +977,7 @@ fn transfer(
                             base_token_path: origin
                                 .map(|x| alloy::primitives::U256::from_be_bytes(x.to_be_bytes()))
                                 .unwrap_or(alloy::primitives::U256::ZERO),
-                            quote_token: quote_token.into_vec().into(),
+                            quote_token: Vec::from(quote_token).into(),
                             quote_amount: alloy::primitives::U256::from_be_bytes(
                                 quote_amount.to_be_bytes(),
                             ),
