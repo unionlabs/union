@@ -6,11 +6,11 @@ import MoveRightIcon from "virtual:icons/lucide/move-right"
 export let chains: Array<Chain>
 export let packet: {
   source_chain_id: string
-  source_connection_id: number
-  source_channel_id: number
+  source_connection_id?: number | null
+  source_channel_id?: number | null
   destination_chain_id: string
-  destination_connection_id: number
-  destination_channel_id: number
+  destination_connection_id?: number | null
+  destination_channel_id?: number | null
 }
 </script>
 

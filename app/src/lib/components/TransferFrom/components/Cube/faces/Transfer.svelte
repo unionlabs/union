@@ -384,30 +384,26 @@ const transfer = async () => {
 
   if ($transferState.kind === "TRANSFERRING") {
     await sleep(REDIRECT_DELAY_MS)
+
+    const transfer = $validation.transfer
+    if (!transfer) {
+      console.error("submitted invalid transfer. this should never happen")
+      console.error("submitted invalid transfer. this should never happen. please contact the devs")
+      goto(`/explorer/transfers/${$transferState.transferHash}`)
+      return
+    }
+
     submittedTransfers.update(ts => {
-      // @ts-ignore
       ts[$transferState.transferHash] = {
-        source_chain_id: $validation.transfer?.sourceChain.chain_id,
-        destination_chain_id: $validation.transfer?.destinationChain?.chain_id,
-        source_transaction_hash: $transferState.transferHash,
-        hop_chain_id: $validation.transfer?.destinationChain?.chain_id,
-        sender: $validation.transfer?.sender,
-        normalized_sender:
-          $validation.transfer?.sourceChain?.rpc_type === "cosmos"
-            ? $userAddrCosmos?.normalized
-            : $userAddrEvm?.normalized,
+        _is_submitted_transfer: true,
+        source_chain_id: transfer.sourceChain.chain_id,
+        destination_chain_id: transfer.destinationChain.chain_id,
+        packet_send_transaction_hash: $transferState.transferHash,
+        sender: transfer.sender,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
-        receiver: $validation.transfer?.receiver,
-        assets: {
-          [$validation.transfer?.asset.metadata.denom]: {
-            info:
-              $validation.transfer?.sourceChain?.assets?.find(
-                d => d.denom === $validation.transfer?.asset.metadata.denom
-              ) ?? null,
-            amount: parsedAmount
-          }
-        },
-        amount: parsedAmount
+        receiver: transfer.receiver,
+        base_token: transfer.asset.metadata.denom,
+        base_amount: parsedAmount
       }
       return ts
     })
