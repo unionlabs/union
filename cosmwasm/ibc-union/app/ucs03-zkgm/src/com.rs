@@ -2,6 +2,9 @@ use alloy::primitives::U256;
 
 pub const ZKGM_VERSION_0: u8 = 0x00;
 
+pub const OP_FORWARD: u8 = 0x00;
+pub const OP_MULTIPLEX: u8 = 0x01;
+pub const OP_BATCH: u8 = 0x02;
 pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];

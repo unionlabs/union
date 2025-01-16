@@ -36,5 +36,15 @@ pub enum ExecuteMsg {
     IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EurekaMsg {
+    OnZkgm {
+        channel_id: u32,
+        sender: Bytes,
+        message: Bytes,
+    },
+}
+
 #[cw_serde]
 pub struct MigrateMsg {}
