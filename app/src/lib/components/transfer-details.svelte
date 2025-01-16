@@ -12,7 +12,7 @@ import { URLS } from "$lib/constants"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { derived, readable, type Readable } from "svelte/store"
+import { derived, get, readable, type Readable } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { raise } from "$lib/utilities"
 import type { Step } from "$lib/stepper-types.ts"
@@ -24,6 +24,7 @@ import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
+import type { UnwrapReadable } from "$lib/utilities/types"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -52,11 +53,9 @@ let processedTransfers = derived(
   [transfers, submittedTransfers],
   ([$transfers, $submittedTransfers]) => {
     if ($transfers.data === undefined || $transfers.data.length === 0) {
-      // @ts-expect-error
       if ($submittedTransfers[source] === undefined) {
         return null
       }
-      // @ts-expect-error
       return [$submittedTransfers[source]]
     }
     return $transfers.data.map(transfer => {
@@ -78,7 +77,13 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     if (!$processedTransfers) return null
 
     return $processedTransfers.map(transfer => {
-      const traces = transfer.traces
+      let traces: Exclude<UnwrapReadable<typeof transfers>["data"], undefined>[number]["traces"] =
+        []
+
+      if (!("_is_submitted_transfer" in transfer) && Array.isArray(transfer?.traces)) {
+        traces = transfer.traces
+      }
+
       const onSourceTrace = (eventType: string) =>
         traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
       const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
@@ -102,7 +107,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         ?.explorers?.at(0)
 
       const sourceChainName = toDisplayName(transfer.source_chain_id, chains)
-      const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
+      //const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
       const destinationChainName = toDisplayName(transfer.destination_chain_id, chains)
 
       const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
@@ -225,6 +230,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       {@const destinationExplorer = chains
         .find((c) => c.chain_id === transfer.destination_chain_id)
         ?.explorers?.at(0)}
+      {#if transfer.source_chain_id !== null && transfer.destination_chain_id !== null}
 
       <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
@@ -245,12 +251,15 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           <section class="flex justify-between">
             <div>
             <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
+              {#if transfer.base_amount}
+              {@const base_amount = BigInt(transfer.base_amount)}
+                <Truncate
+                  value={("base_token_details" in transfer && transfer.base_token_details?.decimals) ? formatUnits(base_amount, transfer.base_token_details.decimals) : base_amount}
+                  type="full"
+                />
+              {/if}
               <Truncate
-                value={transfer.base_token_details ? formatUnits(transfer.base_amount, transfer.base_token_details.decimals) : transfer.base_amount}
-                type="full"
-              />
-              <Truncate
-                value={(transfer.base_token_details && transfer.base_token_details.display_symbol) ? transfer.base_token_details.display_symbol : transfer.base_token}
+                value={("base_token_details" in transfer && transfer.base_token_details?.display_symbol) ? transfer.base_token_details.display_symbol : transfer.base_token}
                 type="address"
               />
             </h2>
@@ -258,18 +267,22 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             <Truncate
               value={transfer.base_token}
               type="address"
-            /> | {#if transfer.base_token_details}{transfer.base_token_details?.origin}{:else}NO DETAILS{/if}
+            /> | {#if "base_token_details" in transfer && transfer.base_token_details}{transfer.base_token_details?.origin}{:else}NO DETAILS{/if}
             </p>
 
             </div>
 
             
             <div class="flex flex-col items-end">
+            {#if "quote_token" in transfer}
             <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
-            <Truncate
-              value={transfer.quote_token_details ? formatUnits(transfer.quote_amount, transfer.quote_token_details.decimals) : transfer.quote_amount}
-              type="full"
-            />
+              {#if "quote_amount" in transfer && transfer.quote_amount}
+              {@const quote_amount = BigInt(transfer.quote_amount)}
+                <Truncate
+                  value={("quote_token_details" in transfer && transfer.quote_token_details?.decimals) ? formatUnits(quote_amount, transfer.quote_token_details.decimals) : quote_amount}
+                  type="full"
+                />
+              {/if}
             <Truncate
                 value={(transfer.quote_token_details && transfer.quote_token_details.display_symbol) ? transfer.quote_token_details.display_symbol : transfer.quote_token}
               type="address"
@@ -279,14 +292,16 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             <Truncate
               value={transfer.quote_token}
               type="address"
-            /> | {#if transfer.quote_token_details}{transfer.quote_token_details?.origin}{:else}NO DETAILS{/if}
+            /> | {#if  "quote_token_details" in transfer && "quote_token_details" in transfer && transfer.quote_token_details}{transfer.quote_token_details?.origin}{:else}NO DETAILS{/if}
 
             </p>
+            {/if}
             </div>
             
           </section>
 
           <section>
+            <!-- typescript is stupid here, as source_chain_id and destination_chain_id have already established not to be null. !-->
             <PacketPath packet={transfer} {chains}/>
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
@@ -305,7 +320,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               <p
                 class={cn(
                   "text-[10px] break-words",
-                  transfer.normalized_sender
+                  "normalized_sender" in transfer && transfer.normalized_sender
                     ? "text-black dark:text-muted-foreground"
                     : "text-transparent"
                 )}
@@ -327,7 +342,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               <p
                 class={cn(
                   "text-[10px] break-words",
-                  transfer.normalized_receiver
+                  "normalized_receiver" in transfer && transfer.normalized_receiver
                     ? "text-black dark:text-muted-foreground"
                     : "text-transparent"
                 )}
@@ -356,6 +371,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
       !-->
+      {/if}
     {/each}
   </div>
 {:else if $transfers.isLoading}

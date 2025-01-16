@@ -6,11 +6,11 @@ import MoveRightIcon from "virtual:icons/lucide/move-right"
 export let chains: Array<Chain>
 export let packet: {
   source_chain_id: string
-  source_connection_id: number
-  source_channel_id: number
+  source_connection_id?: number | null
+  source_channel_id?: number | null
   destination_chain_id: string
-  destination_connection_id: number
-  destination_channel_id: number
+  destination_connection_id?: number | null
+  destination_channel_id?: number | null
 }
 </script>
 
@@ -28,30 +28,23 @@ export let packet: {
     
       {packet.source_chain_id}
     </a>
-     
-    <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}`}
-      class={cn(
-        "px-2 black text-sm underline",
-        packet.source_connection_id
-          ? "text-muted-foreground"
-          : "text-transparent"
-      )}
-    >
-      {packet.source_connection_id}
-    </a>
+    {#if packet.source_connection_id}
+      <a
+        href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}`}
+        class="px-2 black text-sm underline text-muted-foreground"
+      >
+        {packet.source_connection_id}
+      </a>
     
-    <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}`}
-      class={cn(
-        "pl-2 text-sm block underline",
-        packet.source_channel_id
-          ? "text-muted-foreground"
-          : "text-transparent"
-      )}
-    >
-      {packet.source_channel_id}
-    </a>
+      {#if packet.source_channel_id}
+        <a
+          href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}`}
+          class="pl-2 text-sm block underline text-muted-foreground"
+        >
+          {packet.source_channel_id}
+        </a>
+      {/if}
+    {/if}
     </div>
   </div>
   <div class="flex items-center justify-center px-8">
@@ -70,28 +63,22 @@ export let packet: {
     
       {packet.destination_chain_id}
     </a>
-    <a
-      href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}`}
-      class={cn(
-        "px-2 text-sm block underline",
-        packet.destination_connection_id
-          ? "text-muted-foreground"
-          : "text-transparent"
-      )}
-    >
-      {packet.destination_connection_id}
-    </a>
-    <a
-      href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}/${packet.destination_channel_id}`}
-      class={cn(
-        "pl-2 text-sm block underline",
-        packet.destination_channel_id
-          ? "text-muted-foreground"
-          : "text-transparent"
-      )}
-    >
-      {packet.destination_channel_id}
-    </a>
+    {#if packet.destination_connection_id}
+      <a
+        href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}`}
+        class="px-2 text-sm block underline text-muted-foreground"
+      >
+        {packet.destination_connection_id}
+      </a>
+      {#if packet.destination_channel_id}
+        <a
+          href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}/${packet.destination_channel_id}`}
+          class="pl-2 text-sm block underline text-muted-foreground"
+        >
+        {packet.destination_channel_id}
+      </a>
+      {/if}
+    {/if}
     </div>
   </div>
 </section>
