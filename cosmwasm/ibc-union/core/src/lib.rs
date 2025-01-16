@@ -3,6 +3,9 @@
 pub mod contract;
 pub mod state;
 
+#[cfg(test)]
+mod tests;
+
 use cosmwasm_std::{Addr, StdError};
 use ibc_solidity::{ChannelState, ConnectionState};
 use thiserror::Error;
@@ -122,21 +125,5 @@ impl ContractErrorKind {
         let (err, _) = s.split_once(' ')?;
 
         err.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn display() {
-        assert_eq!(
-            ContractErrorKind::ArithmeticOverflow,
-            ContractErrorKind::parse_from_error_message(
-                &ContractError::ArithmeticOverflow.to_string()
-            )
-            .unwrap()
-        )
     }
 }

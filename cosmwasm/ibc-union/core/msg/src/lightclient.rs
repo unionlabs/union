@@ -22,14 +22,14 @@ pub struct MisbehaviourResponse {
     pub client_state: Bytes,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct VerifyCreationResponse {
     pub latest_height: u64,
     pub counterparty_chain_id: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     GetTimestamp {
