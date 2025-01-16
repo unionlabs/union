@@ -54,6 +54,7 @@ pub struct Config {
     pub l2_chain_id: ChainId,
     pub l2_client_type: ClientType,
     pub state_lens_client_type: ClientType,
+    pub host_chain_id: ChainId,
 }
 
 impl Plugin for Module {
@@ -81,9 +82,13 @@ impl Plugin for Module {
                 config.l1_client_id,
                 &config.l2_chain_id,
             ),
-            interest_filter: UpdateHook::filter(
-                &config.l2_chain_id,
-                &config.state_lens_client_type,
+            // interest_filter: UpdateHook::filter(
+            //     &config.l2_chain_id,
+            //     &config.state_lens_client_type,
+            // ),
+            interest_filter: format!(
+                r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}" and ."@value".client_type == "{}" and ."@value".counterparty_chain_id == "{}"] | any"#,
+                config.l2_chain_id, config.state_lens_client_type, config.host_chain_id
             ),
         }
     }
