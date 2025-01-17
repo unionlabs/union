@@ -1,19 +1,19 @@
-pub const UNION_IBC: &str = "union:ibc-union";
+pub const IBC_UNION: &str = "union:ibc-union";
 
 #[cw_orch::interface(
     crate::msg::InstantiateMsg,
     crate::msg::ExecuteMsg,
     crate::msg::QueryMsg,
     crate::msg::MigrateMsg,
-    id = UNION_IBC
+    id = IBC_UNION
 )]
-pub struct UnionIbc<Chain>;
+pub struct IbcUnion<Chain>;
 
 #[cfg(not(target_arch = "wasm32"))]
 use cw_orch::prelude::*;
 
 #[cfg(not(target_arch = "wasm32"))]
-impl<Chain: CwEnv> Uploadable for UnionIbc<Chain> {
+impl<Chain: CwEnv> Uploadable for IbcUnion<Chain> {
     fn wasm(_chain_info: &ChainInfoOwned) -> WasmPath {
         artifacts_dir_from_workspace!()
             .find_wasm_path("ibc_union")
