@@ -132,6 +132,7 @@ members = [
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
+  "voyager/modules/consensus/0gchain",
 
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",
