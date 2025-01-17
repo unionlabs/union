@@ -8249,6 +8249,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ogchain-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "bincode 2.0.0-rc.3",
+ "ethereum-light-client-types",
+ "serde",
+ "unionlabs",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13175,6 +13187,35 @@ dependencies = [
  "tendermint-light-client-types",
  "tokio",
  "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-0gchain"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "cometbft-types",
+ "dashmap 5.5.3",
+ "enumorph",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "ssz",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",

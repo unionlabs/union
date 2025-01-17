@@ -71,6 +71,7 @@ members = [
   "lib/ethereum-light-client-types",
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
+  "lib/0gchain-light-client-types",
   "lib/cometbls-light-client-types",
   "lib/scroll-light-client-types",
   "lib/tendermint-light-client-types",
@@ -135,6 +136,7 @@ members = [
   "voyager/modules/consensus/0gchain",
 
   "voyager/plugins/client-update/berachain",
+  "voyager/plugins/client-update/0gchain",
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
   "voyager/plugins/client-update/movement",
@@ -219,6 +221,7 @@ ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-fea
 evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
 
 berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
+ogchain-light-client-types = { path = "lib/0gchain-light-client-types", default-features = false }
 scroll-api                   = { path = "lib/scroll-api", default-features = false }
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }

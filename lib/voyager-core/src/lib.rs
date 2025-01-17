@@ -110,6 +110,13 @@ impl ClientType {
     /// [CometBFT]: https://github.com/cometbft/cometbft
     pub const BEACON_KIT: &'static str = "beacon-kit";
 
+    /// A client tracking the state of a [Ethermint] chain, verified by verifying the underlying
+    /// [CometBFT] consensus.
+    ///
+    /// [BeaconKit]: https://github.com/evmos/ethermint
+    /// [CometBFT]: https://github.com/cometbft/cometbft
+    pub const ETHERMINT: &'static str = "ethermint";
+
     /// A client tracking the state of a [Movement] chain.
     ///
     /// [Movement]: https://github.com/movementlabsxyz/movement
