@@ -76,7 +76,7 @@ jobs:
 
   download-images-x86_64:
     if: ${{ needs.eval-tag.outputs.image-produced }}
-    needs: [build, eval-tag]
+    needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
 
   download-images-aarch64:
     if: ${{ needs.eval-tag.outputs.image-produced }}
-    needs: [build, eval-tag]
+    needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
@@ -125,7 +125,7 @@ jobs:
           path: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
 
   download-binaries-x86_64:
-    needs: [build, eval-tag]
+    needs: [eval-tag]
     runs-on: ubuntu-24.04
     strategy:
       matrix:
