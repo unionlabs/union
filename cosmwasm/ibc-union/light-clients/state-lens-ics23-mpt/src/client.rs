@@ -133,17 +133,17 @@ impl IbcClient for StateLensIcs23MptLightClient {
 
         let l2_timestamp = extract_uint64(
             &header.l2_consensus_state,
-            client_state.timestamp_offset as usize,
+            client_state.extra.timestamp_offset as usize,
         );
 
         let l2_state_root = extract_bytes32(
             &header.l2_consensus_state,
-            client_state.state_root_offset as usize,
+            client_state.extra.state_root_offset as usize,
         );
 
         let l2_storage_root = extract_bytes32(
             &header.l2_consensus_state,
-            client_state.storage_root_offset as usize,
+            client_state.extra.storage_root_offset as usize,
         );
 
         if client_state.l2_latest_height < header.l2_height.height() {

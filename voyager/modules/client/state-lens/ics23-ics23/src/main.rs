@@ -51,12 +51,9 @@ impl ClientModule for Module {
     }
 }
 
-type SelfConsensusState = ConsensusState;
-type SelfClientState = ClientState;
-
 impl Module {
-    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -65,8 +62,8 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
+        <ClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),

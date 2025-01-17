@@ -7,6 +7,7 @@ version      = "0.0.1"
 
 [dependencies]
 alloy-primitives = { workspace = true, optional = true }
+alloy-sol-types  = { workspace = true, optional = true }
 base64           = { workspace = true, optional = true, features = ["std"] }
 bincode          = { workspace = true, optional = true, features = ["alloc"] }
 generic-array    = { workspace = true, optional = true }
@@ -36,6 +37,7 @@ rlp     = ["dep:rlp"]
 serde   = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
+alloy-sol-types-compat = ["dep:alloy-sol-types"]
 generic-array-compat = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
 primitive-types-compat = [
   # TODO: Make this dep optional again once we switch to ruint

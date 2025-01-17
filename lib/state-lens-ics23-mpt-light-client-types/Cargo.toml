@@ -4,18 +4,20 @@ name    = "state-lens-ics23-mpt-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy     = { workspace = true, features = ["sol-types"], optional = true }
-bincode   = { workspace = true, features = ["alloc", "derive"], optional = true }
-protos    = { workspace = true, optional = true, features = ["proto_full", "serde"] }
-serde     = { workspace = true, optional = true, features = ["derive"] }
-thiserror = { workspace = true }
-unionlabs = { workspace = true, features = ["ethabi", "proto"] }
+alloy                         = { workspace = true, optional = true, features = ["sol-types"] }
+bincode                       = { workspace = true, optional = true, features = ["alloc", "derive"] }
+protos                        = { workspace = true, optional = true, features = ["proto_full", "serde"] }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
+state-lens-light-client-types = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["ethabi", "proto"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 
 [features]
-bincode = ["dep:bincode", "unionlabs/bincode"]
 default = []
-ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]
-serde   = ["dep:serde"]
+
+bincode = ["dep:bincode", "unionlabs/bincode", "state-lens-light-client-types/bincode"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "state-lens-light-client-types/ethabi"]
+serde   = ["dep:serde", "state-lens-light-client-types/serde"]

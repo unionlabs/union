@@ -33,6 +33,9 @@ use crate::{
 pub mod call;
 pub mod callback;
 
+pub type StateLensClientState =
+    state_lens_light_client_types::ClientState<serde_json::Map<String, serde_json::Value>>;
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
@@ -180,7 +183,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 debug!(%state_lens_client_state_json);
 
                 let state_lens_client_state = serde_json::from_value::<
-                    state_lens_light_client_types::ClientState<()>,
+                    state_lens_light_client_types::ClientState<
+                        serde_json::Map<String, serde_json::Value>,
+                    >,
                 >(state_lens_client_state_json)
                 .map_err(|e| {
                     ErrorObject::owned(
@@ -446,4 +451,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         match callback {}
     }
+}
+
+#[test]
+fn json() {
+    serde_json::from_str::<StateLensClientState>(r#"{"l2_chain_id":"elgafar-1","l1_client_id":3,"l2_client_id":14,"l2_latest_height":14268576,"contract_address":"0x83cd1201e1dfd6605349a902146daf50f2b8f254b152b96b882e3dfc47c583bc"}"#).unwrap();
 }

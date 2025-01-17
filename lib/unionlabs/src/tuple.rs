@@ -73,7 +73,7 @@ impl_is_tuple!(A B C D E);
 /// let s = Struct { a: 1, b: "b".to_owned() };
 /// let (a, b): (&u64, &String) = s.as_tuple();
 ///
-/// assert_eq!(a, 1);
+/// assert_eq!(a, &1);
 /// assert_eq!(b, "b");
 ///
 /// assert_eq!(s, Struct::from_tuple(s.clone().into_tuple()));

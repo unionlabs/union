@@ -1154,7 +1154,7 @@ fn derive_as_tuple(
             impl #impl_generics ::unionlabs::tuple::AsTuple for #ident #ty_generics #where_clause {
                 type Tuple = (#(#field_types,)*);
 
-                fn as_tuple(&self) -> <Self::Tuple as Tuple>::Ref<'_> {
+                fn as_tuple(&self) -> <Self::Tuple as ::unionlabs::tuple::Tuple>::Ref<'_> {
                     (
                         #(
                             &self.#as_tuple_fields,
