@@ -29,6 +29,7 @@ fn channel_open_init_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -70,6 +71,7 @@ fn channel_open_init_channel_claimed() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -102,6 +104,7 @@ fn channel_open_init_commitment_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -140,6 +143,7 @@ fn channel_open_try_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -188,6 +192,7 @@ fn channel_open_try_invalid_state() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -245,6 +250,7 @@ fn channel_open_try_channel_claimed() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -298,6 +304,7 @@ fn channel_open_try_commitment_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -357,6 +364,7 @@ fn channel_open_ack_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -415,6 +423,7 @@ fn channel_open_ack_not_found() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -465,6 +474,7 @@ fn channel_open_ack_commitment_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -534,6 +544,7 @@ fn channel_open_confirm_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -596,6 +607,7 @@ fn channel_open_confirm_not_found() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),
@@ -643,6 +655,7 @@ fn channel_open_confirm_commitment_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             msg => panic!("should not be called: {:?}", msg),

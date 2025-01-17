@@ -13,7 +13,7 @@ use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ibc_union_light_client::{IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::Status;
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use unionlabs::{
     encoding::Bincode,
     ensure,
@@ -96,8 +96,8 @@ impl ibc_union_light_client::IbcClient for EthereumLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<EthereumLightClient>> {
+        Ok(None)
     }
 
     fn verify_header(

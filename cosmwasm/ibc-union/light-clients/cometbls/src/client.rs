@@ -6,7 +6,7 @@ use cometbls_light_client_types::{
 };
 use cosmwasm_std::Empty;
 use ibc_union_light_client::IbcClientCtx;
-use ibc_union_msg::lightclient::Status;
+use ibc_union_msg::lightclient::{Event, Status, VerifyCreationResponseEvent};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,
@@ -124,8 +124,11 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<
+        Option<Vec<VerifyCreationResponseEvent>>,
+        ibc_union_light_client::IbcClientError<Self>,
+    > {
+        Ok(None)
     }
 
     fn verify_header(

@@ -778,8 +778,9 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
+    let mut response = Response::new();
     Ok(
-        Response::new().add_event(Event::new(events::client::CREATE).add_attributes([
+        response.add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),
             (events::attribute::CLIENT_ID, client_id.to_string()),
             (

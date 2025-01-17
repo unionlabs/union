@@ -23,10 +23,32 @@ pub struct MisbehaviourResponse {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct Event {
+    pub ty: String,
+    pub attributes: Vec<Attribute>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct Attribute {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub enum VerifyCreationResponseEvent {
+    CreateLensClient {
+        l1_client_id: u32,
+        l2_client_id: u32,
+        l2_chain_id: String,
+    },
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct VerifyCreationResponse {
     pub latest_height: u64,
     pub counterparty_chain_id: String,
+    pub events: Option<Vec<VerifyCreationResponseEvent>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

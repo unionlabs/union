@@ -9,6 +9,7 @@ use cosmwasm_std::{
 use cw_storage_plus::{Item, Map};
 use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+    VerifyCreationResponseEvent,
 };
 use msg::InstantiateMsg;
 use state::IBC_HOST;
@@ -217,7 +218,7 @@ pub trait IbcClient: Sized {
     fn verify_creation(
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-    ) -> Result<(), IbcClientError<Self>>;
+    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>>;
 
     /// Verify `header` against the trusted state (`client_state` and `consensus_state`)
     /// and return `(updated height, updated client state, updated consensus state)`
@@ -281,11 +282,12 @@ pub fn query<T: IbcClient>(
             let consensus_state = T::ConsensusState::decode(&consensus_state)
                 .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
 
-            T::verify_creation(&client_state, &consensus_state)?;
+            let events = T::verify_creation(&client_state, &consensus_state)?;
 
             let response = VerifyCreationResponse {
                 latest_height: T::get_latest_height(&client_state),
                 counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
+                events,
             };
 
             to_json_binary(&response).map_err(Into::into)

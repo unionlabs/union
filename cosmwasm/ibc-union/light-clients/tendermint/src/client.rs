@@ -4,7 +4,7 @@ use cometbft_types::{
 };
 use cosmwasm_std::Empty;
 use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::Status;
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
@@ -157,8 +157,8 @@ impl IbcClient for TendermintLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
+        Ok(None)
     }
 }
 

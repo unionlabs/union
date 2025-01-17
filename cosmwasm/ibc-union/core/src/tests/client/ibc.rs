@@ -72,6 +72,7 @@ fn create_client_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -97,6 +98,7 @@ fn create_client_commitments_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -160,6 +162,7 @@ fn update_client_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyClientMessage { .. } => {
                 to_json_binary(&VerifyClientMessageUpdate {
@@ -217,6 +220,7 @@ fn update_client_ko() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyClientMessage { .. } => to_json_binary(&0),
             msg => panic!("should not be called: {:?}", msg),
@@ -268,6 +272,7 @@ fn update_client_commitments_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
+                events: None,
             }),
             LightClientQueryMsg::VerifyClientMessage { .. } => {
                 to_json_binary(&VerifyClientMessageUpdate {

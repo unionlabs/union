@@ -3,7 +3,7 @@ use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::IbcClient;
-use ibc_union_msg::lightclient::Status;
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use tendermint_light_client::client::TendermintLightClient;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
@@ -88,8 +88,11 @@ impl IbcClient for BerachainLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<
+        Option<Vec<VerifyCreationResponseEvent>>,
+        ibc_union_light_client::IbcClientError<Self>,
+    > {
+        Ok(None)
     }
 
     // TODO: rearrange to avoid the clones
