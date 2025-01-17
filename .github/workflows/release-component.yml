@@ -2,7 +2,7 @@ name: Release Component
 
 on:
   push:
-    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
+    # tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   eval-tag:
@@ -17,12 +17,13 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: ${{github.ref_name}}
+          # TAG: ${{github.ref_name}}
+          TAG: bundle-testnet-9
         run: |
           component="${TAG%/*}"
           case $component in
-            bundle-testnet-8)
-              attrs="[\"bundle-testnet-8\", \"bundle-testnet-8-image\"]"
+            bundle-testnet-9)
+              attrs="[\"bundle-testnet-9\", \"bundle-testnet-9-image\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
