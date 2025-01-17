@@ -280,6 +280,7 @@ tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = 
 
 alloy            = { version = "0.6", default-features = false }
 alloy-primitives = { version = "0.8.16", default-features = false }
+alloy-sol-types  = { version = "0.8.12", default-features = true }
 
 # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }

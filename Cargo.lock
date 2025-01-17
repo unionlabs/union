@@ -11272,6 +11272,7 @@ dependencies = [
  "hex-literal",
  "protos",
  "serde",
+ "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -11306,6 +11307,7 @@ dependencies = [
  "hex-literal",
  "protos",
  "serde",
+ "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -11319,7 +11321,10 @@ dependencies = [
  "hex-literal",
  "protos",
  "serde",
+ "serde_json",
+ "state-lens-light-client-types",
  "thiserror",
+ "tuple_join",
  "unionlabs",
 ]
 
@@ -12507,6 +12512,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuple_join"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae565222358314fef3ea725134985d8a11c893b750e536cf59d3afb8e865c766"
+
+[[package]]
 name = "twofish"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12742,6 +12753,7 @@ name = "unionlabs-primitives"
 version = "0.0.1"
 dependencies = [
  "alloy-primitives",
+ "alloy-sol-types",
  "base64 0.21.7",
  "bincode 2.0.0-rc.3",
  "generic-array 0.14.7",

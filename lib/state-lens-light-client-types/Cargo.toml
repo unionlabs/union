@@ -6,20 +6,25 @@ repository.workspace   = true
 version                = "0.1.0"
 
 [dependencies]
-alloy     = { workspace = true, features = ["sol-types"], optional = true }
-bincode   = { workspace = true, features = ["alloc", "derive"], optional = true }
-protos    = { workspace = true, optional = true, features = ["proto_full", "serde"] }
-serde     = { workspace = true, optional = true, features = ["derive"] }
-thiserror = { workspace = true }
-unionlabs = { workspace = true, features = ["ethabi", "proto"] }
+alloy      = { workspace = true, optional = true, features = ["sol-types", "dyn-abi"] }
+bincode    = { workspace = true, optional = true, features = ["alloc", "derive"] }
+protos     = { workspace = true, optional = true, features = ["proto_full", "serde"] }
+serde      = { workspace = true, optional = true, features = ["derive"] }
+thiserror  = { workspace = true }
+tuple_join = { version = "0.1.0", optional = true }
+unionlabs  = { workspace = true, features = ["ethabi", "proto"] }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+hex-literal                   = { workspace = true }
+serde_json                    = { workspace = true }
+state-lens-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+unionlabs                     = { workspace = true, features = ["test-utils"] }
 
 [features]
-bincode = ["dep:bincode", "unionlabs/bincode"]
 default = []
-ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]
+
+bincode = ["dep:bincode", "unionlabs/bincode"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "dep:tuple_join"]
 serde   = ["dep:serde"]
 
 [lints]

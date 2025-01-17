@@ -1,4 +1,5 @@
 use core::{
+    borrow::Borrow,
     cmp::Ordering,
     fmt::{self, Display},
     marker::PhantomData,
@@ -338,6 +339,18 @@ impl<E: Encoding, const BYTES: usize> From<FixedBytes<BYTES, E>> for [u8; BYTES]
 impl<E: Encoding, const BYTES: usize> From<[u8; BYTES]> for FixedBytes<BYTES, E> {
     fn from(value: [u8; BYTES]) -> Self {
         Self::new(value)
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> Borrow<[u8; BYTES]> for FixedBytes<BYTES, E> {
+    fn borrow(&self) -> &[u8; BYTES] {
+        self.get()
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> Borrow<[u8; BYTES]> for &'_ FixedBytes<BYTES, E> {
+    fn borrow(&self) -> &[u8; BYTES] {
+        self.get()
     }
 }
 

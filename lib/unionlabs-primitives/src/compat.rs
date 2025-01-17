@@ -1,117 +1,213 @@
-#[cfg(feature = "primitive-types-compat")]
-impl From<crate::H256> for primitive_types::H256 {
-    fn from(value: crate::H256) -> Self {
-        Self(*value.get())
-    }
-}
+#![allow(clippy::module_name_repetitions)]
 
 #[cfg(feature = "primitive-types-compat")]
-impl From<primitive_types::H256> for crate::H256 {
-    fn from(value: primitive_types::H256) -> Self {
-        Self::new(value.0)
-    }
-}
+pub mod primitive_types_compat {
+    use crate::{H160, H256};
 
-#[cfg(feature = "primitive-types-compat")]
-impl From<crate::H160> for primitive_types::H160 {
-    fn from(value: crate::H160) -> Self {
-        Self(*value.get())
+    impl From<H256> for primitive_types::H256 {
+        fn from(value: H256) -> Self {
+            Self(*value.get())
+        }
     }
-}
 
-#[cfg(feature = "primitive-types-compat")]
-impl From<primitive_types::H160> for crate::H160 {
-    fn from(value: primitive_types::H160) -> Self {
-        Self::new(value.0)
+    impl From<primitive_types::H256> for H256 {
+        fn from(value: primitive_types::H256) -> Self {
+            Self::new(value.0)
+        }
+    }
+
+    impl From<H160> for primitive_types::H160 {
+        fn from(value: H160) -> Self {
+            Self(*value.get())
+        }
+    }
+
+    impl From<primitive_types::H160> for H160 {
+        fn from(value: primitive_types::H160) -> Self {
+            Self::new(value.0)
+        }
     }
 }
 
 #[cfg(feature = "generic-array-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize>
-    From<generic_array::GenericArray<u8, typenum::U<BYTES>>> for crate::FixedBytes<BYTES, E>
-where
-    typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
-{
-    fn from(arr: generic_array::GenericArray<u8, typenum::U<BYTES>>) -> Self {
-        Self::new(
-            arr.to_vec()
-                .try_into()
-                .expect("GenericArray has the correct length; qed;"),
-        )
+pub mod generic_array_compat {
+    use generic_array::{ArrayLength, GenericArray};
+    use typenum::{Const, ToUInt, U};
+
+    use crate::encoding::Encoding;
+
+    impl<E: Encoding, const BYTES: usize> From<GenericArray<u8, U<BYTES>>>
+        for crate::FixedBytes<BYTES, E>
+    where
+        Const<BYTES>: ToUInt<Output: ArrayLength<u8>>,
+    {
+        fn from(arr: GenericArray<u8, U<BYTES>>) -> Self {
+            Self::new(
+                arr.to_vec()
+                    .try_into()
+                    .expect("GenericArray has the correct length; qed;"),
+            )
+        }
     }
-}
 
-#[cfg(feature = "generic-array-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::FixedBytes<BYTES, E>>
-    for generic_array::GenericArray<u8, typenum::U<BYTES>>
-where
-    typenum::Const<BYTES>: typenum::ToUInt<Output: generic_array::ArrayLength<u8>>,
-{
-    fn from(arr: crate::FixedBytes<BYTES, E>) -> Self {
-        generic_array::GenericArray::<u8, typenum::U<BYTES>>::from_slice(arr.get()).to_owned()
-    }
-}
-
-#[cfg(feature = "alloy-primitives-compat")]
-impl<EBytes: crate::encoding::Encoding> TryFrom<crate::Bytes<EBytes>>
-    for alloy_primitives::Address
-{
-    type Error = crate::fixed_bytes::FixedBytesError;
-
-    fn try_from(value: crate::Bytes<EBytes>) -> Result<Self, Self::Error> {
-        <crate::H160>::try_from(value).map(Self::from)
+    impl<E: Encoding, const BYTES: usize> From<crate::FixedBytes<BYTES, E>>
+        for GenericArray<u8, U<BYTES>>
+    where
+        Const<BYTES>: ToUInt<Output: ArrayLength<u8>>,
+    {
+        fn from(arr: crate::FixedBytes<BYTES, E>) -> Self {
+            GenericArray::<u8, U<BYTES>>::from_slice(arr.get()).to_owned()
+        }
     }
 }
 
 #[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding> From<alloy_primitives::Address> for crate::Bytes<E> {
-    fn from(value: alloy_primitives::Address) -> Self {
-        value.0 .0.into()
+pub mod alloy_primitives_compat {
+    use crate::{encoding::Encoding, Bytes, FixedBytes, H160};
+
+    impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy_primitives::Address {
+        type Error = crate::fixed_bytes::FixedBytesError;
+
+        fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
+            <H160>::try_from(value).map(Self::from)
+        }
+    }
+
+    impl<E: Encoding> From<alloy_primitives::Address> for Bytes<E> {
+        fn from(value: alloy_primitives::Address) -> Self {
+            value.0 .0.into()
+        }
+    }
+
+    impl<E: Encoding> From<alloy_primitives::Address> for H160<E> {
+        fn from(value: alloy_primitives::Address) -> Self {
+            value.0 .0.into()
+        }
+    }
+
+    impl<E: Encoding> From<H160<E>> for alloy_primitives::Address {
+        fn from(value: H160<E>) -> Self {
+            value.get().into()
+        }
+    }
+
+    impl<E: Encoding, const BYTES: usize> From<alloy_primitives::FixedBytes<BYTES>>
+        for FixedBytes<BYTES, E>
+    {
+        fn from(value: alloy_primitives::FixedBytes<BYTES>) -> Self {
+            value.0.into()
+        }
+    }
+
+    impl<E: Encoding, const BYTES: usize> From<FixedBytes<BYTES, E>>
+        for alloy_primitives::FixedBytes<BYTES>
+    {
+        fn from(value: FixedBytes<BYTES, E>) -> Self {
+            value.get().into()
+        }
+    }
+
+    impl<E: Encoding> From<alloy_primitives::Bytes> for Bytes<E> {
+        fn from(value: alloy_primitives::Bytes) -> Self {
+            value.to_vec().into()
+        }
+    }
+
+    impl<E: Encoding> From<Bytes<E>> for alloy_primitives::Bytes {
+        fn from(value: Bytes<E>) -> Self {
+            value.to_vec().into()
+        }
     }
 }
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding> From<alloy_primitives::Address> for crate::H160<E> {
-    fn from(value: alloy_primitives::Address) -> Self {
-        value.0 .0.into()
-    }
-}
+#[cfg(feature = "alloy-sol-types-compat")]
+pub mod alloy_sol_types_compat {
+    use alloy_sol_types::{
+        abi::token::WordToken,
+        private::SolTypeValue,
+        sol_data::{ByteCount, SupportedFixedBytes},
+        SolType, SolValue, Word,
+    };
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding> From<crate::H160<E>> for alloy_primitives::Address {
-    fn from(value: crate::H160<E>) -> Self {
-        value.get().into()
-    }
-}
+    use crate::{encoding::Encoding, Bytes, FixedBytes};
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize> From<alloy_primitives::FixedBytes<BYTES>>
-    for crate::FixedBytes<BYTES, E>
-{
-    fn from(value: alloy_primitives::FixedBytes<BYTES>) -> Self {
-        value.0.into()
+    impl<E: Encoding> SolValue for Bytes<E> {
+        type SolType = <alloy_primitives::Bytes as SolValue>::SolType;
     }
-}
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding, const BYTES: usize> From<crate::FixedBytes<BYTES, E>>
-    for alloy_primitives::FixedBytes<BYTES>
-{
-    fn from(value: crate::FixedBytes<BYTES, E>) -> Self {
-        value.get().into()
+    impl<E: Encoding, const BYTES: usize> SolValue for FixedBytes<BYTES, E>
+    where
+        ByteCount<BYTES>: SupportedFixedBytes,
+    {
+        type SolType = SolFixedBytes<BYTES>;
     }
-}
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding> From<alloy_primitives::Bytes> for crate::Bytes<E> {
-    fn from(value: alloy_primitives::Bytes) -> Self {
-        value.to_vec().into()
+    #[derive(Clone, Copy, Debug)]
+    pub struct SolFixedBytes<const BYTES: usize>;
+
+    impl<E: Encoding, const BYTES: usize> SolTypeValue<SolFixedBytes<BYTES>> for FixedBytes<BYTES, E>
+    where
+        ByteCount<BYTES>: SupportedFixedBytes,
+    {
+        #[inline]
+        fn stv_to_tokens(&self) -> <SolFixedBytes<BYTES> as SolType>::Token<'_> {
+            let mut word = Word::ZERO;
+            word[..BYTES].copy_from_slice(self.get());
+            word.into()
+        }
+
+        #[inline]
+        fn stv_eip712_data_word(&self) -> Word {
+            SolTypeValue::<SolFixedBytes<BYTES>>::stv_to_tokens(self).0
+        }
+
+        #[inline]
+        fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
+            out.extend_from_slice(self.get().as_slice());
+        }
     }
-}
 
-#[cfg(feature = "alloy-primitives-compat")]
-impl<E: crate::encoding::Encoding> From<crate::Bytes<E>> for alloy_primitives::Bytes {
-    fn from(value: crate::Bytes<E>) -> Self {
-        value.to_vec().into()
+    impl<E: Encoding, const BYTES: usize> SolTypeValue<SolFixedBytes<BYTES>> for &FixedBytes<BYTES, E>
+    where
+        ByteCount<BYTES>: SupportedFixedBytes,
+    {
+        #[inline]
+        fn stv_to_tokens(&self) -> <SolFixedBytes<BYTES> as SolType>::Token<'_> {
+            <FixedBytes<BYTES, E> as SolTypeValue<SolFixedBytes<BYTES>>>::stv_to_tokens(self)
+        }
+
+        #[inline]
+        fn stv_eip712_data_word(&self) -> Word {
+            <FixedBytes<BYTES, E> as SolTypeValue<SolFixedBytes<BYTES>>>::stv_eip712_data_word(self)
+        }
+
+        #[inline]
+        fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
+            <FixedBytes<BYTES, E> as SolTypeValue<SolFixedBytes<BYTES>>>::stv_abi_encode_packed_to(
+                self, out,
+            );
+        }
+    }
+
+    impl<const N: usize> SolType for SolFixedBytes<N>
+    where
+        ByteCount<N>: SupportedFixedBytes,
+    {
+        type RustType = FixedBytes<N>;
+        type Token<'a> = WordToken;
+
+        const SOL_NAME: &'static str = <ByteCount<N>>::NAME;
+        const ENCODED_SIZE: Option<usize> = Some(32);
+        const PACKED_ENCODED_SIZE: Option<usize> = Some(N);
+
+        #[inline]
+        fn valid_token(token: &Self::Token<'_>) -> bool {
+            alloy_sol_types::sol_data::FixedBytes::valid_token(token)
+        }
+
+        #[inline]
+        fn detokenize(token: Self::Token<'_>) -> Self::RustType {
+            token.0[..N].try_into().unwrap()
+        }
     }
 }
