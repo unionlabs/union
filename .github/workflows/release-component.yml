@@ -93,14 +93,13 @@ jobs:
         run: |
           nix build .#packages.x86_64-linux."$COMPONENT"
           cp -Lr result x86_64-linux."$COMPONENT"-image
-          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
           path: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
 
   download-images-aarch64:
-    if: ${{ needs.eval-tag.outputs.image-produced }}
+    if: ${{ needs.eval-tag.outputs.image-produced && contains(needs.eval-tag.outputs.systems, 'aarch64-linux') }}
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
@@ -118,7 +117,6 @@ jobs:
         run: |
           nix build .#packages.aarch64-linux."$COMPONENT"
           cp -Lr result aarch64-linux."$COMPONENT"-image
-          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
@@ -127,59 +125,69 @@ jobs:
   download-binaries-x86_64:
     needs: [eval-tag]
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        system: ${{ fromJSON(needs.eval-tag.outputs.systems) }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: packages.${{ matrix.system }}.${{ needs.eval-tag.outputs.component }}
-      - uses: nixbuild/nix-quick-install-action@v28
-      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
+          lfs: true
+      - uses: cachix/install-nix-action@v30
         with:
-          nixbuild_token: ${{ secrets.nixbuild_token }}
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - env:
           ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
-          SYSTEM: ${{ matrix.system }}
         run: |
-          exit 1
-          mkdir "$SYSTEM"
-          echo "Getting OUTPUT and NARINFO_NAME"
-          OUTPUT=$(jq -r \
-            --arg component "$COMPONENT" \
-            --arg system "$SYSTEM" \
-            '.packages[$system][$component].outputs.out' result.json)
-          NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
-
-          echo "Copying $OUTPUT from nixbuild.net"
-          nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$OUTPUT" --extra-experimental-features nix-command
-
-          echo "Get the NAR_URL"
-          nar_url_line=$(cat "./$SYSTEM/$NARINFO_NAME.narinfo" | grep "URL:")
-          NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
-
-          echo "Restore the package from the NAR_URL archive"
-          cat "$SYSTEM/$NAR_URL" | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"
+          nix build .#packages.x86_64-linux."$COMPONENT"
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
-            mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
+            mv result/bin/uniond "$COMPONENT"-x86_64-linux
           elif [[ $ARCHIVE ]]
           then
-            ls -la
-            tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
+            tar -zcf "$COMPONENT"-x86_64-linux result
           else
-            mv "$SYSTEM.$COMPONENT/bin/$COMPONENT" "$COMPONENT-$SYSTEM"
+            mv result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
-          path: ${{ needs.eval-tag.outputs.component }}-${{ matrix.system }}
+          name: ${{ needs.eval-tag.outputs.component }}-x86_64-linux
+          path: ${{ needs.eval-tag.outputs.component }}-x86_64-linux
+
+  download-binaries-aarch64:
+    needs: [eval-tag]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - env:
+          ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
+          COMPONENT: ${{ needs.eval-tag.outputs.component }}
+        run: |
+          nix build .#packages.aarch64-linux."$COMPONENT"
+          if [[ "$COMPONENT" =~ uniond-release ]]
+          then
+            mv result/bin/uniond "$COMPONENT"-aarch64-linux
+          elif [[ $ARCHIVE ]]
+          then
+            tar -zcf "$COMPONENT"-aarch64-linux result
+          else
+            mv result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.eval-tag.outputs.component }}-aarch64-linux
+          path: ${{ needs.eval-tag.outputs.component }}-aarch64-linux
 
   release-images:
-    needs: [download-images-x86_64, eval-tag]
+    needs: [download-images-x86_64]
     if: ${{ needs.eval-tag.outputs.image-produced }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
     services:
@@ -262,6 +270,7 @@ jobs:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           TAG: ${{ needs.eval-tag.outputs.version }}
         run: |
+          exit 1
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
           chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
           echo "downloaded & installed skopeo"
@@ -269,7 +278,7 @@ jobs:
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
 
   public-release:
-    needs: [download-binaries-x86_64, eval-tag]
+    needs: [download-binaries-x86_64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -279,6 +288,7 @@ jobs:
           ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
           SYSTEMS: ${{ needs.eval-tag.outputs.systems }}
         run: |
+          exit 1
           echo "# sha256 Checksums" >> release.md
           x86_64=$(echo "$SYSTEMS" | jq 'contains(["x86_64-linux"])')
           aarch64=$(echo "$SYSTEMS" | jq 'contains(["aarch64-linux"])')
