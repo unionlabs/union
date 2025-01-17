@@ -856,16 +856,16 @@ pub struct LoadedModulesInfo {
     pub client_bootstrap: Vec<ClientBootstrapModuleInfo>,
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(skip_all, fields(%plugin_name))]
 async fn plugin_child_process(
-    name: String,
+    plugin_name: String,
     module_config: PluginConfig,
     cancellation_token: CancellationToken,
 ) {
-    let client_socket = ModuleRpcClient::make_socket_path(&name);
-    let server_socket = make_module_rpc_server_socket_path(&name);
+    let client_socket = ModuleRpcClient::make_socket_path(&plugin_name);
+    let server_socket = make_module_rpc_server_socket_path(&plugin_name);
 
-    info!(%client_socket, %server_socket, "starting plugin {name}");
+    info!(%client_socket, %server_socket, "starting plugin {plugin_name}");
 
     let mut cmd = tokio::process::Command::new(&module_config.path);
     cmd.arg("run");
@@ -886,16 +886,16 @@ async fn plugin_child_process(
     .await
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(skip_all, fields(%module_name))]
 async fn module_child_process<Info: Serialize>(
-    name: String,
+    module_name: String,
     module_config: ModuleConfig<Info>,
     cancellation_token: CancellationToken,
 ) {
-    let client_socket = ModuleRpcClient::make_socket_path(&name);
-    let server_socket = make_module_rpc_server_socket_path(&name);
+    let client_socket = ModuleRpcClient::make_socket_path(&module_name);
+    let server_socket = make_module_rpc_server_socket_path(&module_name);
 
-    info!(%client_socket, %server_socket, "starting module {name}");
+    info!(%client_socket, %server_socket, "starting module {module_name}");
 
     lazarus_pit(
         &module_config.path,
@@ -973,7 +973,7 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
                             .code()
                             .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
                         {
-                            error!(%id, "invalid config for plugin");
+                            error!(%id, "invalid config for plugin or module");
                             cancellation_token.cancel();
                         }
                     }

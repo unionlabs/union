@@ -1,3 +1,5 @@
+// #![warn(clippy::unwrap_used)]
+
 use std::collections::VecDeque;
 
 use chain_utils::{
@@ -96,11 +98,9 @@ impl Plugin for Module {
         let bech32_prefix = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
             config.grpc_url.clone(),
         )
-        .await
-        .unwrap()
+        .await?
         .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
-        .await
-        .unwrap()
+        .await?
         .into_inner()
         .bech32_prefix;
 
@@ -386,8 +386,7 @@ impl Module {
             .comtbft_client
             .broadcast_tx_sync(&tx_raw_bytes)
             .await
-            .map_err(BroadcastTxCommitError::BroadcastTxSync)
-            .unwrap();
+            .map_err(BroadcastTxCommitError::BroadcastTxSync)?;
 
         assert_eq!(tx_hash, response.hash, "tx hash calculated incorrectly");
 
