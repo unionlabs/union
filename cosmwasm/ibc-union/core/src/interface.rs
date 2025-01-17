@@ -1,11 +1,11 @@
-pub const UNION_IBC: &str = "union:union-ibc";
+pub const UNION_IBC: &str = "union:ibc-union";
 
 #[cw_orch::interface(
     crate::msg::InstantiateMsg,
     crate::msg::ExecuteMsg,
     crate::msg::QueryMsg,
     crate::msg::MigrateMsg,
-    id = EVM_NOTE
+    id = UNION_IBC
 )]
 pub struct UnionIbc<Chain>;
 
