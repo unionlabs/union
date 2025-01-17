@@ -6,7 +6,7 @@ use cometbls_light_client_types::{
 };
 use cosmwasm_std::Empty;
 use ibc_union_light_client::IbcClientCtx;
-use ibc_union_msg::lightclient::{Event, Status, VerifyCreationResponseEvent};
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,

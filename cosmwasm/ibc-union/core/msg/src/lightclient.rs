@@ -23,18 +23,7 @@ pub struct MisbehaviourResponse {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct Event {
-    pub ty: String,
-    pub attributes: Vec<Attribute>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct Attribute {
-    pub key: String,
-    pub value: String,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum VerifyCreationResponseEvent {
     CreateLensClient {
         l1_client_id: u32,
