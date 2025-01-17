@@ -38,38 +38,6 @@ async fn main() {
     Module::run().await
 }
 
-/// Representation of the client state of a state lens client.
-///
-/// For a state lens client A->B->C, where the state lens is running on A and tracking C, the terminology is as follows:
-///
-/// - B is L1
-/// - C is L2
-///
-/// where C "settles" on B with the client `self.l2_client_id`, and B "settles" on A with `self.l1_client_id`.
-// NOTE: Purposely DOESN'T use deny_unknown_fields
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StateLensClientState /* <Extra> */ {
-    /// L2 chain ID. This is the same as the ID of the chain being tracked by `self.l2_client_id`.
-    ///
-    /// ("C")
-    pub l2_chain_id: ChainId,
-
-    /// L1 client ID. This is the ID of the L1 client running on A that is used to check the L2 inclusion proof against.
-    ///
-    /// ("B" on "A")
-    pub l1_client_id: u32,
-
-    /// L2 client ID. This is the ID of the L2 client running on B (L1) tracking the C (L2).
-    ///
-    /// ("C" on "B")
-    pub l2_client_id: u32,
-
-    /// L2 latest height
-    pub l2_latest_height: u64,
-    // #[serde(flatten)]
-    // pub extra: Extra,
-}
-
 #[derive(Debug, Clone)]
 pub struct Module {
     /// The ID of the chain this plugin creates updates for.
@@ -211,18 +179,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 debug!(%state_lens_client_state_json);
 
-                let state_lens_client_state =
-                    serde_json::from_value::<StateLensClientState>(state_lens_client_state_json)
-                        .map_err(|e| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                format!(
-                                    "unable to deserialize state lens client state: {}",
-                                    ErrorReporter(e)
-                                ),
-                                None::<()>,
-                            )
-                        })?;
+                let state_lens_client_state = serde_json::from_value::<
+                    state_lens_light_client_types::ClientState<()>,
+                >(state_lens_client_state_json)
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "unable to deserialize state lens client state: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
 
                 debug!(?state_lens_client_state);
 
@@ -237,12 +206,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 debug!(?l1_client_meta);
 
                 let l1_latest_height = voyager_client
-                    .query_latest_height(state_lens_client_state.l2_chain_id.clone(), true)
+                    .query_latest_height(
+                        ChainId::new(state_lens_client_state.l2_chain_id.clone()),
+                        true,
+                    )
                     .await?;
 
                 debug!(%l1_latest_height);
 
-                assert_eq!(state_lens_client_state.l2_chain_id, self.chain_id);
+                assert_eq!(state_lens_client_state.l2_chain_id, self.chain_id.as_str());
 
                 let l2_consensus_state_proof = voyager_client
                     .query_ibc_state(

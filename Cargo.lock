@@ -11319,7 +11319,10 @@ dependencies = [
  "hex-literal",
  "protos",
  "serde",
+ "serde_json",
+ "state-lens-light-client-types",
  "thiserror",
+ "tuple_join",
  "unionlabs",
 ]
 
@@ -12505,6 +12508,12 @@ dependencies = [
  "thiserror",
  "utf-8",
 ]
+
+[[package]]
+name = "tuple_join"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae565222358314fef3ea725134985d8a11c893b750e536cf59d3afb8e865c766"
 
 [[package]]
 name = "twofish"

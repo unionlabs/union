@@ -88,6 +88,8 @@ pub mod errors;
 
 pub mod bech32;
 
+pub mod tuple;
+
 #[cfg(feature = "proto")]
 pub use ::prost;
 
