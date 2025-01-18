@@ -29,32 +29,31 @@
     "check-package": "deno run --allow-all npm:publint --strict && deno run --allow-all npm:@arethetypeswrong/cli@latest --pack --ignore-rules 'cjs-resolves-to-esm'"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.33.1",
-    "@cosmjs/amino": "^0.32.4",
-    "@cosmjs/cosmwasm-stargate": "0.32.4",
-    "@cosmjs/proto-signing": "^0.32.4",
-    "@cosmjs/stargate": "0.32.4",
-    "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@scure/base": "^1.2.1",
+    "@scure/base": "^1.2.4",
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
-    "ox": "^0.6.0",
     "patch-package": "^8.0.0",
-    "viem": "^2.22.3"
+    "@aptos-labs/ts-sdk": "^1.33.1",
+    "@cosmjs/amino": "^0.33.0",
+    "@cosmjs/cosmwasm-stargate": "0.33.0",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "@cosmjs/stargate": "0.33.0",
+    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "viem": "^2.22.9"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.15",
-    "@types/node": "^22.10.5",
-    "consola": "^3.3.3",
+    "@types/bun": "^1.1.17",
+    "@types/node": "^22.10.7",
+    "consola": "^3.4.0",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "knip": "^5.41.1",
+    "knip": "^5.42.2",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.2"
   },
   "repository": {
     "type": "git",
