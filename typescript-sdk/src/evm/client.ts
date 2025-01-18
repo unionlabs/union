@@ -45,6 +45,8 @@ export const evmChainId = [
   `${berachainTestnetbArtio.id}`
 ] as const
 
+console.info(JSON.stringify(evmChainId, undefined, 2))
+
 export type EvmChainId = `${(typeof evmChainId)[number]}`
 
 export function evmChainFromChainId(chainId: LooseAutocomplete<EvmChainId>) {

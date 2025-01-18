@@ -8,13 +8,12 @@ import type { HexAddress, Bech32Address } from "../types.ts"
  * extractBech32AddressPrefix("union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f")
  * ```
  */
+// every cosmos sdk based address starts with some letters, then `1` then more αlphαnumeric string
 export function extractBech32AddressPrefix(address: string) {
-  const pattern = /^([a-z]+)1[a-zA-Z0-9]{38,58}$/
-
-  const match = address.match(pattern)
-  if (match) return match[1]
-  return
+  const prefix = address.split('1')
+  console.info(prefix)
 }
+extractBech32AddressPrefix("cosmos1n4ccqcxw0k8q6mt72ytghvc57xfwqns6u562p6")
 
 /**
  * check if a string is a valid cosmos transaction hash
