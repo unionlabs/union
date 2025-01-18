@@ -17,8 +17,7 @@ jobs:
     steps:
       - id: eval
         env:
-          # TAG: ${{github.ref_name}}
-          TAG: bundle-testnet-9
+          TAG: bundle-testnet-9/v0.25.0
         run: |
           component="${TAG%/*}"
           case $component in
@@ -270,7 +269,6 @@ jobs:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           TAG: ${{ needs.eval-tag.outputs.version }}
         run: |
-          exit 1
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
           chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
           echo "downloaded & installed skopeo"
@@ -288,7 +286,6 @@ jobs:
           ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
           SYSTEMS: ${{ needs.eval-tag.outputs.systems }}
         run: |
-          exit 1
           echo "# sha256 Checksums" >> release.md
           x86_64=$(echo "$SYSTEMS" | jq 'contains(["x86_64-linux"])')
           aarch64=$(echo "$SYSTEMS" | jq 'contains(["aarch64-linux"])')
