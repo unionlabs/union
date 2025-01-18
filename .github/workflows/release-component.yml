@@ -184,7 +184,7 @@ jobs:
           path: ${{ needs.eval-tag.outputs.component }}-aarch64-linux
 
   release-images:
-    needs: [download-images-x86_64]
+    needs: [download-images-x86_64, eval-tag]
     if: ${{ needs.eval-tag.outputs.image-produced }}
     runs-on: ubuntu-24.04
     permissions:
@@ -276,7 +276,7 @@ jobs:
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
 
   public-release:
-    needs: [download-binaries-x86_64]
+    needs: [download-binaries-x86_64, eval-tag]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
