@@ -8249,14 +8249,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "ogchain-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "beacon-api-types",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "lazy_static",
+ "ogchain-light-client-types",
+ "serde_json",
+ "tendermint-light-client",
+ "tendermint-light-client-types",
+ "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "ogchain-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
- "beacon-api-types",
  "bincode 2.0.0-rc.3",
- "ethereum-light-client-types",
  "serde",
+ "tendermint-light-client-types",
  "unionlabs",
 ]
 

@@ -1,0 +1,39 @@
+[package]
+authors = ["Union Labs"]
+edition = "2021"
+license = "BSL-1.1"
+name    = "ogchain-light-client"
+publish = false
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+beacon-api-types      = { workspace = true, features = ["ssz"] }
+cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+ethereum-light-client = { workspace = true, features = ["library"] }
+thiserror             = { workspace = true }
+
+ogchain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+ibc-union-light-client       = { workspace = true }
+ibc-union-msg                = { workspace = true }
+ics23                        = { workspace = true }
+tendermint-light-client-types      = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tendermint-light-client      = { workspace = true, features = ["library"] }
+tendermint-verifier          = { workspace = true }
+unionlabs                    = { workspace = true }
+
+[dev-dependencies]
+base64                = { workspace = true }
+ethereum-light-client = { workspace = true }
+lazy_static           = "1.4.0"
+serde_json            = { workspace = true }
+
+[features]

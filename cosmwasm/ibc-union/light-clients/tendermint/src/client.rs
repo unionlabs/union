@@ -6,7 +6,7 @@ use cosmwasm_std::Empty;
 use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
-use tendermint_light_client_types::{ClientState, ConsensusState, Header};
+use tendermint_light_client_types::{ClientState, ConsensusState, Fraction, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use unionlabs::{
     bounded::BoundedI64,
@@ -95,25 +95,38 @@ impl IbcClient for TendermintLightClient {
         (u64, Self::ClientState, Self::ConsensusState),
         ibc_union_light_client::IbcClientError<Self>,
     > {
-        let client_state = ctx.read_self_client_state()?;
+        let mut client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
-        match header.validator_set.validators.first().map(|v| &v.pub_key) {
-            Some(PublicKey::Bls12_381(_)) => Ok(verify_header(
-                client_state,
-                consensus_state,
-                header,
-                ctx.env.block.time,
-                &SignatureVerifier::new(Bls12Verifier::new(ctx.deps)),
-            )?),
-            Some(PublicKey::Ed25519(_)) => Ok(verify_header(
-                client_state,
-                consensus_state,
-                header,
-                ctx.env.block.time,
-                &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
-            )?),
-            _ => Err(Error::InvalidValidatorSet.into()),
+        let (update_height, consensus_state) =
+            match header.validator_set.validators.first().map(|v| &v.pub_key) {
+                Some(PublicKey::Bls12_381(_)) => verify_header(
+                    client_state.chain_id.clone(),
+                    client_state.trusting_period,
+                    client_state.max_clock_drift,
+                    client_state.trust_level,
+                    consensus_state,
+                    header,
+                    ctx.env.block.time,
+                    &SignatureVerifier::new(Bls12Verifier::new(ctx.deps)),
+                )?,
+                Some(PublicKey::Ed25519(_)) => verify_header(
+                    client_state.chain_id.clone(),
+                    client_state.trusting_period,
+                    client_state.max_clock_drift,
+                    client_state.trust_level,
+                    consensus_state,
+                    header,
+                    ctx.env.block.time,
+                    &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
+                )?,
+                _ => return Err(Error::InvalidValidatorSet.into()),
+            };
+
+        if client_state.latest_height.height() < update_height {
+            *client_state.latest_height.height_mut() = update_height;
         }
+
+        Ok((update_height, client_state, consensus_state))
     }
 
     fn misbehaviour(
@@ -163,12 +176,15 @@ impl IbcClient for TendermintLightClient {
 }
 
 pub fn verify_header<V: HostFns>(
-    mut client_state: ClientState,
+    chain_id: String,
+    trusting_period: Duration,
+    max_clock_drift: Duration,
+    trust_level: Fraction,
     consensus_state: ConsensusState,
     mut header: Header,
     block_timestamp: cosmwasm_std::Timestamp,
     signature_verifier: &SignatureVerifier<V>,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<(u64, ConsensusState), Error> {
     set_total_voting_power(&mut header.validator_set).map_err(Error::from)?;
     set_total_voting_power(&mut header.trusted_validators).map_err(Error::from)?;
 
@@ -216,7 +232,7 @@ pub fn verify_header<V: HostFns>(
 
     tendermint_verifier::verify::verify(
         &construct_partial_header(
-            client_state.chain_id.clone(),
+            chain_id.clone(),
             i64::try_from(header.trusted_height.height())
                 .map_err(|_| {
                     Error::from(IbcHeightTooLargeForTendermintHeight(
@@ -234,10 +250,10 @@ pub fn verify_header<V: HostFns>(
         &header.trusted_validators,
         &header.signed_header,
         &header.validator_set,
-        client_state.trusting_period,
+        trusting_period,
         block_timestamp_proto,
-        client_state.max_clock_drift,
-        &client_state.trust_level,
+        max_clock_drift,
+        &trust_level,
         signature_verifier,
     )
     .map_err(Error::TendermintVerify)?;
@@ -250,13 +266,8 @@ pub fn verify_header<V: HostFns>(
         .try_into()
         .expect("impossible");
 
-    if client_state.latest_height.height() < update_height {
-        *client_state.latest_height.height_mut() = update_height;
-    }
-
     Ok((
         update_height,
-        client_state,
         ConsensusState {
             timestamp: header.signed_header.header.time,
             root: MerkleRoot {
