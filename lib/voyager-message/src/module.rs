@@ -396,30 +396,6 @@ pub trait ClientModule {
     #[method(name = "encodeConsensusState", with_extensions)]
     async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Bytes>;
 
-    /// Re-encode the client state of the specified counterparty client type.
-    ///
-    /// This is required due to limitations with ibc-go v8, and can likely be
-    /// removed once support for that IBC interface is dropped. In most cases,
-    /// this will simply be a pass-through of the bytes provided.
-    #[method(name = "reencodeCounterpartyClientState", with_extensions)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        client_state: Bytes,
-        client_type: ClientType,
-    ) -> RpcResult<Bytes>;
-
-    /// Re-encode the client state of the specified counterparty client type.
-    ///
-    /// This is required due to limitations with ibc-go v8, and can likely be
-    /// removed once support for that IBC interface is dropped. In most cases,
-    /// this will simply be a pass-through of the bytes provided.
-    #[method(name = "reencodeCounterpartyConsensusState", with_extensions)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        consensus_state: Bytes,
-        client_type: ClientType,
-    ) -> RpcResult<Bytes>;
-
     /// Encode the header, provided as JSON.
     #[method(name = "encodeHeader", with_extensions)]
     async fn encode_header(&self, header: Value) -> RpcResult<Bytes>;

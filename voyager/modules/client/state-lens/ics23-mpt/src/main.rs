@@ -228,26 +228,6 @@ impl ClientModuleServer for Module {
             .map(Into::into)
     }
 
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        _client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        _consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
-    }
-
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
