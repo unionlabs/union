@@ -217,6 +217,9 @@ jobs:
           for arch in 'aarch64-linux' 'x86_64-linux'
           do
             echo "Tagging $COMPONENT for $arch"
+            echo "GITHUB_WORKSPACE ($GITHUB_WORKSPACE)"
+            ls -la $GITHUB_WORKSPACE
+            echo "wd: ($(pwd))"
             ls -la
             dockerstring=$(docker load < $arch.$COMPONENT-image)
             dockerstring=$(echo ${dockerstring##*':'})
