@@ -114,6 +114,7 @@ members = [
   "voyager/modules/proof/cosmos-sdk-union",
   "voyager/modules/proof/ethereum",
   "voyager/modules/proof/movement",
+  "voyager/modules/proof/0gchain",
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",

@@ -13676,6 +13676,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-proof-module-0gchain"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-proof-module-cosmos-sdk"
 version = "0.1.0"
 dependencies = [

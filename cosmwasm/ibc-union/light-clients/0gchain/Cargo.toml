@@ -21,14 +21,14 @@ cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"]
 ethereum-light-client = { workspace = true, features = ["library"] }
 thiserror             = { workspace = true }
 
-ogchain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-ibc-union-light-client       = { workspace = true }
-ibc-union-msg                = { workspace = true }
-ics23                        = { workspace = true }
-tendermint-light-client-types      = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-tendermint-light-client      = { workspace = true, features = ["library"] }
-tendermint-verifier          = { workspace = true }
-unionlabs                    = { workspace = true }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
+ics23                         = { workspace = true }
+ogchain-light-client-types    = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tendermint-light-client       = { workspace = true, features = ["library"] }
+tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tendermint-verifier           = { workspace = true }
+unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }

@@ -4,19 +4,15 @@ name    = "ogchain-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"], optional = true }
-bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
+alloy                         = { workspace = true, features = ["sol-types"], optional = true }
+bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
 tendermint-light-client-types = { workspace = true }
-serde                       = { workspace = true, optional = true, features = ["derive"] }
-unionlabs                   = { workspace = true }
+unionlabs                     = { workspace = true }
 
 [features]
 default = []
 
-bincode = [
-  "dep:bincode",
-  "unionlabs/bincode",
-  "tendermint-light-client-types/bincode",
-]
-ethabi = ["unionlabs/ethabi", "dep:alloy"]
-serde = ["tendermint-light-client-types/serde", "dep:serde"]
+bincode = ["dep:bincode", "unionlabs/bincode", "tendermint-light-client-types/bincode"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+serde   = ["tendermint-light-client-types/serde", "dep:serde"]
