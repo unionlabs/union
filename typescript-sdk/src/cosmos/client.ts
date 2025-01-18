@@ -36,7 +36,7 @@ export interface CosmosClientParameters {
 export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({
-      memo,
+      memo: _memo,
       amount,
       receiver,
       denomAddress,
@@ -137,7 +137,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       //   return transfer
       // }
 
-      return err(new Error("Unsupported network"))
+      // return err(new Error("Unsupported network"))
     },
     simulateTransaction: async ({
       memo,
