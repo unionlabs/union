@@ -2,7 +2,7 @@ name: Release Component
 
 on:
   push:
-    # tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
+    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   eval-tag:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: bundle-testnet-9/v0.25.0
+          TAG: ${{github.ref_name}}
         run: |
           component="${TAG%/*}"
           case $component in
@@ -90,8 +90,8 @@ jobs:
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
         run: |
-          nix build .#packages.x86_64-linux."$COMPONENT"-image --accept-flake-config 
-          cp -Lr result x86_64-linux."$COMPONENT"-image
+          nix build .#packages.x86_64-linux.\"$COMPONENT\"-image --accept-flake-config
+          cp -Lr result x86_64-linux.\"$COMPONENT\"-image
       - uses: actions/upload-artifact@v4
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
