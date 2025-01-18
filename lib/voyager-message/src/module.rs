@@ -176,12 +176,18 @@ impl ClientModuleInfo {
 
     pub fn ensure_ibc_interface(
         &self,
-        ibc_interface: impl AsRef<str>,
+        expected_interfaces: Vec<impl AsRef<str>>,
     ) -> Result<(), UnexpectedIbcInterfaceError> {
-        if ibc_interface.as_ref() != self.ibc_interface.as_str() {
+        if !expected_interfaces
+            .iter()
+            .any(|expected| expected.as_ref() == self.ibc_interface.as_str())
+        {
             Err(UnexpectedIbcInterfaceError {
                 expected: self.ibc_interface.clone(),
-                found: ibc_interface.as_ref().to_owned(),
+                found: expected_interfaces
+                    .iter()
+                    .map(|s| s.as_ref().to_string())
+                    .collect(),
             })
         } else {
             Ok(())
@@ -272,7 +278,7 @@ pub struct UnexpectedClientTypeError {
 #[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcInterfaceError {
     pub expected: IbcInterface,
-    pub found: String,
+    pub found: Vec<String>,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
