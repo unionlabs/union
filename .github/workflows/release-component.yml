@@ -204,10 +204,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
+          path: .
       - name: Download x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
         uses: actions/download-artifact@v4
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
+          path: .
       - name: Tag Docker Images
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
