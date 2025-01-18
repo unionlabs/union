@@ -1411,7 +1411,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
 
                         let event = ibc_union_spec::ChannelOpenInit {
-                            port_id: port_id.into_bytes().into(),
+                            port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
                             connection,
@@ -1462,7 +1462,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
 
                         let event = ibc_union_spec::ChannelOpenTry {
-                            port_id: port_id.into_bytes().into(),
+                            port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
                             counterparty_channel_id,
@@ -1523,7 +1523,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .ok_or_else(missing_state("channel must exist", None))?;
 
                         let event = ibc_union_spec::ChannelOpenAck {
-                            port_id: port_id.into_bytes().into(),
+                            port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
                             counterparty_channel_id,
@@ -1585,7 +1585,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
 
                         let event = ibc_union_spec::ChannelOpenConfirm {
-                            port_id: port_id.into_bytes().into(),
+                            port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
                             counterparty_channel_id,
