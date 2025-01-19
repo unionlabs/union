@@ -2,7 +2,9 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use voyager_message::context::{ModulesConfig, PluginConfig};
+use voyager_message::context::{
+    equivalent_chain_ids::EquivalentChainIds, ModulesConfig, PluginConfig,
+};
 
 use crate::queue::QueueConfig;
 
@@ -12,6 +14,8 @@ pub struct Config {
     // allows for using $schema in the config file
     #[serde(rename = "$schema", default, skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
+    #[serde(default, skip_serializing_if = "EquivalentChainIds::is_empty")]
+    pub equivalent_chain_ids: EquivalentChainIds,
     pub modules: ModulesConfig,
     pub plugins: Vec<PluginConfig>,
     pub voyager: VoyagerConfig,
