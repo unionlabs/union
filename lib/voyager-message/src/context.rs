@@ -613,7 +613,7 @@ impl Context {
     pub fn plugin(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&(impl PluginClient<Value, Value> + '_), PluginNotFound> {
+    ) -> Result<&reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
         Ok(self
             .plugins
             .get(name.as_ref())

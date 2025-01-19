@@ -5,6 +5,7 @@ use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use macros::model;
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use tracing::instrument;
 use unionlabs::traits::Member;
 use voyager_core::{ClientInfo, IbcSpecId};
@@ -130,11 +131,15 @@ impl CallbackT<VoyagerMessage> for Callback {
                         .await?,
                 }))
             }
-            Callback::Plugin(PluginMessage { plugin, message }) => Ok(ctx
-                .plugin(&plugin)?
-                .callback(message, data)
+            Callback::Plugin(PluginMessage { plugin, message }) => {
+                Ok(PluginClient::<Value, Value>::callback(
+                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    message,
+                    data,
+                )
                 .await
-                .map_err(json_rpc_error_to_queue_error)?),
+                .map_err(json_rpc_error_to_queue_error)?)
+            }
         }
     }
 }
