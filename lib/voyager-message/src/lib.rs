@@ -1,4 +1,4 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, slice_partition_dedup)]
 
 use std::{
     borrow::Cow,

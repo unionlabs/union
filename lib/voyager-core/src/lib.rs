@@ -383,6 +383,8 @@ macro_rules! str_newtype {
             Clone,
             PartialEq,
             Eq,
+            PartialOrd,
+            Ord,
             Hash,
             ::serde::Serialize,
             ::serde::Deserialize,
