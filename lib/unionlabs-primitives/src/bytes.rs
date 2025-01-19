@@ -303,6 +303,20 @@ impl<EBytes: Encoding, EHash: Encoding, const N: usize>
     }
 }
 
+#[cfg(feature = "schemars")]
+impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
+    fn schema_name() -> String {
+        "Bytes".to_string()
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        schemars::schema::Schema::Object(schemars::schema::SchemaObject {
+            instance_type: Some(schemars::schema::InstanceType::String.into()),
+            ..Default::default()
+        })
+    }
+}
+
 // // TODO: Feature gate rlp across the crate
 // // #[cfg(feature = "rlp")]
 // impl<E: Encoding> rlp::Decodable for Bytes<E> {

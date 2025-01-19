@@ -1,8 +1,22 @@
-use ibc_solidity::Packet;
 use unionlabs_primitives::Bytes;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg(not(feature = "cw-orch-interface"))]
+use ibc_solidity::Packet;
+
+// ibc_solidity types do not implement JsonSchema
+#[cfg(feature = "cw-orch-interface")]
+#[cfg_attr(feature = "cw-orch-interface", cosmwasm_schema::cw_serde)]
+pub struct Packet {
+    pub source_channel_id: u32,
+    pub destination_channel_id: u32,
+    pub data: Bytes,
+    pub timeout_height: u64,
+    pub timeout_timestamp: u64,
+}
+
+#[cfg_attr(feature = "cw-orch-interface", cosmwasm_schema::cw_serde)]
+#[cfg_attr(not(feature = "cw-orch-interface"), derive(Debug, Clone, serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(feature = "cw-orch-interface"), serde(deny_unknown_fields, rename_all = "snake_case"))]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
         connection_id: u32,
