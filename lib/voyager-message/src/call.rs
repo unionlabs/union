@@ -1,14 +1,16 @@
 use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use tracing::{debug, error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    core::ChainId, data::IbcDatagram, error_object_to_queue_error, json_rpc_error_to_queue_error,
-    module::PluginClient, Context, PluginMessage, RawClientId, VoyagerMessage,
+    context::WithId, core::ChainId, data::IbcDatagram, error_object_to_queue_error,
+    json_rpc_error_to_queue_error, module::PluginClient, Context, PluginMessage, RawClientId,
+    VoyagerMessage,
 };
 
 #[model]
@@ -302,11 +304,14 @@ impl CallT<VoyagerMessage> for Call {
                     ]))
                 }
             }
-            Call::Plugin(PluginMessage { plugin, message }) => Ok(ctx
-                .plugin(plugin)?
-                .call(message)
+            Call::Plugin(PluginMessage { plugin, message }) => {
+                Ok(PluginClient::<Value, Value>::call(
+                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    message,
+                )
                 .await
-                .map_err(json_rpc_error_to_queue_error)?),
+                .map_err(json_rpc_error_to_queue_error)?)
+            }
         }
     }
 }

@@ -552,6 +552,8 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         R: DeserializeOwned,
         Params: ToRpcParams + Send,
     {
+        trace!(item_id = ?self.item_id);
+
         match self.item_id {
             Some(item_id) => {
                 self.client
@@ -919,6 +921,8 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
                         ..request
                     };
 
+                    trace!("request is for item_id {}", item_id.raw());
+
                     request.extensions.insert(item_id);
 
                     request.extensions.insert(VoyagerClient(IdThreadClient {
@@ -932,11 +936,18 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
                         .instrument(info_span!("item_id", item_id = item_id.raw()))
                         .left_future();
                 }
-                Err(_) => {
+                Err(err) => {
+                    trace!(
+                        "unable to parse item_id from request: {}",
+                        ErrorReporter(err)
+                    );
+
                     request.params = Some(params);
                 }
             }
         };
+
+        trace!("request is not for a queue item");
 
         request.extensions.insert(VoyagerClient(IdThreadClient {
             client: self.client.clone(),

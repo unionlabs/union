@@ -6,6 +6,7 @@ use std::{
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
+    Extensions,
 };
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
@@ -27,7 +28,7 @@ use crate::{
         json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
         VoyagerRpcServer,
     },
-    IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[derive(Debug, Clone)]
@@ -67,7 +68,7 @@ impl Server {
 
     fn span(&self) -> tracing::Span {
         match self.item_id {
-            Some(item_id) => info_span!("item", item_id = item_id.raw()),
+            Some(item_id) => info_span!("processing_request", item_id = item_id.raw()),
             None => info_span!("processing_request"),
         }
     }
@@ -279,6 +280,74 @@ impl Server {
                 );
 
                 Ok(meta)
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
+    async fn query_ibc_state_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        height: QueryHeight,
+        path: Value,
+    ) -> RpcResult<IbcState<Value>> {
+        self.span()
+            .in_scope(|| async {
+                let height = self.query_height(&chain_id, height).await?;
+
+                debug!("fetching ibc state");
+
+                let state_module = self
+                    .inner
+                    .modules()?
+                    .state_module(&chain_id, &ibc_spec_id)
+                    .map_err(fatal_error)?
+                    .with_id(self.item_id);
+
+                let state = state_module
+                    .query_ibc_state_raw(height, path)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                // TODO: Use valuable here
+                debug!(%state, "fetched ibc state");
+
+                Ok(IbcState { height, state })
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
+    async fn query_ibc_proof_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        height: QueryHeight,
+        path: Value,
+    ) -> RpcResult<IbcProof> {
+        self.span()
+            .in_scope(|| async {
+                let height = self.query_height(&chain_id, height).await?;
+
+                debug!("fetching ibc proof");
+
+                let proof_module = self
+                    .inner
+                    .modules()?
+                    .proof_module(&chain_id, &ibc_spec_id)
+                    .map_err(fatal_error)?
+                    .with_id(self.item_id);
+
+                let proof = proof_module
+                    .query_ibc_proof_raw(height, path)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                // TODO: Use valuable here
+                debug!(%proof, "fetched ibc proof");
+
+                Ok(IbcProof { height, proof })
             })
             .await
     }
@@ -536,7 +605,7 @@ impl Server {
 /// rpc impl
 #[async_trait]
 impl VoyagerRpcServer for Server {
-    async fn info(&self) -> RpcResult<LoadedModulesInfo> {
+    async fn info(&self, _: &Extensions) -> RpcResult<LoadedModulesInfo> {
         Ok(self.modules()?.info())
     }
 
@@ -544,16 +613,26 @@ impl VoyagerRpcServer for Server {
     // CONSENSUS
     // =========
 
-    async fn query_latest_height(&self, chain_id: ChainId, finalized: bool) -> RpcResult<Height> {
-        self.query_latest_height(&chain_id, finalized).await
+    async fn query_latest_height(
+        &self,
+        e: &Extensions,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Height> {
+        self.with_id(e.try_get().ok().cloned())
+            .query_latest_height(&chain_id, finalized)
+            .await
     }
 
     async fn query_latest_timestamp(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        self.query_latest_timestamp(&chain_id, finalized).await
+        self.with_id(e.try_get().ok().cloned())
+            .query_latest_timestamp(&chain_id, finalized)
+            .await
     }
 
     // =====
@@ -562,147 +641,147 @@ impl VoyagerRpcServer for Server {
 
     async fn client_info(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo> {
-        self.client_info(&chain_id, &ibc_spec_id, client_id).await
+        self.with_id(e.try_get().ok().cloned())
+            .client_info(&chain_id, &ibc_spec_id, client_id)
+            .await
     }
 
     async fn client_meta(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
-        self.client_meta(&chain_id, &ibc_spec_id, at, client_id)
+        self.with_id(e.try_get().ok().cloned())
+            .client_meta(&chain_id, &ibc_spec_id, at, client_id)
             .await
     }
 
     #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
     async fn query_ibc_state(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcState<Value>> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        debug!("fetching ibc state");
-
-        let state_module = self
-            .inner
-            .modules()?
-            .state_module(&chain_id, &ibc_spec_id)
-            .map_err(fatal_error)?
-            .with_id(self.item_id);
-
-        let state = state_module
-            .query_ibc_state_raw(height, path)
+        self.with_id(e.try_get().ok().cloned())
+            .query_ibc_state_raw(chain_id, ibc_spec_id, height, path)
             .await
-            .map_err(json_rpc_error_to_error_object)?;
-
-        // TODO: Use valuable here
-        debug!(%state, "fetched ibc state");
-
-        Ok(IbcState { height, state })
     }
+
+    // =====
+    // PROOF
+    // =====
 
     #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
     async fn query_ibc_proof(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
     ) -> RpcResult<IbcProof> {
-        let height = self.query_height(&chain_id, height).await?;
-
-        debug!("fetching ibc proof");
-
-        let proof_module = self
-            .inner
-            .modules()?
-            .proof_module(&chain_id, &ibc_spec_id)
-            .map_err(fatal_error)?;
-
-        let proof = proof_module
-            .query_ibc_proof_raw(height, path)
+        self.with_id(e.try_get().ok().cloned())
+            .query_ibc_proof_raw(chain_id, ibc_spec_id, height, path)
             .await
-            .map_err(json_rpc_error_to_error_object)?;
-
-        // TODO: Use valuable here
-        debug!(%proof, "fetched ibc proof");
-
-        Ok(IbcProof { height, proof })
     }
+
+    // ==========
+    // SELF STATE
+    // ==========
 
     async fn self_client_state(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState> {
-        let height = self.query_height(&chain_id, height).await?;
+        let item_id = e.try_get().ok().cloned();
+        let this = self.with_id(item_id);
 
-        self.self_client_state(chain_id, client_type, height).await
+        let height = this.query_height(&chain_id, height).await?;
+
+        this.self_client_state(chain_id, client_type, height).await
     }
 
     async fn self_consensus_state(
         &self,
+        e: &Extensions,
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
     ) -> RpcResult<SelfConsensusState> {
-        self.self_consensus_state(chain_id, client_type, height)
+        self.with_id(e.try_get().ok().cloned())
+            .self_consensus_state(chain_id, client_type, height)
             .await
     }
+
+    // =====
+    // CODEC
+    // =====
 
     // TODO: Use valuable here
     async fn encode_proof(
         &self,
+        e: &Extensions,
         client_type: ClientType,
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         proof: Value,
     ) -> RpcResult<Bytes> {
-        self.encode_proof(&client_type, &ibc_interface, &ibc_spec_id, proof)
+        self.with_id(e.try_get().ok().cloned())
+            .encode_proof(&client_type, &ibc_interface, &ibc_spec_id, proof)
             .await
     }
 
     // TODO: Use valuable here
     async fn decode_client_state_meta(
         &self,
+        e: &Extensions,
         client_type: ClientType,
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        self.decode_client_state_meta(&client_type, &ibc_interface, &ibc_spec_id, client_state)
+        self.with_id(e.try_get().ok().cloned())
+            .decode_client_state_meta(&client_type, &ibc_interface, &ibc_spec_id, client_state)
             .await
     }
 
     async fn decode_client_state(
         &self,
+        e: &Extensions,
         client_type: ClientType,
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         client_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_client_state(&client_type, &ibc_interface, &ibc_spec_id, client_state)
+        self.with_id(e.try_get().ok().cloned())
+            .decode_client_state(&client_type, &ibc_interface, &ibc_spec_id, client_state)
             .await
     }
 
     async fn decode_consensus_state(
         &self,
+        e: &Extensions,
         client_type: ClientType,
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        self.decode_consensus_state(&client_type, &ibc_interface, &ibc_spec_id, consensus_state)
+        self.with_id(e.try_get().ok().cloned())
+            .decode_consensus_state(&client_type, &ibc_interface, &ibc_spec_id, consensus_state)
             .await
     }
 }
