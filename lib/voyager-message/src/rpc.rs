@@ -27,17 +27,17 @@ pub mod server;
 )]
 // TODO: Ensure that height is always the last parameter for consistency
 pub trait VoyagerRpc {
-    #[method(name = "info")]
+    #[method(name = "info", with_extensions)]
     async fn info(&self) -> RpcResult<LoadedModulesInfo>;
 
     // =========
     // consensus
     // =========
 
-    #[method(name = "queryLatestHeight")]
+    #[method(name = "queryLatestHeight", with_extensions)]
     async fn query_latest_height(&self, chain_id: ChainId, finalized: bool) -> RpcResult<Height>;
 
-    #[method(name = "queryLatestTimestamp")]
+    #[method(name = "queryLatestTimestamp", with_extensions)]
     async fn query_latest_timestamp(
         &self,
         chain_id: ChainId,
@@ -48,7 +48,7 @@ pub trait VoyagerRpc {
     // IBC state queries
     // =================
 
-    #[method(name = "clientInfo")]
+    #[method(name = "clientInfo", with_extensions)]
     async fn client_info(
         &self,
         chain_id: ChainId,
@@ -56,7 +56,7 @@ pub trait VoyagerRpc {
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo>;
 
-    #[method(name = "clientMeta")]
+    #[method(name = "clientMeta", with_extensions)]
     async fn client_meta(
         &self,
         chain_id: ChainId,
@@ -65,7 +65,7 @@ pub trait VoyagerRpc {
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta>;
 
-    #[method(name = "queryIbcState")]
+    #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(
         &self,
         chain_id: ChainId,
@@ -74,7 +74,7 @@ pub trait VoyagerRpc {
         path: Value,
     ) -> RpcResult<IbcState<Value>>;
 
-    #[method(name = "queryIbcProof")]
+    #[method(name = "queryIbcProof", with_extensions)]
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId,
@@ -87,7 +87,7 @@ pub trait VoyagerRpc {
     // self state queries, for creating clients
     // ========================================
 
-    #[method(name = "selfClientState")]
+    #[method(name = "selfClientState", with_extensions)]
     async fn self_client_state(
         &self,
         chain_id: ChainId,
@@ -95,7 +95,7 @@ pub trait VoyagerRpc {
         height: QueryHeight,
     ) -> RpcResult<SelfClientState>;
 
-    #[method(name = "selfConsensusState")]
+    #[method(name = "selfConsensusState", with_extensions)]
     async fn self_consensus_state(
         &self,
         chain_id: ChainId,
@@ -107,7 +107,7 @@ pub trait VoyagerRpc {
     // state and proof codecs
     // ======================
 
-    #[method(name = "encodeProof")]
+    #[method(name = "encodeProof", with_extensions)]
     async fn encode_proof(
         &self,
         client_type: ClientType,
@@ -116,7 +116,7 @@ pub trait VoyagerRpc {
         proof: Value,
     ) -> RpcResult<Bytes>;
 
-    #[method(name = "decodeClientStateMeta")]
+    #[method(name = "decodeClientStateMeta", with_extensions)]
     async fn decode_client_state_meta(
         &self,
         client_type: ClientType,
@@ -125,7 +125,7 @@ pub trait VoyagerRpc {
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta>;
 
-    #[method(name = "decodeClientState")]
+    #[method(name = "decodeClientState", with_extensions)]
     async fn decode_client_state(
         &self,
         client_type: ClientType,
@@ -134,7 +134,7 @@ pub trait VoyagerRpc {
         client_state: Bytes,
     ) -> RpcResult<Value>;
 
-    #[method(name = "decodeConsensusState")]
+    #[method(name = "decodeConsensusState", with_extensions)]
     async fn decode_consensus_state(
         &self,
         client_type: ClientType,

@@ -37,7 +37,7 @@ use crate::{
     context::ibc_spec_handler::IbcSpecHandlers,
     core::{ChainId, ClientType, IbcInterface},
     module::{
-        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginClient, PluginInfo,
+        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
@@ -144,6 +144,8 @@ where
     for<'a> &'a Self: ClientT,
 {
     fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
+        trace!(?item_id, "threading id");
+
         IdThreadClient {
             client: self,
             item_id,
