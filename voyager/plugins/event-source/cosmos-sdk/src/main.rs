@@ -12,7 +12,7 @@ use std::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use dashmap::DashMap;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{ChannelPath, IbcUnion};
+use ibc_union_spec::{path::ChannelPath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -1178,7 +1178,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::CreateClient {
+                        let event = ibc_union_spec::event::CreateClient {
                             client_id,
                             client_type: ClientType::new(client_type),
                         }
@@ -1193,7 +1193,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmUpdateClient {
@@ -1212,7 +1212,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::UpdateClient {
+                        let event = ibc_union_spec::event::UpdateClient {
                             client_id,
                             client_type: client_info.client_type.clone(),
                             height: counterparty_height,
@@ -1228,7 +1228,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmConnectionOpenInit {
@@ -1248,7 +1248,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ConnectionOpenInit {
+                        let event = ibc_union_spec::event::ConnectionOpenInit {
                             client_id,
                             connection_id,
                             counterparty_client_id,
@@ -1264,7 +1264,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmConnectionOpenTry {
@@ -1285,7 +1285,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ConnectionOpenTry {
+                        let event = ibc_union_spec::event::ConnectionOpenTry {
                             connection_id,
                             counterparty_connection_id,
                             client_id,
@@ -1302,7 +1302,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmConnectionOpenAck {
@@ -1323,7 +1323,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ConnectionOpenAck {
+                        let event = ibc_union_spec::event::ConnectionOpenAck {
                             connection_id,
                             counterparty_connection_id,
                             client_id,
@@ -1340,7 +1340,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmConnectionOpenConfirm {
@@ -1361,7 +1361,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ConnectionOpenConfirm {
+                        let event = ibc_union_spec::event::ConnectionOpenConfirm {
                             connection_id,
                             counterparty_connection_id,
                             client_id,
@@ -1378,7 +1378,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmChannelOpenInit {
@@ -1392,7 +1392,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath { connection_id },
+                                ibc_union_spec::path::ConnectionPath { connection_id },
                             )
                             .await?
                             .state
@@ -1410,7 +1410,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ChannelOpenInit {
+                        let event = ibc_union_spec::event::ChannelOpenInit {
                             port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
@@ -1428,7 +1428,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmChannelOpenTry {
@@ -1443,7 +1443,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath { connection_id },
+                                ibc_union_spec::path::ConnectionPath { connection_id },
                             )
                             .await?
                             .state
@@ -1461,7 +1461,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ChannelOpenTry {
+                        let event = ibc_union_spec::event::ChannelOpenTry {
                             port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
@@ -1480,7 +1480,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmChannelOpenAck {
@@ -1494,7 +1494,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath { connection_id },
+                                ibc_union_spec::path::ConnectionPath { connection_id },
                             )
                             .await?
                             .state
@@ -1522,7 +1522,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .ok_or_else(missing_state("channel must exist", None))?;
 
-                        let event = ibc_union_spec::ChannelOpenAck {
+                        let event = ibc_union_spec::event::ChannelOpenAck {
                             port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
@@ -1541,7 +1541,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
 
@@ -1556,7 +1556,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath { channel_id },
+                                ibc_union_spec::path::ChannelPath { channel_id },
                             )
                             .await?
                             .state
@@ -1566,7 +1566,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath { connection_id },
+                                ibc_union_spec::path::ConnectionPath { connection_id },
                             )
                             .await?
                             .state
@@ -1584,7 +1584,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::ChannelOpenConfirm {
+                        let event = ibc_union_spec::event::ChannelOpenConfirm {
                             port_id: port_id.to_string().into_bytes().into(),
                             channel_id,
                             counterparty_port_id: counterparty_port_id.into_encoding(),
@@ -1603,7 +1603,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmPacketSend { packet } => {
@@ -1611,7 +1611,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.source_channel_id,
                                 },
                             )
@@ -1623,7 +1623,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath {
+                                ibc_union_spec::path::ConnectionPath {
                                     connection_id: source_channel.connection_id,
                                 },
                             )
@@ -1646,21 +1646,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::PacketSend {
+                        let event = ibc_union_spec::event::PacketSend {
                             packet_data: packet.data.into(),
-                            packet: ibc_union_spec::PacketMetadata {
-                                source_channel: ibc_union_spec::ChannelMetadata {
+                            packet: ibc_union_spec::event::PacketMetadata {
+                                source_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: source_connection.client_id,
                                         connection_id: source_channel.connection_id,
                                     },
                                 },
-                                destination_channel: ibc_union_spec::ChannelMetadata {
+                                destination_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.destination_channel_id,
                                     version: source_channel.version,
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: source_connection.counterparty_client_id,
                                         connection_id: source_connection.counterparty_connection_id,
                                     },
@@ -1680,7 +1680,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmPacketAck {
@@ -1691,7 +1691,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.source_channel_id,
                                 },
                             )
@@ -1703,7 +1703,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath {
+                                ibc_union_spec::path::ConnectionPath {
                                     connection_id: source_channel.connection_id,
                                 },
                             )
@@ -1726,21 +1726,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        let event = ibc_union_spec::PacketAck {
+                        let event = ibc_union_spec::event::PacketAck {
                             packet_data: packet.data.into(),
-                            packet: ibc_union_spec::PacketMetadata {
-                                source_channel: ibc_union_spec::ChannelMetadata {
+                            packet: ibc_union_spec::event::PacketMetadata {
+                                source_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: source_connection.client_id,
                                         connection_id: source_channel.connection_id,
                                     },
                                 },
-                                destination_channel: ibc_union_spec::ChannelMetadata {
+                                destination_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.destination_channel_id,
                                     version: source_channel.version,
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: source_connection.counterparty_client_id,
                                         connection_id: source_connection.counterparty_connection_id,
                                     },
@@ -1761,7 +1761,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmPacketRecv {
@@ -1772,7 +1772,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.destination_channel_id,
                                 },
                             )
@@ -1784,7 +1784,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath {
+                                ibc_union_spec::path::ConnectionPath {
                                     connection_id: destination_channel.connection_id,
                                 },
                             )
@@ -1811,7 +1811,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 client_meta.chain_id.clone(),
                                 QueryHeight::Latest,
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.source_channel_id,
                                 },
                             )
@@ -1819,23 +1819,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .unwrap();
 
-                        let event = ibc_union_spec::PacketRecv {
+                        let event = ibc_union_spec::event::PacketRecv {
                             packet_data: packet.data.into(),
-                            packet: ibc_union_spec::PacketMetadata {
-                                source_channel: ibc_union_spec::ChannelMetadata {
+                            packet: ibc_union_spec::event::PacketMetadata {
+                                source_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: destination_connection.counterparty_client_id,
                                         connection_id: destination_connection
                                             .counterparty_connection_id,
                                     },
                                 },
-                                destination_channel: ibc_union_spec::ChannelMetadata {
+                                destination_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.destination_channel_id,
                                     version: destination_channel.version.clone(),
 
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: destination_connection.client_id,
                                         connection_id: destination_channel.connection_id,
                                     },
@@ -1856,7 +1856,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                     IbcEvent::WasmWriteAck {
@@ -1867,7 +1867,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.destination_channel_id,
                                 },
                             )
@@ -1879,7 +1879,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(height),
-                                ibc_union_spec::ConnectionPath {
+                                ibc_union_spec::path::ConnectionPath {
                                     connection_id: destination_channel.connection_id,
                                 },
                             )
@@ -1906,7 +1906,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .query_ibc_state(
                                 client_meta.chain_id.clone(),
                                 QueryHeight::Latest,
-                                ibc_union_spec::ChannelPath {
+                                ibc_union_spec::path::ChannelPath {
                                     channel_id: packet.source_channel_id,
                                 },
                             )
@@ -1914,23 +1914,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .state
                             .unwrap();
 
-                        let event = ibc_union_spec::WriteAck {
+                        let event = ibc_union_spec::event::WriteAck {
                             packet_data: packet.data.into(),
-                            packet: ibc_union_spec::PacketMetadata {
-                                source_channel: ibc_union_spec::ChannelMetadata {
+                            packet: ibc_union_spec::event::PacketMetadata {
+                                source_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.source_channel_id,
                                     version: source_channel.version.clone(),
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: destination_connection.counterparty_client_id,
                                         connection_id: destination_connection
                                             .counterparty_connection_id,
                                     },
                                 },
-                                destination_channel: ibc_union_spec::ChannelMetadata {
+                                destination_channel: ibc_union_spec::event::ChannelMetadata {
                                     channel_id: packet.destination_channel_id,
                                     version: destination_channel.version.clone(),
 
-                                    connection: ibc_union_spec::ConnectionMetadata {
+                                    connection: ibc_union_spec::event::ConnectionMetadata {
                                         client_id: destination_connection.client_id,
                                         connection_id: destination_channel.connection_id,
                                     },
@@ -1951,7 +1951,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height,
                             ibc_spec_id: IbcUnion::ID,
-                            event: into_value::<ibc_union_spec::FullEvent>(event),
+                            event: into_value::<ibc_union_spec::event::FullEvent>(event),
                         }))
                     }
                 }

@@ -6193,10 +6193,13 @@ dependencies = [
 name = "ibc-union-spec"
 version = "0.1.0"
 dependencies = [
+ "alloy-sol-types",
  "enumorph",
  "ibc-solidity",
+ "schemars",
  "serde",
  "sha3 0.10.8",
+ "thiserror",
  "tracing",
  "unionlabs",
  "voyager-core",
@@ -12760,6 +12763,7 @@ dependencies = [
  "hex",
  "primitive-types 0.12.2",
  "rlp",
+ "schemars",
  "serde",
  "serde_bytes",
  "thiserror",
@@ -13515,7 +13519,6 @@ name = "voyager-message"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "chain-utils",
  "clap 4.5.4",
  "enumorph",
  "futures",

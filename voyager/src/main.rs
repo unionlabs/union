@@ -740,17 +740,19 @@ pub mod utils {
                         client_type: client_type.clone(),
                     }),
                 ),
-                IbcSpecId::UNION => IbcDatagram::new::<IbcUnion>(ibc_union_spec::Datagram::from(
-                    ibc_union_spec::MsgCreateClient {
-                        client_type,
-                        client_state_bytes: client_module
-                            .encode_client_state(self_client_state, metadata)
-                            .await?,
-                        consensus_state_bytes: client_module
-                            .encode_consensus_state(self_consensus_state)
-                            .await?,
-                    },
-                )),
+                IbcSpecId::UNION => {
+                    IbcDatagram::new::<IbcUnion>(ibc_union_spec::datagram::Datagram::from(
+                        ibc_union_spec::datagram::MsgCreateClient {
+                            client_type,
+                            client_state_bytes: client_module
+                                .encode_client_state(self_client_state, metadata)
+                                .await?,
+                            consensus_state_bytes: client_module
+                                .encode_consensus_state(self_consensus_state)
+                                .await?,
+                        },
+                    ))
+                }
                 _ => bail!("unknown IBC version id `{ibc_spec_id}`"),
             }],
         }))

@@ -23,7 +23,7 @@ use ibc_union_msg::{
     },
     query::QueryMsg,
 };
-use ibc_union_spec::{
+use ibc_union_spec::path::{
     BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
     ConsensusStatePath, COMMITMENT_MAGIC,
 };

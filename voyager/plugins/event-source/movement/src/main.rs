@@ -10,10 +10,15 @@ use aptos_rest_client::{
     Transaction,
 };
 use ibc_union_spec::{
-    ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-    ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-    ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion, PacketAck,
-    PacketMetadata, PacketRecv, PacketSend, UpdateClient, WriteAck,
+    event::{
+        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
+        PacketSend, UpdateClient, WriteAck,
+    },
+    path::{ChannelPath, ConnectionPath},
+    types::{Connection, ConnectionState},
+    IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -760,13 +765,13 @@ pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
     ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
 }
 
-fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
-    ibc_solidity::Connection {
+fn convert_connection(connection: ConnectionEnd) -> Connection {
+    Connection {
         state: match connection.state {
-            0 => ibc_solidity::ConnectionState::Unspecified,
-            1 => ibc_solidity::ConnectionState::Init,
-            2 => ibc_solidity::ConnectionState::TryOpen,
-            3 => ibc_solidity::ConnectionState::Open,
+            0 => None,
+            1 => Some(ConnectionState::Init),
+            2 => Some(ConnectionState::TryOpen),
+            3 => Some(ConnectionState::Open),
             _ => panic!("connection state cannot be more than 3"),
         },
         client_id: connection.client_id,

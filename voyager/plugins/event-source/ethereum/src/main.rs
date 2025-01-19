@@ -11,10 +11,14 @@ use alloy::{
 use beacon_api::client::BeaconApiClient;
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
-    ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-    ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-    ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion, PacketAck,
-    PacketMetadata, PacketRecv, PacketSend, PacketTimeout, UpdateClient, WriteAck,
+    event::{
+        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
+        PacketSend, PacketTimeout, UpdateClient, WriteAck,
+    },
+    path::{ChannelPath, ConnectionPath},
+    IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -673,7 +677,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let event = ChannelOpenConfirm {
                             port_id: raw_event.port_id.into(),
                             channel_id,
-                            counterparty_port_id: channel.counterparty_port_id.into(),
+                            counterparty_port_id: channel.counterparty_port_id,
                             counterparty_channel_id: channel.counterparty_channel_id,
                             connection,
                             version: channel.version,

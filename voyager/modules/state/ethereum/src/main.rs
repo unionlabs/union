@@ -10,7 +10,10 @@ use ibc_solidity::{
     Channel, Connection, ILightClient,
     Ibc::{self, IbcInstance},
 };
-use ibc_union_spec::{BatchPacketsPath, BatchReceiptsPath, IbcUnion, StorePath};
+use ibc_union_spec::{
+    path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
