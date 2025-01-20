@@ -1,0 +1,23 @@
+[package]
+edition = "2021"
+name    = "state-lens-ics23-move-light-client-types"
+version = "0.1.0"
+
+[dependencies]
+alloy                         = { workspace = true, optional = true, features = ["sol-types"] }
+bincode                       = { workspace = true, optional = true, features = ["alloc", "derive"] }
+protos                        = { workspace = true, optional = true, features = ["proto_full", "serde"] }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
+state-lens-light-client-types = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["ethabi", "proto"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+
+[features]
+default = []
+
+bincode = ["dep:bincode", "unionlabs/bincode", "state-lens-light-client-types/bincode"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "state-lens-light-client-types/ethabi"]
+serde   = ["dep:serde", "state-lens-light-client-types/serde"]

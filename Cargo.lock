@@ -11281,6 +11281,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-ics23-move-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "hex-literal",
+ "protos",
+ "serde",
+ "state-lens-light-client-types",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-ics23-mpt-light-client"
 version = "0.1.0"
 dependencies = [

@@ -79,6 +79,7 @@ members = [
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
+  "lib/state-lens-ics23-move-light-client-types",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
@@ -224,6 +225,7 @@ scroll-rpc                   = { path = "lib/scroll-rpc", default-features = fal
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
+state-lens-ics23-move-light-client-types   = { path = "lib/state-lens-ics23-move-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
