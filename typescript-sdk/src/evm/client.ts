@@ -26,7 +26,7 @@ import {
   berachainTestnetbArtio
 } from "viem/chains"
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
-import { ucs03ZkgmAbi } from "#abi/ucs-03.ts"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [

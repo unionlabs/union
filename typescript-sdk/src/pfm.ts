@@ -1,6 +1,6 @@
 import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import { sepolia } from "#mod.ts"
+import { sepolia } from "./mod.ts"
 import { holesky } from "viem/chains"
 
 export const createPfmMemo: (_args: {
@@ -48,9 +48,9 @@ export async function getHubbleChainDetails({
     Error
   >
 > {
-  if (sourceChainId === destinationChainId) {
-    return err(new Error("Source and destination chains cannot be the same"))
-  }
+  // if (sourceChainId === destinationChainId) {
+  //   return err(new Error("Source and destination chains cannot be the same"))
+  // }
 
   // const { data: chains } = await offchainQuery.chains({
   //   includeContracts: true,
