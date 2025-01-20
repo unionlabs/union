@@ -24,8 +24,8 @@ env:
   NODE_OPTIONS: '--no-warnings'
 
 jobs:
-  publish-npm:
-    name: 'Publish to NPM'
+  publish-sdk:
+    name: 'Publish to Registries'
     runs-on: ['ubuntu-latest']
     permissions:
       contents: read
@@ -50,30 +50,11 @@ jobs:
           bun run typecheck
           bun run check-package
 
-      - name: 'Publish to npm'
+      - name: 'Publish to JSR'
+        run: bun scripts/publish.ts --period patch
+
+      - name: 'Publish to NPM'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          bun publih --access='public'
-
-  publish-jsr:
-    name: 'Publish to JSR'
-    runs-on: ['ubuntu-latest']
-    permissions:
-      contents: read
-      # The OIDC ID token is used for authentication with JSR. 
-      id-token: write
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v4
-
-      - name: 'Setup bun'
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 'latest'
-
-      - name: 'Publish to JSR'
-        run: |
-          bun install
-          bun scripts/publish.ts --period patch
+        run: npm publish --access='public' --no-git-tags

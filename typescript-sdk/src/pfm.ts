@@ -1,6 +1,6 @@
 import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import { sepolia } from "#mod.ts"
+import { sepolia } from "./mod.ts"
 import { holesky } from "viem/chains"
 
 export const createPfmMemo: (_args: {
