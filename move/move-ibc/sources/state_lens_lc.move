@@ -61,7 +61,7 @@ module ibc::statelens_lc {
         state_root_offset: u16,
         /// the offset at which we extract the bytes32 storage root (of the ibc contract on the l2) from the l2 consensus state
         /// storage_root = consensus_state[storage_root_offset:storage_root_offset+32]
-        storage_root_offset: u16,
+        storage_root_offset: u16
     }
 
     struct ConsensusState has copy, drop, store {
@@ -70,8 +70,7 @@ module ibc::statelens_lc {
         /// State root of the execution layer.
         state_root: vector<u8>,
         /// Storage root of the ibc contract extracted from the state root.
-        storage_root: vector<u8>,
-        
+        storage_root: vector<u8>
     }
 
     struct Header has copy, drop {
@@ -79,7 +78,7 @@ module ibc::statelens_lc {
         l2_height: Height,
         /// Proof of the L2 consensus state as stored in the state of the L1.
         l2_consensus_state_proof: vector<u8>,
-        l2_consensus_state: vector<u8>,
+        l2_consensus_state: vector<u8>
     }
 
     public fun create_client(
@@ -92,8 +91,7 @@ module ibc::statelens_lc {
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
         assert!(
-            client_state.l2_latest_height != 0
-                && consensus_state.timestamp != 0,
+            client_state.l2_latest_height != 0 && consensus_state.timestamp != 0,
             E_INVALID_CLIENT_STATE
         );
 
@@ -127,23 +125,41 @@ module ibc::statelens_lc {
 
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
-        assert!(cometbls_lc::verify_membership(
-            state.client_state.l1_client_id,
-            height::get_revision_height(&header.l1_height),
-            commitment::consensus_state_path(
-                state.client_state.l2_client_id,
-                height::get_revision_height(&header.l2_height)
-            ),
-            header.l2_consensus_state_proof,
-            keccak256(header.l2_consensus_state)
-        ) == 0, E_L2_CONSENSUS_STATE_PROOF_VERIFICATION);
+        assert!(
+            cometbls_lc::verify_membership(
+                state.client_state.l1_client_id,
+                height::get_revision_height(&header.l1_height),
+                commitment::consensus_state_path(
+                    state.client_state.l2_client_id,
+                    height::get_revision_height(&header.l2_height)
+                ),
+                header.l2_consensus_state_proof,
+                keccak256(header.l2_consensus_state)
+            ) == 0,
+            E_L2_CONSENSUS_STATE_PROOF_VERIFICATION
+        );
 
-        let l2_timestamp = extract_uint64(vector::slice(&header.l2_consensus_state, (state.client_state.timestamp_offset as u64), ((state.client_state.timestamp_offset + 8) as u64)));
-        let l2_state_root = vector::slice(&header.l2_consensus_state, (state.client_state.state_root_offset as u64), ((state.client_state.state_root_offset + 32) as u64));
-        let l2_storage_root = vector::slice(&header.l2_consensus_state, (state.client_state.storage_root_offset as u64), ((state.client_state.storage_root_offset + 32) as u64));
+        let l2_timestamp =
+            extract_uint64(
+                vector::slice(
+                    &header.l2_consensus_state,
+                    (state.client_state.timestamp_offset as u64),
+                    ((state.client_state.timestamp_offset + 8) as u64)
+                )
+            );
+        let l2_state_root = vector::slice(
+            &header.l2_consensus_state,
+            (state.client_state.state_root_offset as u64),
+            ((state.client_state.state_root_offset + 32) as u64)
+        );
+        let l2_storage_root = vector::slice(
+            &header.l2_consensus_state,
+            (state.client_state.storage_root_offset as u64),
+            ((state.client_state.storage_root_offset + 32) as u64)
+        );
 
         let new_height = height::get_revision_height(&header.l2_height);
-        
+
         if ((state.client_state.l2_latest_height as u64) < new_height) {
             state.client_state.l2_latest_height = new_height;
         };
@@ -237,11 +253,7 @@ module ibc::statelens_lc {
         let state_root = bcs_utils::peel_fixed_bytes(&mut buf, 32);
         let storage_root = bcs_utils::peel_fixed_bytes(&mut buf, 32);
 
-        ConsensusState {
-            timestamp,
-            state_root,
-            storage_root
-        }
+        ConsensusState { timestamp, state_root, storage_root }
     }
 
     fun decode_header(buf: vector<u8>): Header {

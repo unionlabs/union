@@ -219,7 +219,8 @@ module ibc::ibc {
         commitments: Table<vector<u8>, vector<u8>>,
         connections: SmartTable<u32, ConnectionEnd>,
         channels: SmartTable<u32, Channel>,
-        channel_to_module: SmartTable<u32, address>
+        channel_to_module: SmartTable<u32, address>,
+        client_id_to_type: SmartTable<u32, String>
     }
 
     struct SignerRef has key {
@@ -279,6 +280,8 @@ module ibc::ibc {
                 client_state,
                 consensus_state
             );
+
+        smart_table::upsert(&mut store.client_id_to_type, client_id, client_type);
 
         // TODO(aeryz): fetch these status from proper exported consts
         assert!(light_client::status(client_type, client_id) == 0, E_CLIENT_NOT_ACTIVE);
@@ -1143,7 +1146,8 @@ module ibc::ibc {
             commitments: table::new(),
             connections: smart_table::new(),
             channels: smart_table::new(),
-            channel_to_module: smart_table::new()
+            channel_to_module: smart_table::new(),
+            client_id_to_type: smart_table::new()
         };
 
         move_to(vault_signer, store);
@@ -1163,15 +1167,21 @@ module ibc::ibc {
     }
 
     #[view]
-    public fun client_state(client_type: String, client_id: u32): vector<u8> {
-        light_client::get_client_state(client_type, client_id)
+    public fun client_state(client_id: u32): vector<u8> acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        light_client::get_client_state(
+            *smart_table::borrow(&store.client_id_to_type, client_id), client_id
+        )
     }
 
     #[view]
-    public fun consensus_state(
-        client_type: String, client_id: u32, revision_height: u64
-    ): vector<u8> {
-        light_client::get_consensus_state(client_type, client_id, revision_height)
+    public fun consensus_state(client_id: u32, revision_height: u64): vector<u8> acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        light_client::get_consensus_state(
+            *smart_table::borrow(&store.client_id_to_type, client_id),
+            client_id,
+            revision_height
+        )
     }
 
     #[view]
