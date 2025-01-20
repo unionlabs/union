@@ -25,8 +25,8 @@
     "knip": "knip --config='knip.json'",
     "clean": "rm -rf dist node_modules",
     "test:typecheck": "vitest --typecheck.only",
-    "typedoc": "deno run --allow-all npm:typedoc@latest --out .docs ./src/mod.ts",
-    "check-package": "deno run --allow-all npm:publint --strict && deno run --allow-all npm:@arethetypeswrong/cli@latest --pack --ignore-rules 'cjs-resolves-to-esm'"
+    "typedoc": "bunx typedoc@latest --out .docs ./src/mod.ts",
+    "check-package": "bunx publint --strict && bunx @arethetypeswrong/cli@latest --pack --ignore-rules 'cjs-resolves-to-esm'"
   },
   "dependencies": {
     "@scure/base": "^1.2.4",
