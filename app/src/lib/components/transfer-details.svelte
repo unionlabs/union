@@ -353,7 +353,7 @@ let processedTransfers = derived(
           </section>
         </Card.Content>
         <Card.Footer class="items-start flex flex-col w-full gap-4">
-          <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
+          <div class="font-bold text-md">{transfer.transfer_day}</div>
           {#if transfer.traces}
             <Trace traces={transfer.traces} {chains}/>
           {:else}

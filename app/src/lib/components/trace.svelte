@@ -13,11 +13,45 @@ import type { Chain } from "$lib/types"
 export let traces: Array<RawTrace>
 export let chains: Array<Chain>
 
-const DISPLAY_NAMES: Record<string, string> = {
-  PACKET_SEND: "Packet Sent",
-  PACKET_RECV: "Packet Received",
-  WRITE_ACK: "Acknowledgement Written",
-  PACKET_ACK: "Packet Acknowledged"
+const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
+  COMPLETED: {
+    PACKET_SEND: "Packet Sent",
+    PACKET_RECV: "Packet Received",
+    WRITE_ACK: "Acknowledgement Written",
+    PACKET_ACK: "Packet Acknowledged",
+    PACKET_SEND_LC_UPDATE_L0: "L0 Light Client Updated",
+    PACKET_SEND_LC_UPDATE_L1: "L1 Light Client Updated",
+    PACKET_SEND_LC_UPDATE_L2: "L2 Light Client Updated",
+    WRITE_ACK_LC_UPDATE_L0: "L0 Light Client Updated (Ack)",
+    WRITE_ACK_LC_UPDATE_L1: "L1 Light Client Updated (Ack)",
+    WRITE_ACK_LC_UPDATE_L2: "L2 Light Client Updated (Ack)"
+  },
+  PENDING: {
+    PACKET_SEND: "Send Packet",
+    PACKET_RECV: "Receive Packet",
+    WRITE_ACK: "Write Acknowledgement",
+    PACKET_ACK: "Acknowledge Packet",
+    PACKET_SEND_LC_UPDATE_L0: "Update L0 Light Client",
+    PACKET_SEND_LC_UPDATE_L1: "Update L1 Light Client",
+    PACKET_SEND_LC_UPDATE_L2: "Update L2 Light Client",
+    WRITE_ACK_LC_UPDATE_L0: "Update L0 Light Client (Ack)",
+    WRITE_ACK_LC_UPDATE_L1: "Update L1 Light Client (Ack)",
+    WRITE_ACK_LC_UPDATE_L2: "Update L2 Light Client (Ack)"
+  },
+  IN_PROGRESS: {
+    PACKET_SEND: "Sending Packet",
+    PACKET_RECV: "Receiving Packet",
+    WRITE_ACK: "Writing Acknowledgement",
+    PACKET_ACK: "Acknowledging Packet",
+    PACKET_SEND_LC_UPDATE_L0: "Updating L0 Light Client",
+    PACKET_SEND_LC_UPDATE_L1: "Updating L1 Light Client",
+    PACKET_SEND_LC_UPDATE_L2: "Updating L2 Light Client",
+    WRITE_ACK_LC_UPDATE_L0: "Updating L0 Light Client (Ack)",
+    WRITE_ACK_LC_UPDATE_L1: "Updating L1 Light Client (Ack)",
+    WRITE_ACK_LC_UPDATE_L2: "Updating L2 Light Client (Ack)"
+  },
+  WARNING: {},
+  ERROR: {}
 }
 
 $: pTraces = ((): Array<Trace> => {
@@ -27,19 +61,21 @@ $: pTraces = ((): Array<Trace> => {
     return {
       ...t,
       status: t.transaction_hash ? "COMPLETED" : ("PENDING" as StepStatus),
-      type: DISPLAY_NAMES[t.type] ?? t.type,
       block_url: explorer ? `${explorer.block_url}${t.height}` : null,
       transaction_url: explorer ? `${explorer.tx_url}${t.transaction_hash}` : null
     }
   })
 
   for (const [index, step] of processedTraces.entries()) {
-    const gap = processedTraces.slice(index).find(step => step.status === "COMPLETED") !== undefined
-    if (gap && (step.status === "IN_PROGRESS" || step.status === "PENDING")) {
-      processedTraces[index].status = "COMPLETED"
+    if (step.status === "COMPLETED") {
+      const next = processedTraces.at(index + 1)
+      if (!next || next.status === "COMPLETED") {
+        continue
+      }
+      next.status = "IN_PROGRESS"
     }
   }
-  return processedTraces
+  return processedTraces.map(t => ({ ...t, type: DISPLAY_NAMES[t.status][t.type] ?? t.type }))
 })()
 </script>
 
