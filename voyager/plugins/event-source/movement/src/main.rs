@@ -768,11 +768,10 @@ pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
 fn convert_connection(connection: ConnectionEnd) -> Connection {
     Connection {
         state: match connection.state {
-            0 => None,
-            1 => Some(ConnectionState::Init),
-            2 => Some(ConnectionState::TryOpen),
-            3 => Some(ConnectionState::Open),
-            _ => panic!("connection state cannot be more than 3"),
+            1 => ConnectionState::Init,
+            2 => ConnectionState::TryOpen,
+            3 => ConnectionState::Open,
+            _ => panic!("connection state must be 1..=3"),
         },
         client_id: connection.client_id,
         counterparty_client_id: connection.counterparty_client_id,

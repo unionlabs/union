@@ -1,6 +1,5 @@
 use contract::instantiate;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
-use ibc_solidity::Connection;
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
@@ -8,6 +7,7 @@ use ibc_union_msg::{
         MsgConnectionOpenTry,
     },
 };
+use ibc_union_spec::types::Connection;
 
 use super::*;
 

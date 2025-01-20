@@ -220,10 +220,7 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy_sol_types::{
-        private::{primitives::bytes, U256},
-        SolValue,
-    };
+    use alloy_sol_types::{private::U256, SolValue};
 
     use super::*;
 

@@ -9,7 +9,7 @@ bip32           = { workspace = true }
 chain-utils     = { workspace = true }
 enumorph        = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["rpc"] }
-ibc-union-spec  = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["ethabi", "ibc-solidity-compat"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 macros          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }

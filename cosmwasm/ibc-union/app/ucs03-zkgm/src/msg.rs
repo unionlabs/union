@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
-use ibc_solidity::Packet;
+use ibc_union_spec::types::Packet;
 use token_factory_api::TokenFactoryMsg;
 use unionlabs::primitives::{Bytes, H256};
 

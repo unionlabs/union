@@ -673,7 +673,7 @@ async fn do_make_msg_union(
                     ibc_union_spec::datagram::MsgChannelOpenTry {
                         port_id: event.counterparty_port_id,
                         channel: Channel {
-                            state: Some(ChannelState::TryOpen),
+                            state: ChannelState::TryOpen,
                             counterparty_channel_id: event.channel_id,
                             counterparty_port_id: event.port_id,
                             connection_id: event.connection.counterparty_connection_id,

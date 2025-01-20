@@ -1000,7 +1000,7 @@ fn process_msgs(
                             ibc_union_msg::msg::MsgChannelOpenTry {
                                 port_id: String::from_utf8(msg_channel_open_try.port_id.to_vec())
                                     .unwrap(),
-                                channel: msg_channel_open_try.channel.into(),
+                                channel: msg_channel_open_try.channel,
                                 counterparty_version: msg_channel_open_try.counterparty_version,
                                 proof_init: msg_channel_open_try.proof_init,
                                 proof_height: msg_channel_open_try.proof_height,

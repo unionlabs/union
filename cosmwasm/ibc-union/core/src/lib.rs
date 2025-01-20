@@ -7,7 +7,7 @@ pub mod state;
 mod tests;
 
 use cosmwasm_std::{Addr, StdError};
-use ibc_solidity::{ChannelState, ConnectionState};
+use ibc_union_spec::types::{ChannelState, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
 

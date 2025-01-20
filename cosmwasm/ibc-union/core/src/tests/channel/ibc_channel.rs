@@ -1,12 +1,12 @@
 use contract::instantiate;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
-use ibc_solidity::Channel;
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
         InitMsg, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
     },
 };
+use ibc_union_spec::types::Channel;
 
 use super::*;
 
@@ -201,7 +201,7 @@ fn channel_open_try_invalid_state() {
     let msg = MsgChannelOpenTry {
         port_id: mock_addr(SENDER).into_string(),
         channel: Channel {
-            state: ChannelState::Unspecified,
+            state: ChannelState::Open,
             connection_id: 1,
             counterparty_channel_id: 0,
             counterparty_port_id: vec![1].into(),
@@ -223,7 +223,7 @@ fn channel_open_try_invalid_state() {
         matches!(
             err,
             ContractError::ChannelInvalidState {
-                got: ChannelState::Unspecified,
+                got: ChannelState::Open,
                 expected: ChannelState::TryOpen
             }
         )

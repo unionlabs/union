@@ -1,9 +1,15 @@
 use std::fmt::Debug;
 
-use aptos_move_ibc::{channel::Channel, connection_end::ConnectionEnd, ibc::ClientExt as _};
+use aptos_move_ibc::{
+    channel::Channel as AptosChannel, connection_end::ConnectionEnd, ibc::ClientExt as _,
+};
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{
+    path::StorePath,
+    types::{Channel, ChannelState, Connection, ConnectionState},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -319,14 +325,13 @@ pub async fn get_storage_proof(
     }
 }
 
-fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
-    ibc_solidity::Connection {
+fn convert_connection(connection: ConnectionEnd) -> Connection {
+    Connection {
         state: match connection.state {
-            0 => ibc_solidity::ConnectionState::Unspecified,
-            1 => ibc_solidity::ConnectionState::Init,
-            2 => ibc_solidity::ConnectionState::TryOpen,
-            3 => ibc_solidity::ConnectionState::Open,
-            _ => panic!("connection state cannot be greater than 3"),
+            1 => ConnectionState::Init,
+            2 => ConnectionState::TryOpen,
+            3 => ConnectionState::Open,
+            _ => panic!("connection state must be 1..=3"),
         },
         client_id: connection.client_id,
         counterparty_client_id: connection.counterparty_client_id,
@@ -334,15 +339,14 @@ fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
     }
 }
 
-fn convert_channel(channel: Channel) -> ibc_solidity::Channel {
-    ibc_solidity::Channel {
+fn convert_channel(channel: AptosChannel) -> Channel {
+    Channel {
         state: match channel.state {
-            0 => ibc_solidity::ChannelState::Unspecified,
-            1 => ibc_solidity::ChannelState::Init,
-            2 => ibc_solidity::ChannelState::TryOpen,
-            3 => ibc_solidity::ChannelState::Open,
-            4 => ibc_solidity::ChannelState::Closed,
-            _ => panic!("channel state cannot be greater than 4"),
+            1 => ChannelState::Init,
+            2 => ChannelState::TryOpen,
+            3 => ChannelState::Open,
+            4 => ChannelState::Closed,
+            _ => panic!("channel state must be 1..=4"),
         },
         connection_id: channel.connection_id,
         counterparty_channel_id: channel.counterparty_channel_id,

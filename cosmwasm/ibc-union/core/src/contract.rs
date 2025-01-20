@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use alloy::{primitives::Bytes, sol_types::SolValue};
+use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -32,7 +32,7 @@ use ibc_union_spec::{
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{encoding::HexPrefixed, H256},
+    primitives::{encoding::HexPrefixed, Bytes, H256},
 };
 
 use crate::{
@@ -220,7 +220,7 @@ pub fn execute(
             channel_open_init(
                 deps.branch(),
                 port_id,
-                counterparty_port_id.into(),
+                counterparty_port_id,
                 connection_id,
                 version,
                 relayer,
@@ -627,7 +627,7 @@ fn timeout_packet(
 fn acknowledge_packet(
     mut deps: DepsMut,
     packets: Vec<Packet>,
-    acknowledgements: Vec<alloy::primitives::Bytes>,
+    acknowledgements: Vec<Bytes>,
     proof: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
@@ -855,7 +855,7 @@ fn connection_open_init(
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
-        state: Some(ConnectionState::Init),
+        state: ConnectionState::Init,
         client_id,
         counterparty_client_id,
         counterparty_connection_id: 0,
@@ -884,14 +884,14 @@ fn connection_open_try(
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
-        state: Some(ConnectionState::TryOpen),
+        state: ConnectionState::TryOpen,
         client_id,
         counterparty_client_id,
         counterparty_connection_id,
     };
 
     let expected_connection = Connection {
-        state: Some(ConnectionState::Init),
+        state: ConnectionState::Init,
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
         counterparty_connection_id: 0,
@@ -1649,11 +1649,11 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
     keccak256(bytes)
 }
 
-fn commit_ack(ack: &alloy::primitives::Bytes) -> H256 {
+fn commit_ack(ack: &Bytes) -> H256 {
     merge_ack(commit(ack))
 }
 
-fn commit_acks(acks: &Vec<alloy::primitives::Bytes>) -> H256 {
+fn commit_acks(acks: &Vec<Bytes>) -> H256 {
     merge_ack(commit(acks.abi_encode()))
 }
 
