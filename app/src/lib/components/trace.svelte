@@ -41,23 +41,6 @@ $: pTraces = ((): Array<Trace> => {
   }
   return processedTraces
 })()
-// const dispatch = createEventDispatcher()
-//
-// let pTraces: Readable<Array<Trace>> = derived(traces, $traces => {
-//   let processedTraces: Array<Trace> = $traces.map(t => ({ ...t, status: "PENDING" as StepStatus }))
-//   // patch gaps (see #2544)
-//   // for (const [index, step] of processedSteps.entries()) {
-//   //   const gap = processedSteps.slice(index).find(step => step.status === "COMPLETED") !== undefined
-//   //   if (gap && (step.status === "IN_PROGRESS" || step.status === "PENDING")) {
-//   //     processedSteps[index].status = "COMPLETED"
-//   //   }
-//   // }
-//   return processedTraces
-// })
-//
-// const cancel = () => {
-//   dispatch("cancel")
-// }
 </script>
 
 <ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
@@ -67,14 +50,12 @@ $: pTraces = ((): Array<Trace> => {
       <!-- top trace connector !-->
       <div class={cn(
           "w-1 flex-1",
-          index !== 0 ?  "dark:bg-muted-foreground bg-black" : "",
-          index !== 0 ?  "dark:bg-muted-foreground bg-black" : "",
+          index !== 0 ?  "dark:bg-neutral-500 bg-black" : "",
           )}></div>
-      <!-- traceper icon !-->
       <div class={cn(
-        "size-12 border-4 relative transition-all duration-300",
-        trace.status === "PENDING" ? "bg-white" :
-        trace.status === "IN_PROGRESS" ? "bg-white" :
+        "size-12 border-4 dark:border-neutral-500 relative transition-all duration-300",
+        trace.status === "PENDING" ? "bg-white dark:bg-neutral-700" :
+        trace.status === "IN_PROGRESS" ? "bg-white dark:bg-neutral-700" :
         trace.status === "COMPLETED" ? "bg-accent" :
         trace.status === "ERROR" ? "bg-black" :
         trace.status === "WARNING" ? "bg-yellow-300" : ""
@@ -95,7 +76,7 @@ $: pTraces = ((): Array<Trace> => {
       </div>
       <!-- bottom trace connector !-->
       <div class={cn("w-1 flex-1",
-      index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-muted-foreground",
+      index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-neutral-500 bg-black",
       index !== pTraces.length - 1  &&
       trace.status !== "ERROR" &&
       trace.status !== "WARNING" ?  "bg-black" : "")
