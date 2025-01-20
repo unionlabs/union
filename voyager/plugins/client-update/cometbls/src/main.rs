@@ -67,6 +67,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
 

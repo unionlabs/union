@@ -33,6 +33,7 @@ pub enum ModuleCallback {
 
 /// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
 #[model]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct MakeIbcMessagesFromUpdate<V: IbcSpecExt> {
     pub client_id: V::ClientId,
     pub batches: Vec<Vec<BatchableEvent<V>>>,

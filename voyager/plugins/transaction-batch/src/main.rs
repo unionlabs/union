@@ -11,7 +11,10 @@ use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt, TryStreamExt};
 use ibc_classic_spec::IbcClassic;
 use ibc_solidity::Packet;
-use ibc_union_spec::IbcUnion;
+use ibc_union_spec::{
+    types::{Channel, ChannelState},
+    IbcUnion,
+};
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -72,12 +75,14 @@ pub enum ClientConfigs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub client_configs: ClientConfigsSerde,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ClientConfig {
     pub min_batch_size: usize,
     pub max_batch_size: usize,
@@ -92,6 +97,7 @@ pub enum ClientConfigsSerde {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SpecificClientConfig {
     pub client_id: RawClientId,
     pub min_batch_size: usize,
@@ -428,7 +434,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -446,7 +452,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -462,13 +468,15 @@ async fn do_make_msg_union(
             debug!(%encoded_connection_state_proof);
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenTry {
-                    client_id: connection_open_init_event.counterparty_client_id,
-                    counterparty_client_id: connection_open_init_event.client_id,
-                    counterparty_connection_id: connection_open_init_event.connection_id,
-                    proof_height: origin_chain_proof_height.height(),
-                    proof_init: encoded_connection_state_proof,
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgConnectionOpenTry {
+                        client_id: connection_open_init_event.counterparty_client_id,
+                        counterparty_client_id: connection_open_init_event.client_id,
+                        counterparty_connection_id: connection_open_init_event.connection_id,
+                        proof_height: origin_chain_proof_height.height(),
+                        proof_init: encoded_connection_state_proof,
+                    },
+                ),
             )))
         }
 
@@ -510,7 +518,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -528,7 +536,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -544,12 +552,14 @@ async fn do_make_msg_union(
             debug!(%encoded_connection_state_proof);
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenAck {
-                    connection_id: connection_open_try_event.counterparty_connection_id,
-                    counterparty_connection_id: connection_open_try_event.connection_id,
-                    proof_height: origin_chain_proof_height.height(),
-                    proof_try: encoded_connection_state_proof,
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgConnectionOpenAck {
+                        connection_id: connection_open_try_event.counterparty_connection_id,
+                        counterparty_connection_id: connection_open_try_event.connection_id,
+                        proof_height: origin_chain_proof_height.height(),
+                        proof_try: encoded_connection_state_proof,
+                    },
+                ),
             )))
         }
 
@@ -591,7 +601,7 @@ async fn do_make_msg_union(
                 .query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .state
@@ -609,7 +619,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id.clone(),
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ConnectionPath { connection_id },
+                    ibc_union_spec::path::ConnectionPath { connection_id },
                 )
                 .await?
                 .proof;
@@ -625,11 +635,13 @@ async fn do_make_msg_union(
             debug!(%encoded_connection_state_proof);
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgConnectionOpenConfirm {
-                    connection_id: connection_open_ack_event.counterparty_connection_id,
-                    proof_height: origin_chain_proof_height.height(),
-                    proof_ack: encoded_connection_state_proof,
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgConnectionOpenConfirm {
+                        connection_id: connection_open_ack_event.counterparty_connection_id,
+                        proof_height: origin_chain_proof_height.height(),
+                        proof_ack: encoded_connection_state_proof,
+                    },
+                ),
             )))
         }
 
@@ -638,7 +650,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ChannelPath {
+                    ibc_union_spec::path::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -657,19 +669,21 @@ async fn do_make_msg_union(
                 .await?;
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenTry {
-                    port_id: event.counterparty_port_id,
-                    channel: ibc_solidity::Channel {
-                        state: ibc_solidity::ChannelState::TryOpen,
-                        counterparty_channel_id: event.channel_id,
-                        counterparty_port_id: event.port_id.into(),
-                        connection_id: event.connection.counterparty_connection_id,
-                        version: event.version.clone(),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgChannelOpenTry {
+                        port_id: event.counterparty_port_id,
+                        channel: Channel {
+                            state: ChannelState::TryOpen,
+                            counterparty_channel_id: event.channel_id,
+                            counterparty_port_id: event.port_id,
+                            connection_id: event.connection.counterparty_connection_id,
+                            version: event.version.clone(),
+                        },
+                        counterparty_version: event.version,
+                        proof_init: encoded_proof_init,
+                        proof_height: origin_chain_proof_height.height(),
                     },
-                    counterparty_version: event.version,
-                    proof_init: encoded_proof_init,
-                    proof_height: origin_chain_proof_height.height(),
-                }),
+                ),
             )))
         }
 
@@ -678,7 +692,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ChannelPath {
+                    ibc_union_spec::path::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -697,13 +711,15 @@ async fn do_make_msg_union(
                 .await?;
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenAck {
-                    channel_id: event.counterparty_channel_id,
-                    counterparty_channel_id: event.channel_id,
-                    counterparty_version: event.version,
-                    proof_try: encoded_proof_try,
-                    proof_height: origin_chain_proof_height.height(),
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgChannelOpenAck {
+                        channel_id: event.counterparty_channel_id,
+                        counterparty_channel_id: event.channel_id,
+                        counterparty_version: event.version,
+                        proof_try: encoded_proof_try,
+                        proof_height: origin_chain_proof_height.height(),
+                    },
+                ),
             )))
         }
 
@@ -712,7 +728,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::ChannelPath {
+                    ibc_union_spec::path::ChannelPath {
                         channel_id: event.channel_id,
                     },
                 )
@@ -731,11 +747,13 @@ async fn do_make_msg_union(
                 .await?;
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgChannelOpenConfirm {
-                    channel_id: event.counterparty_channel_id,
-                    proof_ack: encoded_proof_ack,
-                    proof_height: origin_chain_proof_height.height(),
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgChannelOpenConfirm {
+                        channel_id: event.counterparty_channel_id,
+                        proof_ack: encoded_proof_ack,
+                        proof_height: origin_chain_proof_height.height(),
+                    },
+                ),
             )))
         }
 
@@ -751,7 +769,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::BatchPacketsPath {
+                    ibc_union_spec::path::BatchPacketsPath {
                         channel_id: event.packet.source_channel.channel_id,
                         batch_hash: keccak256(packet.abi_encode()),
                     },
@@ -774,8 +792,8 @@ async fn do_make_msg_union(
                 .await?;
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgPacketRecv {
-                    packets: vec![packet],
+                ibc_union_spec::datagram::Datagram::from(ibc_union_spec::datagram::MsgPacketRecv {
+                    packets: vec![packet.into()],
                     relayer_msgs: vec![vec![].into()],
                     proof: encoded_proof_commitment,
                     proof_height: origin_chain_proof_height.height(),
@@ -795,7 +813,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::BatchReceiptsPath {
+                    ibc_union_spec::path::BatchReceiptsPath {
                         channel_id: event.packet.destination_channel.channel_id,
                         batch_hash: keccak256(packet.abi_encode()),
                     },
@@ -818,12 +836,14 @@ async fn do_make_msg_union(
                 .await?;
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
-                ibc_union_spec::Datagram::from(ibc_union_spec::MsgPacketAcknowledgement {
-                    packets: vec![packet],
-                    acknowledgements: vec![event.acknowledgement],
-                    proof: encoded_proof_commitment,
-                    proof_height: origin_chain_proof_height.height(),
-                }),
+                ibc_union_spec::datagram::Datagram::from(
+                    ibc_union_spec::datagram::MsgPacketAcknowledgement {
+                        packets: vec![packet.into()],
+                        acknowledgements: vec![event.acknowledgement],
+                        proof: encoded_proof_commitment,
+                        proof_height: origin_chain_proof_height.height(),
+                    },
+                ),
             )))
         }
     }

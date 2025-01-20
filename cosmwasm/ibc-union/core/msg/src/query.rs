@@ -1,6 +1,5 @@
 use unionlabs_primitives::H256;
-
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(
     feature = "cw-orch-interface",
@@ -23,9 +22,12 @@ pub enum QueryMsg {
     GetStatus { client_id: u32 },
     #[cfg_attr(feature = "cw-orch-interface", returns(u64))]
     GetClientType { client_id: u32 },
-    #[cfg_attr(feature = "cw-orch-interface", returns(ibc_solidity::Connection))]
+    #[cfg_attr(
+        feature = "cw-orch-interface",
+        returns(ibc_union_spec::types::Connection)
+    )]
     GetConnection { connection_id: u32 },
-    #[cfg_attr(feature = "cw-orch-interface", returns(ibc_solidity::Channel))]
+    #[cfg_attr(feature = "cw-orch-interface", returns(ibc_union_spec::types::Channel))]
     GetChannel { channel_id: u32 },
     #[cfg_attr(feature = "cw-orch-interface", returns(std::collections::BTreeSet<u32>))]
     GetChannels { contract: String },

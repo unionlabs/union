@@ -3,8 +3,7 @@ use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{Bytes, H256},
-    uint::U256,
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::client::StateLensIcs23MptLightClient;

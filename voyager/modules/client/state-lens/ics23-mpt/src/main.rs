@@ -72,6 +72,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 impl ClientModule for Module {
@@ -225,26 +226,6 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        _client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        _consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
     }
 
     #[instrument]

@@ -5,7 +5,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
@@ -32,6 +32,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub l1_client_id: u32,
     pub l2_client_id: u32,
@@ -67,9 +68,11 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: self.l2_client_id,
             l2_latest_height: height.height(),
-            timestamp_offset: self.timestamp_offset,
-            state_root_offset: self.state_root_offset,
-            storage_root_offset: self.storage_root_offset,
+            extra: Extra {
+                timestamp_offset: self.timestamp_offset,
+                state_root_offset: self.state_root_offset,
+                storage_root_offset: self.storage_root_offset,
+            },
         }))
     }
 

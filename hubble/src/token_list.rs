@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 use color_eyre::Result;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
@@ -6,11 +7,11 @@ use crate::cli::TokensUrls;
 
 pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
     info!("Starting token update process.");
-    if let Some(token_list) = get_tokens(urls).await? {
+    if let Some(fetched_token_list_vec) = get_tokens(urls).await? {
         let mut token_inserts = Vec::new();
 
-        for token_value in token_list {
-            for token in token_value.tokens {
+        for fetched_token_list in fetched_token_list_vec {
+            for token in fetched_token_list.token_list.tokens {
                 let token_insert: TokenInsert = token.into();
                 token_inserts.push((
                     token_insert.chain_id,
@@ -19,6 +20,7 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
                     token_insert.decimals,
                     token_insert.logo_uri.clone(),
                     token_insert.display_name.clone(),
+                    fetched_token_list.source.clone(),
                 ));
             }
         }
@@ -35,7 +37,7 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
         if !token_inserts.is_empty() {
             let chain_ids_and_ids = crate::postgres::get_chain_ids_and_ids(&db).await?;
             // Filter tokens based on valid chain_id
-            let filtered_tokens: Vec<(i64, String, String, i64, Option<String>, String)> =
+            let filtered_tokens: Vec<(i64, String, String, i64, Option<String>, String, String)> =
                 token_inserts
                     .iter()
                     .filter_map(|token| {
@@ -47,6 +49,7 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
                                 token.3,
                                 token.4.clone(),
                                 token.5.clone(),
+                                token.6.clone(),
                             )
                         })
                     })
@@ -65,7 +68,12 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
     Ok(())
 }
 
-pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
+struct FetchedTokenList {
+    source: String,
+    token_list: TokenList,
+}
+
+async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<FetchedTokenList>>> {
     let client = reqwest::Client::new();
 
     let requests = urls.into_iter().map(|url| {
@@ -76,7 +84,10 @@ pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
 
             if val.get("statusCode").is_none() {
                 debug!("Token list successfully retrieved from: {}", url);
-                Ok(Some(serde_json::from_value(val).unwrap()))
+                Ok(Some(FetchedTokenList {
+                    source: url,
+                    token_list: serde_json::from_value(val).unwrap(),
+                }))
             } else {
                 debug!("No valid token list found at: {}", url);
                 Ok(None)
@@ -85,7 +96,7 @@ pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
     });
 
     // Execute all requests simultaneously and collect the results
-    let results: Vec<Result<Option<TokenList>>> = futures::future::join_all(requests).await;
+    let results: Vec<Result<Option<FetchedTokenList>>> = futures::future::join_all(requests).await;
 
     let tokens = results.into_iter().flatten().flatten().collect::<Vec<_>>();
 
@@ -105,7 +116,7 @@ pub struct TokenList {
     pub version: Version,
     pub tokens: Vec<Token>,
     #[serde(rename = "logoURI")]
-    pub logo_uri: String,
+    pub logo_uri: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

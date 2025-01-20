@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::{Item, Map};
-use ibc_solidity::{Channel, Connection};
+use ibc_union_spec::types::{Channel, Connection};
 
 pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
 

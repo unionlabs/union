@@ -9,6 +9,7 @@ version      = "0.1.0"
 gnark-mimc  = { workspace = true }
 hex         = { workspace = true }
 hex-literal = { workspace = true }
+linea-types = { workspace = true }
 serde       = { workspace = true }
 serde_json  = { workspace = true }
 thiserror   = { workspace = true }

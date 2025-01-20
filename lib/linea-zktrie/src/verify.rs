@@ -1,13 +1,12 @@
 use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377, MiMCBls12377Constants};
+use linea_types::{
+    account::{MimcSafeBytes, ZkAccount},
+    proof::{MerklePath, MerkleProof, NonInclusionProof},
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    linea::{
-        account::{MimcSafeBytes, ZkAccount},
-        proof::{MerklePath, MerkleProof, NonInclusionProof},
-    },
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
 };
 
 use crate::node::{get_leaf_path, BranchNode, Direction, LeafNode, Node, RootNode, Terminator};
@@ -99,7 +98,10 @@ impl ZkValue for U256 {
     where
         Self: Sized,
     {
-        Self::try_from_be_bytes(value.as_ref())
+        Self::try_from_be_bytes(value.as_ref()).map_err(|e| InvalidLength {
+            expected: ExpectedLength::Between(0, e.expected_max_len),
+            found: e.found_len,
+        })
     }
 }
 
@@ -336,10 +338,8 @@ pub fn verify_inclusion<V: ZkValue + Clone>(
 mod tests {
     use gnark_mimc::{new_mimc_bls12_377, new_mimc_constants_bls12_377};
     use hex_literal::hex;
-    use unionlabs::{
-        linea::{account::ZkAccount, proof::GetProof},
-        primitives::{H160, H256},
-    };
+    use linea_types::{account::ZkAccount, proof::GetProof};
+    use unionlabs::primitives::{H160, H256};
 
     use super::verify;
 

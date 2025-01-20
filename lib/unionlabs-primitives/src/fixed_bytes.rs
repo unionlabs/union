@@ -1,4 +1,5 @@
 use core::{
+    borrow::Borrow,
     cmp::Ordering,
     fmt::{self, Display},
     marker::PhantomData,
@@ -236,32 +237,6 @@ impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for FixedByte
     }
 }
 
-#[cfg(feature = "schemars")]
-impl<const BYTES: usize, E: Encoding> schemars::JsonSchema for FixedBytes<BYTES, E> {
-    fn schema_name() -> String {
-        "Hash".to_string()
-    }
-
-    /// The `FixedBytes` object is serialized as an array in JSON
-    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-        let mut schema_object = schemars::schema::SchemaObject {
-            instance_type: Some(schemars::schema::InstanceType::Array.into()),
-            ..Default::default()
-        };
-
-        schema_object.array = Some(Box::new(schemars::schema::ArrayValidation {
-            items: Some(schemars::schema::SingleOrVec::Single(Box::new(
-                gen.subschema_for::<u8>(),
-            ))),
-            min_items: Some(BYTES.try_into().unwrap()),
-            max_items: Some(BYTES.try_into().unwrap()),
-            ..Default::default()
-        }));
-
-        schemars::schema::Schema::Object(schema_object)
-    }
-}
-
 impl<const BYTES: usize, E: Encoding> FromStr for FixedBytes<BYTES, E> {
     type Err = E::Error;
 
@@ -367,6 +342,18 @@ impl<E: Encoding, const BYTES: usize> From<[u8; BYTES]> for FixedBytes<BYTES, E>
     }
 }
 
+impl<E: Encoding, const BYTES: usize> Borrow<[u8; BYTES]> for FixedBytes<BYTES, E> {
+    fn borrow(&self) -> &[u8; BYTES] {
+        self.get()
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> Borrow<[u8; BYTES]> for &'_ FixedBytes<BYTES, E> {
+    fn borrow(&self) -> &[u8; BYTES] {
+        self.get()
+    }
+}
+
 #[cfg(feature = "rlp")]
 impl<E: Encoding, const BYTES: usize> rlp::Decodable for FixedBytes<BYTES, E> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
@@ -413,6 +400,34 @@ impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for Fixe
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         bincode::Decode::decode(decoder)
+    }
+}
+
+#[cfg(feature = "schemars")]
+impl<E: Encoding, const BYTES: usize> schemars::JsonSchema for FixedBytes<BYTES, E> {
+    fn schema_name() -> String {
+        format!("FixedBytes<{}, {BYTES}>", E::NAME)
+    }
+
+    fn schema_id() -> alloc::borrow::Cow<'static, str> {
+        format!("{}::{}", module_path!(), Self::schema_name()).into()
+    }
+
+    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
+
+        SchemaObject {
+            metadata: Some(Box::new(Metadata {
+                description: Some(format!(
+                    "A string representation of fixed bytes of length {BYTES}, encoded via {}",
+                    E::NAME
+                )),
+                ..Default::default()
+            })),
+            instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+            ..Default::default()
+        }
+        .into()
     }
 }
 

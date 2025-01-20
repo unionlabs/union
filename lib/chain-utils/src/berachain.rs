@@ -26,9 +26,8 @@ use unionlabs::{
         },
     },
     option_unwrap,
-    primitives::H160,
+    primitives::{H160, U256},
     result_unwrap,
-    uint::U256,
 };
 
 use crate::{

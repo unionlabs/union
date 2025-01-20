@@ -1,11 +1,11 @@
 pub const UNION_IBC: &str = "union:union-ibc";
 
 #[cw_orch::interface(
-    crate::msg::InstantiateMsg,
-    crate::msg::ExecuteMsg,
-    crate::msg::QueryMsg,
-    crate::msg::MigrateMsg,
-    id = EVM_NOTE
+    ibc_union_msg::msg::InitMsg,
+    ibc_union_msg::msg::ExecuteMsg,
+    ibc_union_msg::query::QueryMsg,
+    crate::contract::MigrateMsg,
+    id = UNION_IBC
 )]
 pub struct UnionIbc<Chain>;
 
@@ -20,12 +20,10 @@ impl<Chain: CwEnv> Uploadable for UnionIbc<Chain> {
             .unwrap()
     }
     fn wrapper() -> <Mock as TxHandler>::ContractSource {
-        Box::new(
-            ContractWrapper::new(
-                crate::contract::execute,
-                crate::contract::instantiate,
-                crate::contract::query,
-            )
-        )
+        Box::new(ContractWrapper::new(
+            crate::contract::execute,
+            crate::contract::instantiate,
+            crate::contract::query,
+        ))
     }
 }

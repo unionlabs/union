@@ -53,4 +53,12 @@ pub enum ContractError {
     UnableToValidateMarketMaker,
     #[error("the sender can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateSender,
+    #[error("multiplex contract address must be a valid address")]
+    InvalidContractAddress,
+    #[error(
+        "the multiplex target contract address can't be validated, make sure the bech prefix matches the current chain"
+    )]
+    UnableToValidateMultiplexTarget,
+    #[error("feature is not yet implemented")]
+    Unimplemented,
 }

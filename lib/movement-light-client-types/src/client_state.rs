@@ -13,4 +13,5 @@ pub struct ClientState {
     pub table_handle: AccountAddress,
     pub frozen_height: Height,
     pub latest_block_num: u64,
+    pub whitelisted_relayers: Vec<String>,
 }

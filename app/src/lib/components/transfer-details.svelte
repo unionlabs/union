@@ -2,17 +2,17 @@
 import { page } from "$app/stores"
 import request from "graphql-request"
 import {
-  transfersBySourceHashBaseQueryDocument,
-  transfersBySourceHashTracesAndHopsQueryDocument,
-  ucs03OrdersBySourceHashQueryDocument
+  transfersBySourceHashBaseQueryDocument
+  // transfersBySourceHashTracesAndHopsQueryDocument
 } from "$lib/graphql/queries/transfer-details.ts"
 import DetailsHeading from "$lib/components/details-heading.svelte"
+import MoveRightIcon from "virtual:icons/lucide/move-right"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { derived, readable, type Readable } from "svelte/store"
+import { derived, get, readable, type Readable } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { raise } from "$lib/utilities"
 import type { Step } from "$lib/stepper-types.ts"
@@ -24,156 +24,66 @@ import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
+import type { UnwrapReadable } from "$lib/utilities/types"
 
 const source = $page.params.source
 export let chains: Array<Chain>
-
-let ucs03Orders = createQuery({
-  queryKey: ["ucs03-orders-by-source", source],
-  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
-  placeholderData: (previousData, _) => previousData,
-  queryFn: async () => {
-    const response = await request(URLS().GRAPHQL, ucs03OrdersBySourceHashQueryDocument, {
-      source_transaction_hash: source
-    })
-
-    return response.v1_ibc_union_fungible_asset_order_view
-  }
-})
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
   refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
+    console.log("querying")
     const response = await request(URLS().GRAPHQL, transfersBySourceHashBaseQueryDocument, {
       source_transaction_hash: source
     })
 
-    if (response.v1_transfers === undefined || response.v1_transfers === null)
+    if (
+      response.v1_ibc_union_fungible_asset_orders === undefined ||
+      response.v1_ibc_union_fungible_asset_orders === null
+    )
       raise("error fetching transfers")
 
-    return response.v1_transfers
+    return response.v1_ibc_union_fungible_asset_orders
   }
 })
 
-//@ts-ignore
 let processedTransfers = derived(
   [transfers, submittedTransfers],
   ([$transfers, $submittedTransfers]) => {
     if ($transfers.data === undefined || $transfers.data.length === 0) {
-      // @ts-expect-error
       if ($submittedTransfers[source] === undefined) {
         return null
       }
-      // @ts-expect-error
       return [$submittedTransfers[source]]
     }
-    //@ts-ignore
     return $transfers.data.map(transfer => {
       let tx = structuredClone(transfer)
-
-      let hop_chain_id: string | null = null
-      let hop_chain_destination_connection_id: string | null = null
-      let hop_chain_destination_channel_id: string | null = null
-      let hop_chain_source_connection_id: string | null = null
-      let hop_chain_source_channel_id: string | null = null
-
-      // overwrite destination and receiver if to last forward
-
-      // forwards does not contain sequence numbers,
-      // so we cannot construct the destination sequence at this stage yet.
-      const lastForward = tx.forwards?.at(-1)
-      if (lastForward) {
-        hop_chain_id = tx.destination_chain_id
-        hop_chain_destination_connection_id = tx.destination_connection_id
-        hop_chain_destination_channel_id = tx.destination_channel_id
-        hop_chain_source_connection_id = lastForward.source_connection_id
-        hop_chain_source_channel_id = lastForward.source_channel_id
-        tx.destination_chain_id = lastForward.destination_chain_id
-        tx.destination_connection_id = lastForward.destination_connection_id
-        tx.destination_channel_id = lastForward.destination_channel_id
-        tx.receiver = lastForward.receiver
-        tx.normalized_receiver = lastForward.receiver
-      }
-
-      // if (tx.hop !== null) {
-      //   // hop_chain = tx.destination_chain
-      //   // hop_chain_id = tx.destination_chain_id
-
-      //   // tx.destination_chain = tx.hop.destination_chain
-      //   // tx.destination_chain_id = tx.hop.destination_chain_id
-      //   // tx.destination_connection_id = tx.hop.destination_connection_id
-      //   // tx.destination_channel_id = tx.hop.destination_channel_id
-      //   // tx.receiver = tx.hop.receiver
-      //   tx.normalized_receiver = tx.hop.normalized_receiver
-      //   tx.traces.push.apply(tx.traces, tx.hop.traces)
-      //   tx.traces.sort((a, b) => {
-      //     // @ts-ignore timestamp is guaranteed to be a date
-      //     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      //   })
-      // }
-
       return {
-        hop_chain_id,
-        hop_chain_destination_connection_id,
-        hop_chain_destination_channel_id,
-        hop_chain_source_connection_id,
-        hop_chain_source_channel_id,
-        // @ts-ignore
-        transfer_day: toIsoString(new Date(tx.source_timestamp)).split("T")[0],
+        transfer_day: tx.packet_send_timestamp
+          ? toIsoString(new Date(tx.packet_send_timestamp)).split("T")[0]
+          : null,
         ...tx
       }
     })
   }
 )
 
-let tracesAndHops = createQuery({
-  queryKey: ["transfers-by-source-traces-and-hops", source],
-  refetchInterval: 1_000,
-  placeholderData: (previousData, _) => previousData,
-  queryFn: async () =>
-    (
-      await request(URLS().GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
-        source_transaction_hash: source
-      })
-    ).v1_transfers
-})
-
-let processedTraces = derived(
-  [tracesAndHops, submittedTransfers],
-  ([$tracesAndHops, $submittedTransfers]) => {
-    if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
-      // @ts-expect-error
-      if ($submittedTransfers[source] !== undefined) {
-        return [[]] // pre-generate trace for submitted transfer
-      }
-      return null
-    }
-
-    return $tracesAndHops.data.map(tx => {
-      if (tx.hop !== null) {
-        tx.traces.push.apply(tx.traces, tx.hop.traces)
-        tx.traces.sort((a, b) => {
-          return (
-            // @ts-ignore timestamp is guaranteed to be a date
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          )
-        })
-      }
-
-      return tx.traces
-    })
-  }
-)
-
 // @ts-expect-error
 let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
-  [processedTraces, processedTransfers],
-  ([$processedTraces, $processedTransfers]) => {
-    if (!($processedTraces && $processedTransfers)) return null
+  [processedTransfers],
+  ([$processedTransfers]) => {
+    if (!$processedTransfers) return null
 
-    return zip($processedTransfers, $processedTraces).map(([transfer, traces]) => {
+    return $processedTransfers.map(transfer => {
+      let traces: Exclude<UnwrapReadable<typeof transfers>["data"], undefined>[number]["traces"] =
+        []
+
+      if (!("_is_submitted_transfer" in transfer) && Array.isArray(transfer?.traces)) {
+        traces = transfer.traces
+      }
+
       const onSourceTrace = (eventType: string) =>
         traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
       const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
@@ -197,7 +107,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         ?.explorers?.at(0)
 
       const sourceChainName = toDisplayName(transfer.source_chain_id, chains)
-      const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
+      //const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
       const destinationChainName = toDisplayName(transfer.destination_chain_id, chains)
 
       const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
@@ -245,145 +155,60 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
             }
       }
 
-      if (!transfer.hop_chain_id) {
-        return [
-          {
-            status: onSource("SEND_PACKET") ? "COMPLETED" : "IN_PROGRESS",
-            title: `Send Packet`,
-            description: "Waiting on indexer",
-            traceDetails: traceDetails("SEND_PACKET", "source")
-          },
-          (() => {
-            let status = onDestination("LIGHTCLIENT_UPDATE")
-              ? "COMPLETED"
-              : onSource("SEND_PACKET")
-                ? "IN_PROGRESS"
-                : "PENDING"
-            return {
-              status,
-              title: `Light Client Update`,
-              description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
-              traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
-            }
-          })(),
-          (() => {
-            let status = onDestination("RECEIVE_PACKET")
-              ? "COMPLETED"
-              : onDestination("LIGHTCLIENT_UPDATE")
-                ? "IN_PROGRESS"
-                : "PENDING"
-            return {
-              status,
-              title: `Receive Packet`,
-              traceDetails: traceDetails("RECEIVE_PACKET", "destination")
-            }
-          })(),
-          (() => {
-            let status = onSource("ACKNOWLEDGE_PACKET")
-              ? "COMPLETED"
-              : onDestination("RECEIVE_PACKET")
-                ? "IN_PROGRESS"
-                : "PENDING"
-            return {
-              status,
-              title: `Acknowledge Packet`,
-              traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
-            }
-          })()
-        ]
-      }
-
       return [
         {
-          status: onSource("SEND_PACKET") ? "COMPLETED" : "IN_PROGRESS",
+          status: onSource("PACKET_SEND") ? "COMPLETED" : "IN_PROGRESS",
           title: `Send Packet`,
           description: "Waiting on indexer",
-          traceDetails: traceDetails("SEND_PACKET", "source")
+          traceDetails: traceDetails("PACKET_SEND", "source")
         },
+        //(() => {
+        //  let status = onDestination("LIGHTCLIENT_UPDATE")
+        //    ? "COMPLETED"
+        //    : onSource("PACKET_SEND")
+        //      ? "IN_PROGRESS"
+        //      : "PENDING"
+        //  return {
+        //    status,
+        //    title: `Light Client Update`,
+        //    description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
+        //    traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
+        //  }
+        //})(),
         (() => {
-          let status = onHop("LIGHTCLIENT_UPDATE")
+          let status = onDestination("PACKET_RECV")
             ? "COMPLETED"
-            : onSource("SEND_PACKET")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Light Client Update`,
-            description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
-            traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "hop")
-          }
-        })(),
-        (() => {
-          let status = onHop("RECEIVE_PACKET")
-            ? "COMPLETED"
-            : onHop("LIGHTCLIENT_UPDATE")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Receive Packet`,
-            traceDetails: traceDetails("RECEIVE_PACKET", "hop")
-          }
-        })(),
-        (() => {
-          let status = onHop("SEND_PACKET")
-            ? "COMPLETED"
-            : onHop("RECEIVE_PACKET")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Send Packet`,
-            traceDetails: traceDetails("SEND_PACKET", "hop")
-          }
-        })(),
-        (() => {
-          let status = onDestination("LIGHTCLIENT_UPDATE")
-            ? "COMPLETED"
-            : onHop("SEND_PACKET")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Light Client Update`,
-            description: status === "IN_PROGRESS" ? `Waiting on ${hopChainName} finality` : "",
-            traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
-          }
-        })(),
-        (() => {
-          let status = onDestination("RECEIVE_PACKET")
-            ? "COMPLETED"
-            : onDestination("LIGHTCLIENT_UPDATE")
+            : onSource("PACKET_SEND")
               ? "IN_PROGRESS"
               : "PENDING"
           return {
             status,
             title: `Receive Packet`,
-            traceDetails: traceDetails("RECEIVE_PACKET", "destination")
+            traceDetails: traceDetails("PACKET_RECV", "destination")
           }
         })(),
         (() => {
-          let status = onHop("ACKNOWLEDGE_PACKET")
+          let status = onDestination("WRITE_ACK")
             ? "COMPLETED"
-            : onDestination("RECEIVE_PACKET")
+            : onDestination("PACKET_RECV")
               ? "IN_PROGRESS"
               : "PENDING"
           return {
             status,
-            title: `Acknowledge Packet`,
-            traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "hop")
+            title: `Write Acknowledgement`,
+            traceDetails: traceDetails("WRITE_ACK", "destination")
           }
         })(),
         (() => {
-          let status = onSource("ACKNOWLEDGE_PACKET")
+          let status = onSource("PACKET_ACK")
             ? "COMPLETED"
-            : onHop("ACKNOWLEDGE_PACKET")
+            : onDestination("PACKET_RECV")
               ? "IN_PROGRESS"
               : "PENDING"
           return {
             status,
-            title: `Acknowledge Packet`,
-            traceDetails: traceDetails("ACKNOWLEDGE_PACKET", "source")
+            title: `Receive Acknowledgement`,
+            traceDetails: traceDetails("PACKET_ACK", "source")
           }
         })()
       ]
@@ -396,11 +221,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 <h1 class="font-bold text-md">Transfer for <span class="font-mono">{source}</span></h1>
 <a href="/explorer/transfers">Back to all transfers </a>
 !-->
-
-<div>
-<pre>{JSON.stringify($ucs03Orders.data, null, 2)}</pre>
-</div>
-
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
   <div class="flex flex-col w-full items-center gap-6">
     {#each $processedTransfers as transfer, transferIndex}
@@ -410,6 +230,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       {@const destinationExplorer = chains
         .find((c) => c.chain_id === transfer.destination_chain_id)
         ?.explorers?.at(0)}
+      {#if transfer.source_chain_id !== null && transfer.destination_chain_id !== null}
 
       <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
@@ -422,82 +243,69 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
         >
           TRANSFER <Truncate
-            value={transfer.source_transaction_hash}
+            value={transfer.packet_send_transaction_hash}
             type="hash"
           />
         </Card.Header>
         <Card.Content class="flex flex-col gap-8">
-          <section class="mt-6">
-            {#if transfer.tokens}
-              <ul
-                class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl"
-              >
-                {#each transfer.tokens as token}
-                  {#if token.asset}
-                    <li>
-                      <Truncate
-                        value={formatUnits(token.amount, token.asset.decimals)}
-                        type="full"
-                      />
-                      <Truncate
-                        value={token.asset.display_symbol}
-                        type="address"
-                      />
-                    </li>
-                  {:else}
-                    <li>
-                      <Truncate value={token.amount} type="full" />
-                      <Truncate value={token.denom} type="address" />
-                    </li>
-                  {/if}
-                {/each}
-              </ul>
-            {:else}
-              No assets in transfer
+          <section class="flex justify-between">
+            <div>
+            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
+              {#if transfer.base_amount}
+              {@const base_amount = BigInt(transfer.base_amount)}
+                <Truncate
+                  value={("base_token_details" in transfer && transfer.base_token_details?.decimals) ? formatUnits(base_amount, transfer.base_token_details.decimals) : base_amount}
+                  type="full"
+                />
+              {/if}
+              <Truncate
+                value={("base_token_details" in transfer && transfer.base_token_details?.display_symbol) ? transfer.base_token_details.display_symbol : transfer.base_token}
+                type="address"
+              />
+            </h2>
+            <p class="text-muted-foreground text-sm break-words">
+            <Truncate
+              value={transfer.base_token}
+              type="address"
+            /> | {#if "base_token_details" in transfer && transfer.base_token_details}{transfer.base_token_details?.origin}{:else}NO DETAILS{/if}
+            </p>
+
+            </div>
+
+            
+            <div class="flex flex-col items-end">
+            {#if "quote_token" in transfer}
+            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
+              {#if "quote_amount" in transfer && transfer.quote_amount}
+              {@const quote_amount = BigInt(transfer.quote_amount)}
+                <Truncate
+                  value={("quote_token_details" in transfer && transfer.quote_token_details?.decimals) ? formatUnits(quote_amount, transfer.quote_token_details.decimals) : quote_amount}
+                  type="full"
+                />
+              {/if}
+            <Truncate
+                value={(transfer.quote_token_details && transfer.quote_token_details.display_symbol) ? transfer.quote_token_details.display_symbol : transfer.quote_token}
+              type="address"
+            />
+            </h2>
+            <p class="text-muted-foreground text-sm break-words">
+            <Truncate
+              value={transfer.quote_token}
+              type="address"
+            /> | {#if  "quote_token_details" in transfer && "quote_token_details" in transfer && transfer.quote_token_details}{transfer.quote_token_details?.origin}{:else}NO DETAILS{/if}
+
+            </p>
             {/if}
+            </div>
+            
           </section>
 
           <section>
+            <!-- typescript is stupid here, as source_chain_id and destination_chain_id have already established not to be null. !-->
             <PacketPath packet={transfer} {chains}/>
-            {#if transfer.hop_chain_id}
-              <div
-                class="flex-1 text-center flex-col text-sm text-muted-foreground items-center"
-              >
-                forwarded through
-                <h2
-                  class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap"
-                >
-                  {toDisplayName(transfer.hop_chain_id, chains)}
-                </h2>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.hop_chain_destination_connection_id &&
-                      transfer.hop_chain_source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer?.hop_chain_destination_connection_id ?? "unknown"} {'->'}
-                  {transfer?.hop_chain_source_connection_id ?? "unknown"}
-                </p>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.hop_chain_destination_channel_id &&
-                      transfer.hop_chain_source_channel_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer?.hop_chain_destination_channel_id ?? "unknown"} {'->'} {transfer.hop_chain_source_channel_id ??
-                    "unknown"}
-                </p>
-              </div>
-            {/if}
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
-            <div class=" lex-col text-muted-foreground">
+            <div class="flex-col text-muted-foreground">
               <DetailsHeading>
                 Sender
               </DetailsHeading>
@@ -505,19 +313,18 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 <a
                   href={`/explorer/address/${transfer.sender}`}
                   class="block text-sm underline break-words"
-                  >{transfer.sender}
+                  ><Truncate class="underline" value={transfer.sender} type="address"/>
                 </a>{:else}<p class="text-sm break-words">
-                  {transfer.sender}
+                  <Truncate value={transfer.sender} type="address"/>
                 </p>{/if}
               <p
                 class={cn(
                   "text-[10px] break-words",
-                  transfer.normalized_sender
+                  "normalized_sender" in transfer && transfer.normalized_sender
                     ? "text-black dark:text-muted-foreground"
                     : "text-transparent"
                 )}
               >
-                raw: {transfer.normalized_sender}
               </p>
             </div>
             <div class="flex-1 lg:text-right flex-col text-muted-foreground">
@@ -528,19 +335,18 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 <a
                   href={`/explorer/address/${transfer.receiver}`}
                   class="block text-sm underline break-words"
-                  >{transfer.receiver}
+                  ><Truncate class="underline" value={transfer.receiver} type="address"/>
                 </a>{:else}<p class="text-sm break-words">
-                  {transfer.receiver}
+                  <Truncate value={transfer.receiver} type="address"/>
                 </p>{/if}
               <p
                 class={cn(
                   "text-[10px] break-words",
-                  transfer.normalized_receiver
+                  "normalized_receiver" in transfer && transfer.normalized_receiver
                     ? "text-black dark:text-muted-foreground"
                     : "text-transparent"
                 )}
               >
-                raw: {transfer.normalized_receiver}
               </p>
             </div>
           </section>
@@ -548,7 +354,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         <Card.Footer class="items-start flex flex-col w-full gap-4">
           <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
           <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
-          {@const pTrace = $processedTraces?.at(transferIndex) ?? null}
+          {@const pTrace = $processedTransfers?.at(transferIndex) ?? null}
           {@const ts = derived(
             tracesSteps,
             ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []
@@ -565,6 +371,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
       !-->
+      {/if}
     {/each}
   </div>
 {:else if $transfers.isLoading}
@@ -572,3 +379,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 {:else if $transfers.isError}
   Error loading transfer data
 {/if}
+
+<pre>
+{JSON.stringify($transfers, null, 2)}
+</pre>
+
+

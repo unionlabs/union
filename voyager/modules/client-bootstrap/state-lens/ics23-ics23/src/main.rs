@@ -4,7 +4,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_ics23_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tendermint_light_client_types::ConsensusState as TmConsensusState;
 use tracing::instrument;
 use unionlabs::{bech32::Bech32, ibc::core::client::height::Height, primitives::H256};
@@ -30,6 +30,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub l1_client_id: u32,
     pub l2_client_id: u32,
@@ -61,7 +62,9 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: self.l2_client_id,
             l2_latest_height: height.height(),
-            contract_address: self.l2_contract_address,
+            extra: Extra {
+                contract_address: self.l2_contract_address,
+            },
         }))
     }
 

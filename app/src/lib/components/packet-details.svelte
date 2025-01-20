@@ -15,20 +15,19 @@ const packetSourceDestination = {
   source_chain_id: packet.source_chain_id ?? "unknown",
   source_connection_id: packet.source_connection_id ?? "unknown",
   source_channel_id: packet.source_channel_id ?? "unknown",
-  source_sequence: packet.source_sequence?.toString() ?? "unknown",
   destination_chain_id: packet.destination_chain_id ?? "unknown",
   destination_connection_id: packet.destination_connection_id ?? "unknown",
-  destination_channel_id: packet.destination_channel_id ?? "unknown",
-  destination_sequence: packet.destination_sequence?.toString() ?? "unknown"
+  destination_channel_id: packet.destination_channel_id ?? "unknown"
 }
 </script>  
+
 
 
 <Card.Root class="break-words">
   <Card.Header
     class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
   >
-    PACKET {packet.source_sequence}
+    PACKET 
   </Card.Header>
   <Card.Content class="flex flex-col gap-8">
     <PacketPath {chains} packet={packetSourceDestination}/>

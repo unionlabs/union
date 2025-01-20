@@ -40,7 +40,6 @@ static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-uint                     = "0.9.0"
 wasmparser               = { version = "0.113" }
 
 alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
@@ -63,10 +62,14 @@ serde_json = { workspace = true }
 default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
-ethabi   = ["alloy", "unionlabs-primitives/alloy-primitives-compat"]
-grpc     = ["protos/client"]
-near     = ["borsh", "near-sdk", "near-primitives-core"]
-std      = ["subtle-encoding/std", "sha2/std"]
+ethabi = [
+  "alloy",
+  "unionlabs-primitives/alloy-primitives-compat",
+  "unionlabs-primitives/alloy-sol-types-compat",
+]
+grpc = ["protos/client"]
+near = ["borsh", "near-sdk", "near-primitives-core"]
+std = ["subtle-encoding/std", "sha2/std"]
 
 fuzzing    = []
 test-utils = []
@@ -74,5 +77,5 @@ test-utils = []
 bincode  = ["dep:bincode", "unionlabs-primitives/bincode"]
 proto    = []
 rlp      = ["dep:rlp", "unionlabs-primitives/rlp"]
-schemars = ["dep:schemars"]
+schemars = ["dep:schemars", "unionlabs-primitives/schemars"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

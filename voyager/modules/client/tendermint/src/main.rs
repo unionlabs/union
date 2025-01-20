@@ -72,6 +72,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 impl ClientModule for Module {
@@ -235,26 +236,6 @@ impl ClientModuleServer for Module {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        Ok(client_state)
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        Ok(consensus_state)
     }
 
     #[instrument(skip_all)]

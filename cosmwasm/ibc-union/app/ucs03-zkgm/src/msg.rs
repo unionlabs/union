@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
-use ibc_solidity::Packet;
+use ibc_union_spec::types::Packet;
 use token_factory_api::TokenFactoryMsg;
 use unionlabs::primitives::{Bytes, H256};
 
@@ -34,6 +34,16 @@ pub enum ExecuteMsg {
         relayer_msg: Bytes,
     },
     IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EurekaMsg {
+    OnZkgm {
+        channel_id: u32,
+        sender: Bytes,
+        message: Bytes,
+    },
 }
 
 #[cw_serde]

@@ -7,6 +7,7 @@ use crate::types::part_set_header::PartSetHeader;
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct BlockId {
     /// Hash of the previous block. This is only None on block 1, as the genesis block does not have a hash.
+    #[serde(with = "crate::serde::maybe_empty_h256")]
     pub hash: Option<H256<HexUnprefixed>>,
     #[serde(rename = "parts")]
     pub part_set_header: PartSetHeader,
@@ -15,32 +16,16 @@ pub struct BlockId {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        errors::{ExpectedLength, InvalidLength, MissingField},
-        impl_proto_via_try_from_into,
-        primitives::{encoding::HexUnprefixed, FixedBytesError, H256},
-        required,
+        errors::{InvalidLength, MissingField},
+        impl_proto_via_try_from_into, required,
     };
 
-    use crate::types::{block_id::BlockId, part_set_header};
+    use crate::{
+        types::{block_id::BlockId, part_set_header},
+        utils::maybe_empty_h256,
+    };
 
     impl_proto_via_try_from_into!(BlockId => protos::cometbft::types::v1::BlockId);
-
-    pub(crate) fn maybe_empty_h256(
-        value: &[u8],
-    ) -> Result<Option<H256<HexUnprefixed>>, InvalidLength> {
-        Ok(if value.is_empty() {
-            None
-        } else {
-            Some(
-                value
-                    .try_into()
-                    .map_err(|err: FixedBytesError| InvalidLength {
-                        expected: ExpectedLength::Either(0, 32),
-                        found: err.found_len,
-                    })?,
-            )
-        })
-    }
 
     impl TryFrom<protos::cometbft::types::v1::BlockId> for BlockId {
         type Error = Error;

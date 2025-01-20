@@ -1,6 +1,6 @@
 import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import { sepolia } from "#mod.ts"
+import { sepolia } from "./mod.ts"
 import { holesky } from "viem/chains"
 
 export const createPfmMemo: (_args: {
@@ -48,9 +48,9 @@ export async function getHubbleChainDetails({
     Error
   >
 > {
-  if (sourceChainId === destinationChainId) {
-    return err(new Error("Source and destination chains cannot be the same"))
-  }
+  // if (sourceChainId === destinationChainId) {
+  //   return err(new Error("Source and destination chains cannot be the same"))
+  // }
 
   // const { data: chains } = await offchainQuery.chains({
   //   includeContracts: true,
@@ -82,7 +82,35 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "0x7b7872fec715c787a1be3f062adedc82b3b06144",
         channels: {
-          [sepolia.id.toString()]: 9
+          [sepolia.id.toString()]: 9,
+          "union-testnet-9": 8,
+          "elgafar-1": 11
+        }
+      }
+    },
+    {
+      testnet: true,
+      chain_id: "union-testnet-9",
+      rpc_type: "cosmos",
+      addr_prefix: "union",
+      display_name: "Union Testnet 9",
+      ucs3_config: {
+        address: "union19hspxmypfxsdsnxttma8rxvp7dtcmzhl9my0ee64avg358vlpawsdvucqa",
+        channels: {
+          [holesky.id.toString()]: 7
+        }
+      }
+    },
+    {
+      testnet: true,
+      chain_id: "elgafar-1",
+      rpc_type: "cosmos",
+      addr_prefix: "stars",
+      display_name: "Stargaze Testnet",
+      ucs3_config: {
+        address: "stars1vv5v4sk4tzxs9a0685j4shdqazj44dla8rfu6np40h9tneuruq0s3rs6kq",
+        channels: {
+          [holesky.id.toString()]: 15
         }
       }
     }

@@ -4,16 +4,18 @@ name    = "state-lens-ics23-ics23-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-alloy     = { workspace = true, features = ["sol-types"], optional = true }
-protos    = { workspace = true, optional = true, features = ["proto_full", "serde"] }
-serde     = { workspace = true, optional = true, features = ["derive"] }
-thiserror = { workspace = true }
-unionlabs = { workspace = true, features = ["ethabi", "proto"] }
+alloy                         = { workspace = true, optional = true, features = ["sol-types"] }
+protos                        = { workspace = true, optional = true, features = ["proto_full", "serde"] }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
+state-lens-light-client-types = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 
 [features]
 default = []
-ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos"]
-serde   = ["dep:serde"]
+
+ethabi = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "state-lens-light-client-types/ethabi"]
+serde  = ["dep:serde", "state-lens-light-client-types/serde"]

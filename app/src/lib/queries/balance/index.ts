@@ -65,6 +65,17 @@ export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMe
       } catch (e) {
         console.error("Multicall metadata fetch failed:", e)
       }
+    } else if (chain.rpc_type === "cosmos") {
+      // TODO: fetch proper balance metadata from chain.
+      return {
+        chain_id: chain.chain_id,
+        denom: normalizedDenom,
+        display_symbol: denom,
+        display_name: denom,
+        decimals: 0,
+        gasToken: false,
+        metadata_level: "onchain"
+      }
     }
 
     return {
@@ -124,6 +135,9 @@ export function userBalancesQuery({
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
       queryFn: async () => {
+        // HACK: augment chain assets part 1
+        let expandedAssets = [...chain.assets]
+
         if (!connected) return []
 
         const address = getAddressForChain(chain, userAddr)
@@ -155,6 +169,15 @@ export function userBalancesQuery({
           const cosmosBalances = await getCosmosChainBalances({ url, walletAddress: bech32Address })
           cosmosBalances.forEach(balance => {
             rawBalances.set(balance.address, balance.balance.toString())
+            // HACK: augment chain assets part 2
+            expandedAssets.push({
+              denom: balance.address,
+              display_name: balance.symbol,
+              display_symbol: balance.symbol,
+              decimals: 0,
+              gas_token: false,
+              faucets: []
+            })
           })
         } else if (chain.rpc_type === "aptos") {
           const url = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -165,10 +188,10 @@ export function userBalancesQuery({
             rawBalances.set(balance.address, balance.balance.toString())
           })
         }
-
         // Convert all assets to BalanceData format, including those with zero balance
         const balances: Array<BalanceData> = await Promise.all(
-          chain.assets.map(async asset => {
+          // HACK: augment chain assets part 3
+          expandedAssets.map(async asset => {
             const balance = rawBalances.get(asset.denom) ?? "0"
             return {
               balance,

@@ -148,10 +148,15 @@ impl Voyager {
             .context("error initializing queue")?;
 
         Ok(Self {
-            context: Context::new(config.plugins, config.modules, |h| {
-                h.register::<IbcClassic>();
-                h.register::<IbcUnion>();
-            })
+            context: Context::new(
+                config.plugins,
+                config.modules,
+                config.equivalent_chain_ids,
+                |h| {
+                    h.register::<IbcClassic>();
+                    h.register::<IbcUnion>();
+                },
+            )
             .await
             .context("error initializing plugins")?,
             num_workers: config.voyager.num_workers,

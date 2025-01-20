@@ -14,8 +14,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::{FixedBytes, H160},
-    uint::U256,
+    primitives::{FixedBytes, H160, U256},
 };
 use voyager_message::{
     core::{ChainId, ClientType},
@@ -84,6 +83,7 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: AccountAddress,
@@ -165,6 +165,7 @@ impl ClientBootstrapModuleServer for Module {
             )),
             frozen_height: Height::new(0),
             latest_block_num: height.height(),
+            whitelisted_relayers: vec![],
         })
         .expect("infallible"))
     }

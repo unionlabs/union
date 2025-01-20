@@ -9,8 +9,11 @@ use std::{
 
 use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
-use ibc_solidity::{Channel, Connection};
-use ibc_union_spec::{IbcUnion, StorePath};
+use ibc_union_spec::{
+    path::StorePath,
+    types::{Channel, Connection},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},

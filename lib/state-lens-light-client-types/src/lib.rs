@@ -1,3 +1,4 @@
-mod header;
+pub mod client_state;
+pub mod header;
 
-pub use header::Header;
+pub use crate::{client_state::ClientState, header::Header};

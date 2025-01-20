@@ -23,9 +23,21 @@ import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { derived, writable, type Readable } from "svelte/store"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
+import {
+  sepolia,
+  holesky,
+  berachainTestnetbArtio,
+  arbitrumSepolia,
+  scrollSepolia
+} from "@wagmi/core/chains"
 
-export const chains = [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia] as const
+export const chains = [
+  sepolia,
+  holesky,
+  berachainTestnetbArtio,
+  arbitrumSepolia,
+  scrollSepolia
+] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
@@ -54,6 +66,18 @@ export const config = createConfig({
         name: "Chain Kitchen - Sepolia"
       }),
       http(sepolia.rpcUrls.default.http.at(0), { name: "default Sepolia RPC" })
+    ]),
+    [holesky.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-holesky",
+        name: "unstable_connector-injected-holesky"
+      }),
+      http(`https://rpc.17000.holesky.chain.kitchen`, {
+        name: "Chain Kitchen - Holesky"
+      }),
+      http(holesky.rpcUrls.default.http.at(0), { name: "default Holesky RPC" })
     ]),
     [berachainTestnetbArtio.id]: fallback([
       unstable_connector(injected, {

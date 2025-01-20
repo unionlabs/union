@@ -36,36 +36,10 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     } else {
       addr_prefix = chain.addr_prefix
     }
-
-    let ucs1_configurations = chain.ucs1_configurations.reduce<Chain["ucs1_configurations"]>(
-      (acc, item) => {
-        let forwards = item.forwards.reduce<Record<string, (typeof item.forwards)[number]>>(
-          (acc2, item2) => {
-            // @ts-expect-error
-            acc2[item2.destination_chain.chain_id] = item2
-            return acc2
-          },
-          {}
-        )
-
-        let item_with_fwd = {
-          ...item,
-          forwards
-        }
-
-        // @ts-expect-error
-        acc[item.destination_chain.chain_id] = item_with_fwd
-
-        return acc
-      },
-      {}
-    )
-
     return {
       chain_id: chain.chain_id,
       enabled: chain.enabled,
       enabled_staging: chain.enabled_staging,
-      ucs1_configurations,
       display_name,
       rpc_type: rpcType,
       rpcs: chain.rpcs,

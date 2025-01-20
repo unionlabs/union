@@ -16,12 +16,12 @@ cw-orch-interface = [
     "dep:cosmwasm-std",
     "dep:cosmwasm-schema",
     "unionlabs-primitives/schemars",
-    "ibc-solidity/schemars",
+    "ibc-union-spec/schemars",
 ]
 schemars = []
 
 [dependencies]
-ibc-solidity         = { workspace = true, features = ["serde"] }
+ibc-union-spec       = { workspace = true, features = ["serde"] }
 serde                = { workspace = true, features = ["derive"] }
 unionlabs-primitives = { workspace = true, features = ["serde"] }
 

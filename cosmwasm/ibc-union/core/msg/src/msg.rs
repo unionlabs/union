@@ -1,18 +1,19 @@
-use ibc_solidity::Packet;
+use ibc_union_spec::types::{Channel, Packet};
+use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {}
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgRegisterClient {
     pub client_type: String,
     pub client_address: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
@@ -40,7 +41,7 @@ pub enum ExecuteMsg {
     MigrateState(MsgMigrateState),
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgMigrateState {
     pub client_id: u32,
@@ -49,7 +50,7 @@ pub struct MsgMigrateState {
     pub height: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgCreateClient {
     pub client_type: String,
@@ -58,7 +59,7 @@ pub struct MsgCreateClient {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgUpdateClient {
     pub client_id: u32,
@@ -66,7 +67,7 @@ pub struct MsgUpdateClient {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenInit {
     pub client_id: u32,
@@ -74,7 +75,7 @@ pub struct MsgConnectionOpenInit {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenTry {
     pub counterparty_client_id: u32,
@@ -85,7 +86,7 @@ pub struct MsgConnectionOpenTry {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenAck {
     pub connection_id: u32,
@@ -95,7 +96,7 @@ pub struct MsgConnectionOpenAck {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenConfirm {
     pub connection_id: u32,
@@ -104,7 +105,7 @@ pub struct MsgConnectionOpenConfirm {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenInit {
     pub port_id: String,
@@ -114,18 +115,18 @@ pub struct MsgChannelOpenInit {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenTry {
     pub port_id: String,
-    pub channel: ibc_solidity::Channel,
+    pub channel: Channel,
     pub counterparty_version: String,
     pub proof_init: Bytes,
     pub proof_height: u64,
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenAck {
     pub channel_id: u32,
@@ -136,7 +137,7 @@ pub struct MsgChannelOpenAck {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenConfirm {
     pub channel_id: u32,
@@ -145,14 +146,14 @@ pub struct MsgChannelOpenConfirm {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelCloseInit {
     pub channel_id: u32,
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelCloseConfirm {
     pub channel_id: u32,
@@ -161,7 +162,7 @@ pub struct MsgChannelCloseConfirm {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgPacketRecv {
     pub packets: Vec<Packet>,
@@ -171,7 +172,7 @@ pub struct MsgPacketRecv {
     pub proof_height: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgPacketAcknowledgement {
     pub packets: Vec<Packet>,
@@ -181,7 +182,7 @@ pub struct MsgPacketAcknowledgement {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgPacketTimeout {
     pub packet: Packet,
@@ -190,7 +191,7 @@ pub struct MsgPacketTimeout {
     pub relayer: String,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgIntentPacketRecv {
     pub packets: Vec<Packet>,
@@ -199,14 +200,14 @@ pub struct MsgIntentPacketRecv {
     pub empty_proof: Bytes,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgBatchSend {
     pub source_channel: u32,
     pub packets: Vec<Packet>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgBatchAcks {
     pub source_channel: u32,
@@ -214,7 +215,7 @@ pub struct MsgBatchAcks {
     pub acks: Vec<Bytes>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgWriteAcknowledgement {
     pub channel_id: u32,
@@ -222,7 +223,7 @@ pub struct MsgWriteAcknowledgement {
     pub acknowledgement: Bytes,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgSendPacket {
     pub source_channel: u32,

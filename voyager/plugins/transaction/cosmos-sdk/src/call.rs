@@ -16,7 +16,7 @@ pub enum ModuleCall {
 #[derive(Enumorph)]
 pub enum IbcMessage {
     IbcV1(ibc_classic_spec::Datagram),
-    IbcUnion(ibc_union_spec::Datagram),
+    IbcUnion(ibc_union_spec::datagram::Datagram),
 }
 
 impl IbcMessage {

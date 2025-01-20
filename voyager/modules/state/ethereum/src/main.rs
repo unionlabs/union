@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)] // oh boy this will be a lot of work
+#![warn(clippy::unwrap_used)]
 
 use alloy::{
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -7,10 +7,14 @@ use alloy::{
     transports::BoxTransport,
 };
 use ibc_solidity::{
-    Channel, Connection, ILightClient,
+    ILightClient,
     Ibc::{self, IbcInstance},
 };
-use ibc_union_spec::{BatchPacketsPath, BatchReceiptsPath, IbcUnion, StorePath};
+use ibc_union_spec::{
+    path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
+    types::{Channel, Connection},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -53,16 +57,14 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
 }
 
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let chain_id = provider.get_chain_id().await?;
 
@@ -193,7 +195,15 @@ impl Module {
                     None::<()>,
                 )
             })?
-            ._0;
+            ._0
+            .try_into()
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("invalid connection: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?;
 
         Ok(Some(raw))
     }
@@ -231,9 +241,21 @@ impl Module {
             })
             .block(execution_height.into())
             .await
-            .unwrap();
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error querying channel: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?;
 
-        let channel = ibc_solidity::Channel::abi_decode_params(&raw, true).unwrap();
+        let channel = Channel::abi_decode_params(&raw, true).map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!("error decoding channel: {}", ErrorReporter(e)),
+                None::<()>,
+            )
+        })?;
 
         Ok(Some(channel))
     }

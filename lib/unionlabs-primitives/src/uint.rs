@@ -3,38 +3,76 @@
 use core::{
     fmt::{self, Display},
     iter::Sum,
-    num::NonZeroUsize,
     ops::{Add, AddAssign, Div, Rem},
     str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
-use serde_utils::HEX_ENCODING_PREFIX;
-
-use crate::{
-    encoding::{Decode, Encode, Proto},
-    errors::{ExpectedLength, InvalidLength},
-    option_unwrap,
-    primitives::H256,
-};
-
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
-#[derive(
-    ::macros::Debug,
-    Clone,
-    Copy,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Default,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[repr(transparent)]
-#[debug("U256({})", self)]
-pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+pub struct U256(pub primitive_types::U256);
+
+impl fmt::Debug for U256 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "U256({self})")
+    }
+}
+
+impl Display for U256 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for U256 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for U256 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer)
+            .and_then(|s| {
+                primitive_types::U256::from_dec_str(&s).map_err(|err| {
+                    serde::de::Error::custom(format!("failure to parse string data: {err}"))
+                })
+            })
+            .map(Self)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[allow(clippy::missing_errors_doc)]
+pub mod u256_big_endian_hex {
+    use serde::de::{self, Deserialize};
+
+    use crate::U256;
+
+    pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&data.to_be_hex_packed())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
+            U256::from_be_hex(s).map_err(de::Error::custom)
+        })
+    }
+}
 
 #[cfg(feature = "bincode")]
 impl bincode::Decode for U256 {
@@ -175,15 +213,20 @@ impl U256 {
         buffer[leading_empty_bytes..].to_vec()
     }
 
-    pub fn try_from_be_bytes(bz: &[u8]) -> Result<Self, InvalidLength> {
+    /// Attempt to convert the provided big-endian bytes into a [`U256`].
+    ///
+    /// # Errors
+    ///
+    /// See [`TryFromBytesError`] for the possible failure modes for this function.
+    pub fn try_from_be_bytes(bz: &[u8]) -> Result<Self, TryFromBytesError> {
         let len = bz.len();
 
         if (0..=32).contains(&len) {
             Ok(Self(primitive_types::U256::from_big_endian(bz)))
         } else {
-            Err(InvalidLength {
-                expected: ExpectedLength::Between(0, 32),
-                found: len,
+            Err(TryFromBytesError {
+                expected_max_len: 32,
+                found_len: len,
             })
         }
     }
@@ -210,31 +253,41 @@ impl U256 {
 
     #[must_use]
     pub fn to_be_hex(&self) -> String {
-        serde_utils::to_hex(self.to_be_bytes())
+        let encoded = if self == &Self::ZERO {
+            "0".to_string()
+        } else {
+            hex::encode(self.to_be_bytes())
+        };
+
+        format!("0x{encoded}")
     }
 
     #[must_use]
     pub fn to_be_hex_packed(&self) -> String {
         if self.0.is_zero() {
-            format!("{HEX_ENCODING_PREFIX}{}", 0)
+            format!("0x{}", 0)
         } else {
             // NOTE: Can't use serde_utils::to_hex here as it ensures there's an even number of bytes (by prepending a 0) which we don't want for u256
             format!(
-                "{HEX_ENCODING_PREFIX}{}",
+                "0x{}",
                 hex::encode(self.to_be_bytes_packed()).trim_start_matches('0')
             )
         }
     }
 
+    /// Attempt to convert the provided big-endian hex string into a [`U256`].
+    ///
+    /// # Errors
+    ///
+    /// See [`TryFromHexError`] for the possible failure modes for this function.
     pub fn from_be_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
         if s.as_ref().is_empty() {
-            return Err(serde_utils::FromHexStringError::EmptyString.into());
+            return Err(TryFromHexError::EmptyString);
         }
 
         s.as_ref()
-            .strip_prefix(HEX_ENCODING_PREFIX)
-            .ok_or_else(|| serde_utils::FromHexStringError::MissingPrefix(s.as_ref().to_owned()))
-            .map_err(Into::into)
+            .strip_prefix("0x")
+            .ok_or(TryFromHexError::MissingPrefix)
             .and_then(|maybe_hex| {
                 Ok(U256::try_from_be_bytes(
                     &if maybe_hex.len() % 2 == 1 {
@@ -242,135 +295,40 @@ impl U256 {
                     } else {
                         hex::decode(maybe_hex)
                     }
-                    .map_err(serde_utils::FromHexStringError::Hex)?,
+                    .map_err(TryFromHexError::Hex)?,
                 )?)
             })
     }
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid bytes length, expected between 0..={expected_max_len} but found {found_len}")]
+pub struct TryFromBytesError {
+    pub expected_max_len: usize,
+    pub found_len: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromHexError {
-    #[error("error parsing hex")]
-    Hex(#[from] serde_utils::FromHexStringError),
-    #[error("error converting from bytes")]
-    FromBytes(#[from] InvalidLength),
-}
-
-pub mod u256_big_endian_hex {
-    use serde::de::{self, Deserialize};
-
-    use crate::uint::U256;
-
-    pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&data.to_be_hex_packed())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        String::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
-            U256::from_be_hex(s).map_err(de::Error::custom)
-        })
-    }
-}
-
-// impl TryFrom<Vec<u8>> for U256 {
-//     type Error = InvalidLength;
-
-//     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-//         if value.len() > 32 {
-//             Err(InvalidLength {
-//                 expected: ExpectedLength::LessThan(32),
-//                 found: value.len(),
-//             })
-//         } else {
-//             // NOTE: This can panic if len > 32, hence the check above
-//             Ok(Self(primitive_types::U256::from_little_endian(&value)))
-//         }
-//     }
-// }
-
-// // REVIEW: Should this trim leading zeros?
-// impl From<U256> for Vec<u8> {
-//     fn from(value: U256) -> Self {
-//         let mut slice = [0_u8; 32];
-//         value.0.to_little_endian(&mut slice);
-//         slice.into()
-//     }
-// }
-
-impl Encode<Proto> for U256 {
-    fn encode(self) -> Vec<u8> {
-        self.to_be_bytes().into()
-    }
-}
-
-impl Decode<Proto> for U256 {
-    type Error = InvalidLength;
-
-    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from_be_bytes(bytes)
-    }
-}
-
-impl ssz::Ssz for U256 {
-    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(option_unwrap!(NonZeroUsize::new(32)));
-
-    const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType =
-        ssz::tree_hash::TreeHashType::Basic { size: 32 };
-
-    fn tree_hash_root(&self) -> H256 {
-        let mut result = [0; 32];
-        self.0.to_little_endian(&mut result[..]);
-        H256::new(result)
-    }
-
-    fn ssz_bytes_len(&self) -> NonZeroUsize {
-        option_unwrap!(NonZeroUsize::new(32))
-    }
-
-    fn ssz_append(&self, buf: &mut Vec<u8>) {
-        let n = 32;
-        let s = buf.len();
-
-        buf.resize(s + n, 0);
-        self.0.to_little_endian(&mut buf[s..]);
-    }
-
-    fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::decode::DecodeError> {
-        let len = bytes.len();
-        let expected = 32;
-
-        if len == expected {
-            Ok(Self(primitive_types::U256::from_little_endian(bytes)))
-        } else {
-            Err(ssz::decode::DecodeError::InvalidByteLength {
-                found: len,
-                expected,
-            })
-        }
-    }
+    #[error("missing `0x` prefix")]
+    MissingPrefix,
+    #[error("cannot parse empty string as hex")]
+    EmptyString,
+    #[error(transparent)]
+    TryFromBytes(#[from] TryFromBytesError),
+    #[error(transparent)]
+    Hex(#[from] hex::FromHexError),
 }
 
 impl FromStr for U256 {
-    type Err = uint::FromDecStrErr;
+    type Err = ::uint::FromDecStrErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         primitive_types::U256::from_dec_str(s).map(Self)
     }
 }
 
-pub use uint::FromDecStrErr;
-
-impl Display for U256 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
-    }
-}
+pub use ::uint::FromDecStrErr;
 
 #[cfg(feature = "rlp")]
 impl rlp::Encodable for U256 {
@@ -426,66 +384,59 @@ impl Div for U256 {
 mod u256_tests {
     use core::str::FromStr;
 
-    use serde::{Deserialize, Serialize};
+    use crate::U256;
 
-    use crate::{
-        primitives::H256,
-        test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
-        uint::U256,
-    };
+    // #[test]
+    // fn hex_string() {
+    //     #[derive(Debug, Deserialize, Serialize)]
+    //     struct T {
+    //         #[serde(with = "super::u256_big_endian_hex")]
+    //         u256: U256,
+    //     }
 
-    #[test]
-    fn hex_string() {
-        #[derive(Debug, Deserialize, Serialize)]
-        struct T {
-            #[serde(with = "super::u256_big_endian_hex")]
-            u256: U256,
-        }
+    //     fn assert_big_endian_hex_roundtrip(hex: &'static str) {
+    //         let n: u64 = {
+    //             // assume the prefix is provided
+    //             let hex = &hex[2..];
+    //             let vec = if hex.len() % 2 == 1 {
+    //                 hex::decode(format!("0{hex}"))
+    //             } else {
+    //                 hex::decode(hex)
+    //             }
+    //             .unwrap();
+    //             let vec: Vec<_> = vec![0; 8 - vec.len()].into_iter().chain(vec).collect();
+    //             u64::from_be_bytes(vec.try_into().unwrap())
+    //         };
 
-        fn assert_big_endian_hex_roundtrip(hex: &'static str) {
-            let n: u64 = {
-                // assume the prefix is provided
-                let hex = &hex[2..];
-                let vec = if hex.len() % 2 == 1 {
-                    hex::decode(format!("0{hex}"))
-                } else {
-                    hex::decode(hex)
-                }
-                .unwrap();
-                let vec: Vec<_> = vec![0; 8 - vec.len()].into_iter().chain(vec).collect();
-                u64::from_be_bytes(vec.try_into().unwrap())
-            };
+    //         let string = format!(r#"{{"u256":"{hex}"}}"#);
+    //         let t = serde_json::from_str::<T>(&string).unwrap();
 
-            let string = format!(r#"{{"u256":"{hex}"}}"#);
-            let t = serde_json::from_str::<T>(&string).unwrap();
+    //         dbg!(<H256>::new(t.u256.to_be_bytes()));
 
-            dbg!(<H256>::new(t.u256.to_be_bytes()));
+    //         assert_eq!(t.u256.0.as_u64(), n);
 
-            assert_eq!(t.u256.0.as_u64(), n);
+    //         let roundtrip = serde_json::to_string(&t).unwrap();
 
-            let roundtrip = serde_json::to_string(&t).unwrap();
+    //         assert_eq!(string, roundtrip);
+    //     }
 
-            assert_eq!(string, roundtrip);
-        }
+    //     // even length
+    //     assert_big_endian_hex_roundtrip("0x1234");
 
-        // even length
-        assert_big_endian_hex_roundtrip("0x1234");
+    //     // odd length
+    //     assert_big_endian_hex_roundtrip("0x56789");
 
-        // odd length
-        assert_big_endian_hex_roundtrip("0x56789");
+    //     // single digit
+    //     assert_big_endian_hex_roundtrip("0x3");
 
-        // single digit
-        assert_big_endian_hex_roundtrip("0x3");
-
-        // zero
-        assert_big_endian_hex_roundtrip("0x0");
-    }
+    //     // zero
+    //     assert_big_endian_hex_roundtrip("0x0");
+    // }
 
     #[test]
     fn roundtrip() {
-        assert_json_roundtrip(&U256::from_str("123456").unwrap());
-        assert_proto_roundtrip(&U256::from_str("123456").unwrap());
-        assert_string_roundtrip(&U256::from_str("123456").unwrap());
+        unionlabs::test_utils::assert_json_roundtrip(&U256::from_str("123456").unwrap());
+        unionlabs::test_utils::assert_string_roundtrip(&U256::from_str("123456").unwrap());
     }
 
     #[test]

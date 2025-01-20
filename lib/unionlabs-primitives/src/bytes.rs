@@ -334,6 +334,34 @@ impl<EBytes: Encoding, EHash: Encoding, const N: usize>
 //     }
 // }
 
+#[cfg(feature = "schemars")]
+impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
+    fn schema_name() -> String {
+        format!("Bytes<{}>", E::NAME)
+    }
+
+    fn schema_id() -> alloc::borrow::Cow<'static, str> {
+        format!("{}::{}", module_path!(), Self::schema_name()).into()
+    }
+
+    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
+
+        SchemaObject {
+            metadata: Some(Box::new(Metadata {
+                description: Some(format!(
+                    "A string representation of bytes, encoded via {}",
+                    E::NAME
+                )),
+                ..Default::default()
+            })),
+            instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+            ..Default::default()
+        }
+        .into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -11,10 +11,14 @@ use alloy::{
 use beacon_api::client::BeaconApiClient;
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
-    ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-    ChannelPath, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-    ConnectionOpenTry, ConnectionPath, CreateClient, FullEvent, IbcUnion, PacketAck,
-    PacketMetadata, PacketRecv, PacketSend, PacketTimeout, UpdateClient, WriteAck,
+    event::{
+        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
+        PacketSend, PacketTimeout, UpdateClient, WriteAck,
+    },
+    path::{ChannelPath, ConnectionPath},
+    IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -70,9 +74,9 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
     /// The RPC endpoint for the beacon chain.
-    pub eth_beacon_rpc_api: String,
+    pub beacon_rpc_url: String,
 }
 
 impl Plugin for Module {
@@ -113,9 +117,7 @@ impl Module {
     }
 
     pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         // TODO: Assert chain id is correct
         let chain_id = provider.get_chain_id().await?;
@@ -124,7 +126,7 @@ impl Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
+            beacon_api_client: BeaconApiClient::new(config.beacon_rpc_url).await?,
         })
     }
 
@@ -675,7 +677,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let event = ChannelOpenConfirm {
                             port_id: raw_event.port_id.into(),
                             channel_id,
-                            counterparty_port_id: channel.counterparty_port_id.into(),
+                            counterparty_port_id: channel.counterparty_port_id,
                             counterparty_channel_id: channel.counterparty_channel_id,
                             connection,
                             version: channel.version,

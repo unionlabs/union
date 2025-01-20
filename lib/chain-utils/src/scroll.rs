@@ -14,8 +14,7 @@ use unionlabs::{
         lightclients::{ethereum, scroll},
     },
     id::ClientId,
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
 };
 
 use crate::{

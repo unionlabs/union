@@ -34,6 +34,7 @@ async fn main() {
 pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {}
 
 type SelfConsensusState = movement_light_client_types::consensus_state::ConsensusState;
@@ -172,63 +173,6 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        _client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        // match client_type.as_str() {
-        //     ClientType::COMETBLS_GROTH16 => {
-        //         Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
-        //             Bcs,
-        //         >(&client_state.0)
-        //         .map_err(|err| {
-        //             ErrorObject::owned(
-        //                 FATAL_JSONRPC_ERROR_CODE,
-        //                 format!("unable to decode client state: {}", ErrorReporter(err)),
-        //                 Some(json!({
-        //                     "client_type": client_type,
-        //                 })),
-        //             )
-        //         })?)
-        //         .encode_as::<Proto>()))
-        //     }
-        //     _ => Ok(client_state),
-        // }
-
-        todo!()
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        // match client_type.as_str() {
-        //     ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {
-        //         data: cometbls::consensus_state::ConsensusState::decode_as::<EthAbi>(
-        //             &consensus_state.0,
-        //         )
-        //         .map_err(|err| {
-        //             ErrorObject::owned(
-        //                 FATAL_JSONRPC_ERROR_CODE,
-        //                 format!("unable to decode client state: {}", ErrorReporter(err)),
-        //                 Some(json!({
-        //                     "client_type": client_type,
-        //                 })),
-        //             )
-        //         })?,
-        //     })
-        //     .encode_as::<Proto>())),
-        //     _ => Ok(consensus_state),
-        // }
-        Ok(consensus_state)
     }
 
     #[instrument]

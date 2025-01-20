@@ -88,7 +88,7 @@ where
 #[cfg(feature = "ethabi")]
 #[macro_export]
 macro_rules! impl_ethabi_via_try_from_into {
-    ($T:ty => $EthAbi:ty) => {
+    ($T:path => $EthAbi:path) => {
         impl $crate::encoding::Decode<$crate::encoding::EthAbi> for $T {
             type Error = $crate::TryFromEthAbiBytesErrorAlloy<<$T as TryFrom<$EthAbi>>::Error>;
 

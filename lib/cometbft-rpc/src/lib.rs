@@ -325,10 +325,11 @@ impl ClientT for ClientInner {
 
 //     use super::*;
 
-//     const UNION_TESTNET: &str = "https://rpc.testnet-8.union.build";
+//     const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
 //     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
 //     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
 //     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
+//     const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
 
 //     const TEST_URL: &str = UNION_TESTNET;
 
@@ -343,7 +344,7 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn abci_query() {
-//         let _ = tracing_subscriber::fmt().try_init();
+//         // let _ = tracing_subscriber::fmt().try_init();
 
 //         let client = Client::new(TEST_URL).await.unwrap();
 
@@ -361,7 +362,7 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn validators() {
-//         let _ = tracing_subscriber::fmt().try_init();
+//         // let _ = tracing_subscriber::fmt().try_init();
 
 //         let client = Client::new(TEST_URL).await.unwrap();
 
@@ -387,7 +388,7 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn status() {
-//         let _ = tracing_subscriber::fmt().try_init();
+//         // let _ = tracing_subscriber::fmt().try_init();
 
 //         let client = Client::new(TEST_URL).await.unwrap();
 
@@ -398,7 +399,7 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn block() {
-//         let _ = tracing_subscriber::fmt().try_init();
+//         // let _ = tracing_subscriber::fmt().try_init();
 
 //         let client = Client::new(TEST_URL).await.unwrap();
 
@@ -408,8 +409,8 @@ impl ClientT for ClientInner {
 //         //     dbg!(i);
 
 //         let result = client
-//             // .block(Some(i.try_into().unwrap()))
-//             .block(None)
+//             .block(Some(1.try_into().unwrap()))
+//             // .block(None)
 //             .await
 //             .unwrap();
 
@@ -423,7 +424,7 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn tx() {
-//         let _ = tracing_subscriber::fmt().try_init();
+//         // let _ = tracing_subscriber::fmt().try_init();
 
 //         let client = Client::new(TEST_URL).await.unwrap();
 

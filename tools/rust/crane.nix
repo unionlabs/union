@@ -3,14 +3,12 @@
 {
   perSystem =
     {
-      self',
       pkgs,
       unstablePkgs,
       rust,
       system,
       lib,
       dbg,
-      inputs',
       mkCi,
       ...
     }:
@@ -446,7 +444,9 @@
             pname = "workspace-cargo-clippy";
             version = "0.0.0";
             src = cargoWorkspaceSrc;
-            cargoClippyExtraArgs = "--workspace --tests";
+            cargoClippyExtraArgs = "--workspace --tests -- -Dwarnings";
+
+            CARGO_PROFILE = "dev";
             SQLX_OFFLINE = true;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";

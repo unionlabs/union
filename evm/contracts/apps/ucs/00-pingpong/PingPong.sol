@@ -7,6 +7,7 @@ import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
 
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
+import "../03-zkgm/IEurekaModule.sol";
 
 // Protocol specific packet
 struct PingPongPacket {
@@ -20,10 +21,12 @@ library PingPongLib {
     error ErrInvalidAck();
     error ErrNoChannel();
     error ErrInfiniteGame();
+    error ErrOnlyZKGM();
 
     event Ring(bool ping);
     event TimedOut();
     event Acknowledged();
+    event Zkgoblim(uint32 channelId, bytes sender, bytes message);
 
     function encode(
         PingPongPacket memory packet
@@ -44,13 +47,15 @@ contract PingPong is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    IEurekaModule
 {
     using PingPongLib for *;
 
     IIBCPacket private ibcHandler;
     uint32 private _gap0;
     uint64 private timeout;
+    address private zkgmProtocol;
 
     constructor() {
         _disableInitializers();
@@ -191,4 +196,21 @@ contract PingPong is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    function setZkgm(
+        address zkgm
+    ) public onlyOwner {
+        zkgmProtocol = zkgm;
+    }
+
+    function onZkgm(
+        uint32 channelId,
+        bytes calldata sender,
+        bytes calldata message
+    ) public {
+        if (msg.sender != zkgmProtocol) {
+            revert PingPongLib.ErrOnlyZKGM();
+        }
+        emit PingPongLib.Zkgoblim(channelId, sender, message);
+    }
 }

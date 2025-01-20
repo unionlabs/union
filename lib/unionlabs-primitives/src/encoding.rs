@@ -4,6 +4,11 @@ trait Sealed {}
 
 #[expect(private_bounds)]
 pub trait Encoding: Sealed {
+    /// A string name for this encoding.
+    ///
+    /// This is expected to be unique across all implementations.
+    const NAME: &'static str;
+
     type Error: core::error::Error + 'static;
 
     /// Encode `bytes` and write the value to `f`.
@@ -31,6 +36,8 @@ pub trait Encoding: Sealed {
 pub struct HexPrefixed;
 impl Sealed for HexPrefixed {}
 impl Encoding for HexPrefixed {
+    const NAME: &'static str = "HexPrefixed";
+
     type Error = HexPrefixedFromStrError;
 
     fn fmt(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -67,6 +74,8 @@ pub enum HexPrefixedFromStrError {
 pub struct HexUnprefixed;
 impl Sealed for HexUnprefixed {}
 impl Encoding for HexUnprefixed {
+    const NAME: &'static str = "HexUnprefixed";
+
     type Error = hex::FromHexError;
 
     fn fmt(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -88,6 +97,8 @@ pub struct Base64;
 impl Sealed for Base64 {}
 #[cfg(feature = "base64")]
 impl Encoding for Base64 {
+    const NAME: &'static str = "Base64";
+
     type Error = Base64Error;
 
     fn fmt(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {

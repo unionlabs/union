@@ -2,14 +2,10 @@
 {
   perSystem =
     {
-      self',
-      inputs',
       pkgs,
       system,
       config,
       crane,
-      stdenv,
-      dbg,
       ensureAtRepositoryRoot,
       mkCi,
       ...

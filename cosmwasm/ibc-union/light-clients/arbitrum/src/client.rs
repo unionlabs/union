@@ -146,7 +146,7 @@ impl IbcClient for ArbitrumLightClient {
 //         primitives::{H160, H256},
 //         ibc::core::client::height::Height,
 //         id::ClientId,
-//         uint::U256,
+//         primitives::U256,
 //     };
 
 //     use super::{

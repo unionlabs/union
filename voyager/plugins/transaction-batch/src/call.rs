@@ -33,6 +33,7 @@ pub enum ModuleCall {
 
 /// Constructs multiple batch transactions, where all of the batches are provable at the new consensus height.
 #[model]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct MakeTransactionBatchesWithUpdate<V: IbcSpecExt> {
     pub client_id: V::ClientId,
     pub batches: Vec<Vec<BatchableEvent<V>>>,
@@ -117,6 +118,7 @@ where
                         client_type: client_info.client_type,
                         counterparty_chain_id: module.chain_id.clone(),
                         chain_id: client_meta.chain_id,
+                        client_id: RawClientId::new(self.client_id.clone()),
                         update_from: client_meta.counterparty_height,
                         update_to: latest_height,
                     })],

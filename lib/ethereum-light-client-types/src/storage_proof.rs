@@ -1,4 +1,4 @@
-use unionlabs::{primitives::Bytes, uint::U256};
+use unionlabs::primitives::{Bytes, U256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -13,8 +13,8 @@ pub struct StorageProof {
 mod tests {
     use unionlabs::{
         encoding::{Bincode, Json},
+        primitives::U256,
         test_utils::assert_codec_iso,
-        uint::U256,
     };
 
     use super::*;

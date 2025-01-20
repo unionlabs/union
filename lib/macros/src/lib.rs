@@ -11,8 +11,8 @@ use syn::{
     punctuated::Punctuated,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type, Variant,
-    WhereClause, WherePredicate,
+    Index, Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type,
+    Variant, WhereClause, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -1106,4 +1106,78 @@ fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
                 )
         })
         .collect()
+}
+
+#[proc_macro_derive(AsTuple)]
+pub fn as_tuple(ts: TokenStream) -> TokenStream {
+    derive_as_tuple(parse_macro_input!(ts as DeriveInput))
+        // .inspect(|x| println!("{x}"))
+        .map_err(|e| e.into_compile_error())
+        .unwrap_or_else(convert::identity)
+        .into()
+}
+
+fn derive_as_tuple(
+    DeriveInput {
+        ident,
+        generics,
+        data,
+        ..
+    }: DeriveInput,
+) -> Result<proc_macro2::TokenStream, syn::Error> {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let Data::Struct(data_struct) = data else {
+        return Err(syn::Error::new(
+            Span::call_site(),
+            "only structs are supported",
+        ));
+    };
+
+    let (into_tuple_fields, as_tuple_fields, from_tuple_fields) = (
+        data_struct.fields.members(),
+        data_struct.fields.members(),
+        data_struct.fields.members(),
+    );
+
+    let field_types = data_struct.fields.iter().map(|f| &f.ty);
+
+    let from_tuple_tuple_idxs = data_struct
+        .fields
+        .members()
+        .enumerate()
+        .map(|(idx, _)| Index::from(idx));
+
+    Ok(quote! {
+        const _: () = {
+            #[automatically_derived]
+            impl #impl_generics ::unionlabs::tuple::AsTuple for #ident #ty_generics #where_clause {
+                type Tuple = (#(#field_types,)*);
+
+                fn as_tuple(&self) -> <Self::Tuple as ::unionlabs::tuple::Tuple>::Ref<'_> {
+                    (
+                        #(
+                            &self.#as_tuple_fields,
+                        )*
+                    )
+                }
+
+                fn into_tuple(self) -> Self::Tuple {
+                    (
+                        #(
+                            self.#into_tuple_fields,
+                        )*
+                    )
+                }
+
+                fn from_tuple(tuple: Self::Tuple) -> Self {
+                    Self {
+                        #(
+                            #from_tuple_fields: tuple.#from_tuple_tuple_idxs,
+                        )*
+                    }
+                }
+            }
+        };
+    })
 }

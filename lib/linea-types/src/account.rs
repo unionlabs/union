@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
-
-use crate::{
+use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    primitives::H256,
-    uint::U256,
+    primitives::{H256, U256},
     ByteArrayExt,
 };
 

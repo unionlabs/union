@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 ethereum-light-client-types = { workspace = true }
+linea-types                 = { workspace = true }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
 unionlabs                   = { workspace = true }
 

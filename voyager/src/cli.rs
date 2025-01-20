@@ -207,9 +207,9 @@ pub enum RpcCmd {
     ClientInfo {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        client_id: RawClientId,
         #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
         ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
     },
     ConsensusState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]

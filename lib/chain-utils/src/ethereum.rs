@@ -37,8 +37,7 @@ use unionlabs::{
         NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
         NextSequenceSendPath, ReceiptPath,
     },
-    primitives::{H160, H256},
-    uint::U256,
+    primitives::{H160, H256, U256},
     ErrorReporter,
 };
 

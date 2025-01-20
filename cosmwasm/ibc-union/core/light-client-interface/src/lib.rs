@@ -58,6 +58,8 @@ pub enum IbcClientError<T: IbcClient> {
     ClientSpecific(T::Error),
     #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
     InvalidClientMessage(Vec<u8>),
+    #[error("caller `{0}` is not a whitelisted relayer")]
+    UnauthorizedCaller(String),
 }
 
 impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {
@@ -134,13 +136,13 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         let client_impl = client_impl(self.deps.querier.into_empty(), &self.ibc_host, client_id)?;
         self.deps.querier.query_wasm_smart::<()>(
             &client_impl,
-            &QueryMsg::VerifyMembership {
+            &(QueryMsg::VerifyMembership {
                 client_id,
                 height,
                 proof: storage_proof.encode_as::<Client::Encoding>().into(),
                 path,
                 value,
-            },
+            }),
         )?;
 
         Ok(())
@@ -340,11 +342,13 @@ pub fn query<T: IbcClient>(
                 Addr::unchecked(caller),
             )?;
 
-            to_json_binary(&VerifyClientMessageUpdate {
-                height,
-                consensus_state: consensus_state.encode().into(),
-                client_state: client_state.encode_as::<T::Encoding>().into(),
-            })
+            to_json_binary(
+                &(VerifyClientMessageUpdate {
+                    height,
+                    consensus_state: consensus_state.encode().into(),
+                    client_state: client_state.encode_as::<T::Encoding>().into(),
+                }),
+            )
             .map_err(Into::into)
         }
         QueryMsg::Misbehaviour { client_id, message } => {
@@ -357,9 +361,11 @@ pub fn query<T: IbcClient>(
                 misbehaviour,
             )?;
 
-            to_json_binary(&MisbehaviourResponse {
-                client_state: client_state.encode_as::<T::Encoding>().into(),
-            })
+            to_json_binary(
+                &(MisbehaviourResponse {
+                    client_state: client_state.encode_as::<T::Encoding>().into(),
+                }),
+            )
             .map_err(Into::into)
         }
     }
@@ -392,12 +398,19 @@ pub fn read_consensus_state<T: IbcClient>(
 ) -> Result<T::ConsensusState, IbcClientError<T>> {
     let consensus_state = from_json::<Bytes<Base64>>(
         querier
-            .query_wasm_raw(ibc_host.to_string(), CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec())?
+            .query_wasm_raw(
+                ibc_host.to_string(),
+                CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec()
+            )?
             .ok_or_else(|| {
-                IbcClientError::Std(StdError::generic_err(format!(
-                    "unable to read consensus state of client {client_id} at trusted height {height}"
-                )))
-            })?,
+                IbcClientError::Std(
+                    StdError::generic_err(
+                        format!(
+                            "unable to read consensus state of client {client_id} at trusted height {height}"
+                        )
+                    )
+                )
+            })?
     )?;
 
     T::ConsensusState::decode(&consensus_state)

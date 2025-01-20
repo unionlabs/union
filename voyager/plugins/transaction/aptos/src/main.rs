@@ -10,7 +10,7 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
-use ibc_union_spec::{Datagram, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,

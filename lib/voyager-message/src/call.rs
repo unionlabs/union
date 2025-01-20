@@ -1,14 +1,16 @@
 use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use tracing::{debug, error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    core::ChainId, data::IbcDatagram, error_object_to_queue_error, json_rpc_error_to_queue_error,
-    module::PluginClient, Context, PluginMessage, RawClientId, VoyagerMessage,
+    context::WithId, core::ChainId, data::IbcDatagram, error_object_to_queue_error,
+    json_rpc_error_to_queue_error, module::PluginClient, Context, PluginMessage, RawClientId,
+    VoyagerMessage,
 };
 
 #[model]
@@ -85,10 +87,12 @@ pub struct FetchBlocks {
 pub struct FetchUpdateHeaders {
     /// The type of client that is tracking the consensus on `self.chain_id`.
     pub client_type: ClientType,
-    /// The ID of the chain that is being tracked by a client on `self.counterparty_chain_id`.
+    /// The ID of the chain that is being tracked by the `self.client_id` client on `self.counterparty_chain_id`.
     pub chain_id: ChainId,
     /// The chain that the light client tracking `self.chain_id` is on.
     pub counterparty_chain_id: ChainId,
+    /// The ID of the client that is being updated.
+    pub client_id: RawClientId,
     /// The currently trusted height of the client on `self.chain_id`.
     pub update_from: Height,
     /// The *minimum* height to update the client to. This is assumed to be finalized. Note that the generated update may not be to this exact height, but it *must* be >= it.
@@ -160,13 +164,14 @@ impl CallT<VoyagerMessage> for Call {
                 client_type,
                 chain_id,
                 counterparty_chain_id,
+                client_id,
                 update_from,
                 update_to,
             }) => {
                 let message = format!(
-                    "client update request received for a {client_type} client on \
-                    {counterparty_chain_id} tracking {chain_id} from height {update_from}
-                    to {update_to} but it was not picked up by a plugin"
+                    "client update request received for a {client_type} client \
+                    on (id {client_id}) {counterparty_chain_id} tracking {chain_id} from
+                    height {update_from} to {update_to} but it was not picked up by a plugin"
                 );
 
                 error!(%message);
@@ -299,11 +304,14 @@ impl CallT<VoyagerMessage> for Call {
                     ]))
                 }
             }
-            Call::Plugin(PluginMessage { plugin, message }) => Ok(ctx
-                .plugin(plugin)?
-                .call(message)
+            Call::Plugin(PluginMessage { plugin, message }) => {
+                Ok(PluginClient::<Value, Value>::call(
+                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    message,
+                )
                 .await
-                .map_err(json_rpc_error_to_queue_error)?),
+                .map_err(json_rpc_error_to_queue_error)?)
+            }
         }
     }
 }

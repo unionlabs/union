@@ -36,7 +36,7 @@ use voyager_message::{
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};
 
@@ -68,6 +68,7 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
 
@@ -77,9 +78,9 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
     /// The RPC endpoint for the beacon chain.
-    pub eth_beacon_rpc_api: String,
+    pub beacon_rpc_url: String,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -129,9 +130,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
@@ -143,7 +142,7 @@ impl Plugin for Module {
             .into());
         }
 
-        let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
+        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url).await?;
 
         let spec = beacon_api_client
             .spec()
@@ -212,6 +211,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     from_height: fetch.update_from,
                                     to_height: fetch.update_to,
                                     counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                    client_id: fetch.client_id.clone(),
                                 }),
                             ))
                         },
@@ -233,8 +233,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 from_height,
                 to_height,
                 counterparty_chain_id,
+                client_id,
             }) => self
-                .fetch_update(from_height, to_height, counterparty_chain_id)
+                .fetch_update(from_height, to_height, counterparty_chain_id, client_id)
                 .await
                 .map_err(|e| {
                     ErrorObject::owned(
@@ -319,6 +320,7 @@ impl Module {
         update_from_block_number: Height,
         update_to_block_number: Height,
         counterparty_chain_id: ChainId,
+        client_id: RawClientId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         let finality_update = self
             .beacon_api_client
@@ -372,6 +374,7 @@ impl Module {
                 call(FetchUpdateHeaders {
                     client_type: ClientType::new(ClientType::ETHEREUM),
                     chain_id: self.chain_id.clone(),
+                    client_id,
                     counterparty_chain_id,
                     update_from: update_from_block_number,
                     update_to: update_to_block_number,

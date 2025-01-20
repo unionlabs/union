@@ -1,31 +1,25 @@
-use macros::model;
 use serde::{Deserialize, Serialize};
+use unionlabs::primitives::Bytes;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MerklePath {
-    #[serde(with = "::serde_utils::hex_string")]
-    pub value: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string_list")]
-    pub proof_related_nodes: Vec<Vec<u8>>,
+    pub value: Bytes,
+    pub proof_related_nodes: Vec<Bytes>,
 }
 
-#[model(no_serde)]
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InclusionProof {
-    #[serde(with = "::serde_utils::hex_string")]
-    pub key: Vec<u8>,
+    pub key: Bytes,
     pub leaf_index: u64,
     pub proof: MerklePath,
 }
 
-#[model(no_serde)]
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NonInclusionProof {
-    #[serde(with = "::serde_utils::hex_string")]
-    pub key: Vec<u8>,
+    pub key: Bytes,
     pub left_leaf_index: u64,
     pub left_proof: MerklePath,
     pub right_leaf_index: u64,

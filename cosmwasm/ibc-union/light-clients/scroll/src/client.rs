@@ -181,7 +181,7 @@ pub fn verify_header(
 //         google::protobuf::any::Any,
 //         primitives::{H160, H256},
 //         ibc::core::client::height::Height,
-//         uint::U256,
+//         primitives::U256,
 //     };
 
 //     use super::{

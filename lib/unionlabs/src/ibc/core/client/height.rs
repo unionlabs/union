@@ -225,7 +225,7 @@ impl ::schemars::JsonSchema for Height {
     }
 
     fn schema_id() -> alloc::borrow::Cow<'static, str> {
-        alloc::borrow::Cow::Borrowed(concat!(module_path!(), "::NonGenericType"))
+        alloc::borrow::Cow::Borrowed(concat!(module_path!(), "::Height"))
     }
 
     fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {

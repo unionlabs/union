@@ -5,7 +5,7 @@ use alloy::{
     transports::BoxTransport,
 };
 use ethereum_light_client_types::StorageProof;
-use ibc_union_spec::{IbcUnion, StorePath};
+use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -15,7 +15,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
-    ethereum::ibc_commitment_key, ibc::core::client::height::Height, primitives::H160, uint::U256,
+    ethereum::ibc_commitment_key,
+    ibc::core::client::height::Height,
+    primitives::{H160, U256},
     ErrorReporter,
 };
 use voyager_message::{
@@ -47,16 +49,14 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
 }
 
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let chain_id = provider.get_chain_id().await?;
 

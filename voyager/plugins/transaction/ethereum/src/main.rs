@@ -14,7 +14,7 @@ use chain_utils::{
     BoxDynError,
 };
 use ibc_solidity::Ibc::{self, IbcErrors};
-use ibc_union_spec::{Datagram, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -76,7 +76,7 @@ pub struct Config {
     pub multicall_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub eth_rpc_api: String,
+    pub rpc_url: String,
 
     pub keyring: KeyringConfig,
 
@@ -95,9 +95,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_api)
-            .await?;
+        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
 
         let raw_chain_id = provider.get_chain_id().await?;
         let chain_id = ChainId::new(raw_chain_id.to_string());
@@ -543,7 +541,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     ibc_handler
                         .channelOpenTry(ibc_solidity::MsgChannelOpenTry {
                             port_id: data.port_id.try_into().unwrap(),
-                            channel: data.channel,
+                            channel: data.channel.into(),
                             counterparty_version: data.counterparty_version,
                             proof_init: data.proof_init.into(),
                             proof_height: data.proof_height,
@@ -579,7 +577,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .recvPacket(ibc_solidity::MsgPacketRecv {
-                            packets: data.packets,
+                            packets: data.packets.into_iter().map(Into::into).collect(),
                             proof: data.proof.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -591,7 +589,7 @@ fn process_msgs<T: Transport + Clone, P: Provider<T>>(
                     msg,
                     ibc_handler
                         .acknowledgePacket(ibc_solidity::MsgPacketAcknowledgement {
-                            packets: data.packets,
+                            packets: data.packets.into_iter().map(Into::into).collect(),
                             acknowledgements: data
                                 .acknowledgements
                                 .into_iter()

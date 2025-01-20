@@ -657,33 +657,6 @@ pub mod string_opt {
     }
 }
 
-pub mod u256_from_dec_str {
-    #![allow(clippy::disallowed_types)] // need to access the inner type to do ser/de
-
-    use alloc::{format, string::String};
-
-    use primitive_types::U256;
-    use serde::{de::Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S>(data: &U256, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.collect_str(&data)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        String::deserialize(deserializer).and_then(|s| {
-            U256::from_dec_str(&s).map_err(|err| {
-                serde::de::Error::custom(format!("failure to parse string data: {err}"))
-            })
-        })
-    }
-}
-
 pub mod bitvec_string {
     use alloc::string::String;
 

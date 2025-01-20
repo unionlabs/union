@@ -1,7 +1,7 @@
 use beacon_api_types::Slot;
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{primitives::H256, uint::U256};
+use unionlabs::primitives::{H256, U256};
 
 use crate::client::EthereumLightClient;
 

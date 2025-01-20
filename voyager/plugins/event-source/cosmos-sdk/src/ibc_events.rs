@@ -2,9 +2,10 @@ use std::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    bech32::Bech32,
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    primitives::{encoding::HexUnprefixed, Bytes},
+    primitives::{encoding::HexUnprefixed, Bytes, H256},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -252,7 +253,7 @@ pub enum IbcEvent {
 
     #[serde(rename = "wasm-channel_open_init")]
     WasmChannelOpenInit {
-        port_id: String,
+        port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
         counterparty_port_id: Bytes<HexUnprefixed>,
@@ -263,7 +264,7 @@ pub enum IbcEvent {
 
     #[serde(rename = "wasm-channel_open_try")]
     WasmChannelOpenTry {
-        port_id: String,
+        port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
         counterparty_port_id: Bytes<HexUnprefixed>,
@@ -276,7 +277,7 @@ pub enum IbcEvent {
 
     #[serde(rename = "wasm-channel_open_ack")]
     WasmChannelOpenAck {
-        port_id: String,
+        port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
         counterparty_port_id: Bytes<HexUnprefixed>,
@@ -288,7 +289,7 @@ pub enum IbcEvent {
 
     #[serde(rename = "wasm-channel_open_confirm")]
     WasmChannelOpenConfirm {
-        port_id: String,
+        port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
         channel_id: u32,
         counterparty_port_id: Bytes<HexUnprefixed>,

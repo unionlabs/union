@@ -16,7 +16,7 @@ use ics721::{
     execute::Ics721Execute, ibc::Ics721Ibc, query::Ics721Query, NonFungibleTokenPacketData,
 };
 use thiserror::Error;
-use unionlabs::uint::U256;
+use unionlabs::primitives::U256;
 
 pub const CHANNEL_VERSION: Map<&str, Version> = Map::new("channel_version");
 

@@ -19,41 +19,41 @@ import { packetDetailsQueryDocument } from "$lib/graphql/queries/packet-details"
 const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   const packet = readFragment(packetListDataFragment, p)
   return {
-    url: `/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`,
+    url: `/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.packet_send_transaction_hash}`,
     source: {
       chain_id: packet.source_chain_id ?? "unknown",
       connection_id: packet.source_connection_id ?? "unknown",
       channel_id: packet.source_channel_id ?? "unknown",
       port_id: packet.source_port_id ?? "unknown",
-      sequence: packet.source_sequence ?? "unknown"
+      transaction_hash: packet.packet_send_transaction_hash ?? "unknown"
     },
     destination: {
       chain_id: packet.destination_chain_id ?? "unknown",
       connection_id: packet.destination_connection_id ?? "unknown",
       channel_id: packet.destination_channel_id ?? "unknown",
       port_id: packet.destination_port_id ?? "unknown",
-      sequence: packet.destination_sequence ?? "unknown"
+      sequence: packet.packet_recv_transaction_hash ?? "unknown"
     },
-    source_sequence: {
-      sequence: packet.source_sequence,
-      timestamp: packet.source_timestamp
+    send: {
+      transaction_hash: packet.packet_send_transaction_hash,
+      timestamp: packet.packet_send_timestamp
     },
-    destination_sequence: {
-      sequence: packet.destination_sequence,
-      timestamp: packet.destination_timestamp
+    recv: {
+      transaction_hash: packet.packet_recv_transaction_hash,
+      timestamp: packet.packet_recv_timestamp
     },
-    timestamp: packet.source_timestamp,
-    destination_time: packet.destination_timestamp
+    timestamp: packet.packet_send_timestamp,
+    destination_time: packet.packet_recv_timestamp
   }
 }
 
 type PacketsReturnType = Promise<Array<ReturnType<typeof packetTransform>>>
 
 export async function packetsLatest({ limit = 12 }: { limit?: number } = {}): PacketsReturnType {
-  const { v1_packets } = await request(URLS().GRAPHQL, packetsLatestQuery, {
+  const { v1_ibc_union_packets } = await request(URLS().GRAPHQL, packetsLatestQuery, {
     limit
   })
-  return v1_packets.map(packetTransform)
+  return v1_ibc_union_packets.map(packetTransform)
 }
 
 export async function packetsTimestamp({
@@ -72,11 +72,11 @@ export async function packetsByChainIdLatest({
   limit,
   chain_id
 }: { limit: number; chain_id: string }): PacketsReturnType {
-  const { v1_packets } = await request(URLS().GRAPHQL, packetsByChainLatestQuery, {
+  const { v1_ibc_union_packets } = await request(URLS().GRAPHQL, packetsByChainLatestQuery, {
     limit,
     chain_id
   })
-  return v1_packets.map(packetTransform)
+  return v1_ibc_union_packets.map(packetTransform)
 }
 
 export async function packetsByChainIdTimestamp({
@@ -96,13 +96,13 @@ export async function packetsByConnectionIdLatest({
   limit,
   chain_id,
   connection_id
-}: { limit: number; chain_id: string; connection_id: string }): PacketsReturnType {
-  const { v1_packets } = await request(URLS().GRAPHQL, packetsByConnectionIdLatestQuery, {
+}: { limit: number; chain_id: string; connection_id: number }): PacketsReturnType {
+  const { v1_ibc_union_packets } = await request(URLS().GRAPHQL, packetsByConnectionIdLatestQuery, {
     limit,
     chain_id,
     connection_id
   })
-  return v1_packets.map(packetTransform)
+  return v1_ibc_union_packets.map(packetTransform)
 }
 
 export async function packetsByConnectionIdTimestamp({
@@ -113,7 +113,7 @@ export async function packetsByConnectionIdTimestamp({
 }: {
   limit: number
   chain_id: string
-  connection_id: string
+  connection_id: number
   timestamp: string
 }): PacketsReturnType {
   const { newer, older } = await request(URLS().GRAPHQL, packetsByConnectionIdTimestampQuery, {
@@ -133,16 +133,16 @@ export async function packetsByChannelIdLatest({
 }: {
   limit: number
   chain_id: string
-  connection_id: string
-  channel_id: string
+  connection_id: number
+  channel_id: number
 }): PacketsReturnType {
-  const { v1_packets } = await request(URLS().GRAPHQL, packetsByChannelIdLatestQuery, {
+  const { v1_ibc_union_packets } = await request(URLS().GRAPHQL, packetsByChannelIdLatestQuery, {
     limit,
     chain_id,
     connection_id,
     channel_id
   })
-  return v1_packets.map(packetTransform)
+  return v1_ibc_union_packets.map(packetTransform)
 }
 
 export async function packetsByChannelIdTimestamp({
@@ -154,8 +154,8 @@ export async function packetsByChannelIdTimestamp({
 }: {
   limit: number
   chain_id: string
-  connection_id: string
-  channel_id: string
+  connection_id: number
+  channel_id: number
   timestamp: string
 }): PacketsReturnType {
   const { newer, older } = await request(URLS().GRAPHQL, packetsByChannelIdTimestampQuery, {
@@ -218,7 +218,7 @@ export const packetsByChainIdQuery = (
 export const packetsByConnectionIdQuery = (
   limit: number,
   chain_id: string,
-  connection_id: string,
+  connection_id: number,
   timestamp: Readable<string | null>
 ) =>
   createQuery(
@@ -251,8 +251,8 @@ export const packetsByConnectionIdQuery = (
 export const packetsByChannelIdQuery = (
   limit: number,
   chain_id: string,
-  connection_id: string,
-  channel_id: string,
+  connection_id: number,
+  channel_id: number,
   timestamp: Readable<string | null>
 ) =>
   createQuery(
@@ -285,12 +285,12 @@ export const packetsByChannelIdQuery = (
 
 export const packetDetailsQuery = (
   chain_id: string,
-  connection_id: string,
-  channel_id: string,
-  sequence: number
+  connection_id: number,
+  channel_id: number,
+  packet_send_transaction_hash: string
 ) =>
   createQuery({
-    queryKey: ["packets", chain_id, connection_id, channel_id, sequence],
+    queryKey: ["packets", chain_id, connection_id, channel_id, packet_send_transaction_hash],
     refetchInterval: 5_000,
     placeholderData: keepPreviousData,
     queryFn: async () =>
@@ -298,6 +298,6 @@ export const packetDetailsQuery = (
         chain_id,
         connection_id,
         channel_id,
-        sequence
+        packet_send_transaction_hash
       })
   })

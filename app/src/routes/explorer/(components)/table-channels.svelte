@@ -16,7 +16,7 @@ let channels = createQuery({
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000),
   queryFn: async () => request(URLS().GRAPHQL, channelsQuery, {}),
   select: data =>
-    data.v1_channels.map(channel => ({
+    data.v1_ibc_union_channels.map(channel => ({
       source_chain: {
         chain_display_name: channel.destination_chain?.display_name ?? "unknown",
         chain_id: channel.source_chain_id ?? "unknown",
