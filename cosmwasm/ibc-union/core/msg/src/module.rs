@@ -1,15 +1,8 @@
 use ibc_union_spec::types::Packet;
 use unionlabs_primitives::Bytes;
 
-#[cfg_attr(feature = "cw-orch-interface", cosmwasm_schema::cw_serde)]
-#[cfg_attr(
-    not(feature = "cw-orch-interface"),
-    derive(Debug, Clone, serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(
-    not(feature = "cw-orch-interface"),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
         connection_id: u32,

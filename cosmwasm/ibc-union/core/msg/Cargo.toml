@@ -10,15 +10,7 @@ version      = "1.0.0"
 workspace = true
 
 [features]
-cw-orch-interface = [
-    "dep:cw-orch",
-    "dep:schemars",
-    "dep:cosmwasm-std",
-    "dep:cosmwasm-schema",
-    "unionlabs-primitives/schemars",
-    "ibc-union-spec/schemars",
-]
-schemars = []
+cw-orch-interface = ["dep:cw-orch", "dep:schemars", "dep:cosmwasm-std", "dep:cosmwasm-schema"]
 
 [dependencies]
 ibc-union-spec       = { workspace = true, features = ["serde"] }
