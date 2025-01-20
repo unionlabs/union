@@ -267,8 +267,6 @@ module ibc::ibc {
     public entry fun create_client(
         client_type: String, client_state: vector<u8>, consensus_state: vector<u8>
     ) acquires IBCStore, SignerRef {
-        assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
-
         let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
