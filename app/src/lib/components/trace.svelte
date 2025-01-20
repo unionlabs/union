@@ -1,0 +1,121 @@
+<script lang="ts">
+import { cn } from "$lib/utilities/shadcn"
+import Button from "$lib/components/ui/button/button.svelte"
+import { type Readable, derived } from "svelte/store"
+import SpinnerSvg from "./spinner-svg.svelte"
+import type { Step, RawTrace, Trace, StepStatus } from "$lib/stepper-types.ts"
+import { toIsoString } from "$lib/utilities/date"
+import Truncate from "$lib/components/truncate.svelte"
+import { createEventDispatcher } from "svelte"
+import { toDisplayName } from "$lib/utilities/chains.ts"
+import type { Chain } from "$lib/types"
+
+export let traces: Array<RawTrace>
+export let chains: Array<Chain>
+
+const DISPLAY_NAMES: Record<string, string> = {
+  PACKET_SEND: "Packet Sent",
+  PACKET_RECV: "Packet Received",
+  WRITE_ACK: "Acknowledgement Written",
+  PACKET_ACK: "Packet Acknowledged"
+}
+
+$: pTraces = ((): Array<Trace> => {
+  let processedTraces = traces.map(t => {
+    let explorer = chains.find(c => c.chain_id === t.chain.chain_id)?.explorers?.at(0)
+
+    return {
+      ...t,
+      status: t.transaction_hash ? "COMPLETED" : ("PENDING" as StepStatus),
+      type: DISPLAY_NAMES[t.type] ?? t.type,
+      block_url: explorer ? `${explorer.block_url}${t.height}` : null,
+      transaction_url: explorer ? `${explorer.tx_url}${t.transaction_hash}` : null
+    }
+  })
+
+  for (const [index, step] of processedTraces.entries()) {
+    const gap = processedTraces.slice(index).find(step => step.status === "COMPLETED") !== undefined
+    if (gap && (step.status === "IN_PROGRESS" || step.status === "PENDING")) {
+      processedTraces[index].status = "COMPLETED"
+    }
+  }
+  return processedTraces
+})()
+// const dispatch = createEventDispatcher()
+//
+// let pTraces: Readable<Array<Trace>> = derived(traces, $traces => {
+//   let processedTraces: Array<Trace> = $traces.map(t => ({ ...t, status: "PENDING" as StepStatus }))
+//   // patch gaps (see #2544)
+//   // for (const [index, step] of processedSteps.entries()) {
+//   //   const gap = processedSteps.slice(index).find(step => step.status === "COMPLETED") !== undefined
+//   //   if (gap && (step.status === "IN_PROGRESS" || step.status === "PENDING")) {
+//   //     processedSteps[index].status = "COMPLETED"
+//   //   }
+//   // }
+//   return processedTraces
+// })
+//
+// const cancel = () => {
+//   dispatch("cancel")
+// }
+</script>
+
+<ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
+{#each pTraces as trace, index}
+  <li class="flex gap-4 w-full">
+    <div class="flex flex-col items-center">
+      <!-- top trace connector !-->
+      <div class={cn(
+          "w-1 flex-1",
+          index !== 0 ?  "dark:bg-muted-foreground bg-black" : "",
+          index !== 0 ?  "dark:bg-muted-foreground bg-black" : "",
+          )}></div>
+      <!-- traceper icon !-->
+      <div class={cn(
+        "size-12 border-4 relative transition-all duration-300",
+        trace.status === "PENDING" ? "bg-white" :
+        trace.status === "IN_PROGRESS" ? "bg-white" :
+        trace.status === "COMPLETED" ? "bg-accent" :
+        trace.status === "ERROR" ? "bg-black" :
+        trace.status === "WARNING" ? "bg-yellow-300" : ""
+      )}>
+        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
+          trace.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" :
+          trace.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" :
+          trace.status === "WARNING" ? "w-1 h-4 -translate-y-[12px]" : "w-2 h-2"
+          )}></div>
+        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
+          trace.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" :
+          trace.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" :
+          trace.status === "WARNING" ? "w-1 h-1 translate-y-[8px]" : "w-2 h-2"
+          )}></div>
+        {#if trace.status === "IN_PROGRESS"}
+          <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
+        {/if}
+      </div>
+      <!-- bottom trace connector !-->
+      <div class={cn("w-1 flex-1",
+      index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-muted-foreground",
+      index !== pTraces.length - 1  &&
+      trace.status !== "ERROR" &&
+      trace.status !== "WARNING" ?  "bg-black" : "")
+      }></div>
+    </div>
+    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
+      {#if trace.timestamp}
+        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
+      {/if}
+      <div>{trace.type}</div>
+      {#if trace.transaction_hash}
+        {#if trace.transaction_url}
+          <a href={trace.transaction_url} class="-mt-1 block underline text-xs text-muted-foreground"><Truncate class="underline" value={trace.transaction_hash} type="hash"/></a>
+        {:else}
+          <p class="text-xs text-muted-foreground"><Truncate value={trace.transaction_hash} type="hash"/></p>
+        {/if}
+      {/if}
+    </div>
+  </li>
+{/each}
+</ol>
+
+

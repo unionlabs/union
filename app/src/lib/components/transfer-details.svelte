@@ -16,6 +16,7 @@ import { derived, get, readable, type Readable } from "svelte/store"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { raise } from "$lib/utilities"
 import type { Step } from "$lib/stepper-types.ts"
+import Trace from "$lib/components/trace.svelte"
 import Stepper from "$lib/components/stepper.svelte"
 import { zip } from "$lib/utilities/helpers.ts"
 import type { Chain } from "$lib/types"
@@ -70,151 +71,151 @@ let processedTransfers = derived(
   }
 )
 
-// @ts-expect-error
-let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
-  [processedTransfers],
-  ([$processedTransfers]) => {
-    if (!$processedTransfers) return null
-
-    return $processedTransfers.map(transfer => {
-      let traces: Exclude<UnwrapReadable<typeof transfers>["data"], undefined>[number]["traces"] =
-        []
-
-      if (!("_is_submitted_transfer" in transfer) && Array.isArray(transfer?.traces)) {
-        traces = transfer.traces
-      }
-
-      const onSourceTrace = (eventType: string) =>
-        traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
-      const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
-      const onHopTrace = (eventType: string) =>
-        traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
-      const onHop = (eventType: string) => onHopTrace(eventType) !== undefined
-      const onDestinationTrace = (eventType: string) =>
-        traces.find(
-          t => t.type === eventType && t.chain?.chain_id === transfer.destination_chain_id
-        )
-      const onDestination = (eventType: string) => onDestinationTrace(eventType) !== undefined
-
-      const sourceChainExplorer = chains
-        .find(c => c.chain_id === transfer.source_chain_id)
-        ?.explorers?.at(0)
-      const hopChainExplorer = chains
-        .find(c => c.chain_id === transfer.hop_chain_id)
-        ?.explorers?.at(0)
-      const destinationChainExplorer = chains
-        .find(c => c.chain_id === transfer.destination_chain_id)
-        ?.explorers?.at(0)
-
-      const sourceChainName = toDisplayName(transfer.source_chain_id, chains)
-      //const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
-      const destinationChainName = toDisplayName(transfer.destination_chain_id, chains)
-
-      const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
-        let trace =
-          c === "source"
-            ? onSourceTrace(eventType)
-            : c === "hop"
-              ? onHopTrace(eventType)
-              : c === "destination"
-                ? onDestinationTrace(eventType)
-                : undefined
-        let explorer =
-          c === "source"
-            ? sourceChainExplorer
-            : c === "hop"
-              ? hopChainExplorer
-              : c === "destination"
-                ? destinationChainExplorer
-                : undefined
-        let chain_display_name =
-          c === "source"
-            ? sourceChainName
-            : c === "hop"
-              ? hopChainName
-              : c === "destination"
-                ? destinationChainName
-                : undefined
-
-        if (trace === undefined) return undefined
-
-        return explorer === undefined
-          ? {
-              chain_display_name,
-              tx: trace.transaction_hash,
-              block: trace.height,
-              timestamp: trace.timestamp
-            }
-          : {
-              chain_display_name,
-              tx: trace.transaction_hash,
-              tx_url: `${explorer.tx_url}${trace.transaction_hash}`,
-              block: trace.height,
-              block_url: `${explorer.block_url}${trace.height}`,
-              timestamp: trace.timestamp
-            }
-      }
-
-      return [
-        {
-          status: onSource("PACKET_SEND") ? "COMPLETED" : "IN_PROGRESS",
-          title: `Send Packet`,
-          description: "Waiting on indexer",
-          traceDetails: traceDetails("PACKET_SEND", "source")
-        },
-        //(() => {
-        //  let status = onDestination("LIGHTCLIENT_UPDATE")
-        //    ? "COMPLETED"
-        //    : onSource("PACKET_SEND")
-        //      ? "IN_PROGRESS"
-        //      : "PENDING"
-        //  return {
-        //    status,
-        //    title: `Light Client Update`,
-        //    description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
-        //    traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
-        //  }
-        //})(),
-        (() => {
-          let status = onDestination("PACKET_RECV")
-            ? "COMPLETED"
-            : onSource("PACKET_SEND")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Receive Packet`,
-            traceDetails: traceDetails("PACKET_RECV", "destination")
-          }
-        })(),
-        (() => {
-          let status = onDestination("WRITE_ACK")
-            ? "COMPLETED"
-            : onDestination("PACKET_RECV")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Write Acknowledgement`,
-            traceDetails: traceDetails("WRITE_ACK", "destination")
-          }
-        })(),
-        (() => {
-          let status = onSource("PACKET_ACK")
-            ? "COMPLETED"
-            : onDestination("PACKET_RECV")
-              ? "IN_PROGRESS"
-              : "PENDING"
-          return {
-            status,
-            title: `Receive Acknowledgement`,
-            traceDetails: traceDetails("PACKET_ACK", "source")
-          }
-        })()
-      ]
-    })
-  }
-)
+// // @ts-expect-error
+// let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
+//   [processedTransfers],
+//   ([$processedTransfers]) => {
+//     if (!$processedTransfers) return null
+//
+//     return $processedTransfers.map(transfer => {
+//       let traces: Exclude<UnwrapReadable<typeof transfers>["data"], undefined>[number]["traces"] =
+//         []
+//
+//       if (!("_is_submitted_transfer" in transfer) && Array.isArray(transfer?.traces)) {
+//         traces = transfer.traces
+//       }
+//
+//       const onSourceTrace = (eventType: string) =>
+//         traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.source_chain_id)
+//       const onSource = (eventType: string) => onSourceTrace(eventType) !== undefined
+//       const onHopTrace = (eventType: string) =>
+//         traces.find(t => t.type === eventType && t.chain?.chain_id === transfer.hop_chain_id)
+//       const onHop = (eventType: string) => onHopTrace(eventType) !== undefined
+//       const onDestinationTrace = (eventType: string) =>
+//         traces.find(
+//           t => t.type === eventType && t.chain?.chain_id === transfer.destination_chain_id
+//         )
+//       const onDestination = (eventType: string) => onDestinationTrace(eventType) !== undefined
+//
+//       const sourceChainExplorer = chains
+//         .find(c => c.chain_id === transfer.source_chain_id)
+//         ?.explorers?.at(0)
+//       const hopChainExplorer = chains
+//         .find(c => c.chain_id === transfer.hop_chain_id)
+//         ?.explorers?.at(0)
+//       const destinationChainExplorer = chains
+//         .find(c => c.chain_id === transfer.destination_chain_id)
+//         ?.explorers?.at(0)
+//
+//       const sourceChainName = toDisplayName(transfer.source_chain_id, chains)
+//       //const hopChainName = toDisplayName(transfer.hop_chain_id, chains)
+//       const destinationChainName = toDisplayName(transfer.destination_chain_id, chains)
+//
+//       const traceDetails = (eventType: string, c: "source" | "hop" | "destination") => {
+//         let trace =
+//           c === "source"
+//             ? onSourceTrace(eventType)
+//             : c === "hop"
+//               ? onHopTrace(eventType)
+//               : c === "destination"
+//                 ? onDestinationTrace(eventType)
+//                 : undefined
+//         let explorer =
+//           c === "source"
+//             ? sourceChainExplorer
+//             : c === "hop"
+//               ? hopChainExplorer
+//               : c === "destination"
+//                 ? destinationChainExplorer
+//                 : undefined
+//         let chain_display_name =
+//           c === "source"
+//             ? sourceChainName
+//             : c === "hop"
+//               ? hopChainName
+//               : c === "destination"
+//                 ? destinationChainName
+//                 : undefined
+//
+//         if (trace === undefined) return undefined
+//
+//         return explorer === undefined
+//           ? {
+//               chain_display_name,
+//               tx: trace.transaction_hash,
+//               block: trace.height,
+//               timestamp: trace.timestamp
+//             }
+//           : {
+//               chain_display_name,
+//               tx: trace.transaction_hash,
+//               tx_url: `${explorer.tx_url}${trace.transaction_hash}`,
+//               block: trace.height,
+//               block_url: `${explorer.block_url}${trace.height}`,
+//               timestamp: trace.timestamp
+//             }
+//       }
+//
+//       return [
+//         {
+//           status: onSource("PACKET_SEND") ? "COMPLETED" : "IN_PROGRESS",
+//           title: `Send Packet`,
+//           description: "Waiting on indexer",
+//           traceDetails: traceDetails("PACKET_SEND", "source")
+//         },
+//         //(() => {
+//         //  let status = onDestination("LIGHTCLIENT_UPDATE")
+//         //    ? "COMPLETED"
+//         //    : onSource("PACKET_SEND")
+//         //      ? "IN_PROGRESS"
+//         //      : "PENDING"
+//         //  return {
+//         //    status,
+//         //    title: `Light Client Update`,
+//         //    description: status === "IN_PROGRESS" ? `Waiting on ${sourceChainName} finality` : "",
+//         //    traceDetails: traceDetails("LIGHTCLIENT_UPDATE", "destination")
+//         //  }
+//         //})(),
+//         (() => {
+//           let status = onDestination("PACKET_RECV")
+//             ? "COMPLETED"
+//             : onSource("PACKET_SEND")
+//               ? "IN_PROGRESS"
+//               : "PENDING"
+//           return {
+//             status,
+//             title: `Receive Packet`,
+//             traceDetails: traceDetails("PACKET_RECV", "destination")
+//           }
+//         })(),
+//         (() => {
+//           let status = onDestination("WRITE_ACK")
+//             ? "COMPLETED"
+//             : onDestination("PACKET_RECV")
+//               ? "IN_PROGRESS"
+//               : "PENDING"
+//           return {
+//             status,
+//             title: `Write Acknowledgement`,
+//             traceDetails: traceDetails("WRITE_ACK", "destination")
+//           }
+//         })(),
+//         (() => {
+//           let status = onSource("PACKET_ACK")
+//             ? "COMPLETED"
+//             : onDestination("PACKET_RECV")
+//               ? "IN_PROGRESS"
+//               : "PENDING"
+//           return {
+//             status,
+//             title: `Receive Acknowledgement`,
+//             traceDetails: traceDetails("PACKET_ACK", "source")
+//           }
+//         })()
+//       ]
+//     })
+//   }
+// )
 </script>
 
 <!--
@@ -353,14 +354,8 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         </Card.Content>
         <Card.Footer class="items-start flex flex-col w-full gap-4">
           <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
-          <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
-          {@const pTrace = $processedTransfers?.at(transferIndex) ?? null}
-          {@const ts = derived(
-            tracesSteps,
-            ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []
-          )}
-          {#if pTrace}
-            <Stepper steps={ts} />
+          {#if transfer.traces}
+            <Trace traces={transfer.traces} {chains}/>
           {:else}
             <LoadingLogo />
           {/if}
