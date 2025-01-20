@@ -27,7 +27,7 @@ pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "@type", content = "@value", rename_all = "snake_case")
+    serde(rename_all = "snake_case")
 )]
 pub enum StorePath {
     ClientState(ClientStatePath),
