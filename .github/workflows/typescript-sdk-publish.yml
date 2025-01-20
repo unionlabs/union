@@ -17,16 +17,48 @@ concurrency:
 defaults:
   run:
     shell: bash
+    working-directory: './typescript-sdk'
 
 env:
-  NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
+  NODE_OPTIONS: '--no-warnings'
 
 jobs:
+  publish-npm:
+    name: 'Publish to NPM'
+    runs-on: ['ubuntu-latest']
+    permissions:
+      contents: read
+      # The OIDC ID token is used for authentication with JSR. 
+      id-token: write
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 'Install Dependencies'
+        run: bun install
+
+      - name: 'Prechecks'
+        run: |
+          bun run build
+          bun run typecheck
+          bun run check-package
+
+      - name: 'Publish to npm'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          bun publih --access='public'
+
   publish-jsr:
-    # manually temporarily disabled
-    if: false
-    name: 'Publish JSR'
+    name: 'Publish to JSR'
     runs-on: ['ubuntu-latest']
     permissions:
       contents: read
@@ -42,7 +74,6 @@ jobs:
           bun-version: 'latest'
 
       - name: 'Publish to JSR'
-        working-directory: './typescript-sdk'
         run: |
           bun install
           bun scripts/publish.ts --period patch

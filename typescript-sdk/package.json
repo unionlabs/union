@@ -39,7 +39,7 @@
     "@cosmjs/proto-signing": "^0.33.0",
     "@cosmjs/stargate": "0.33.0",
     "@cosmjs/tendermint-rpc": "^0.33.0",
-    "viem": "^2.22.9"
+    "viem": "^2.22.10"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",

@@ -1,14 +1,4 @@
 /**
- * sleep for the specified number of milliseconds
- * @example
- * ```ts
- * await sleep(1000)
- * ```
- */
-export const sleep = async (ms: number): Promise<void> =>
-  new Promise(resolve => setTimeout(resolve, ms))
-
-/**
  * get the current timestamp in the format `YYYY-MM-DD--HH-MM-SS`
  * @example
  * ```ts
