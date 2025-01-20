@@ -44,8 +44,11 @@ pub struct Connection {
 )]
 #[repr(u8)]
 pub enum ConnectionState {
+    #[serde(alias = "Init")]
     Init = 1,
+    #[serde(alias = "TryOpen")]
     TryOpen = 2,
+    #[serde(alias = "Open")]
     Open = 3,
 }
 

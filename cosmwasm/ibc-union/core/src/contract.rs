@@ -459,7 +459,23 @@ fn migrate_state(
 pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let keys = CONNECTIONS
+        .keys(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for key in keys {
+        CONNECTIONS.update(deps.storage, key, |e| Ok::<_, ContractError>(e.unwrap()))?;
+    }
+
+    let keys = CHANNELS
+        .keys(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for key in keys {
+        CHANNELS.update(deps.storage, key, |e| Ok::<_, ContractError>(e.unwrap()))?;
+    }
+
     Ok(Response::new())
 }
 

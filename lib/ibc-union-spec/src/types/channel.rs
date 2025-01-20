@@ -28,9 +28,13 @@ pub struct Channel {
 )]
 #[repr(u8)]
 pub enum ChannelState {
+    #[serde(alias = "Init")]
     Init = 1,
+    #[serde(alias = "TryOpen")]
     TryOpen = 2,
+    #[serde(alias = "Open")]
     Open = 3,
+    #[serde(alias = "Closed")]
     Closed = 4,
 }
 
