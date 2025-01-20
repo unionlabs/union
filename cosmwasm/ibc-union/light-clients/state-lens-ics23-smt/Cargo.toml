@@ -1,0 +1,39 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "state-lens-ics23-smt-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+aptos-verifier                          = { workspace = true }
+bcs                                     = { workspace = true }
+cometbls-light-client                   = { workspace = true, features = ["library"] }
+cosmwasm-std                            = { workspace = true, features = ["abort"] }
+ibc-union-light-client                  = { workspace = true }
+ibc-union-msg                           = { workspace = true }
+ibc-union-spec                          = { workspace = true }
+ics23                                   = { workspace = true }
+movement-light-client-types             = { workspace = true, features = ["ethabi"] }
+rlp                                     = { workspace = true }
+serde                                   = { workspace = true, features = ["derive"] }
+serde-utils                             = { workspace = true }
+state-lens-ics23-smt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+thiserror                               = { workspace = true }
+unionlabs                               = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+
+[features]
+default = []
+# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
+library = []
