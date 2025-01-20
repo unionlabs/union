@@ -1,0 +1,17 @@
+[package]
+edition = "2021"
+name    = "voyager-client-module-ethermint"
+version = "0.1.0"
+
+[dependencies]
+jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                        = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+serde_json                    = { workspace = true }
+tendermint-light-client-types = { workspace = true, features = ["proto", "serde", "ethabi", "bincode"] }
+ogchain-light-client-types = { workspace = true, features = ["serde", "bincode"] }
+tokio                         = { workspace = true }
+tracing                       = { workspace = true }
+unionlabs                     = { workspace = true, features = ["bincode"] }
+voyager-message               = { workspace = true }
+voyager-vm                    = { workspace = true }
