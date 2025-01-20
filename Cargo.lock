@@ -6133,7 +6133,6 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
- "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -6184,7 +6183,7 @@ dependencies = [
 name = "ibc-union-msg"
 version = "1.0.0"
 dependencies = [
- "ibc-solidity",
+ "ibc-union-spec",
  "serde",
  "unionlabs-primitives",
 ]
@@ -6193,10 +6192,14 @@ dependencies = [
 name = "ibc-union-spec"
 version = "0.1.0"
 dependencies = [
+ "alloy-sol-types",
  "enumorph",
  "ibc-solidity",
+ "ibc-union-spec",
+ "schemars",
  "serde",
  "sha3 0.10.8",
+ "thiserror",
  "tracing",
  "unionlabs",
  "voyager-core",
@@ -6228,8 +6231,8 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "ethabi",
  "hex",
- "ibc-solidity",
  "ibc-union-msg",
+ "ibc-union-spec",
  "serde",
  "serde_json",
  "thiserror",
@@ -12760,6 +12763,7 @@ dependencies = [
  "hex",
  "primitive-types 0.12.2",
  "rlp",
+ "schemars",
  "serde",
  "serde_bytes",
  "thiserror",
@@ -13515,7 +13519,6 @@ name = "voyager-message"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "chain-utils",
  "clap 4.5.4",
  "enumorph",
  "futures",

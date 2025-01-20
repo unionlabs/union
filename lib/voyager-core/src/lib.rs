@@ -1,15 +1,14 @@
+#![feature(trait_alias)]
 #![warn(clippy::pedantic)]
 
 use core::{fmt, str::FromStr};
 use std::fmt::{Debug, Display};
 
-use macros::{apply, model};
-use serde::{Deserialize, Serialize};
+use macros::apply;
 use serde_json::Value;
 use unionlabs::{
     ibc::core::client::height::{Height, HeightFromStrError},
     primitives::{encoding::HexUnprefixed, Bytes, H256},
-    traits::Member,
 };
 
 /// Represents the IBC interface of a chain.
@@ -174,6 +173,12 @@ impl ConsensusType {
     // lots more to come - near, linea, polygon - stay tuned
 }
 
+#[cfg(feature = "serde")]
+pub trait MaybeSerde = serde::Serialize + serde::de::DeserializeOwned;
+
+#[cfg(not(feature = "serde"))]
+pub trait MaybeSerde =;
+
 /// An IBC specification describes the format of the store, datagrams, and events.
 ///
 /// Typically, an IBC interface will support exactly one IBC version, however
@@ -188,16 +193,16 @@ impl ConsensusType {
 pub trait IbcSpec {
     const ID: IbcSpecId;
 
-    type ClientId: Display + Member;
+    type ClientId: Display + Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
     /// The type used to index into the IBC store.
-    type StorePath: Member;
+    type StorePath: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
     /// The messages submitted on chain.
-    type Datagram: Member;
+    type Datagram: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
     /// Events emitted on chain.
-    type Event: Member;
+    type Event: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
     fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
 
@@ -208,7 +213,14 @@ pub trait IbcSpec {
 /// A subset of [`IbcSpec::StorePath`]. This should be implemented by all variants of the
 /// `StorePath` enum for an `IbcSpec` implementation.
 pub trait IbcStorePathKey:
-    Member
+    Debug
+    + Clone
+    + PartialEq
+    + MaybeSerde
+    + Send
+    + Sync
+    + Unpin
+    + 'static
     + TryFrom<<Self::Spec as IbcSpec>::StorePath, Error = <Self::Spec as IbcSpec>::StorePath>
     + Into<<Self::Spec as IbcSpec>::StorePath>
 {
@@ -217,7 +229,7 @@ pub trait IbcStorePathKey:
 
     /// The value stored under this key. Note that this is NOT the *commitment*, but rather the
     /// actual value.
-    type Value: Member;
+    type Value: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 }
 
 /// An identifier for an [`IbcSpec`].
@@ -263,7 +275,12 @@ pub struct ChainId;
 /// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum":
 ///   "0x..."}))`
 /// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 pub struct ClientInfo {
     pub client_type: ClientType,
     pub ibc_interface: IbcInterface,
@@ -272,12 +289,20 @@ pub struct ClientInfo {
     /// This is currently only used for threading the checksum for ibc-go
     /// 08-wasm clients, and can likely be removed when support for that IBC
     /// interface is dropped.
-    #[serde(default, skip_serializing_if = "Value::is_null")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Value::is_null")
+    )]
     pub metadata: Value,
 }
 
 /// Metadata about a client, as it exists at a specific height.
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 pub struct ClientStateMeta {
     /// The counterparty height this client has been updated to. A consensus
     /// state will exist at this height.
@@ -288,28 +313,43 @@ pub struct ClientStateMeta {
     pub chain_id: ChainId,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 pub struct ConsensusStateMeta {
     /// The timestamp of the counterparty at the height represented by this
     /// consensus state.
     pub timestamp_nanos: Timestamp,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 pub struct IbcGo08WasmClientMetadata {
     pub checksum: H256<HexUnprefixed>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 pub enum QueryHeight {
     /// The latest, potentially unfinalized block (the head of the chain).
-    #[serde(rename = "latest")]
+    #[cfg_attr(feature = "serde", serde(rename = "latest"))]
     Latest,
     /// The latest finalized block.
-    #[serde(rename = "finalized")]
+    #[cfg_attr(feature = "serde", serde(rename = "finalized"))]
     Finalized,
     /// A specific block that may or not be finalized.
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Specific(Height),
 }
 
@@ -341,7 +381,12 @@ impl FromStr for QueryHeight {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 pub struct Timestamp(u64);
 
 impl Timestamp {
@@ -386,13 +431,15 @@ macro_rules! str_newtype {
             PartialOrd,
             Ord,
             Hash,
-            ::serde::Serialize,
-            ::serde::Deserialize,
+        )]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            // I tested this and apparently it's not required (newtype is automatically transparent?) but
+            // keeping it here for clarity
+            serde(transparent)
         )]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
-        // I tested this and apparently it's not required (newtype is automatically transparent?) but
-        // keeping it here for clarity
-        #[serde(transparent)]
         #[debug("{}({:?})", stringify!($Struct), self.0)]
         $vis struct $Struct(#[doc(hidden)] ::std::borrow::Cow<'static, str>);
 

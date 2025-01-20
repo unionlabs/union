@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
-use ibc_solidity::Packet;
+use ibc_union_spec::types::Packet;
 use unionlabs::primitives::Bytes;
 
 #[cw_serde]

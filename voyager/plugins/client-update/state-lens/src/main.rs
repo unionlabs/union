@@ -1,7 +1,10 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use call::FetchUpdateAfterL1Update;
-use ibc_union_spec::{ClientStatePath, ConsensusStatePath, IbcUnion};
+use ibc_union_spec::{
+    path::{ClientStatePath, ConsensusStatePath},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,

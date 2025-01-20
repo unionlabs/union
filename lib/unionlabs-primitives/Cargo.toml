@@ -14,6 +14,7 @@ generic-array    = { workspace = true, optional = true }
 hex              = { workspace = true, features = ["std"] }
 primitive-types  = { workspace = true }
 rlp              = { workspace = true, optional = true }
+schemars         = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }
 serde_bytes      = { version = "0.11.15", optional = true }
 thiserror        = { workspace = true }
@@ -31,10 +32,11 @@ workspace = true
 [features]
 default = ["serde", "base64"]
 
-base64  = ["dep:base64"]
-bincode = ["dep:bincode"]
-rlp     = ["dep:rlp"]
-serde   = ["dep:serde", "dep:serde_bytes"]
+base64   = ["dep:base64"]
+bincode  = ["dep:bincode"]
+rlp      = ["dep:rlp"]
+schemars = ["dep:schemars"]
+serde    = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
 alloy-sol-types-compat = ["dep:alloy-sol-types"]

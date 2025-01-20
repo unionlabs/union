@@ -11,8 +11,8 @@ workspace = true
 
 [dependencies]
 macros     = { workspace = true }
-schemars   = { workspace = true, optional = true }
-serde      = { workspace = true, features = ["derive"] }
+schemars   = { workspace = true, optional = true, features = ["derive"] }
+serde      = { workspace = true, optional = true, features = ["derive"] }
 serde_json = { workspace = true }
 unionlabs  = { workspace = true }
 
@@ -20,5 +20,7 @@ unionlabs  = { workspace = true }
 hex-literal = { workspace = true }
 
 [features]
-default  = []
+default = []
+
 schemars = ["dep:schemars"]
+serde    = ["dep:serde"]

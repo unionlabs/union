@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
-use ibc_union_spec::{IbcUnion, StorePath};
+use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},

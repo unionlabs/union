@@ -8,11 +8,11 @@ use cosmwasm_std::{
     to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
     QueryRequest, Reply, Response, StdError, SubMsg, SubMsgResult, Uint128, Uint256,
 };
-use ibc_solidity::Packet;
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
+use ibc_union_spec::types::Packet;
 use token_factory_api::{Metadata, MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
 use unionlabs::{
     ethereum::keccak256,

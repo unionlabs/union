@@ -8,7 +8,6 @@ use std::{
     time::Duration,
 };
 
-use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use futures::FutureExt;
 use jsonrpsee::{
@@ -45,7 +44,7 @@ use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
     IbcStorePathKey, QueryHeight, Timestamp,
 };
-use voyager_vm::{ItemId, QueueError, QueueMessage};
+use voyager_vm::{BoxDynError, ItemId, QueueError, QueueMessage};
 
 use crate::{
     call::Call,

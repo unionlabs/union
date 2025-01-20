@@ -403,6 +403,34 @@ impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for Fixe
     }
 }
 
+#[cfg(feature = "schemars")]
+impl<E: Encoding, const BYTES: usize> schemars::JsonSchema for FixedBytes<BYTES, E> {
+    fn schema_name() -> String {
+        format!("FixedBytes<{}, {BYTES}>", E::NAME)
+    }
+
+    fn schema_id() -> alloc::borrow::Cow<'static, str> {
+        format!("{}::{}", module_path!(), Self::schema_name()).into()
+    }
+
+    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
+
+        SchemaObject {
+            metadata: Some(Box::new(Metadata {
+                description: Some(format!(
+                    "A string representation of fixed bytes of length {BYTES}, encoded via {}",
+                    E::NAME
+                )),
+                ..Default::default()
+            })),
+            instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+            ..Default::default()
+        }
+        .into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex::FromHexError;
