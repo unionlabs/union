@@ -38,14 +38,14 @@ Double-check the version and architecture in the link before downloading.
     ```sh frame="none"
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-x86_64-linux
     ```
-    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-9'}).current} />*
 
   </TabItem>
   <TabItem label='aarch64-linux'>
     ```sh frame='none'
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-aarch64-linux
     ```
-    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-9'}).current} />*
 
   </TabItem>
 </Tabs>
@@ -70,7 +70,7 @@ We also provide containers in our [package registry](https://github.com/orgs/uni
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
-_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />_
+_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-9'}).current} />_
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
 
@@ -87,7 +87,7 @@ We'll need to set up a few configuration files and obtain the <DownloadFile file
 First, set some environment variables, which are used throughout initialization.
 
 ```sh title="env.sh"
-export CHAIN_ID=union-testnet-8
+export CHAIN_ID=union-testnet-9
 export MONIKER="Unionized Goblin"
 export KEY_NAME=alice
 export GENESIS_URL="https://union.build/genesis.json"
@@ -103,11 +103,11 @@ uniond init $MONIKER --chain-id $CHAIN_ID
 
 Next, edit `~/.union/config/config.toml`. We'll set the seeds to ensure your node can connect to the peer-to-peer network.
 
-For `union-testnet-8` replace `seeds = ""` with:
+For `union-testnet-9` replace `seeds = ""` with:
 
 <Code
   lang='toml'
-  code={`seeds = "${chainVersion({ chainId: 'union-testnet-8' }).seeds}"`} 
+  code={`seeds = "${chainVersion({ chainId: 'union-testnet-9' }).seeds}"`} 
 />
 
 
