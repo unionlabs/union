@@ -7,7 +7,6 @@ use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
 };
 use cw_storage_plus::Item;
-use ibc_solidity::{Channel, ChannelState, Connection, ConnectionState, Packet};
 use ibc_union_msg::{
     lightclient::{
         QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
@@ -23,9 +22,12 @@ use ibc_union_msg::{
     },
     query::QueryMsg,
 };
-use ibc_union_spec::path::{
-    BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-    ConsensusStatePath, COMMITMENT_MAGIC,
+use ibc_union_spec::{
+    path::{
+        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
+        ConsensusStatePath, COMMITMENT_MAGIC,
+    },
+    types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -853,7 +855,7 @@ fn connection_open_init(
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
-        state: ConnectionState::Init,
+        state: Some(ConnectionState::Init),
         client_id,
         counterparty_client_id,
         counterparty_connection_id: 0,
@@ -882,17 +884,19 @@ fn connection_open_try(
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
-        state: ConnectionState::TryOpen,
+        state: Some(ConnectionState::TryOpen),
         client_id,
         counterparty_client_id,
         counterparty_connection_id,
     };
+
     let expected_connection = Connection {
-        state: ConnectionState::Init,
+        state: Some(ConnectionState::Init),
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
         counterparty_connection_id: 0,
     };
+
     let client_impl = client_impl(deps.as_ref(), client_id)?;
     deps.querier.query_wasm_smart::<()>(
         &client_impl,

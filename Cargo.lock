@@ -6133,7 +6133,6 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
- "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -6184,7 +6183,7 @@ dependencies = [
 name = "ibc-union-msg"
 version = "1.0.0"
 dependencies = [
- "ibc-solidity",
+ "ibc-union-spec",
  "serde",
  "unionlabs-primitives",
 ]
@@ -6196,6 +6195,7 @@ dependencies = [
  "alloy-sol-types",
  "enumorph",
  "ibc-solidity",
+ "ibc-union-spec",
  "schemars",
  "serde",
  "sha3 0.10.8",
