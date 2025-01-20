@@ -14,3 +14,20 @@ export type Step = {
 }
 
 export type StepStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "WARNING" | "ERROR"
+
+export type RawTrace = {
+  type: string
+  height: number | null
+  block_hash: string | null
+  timestamp: string | null
+  transaction_hash: string | null
+  chain: {
+    chain_id: string
+  }
+}
+
+export type Trace = {
+  status: StepStatus
+  block_url: string | null
+  transaction_url: string | null
+} & RawTrace
