@@ -1,3 +1,6 @@
+use tuple_join::{Join, Joined};
+use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
+
 /// Representation of the client state of a state lens client.
 ///
 /// For a state lens client A->B->C, where the state lens is running on A and tracking C, the
@@ -16,7 +19,7 @@
 ///
 /// The following struct will be used in all examples:
 ///
-/// ```rs
+/// ```rust
 /// struct Extra {
 ///     pub a: u64,
 ///     pub b: String,
@@ -25,7 +28,8 @@
 ///
 /// ## EthAbi
 ///
-/// EthAbi encoding is supported for this structure. This is achieved by flattening the tuple of `Extra` into the tuple of `ClientState`.
+/// EthAbi encoding is supported for this structure. This is achieved by flattening the tuple of
+/// `Extra` into the tuple of `ClientState`.
 ///
 /// The standalone client state tuple:
 ///
@@ -58,7 +62,12 @@
 /// }
 /// ```
 ///
-/// The expected encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)` ***MUST NOT*** be used, as this will wrap the entire structure in a single item tuple. Instead, use `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id, value.l2_latest_height, value.a, value.b)`. Although this is more verbose, it results in a consistent and predictable encoding and decoding. This also enables certain optimizations in solidity, such as directly decoding the state from calldata:
+/// The expected encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)`
+/// ***MUST NOT*** be used, as this will wrap the entire structure in a single item tuple. Instead,
+/// use `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id,
+/// value.l2_latest_height, value.a, value.b)`. Although this is more verbose, it results in a
+/// consistent and predictable encoding and decoding. This also enables certain optimizations in
+/// solidity, such as directly decoding the state from calldata:
 ///
 /// ```solidity
 /// ClientState calldata clientState;
@@ -67,19 +76,38 @@
 /// }
 /// ```
 ///
-/// In rust, `abi_encode_params` ***MUST*** be used. This has the same effect as the per-field `abi.encode` in solidity.
+/// In rust, `abi_encode_params` ***MUST*** be used. This has the same effect as the per-field
+/// `abi.encode` in solidity.
 ///
-/// NOTE: For ethabi encoding, `Extra` must implement [`SolType`][alloy::sol_types::SolType], [`SolValue`][alloy::sol_types::SolValue], and [`SolTypeValue`][alloy::sol_types::private::SolTypeValue].
+/// NOTE: For ethabi encoding, `Extra` must implement [`SolType`][alloy::sol_types::SolType],
+/// [`SolValue`][alloy::sol_types::SolValue], and
+/// [`SolTypeValue`][alloy::sol_types::private::SolTypeValue].
 ///
 /// ## JSON
 ///
-/// JSON encoding is implemented via serde. `Extra` is `#[serde(flattened)]` into the top level object.
+/// JSON encoding is implemented via serde. `Extra` is `#[serde(flattened)]` into the top level
+/// object.
 ///
-/// NOTE: Due to limitations with serde, it is not possible to `#[serde(deny_unknown_fields)]` on this struct with the flattened `Extra`. Any unknown fields will be silently dropped during deserialization.
+/// NOTE: Due to limitations with serde, it is not possible to `#[serde(deny_unknown_fields)]` on
+/// this struct with the flattened `Extra`. Any unknown fields will be silently dropped during
+/// deserialization.
 ///
 /// ## Bincode
 ///
-/// Bincode encoding is implemented via [`bincode`]. Since bincode inlines nested objects, there is no difference between `ClientState<Extra>` and the equivalent struct with the fields of `Extra` inlined directly.
+/// Bincode encoding is implemented via [`bincode`]. Since bincode inlines nested objects, there is
+/// no difference between `ClientState<Extra>` and the equivalent struct with the fields of `Extra`
+/// inlined directly.
+///
+/// ## Bcs
+///
+/// Bcs encoding is implemented via serde and [`bcs`]. Since [`bcs`] leverages serde, it is
+/// incompatible with the generated serde implementation due to `#[serde(deny_unknown_fields)]`. To
+/// work around this, [`AsTuple`] is implemented for `ClientState`. To encode bcs, convert to tuple
+/// form with [`AsTuple::as_tuple`] first and then encode that structure. To decode bcs, decode into
+/// `<ClientState<Extra> as AsTuple>::Tuple` and then convert from that value with
+/// [`AsTuple::from_tuple`].
+///
+/// [`bcs`]: (https://docs.rs/bcs/latest/bcs/)
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -110,6 +138,56 @@ pub struct ClientState<Extra> {
 
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub extra: Extra,
+}
+
+type ClientStateFieldsTuple = (String, u32, u32, u64);
+
+impl<Extra> AsTuple for ClientState<Extra>
+where
+    Extra: AsTuple,
+    ClientStateFieldsTuple: Join<Extra::Tuple, Out: Tuple + TupleAsRef>,
+    // can't use `<ClientStateFieldsTuple as Tuple>::Ref<'a>` here for some reason?
+    for<'a> (&'a String, &'a u32, &'a u32, &'a u64): Join<
+        <Extra::Tuple as Tuple>::Ref<'a>,
+        Out = <<ClientStateFieldsTuple as Join<Extra::Tuple>>::Out as Tuple>::Ref<'a>,
+    >,
+{
+    type Tuple = <ClientStateFieldsTuple as Join<Extra::Tuple>>::Out;
+
+    fn as_tuple(&self) -> <Self::Tuple as Tuple>::Ref<'_> {
+        (
+            &self.l2_chain_id,
+            &self.l1_client_id,
+            &self.l2_client_id,
+            &self.l2_latest_height,
+        )
+            .join(self.extra.as_tuple())
+    }
+
+    fn into_tuple(self) -> Self::Tuple {
+        (
+            self.l2_chain_id,
+            self.l1_client_id,
+            self.l2_client_id,
+            self.l2_latest_height,
+        )
+            .join(self.extra.into_tuple())
+    }
+
+    fn from_tuple(tuple: Self::Tuple) -> Self {
+        let ((l2_chain_id, l1_client_id, l2_client_id, l2_latest_height), extra_tuple): (
+            ClientStateFieldsTuple,
+            Extra::Tuple,
+        ) = tuple.split();
+
+        Self {
+            l2_chain_id,
+            l1_client_id,
+            l2_client_id,
+            l2_latest_height,
+            extra: Extra::from_tuple(extra_tuple),
+        }
+    }
 }
 
 #[cfg(feature = "ethabi")]
@@ -216,7 +294,7 @@ mod tests {
         SolType, SolValue,
     };
     use unionlabs::{
-        encoding::{Bincode, Json},
+        encoding::{Bcs, Bincode, Json},
         test_utils::assert_codec_iso,
         tuple::AsTuple,
     };
@@ -290,6 +368,7 @@ mod tests {
         serde::Deserialize,
         bincode::Encode,
         bincode::Decode,
+        AsTuple,
     )]
     pub struct ClientStateWithExtra {
         pub l2_chain_id: String,
@@ -392,6 +471,43 @@ mod tests {
     }
 
     #[test]
+    fn test_bcs() {
+        let cs = ClientState {
+            l2_chain_id: "l2_chain_id".to_owned(),
+            l1_client_id: 1,
+            l2_client_id: 2,
+            l2_latest_height: 100,
+            extra: Extra {
+                a: 5,
+                b: "b".to_owned(),
+            },
+        };
+
+        let cs_with_extra = ClientStateWithExtra {
+            l2_chain_id: "l2_chain_id".to_owned(),
+            l1_client_id: 1,
+            l2_client_id: 2,
+            l2_latest_height: 100,
+            a: 5,
+            b: "b".to_owned(),
+        };
+
+        assert_eq!(
+            cs_with_extra,
+            bcs::from_bytes::<ClientStateWithExtra>(&bcs::to_bytes(&cs.as_tuple()).unwrap())
+                .unwrap()
+        );
+
+        assert_eq!(
+            cs.into_tuple(),
+            bcs::from_bytes::<<ClientState<Extra> as AsTuple>::Tuple>(
+                &bcs::to_bytes(&cs_with_extra).unwrap()
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
     fn test_ethabi() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
@@ -456,6 +572,19 @@ mod tests {
         };
 
         assert_codec_iso::<_, Json>(&cs);
+    }
+
+    #[test]
+    fn test_bcs_unit() {
+        let cs = ClientState {
+            l2_chain_id: "l2_chain_id".to_owned(),
+            l1_client_id: 1,
+            l2_client_id: 2,
+            l2_latest_height: 100,
+            extra: (),
+        };
+
+        assert_codec_iso::<_, Bcs>(&cs);
     }
 
     // #[test]

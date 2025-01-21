@@ -11321,9 +11321,9 @@ name = "state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "bcs 0.1.6",
  "bincode 2.0.0-rc.3",
  "hex-literal",
- "protos",
  "serde",
  "serde_json",
  "state-lens-light-client-types",
