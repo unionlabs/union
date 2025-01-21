@@ -56,8 +56,10 @@ export type Chain = {
   }>
   addr_prefix: string
   assets: Array<ChainAsset>
+  tokens: Array<ChainToken>
 }
 
+/** @deprecated */
 export type ChainAsset = {
   denom: string
   display_symbol: string
@@ -69,3 +71,50 @@ export type ChainAsset = {
   }>
   gas_token: boolean
 }
+
+export type ChainToken = {
+  denom: string
+  representations: Array<{
+    name: string | null
+    symbol: string | null
+    decimals: number | null
+    sources: Array<{
+      id: string
+      name: string
+      logo_uri: string | null
+      update_timestamp: string | null
+    }>
+  }>
+  wrapping: Array<{
+    wrapped_chain: {
+      chain_id: string
+    }
+    destination_channel_id: 3
+    unwrapped_denom: string
+  }>
+}
+
+export type TokenInfoQualityLevel = "GRAPHQL" | "ONCHAIN" | "NONE"
+
+export type TokenRepresentation = {
+  name: string
+  symbol: string
+  decimals: number
+}
+export type TokenInfo =
+  | {
+      quality_level: "GRAPHQL"
+      denom: string
+      primaryRepresentation: TokenRepresentation
+      representations: Array<TokenRepresentation>
+    }
+  | {
+      quality_level: "ONCHAIN"
+      denom: string
+      name: string
+      symbol: string
+    }
+  | {
+      quality_level: "NONE"
+      denom: string
+    }
