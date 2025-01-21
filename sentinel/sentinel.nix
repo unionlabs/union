@@ -1,36 +1,64 @@
 { self, ... }:
 {
-  # This “perSystem” function is where we build the sentinel package.
-  perSystem = { pkgs, unstablePkgs, ensureAtRepositoryRoot, ... }:
+  perSystem =
+    { pkgs
+    , jsPkgs
+    , ensureAtRepositoryRoot
+    , lib
+    , ...
+    }:
     let
-      sentinelApp = unstablePkgs.writeShellApplication {
-        name = "sentinel";
-        text = ''
-          # Make sure we are at repository root
-          # where are we?
-          echo "Current directory: $(pwd)"
-          
-          ${ensureAtRepositoryRoot}
-
-          # Navigate to sentinel/ subdirectory
-          cd sentinel/
-
-          # Install dependencies and build
-          npm install
-          npm run build
-
-          # Run it
-          node dist/sentinel.js "$@"
-        '';
-      };
+      deps = with jsPkgs; [
+        python3
+        pkg-config
+        nodePackages_latest.nodejs
+        nodePackages_latest."patch-package"
+      ];
+      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        sentinel = sentinelApp;
+        sentinel = jsPkgs.buildNpmPackage {
+          npmDepsHash = "sha256-ftC6pM+l9fiyJ52voMYILusrVd0BuJ1FFJy+0gY8jyo=";
+          src = ./.;
+          sourceRoot = "sentinel";
+          npmFlags = [
+            "--loglevel=verbose"
+            "--enable-pre-post-scripts"
+          ];
+          pname = packageJSON.name;
+          inherit (packageJSON) version;
+          nativeBuildInputs = deps;
+          buildInputs = deps;
+          installPhase = ''
+            echo "Current directory: $(pwd)"
+            echo "out is $out"
+            mkdir -p $out
+            echo "under build: $(ls ./build)"
+            cp -r ./build/* $out
+          '';
+          doDist = false;
+          NODE_OPTIONS = "--no-warnings";
+        };
+      };
+
+      apps = {
+        sentinel-dev = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "sentinel-dev-server";
+            runtimeInputs = deps;
+            text = ''
+                      ${ensureAtRepositoryRoot}
+                      cd sentinel/
+
+                  npm run build
+              node dist/sentinel.js "$@"
+            '';
+          };
+        };
       };
     };
-
-  # This is your module that makes a systemd service and so forth
   flake.nixosModules.sentinel = { lib, pkgs, config, ... }:
     with lib;
     let
