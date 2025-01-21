@@ -30,11 +30,8 @@ let sortedTokens = derived([intents], ([$intents]) =>
 
 function setAsset(denom: string) {
   rawIntents.updateField("asset", denom)
+  rawIntents.set({ asset: denom })
   rotateTo("intentFace")
-}
-
-function toggleZeroBalances() {
-  showZeroBalances.update(value => !value)
 }
 </script>
 

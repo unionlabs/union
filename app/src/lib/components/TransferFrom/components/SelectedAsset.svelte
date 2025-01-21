@@ -29,8 +29,8 @@ export let onSelectAsset: Props["onSelectAsset"]
           class="border-2 font-bold"
           on:click={onSelectAsset}
   >
-    {#if $rawIntents.asset}
-      <Token chains={$intents.chains} chainId={$rawIntents.source} denom={$rawIntents.asset}/>
+    {#if $rawIntents.asset && $intents.sourceChain}
+      <Token chains={$intents.chains} chainId={$intents.sourceChain.chain_id} denom={$rawIntents.asset}/>
     {:else}
       Select Asset
     {/if}

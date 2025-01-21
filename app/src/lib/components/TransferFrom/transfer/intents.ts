@@ -36,7 +36,6 @@ export function createIntentStore(
   const baseTokens = derived([context, sourceChain], ([$context, $sourceChain]) => {
     if (!$sourceChain) return []
     let balances = $context.balances.find(c => c.data?.chain_id === $sourceChain.chain_id)
-    console.log({ balances })
     let baseTokens = $sourceChain.tokens.map(token => ({
       denom: token.denom,
       balance: balances?.data?.balances[token.denom] ?? "0"
