@@ -106,7 +106,7 @@ pub async fn update_tokens_for_source(
         .iter()
         .filter_map(|token| {
             internal_chain_id_by_chain_id
-                .get(&token.chain_id.to_string())
+                .get(&token.chain_id)
                 .map(|internal_chain_id| {
                     (
                         TokenKey {

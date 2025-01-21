@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use reqwest::StatusCode;
-use serde::Deserialize;
+use serde::{de, Deserialize, Deserializer};
 use tracing::{debug, info};
 
 #[derive(Debug, thiserror::Error)]
@@ -62,7 +62,8 @@ pub struct Version {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Token {
-    pub chain_id: i64,
+    #[serde(deserialize_with = "string_or_number")]
+    pub chain_id: String,
     #[serde(with = "hex_as_vec")]
     pub address: Vec<u8>,
     pub name: String,
@@ -85,6 +86,44 @@ impl Display for Token {
     }
 }
 
+fn string_or_number<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserializer.deserialize_any(StringOrNumber)
+}
+
+struct StringOrNumber;
+
+impl<'de> de::Visitor<'de> for StringOrNumber {
+    type Value = String;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string or a number")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(value.to_string())
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(value.to_string())
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(value.to_string())
+    }
+}
+
 mod hex_as_vec {
 
     use serde::{self, Deserialize, Deserializer};
@@ -97,7 +136,8 @@ mod hex_as_vec {
         if let Some(stripped) = hex_str.strip_prefix("0x") {
             hex::decode(stripped).map_err(serde::de::Error::custom)
         } else {
-            Err(serde::de::Error::custom("Hex string must start with '0x'"))
+            // assume it's UTF-8
+            Ok(hex_str.as_bytes().to_vec())
         }
     }
 }
@@ -111,6 +151,19 @@ mod hex_as_vec {
 //         let result =
 //             get_tokens("https://unionlabs.github.io/token-lists/holesky.17000/tokenlist.json")
 //                 .await;
+//         assert!(result.is_ok());
+
+//         let tokens = result.unwrap();
+
+//         assert!(!tokens.tokens.is_empty());
+//     }
+
+//     #[tokio::test]
+//     async fn fetch_string_chain_id() {
+//         let result = get_tokens(
+//             "https://unionlabs.github.io/token-lists/union.union-testnet-9/tokenlist.json",
+//         )
+//         .await;
 //         assert!(result.is_ok());
 
 //         let tokens = result.unwrap();
