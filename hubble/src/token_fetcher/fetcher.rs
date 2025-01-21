@@ -75,11 +75,11 @@ pub async fn update_tokens_for_source(
         .await
         .map_err(|error| UpdateTokensError::GetChainIds(token_source.clone(), error))?;
 
-    let tokens_from_source = get_tokens(&token_source.source_url)
+    let tokens_from_source = get_tokens(&token_source.source_uri)
         .await
         .map_err(|error| UpdateTokensError::FetchTokens(token_source.clone(), error))?;
 
-    if token_source.logo_url != tokens_from_source.logo_uri
+    if token_source.logo_uri != tokens_from_source.logo_uri
         || token_source.name != tokens_from_source.name
     {
         debug!("update source details: {token_source}");
@@ -88,9 +88,9 @@ pub async fn update_tokens_for_source(
             &mut tx,
             &TokenSource {
                 id: token_source.id,
-                source_url: token_source.source_url.clone(),
+                source_uri: token_source.source_uri.clone(),
                 name: tokens_from_source.name,
-                logo_url: tokens_from_source.logo_uri,
+                logo_uri: tokens_from_source.logo_uri,
             },
         )
         .await
@@ -146,7 +146,7 @@ pub async fn update_tokens_for_source(
             .expect("token to exist in db (common)");
 
         if token_from_source.decimals != token_from_db.decimals
-            || token_from_source.logo_uri != token_from_db.logo_url
+            || token_from_source.logo_uri != token_from_db.logo_uri
             || token_from_source.name != token_from_db.name
             || token_from_source.symbol != token_from_db.symbol
         {
@@ -159,7 +159,7 @@ pub async fn update_tokens_for_source(
                 symbol: token_from_source.symbol.clone(),
                 name: token_from_source.name.clone(),
                 decimals: token_from_source.decimals,
-                logo_url: token_from_source.logo_uri.clone(),
+                logo_uri: token_from_source.logo_uri.clone(),
             };
 
             upsert_token_representation(&mut tx, &token_representation)
@@ -189,7 +189,7 @@ pub async fn update_tokens_for_source(
             symbol: token_from_source.symbol.clone(),
             name: token_from_source.name.clone(),
             decimals: token_from_source.decimals,
-            logo_url: token_from_source.logo_uri.clone(),
+            logo_uri: token_from_source.logo_uri.clone(),
         };
 
         upsert_token_representation(&mut tx, &token_representation)

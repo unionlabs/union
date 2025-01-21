@@ -7,14 +7,14 @@ mod postgres;
 #[derive(Clone, Debug)]
 pub struct TokenSource {
     id: i32,
-    source_url: String,
+    source_uri: String,
     name: String,
-    logo_url: Option<String>,
+    logo_uri: Option<String>,
 }
 
 impl Display for TokenSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}: {}", self.id, self.source_url))
+        f.write_fmt(format_args!("{}: {}", self.id, self.source_uri))
     }
 }
 
@@ -26,7 +26,7 @@ pub struct TokenRepresentation {
     symbol: String,
     name: String,
     decimals: i32,
-    logo_url: Option<String>,
+    logo_uri: Option<String>,
 }
 
 impl Display for TokenRepresentation {
@@ -39,7 +39,7 @@ impl Display for TokenRepresentation {
             self.symbol,
             self.name,
             self.decimals,
-            self.logo_url.as_deref().unwrap_or("None")
+            self.logo_uri.as_deref().unwrap_or("None")
         ))
     }
 }

@@ -9,7 +9,7 @@ pub async fn get_token_sources(
 ) -> sqlx::Result<Vec<TokenSource>> {
     Ok(sqlx::query!(
         r#"
-        SELECT id, source_url, name, logo_url
+        SELECT id, source_uri, name, logo_uri
         FROM hubble.token_sources
         WHERE enabled = true
         ORDER BY id
@@ -20,9 +20,9 @@ pub async fn get_token_sources(
     .into_iter()
     .map(|record| TokenSource {
         id: record.id,
-        source_url: record.source_url,
+        source_uri: record.source_uri,
         name: record.name,
-        logo_url: record.logo_url,
+        logo_uri: record.logo_uri,
     })
     .collect())
 }
@@ -33,7 +33,7 @@ pub async fn get_token_representations(
 ) -> sqlx::Result<Vec<TokenRepresentation>> {
     Ok(sqlx::query!(
         r#"
-        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_url
+        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri
         FROM hubble.token_source_representations
         WHERE token_source_id = $1
         "#,
@@ -49,7 +49,7 @@ pub async fn get_token_representations(
         symbol: record.symbol,
         name: record.name,
         decimals: record.decimals,
-        logo_url: record.logo_url,
+        logo_uri: record.logo_uri,
     })
     .collect())
 }
@@ -79,14 +79,14 @@ pub async fn upsert_token_representation(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        INSERT INTO hubble.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_url)
+        INSERT INTO hubble.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (token_source_id, internal_chain_id, address) DO 
         UPDATE SET
             symbol = excluded.symbol,
             name = excluded.name,
             decimals = excluded.decimals,
-            logo_url = excluded.logo_url
+            logo_uri = excluded.logo_uri
         ",
         token_representation.token_source_id,
         token_representation.internal_chain_id,
@@ -94,7 +94,7 @@ pub async fn upsert_token_representation(
         token_representation.symbol,
         token_representation.name,
         token_representation.decimals,
-        token_representation.logo_url,
+        token_representation.logo_uri,
     )
     .execute(tx.as_mut())
     .await?;
@@ -110,15 +110,15 @@ pub async fn update_token_source(
         "
         UPDATE hubble.token_sources
         SET 
-            source_url = $2, 
+            source_uri = $2, 
             name = $3, 
-            logo_url = $4
+            logo_uri = $4
         WHERE id = $1
         ",
         token_source.id,
-        token_source.source_url,
+        token_source.source_uri,
         token_source.name,
-        token_source.logo_url,
+        token_source.logo_uri,
     )
     .execute(tx.as_mut())
     .await?;
