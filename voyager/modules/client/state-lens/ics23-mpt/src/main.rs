@@ -90,12 +90,9 @@ impl ClientModule for Module {
     }
 }
 
-type SelfConsensusState = ConsensusState;
-type SelfClientState = ClientState;
-
 impl Module {
-    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {err}"),
@@ -104,26 +101,24 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<SelfClientState> {
+    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcSolidity => {
-                <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+            SupportedIbcInterface::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
+                .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {err}"),
                         None::<()>,
                     )
-                })
-            }
-            SupportedIbcInterface::IbcCosmwasm => {
-                <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
+                }),
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {err}"),
                         None::<()>,
                     )
-                })
-            }
+                }),
         }
     }
 

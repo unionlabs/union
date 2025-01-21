@@ -11310,6 +11310,7 @@ dependencies = [
  "hex-literal",
  "protos",
  "serde",
+ "state-lens-ics23-mpt-light-client-types",
  "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
