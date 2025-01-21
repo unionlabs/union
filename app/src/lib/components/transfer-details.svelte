@@ -17,6 +17,7 @@ import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
+import Token from "./token.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -73,131 +74,108 @@ let processedTransfers = derived(
         .find((c) => c.chain_id === transfer.destination_chain_id)
         ?.explorers?.at(0)}
       {#if transfer.source_chain_id !== null && transfer.destination_chain_id !== null}
-      <Card.Root
-        class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
-      >
-        <Card.Header
-          class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
+        <Card.Root
+          class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
         >
-          TRANSFER <Truncate
-            value={transfer.packet_send_transaction_hash}
-            type="hash"
-          />
-        </Card.Header>
-        <Card.Content class="flex flex-col gap-8">
-          <section class="flex justify-between">
-            <div>
-            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
-              {#if transfer.base_amount}
-              {@const base_amount = BigInt(transfer.base_amount)}
-                <Truncate
-                  value={("base_token_details" in transfer && transfer.base_token_details?.decimals) ? formatUnits(base_amount, transfer.base_token_details.decimals) : base_amount}
-                  type="full"
-                />
-              {/if}
-              <Truncate
-                value={("base_token_details" in transfer && transfer.base_token_details?.display_symbol) ? transfer.base_token_details.display_symbol : transfer.base_token}
-                type="address"
-              />
-            </h2>
-            <p class="text-muted-foreground text-sm break-words">
-            <Truncate
-              value={transfer.base_token}
-              type="address"
-            /> | {#if "base_token_details" in transfer && transfer.base_token_details}{transfer.base_token_details?.origin}{:else}NO DETAILS{/if}
-            </p>
-
-            </div>
-
-            
-            <div class="flex flex-col items-end">
-            {#if "quote_token" in transfer}
-            <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">
-              {#if "quote_amount" in transfer && transfer.quote_amount}
-              {@const quote_amount = BigInt(transfer.quote_amount)}
-                <Truncate
-                  value={("quote_token_details" in transfer && transfer.quote_token_details?.decimals) ? formatUnits(quote_amount, transfer.quote_token_details.decimals) : quote_amount}
-                  type="full"
-                />
-              {/if}
-            <Truncate
-                value={(transfer.quote_token_details && transfer.quote_token_details.display_symbol) ? transfer.quote_token_details.display_symbol : transfer.quote_token}
-              type="address"
+          <Card.Header
+            class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
+          >
+            TRANSFER <Truncate
+              value={transfer.packet_send_transaction_hash}
+              type="hash"
             />
-            </h2>
-            <p class="text-muted-foreground text-sm break-words">
-            <Truncate
-              value={transfer.quote_token}
-              type="address"
-            /> | {#if  "quote_token_details" in transfer && "quote_token_details" in transfer && transfer.quote_token_details}{transfer.quote_token_details?.origin}{:else}NO DETAILS{/if}
+          </Card.Header>
+          <Card.Content class="flex flex-col gap-8">
+            <section class="flex justify-between">
+              <div>
+                <div class="flex flex-col gap-6">
+                  {#if transfer.base_amount && transfer.base_token}
+                    <Token
+                      expanded="true"
+                      amount={transfer.base_amount}
+                      denom={transfer.base_token}
+                      chainId={transfer.source_chain_id}
+                      {chains}
+                    />
+                  {/if}
+                  {#if "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
+                    <Token
+                      expanded="true"
+                      amount={transfer.quote_amount}
+                      denom={transfer.quote_token}
+                      chainId={transfer.destination_chain_id}
+                      {chains}
+                    />
+                  {/if}
+                </div>
+              </div>
+            </section>
 
-            </p>
+            <section>
+              <!-- typescript is stupid here, as source_chain_id and destination_chain_id have already established not to be null. !-->
+              <PacketPath packet={transfer} {chains} />
+            </section>
+            <section class="flex flex-col lg:flex-row gap-8">
+              <div class="flex-col text-muted-foreground">
+                <DetailsHeading>Sender</DetailsHeading>
+                {#if sourceExplorer !== undefined}
+                  <a
+                    href={`/explorer/address/${transfer.sender}`}
+                    class="block text-sm underline break-words"
+                    ><Truncate
+                      class="underline"
+                      value={transfer.sender}
+                      type="address"
+                    />
+                  </a>{:else}<p class="text-sm break-words">
+                    <Truncate value={transfer.sender} type="address" />
+                  </p>{/if}
+                <p
+                  class={cn(
+                    "text-[10px] break-words",
+                    "normalized_sender" in transfer &&
+                      transfer.normalized_sender
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent",
+                  )}
+                ></p>
+              </div>
+              <div class="flex-1 lg:text-right flex-col text-muted-foreground">
+                <DetailsHeading>Receiver</DetailsHeading>
+                {#if destinationExplorer !== undefined}
+                  <a
+                    href={`/explorer/address/${transfer.receiver}`}
+                    class="block text-sm underline break-words"
+                    ><Truncate
+                      class="underline"
+                      value={transfer.receiver}
+                      type="address"
+                    />
+                  </a>{:else}<p class="text-sm break-words">
+                    <Truncate value={transfer.receiver} type="address" />
+                  </p>{/if}
+                <p
+                  class={cn(
+                    "text-[10px] break-words",
+                    "normalized_receiver" in transfer &&
+                      transfer.normalized_receiver
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent",
+                  )}
+                ></p>
+              </div>
+            </section>
+          </Card.Content>
+          <Card.Footer class="items-start flex flex-col w-full gap-4">
+            <div class="font-bold text-md">{transfer.transfer_day}</div>
+            {#if transfer.traces}
+              <Trace traces={transfer.traces} {chains} />
+            {:else}
+              <LoadingLogo />
             {/if}
-            </div>
-            
-          </section>
-
-          <section>
-            <!-- typescript is stupid here, as source_chain_id and destination_chain_id have already established not to be null. !-->
-            <PacketPath packet={transfer} {chains}/>
-          </section>
-          <section class="flex flex-col lg:flex-row gap-8">
-            <div class="flex-col text-muted-foreground">
-              <DetailsHeading>
-                Sender
-              </DetailsHeading>
-              {#if sourceExplorer !== undefined}
-                <a
-                  href={`/explorer/address/${transfer.sender}`}
-                  class="block text-sm underline break-words"
-                  ><Truncate class="underline" value={transfer.sender} type="address"/>
-                </a>{:else}<p class="text-sm break-words">
-                  <Truncate value={transfer.sender} type="address"/>
-                </p>{/if}
-              <p
-                class={cn(
-                  "text-[10px] break-words",
-                  "normalized_sender" in transfer && transfer.normalized_sender
-                    ? "text-black dark:text-muted-foreground"
-                    : "text-transparent"
-                )}
-              >
-              </p>
-            </div>
-            <div class="flex-1 lg:text-right flex-col text-muted-foreground">
-              <DetailsHeading>
-                Receiver
-              </DetailsHeading>
-              {#if destinationExplorer !== undefined}
-                <a
-                  href={`/explorer/address/${transfer.receiver}`}
-                  class="block text-sm underline break-words"
-                  ><Truncate class="underline" value={transfer.receiver} type="address"/>
-                </a>{:else}<p class="text-sm break-words">
-                  <Truncate value={transfer.receiver} type="address"/>
-                </p>{/if}
-              <p
-                class={cn(
-                  "text-[10px] break-words",
-                  "normalized_receiver" in transfer && transfer.normalized_receiver
-                    ? "text-black dark:text-muted-foreground"
-                    : "text-transparent"
-                )}
-              >
-              </p>
-            </div>
-          </section>
-        </Card.Content>
-        <Card.Footer class="items-start flex flex-col w-full gap-4">
-          <div class="font-bold text-md">{transfer.transfer_day}</div>
-          {#if transfer.traces}
-            <Trace traces={transfer.traces} {chains}/>
-          {:else}
-            <LoadingLogo />
-          {/if}
-        </Card.Footer>
-      </Card.Root>
-      <!--
+          </Card.Footer>
+        </Card.Root>
+        <!--
       <div class="text-transparent hover:text-muted-foreground transition text-xs overflow-hidden">
         {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
@@ -210,4 +188,3 @@ let processedTransfers = derived(
 {:else if $transfers.isError}
   Error loading transfer data
 {/if}
-
