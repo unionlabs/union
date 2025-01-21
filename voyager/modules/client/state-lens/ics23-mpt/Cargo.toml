@@ -4,6 +4,7 @@ name    = "voyager-client-module-state-lens-ics23-mpt"
 version = "0.1.0"
 
 [dependencies]
+alloy                                   = { workspace = true, features = ["sol-types"] }
 beacon-api-types                        = { workspace = true, features = ["serde"] }
 chain-utils                             = { workspace = true }
 enumorph                                = { workspace = true }

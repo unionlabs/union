@@ -5,16 +5,19 @@ name                   = "state-lens-light-client-types"
 repository.workspace   = true
 version                = "0.1.0"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 alloy      = { workspace = true, optional = true, features = ["sol-types", "dyn-abi"] }
 bincode    = { workspace = true, optional = true, features = ["alloc", "derive"] }
-protos     = { workspace = true, optional = true, features = ["proto_full", "serde"] }
 serde      = { workspace = true, optional = true, features = ["derive"] }
 thiserror  = { workspace = true }
-tuple_join = { version = "0.1.0", optional = true }
-unionlabs  = { workspace = true, features = ["ethabi", "proto"] }
+tuple_join = { version = "0.1.0" }
+unionlabs  = { workspace = true }
 
 [dev-dependencies]
+bcs                           = { workspace = true }
 hex-literal                   = { workspace = true }
 serde_json                    = { workspace = true }
 state-lens-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
@@ -24,7 +27,7 @@ unionlabs                     = { workspace = true, features = ["test-utils"] }
 default = []
 
 bincode = ["dep:bincode", "unionlabs/bincode"]
-ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "dep:tuple_join"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy"]
 serde   = ["dep:serde"]
 
 [lints]
