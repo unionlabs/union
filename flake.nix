@@ -361,8 +361,6 @@
                 then
                   echo "We are at the repository root. Running script..."
                 else
-                  echo "current path is: $(pwd)"
-                  echo "files in current path are: $(ls)" 
                   echo "We are NOT at the repository root. Please cd to the repository root and try again."
                   exit 1
                 fi

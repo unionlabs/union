@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/sentinel.js"
+    "start": "node dist/sentinel.js",
+    "dev": "npx tsx src/sentinel.ts --config config.json"
   }
 }
