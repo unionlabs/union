@@ -1,40 +1,36 @@
-{ self, ... }: {
+{ self, ... }:
+{
+  # This “perSystem” function is where we build the sentinel package.
   perSystem = { pkgs, unstablePkgs, ensureAtRepositoryRoot, ... }:
     let
-      # Define the TypeScript-based Sentinel application
       sentinelApp = unstablePkgs.writeShellApplication {
         name = "sentinel";
         text = ''
+          # Make sure we are at repository root
+          # where are we?
+          echo "Current directory: $(pwd)"
+          
           ${ensureAtRepositoryRoot}
 
-          # Navigate to the correct project directory
+          # Navigate to sentinel/ subdirectory
           cd sentinel/
 
-          # Ensure dependencies are installed
-          if [ ! -f package.json ]; then
-            echo "Error: package.json not found in sentinel directory"
-            exit 1
-          fi
+          # Install dependencies and build
           npm install
-
-          # Build the TypeScript application
           npm run build
 
-          # Run the built application with arguments
+          # Run it
           node dist/sentinel.js "$@"
         '';
       };
     in
     {
-      # Expose the app for use
-      apps = {
-        sentinel = {
-          type = "app";
-          program = sentinelApp;
-        };
+      packages = {
+        sentinel = sentinelApp;
       };
     };
 
+  # This is your module that makes a systemd service and so forth
   flake.nixosModules.sentinel = { lib, pkgs, config, ... }:
     with lib;
     let
@@ -45,10 +41,11 @@
         enable = mkEnableOption "Sentinel service";
         package = mkOption {
           type = types.package;
-          default = self.apps.sentinel.program;
+          # Now we can reference it correctly
+          default = self.packages.${pkgs.system}.sentinel;
         };
         cycleIntervalMs = mkOption {
-          type = types.attrs;
+          type = types.number;
           description = "Interval between cycles in milliseconds";
         };
         interactions = mkOption {
@@ -59,41 +56,34 @@
           type = types.str;
           default = "info";
           description = "Log level for Sentinel";
-          example = "info";
-        };
-        logFormat = mkOption {
-          type = types.enum [ "json" "text" ];
-          default = "json";
-          description = "Log format for Sentinel output";
-          example = "text";
         };
       };
 
-      config =
-        let
-          # Generate the config.json file from NixOS options
-          configJson = pkgs.writeText "config.json" (builtins.toJSON {
-            cycleIntervalMs = cfg.cycleIntervalMs;
-            interactions = cfg.interactions;
-          });
-        in
-        mkIf cfg.enable {
-          # Define the systemd service
-          systemd.services.sentinel = {
-            description = "Sentinel Service";
-            wantedBy = [ "multi-user.target" ];
-            after = [ "network.target" ];
-            serviceConfig = {
-              Type = "simple";
-              ExecStart = "${cfg.package} --config ${configJson} -l ${cfg.logFormat}";
-              Restart = "always";
-              RestartSec = 10;
-            };
-            environment = {
-              NODE_ENV = "production";
-              LOG_LEVEL = cfg.logLevel;
-            };
+      config = mkIf cfg.enable {
+        # Write config.json from user-provided cycleIntervalMs & interactions
+        # so the sentinel script can read them
+        systemd.services.sentinel = {
+          description = "Sentinel Service";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "network.target" ];
+          serviceConfig = {
+            Type = "simple";
+            ExecStart = ''
+              ${pkgs.lib.getExe cfg.package} --config ${
+                pkgs.writeText "config.json" (builtins.toJSON {
+                  cycleIntervalMs = cfg.cycleIntervalMs;
+                  interactions = cfg.interactions;
+                })
+              }
+            '';
+            Restart = "always";
+            RestartSec = 10;
+          };
+          environment = {
+            NODE_ENV = "production";
+            LOG_LEVEL = cfg.logLevel;
           };
         };
+      };
     };
 }
