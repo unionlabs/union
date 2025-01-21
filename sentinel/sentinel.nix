@@ -33,10 +33,29 @@
           installPhase = ''
             echo "Current directory: $(pwd)"
             echo "out is $out"
-            mkdir -p $out
-            echo "under build: $(ls ./build)"
-            cp -r ./build/* $out
+
+            # 1) Copy the compiled ESM .js
+            mkdir -p $out/lib
+            cp -r dist/* $out/lib
+
+            # 2) Copy node_modules
+            cp -r node_modules $out/lib/node_modules
+
+            # 3) Copy package.json
+            cp package.json $out/lib
+
+            # 4) Create a Bash wrapper in $out/bin
+            mkdir -p $out/bin
+
+            # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+            echo '#!/usr/bin/env bash' > $out/bin/sentinel
+            echo 'cd "$out/lib"' >> $out/bin/sentinel
+            echo 'export NODE_PATH="$out/lib/node_modules"' >> $out/bin/sentinel
+            echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' sentinel.js "$@"' >> $out/bin/sentinel
+
+            chmod +x $out/bin/sentinel
           '';
+
           doDist = false;
           NODE_OPTIONS = "--no-warnings";
         };
