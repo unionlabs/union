@@ -9,7 +9,7 @@ module ibc::ibc {
     use std::event;
     use std::bcs;
     use std::object;
-    use std::string::{Self, String};
+    use std::string::{String};
     use std::hash;
     use std::option::{Self, Option};
     use std::string_utils;
@@ -261,7 +261,7 @@ module ibc::ibc {
 
     /// Create a client with an initial client and consensus state.
     ///
-    /// * `client_type`: Strictly "cometbls" for now.
+    /// * `client_type`: "cometbls" or "state-lens/ics23/mpt".
     /// * `client_state`: The initial state of the client. The encoding is defined by the underlying client implementation.
     /// * `consensus_state`: The consensus state at an initial height. The encoding is defined by the underlying client implementation.
     public entry fun create_client(
@@ -346,13 +346,13 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_init` was generated.
     public entry fun connection_open_try(
-        client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
         client_id: u32,
         proof_init: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
+        let client_type = client_id_to_type(client_id);
         let connection_id = generate_connection_identifier();
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -412,12 +412,20 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_try` was generated.
     public entry fun connection_open_ack(
-        client_type: String,
         connection_id: u32,
         counterparty_connection_id: u32,
         proof_try: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
+        let client_type =
+            client_id_to_type(
+                connection_end::client_id(
+                    smart_table::borrow(
+                        &borrow_global<IBCStore>(get_vault_addr()).connections,
+                        connection_id
+                    )
+                )
+            );
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         assert!(
@@ -481,17 +489,18 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_ack` was generated.
     public entry fun connection_open_confirm(
-        client_type: String,
-        connection_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64
+        connection_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires IBCStore {
+        let client_type =
+            client_id_to_type(
+                connection_end::client_id(
+                    smart_table::borrow(
+                        &borrow_global<IBCStore>(get_vault_addr()).connections,
+                        connection_id
+                    )
+                )
+            );
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        assert!(
-            smart_table::contains(&store.connections, connection_id),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
         assert!(
@@ -545,8 +554,9 @@ module ibc::ibc {
     /// the client update data. The light client just needs to make sure altering this data can NEVER make it
     /// transition to an invalid state.
     public entry fun update_client(
-        client_type: String, client_id: u32, client_message: vector<u8>
+        client_id: u32, client_message: vector<u8>
     ) acquires IBCStore {
+        let client_type = client_id_to_type(client_id);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         assert!(
@@ -590,7 +600,7 @@ module ibc::ibc {
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
-            event::emit(ClientUpdated { client_id, client_type: client_type, height });
+            event::emit(ClientUpdated { client_id, client_type, height });
 
             i = i + 1;
         };
@@ -605,7 +615,7 @@ module ibc::ibc {
     /// * `misbehaviour`: Light client defined misbehaviour data. It's the responsibility of the caller to gather and encode
     ///   the correct data. The light client MUST detect any invalid misbehaviors and ignore those.
     public entry fun submit_misbehaviour(
-        client_type: String, client_id: u32, misbehaviour: vector<u8>
+        client_id: u32, misbehaviour: vector<u8>
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -617,9 +627,11 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
+        let client_type = client_id_to_type(client_id);
+
         light_client::report_misbehaviour(client_type, client_id, misbehaviour);
 
-        event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
+        event::emit(SubmitMisbehaviour { client_id, client_type });
     }
 
     /// Execute the init phase of the channel handshake. `T` is the witness type of the target module that is
@@ -706,7 +718,6 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_init` was generated.
     public fun channel_open_try<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         connection_id: u32,
         counterparty_channel_id: u32,
@@ -720,6 +731,8 @@ module ibc::ibc {
         assert!(port.port_id == port_id, E_UNAUTHORIZED);
 
         let client_id = ensure_connection_state(connection_id);
+
+        let client_type = client_id_to_type(client_id);
 
         let expected_channel =
             channel::new(
@@ -816,7 +829,6 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_try` was generated.
     public fun channel_open_ack<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         channel_id: u32,
         counterparty_version: String,
@@ -849,6 +861,8 @@ module ibc::ibc {
                 bcs::to_bytes(&port.port_id),
                 counterparty_version
             );
+
+        let client_type = client_id_to_type(client_id);
 
         let err =
             verify_channel_state(
@@ -892,7 +906,6 @@ module ibc::ibc {
     ///   by the light client (`client_id`).
     /// * `proof_height`: The height at when `proof_ack` was generated.
     public fun channel_open_confirm<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         channel_id: u32,
         proof_ack: vector<u8>,
@@ -922,6 +935,8 @@ module ibc::ibc {
                 *channel::counterparty_port_id(&chan),
                 *channel::version(&chan)
             );
+
+        let client_type = client_id_to_type(client_id);
 
         let err =
             verify_channel_state(
@@ -1058,7 +1073,6 @@ module ibc::ibc {
     }
 
     public(friend) fun timeout_packet<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         packet_source_channel: u32,
         packet_destination_channel: u32,
@@ -1085,6 +1099,7 @@ module ibc::ibc {
         let destination_channel = packet::destination_channel(&packet);
         let channel = ensure_channel_state(source_channel);
         let client_id = ensure_connection_state(channel::connection_id(&channel));
+        let client_type = client_id_to_type(client_id);
 
         let proof_timestamp =
             light_client::get_timestamp_at_height(client_type, client_id, proof_height);
@@ -1157,6 +1172,12 @@ module ibc::ibc {
     }
 
     // ========= UTILS and VIEW functions ========= //
+
+    #[view]
+    public fun client_id_to_type(client_id: u32): String acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        *smart_table::borrow(&store.client_id_to_type, client_id)
+    }
 
     #[view]
     public fun get_module(channel_id: u32): address acquires IBCStore {
@@ -1348,13 +1369,13 @@ module ibc::ibc {
     }
 
     public fun verify_commitment(
-        client_type: String,
         client_id: u32,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>,
         commitment: vector<u8>
-    ): u64 {
+    ): u64 acquires IBCStore {
+        let client_type = client_id_to_type(client_id);
         light_client::verify_membership(
             client_type,
             client_id,
@@ -1490,12 +1511,12 @@ module ibc::ibc {
 
     fun verify_absent_commitment(
         client_type: String,
-        clientId: u32,
+        client_id: u32,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
-        light_client::verify_non_membership(client_type, clientId, height, proof, path)
+        light_client::verify_non_membership(client_type, client_id, height, proof, path)
     }
 
     fun address_to_string(addr: address): String {

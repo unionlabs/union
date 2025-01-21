@@ -8,7 +8,6 @@ module ibc::statelens_lc {
     use aptos_std::bcs;
     use aptos_std::object;
 
-    use ibc::ics23;
     use ibc::height::{Self, Height};
     use ibc::ethabi;
     use ibc::bcs_utils;
@@ -129,11 +128,11 @@ module ibc::statelens_lc {
             cometbls_lc::verify_membership(
                 state.client_state.l1_client_id,
                 height::get_revision_height(&header.l1_height),
-                commitment::consensus_state_path(
+                header.l2_consensus_state_proof,
+                commitment::consensus_state_commitment_key(
                     state.client_state.l2_client_id,
                     height::get_revision_height(&header.l2_height)
                 ),
-                header.l2_consensus_state_proof,
                 keccak256(header.l2_consensus_state)
             ) == 0,
             E_L2_CONSENSUS_STATE_PROOF_VERIFICATION
@@ -210,12 +209,15 @@ module ibc::statelens_lc {
         0
     }
 
-    public fun get_client_state(_client_id: u32): vector<u8> {
-        vector::empty()
+    public fun get_client_state(client_id: u32): vector<u8> acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
+        bcs::to_bytes(&state.client_state)
     }
 
-    public fun get_consensus_state(_client_id: u32, _height: u64): vector<u8> {
-        vector::empty()
+    public fun get_consensus_state(client_id: u32, height: u64): vector<u8> acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
+        let consensus_state = smart_table::borrow(&state.consensus_states, height);
+        encode_consensus_state(consensus_state)
     }
 
     public fun check_for_misbehaviour(
@@ -247,11 +249,10 @@ module ibc::statelens_lc {
     }
 
     fun decode_consensus_state(buf: vector<u8>): ConsensusState {
-        let buf = bcs_utils::new(buf);
-
-        let timestamp = bcs_utils::peel_u64(&mut buf);
-        let state_root = bcs_utils::peel_fixed_bytes(&mut buf, 32);
-        let storage_root = bcs_utils::peel_fixed_bytes(&mut buf, 32);
+        let index = 0;
+        let timestamp = (ethabi::decode_uint(&buf, &mut index) as u64);
+        let state_root = vector::slice(&buf, 32, 64);
+        let storage_root = vector::slice(&buf, 64, 96);
 
         ConsensusState { timestamp, state_root, storage_root }
     }
@@ -292,5 +293,16 @@ module ibc::statelens_lc {
         let vault_addr = object::create_object_address(&@ibc, b"IBC_VAULT_SEED");
 
         object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
+    }
+
+    #[test]
+    fun decode_test() {
+        let client_state = x"0531373030300100000013000000e898300000000000000020004000";
+        let client_state = decode_client_state(client_state);
+        let consensus_state =
+            x"000000000000000000000000000000000000000000000000181c75935aab8000f5c411575dae56d013ca1b7626896a9e96b457c14043091768d3d021fd5ebf333a42f6ef5bdc9ebe38b19ba1b8578f6e20e2a552bba787951c185159c721a165";
+        let consensus_state = decode_consensus_state(consensus_state);
+        std::debug::print(&client_state);
+        std::debug::print(&consensus_state);
     }
 }

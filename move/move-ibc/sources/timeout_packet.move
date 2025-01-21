@@ -4,10 +4,8 @@ module ibc::timeout_packet {
     use ibc::dispatcher;
     use ibc::helpers;
     use ibc::ibc;
-    use std::string::{String};
 
     public entry fun timeout_packet<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         packet_source_channel: u32,
         packet_destination_channel: u32,
@@ -20,7 +18,6 @@ module ibc::timeout_packet {
     ) {
         let packet =
             ibc::timeout_packet<T>(
-                client_type,
                 port_id,
                 packet_source_channel,
                 packet_destination_channel,

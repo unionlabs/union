@@ -1,7 +1,6 @@
 module ibc::mpt_verifier {
 
     use aptos_std::vector;
-    use std::string;
     use std::bcs;
     use aptos_std::aptos_hash::keccak256;
 
@@ -533,9 +532,9 @@ module ibc::mpt_verifier {
         let key = keccak256(slot);
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
-        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&std::string::utf8(b"is_exists:"));
         std::debug::print(&is_exists);
-        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&std::string::utf8(b"value:"));
         std::debug::print(&value);
         assert!(!is_exists, 1001);
     }
@@ -572,9 +571,9 @@ module ibc::mpt_verifier {
         let key = keccak256(slot);
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
-        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&std::string::utf8(b"is_exists:"));
         std::debug::print(&is_exists);
-        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&std::string::utf8(b"value:"));
         std::debug::print(&value);
         assert!(is_exists, 1001);
         assert!(value == x"01", 1002);
@@ -605,9 +604,9 @@ module ibc::mpt_verifier {
         let key = keccak256(keccak256(slot));
 
         let (is_exists, value) = verify_trie_value(&proofChain, &key, storage_root);
-        std::debug::print(&string::utf8(b"is_exists:"));
+        std::debug::print(&std::string::utf8(b"is_exists:"));
         std::debug::print(&is_exists);
-        std::debug::print(&string::utf8(b"value:"));
+        std::debug::print(&std::string::utf8(b"value:"));
         std::debug::print(&value);
         assert!(is_exists, 1001);
         assert!(value == expected_valude, 1002);
@@ -685,7 +684,7 @@ module ibc::mpt_verifier {
         let buf: vector<u8> =
             x"f90211a0b51ceda38c7c0d96cee1d651d8c9001299aae0a56dd4778366faccf8c89802f0a011e1adf2007c6afdc9300271c03ad104cf9ed625a3cca7050416449175f7ef21a0e4187606d7baba63b37fd6978f264374e8d7289da084c4a56170ce1e438ff0f0a061869b1b76c51cc75983fc4792b3fc9c1c5e366a76149979920143afd2899770a0ae2ffd634be69d00ca955e55ad4bb4c1065d40938f82f56d678a87180087d2aba0dcfab65101c9968d7891a91ffc1d6c8bcda2773458d802feca923a7d938f7695a0c62fdc1d9731b77b5310a9a9e1bc9edb79976637f6f29c13ce49459ef7cdb7d5a0fce12c4968e940f0f7dbe888d359b81425bde60f261761608465fd74fa390828a04f77e522f007df2b5c6090006e531d113647900ef01ce8ddad6b6b908e786ce9a04beb43119c19f9f2b94738830b8ca07ce2cb40a2fc60e51567810deda9719527a05085bfa24339e17ba1305a8d7c93468ab8414fde3b1b0ce77ea3f196e16217eaa0071e1a46d2a544b7cc24d3153619887ab88606501aea6f30f03e084dab9da01aa0a27d98ca7583cd6f303c41747e5109978c3399cb632283a9a6d5300366bfc97ca0c38268688069ddd9ec101532ea6f0253025f9df93c6d5e916968221232f8da00a0654ec1fadfb6c2d7849b96c26a1373e111cc6fd30c408ee833e0e2a89c4828f7a04a1eba1371dffabf57cd6f2a1774d2d464968546390a9f4dd78a76444cfce53580";
         let result = parse_nodes(&buf);
-        std::debug::print(&string::utf8(b"result: "));
+        std::debug::print(&std::string::utf8(b"result: "));
         std::debug::print(&result);
 
     }
