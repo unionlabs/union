@@ -13159,6 +13159,7 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-mpt"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "beacon-api-types",
  "chain-utils",
  "enumorph",
