@@ -132,24 +132,23 @@
     };
   };
   outputs =
-    inputs@{
-      self,
-      nixpkgs,
-      nixpkgs-solc,
-      nixpkgs-go,
-      flake-parts,
-      nix-filter,
-      foundry,
-      treefmt-nix,
-      ibc-go,
-      ics23,
-      cosmosproto,
-      gogoproto,
-      googleapis,
-      get-flake,
-      wasmd,
-      solc,
-      ...
+    inputs@{ self
+    , nixpkgs
+    , nixpkgs-solc
+    , nixpkgs-go
+    , flake-parts
+    , nix-filter
+    , foundry
+    , treefmt-nix
+    , ibc-go
+    , ics23
+    , cosmosproto
+    , gogoproto
+    , googleapis
+    , get-flake
+    , wasmd
+    , solc
+    , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       flake = {
@@ -223,29 +222,31 @@
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
+        ./sentinel/sentinel.nix
         treefmt-nix.flakeModule
       ];
 
       perSystem =
-        {
-          config,
-          self',
-          pkgs,
-          rust,
-          system,
-          lib,
-          ...
+        { config
+        , self'
+        , pkgs
+        , rust
+        , system
+        , lib
+        , ...
         }:
         let
           mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           dbg =
             value:
-            builtins.trace (
-              if value ? type && value.type == "derivation" then
-                "derivation: ${value}"
-              else
-                pkgs.lib.generators.toPretty { } value
-            ) value;
+            builtins.trace
+              (
+                if value ? type && value.type == "derivation" then
+                  "derivation: ${value}"
+                else
+                  pkgs.lib.generators.toPretty { } value
+              )
+              value;
 
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
@@ -322,31 +323,32 @@
 
                     solc =
                       if system == "aarch64-linux" then
-                        super.gccStdenv.mkDerivation rec {
-                          pname = "solc";
-                          version = "0.8.27";
-                          src = pkgs.fetchurl {
-                            url = "https://github.com/nikitastupin/solc/raw/main/linux/aarch64/solc-v${version}";
-                            hash = "sha256-L5W7foccAyGJmcvINqByiDMJUYPuy0AOaVWKDvahCac=";
-                          };
-                          dontUnpack = true;
-                          nativeBuildInputs = [
-                            super.stdenv.cc.cc.lib
-                            super.autoPatchelfHook
-                          ];
-                          installPhase = ''
-                            runHook preInstall
-                            mkdir -p $out/bin
-                            cp ${src} $out/bin/solc
-                            chmod +x $out/bin/solc
-                            runHook postInstall
-                          '';
-                          meta = {
-                            description = "Static binary of compiler for Ethereum smart contract language Solidity";
-                            homepage = "https://github.com/ethereum/solidity";
-                            license = super.lib.licenses.gpl3;
-                          };
-                        }
+                        super.gccStdenv.mkDerivation
+                          rec {
+                            pname = "solc";
+                            version = "0.8.27";
+                            src = pkgs.fetchurl {
+                              url = "https://github.com/nikitastupin/solc/raw/main/linux/aarch64/solc-v${version}";
+                              hash = "sha256-L5W7foccAyGJmcvINqByiDMJUYPuy0AOaVWKDvahCac=";
+                            };
+                            dontUnpack = true;
+                            nativeBuildInputs = [
+                              super.stdenv.cc.cc.lib
+                              super.autoPatchelfHook
+                            ];
+                            installPhase = ''
+                              runHook preInstall
+                              mkdir -p $out/bin
+                              cp ${src} $out/bin/solc
+                              chmod +x $out/bin/solc
+                              runHook postInstall
+                            '';
+                            meta = {
+                              description = "Static binary of compiler for Ethereum smart contract language Solidity";
+                              homepage = "https://github.com/ethereum/solidity";
+                              license = super.lib.licenses.gpl3;
+                            };
+                          }
                       else
                         super.solc_0_8_27;
                   })
