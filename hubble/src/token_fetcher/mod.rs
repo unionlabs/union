@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
 mod client;
-mod postgres;
 mod fetcher;
+mod postgres;
 
 #[derive(Clone, Debug)]
 pub struct TokenSource {

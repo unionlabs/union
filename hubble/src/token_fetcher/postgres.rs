@@ -88,12 +88,12 @@ pub async fn upsert_token_representation(
             decimals = excluded.decimals,
             logo_url = excluded.logo_url
         ",
-        token_representation.token_source_id, 
-        token_representation.internal_chain_id, 
-        token_representation.address, 
-        token_representation.symbol, 
-        token_representation.name, 
-        token_representation.decimals, 
+        token_representation.token_source_id,
+        token_representation.internal_chain_id,
+        token_representation.address,
+        token_representation.symbol,
+        token_representation.name,
+        token_representation.decimals,
         token_representation.logo_url,
     )
     .execute(tx.as_mut())
@@ -115,10 +115,10 @@ pub async fn update_token_source(
             logo_url = $4
         WHERE id = $1
         ",
-        token_source.id, 
-        token_source.source_url, 
-        token_source.name, 
-        token_source.logo_url, 
+        token_source.id,
+        token_source.source_url,
+        token_source.name,
+        token_source.logo_url,
     )
     .execute(tx.as_mut())
     .await?;
@@ -133,8 +133,7 @@ pub async fn get_internal_chain_id_by_chain_id(
         .fetch_all(tx.as_mut())
         .await?;
 
-    let result: HashMap<String, i32> =
-        rows.into_iter().map(|row| (row.chain_id, row.id)).collect();
+    let result: HashMap<String, i32> = rows.into_iter().map(|row| (row.chain_id, row.id)).collect();
 
     Ok(result)
 }
