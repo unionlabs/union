@@ -13,10 +13,8 @@ import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer
 
 export let chains: Array<Chain>
 
-$: userBalancesQueries = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
-$: balanceStore.set($userBalancesQueries.map(query => query.data || []))
-
-const stores = createTransferStore(chains)
+let balances = userBalancesQuery({ chains, userAddr: $userAddress })
+const stores = createTransferStore(chains, balances)
 </script>
 
 <Cube>
@@ -33,7 +31,7 @@ const stores = createTransferStore(chains)
   </div>
 
   <div slot="assets" let:rotateTo class="w-full h-full">
-    <Assets {stores} {rotateTo}/>
+    <Assets {stores} {chains} {rotateTo}/>
   </div>
 
   <div slot="transfer" let:rotateTo class="w-full h-full">

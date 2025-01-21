@@ -7,6 +7,8 @@ import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/typ
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import { derived, writable } from "svelte/store"
+import Token from "$lib/components/token.svelte"
+import type { Chain } from "$lib/types"
 
 interface Props {
   stores: {
@@ -16,6 +18,7 @@ interface Props {
   rotateTo: (face: CubeFaces) => void
 }
 
+export let chains: Array<Chain>
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
@@ -57,6 +60,17 @@ function toggleZeroBalances() {
     </button>
   </div>
 
+  <div class="flex flex-col overflow-y-auto">
+  {#each $intents.baseTokens as token}
+    <button
+            class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
+            on:click={() => setAsset(token.denom)}
+    >
+      <Token chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+    </button>
+  {/each}
+  </div>
+  <!--
   {#if $filteredAssets.length}
     <div class="flex-1 overflow-y-auto">
       {#each $filteredAssets as asset (asset)}
@@ -81,4 +95,5 @@ function toggleZeroBalances() {
       <p>No spendable balances</p>
     </div>
   {/if}
+  !-->
 </div>

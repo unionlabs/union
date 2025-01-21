@@ -17,6 +17,7 @@ export interface IntentsStore {
   destinationChain: Chain | null
   selectedAsset: SelectedAsset
   sourceAssets: Array<AssetListItem>
+  baseTokens: Array<{ denom: string; balance: string }>
   receiver: string
   amount: string
 }
@@ -34,6 +35,18 @@ export function createIntentStore(
     ([$intents, $context]) =>
       $context.chains.find(chain => chain.chain_id === $intents.destination) ?? null
   )
+
+  const baseTokens = derived([context, sourceChain], ([$context, $sourceChain]) => {
+    if (!$sourceChain) return []
+    let balances = $context.balances.find(c => c.data?.chain_id === $sourceChain.chain_id)
+    console.log({ balances })
+    let baseTokens = $sourceChain.tokens.map(token => ({
+      denom: token.denom,
+      balance: balances?.data?.balances[token.denom] ?? "0"
+    }))
+
+    return baseTokens
+  })
 
   const sourceAssets = derived([context, sourceChain], ([$context, $sourceChain]) => {
     if (!$sourceChain) return []
@@ -54,10 +67,18 @@ export function createIntentStore(
   })
 
   return derived(
-    [sourceChain, destinationChain, selectedAsset, sourceAssets, rawIntents],
-    ([$sourceChain, $destinationChain, $selectedAsset, $sourceAssets, $rawIntents]) => ({
+    [sourceChain, destinationChain, baseTokens, selectedAsset, sourceAssets, rawIntents],
+    ([
+      $sourceChain,
+      $destinationChain,
+      $baseTokens,
+      $selectedAsset,
+      $sourceAssets,
+      $rawIntents
+    ]) => ({
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
+      baseTokens: $baseTokens,
       selectedAsset: $selectedAsset,
       sourceAssets: $sourceAssets,
       receiver: $rawIntents.receiver,
