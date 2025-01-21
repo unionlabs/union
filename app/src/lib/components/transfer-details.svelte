@@ -93,7 +93,7 @@
           <Card.Content class="flex flex-col gap-8">
             <section class="flex justify-between">
               <div>
-                <div class="block">
+                <div class="flex flex-col gap-4">
                   {#if transfer.base_amount && transfer.base_token}
                     <Token
                       amount={transfer.base_amount}

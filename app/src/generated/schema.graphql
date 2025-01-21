@@ -9195,6 +9195,9 @@ columns and relationships of "v1_ibc_union.token_unwrapping"
 """
 type v1_ibc_union_token_unwrapping {
   destination_channel_id: Int
+
+  """An object relationship"""
+  unwrapped_chain: v1_ibc_union_chains
   unwrapped_denom: String
 
   """An object relationship"""
@@ -9233,6 +9236,7 @@ input v1_ibc_union_token_unwrapping_bool_exp {
   _not: v1_ibc_union_token_unwrapping_bool_exp
   _or: [v1_ibc_union_token_unwrapping_bool_exp!]
   destination_channel_id: Int_comparison_exp
+  unwrapped_chain: v1_ibc_union_chains_bool_exp
   unwrapped_denom: String_comparison_exp
   wrapped_chain: v1_ibc_union_chains_bool_exp
 }
@@ -9258,6 +9262,7 @@ Ordering options when selecting data from "v1_ibc_union.token_unwrapping".
 """
 input v1_ibc_union_token_unwrapping_order_by {
   destination_channel_id: order_by
+  unwrapped_chain: v1_ibc_union_chains_order_by
   unwrapped_denom: order_by
   wrapped_chain: v1_ibc_union_chains_order_by
 }

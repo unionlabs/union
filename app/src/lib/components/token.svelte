@@ -2,7 +2,7 @@
   import type { Chain, TokenInfo } from "$lib/types";
   import TokenQualityLevel from "$lib/components/token-quality-level.svelte";
   import Truncate from "./truncate.svelte";
-  import ArrowRightIcon from "virtual:icons/lucide/arrow-right";
+  import ArrowLeftIcon from "virtual:icons/lucide/arrow-left";
   import { toDisplayName } from "$lib/utilities/chains.ts";
   import { formatUnits } from "viem";
 
@@ -50,23 +50,39 @@
   })();
 </script>
 
-<div class="flex gap-1 items-center">
-  <TokenQualityLevel level={token.quality_level} />
-  {#if token.quality_level === "GRAPHQL"}
-    {#if amount !== null}
-      {formatUnits(BigInt(amount), token.primaryRepresentation.decimals)}
+<div>
+  <div class="flex gap-1 items-center">
+    <TokenQualityLevel level={token.quality_level} />
+    {#if token.quality_level === "GRAPHQL"}
+      {#if amount !== null}
+        {formatUnits(BigInt(amount), token.primaryRepresentation.decimals)}
+      {/if}
+      <div class="font-bold">{token.primaryRepresentation.symbol}</div>
+      <div class="text-muted-foreground text-xs flex gap-1 items-center">
+        {toDisplayName(chainId, chains)}
+        {#each token.wrapping as wrapping}
+          <ArrowLeftIcon />{toDisplayName(
+            wrapping.unwrapped_chain.chain_id,
+            chains,
+          )}
+        {/each}
+      </div>
+    {:else}
+      {amount}
+      <b><Truncate value={token.denom} type="address" /></b>
     {/if}
-    <div class="font-bold">{token.primaryRepresentation.symbol}</div>
-    <div class="text-muted-foreground text-xs flex gap-1 items-center">
-      {#each token.wrapping as wrapping}
-        <ArrowRightIcon />{toDisplayName(
-          wrapping.wrapped_chain.chain_id,
-          chains,
-        )}
-      {/each}
+  </div>
+  {#if token.quality_level === "GRAPHQL"}
+    <div class="text-xs">
+      <div>Name: {token.primaryRepresentation.name}</div>
+      <div>Symbol: {token.primaryRepresentation.symbol}</div>
+      <div>Denom: <Truncate value={token.denom} type="address" /></div>
+      <div>
+        Verifiers: {#each token.primaryRepresentation.sources as source}<a
+            class="underline"
+            href={source.source.source_uri}>{source.source.name}</a
+          >{/each}
+      </div>
     </div>
-  {:else}
-    {amount}
-    <b><Truncate value={token.denom} type="address" /></b>
   {/if}
 </div>

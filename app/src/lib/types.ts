@@ -92,6 +92,9 @@ export type Wrapping = {
   wrapped_chain: {
     chain_id: string
   }
+  unwrapped_chain: {
+    chain_id: string
+  }
   destination_channel_id: number
   unwrapped_denom: string
 }

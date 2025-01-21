@@ -44,6 +44,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
           source {
             name
             logo_uri
+            source_uri
           }
           wrapping {
             destination_channel_id
@@ -55,6 +56,9 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
         }
       }
       wrapping {
+        unwrapped_chain {
+          chain_id
+        }
         wrapped_chain {
           chain_id
         }
