@@ -1,5 +1,10 @@
 <script lang="ts">
 import type { Chain, TokenInfo } from "$lib/types"
+import TokenQualityLevel from "$lib/components/token-quality-level.svelte"
+import Truncate from "./truncate.svelte"
+import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import { toDisplayName } from "$lib/utilities/chains.ts"
+
 export let chains: Array<Chain>
 export let chainId: string
 export let denom: string
@@ -26,7 +31,8 @@ let token: TokenInfo = (() => {
         quality_level: "GRAPHQL",
         denom,
         primaryRepresentation: fullRepresentations[0],
-        representations: fullRepresentations
+        representations: fullRepresentations,
+        wrapping: graphqlToken.wrapping
       }
     }
   }
@@ -38,9 +44,16 @@ let token: TokenInfo = (() => {
 })()
 </script>
 
-
-{#if token.quality_level === "GRAPHQL"}
-  [G] {token.primaryRepresentation.symbol}
-{:else}
-  [N] {denom}
-{/if}
+<div class="flex gap-1 items-center">
+  {#if token.quality_level === "GRAPHQL"}
+    <div class="font-bold">{token.primaryRepresentation.symbol}</div>
+    <div class="text-muted-foreground text-xs flex gap-1 items-center">
+    {#each token.wrapping as wrapping}
+       <ArrowLeftIcon/>{toDisplayName(wrapping.wrapped_chain.chain_id, chains)}
+    {/each}
+    </div>
+  {:else}
+    <Truncate value={token.denom} type = "address"/>
+  {/if}
+  <TokenQualityLevel level={token.quality_level}/>
+</div>

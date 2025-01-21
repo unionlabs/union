@@ -21,6 +21,7 @@ export let token: {
 }
 </script>
 
-<Token {chains} denom={token.base.token} chainId={token.base.chainId}/>
-➡️
-<Token {chains} denom={token.quote.token} chainId={token.quote.chainId}/>
+<div class="flex flex-col items-start">
+  <Token {chains} denom={token.base.token} chainId={token.base.chainId}/>
+  <Token {chains} denom={token.quote.token} chainId={token.quote.chainId}/>
+</div>

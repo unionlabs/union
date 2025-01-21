@@ -85,13 +85,15 @@ export type ChainToken = {
       update_timestamp: string | null
     }>
   }>
-  wrapping: Array<{
-    wrapped_chain: {
-      chain_id: string
-    }
-    destination_channel_id: 3
-    unwrapped_denom: string
-  }>
+  wrapping: Array<Wrapping>
+}
+
+export type Wrapping = {
+  wrapped_chain: {
+    chain_id: string
+  }
+  destination_channel_id: number
+  unwrapped_denom: string
 }
 
 export type TokenInfoQualityLevel = "GRAPHQL" | "ONCHAIN" | "NONE"
@@ -107,6 +109,7 @@ export type TokenInfo =
       denom: string
       primaryRepresentation: TokenRepresentation
       representations: Array<TokenRepresentation>
+      wrapping: Array<Wrapping>
     }
   | {
       quality_level: "ONCHAIN"
