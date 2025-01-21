@@ -117,6 +117,7 @@ export type TokenInfo =
   | {
       quality_level: "ONCHAIN"
       denom: string
+      decimals: number
       name: string
       symbol: string
     }

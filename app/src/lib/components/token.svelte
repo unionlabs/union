@@ -3,8 +3,10 @@ import type { Chain, TokenInfo } from "$lib/types"
 import TokenQualityLevel from "$lib/components/token-quality-level.svelte"
 import Truncate from "./truncate.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import { getOnchainAssetInfo } from "$lib/queries/balance"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { formatUnits } from "viem"
+import { onMount } from "svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -15,7 +17,7 @@ export let expanded: bool = false
 let chain = chains.find(c => c.chain_id === chainId) ?? null
 let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
 
-let token: TokenInfo = (() => {
+let getToken = async (): Promise<TokenInfo> => {
   let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
 
   if (graphqlToken?.representations && graphqlToken.representations.length > 0) {
@@ -38,15 +40,19 @@ let token: TokenInfo = (() => {
         wrapping: graphqlToken.wrapping
       }
     }
+  } else if (chain) {
+    let onchainToken = await getOnchainAssetInfo(chain, denom)
+    return onchainToken
   }
 
   return {
     quality_level: "NONE",
     denom
   }
-})()
+}
 </script>
 
+{#await getToken() then token}
 <div>
   <div class="flex gap-1 items-center">
     <TokenQualityLevel level={token.quality_level} />
@@ -64,6 +70,14 @@ let token: TokenInfo = (() => {
           )}
         {/each}
       </div>
+    {:else if token.quality_level === "ONCHAIN"}
+      {#if amount !== null}
+        {formatUnits(BigInt(amount), token.decimals)}
+        <div class="font-bold">{token.symbol}</div>
+        <div class="text-muted-foreground text-xs flex gap-1 items-center">
+          {toDisplayName(chainId, chains)}
+        </div>
+      {/if}
     {:else}
       {amount}
       <b><Truncate value={token.denom} type="address" /></b>
@@ -93,3 +107,4 @@ let token: TokenInfo = (() => {
     </div>
   {/if}
 </div>
+{/await}

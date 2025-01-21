@@ -1,6 +1,6 @@
 import { isAddress, type Address } from "viem"
 import { bech32ToBech32Address } from "@unionlabs/client"
-import type { Chain, UserAddresses, ChainAsset } from "$lib/types"
+import type { Chain, UserAddresses, ChainAsset, TokenInfo } from "$lib/types"
 import { erc20ReadMulticall } from "./evm/multicall.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { getAptosChainBalances } from "./aptos.ts"
@@ -23,6 +23,35 @@ export type BalanceData = {
 
 function normalizeAddress(denom: string): string {
   return isAddress(denom) ? denom.toLowerCase() : denom
+}
+
+export async function getOnchainAssetInfo(chain: Chain, denom: string): Promise<TokenInfo> {
+  const normalizedDenom = normalizeAddress(denom)
+  if (chain.rpc_type === "evm") {
+    try {
+      const results = await erc20ReadMulticall({
+        chainId: chain.chain_id,
+        functionNames: ["decimals", "symbol", "name"],
+        address: normalizedDenom as Address,
+        contractAddresses: [normalizedDenom] as Array<Address>
+      })
+      return {
+        quality_level: "ONCHAIN",
+        denom,
+        name: results[0].name,
+        symbol: results[0].symbol
+      }
+    } catch (e) {
+      return {
+        quality_level: "NONE",
+        denom
+      }
+    }
+  }
+  return {
+    quality_level: "NONE",
+    denom
+  }
 }
 
 export async function getAssetInfo(chain: Chain, denom: string): Promise<AssetMetadata> {
