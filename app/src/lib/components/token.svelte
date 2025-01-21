@@ -10,6 +10,7 @@
   export let chainId: string;
   export let denom: string;
   export let amount: string | number | bigint | null = null;
+  export let expanded: bool = false;
 
   let chain = chains.find((c) => c.chain_id === chainId) ?? null;
   let graphqlToken = chain?.tokens.find((t) => t.denom === denom) ?? null;
@@ -72,17 +73,21 @@
       <b><Truncate value={token.denom} type="address" /></b>
     {/if}
   </div>
-  {#if token.quality_level === "GRAPHQL"}
-    <div class="text-xs">
-      <div>Name: {token.primaryRepresentation.name}</div>
-      <div>Symbol: {token.primaryRepresentation.symbol}</div>
-      <div>Denom: <Truncate value={token.denom} type="address" /></div>
-      <div>
-        Verifiers: {#each token.primaryRepresentation.sources as source}<a
-            class="underline"
-            href={source.source.source_uri}>{source.source.name}</a
-          >{/each}
+  {#if expanded}
+    {#if token.quality_level === "GRAPHQL"}
+      <div class="text-xs">
+        <div>Name: {token.primaryRepresentation.name}</div>
+        <div>Symbol: {token.primaryRepresentation.symbol}</div>
+        <div>Denom: <Truncate value={token.denom} type="address" /></div>
+        <div>Amount: {amount}</div>
+        <div>Decimals: {token.primaryRepresentation.decimals}</div>
+        <div>
+          Verifiers: {#each token.primaryRepresentation.sources as source}<a
+              class="underline"
+              href={source.source.source_uri}>{source.source.name}</a
+            >{/each}
+        </div>
       </div>
-    </div>
+    {/if}
   {/if}
 </div>

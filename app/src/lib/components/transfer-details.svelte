@@ -93,9 +93,10 @@
           <Card.Content class="flex flex-col gap-8">
             <section class="flex justify-between">
               <div>
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-6">
                   {#if transfer.base_amount && transfer.base_token}
                     <Token
+                      expanded="true"
                       amount={transfer.base_amount}
                       denom={transfer.base_token}
                       chainId={transfer.source_chain_id}
@@ -104,6 +105,7 @@
                   {/if}
                   {#if "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
                     <Token
+                      expanded="true"
                       amount={transfer.quote_amount}
                       denom={transfer.quote_token}
                       chainId={transfer.destination_chain_id}
