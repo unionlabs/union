@@ -3,9 +3,8 @@ import { tokensQueryDocument } from "$lib/graphql/queries/tokens"
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
-import type { Chain, TokenInfo, TokenInfoMulti } from "$lib/types"
-import { getOnchainAssetInfo } from "./balance"
-import { erc20ReadMulticall } from "./balance/evm/multicall"
+import type { Chain, TokenInfoMulti } from "$lib/types"
+import { erc20ReadMulticall } from "./balance/evm/multicall.ts"
 import type { Address } from "viem"
 
 export const tokensQuery = () =>
