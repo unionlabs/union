@@ -22,6 +22,6 @@ export let token: {
 </script>
 
 <div class="flex flex-col items-start">
-  <Token {chains} denom={token.base.token} chainId={token.base.chainId}/>
-  <Token {chains} denom={token.quote.token} chainId={token.quote.chainId}/>
+  <Token {chains} amount={token.base.amount} denom={token.base.token} chainId={token.base.chainId}/>
+  <Token {chains}  amount={token.quote.amount} denom={token.quote.token} chainId={token.quote.chainId}/>
 </div>
