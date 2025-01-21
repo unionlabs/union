@@ -11,6 +11,7 @@ export type AssetListItem = BalanceData & {
 }
 
 export interface IntentsStore {
+  chains: Array<Chain>
   sourceChain: Chain | null
   destinationChain: Chain | null
   baseTokens: Array<{ denom: string; balance: string }>
@@ -45,8 +46,9 @@ export function createIntentStore(
   })
 
   return derived(
-    [sourceChain, destinationChain, baseTokens, rawIntents],
-    ([$sourceChain, $destinationChain, $baseTokens, $rawIntents]) => ({
+    [sourceChain, destinationChain, baseTokens, rawIntents, context],
+    ([$sourceChain, $destinationChain, $baseTokens, $rawIntents, $context]) => ({
+      chains: $context.chains,
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
       baseTokens: $baseTokens,
