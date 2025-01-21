@@ -1,72 +1,67 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import request from "graphql-request";
-  import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/queries/transfer-details.ts";
-  import DetailsHeading from "$lib/components/details-heading.svelte";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { URLS } from "$lib/constants";
-  import * as Card from "$lib/components/ui/card/index.ts";
-  import { toIsoString } from "$lib/utilities/date";
-  import LoadingLogo from "$lib/components/loading-logo.svelte";
-  import { derived } from "svelte/store";
-  import { raise } from "$lib/utilities";
-  import Trace from "$lib/components/trace.svelte";
-  import type { Chain } from "$lib/types";
-  import { submittedTransfers } from "$lib/stores/submitted-transfers";
-  import { cn } from "$lib/utilities/shadcn";
-  import Truncate from "$lib/components/truncate.svelte";
-  import { formatUnits } from "viem";
-  import PacketPath from "./packet-path.svelte";
-  import Token from "./token.svelte";
+import { page } from "$app/stores"
+import request from "graphql-request"
+import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/queries/transfer-details.ts"
+import DetailsHeading from "$lib/components/details-heading.svelte"
+import { createQuery } from "@tanstack/svelte-query"
+import { URLS } from "$lib/constants"
+import * as Card from "$lib/components/ui/card/index.ts"
+import { toIsoString } from "$lib/utilities/date"
+import LoadingLogo from "$lib/components/loading-logo.svelte"
+import { derived } from "svelte/store"
+import { raise } from "$lib/utilities"
+import Trace from "$lib/components/trace.svelte"
+import type { Chain } from "$lib/types"
+import { submittedTransfers } from "$lib/stores/submitted-transfers"
+import { cn } from "$lib/utilities/shadcn"
+import Truncate from "$lib/components/truncate.svelte"
+import { formatUnits } from "viem"
+import PacketPath from "./packet-path.svelte"
+import Token from "./token.svelte"
 
-  const source = $page.params.source;
-  export let chains: Array<Chain>;
+const source = $page.params.source
+export let chains: Array<Chain>
 
-  let transfers = createQuery({
-    queryKey: ["transfers-by-source-base", source],
-    refetchInterval: (query) =>
-      query.state.data?.length === 0 ? 1_000 : false, // fetch every second until we have the transaction
-    placeholderData: (previousData, _) => previousData,
-    queryFn: async () => {
-      console.log("querying");
-      const response = await request(
-        URLS().GRAPHQL,
-        transfersBySourceHashBaseQueryDocument,
-        {
-          source_transaction_hash: source,
-        },
-      );
+let transfers = createQuery({
+  queryKey: ["transfers-by-source-base", source],
+  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
+  placeholderData: (previousData, _) => previousData,
+  queryFn: async () => {
+    console.log("querying")
+    const response = await request(URLS().GRAPHQL, transfersBySourceHashBaseQueryDocument, {
+      source_transaction_hash: source
+    })
 
-      if (
-        response.v1_ibc_union_fungible_asset_orders === undefined ||
-        response.v1_ibc_union_fungible_asset_orders === null
-      )
-        raise("error fetching transfers");
+    if (
+      response.v1_ibc_union_fungible_asset_orders === undefined ||
+      response.v1_ibc_union_fungible_asset_orders === null
+    )
+      raise("error fetching transfers")
 
-      return response.v1_ibc_union_fungible_asset_orders;
-    },
-  });
+    return response.v1_ibc_union_fungible_asset_orders
+  }
+})
 
-  let processedTransfers = derived(
-    [transfers, submittedTransfers],
-    ([$transfers, $submittedTransfers]) => {
-      if ($transfers.data === undefined || $transfers.data.length === 0) {
-        if ($submittedTransfers[source] === undefined) {
-          return null;
-        }
-        return [$submittedTransfers[source]];
+let processedTransfers = derived(
+  [transfers, submittedTransfers],
+  ([$transfers, $submittedTransfers]) => {
+    if ($transfers.data === undefined || $transfers.data.length === 0) {
+      if ($submittedTransfers[source] === undefined) {
+        return null
       }
-      return $transfers.data.map((transfer) => {
-        let tx = structuredClone(transfer);
-        return {
-          transfer_day: tx.packet_send_timestamp
-            ? toIsoString(new Date(tx.packet_send_timestamp)).split("T")[0]
-            : null,
-          ...tx,
-        };
-      });
-    },
-  );
+      return [$submittedTransfers[source]]
+    }
+    return $transfers.data.map(transfer => {
+      let tx = structuredClone(transfer)
+      return {
+        transfer_day: tx.packet_send_timestamp
+          ? toIsoString(new Date(tx.packet_send_timestamp)).split("T")[0]
+          : null,
+        ...tx
+      }
+    })
+  }
+)
 </script>
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
