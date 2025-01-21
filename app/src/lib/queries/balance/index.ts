@@ -39,6 +39,7 @@ export async function getOnchainAssetInfo(chain: Chain, denom: string): Promise<
         quality_level: "ONCHAIN",
         denom,
         name: results[0].name,
+        decimals: results[0].decimals,
         symbol: results[0].symbol
       }
     } catch (e) {

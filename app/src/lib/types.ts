@@ -105,6 +105,7 @@ export type TokenRepresentation = {
   name: string
   symbol: string
   decimals: number
+  sources: Array<unknown>
 }
 export type TokenInfo =
   | {
@@ -125,3 +126,21 @@ export type TokenInfo =
       quality_level: "NONE"
       denom: string
     }
+
+export type TokenInfoMulti = {
+  graphql: {
+    primaryRepresentation: TokenRepresentation
+    representations: Array<TokenRepresentation>
+    wrapping: Array<Wrapping>
+  } | null
+  onchain: {
+    decimals: number | null
+    name: string | null
+    symbol: string | null
+  } | null
+  combined: {
+    decimals: number
+    symbol: string
+    wrapping: Array<Wrapping>
+  }
+}

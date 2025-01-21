@@ -7,104 +7,63 @@ import { getOnchainAssetInfo } from "$lib/queries/balance"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { formatUnits } from "viem"
 import { onMount } from "svelte"
+import { tokenInfoQuery } from "$lib/queries/tokens"
 
 export let chains: Array<Chain>
 export let chainId: string
 export let denom: string
 export let amount: string | number | bigint | null = null
-export let expanded: bool = false
+export let expanded = false
 
 let chain = chains.find(c => c.chain_id === chainId) ?? null
 let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
 
-let getToken = async (): Promise<TokenInfo> => {
-  let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
-
-  if (graphqlToken?.representations && graphqlToken.representations.length > 0) {
-    let fullRepresentations = graphqlToken.representations.filter(
-      repr => repr.decimals != null && repr.name != null && repr.symbol != null
-    ) as Array<
-      {
-        decimals: number
-        name: string
-        symbol: string
-      } & (typeof graphqlToken.representations)[number]
-    >
-
-    if (fullRepresentations.length > 0) {
-      return {
-        quality_level: "GRAPHQL",
-        denom,
-        primaryRepresentation: fullRepresentations[0],
-        representations: fullRepresentations,
-        wrapping: graphqlToken.wrapping
-      }
-    }
-  } else if (chain) {
-    let onchainToken = await getOnchainAssetInfo(chain, denom)
-    return onchainToken
-  }
-
-  return {
-    quality_level: "NONE",
-    denom
-  }
-}
+let tokenInfo = tokenInfoQuery(chainId, denom, chains)
 </script>
 
-{#await getToken() then token}
+{#if $tokenInfo.data}
+{@const token = $tokenInfo.data}
 <div>
   <div class="flex gap-1 items-center">
-    <TokenQualityLevel level={token.quality_level} />
-    {#if token.quality_level === "GRAPHQL"}
+    <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"} />
       {#if amount !== null}
-        {formatUnits(BigInt(amount), token.primaryRepresentation.decimals)}
+        {formatUnits(BigInt(amount), token.combined.decimals)}
       {/if}
-      <div class="font-bold">{token.primaryRepresentation.symbol}</div>
-      <div class="text-muted-foreground text-xs flex gap-1 items-center">
-        {toDisplayName(chainId, chains)}
-        {#each token.wrapping as wrapping}
-          <ArrowLeftIcon />{toDisplayName(
-            wrapping.unwrapped_chain.chain_id,
-            chains,
-          )}
-        {/each}
-      </div>
-    {:else if token.quality_level === "ONCHAIN"}
-      {#if amount !== null}
-        {formatUnits(BigInt(amount), token.decimals)}
-        <div class="font-bold">{token.symbol}</div>
-        <div class="text-muted-foreground text-xs flex gap-1 items-center">
-          {toDisplayName(chainId, chains)}
-        </div>
-      {/if}
-    {:else}
-      {amount}
-      <b><Truncate value={token.denom} type="address" /></b>
-      <div class="text-muted-foreground text-xs flex gap-1 items-center">
-        {toDisplayName(chainId, chains)}
-      </div>
-    {/if}
+    <b><Truncate value={token.combined.symbol} type="symbol"/></b>
+    <div class="text-muted-foreground text-xs flex gap-1 items-center">
+      {toDisplayName(chainId, chains)}
+      {#each token.combined.wrapping as wrapping}
+        <ArrowLeftIcon />{toDisplayName(
+          wrapping.unwrapped_chain.chain_id,
+          chains,
+        )}
+      {/each}
+    </div>
   </div>
   {#if expanded}
-    <div class="text-xs">
-      {#if token.quality_level === "GRAPHQL"}
-        <div>Name: {token.primaryRepresentation.name}</div>
-        <div>Symbol: {token.primaryRepresentation.symbol}</div>
-        <div>Denom: <Truncate value={token.denom} type="address" /></div>
-        <div>Amount: {amount}</div>
-        <div>Decimals: {token.primaryRepresentation.decimals}</div>
-        <div>
-          Verifiers: {#each token.primaryRepresentation.sources as source}<a
-              class="underline"
-              href={source.source.source_uri}>{source.source.name}</a
-            >{/each}
-        </div>
-      {:else}
-        <div>Denom: <Truncate value={token.denom} type="address" /></div>
-        <div>Amount: {amount}</div>
+    <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
+      <section>
+      <h2 class="text-foreground">Denom</h2>
+      <div><Truncate value={denom} type="address" /></div>
+      </section>
+      {#if token.graphql}
+        <section>
+        <h2 class="text-foreground">GrapqhQL</h2>
+        <div>Name: {token.graphql.primaryRepresentation.name}</div>
+        <div>Symbol: {token.graphql.primaryRepresentation.symbol}</div>
+        <div>Decimals: {token.graphql.primaryRepresentation.decimals}</div>
+        {#if token.graphql.primaryRepresentation.sources}<div>Sources: {#each token.graphql.primaryRepresentation.sources as source}<a class="underline" href={source.source.source_uri}> {source.source.name}</a>{/each}</div>{/if}
+        </section>
+      {/if}
+      {#if token.onchain}
+        <section>
+        <h2 class="text-foreground">Onchain</h2>
+        <div>Name: {token.onchain.name}</div>
+        <div>Symbol: {token.onchain.symbol}</div>
+        <div>Decimals: {token.onchain.decimals}</div>
+        </section>
       {/if}
     </div>
   {/if}
 </div>
-{/await}
+{/if}
