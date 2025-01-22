@@ -1,5 +1,98 @@
 ---
-title: "Solidity"
+title: "ucs03-zkgm Asset Transfer Tutorial - Solidity"
 description: "Transfer assets using Union's ZKGM protocol in a Solidity contract"
 template: doc
 ---
+
+# Prerequisites
+This tutorial assumes that you have experience creating contracts in Solidity.
+
+The Union team uses [Nix](https://nixos.org/) to manage developer environments. While this tutorial may mention different developer tools, it will not guide you through setting each one up.
+
+This tutorial uses [foundry](https://book.getfoundry.sh/getting-started/installation) to create and manage the solidity contract.
+
+# Transfer
+
+To demonstrate asset transfers with ucs03, this tutorial will walk you through creating a simple contract that sends a single token.
+
+## Project Bootstrapping
+
+
+### Contract Source
+
+```solidity title="src/Transfer.sol"
+pragma solidity ^0.8.27;
+
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+
+struct LocalToken {
+  address denom;
+  uint128 amount;
+}
+
+struct Height {
+  uint64 revisionNumber;
+  uint64 revisionHeight;
+}
+
+interface IRelay {
+  function send(
+    string calldata sourceChannel,
+    bytes calldata receiver,
+    LocalToken[] calldata tokens,
+    string calldata extension,
+    Height calldata timeoutHeight,
+    uint64 timeoutTimestamp
+  ) external;
+}
+
+contract Transfer {
+  // https://github.com/unionlabs/union/blob/main/evm/README.md#sepolia
+  address public constant relay = 0xD0081080Ae8493cf7340458Eaf4412030df5FEEb;
+
+  // https://github.com/unionlabs/union/blob/main/evm/contracts/apps/ucs/01-relay/Relay.sol#L54-L61
+  function transferAsset() public {
+    LocalToken[] memory tokens = new LocalToken[](1);
+    tokens[0].denom = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    tokens[0].amount = 1000000;
+
+    IERC20(tokens[0].denom).approve(relay, 1000000);
+
+    IRelay(relay).send(
+      "channel-90",
+      hex"a833B03D8ED1228C4791cBfAb22b3ED57954429F",
+      tokens,
+      "",
+      Height({revisionNumber: 100, revisionHeight: 1000000}),
+      0
+    );
+  }
+}
+```
+
+### Contract Running Script
+
+```solidity title="script/Transfer.s.sol"
+pragma solidity ^0.8.27;
+
+import {Script, console} from "forge-std/Script.sol";
+import {Transfer} from "../src/Transfer.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+
+contract TransferScript is Script {
+  address public constant USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+
+  function run() public {
+    uint256 privateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(privateKey);
+    Transfer transfer = new Transfer();
+
+    IERC20(USDC).transfer(address(transfer), 1500000);
+
+    console.log("transferring");
+    transfer.transferAsset();
+    console.log("complete");
+    vm.stopBroadcast();
+  }
+}
+```
