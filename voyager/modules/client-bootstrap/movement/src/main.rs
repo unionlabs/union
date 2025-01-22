@@ -49,6 +49,8 @@ pub struct Module {
     pub aptos_client: aptos_rest_client::Client,
 
     pub movement_rest_url: String,
+
+    pub whitelisted_relayers: Vec<String>,
 }
 
 impl ClientBootstrapModule for Module {
@@ -72,6 +74,11 @@ impl ClientBootstrapModule for Module {
             l1_settlement_address: config.l1_settlement_address,
             l1_client_id: config.l1_client_id,
             movement_rest_url: config.movement_rest_url,
+            whitelisted_relayers: config
+                .whitelisted_relayers
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         })
     }
 }
@@ -99,6 +106,9 @@ pub struct Config {
 
     /// The RPC endpoint for custom movement apis.
     pub movement_rest_url: String,
+
+    /// The relayers that are allowed to modify this light client
+    pub whitelisted_relayers: Vec<cosmwasm_std::Addr>,
 }
 
 impl Module {
@@ -165,7 +175,7 @@ impl ClientBootstrapModuleServer for Module {
             )),
             frozen_height: Height::new(0),
             latest_block_num: height.height(),
-            whitelisted_relayers: vec![],
+            whitelisted_relayers: self.whitelisted_relayers.clone(),
         })
         .expect("infallible"))
     }
