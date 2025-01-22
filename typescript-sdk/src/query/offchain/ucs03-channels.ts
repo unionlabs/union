@@ -1,17 +1,9 @@
-import { ofetch } from "ofetch"
 import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, http, type ByteArray } from "viem"
+import { createPublicClient, http } from "viem"
 import { err, ok, type Result } from "neverthrow"
-import consola from "consola"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
-
-const queryHeaders = new Headers({
-  Accept: "application/json",
-  "User-Agent": "typescript-sdk",
-  "Content-Type": "application/json"
-})
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -109,9 +101,8 @@ export const getChannelInfo = (
   channels: Awaited<ReturnType<typeof getRecommendedChannels>>
 ): Channel | null => {
   let rawChannel = channels.find(
-    chan => (
-      chan.source_chain_id === source_chain_id, chan.destination_chain_id === destination_chain_id,
-    )
+    chan =>
+      chan.source_chain_id === source_chain_id && chan.destination_chain_id === destination_chain_id
   )
   if (
     // Validate that all required fields are included by the garphql api.
@@ -133,9 +124,6 @@ export const getChannelInfo = (
   let destination_port_id = String(rawChannel.destination_port_id)
   if (destination_port_id.length < 4) return null
   destination_port_id = destination_port_id.slice(2)
-
-  console.log("source port", rawChannel.source_port_id)
-  console.log("source port string", String(rawChannel.source_port_id))
 
   return {
     source_chain_id,
