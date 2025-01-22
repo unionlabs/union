@@ -19,7 +19,7 @@
     {
       packages = {
         sentinel = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-Ddjoj/M22j4RPqtusdZ55YJRz/4CKTp/n9DVaQJ/+sg=";
+          npmDepsHash = "sha256-joM2pEuAT8HHkTjVzxqQY6UvYV6cvJd1oxTt7MZBcOM=";
           src = ./.;
           sourceRoot = "sentinel";
           npmFlags = [
@@ -103,6 +103,10 @@
           type = types.listOf types.attrs;
           description = "Interactions for cross-chain communication.";
         };
+        transfers = mkOption {
+          type = types.listOf types.attrs;
+          description = "Array for cross-chain transfers.";
+        };
         logLevel = mkOption {
           type = types.str;
           default = "info";
@@ -124,6 +128,7 @@
                 pkgs.writeText "config.json" (builtins.toJSON {
                   cycleIntervalMs = cfg.cycleIntervalMs;
                   interactions = cfg.interactions;
+                  transfers = cfg.transfers;
                 })
               }
             '';
