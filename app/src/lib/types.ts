@@ -56,8 +56,10 @@ export type Chain = {
   }>
   addr_prefix: string
   assets: Array<ChainAsset>
+  tokens: Array<ChainToken>
 }
 
+/** @deprecated */
 export type ChainAsset = {
   denom: string
   display_symbol: string
@@ -68,4 +70,77 @@ export type ChainAsset = {
     display_name: string
   }>
   gas_token: boolean
+}
+
+export type ChainToken = {
+  denom: string
+  representations: Array<{
+    name: string | null
+    symbol: string | null
+    decimals: number | null
+    sources: Array<{
+      id: string
+      name: string
+      logo_uri: string | null
+      update_timestamp: string | null
+    }>
+  }>
+  wrapping: Array<Wrapping>
+}
+
+export type Wrapping = {
+  wrapped_chain: {
+    chain_id: string
+  }
+  unwrapped_chain: {
+    chain_id: string
+  }
+  destination_channel_id: number
+  unwrapped_denom: string
+}
+
+export type TokenInfoQualityLevel = "GRAPHQL" | "ONCHAIN" | "NONE"
+
+export type TokenRepresentation = {
+  name: string
+  symbol: string
+  decimals: number
+  sources: Array<unknown>
+}
+export type TokenInfo =
+  | {
+      quality_level: "GRAPHQL"
+      denom: string
+      primaryRepresentation: TokenRepresentation
+      representations: Array<TokenRepresentation>
+      wrapping: Array<Wrapping>
+    }
+  | {
+      quality_level: "ONCHAIN"
+      denom: string
+      decimals: number
+      name: string
+      symbol: string
+    }
+  | {
+      quality_level: "NONE"
+      denom: string
+    }
+
+export type TokenInfoMulti = {
+  graphql: {
+    primaryRepresentation: TokenRepresentation
+    representations: Array<TokenRepresentation>
+    wrapping: Array<Wrapping>
+  } | null
+  onchain: {
+    decimals: number | null
+    name: string | null
+    symbol: string | null
+  } | null
+  combined: {
+    decimals: number
+    symbol: string
+    wrapping: Array<Wrapping>
+  }
 }

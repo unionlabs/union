@@ -27,7 +27,6 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_try<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         connection_id: u32,
         counterparty_channel_id: u32,
@@ -39,7 +38,6 @@ module ibc::channel_handshake {
     ) {
         let channel_id =
             ibc::channel_open_try<T>(
-                client_type,
                 port_id,
                 connection_id,
                 counterparty_channel_id,
@@ -58,7 +56,6 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_ack<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         channel_id: u32,
         counterparty_version: String,
@@ -67,7 +64,6 @@ module ibc::channel_handshake {
         proof_height: u64
     ) {
         ibc::channel_open_ack<T>(
-            client_type,
             port_id,
             channel_id,
             counterparty_version,
@@ -88,19 +84,12 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_confirm<T: key + store + drop>(
-        client_type: String,
         port_id: address,
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64
     ) {
-        ibc::channel_open_confirm<T>(
-            client_type,
-            port_id,
-            channel_id,
-            proof_ack,
-            proof_height
-        );
+        ibc::channel_open_confirm<T>(port_id, channel_id, proof_ack, proof_height);
 
         engine::dispatch<T>(helpers::pack_channel_open_confirm_params(channel_id));
 

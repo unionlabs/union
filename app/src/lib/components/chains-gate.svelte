@@ -2,9 +2,11 @@
 import type { Chain } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
+import { tokensQuery } from "$lib/queries/tokens"
 import { type Readable, derived } from "svelte/store"
 
 let chains = chainsQuery()
+// let tokens = tokensQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []
 
@@ -47,6 +49,8 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       testnet: !!chain.testnet,
       explorers: chain.explorers,
       // this as statement should no longer be required in the next typescript release
+      tokens: chain.tokens,
+      // @deprecated
       assets: chain.assets.filter(
         asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
       ) as Chain["assets"]

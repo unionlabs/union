@@ -289,14 +289,6 @@ impl Module {
         match res {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
-            Some(Err(BroadcastTxCommitError::SimulateTx(err))) => {
-                error!(
-                    error = %ErrorReporter(err),
-                    "transaction simulation failed, message will be requeued and retried"
-                );
-
-                Ok(call(rewrap_msg()))
-            }
             Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
                 error!(error = %ErrorReporter(err), "error querying latest height");
 
@@ -325,14 +317,9 @@ impl Module {
                 Ok((tx_body, auth_info, simulation_gas_info)) => {
                     (tx_body, auth_info, simulation_gas_info)
                 }
-                Err((tx_body, auth_info, _err)) => (
-                    tx_body,
-                    auth_info,
-                    GasInfo {
-                        gas_wanted: u64::MAX,
-                        gas_used: u64::MAX,
-                    },
-                ),
+                Err((_tx_body, _auth_info, err)) => {
+                    return Err(BroadcastTxCommitError::SimulateTx(err))
+                }
             };
         // .map_err(BroadcastTxCommitError::SimulateTx)?;
 
@@ -686,6 +673,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     None::<()>,
                                 ),
                             },
+                            BroadcastTxCommitError::SimulateTx(err) => ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("tx simulation failed: {}", ErrorReporter(err)),
+                                None::<()>,
+                            ),
                             BroadcastTxCommitError::IbcUnionError(_) => ErrorObject::owned(
                                 FATAL_JSONRPC_ERROR_CODE,
                                 ErrorReporter(err).to_string(),

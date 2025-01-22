@@ -32,7 +32,7 @@ struct ConsensusState {
     bytes32 stateRoot;
 }
 
-library StateLensIcs23MoveLib {
+library StateLensIcs23SmtLib {
     uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
 
     event CreateLensClient(
@@ -48,14 +48,21 @@ library StateLensIcs23MoveLib {
 
     function encode(
         ConsensusState memory consensusState
-    ) internal pure returns (bytes memory) {
-        return abi.encode(consensusState);
+    ) public pure returns (bytes memory) {
+        return abi.encode(consensusState.timestamp, consensusState.stateRoot);
     }
 
     function encode(
         ClientState memory clientState
-    ) internal pure returns (bytes memory) {
-        return abi.encode(clientState);
+    ) public pure returns (bytes memory) {
+        return abi.encode(
+            clientState.l2ChainId,
+            clientState.l1ClientId,
+            clientState.l2ClientId,
+            clientState.l2LatestHeight,
+            clientState.timestampOffset,
+            clientState.stateRootOffset
+        );
     }
 
     function commit(
@@ -91,14 +98,14 @@ library StateLensIcs23MoveLib {
     }
 }
 
-contract StateLensIcs23MoveClient is
+contract StateLensIcs23SmtClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    using StateLensIcs23MoveLib for *;
+    using StateLensIcs23SmtLib for *;
 
     address private ibcHandler;
 
@@ -130,26 +137,22 @@ contract StateLensIcs23MoveClient is
             string memory counterpartyChainId
         )
     {
-        // ClientState calldata clientState;
-        // assembly {
-        //     clientState := clientStateBytes.offset
-        // }
-        // ConsensusState calldata consensusState;
-        // assembly {
-        //     consensusState := consensusStateBytes.offset
-        // }
-        ClientState memory clientState =
-            abi.decode(clientStateBytes, (ClientState));
-        ConsensusState memory consensusState =
-            abi.decode(consensusStateBytes, (ConsensusState));
+        ClientState calldata clientState;
+        assembly {
+            clientState := clientStateBytes.offset
+        }
+        ConsensusState calldata consensusState;
+        assembly {
+            consensusState := consensusStateBytes.offset
+        }
 
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
-            revert StateLensIcs23MoveLib.ErrInvalidInitialConsensusState();
+            revert StateLensIcs23SmtLib.ErrInvalidInitialConsensusState();
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23MoveLib.CreateLensClient(
+        emit StateLensIcs23SmtLib.CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -174,7 +177,10 @@ contract StateLensIcs23MoveClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC returns (ConsensusStateUpdate memory) {
-        Header memory header = abi.decode(clientMessageBytes, (Header));
+        Header calldata header;
+        assembly {
+            header := clientMessageBytes.offset
+        }
 
         ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
@@ -193,18 +199,18 @@ contract StateLensIcs23MoveClient is
                 abi.encodePacked(keccak256(header.l2ConsensusState))
             )
         ) {
-            revert StateLensIcs23MoveLib.ErrInvalidL1Proof();
+            revert StateLensIcs23SmtLib.ErrInvalidL1Proof();
         }
 
         bytes memory rawL2ConsensusState = header.l2ConsensusState;
         uint64 l2Timestamp = uint64(
             uint256(
-                StateLensIcs23MoveLib.extractMemory(
+                StateLensIcs23SmtLib.extractMemory(
                     rawL2ConsensusState, clientState.timestampOffset
                 )
             )
         );
-        bytes32 l2StateRoot = StateLensIcs23MoveLib.extractMemory(
+        bytes32 l2StateRoot = StateLensIcs23SmtLib.extractMemory(
             rawL2ConsensusState, clientState.stateRootOffset
         );
 
@@ -231,7 +237,7 @@ contract StateLensIcs23MoveClient is
         uint32 clientId,
         bytes calldata clientMessageBytes
     ) external override onlyIBC {
-        revert StateLensIcs23MoveLib.ErrUnsupported();
+        revert StateLensIcs23SmtLib.ErrUnsupported();
     }
 
     function verifyMembership(
@@ -300,7 +306,7 @@ contract StateLensIcs23MoveClient is
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
-            revert StateLensIcs23MoveLib.ErrNotIBC();
+            revert StateLensIcs23SmtLib.ErrNotIBC();
         }
     }
 

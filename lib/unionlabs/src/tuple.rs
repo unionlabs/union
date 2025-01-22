@@ -56,6 +56,9 @@ impl_is_tuple!(A B);
 impl_is_tuple!(A B C);
 impl_is_tuple!(A B C D);
 impl_is_tuple!(A B C D E);
+impl_is_tuple!(A B C D E F);
+impl_is_tuple!(A B C D E F G);
+impl_is_tuple!(A B C D E F G H);
 
 /// Convert a value between it's tuple form.
 ///

@@ -52,6 +52,12 @@ module ibc::bcs_utils {
         length
     }
 
+    /// Peel a u16
+    public fun peel_u16(buf: &mut BcsBuf): u16 {
+        buf.cursor = buf.cursor + 2;
+        from_bcs::to_u16(vector::slice(&buf.inner, buf.cursor - 2, buf.cursor))
+    }
+
     /// Peel a u32
     public fun peel_u32(buf: &mut BcsBuf): u32 {
         buf.cursor = buf.cursor + 4;

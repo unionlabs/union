@@ -3,7 +3,7 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 import { truncate } from "$lib/utilities/format"
 
 export let value: string | bigint | null
-export let type: "address" | "hash" | "full"
+export let type: "address" | "hash" | "full" | "symbol"
 </script>
 
 {#if value}

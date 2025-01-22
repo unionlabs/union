@@ -55,6 +55,10 @@ jobs:
 
       - name: 'Publish to NPM'
         env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          BUN_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish --access='public' --no-git-tags

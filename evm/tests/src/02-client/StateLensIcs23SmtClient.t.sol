@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "../../../contracts/clients/StateLensIcs23MoveClient.sol";
+import "../../../contracts/clients/StateLensIcs23SmtClient.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 /*//////////////////////////////////////////////////////////////
@@ -146,8 +146,8 @@ contract MockIBCStore {
                         TEST CONTRACT
 //////////////////////////////////////////////////////////////*/
 
-contract StateLensIcs23MoveClientTest is Test {
-    StateLensIcs23MoveClient client;
+contract StateLensIcs23SmtClientTest is Test {
+    StateLensIcs23SmtClient client;
     MockIBCStore ibcStore;
     MockLightClient lightClient;
     address ibcHandler;
@@ -158,16 +158,16 @@ contract StateLensIcs23MoveClientTest is Test {
         ibcHandler = address(ibcStore);
 
         // Deploy the implementation
-        StateLensIcs23MoveClient implementation = new StateLensIcs23MoveClient();
+        StateLensIcs23SmtClient implementation = new StateLensIcs23SmtClient();
         // Deploy proxy
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                StateLensIcs23MoveClient.initialize.selector, ibcHandler, admin
+                StateLensIcs23SmtClient.initialize.selector, ibcHandler, admin
             )
         );
         // Cast proxy -> client
-        client = StateLensIcs23MoveClient(address(proxy));
+        client = StateLensIcs23SmtClient(address(proxy));
 
         // Create our mock L1 client and store it in the mock IBCStore
         lightClient = new MockLightClient();
@@ -189,13 +189,13 @@ contract StateLensIcs23MoveClientTest is Test {
             timestampOffset: 0,
             stateRootOffset: 32
         });
-        bytes memory clientStateBytes = abi.encode(cState);
+        bytes memory clientStateBytes = StateLensIcs23SmtLib.encode(cState);
 
         ConsensusState memory consState = ConsensusState({
             timestamp: 12345,
             stateRoot: keccak256("fake-root")
         });
-        bytes memory consStateBytes = abi.encode(consState);
+        bytes memory consStateBytes = StateLensIcs23SmtLib.encode(consState);
 
         vm.prank(ibcHandler);
 
@@ -227,39 +227,39 @@ contract StateLensIcs23MoveClientTest is Test {
             timestampOffset: 0,
             stateRootOffset: 32
         });
-        bytes memory cStateBytes = abi.encode(cState);
+        bytes memory cStateBytes = StateLensIcs23SmtLib.encode(cState);
 
         ConsensusState memory consState =
             ConsensusState({timestamp: 1234, stateRoot: keccak256("x")});
-        bytes memory consStateBytes = abi.encode(consState);
+        bytes memory consStateBytes = StateLensIcs23SmtLib.encode(consState);
 
         vm.prank(ibcHandler);
         vm.expectRevert(
             abi.encodeWithSelector(
-                StateLensIcs23MoveLib.ErrInvalidInitialConsensusState.selector
+                StateLensIcs23SmtLib.ErrInvalidInitialConsensusState.selector
             )
         );
         client.createClient(clientId, cStateBytes, consStateBytes);
     }
 
     function test_updateClient_success() public {
-        {
-            ClientState memory cState = ClientState({
-                l2ChainId: "fake-l2",
-                l1ClientId: 10,
-                l2ClientId: 20,
-                l2LatestHeight: 100,
-                timestampOffset: 0,
-                stateRootOffset: 32
-            });
-            ConsensusState memory cs = ConsensusState({
-                timestamp: 9999,
-                stateRoot: keccak256("old-root")
-            });
+        ClientState memory cState = ClientState({
+            l2ChainId: "fake-l2",
+            l1ClientId: 10,
+            l2ClientId: 20,
+            l2LatestHeight: 100,
+            timestampOffset: 0,
+            stateRootOffset: 32
+        });
+        ConsensusState memory cs =
+            ConsensusState({timestamp: 9999, stateRoot: keccak256("old-root")});
 
-            vm.prank(ibcHandler);
-            client.createClient(1, abi.encode(cState), abi.encode(cs));
-        }
+        vm.startPrank(ibcHandler);
+        client.createClient(
+            1,
+            StateLensIcs23SmtLib.encode(cState),
+            StateLensIcs23SmtLib.encode(cs)
+        );
 
         Header memory header = Header({
             l1Height: 500,
@@ -269,38 +269,44 @@ contract StateLensIcs23MoveClientTest is Test {
                 uint64(8888), keccak256("new-root"), keccak256("new-storage")
             )
         });
-        bytes memory headerBytes = abi.encode(header);
+        bytes memory headerBytes = abi.encode(
+            header.l1Height,
+            header.l2Height,
+            header.l2InclusionProof,
+            header.l2ConsensusState
+        );
 
         lightClient.setVerifyMembershipReturn(true);
 
-        vm.prank(ibcHandler);
         client.updateClient(1, headerBytes);
 
         bytes memory stored = client.getConsensusState(1, 101);
-        ConsensusState memory dec = abi.decode(stored, (ConsensusState));
+        ConsensusState memory dec = decodeConsensusState(stored);
 
         assertEq(dec.timestamp, 8888, "timestamp mismatch");
         assertEq(dec.stateRoot, keccak256("new-root"), "stateRoot mismatch");
+
+        vm.stopPrank();
     }
 
     function test_updateClient_revert_invalidProof() public {
-        {
-            ClientState memory cState = ClientState({
-                l2ChainId: "fake-l2",
-                l1ClientId: 10,
-                l2ClientId: 20,
-                l2LatestHeight: 100,
-                timestampOffset: 0,
-                stateRootOffset: 32
-            });
-            ConsensusState memory cs = ConsensusState({
-                timestamp: 9999,
-                stateRoot: keccak256("old-root")
-            });
+        ClientState memory cState = ClientState({
+            l2ChainId: "fake-l2",
+            l1ClientId: 10,
+            l2ClientId: 20,
+            l2LatestHeight: 100,
+            timestampOffset: 0,
+            stateRootOffset: 32
+        });
+        ConsensusState memory cs =
+            ConsensusState({timestamp: 9999, stateRoot: keccak256("old-root")});
 
-            vm.prank(ibcHandler);
-            client.createClient(123, abi.encode(cState), abi.encode(cs));
-        }
+        vm.startPrank(ibcHandler);
+        client.createClient(
+            123,
+            StateLensIcs23SmtLib.encode(cState),
+            StateLensIcs23SmtLib.encode(cs)
+        );
 
         Header memory header = Header({
             l1Height: 500,
@@ -310,114 +316,65 @@ contract StateLensIcs23MoveClientTest is Test {
                 uint64(8888), keccak256("new-root"), keccak256("new-storage")
             )
         });
-        bytes memory headerBytes = abi.encode(header);
+        bytes memory headerBytes = abi.encode(
+            header.l1Height,
+            header.l2Height,
+            header.l2InclusionProof,
+            header.l2ConsensusState
+        );
 
         lightClient.setVerifyMembershipReturn(false);
 
-        vm.prank(ibcHandler);
         vm.expectRevert(
             abi.encodeWithSelector(
-                StateLensIcs23MoveLib.ErrInvalidL1Proof.selector
+                StateLensIcs23SmtLib.ErrInvalidL1Proof.selector
             )
         );
         client.updateClient(123, headerBytes);
+        vm.stopPrank();
     }
 
     function test_misbehaviour_reverts() public {
         vm.prank(ibcHandler);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                StateLensIcs23MoveLib.ErrUnsupported.selector
-            )
+            abi.encodeWithSelector(StateLensIcs23SmtLib.ErrUnsupported.selector)
         );
         client.misbehaviour(1, bytes(""));
     }
 
     function test_isFrozenImpl() public {
-        {
-            ClientState memory cState = ClientState({
-                l2ChainId: "fake-l2",
-                l1ClientId: 10,
-                l2ClientId: 20,
-                l2LatestHeight: 100,
-                timestampOffset: 0,
-                stateRootOffset: 32
-            });
-            ConsensusState memory cs = ConsensusState({
-                timestamp: 9999,
-                stateRoot: keccak256("old-root")
-            });
-            vm.prank(ibcHandler);
-            client.createClient(999, abi.encode(cState), abi.encode(cs));
-        }
+        ClientState memory cState = ClientState({
+            l2ChainId: "fake-l2",
+            l1ClientId: 10,
+            l2ClientId: 20,
+            l2LatestHeight: 100,
+            timestampOffset: 0,
+            stateRootOffset: 32
+        });
+        ConsensusState memory cs =
+            ConsensusState({timestamp: 9999, stateRoot: keccak256("old-root")});
+        vm.startPrank(ibcHandler);
+        client.createClient(
+            999,
+            StateLensIcs23SmtLib.encode(cState),
+            StateLensIcs23SmtLib.encode(cs)
+        );
 
         lightClient.setIsFrozenReturn(true);
-        // TODO: verifymembership is returning true automatically, so this test will revert anyway
 
         bool frozen = client.isFrozen(999);
         assertTrue(frozen, "expected client to be frozen");
+        vm.stopPrank();
     }
 
-    function test_verifyMembership_isFrozen() public {
-        {
-            ClientState memory cState = ClientState({
-                l2ChainId: "fake-l2",
-                l1ClientId: 10,
-                l2ClientId: 20,
-                l2LatestHeight: 100,
-                timestampOffset: 0,
-                stateRootOffset: 32
-            });
-            ConsensusState memory cs = ConsensusState({
-                timestamp: 9999,
-                stateRoot: keccak256("old-root")
-            });
-            vm.prank(ibcHandler);
-            client.createClient(2, abi.encode(cState), abi.encode(cs));
-        }
-
-        lightClient.setIsFrozenReturn(true);
-        // TODO: verifymembership is returning true automatically, so this test will revert anyway
-
-        // vm.prank(ibcHandler);
-        // vm.expectRevert(
-        //     abi.encodeWithSelector(
-        //         StateLensIcs23MoveLib.ErrClientFrozen.selector
-        //     )
-        // );
-
-        client.verifyMembership(
-            2, 100, bytes("proof"), bytes("path"), bytes("value")
-        );
-    }
-
-    function test_verifyNonMembership_isFrozen() public {
-        {
-            ClientState memory cState = ClientState({
-                l2ChainId: "fake-l2",
-                l1ClientId: 10,
-                l2ClientId: 20,
-                l2LatestHeight: 100,
-                timestampOffset: 0,
-                stateRootOffset: 32
-            });
-            ConsensusState memory cs = ConsensusState({
-                timestamp: 9999,
-                stateRoot: keccak256("old-root")
-            });
-            vm.prank(ibcHandler);
-            client.createClient(3, abi.encode(cState), abi.encode(cs));
-        }
-
-        lightClient.setIsFrozenReturn(true);
-        // TODO: verifymembership is returning true automatically, so this test will revert anyway
-
-        // vm.prank(ibcHandler);
-        // vm.expectRevert(
-        //     abi.encodeWithSelector(
-        //         StateLensIcs23MoveLib.ErrClientFrozen.selector
-        //     )
-        // );
-        // client.verifyNonMembership(3, 100, bytes("proof"), bytes("path"));
+    function decodeConsensusState(
+        bytes memory bz
+    ) internal pure returns (ConsensusState memory) {
+        ConsensusState memory consensusState;
+        (uint64 timestamp, bytes32 stateRoot) =
+            abi.decode(bz, (uint64, bytes32));
+        consensusState.timestamp = timestamp;
+        consensusState.stateRoot = stateRoot;
+        return consensusState;
     }
 }

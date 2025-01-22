@@ -63,7 +63,7 @@ impl Module {
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
-        <ClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+        ClientState::abi_decode_params(client_state, true).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),
@@ -148,7 +148,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|cs| cs.abi_encode_params())
             .map(Into::into)
     }
 

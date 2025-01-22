@@ -24,7 +24,7 @@ export const statsQuery = (): Readable<QueryObserverResult<Array<Statistic>, Err
       return response.v1_ibc_union_statistics
     },
     enabled: true,
-    refetchInterval: 5_000,
+    refetchInterval: 12_000,
     refetchOnWindowFocus: false
   })
 
@@ -38,6 +38,6 @@ export const transfersPerDayQuery = (
       return response.v1_ibc_union_daily_fungible_asset_orders
     },
     enabled: true,
-    refetchInterval: 6_000,
+    refetchInterval: 12_000,
     refetchOnWindowFocus: false
   })
