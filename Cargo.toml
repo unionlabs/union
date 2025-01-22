@@ -79,7 +79,7 @@ members = [
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
-  "lib/state-lens-ics23-move-light-client-types",
+  "lib/state-lens-ics23-smt-light-client-types",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
@@ -120,12 +120,14 @@ members = [
   "voyager/modules/client/tendermint",
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
+  "voyager/modules/client/state-lens/ics23-smt",
 
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
+  "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
 
   "voyager/modules/consensus/berachain",
@@ -225,7 +227,7 @@ scroll-rpc                   = { path = "lib/scroll-rpc", default-features = fal
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
-state-lens-ics23-move-light-client-types   = { path = "lib/state-lens-ics23-move-light-client-types", default-features = false }
+state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
 
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
