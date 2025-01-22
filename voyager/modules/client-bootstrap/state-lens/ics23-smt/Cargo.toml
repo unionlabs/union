@@ -1,0 +1,24 @@
+[package]
+edition = "2021"
+name    = "voyager-client-bootstrap-module-state-lens-ics23-smt"
+version = "0.1.0"
+
+[dependencies]
+alloy                                   = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+beacon-api                              = { workspace = true }
+beacon-api-types                        = { workspace = true, features = ["serde"] }
+cometbft-rpc                            = { workspace = true }
+movement-light-client-types             = { workspace = true, features = ["serde"] }
+ibc-union-spec.workspace                = true
+jsonrpsee                               = { workspace = true, features = ["macros", "server", "tracing"] }
+serde                                   = { workspace = true, features = ["derive"] }
+serde_json                              = { workspace = true }
+state-lens-ics23-smt-light-client-types = { workspace = true, features = ["serde"] }
+tokio                                   = { workspace = true }
+tracing                                 = { workspace = true }
+unionlabs                               = { workspace = true }
+voyager-message                         = { workspace = true }
+voyager-vm                              = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
