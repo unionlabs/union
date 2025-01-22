@@ -5,7 +5,11 @@ import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky, sepolia } from "viem/chains"
 import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
-import { getChannelInfo, getRecommendedChannels } from "#query/offchain/ucs03-channels"
+import {
+  getChannelInfo,
+  getQuoteToken,
+  getRecommendedChannels
+} from "#query/offchain/ucs03-channels"
 import { evmApproveTransferAsset } from "#evm/transfer"
 
 const { values } = parseArgs({
@@ -21,10 +25,10 @@ const PRIVATE_KEY = values["private-key"]
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const client = createUnionClient({
-  chainId: "17000",
+  chainId: "11155111",
   account: evmAccount,
   transport: fallback([
-    http("https://rpc.holesky.sepolia.chain.kitchen"),
+    http("https://rpc.11155111.sepolia.chain.kitchen"),
     http(holesky?.rpcUrls.default.http.at(0))
   ])
 })
@@ -32,14 +36,19 @@ const client = createUnionClient({
 let channels = await getRecommendedChannels()
 
 const LINK_CONTRACT_ADDRESS = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
+const LINK_CONTRACT_ADDRESS_SEPOLIA = "0x44799296211290262fd6b22a07a0fa13414caddc"
 
-let channel = getChannelInfo("17000", "11155111", channels)
+let channel = getChannelInfo("11155111", "17000", channels)
 
 if (channel === null) {
-  console.log("no channel found")
+  consola.info("no channel found")
   process.exit(1)
 }
 
+consola.info({ channel })
+let quoteToken = await getQuoteToken("11155111", LINK_CONTRACT_ADDRESS_SEPOLIA, channel)
+
+/**
 const approveResponse = await evmApproveTransferAsset(client, {
   amount: 1n,
   denomAddress: LINK_CONTRACT_ADDRESS,
@@ -68,3 +77,4 @@ if (transfer.isErr()) {
 }
 
 consola.info(transfer.value)
+*/
