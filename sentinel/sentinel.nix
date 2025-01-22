@@ -19,7 +19,7 @@
     {
       packages = {
         sentinel = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-ftC6pM+l9fiyJ52voMYILusrVd0BuJ1FFJy+0gY8jyo=";
+          npmDepsHash = "sha256-Ddjoj/M22j4RPqtusdZ55YJRz/4CKTp/n9DVaQJ/+sg=";
           src = ./.;
           sourceRoot = "sentinel";
           npmFlags = [
@@ -29,31 +29,35 @@
           pname = packageJSON.name;
           inherit (packageJSON) version;
           nativeBuildInputs = deps;
-          buildInputs = deps;
+          buildInputs = [ pkgs.bashInteractive ];
           installPhase = ''
-            echo "Current directory: $(pwd)"
-            echo "out is $out"
+                        echo "Current directory: $(pwd)"
+                        echo "out is $out"
 
-            # 1) Copy the compiled ESM .js
-            mkdir -p $out/lib
-            cp -r dist/* $out/lib
+                        # 1) Copy the compiled ESM .js
+                        mkdir -p $out/lib
+                        cp -r dist/* $out/lib
 
-            # 2) Copy node_modules
-            cp -r node_modules $out/lib/node_modules
+                        # 2) Copy node_modules
+                        cp -r node_modules $out/lib/node_modules
 
-            # 3) Copy package.json
-            cp package.json $out/lib
+                        # 3) Copy package.json
+                        cp package.json $out/lib
 
-            # 4) Create a Bash wrapper in $out/bin
-            mkdir -p $out/bin
+                        # 4) Create a Bash wrapper in $out/bin
+                        mkdir -p $out/bin
 
-            # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
-            echo '#!/usr/bin/env bash' > $out/bin/sentinel
-            echo 'cd "$out/lib"' >> $out/bin/sentinel
-            echo 'export NODE_PATH="$out/lib/node_modules"' >> $out/bin/sentinel
-            echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' sentinel.js "$@"' >> $out/bin/sentinel
+                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+                          cat <<EOF > $out/bin/sentinel
+            #!${pkgs.bashInteractive}/bin/bash
+            cd "$out/lib"
+            export NODE_PATH="$out/lib/node_modules"
+            EOF
 
-            chmod +x $out/bin/sentinel
+
+                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' sentinel.js "$@"' >> $out/bin/sentinel
+
+                        chmod +x $out/bin/sentinel
           '';
 
           doDist = false;

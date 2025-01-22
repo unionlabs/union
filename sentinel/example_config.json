@@ -1,0 +1,15 @@
+{
+  "cycleIntervalMs": 3600000,
+  "interactions": [
+    { "destinationChain": "17000", "sourceChain": "11155111", "timeframeMs": 3600000 }
+  ],
+  "evmTransfers": [
+    {
+      "privateKey": "----",
+      "estimateGas": true,
+      "destinationChainId": "11155111",
+      "rpc": "https://rpc.holesky.sepolia.chain.kitchen",
+      "linkContractAddress": "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
+    }
+  ]
+}
