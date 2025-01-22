@@ -1,8 +1,17 @@
+#!/usr/bin/env node
 import { request, gql } from "graphql-request"
 import fetch, { Headers } from "node-fetch"
 import fs from "fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
+
+// For the EVM cross-chain transfer snippet:
+import { Address, fallback, http } from "viem"
+import { holesky, sepolia } from "viem/chains"
+import { privateKeyToAccount } from "viem/accounts"
+// If you’re pulling createUnionClient from your local or a published package:
+import { createUnionClient, type TransferAssetsParameters } from "@unionlabs/client"
+// Alternatively, adapt the import path to your code’s actual location if it’s local
 
 // Hasura endpoint
 const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql"
@@ -13,33 +22,32 @@ const reportedBlockHashes = new Set<string>()
 // Variable to track sleep cycles
 let sleepCycleCount = 0
 
-// Parse command-line arguments
-function loadConfig(configPath: string): { interactions: ChainPair[]; cycleIntervalMs: number } {
-  if (!fs.existsSync(configPath)) {
-    throw new Error("Config file not found. Ensure config.json exists.")
-  }
+// Shape of the chain pair config
+interface ChainPair {
+  sourceChain: string
+  destinationChain: string
+  timeframeMs: number
+}
 
-  const rawData = fs.readFileSync(configPath, "utf-8")
-  const config = JSON.parse(rawData)
+// Shape of the EVM transfer config
+interface EvmTransferConfig {
+  privateKey: string
+  estimateGas: boolean
+  destinationChainId: string
+  rpc: string
+  linkContractAddress: Address
+}
 
-  if (!Array.isArray(config.interactions) || config.interactions.length === 0) {
-    throw new Error("Config file is invalid or interactions array is empty.")
-  }
-
-  return config
+// Combined config shape
+interface ConfigFile {
+  interactions: ChainPair[]
+  cycleIntervalMs: number
+  evmTransfers?: EvmTransferConfig[] // optional array
 }
 
 // The shape of Hasura’s response
 interface HasuraResponse {
   v1_ibc_union_packets: Packet[]
-}
-
-// Set global fetch and Headers
-if (!globalThis.fetch) {
-  globalThis.fetch = fetch as any
-}
-if (!globalThis.Headers) {
-  globalThis.Headers = Headers as any
 }
 
 // Define our expected shape from Hasura
@@ -55,6 +63,30 @@ interface Packet {
   // optional fields
   packet_send_block_hash?: string | null
   packet_recv_block_hash?: string | null
+}
+
+// Set global fetch and Headers
+if (!globalThis.fetch) {
+  globalThis.fetch = fetch as any
+}
+if (!globalThis.Headers) {
+  globalThis.Headers = Headers as any
+}
+
+// Parse command-line arguments
+function loadConfig(configPath: string): ConfigFile {
+  if (!fs.existsSync(configPath)) {
+    throw new Error("Config file not found. Ensure config.json exists.")
+  }
+
+  const rawData = fs.readFileSync(configPath, "utf-8")
+  const config = JSON.parse(rawData)
+
+  if (!Array.isArray(config.interactions) || config.interactions.length === 0) {
+    throw new Error("Config file is invalid or interactions array is empty.")
+  }
+
+  return config
 }
 
 /**
@@ -77,6 +109,7 @@ export async function checkPackets(
   // Current time
   const now = Date.now()
 
+  // We'll query more than the timeframe to ensure we catch all
   const searchRangeMs = timeframeMs * 500
   const sinceDate = new Date(now - searchRangeMs).toISOString()
 
@@ -167,7 +200,6 @@ export async function checkPackets(
             p.packet_send_block_hash ?? "?"
           }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        // Add block hash to the set
         reportedBlockHashes.add(blockHash)
         continue
       } else {
@@ -178,7 +210,6 @@ export async function checkPackets(
               p.packet_send_block_hash ?? "?"
             }`
           )
-          // Add block hash to the set
           reportedBlockHashes.add(blockHash)
         }
       }
@@ -190,7 +221,6 @@ export async function checkPackets(
             p.packet_send_block_hash ?? "?"
           }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        // Add block hash to the set
         reportedBlockHashes.add(blockHash)
         continue
       } else {
@@ -201,7 +231,6 @@ export async function checkPackets(
               p.packet_send_block_hash ?? "?"
             }, send_time=${sendStr}, write_ack_time=${writeAckStr}`
           )
-          // Add block hash to the set
           reportedBlockHashes.add(blockHash)
         }
       }
@@ -213,7 +242,6 @@ export async function checkPackets(
             p.packet_send_block_hash ?? "?"
           }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        // Add block hash to the set
         reportedBlockHashes.add(blockHash)
       } else {
         const ackTimeMs = new Date(ackStr).getTime()
@@ -223,7 +251,6 @@ export async function checkPackets(
               p.packet_send_block_hash ?? "?"
             }`
           )
-          // Add block hash to the set
           reportedBlockHashes.add(blockHash)
         } else {
           console.debug(`Packet fully acked on time. blockHash=${p.packet_send_block_hash ?? "?"}`)
@@ -235,15 +262,72 @@ export async function checkPackets(
   }
 }
 
-interface ChainPair {
-  sourceChain: string
-  destinationChain: string
-  timeframeMs: number
+const LINK_CONTRACT_ADDRESS = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
+const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
+
+/**
+ * Perform an EVM cross-chain transfer or estimate the gas for it.
+ * Adapt the logic as needed to match your chain IDs / workflow.
+ */
+async function doEvmTransfer(task: EvmTransferConfig) {
+  try {
+    console.info(`\n[EVMTx] Starting EVM transfer for chainId=${task.destinationChainId}`)
+
+    // The account derived from the private key
+    const evmAccount = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
+    console.info("[EVMTx] EVM account:", evmAccount)
+    const unionClient = createUnionClient({
+      chainId: "17000",
+      account: evmAccount,
+      transport: fallback([
+        http("https://rpc.holesky.sepolia.chain.kitchen"),
+        http(holesky?.rpcUrls.default.http.at(0))
+      ])
+    })
+
+    // Construct transaction payload
+    const transactionPayload = {
+      amount: 421n,
+      destinationChainId: `${sepolia.id}`,
+      receiver: RECEIVER,
+      denomAddress: LINK_CONTRACT_ADDRESS,
+      autoApprove: true
+    } satisfies TransferAssetsParameters<"17000">
+
+    console.log("transactionPayload: ", transactionPayload)
+
+    // Simulate to get gas estimation
+    const gasEstimationResponse = await unionClient.simulateTransaction(transactionPayload)
+    console.log("gasEstimationResponse: ", gasEstimationResponse)
+    if (gasEstimationResponse.isErr()) {
+      console.error("[EVMTx] Gas estimation failed:", gasEstimationResponse.error)
+      return
+    }
+    console.info("[EVMTx] Gas cost estimate:", gasEstimationResponse.value)
+
+    // If only estimating gas, return now
+    if (task.estimateGas) {
+      console.info("[EVMTx] Task configured to only estimate gas; skipping transfer.")
+      return
+    }
+
+    // Otherwise, perform the actual transfer
+    const transferResp = await unionClient.transferAsset(transactionPayload)
+    if (transferResp.isErr()) {
+      console.error("[EVMTx] Transfer error:", transferResp.error)
+      return
+    }
+
+    console.info("[EVMTx] Transfer success:", transferResp.value)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`[EVMTx] Transfer exception: ${msg}`)
+  }
 }
 
 /**
  * Main function that calls `checkPackets` repeatedly,
- * similar to a cron job (infinite loop).
+ * then does EVM transfers, in an infinite loop.
  */
 export async function main() {
   const argv = await yargs(hideBin(process.argv))
@@ -265,9 +349,11 @@ export async function main() {
   const chainPairs: ChainPair[] = config.interactions
   const oneHourMs = config.cycleIntervalMs
 
-  while (true) {
-    console.info("Starting IBC cross-chain checks...")
+  // Optional array of EVM tasks
+  const evmTransfers: EvmTransferConfig[] = config.evmTransfers ?? []
 
+  while (true) {
+    console.info("\n========== Starting IBC cross-chain checks ==========")
     for (const pair of chainPairs) {
       console.info(
         `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
@@ -282,15 +368,26 @@ export async function main() {
         )
       }
     }
+
+    // Optionally clear the reportedBlockHashes set every 3 cycles
     sleepCycleCount++
     if (sleepCycleCount % 3 === 0) {
       reportedBlockHashes.clear()
+      console.info("Cleared reported block hashes.")
     }
 
-    console.info("All checks done. Sleeping for 1 hour...")
+    // Now do the EVM transfers for each config item:
+    if (evmTransfers.length > 0) {
+      console.info("\n========== Starting EVM transfer tasks ==========")
+      for (const task of evmTransfers) {
+        await doEvmTransfer(task)
+      }
+    }
+
+    console.info(`\nAll checks & EVM tasks done. Sleeping for ${oneHourMs / 1000 / 60} minutes...`)
     await new Promise(resolve => setTimeout(resolve, oneHourMs))
   }
 }
 
-// Just call `main()` immediately, since we don't have `require.main` in ESM
+// Just call `main()` immediately
 main().catch(err => console.error("Error in main()", err))
