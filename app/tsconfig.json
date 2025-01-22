@@ -1,5 +1,7 @@
 {
-  "extends": ["./.svelte-kit/tsconfig.json"],
+  "extends": [
+    "./.svelte-kit/tsconfig.json"
+  ],
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
@@ -15,10 +17,20 @@
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "types": [
+      "typed-query-selector/strict",
+      "unplugin-icons/types/svelte"
+    ],
     "paths": {
-      "$*": ["./src/*"]
+      "$*": [
+        "./src/*"
+      ]
     },
     "plugins": [
       {
@@ -26,13 +38,18 @@
         "name": "gql.tada/ts-plugin",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://purple.graphql.union.build/v1/graphql"
+          "url": "https://staging.graphql.union.build/v1/graphql"
         }
       }
     ]
   },
-  "include": ["src", "scripts"],
-  "exclude": ["./src/lib/components/ui"],
+  "include": [
+    "src",
+    "scripts"
+  ],
+  "exclude": [
+    "./src/lib/components/ui"
+  ],
   "files": [
     "reset.d.ts",
     "vite.config.ts",
