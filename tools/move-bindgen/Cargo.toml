@@ -1,10 +1,15 @@
 [package]
+name    = "move-bindgen"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "move-bindgen"
-publish      = false
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.0.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 aptos-rest-client   = { workspace = true }
@@ -20,6 +25,3 @@ serde_json          = { workspace = true }
 syn                 = { version = "2.0.52", default-features = false, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }
 tokio               = { workspace = true, features = ["full"] }
 tracing             = { workspace = true }
-
-[lints]
-workspace = true

@@ -1,10 +1,12 @@
 [package]
-authors      = ["Union Labs"]
-edition      = "2021"
+name    = "state-lens-ics23-mpt-light-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "state-lens-ics23-mpt-light-client"
-publish      = false
-version      = "0.1.0"
+publish      = { workspace = true }
+repository   = { workspace = true }
 
 [lints]
 workspace = true

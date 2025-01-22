@@ -1,9 +1,15 @@
 [package]
+name    = "ibc-union-spec"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union-spec"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 alloy-sol-types = { workspace = true, optional = true }
@@ -20,9 +26,6 @@ voyager-core    = { workspace = true }
 [dev-dependencies]
 ibc-solidity   = { workspace = true }
 ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", "ibc-solidity-compat"] }
-
-[lints]
-workspace = true
 
 [features]
 default = []

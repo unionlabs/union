@@ -1,8 +1,12 @@
 [package]
-edition  = "2021"
-name     = "chain-utils"
-resolver = "2"
-version  = "0.1.0"
+name    = "chain-utils"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
 
 [lints]
 workspace = true

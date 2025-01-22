@@ -1,10 +1,12 @@
 [package]
-authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+name    = "ibc-union-msg"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union-msg"
-repository   = "https://github.com/unionlabs/union"
-version      = "1.0.0"
+publish      = { workspace = true }
+repository   = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,9 +1,15 @@
 [package]
+name    = "gnark-key-parser"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "gnark-key-parser"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 arith        = "0.2.3"
@@ -11,6 +17,3 @@ ark-ff       = { version = "0.4.2", default-features = false }
 hex          = { workspace = true, features = ["alloc"] }
 substrate-bn = { version = "0.6", default-features = false }
 thiserror    = { workspace = true }
-
-[lints]
-workspace = true
