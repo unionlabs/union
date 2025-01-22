@@ -1,10 +1,11 @@
 import { ofetch } from "ofetch"
-import { GRAQPHQL_URL } from "#mod"
+import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import type { ByteArray } from "viem"
+import { createPublicClient, http, type ByteArray } from "viem"
 import { err, ok, type Result } from "neverthrow"
 import consola from "consola"
+import { ucs03ZkgmAbi } from "#abi/ucs-03"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
@@ -62,28 +63,40 @@ export const getQuoteToken = async (
   source_chain_id: string,
   base_token: string,
   channel: Channel
-): Promise<Result<string, Error>> => {
+): Promise<Result<{ quote_token: string; type: "UNWRAPPED" | "NEW_WRAPPED" }, Error>> => {
   // check if the denom is wrapped
-  let args = {
-    base_token,
-    destination_channel_id: channel.source_channel_id, // not a mistake! because we're unwrapping
-    source_chain_id
-  }
-  console.log({ args })
-  let wrapping = (await request(GRAQPHQL_URL, tokenWrappingQuery, args)).v1_ibc_union_tokens
+  let wrapping = (
+    await request(GRAQPHQL_URL, tokenWrappingQuery, {
+      base_token,
+      destination_channel_id: channel.source_channel_id, // not a mistake! because we're unwrapping
+      source_chain_id
+    })
+  ).v1_ibc_union_tokens
 
+  // if it is, quote token is the unwrapped verison of the warpped token.
   if (wrapping.length > 0) {
     let quote_token = wrapping.at(0)?.wrapping.at(0)?.unwrapped_address_hex
     if (quote_token) {
-      console.log("quote token found")
-      return ok(quote_token)
+      return ok({ type: "UNWRAPPED", quote_token })
     }
   }
-  console.log({ wrapping })
-  // if it is, quote token is the unwrapped verison of the warpped token.
 
   // if it is unknown, calculate the quotetoken
-  return err(new Error("blah"))
+  const destinationChainClient = createPublicClient({
+    chain: evmChainFromChainId(channel.destination_chain_id),
+    transport: http()
+  })
+
+  // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
+  // we do this by calling the ucs03 instance on the counterparty chain.
+  const [quote_token, _] = (await destinationChainClient.readContract({
+    address: `0x${channel.destination_port_id}`,
+    abi: ucs03ZkgmAbi,
+    functionName: "predictWrappedToken",
+    args: [0, channel.destination_channel_id, base_token]
+  })) as ["0x${string}", string]
+
+  return ok({ type: "NEW_WRAPPED", quote_token })
 }
 
 export const getRecommendedChannels = async () => {
