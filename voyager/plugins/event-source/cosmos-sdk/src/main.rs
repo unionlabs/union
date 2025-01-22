@@ -20,16 +20,16 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::{
         channel::{self},
         client::height::Height,
     },
-    id::{ChannelId, ClientId, ConnectionId, PortId},
-    option_unwrap, parse_wasm_client_type,
-    primitives::{encoding::HexUnprefixed, H256},
+    id::{ChannelId, ConnectionId, PortId},
+    option_unwrap,
+    primitives::H256,
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{
@@ -39,7 +39,8 @@ use voyager_message::{
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::missing_state,
-    ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
@@ -60,12 +61,6 @@ const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(10));
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
-}
-
-#[derive(clap::Subcommand)]
-pub enum Cmd {
-    ChainId,
-    LatestHeight,
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +100,7 @@ impl Plugin for Module {
     type Callback = ModuleCallback;
 
     type Config = Config;
-    type Cmd = Cmd;
+    type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
@@ -147,13 +142,8 @@ impl Plugin for Module {
         }
     }
 
-    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
-        let module = Self::new(config).await.unwrap();
-
-        match cmd {
-            Cmd::ChainId => println!("{}", module.chain_id),
-            Cmd::LatestHeight => println!("{}", module.latest_height().await.unwrap()),
-        }
+    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
+        match cmd {}
     }
 }
 
@@ -171,144 +161,6 @@ impl Module {
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
         Height::new_with_revision(self.chain_revision, height)
-    }
-
-    async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
-        if let Some(ty) = self.checksum_cache.get(&checksum) {
-            debug!(
-                %checksum,
-                ty = ?*ty,
-                "cache hit for checksum"
-            );
-
-            return Ok(Some(*ty));
-        };
-
-        info!(
-            %checksum,
-            "cache miss for checksum"
-        );
-
-        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .map_err(rpc_error(
-            "error connecting to grpc server",
-            Some(json!({
-                "grpc_url": self.grpc_url
-            })),
-        ))?
-        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
-        })
-        .await
-        .map_err(rpc_error(
-            "error querying wasm code",
-            Some(json!({
-                "checksum": checksum,
-                "grpc_url": self.grpc_url
-            })),
-        ))?
-        .into_inner()
-        .data;
-
-        match parse_wasm_client_type(bz) {
-            Ok(Some(ty)) => {
-                info!(
-                    %checksum,
-                    ?ty,
-                    "parsed checksum"
-                );
-
-                self.checksum_cache.insert(checksum, ty);
-
-                Ok(Some(ty))
-            }
-            Ok(None) => Ok(None),
-            Err(err) => {
-                error!(
-                    %checksum,
-                    %err,
-                    "unable to parse wasm client type"
-                );
-
-                Ok(None)
-            }
-        }
-    }
-
-    #[instrument(skip_all, fields(%client_id))]
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
-        type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
-
-        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .map_err(rpc_error(
-            "error connecting to grpc server",
-            Some(json!({ "client_id": client_id })),
-        ))?
-        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
-        })
-        .await
-        .map_err(rpc_error(
-            "error querying client state",
-            Some(json!({ "client_id": client_id })),
-        ))?
-        .into_inner()
-        .client_state
-        .ok_or_else(|| {
-            // lol
-            rpc_error(
-                "error fetching client state",
-                Some(json!({ "client_id": client_id })),
-            )(&*Box::<dyn Error>::from("client state field is empty"))
-        })?;
-
-        assert!(
-            client_state.type_url == <WasmClientState as prost::Name>::type_url(),
-            "attempted to get the wasm blob checksum of a non-wasm \
-            light client. this is a bug, please report this at \
-            `https://github.com/unionlabs/union`."
-        );
-
-        // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
-        <WasmClientState as prost::Message>::decode(&*client_state.value)
-            .map_err(rpc_error(
-                "error decoding client state",
-                Some(json!({ "client_id": client_id })),
-            ))?
-            .checksum
-            .try_into()
-            .map_err(rpc_error(
-                "invalid checksum",
-                Some(json!({ "client_id": client_id })),
-            ))
-    }
-
-    // TODO: Remove
-    async fn latest_height(&self) -> Result<Height, cometbft_rpc::JsonRpcError> {
-        let commit_response = self.cometbft_client.commit(None).await?;
-
-        let mut height = commit_response
-            .signed_header
-            .header
-            .height
-            .inner()
-            .try_into()
-            .expect("value is >= 0; qed;");
-
-        if !commit_response.canonical {
-            debug!("commit is not canonical, latest finalized height is the previous block");
-            height -= 1;
-        }
-
-        debug!(height, "latest height");
-
-        Ok(self.make_height(height))
     }
 
     #[allow(clippy::too_many_arguments)] // pls
@@ -461,152 +313,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchTransactions(FetchTransactions { height, page }) => {
-                info!(%height, %page, "fetching events in block");
-
-                let response = self
-                    .cometbft_client
-                    .tx_search(
-                        format!("tx.height={}", height.height()),
-                        false,
-                        page,
-                        PER_PAGE_LIMIT,
-                        cometbft_rpc::rpc_types::Order::Desc,
-                    )
-                    .await
-                    .map_err(rpc_error(
-                        format_args!("error fetching transactions at height {height}"),
-                        Some(json!({ "height": height })),
-                    ))?;
-
-                Ok(conc(
-                    response
-                        .txs
-                        .into_iter()
-                        .flat_map(|txr| {
-                            txr.tx_result.events.into_iter().filter_map(move |event| {
-                                debug!(%event.ty, "observed event");
-
-                                let event = CosmosSdkEvent::<IbcEvent>::new(event.clone())
-                                    .inspect_err(|e| match e {
-                                        cosmos_sdk_event::Error::Deserialize(error) => {
-                                            debug!("unable to parse event: {error}")
-                                        }
-                                        _ => {
-                                            error!("{e}");
-                                        }
-                                    })
-                                    .ok()?;
-
-                                match (&event.contract_address, &self.ibc_host_contract_address) {
-                                    (None, None) => Some((event, txr.hash)),
-                                    (None, Some(_)) => Some((event, txr.hash)),
-                                    (Some(_), None) => None,
-                                    (Some(a), Some(b)) => {
-                                        if a == b {
-                                            Some((event, txr.hash))
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                }
-                            })
-                        })
-                        // .collect::<Result<Vec<_>, _>>()
-                        // .map_err(|err| {
-                        //     ErrorObject::owned(
-                        //         -1,
-                        //         ErrorReporter(err).to_string(),
-                        //         Some(json!({
-                        //             "height": height,
-                        //             "page": page
-                        //         })),
-                        //     )
-                        // })?
-                        // .into_iter()
-                        .map(|(ibc_event, tx_hash)| {
-                            debug!(event = %ibc_event.event.name(), "observed IBC event");
-                            call(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(MakeChainEvent {
-                                    height,
-                                    tx_hash: tx_hash.into_encoding(),
-                                    event: ibc_event.event,
-                                }),
-                            ))
-                        })
-                        .chain(
-                            ((page.get() * PER_PAGE_LIMIT.get() as u32) < response.total_count)
-                                .then(|| {
-                                    call(PluginMessage::new(
-                                        self.plugin_name(),
-                                        ModuleCall::from(FetchTransactions {
-                                            height,
-                                            page: page.checked_add(1).expect("too many pages?"),
-                                        }),
-                                    ))
-                                }),
-                        ),
-                ))
+                self.fetch_transaction(height, page).await
             }
             ModuleCall::FetchBlocks(FetchBlocks { height }) => {
-                let latest_height = e
-                    .try_get::<VoyagerClient>()?
-                    .query_latest_height(self.chain_id.clone(), true)
-                    .await?;
-
-                let continuation = |next_height| {
-                    seq([
-                        // TODO: Make this a config param
-                        call(WaitForHeight {
-                            chain_id: self.chain_id.clone(),
-                            height: next_height,
-                            finalized: true,
-                        }),
-                        call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchBlocks {
-                                height: next_height,
-                            }),
-                        )),
-                    ])
-                };
-
-                match height.height().cmp(&latest_height.height()) {
-                    Ordering::Less => {
-                        let next_height = (latest_height.height() - height.height())
-                            .clamp(1, self.chunk_block_fetch_size)
-                            + height.height();
-
-                        info!("batch fetching blocks in range {height}..{next_height}");
-
-                        Ok(conc(
-                            (height.height()..next_height)
-                                .map(|h| {
-                                    call(PluginMessage::new(
-                                        self.plugin_name(),
-                                        ModuleCall::from(FetchTransactions {
-                                            height: Height::new_with_revision(height.revision(), h),
-                                            page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
-                                        }),
-                                    ))
-                                })
-                                .chain([continuation(Height::new_with_revision(
-                                    height.revision(),
-                                    next_height,
-                                ))]),
-                        ))
-                    }
-                    Ordering::Equal | Ordering::Greater => Ok(conc([
-                        call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchTransactions {
-                                height: height.increment(),
-                                page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
-                            }),
-                        )),
-                        continuation(height.increment()),
-                    ])),
-                }
+                self.fetch_blocks(e.try_get::<VoyagerClient>()?, height)
+                    .await
             }
             ModuleCall::MakeChainEvent(MakeChainEvent {
                 height,
@@ -1970,5 +1681,197 @@ fn rpc_error<E: Error>(
         let message = format!("{message}: {}", ErrorReporter(e));
         error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
+    }
+}
+
+impl Module {
+    #[instrument(skip_all, fields(height))]
+    async fn fetch_blocks(
+        &self,
+        voyager_client: &VoyagerClient,
+        height: Height,
+    ) -> RpcResult<Op<VoyagerMessage>> {
+        let latest_height = voyager_client
+            .query_latest_height(self.chain_id.clone(), true)
+            .await?;
+
+        info!(%latest_height, %height, "fetching blocks");
+
+        if !height.revision_matches(&latest_height) {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!(
+                    "revision number mismatch: fetching blocks from height \
+                    {height}, but the latest height is {latest_height}"
+                ),
+                None::<()>,
+            ));
+        }
+
+        let continuation = |next_height| {
+            seq([
+                // TODO: Make this a config param
+                call(WaitForHeight {
+                    chain_id: self.chain_id.clone(),
+                    height: next_height,
+                    finalized: true,
+                }),
+                call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::from(FetchBlocks {
+                        height: next_height,
+                    }),
+                )),
+            ])
+        };
+
+        match height.cmp(&latest_height) {
+            // height < latest_height
+            // fetch transactions on all blocks height..next_height (*exclusive* on the upper bound!)
+            // and then queue the continuation starting at next_height
+            Ordering::Less => {
+                let next_height = (latest_height.height() - height.height())
+                    .clamp(1, self.chunk_block_fetch_size)
+                    + height.height();
+
+                info!("batch fetching blocks in range {height}..{next_height}");
+
+                Ok(conc(
+                    (height.height()..next_height)
+                        .map(|h| {
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchTransactions {
+                                    height: Height::new_with_revision(height.revision(), h),
+                                    page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
+                                }),
+                            ))
+                        })
+                        .chain([continuation(Height::new_with_revision(
+                            height.revision(),
+                            next_height,
+                        ))]),
+                ))
+            }
+            // height == latest_height
+            Ordering::Equal => {
+                info!("requested fetch height is lateset finalized height ({height})");
+
+                Ok(conc([
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchTransactions {
+                            height: height.increment(),
+                            page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
+                        }),
+                    )),
+                    continuation(height.increment()),
+                ]))
+            }
+            // height > latest_height
+            Ordering::Greater => {
+                warn!(
+                    "the latest finalized height ({latest_height}) \
+                    is less than the requested height ({height})"
+                );
+
+                Ok(continuation(height))
+            }
+        }
+    }
+
+    #[instrument(skip_all, fields(height, page))]
+    async fn fetch_transaction(
+        &self,
+        height: Height,
+        page: NonZeroU32,
+    ) -> RpcResult<Op<VoyagerMessage>> {
+        info!(%height, "fetching events in block");
+
+        let response = self
+            .cometbft_client
+            .tx_search(
+                format!("tx.height={}", height.height()),
+                false,
+                page,
+                PER_PAGE_LIMIT,
+                cometbft_rpc::rpc_types::Order::Desc,
+            )
+            .await
+            .map_err(rpc_error(
+                format_args!("error fetching transactions at height {height}"),
+                Some(json!({ "height": height })),
+            ))?;
+
+        Ok(conc(
+            response
+                .txs
+                .into_iter()
+                .flat_map(|txr| {
+                    txr.tx_result.events.into_iter().filter_map(move |event| {
+                        debug!(%event.ty, "observed event");
+
+                        let event = CosmosSdkEvent::<IbcEvent>::new(event.clone())
+                            .inspect_err(|e| match e {
+                                cosmos_sdk_event::Error::Deserialize(error) => {
+                                    trace!("unable to parse event: {error}")
+                                }
+                                _ => {
+                                    error!("{e}");
+                                }
+                            })
+                            .ok()?;
+
+                        match (&event.contract_address, &self.ibc_host_contract_address) {
+                            (None, None) => Some((event, txr.hash)),
+                            (None, Some(_)) => Some((event, txr.hash)),
+                            (Some(_), None) => None,
+                            (Some(a), Some(b)) => {
+                                if a == b {
+                                    Some((event, txr.hash))
+                                } else {
+                                    None
+                                }
+                            }
+                        }
+                    })
+                })
+                // .collect::<Result<Vec<_>, _>>()
+                // .map_err(|err| {
+                //     ErrorObject::owned(
+                //         -1,
+                //         ErrorReporter(err).to_string(),
+                //         Some(json!({
+                //             "height": height,
+                //             "page": page
+                //         })),
+                //     )
+                // })?
+                // .into_iter()
+                .map(|(ibc_event, tx_hash)| {
+                    debug!(event = %ibc_event.event.name(), "observed IBC event");
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(MakeChainEvent {
+                            height,
+                            tx_hash: tx_hash.into_encoding(),
+                            event: ibc_event.event,
+                        }),
+                    ))
+                })
+                .chain(
+                    ((page.get() * PER_PAGE_LIMIT.get() as u32) < response.total_count).then(
+                        || {
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchTransactions {
+                                    height,
+                                    page: page.checked_add(1).expect("too many pages?"),
+                                }),
+                            ))
+                        },
+                    ),
+                ),
+        ))
     }
 }
