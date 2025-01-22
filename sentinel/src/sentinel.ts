@@ -1,17 +1,42 @@
 #!/usr/bin/env node
+declare global {
+  interface BigInt {
+    toJSON: () => string
+  }
+}
+
+if (!BigInt.prototype.toJSON) {
+  Object.defineProperty(BigInt.prototype, "toJSON", {
+    value: function () {
+      return this.toString()
+    },
+    writable: true,
+    configurable: true
+  })
+}
+
 import { request, gql } from "graphql-request"
 import fetch, { Headers } from "node-fetch"
 import fs from "fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
+import consola from "consola"
 
 // For the EVM cross-chain transfer snippet:
 import { Address, fallback, http } from "viem"
+import { bech32, hex, bytes } from "@scure/base"
 import { holesky, sepolia } from "viem/chains"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { privateKeyToAccount } from "viem/accounts"
 // If you’re pulling createUnionClient from your local or a published package:
-import { createUnionClient, type TransferAssetsParameters } from "@unionlabs/client"
-// Alternatively, adapt the import path to your code’s actual location if it’s local
+import {
+  ChainId,
+  CosmosChainId,
+  createUnionClient,
+  EvmChainId,
+  type TransferAssetsParameters,
+  hexToBytes
+} from "@unionlabs/client"
 
 // Hasura endpoint
 const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql"
@@ -30,19 +55,24 @@ interface ChainPair {
 }
 
 // Shape of the EVM transfer config
-interface EvmTransferConfig {
+interface TransferConfig {
   privateKey: string
-  estimateGas: boolean
-  destinationChainId: string
-  rpc: string
-  linkContractAddress: Address
+  sourceChainIdEVM: EvmChainId
+  sourceChainIdCosmos: CosmosChainId
+  destinationChainId: ChainId
+  rpcs: string[]
+  gasPriceDenom: string
+  receiverAddress: Address
+  denomAddress: Address
+  amount: bigint
+  cosmosAccountType: string
 }
 
 // Combined config shape
 interface ConfigFile {
   interactions: ChainPair[]
   cycleIntervalMs: number
-  evmTransfers?: EvmTransferConfig[] // optional array
+  transfers?: TransferConfig[] // optional array
 }
 
 // The shape of Hasura’s response
@@ -110,10 +140,10 @@ export async function checkPackets(
   const now = Date.now()
 
   // We'll query more than the timeframe to ensure we catch all
-  const searchRangeMs = timeframeMs * 500
+  const searchRangeMs = timeframeMs * 2
   const sinceDate = new Date(now - searchRangeMs).toISOString()
 
-  console.info(
+  consola.info(
     `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`
   )
 
@@ -128,18 +158,17 @@ export async function checkPackets(
                 {
                   source_chain_id: { _eq: $srcChain }
                   destination_chain_id: { _eq: $dstChain }
-                },
+                }
                 {
                   source_chain_id: { _eq: $dstChain }
                   destination_chain_id: { _eq: $srcChain }
                 }
               ]
-            },
+            }
             { packet_send_timestamp: { _gte: $since } }
           ]
         }
         order_by: { packet_send_timestamp: asc }
-        limit: 500
       ) {
         packet_send_timestamp
         packet_recv_timestamp
@@ -164,7 +193,7 @@ export async function checkPackets(
     const response = await request<HasuraResponse>(HASURA_ENDPOINT, query, variables)
     const data = response.v1_ibc_union_packets ?? []
 
-    console.info(
+    consola.info(
       `Found ${data.length} packets in the last ${searchRangeMs}ms for ${sourceChain} <-> ${destinationChain}`
     )
 
@@ -193,22 +222,19 @@ export async function checkPackets(
       if (reportedBlockHashes.has(blockHash)) {
         continue
       }
+
       // 1) RECV
       if (!recvStr) {
-        console.error(
-          `[RECV MISSING] >${timeframeMs}ms since send. BlockHash=${
-            p.packet_send_block_hash ?? "?"
-          }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+        consola.error(
+          `[RECV MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
         reportedBlockHashes.add(blockHash)
         continue
       } else {
         const recvTimeMs = new Date(recvStr).getTime()
         if (recvTimeMs - sendTimeMs > timeframeMs) {
-          console.error(
-            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, blockHash=${
-              p.packet_send_block_hash ?? "?"
-            }`
+          consola.error(
+            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, blockHash=${blockHash}`
           )
           reportedBlockHashes.add(blockHash)
         }
@@ -216,20 +242,16 @@ export async function checkPackets(
 
       // 2) WRITE_ACK
       if (!writeAckStr) {
-        console.error(
-          `[WRITE_ACK MISSING] >${timeframeMs}ms since send. BlockHash=${
-            p.packet_send_block_hash ?? "?"
-          }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+        consola.error(
+          `[WRITE_ACK MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
         reportedBlockHashes.add(blockHash)
         continue
       } else {
         const writeAckTimeMs = new Date(writeAckStr).getTime()
         if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-          console.error(
-            `[WRITE_ACK TOO LATE] >${timeframeMs}ms. blockHash=${
-              p.packet_send_block_hash ?? "?"
-            }, send_time=${sendStr}, write_ack_time=${writeAckStr}`
+          consola.error(
+            `[WRITE_ACK TOO LATE] >${timeframeMs}ms. blockHash=${blockHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`
           )
           reportedBlockHashes.add(blockHash)
         }
@@ -237,99 +259,154 @@ export async function checkPackets(
 
       // 3) ACK
       if (!ackStr) {
-        console.error(
-          `[ACK MISSING] >${timeframeMs}ms since send. BlockHash=${
-            p.packet_send_block_hash ?? "?"
-          }, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+        consola.error(
+          `[ACK MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
         reportedBlockHashes.add(blockHash)
       } else {
         const ackTimeMs = new Date(ackStr).getTime()
         if (ackTimeMs - sendTimeMs > timeframeMs) {
-          console.error(
-            `[ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, blockHash=${
-              p.packet_send_block_hash ?? "?"
-            }`
+          consola.error(
+            `[ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, blockHash=${blockHash}`
           )
           reportedBlockHashes.add(blockHash)
-        } else {
-          console.debug(`Packet fully acked on time. blockHash=${p.packet_send_block_hash ?? "?"}`)
         }
       }
     }
   } catch (error: any) {
-    console.error("Error fetching data from Hasura:", error.message)
+    consola.error("Error fetching data from Hasura:", error.message)
   }
 }
-
-const LINK_CONTRACT_ADDRESS = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
-const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 
 /**
  * Perform an EVM cross-chain transfer or estimate the gas for it.
  * Adapt the logic as needed to match your chain IDs / workflow.
  */
-async function doEvmTransfer(task: EvmTransferConfig) {
+async function doTransfer(task: TransferConfig) {
+  const isCosmosChain = Boolean(task.sourceChainIdCosmos)
+  const chainType = isCosmosChain ? "Cosmos" : "EVM"
   try {
-    console.info(`\n[EVMTx] Starting EVM transfer for chainId=${task.destinationChainId}`)
+    consola.info(
+      "\n[%s] Starting transfer for chainId=%s to chain=%s",
+      chainType,
+      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
+      task.destinationChainId
+    )
 
-    // The account derived from the private key
     const evmAccount = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
-    console.info("[EVMTx] EVM account:", evmAccount)
-    const unionClient = createUnionClient({
-      chainId: "17000",
-      account: evmAccount,
-      transport: fallback([
-        http("https://rpc.holesky.sepolia.chain.kitchen"),
-        http(holesky?.rpcUrls.default.http.at(0))
-      ])
-    })
+    const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+      Uint8Array.from(hexToBytes(task.privateKey)),
+      task.cosmosAccountType
+    )
 
-    // Construct transaction payload
-    const transactionPayload = {
-      amount: 421n,
-      destinationChainId: `${sepolia.id}`,
-      receiver: RECEIVER,
-      denomAddress: LINK_CONTRACT_ADDRESS,
-      autoApprove: true
-    } satisfies TransferAssetsParameters<"17000">
+    const transports = task.rpcs.map(rpc => http(rpc))
+    const sourceChainId = isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM
 
-    console.log("transactionPayload: ", transactionPayload)
+    const unionClient = isCosmosChain
+      ? createUnionClient({
+          account: cosmosAccount,
+          chainId: task.sourceChainIdCosmos,
+          gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
+          transport: transports[0]
+        })
+      : createUnionClient({
+          account: evmAccount,
+          chainId: task.sourceChainIdEVM,
+          transport: fallback(transports)
+        })
 
-    // Simulate to get gas estimation
-    const gasEstimationResponse = await unionClient.simulateTransaction(transactionPayload)
-    console.log("gasEstimationResponse: ", gasEstimationResponse)
-    if (gasEstimationResponse.isErr()) {
-      console.error("[EVMTx] Gas estimation failed:", gasEstimationResponse.error)
-      return
-    }
-    console.info("[EVMTx] Gas cost estimate:", gasEstimationResponse.value)
+    const transactionPayload = isCosmosChain
+      ? ({
+          amount: BigInt(task.amount),
+          denomAddress: task.denomAddress,
+          destinationChainId: task.destinationChainId,
+          receiver: task.receiverAddress
+        } satisfies TransferAssetsParameters<typeof sourceChainId>)
+      : ({
+          amount: task.amount,
+          denomAddress: task.denomAddress,
+          destinationChainId: task.destinationChainId,
+          receiver: task.receiverAddress,
+          autoApprove: true
+        } satisfies TransferAssetsParameters<typeof sourceChainId>)
 
-    // If only estimating gas, return now
-    if (task.estimateGas) {
-      console.info("[EVMTx] Task configured to only estimate gas; skipping transfer.")
-      return
-    }
-
-    // Otherwise, perform the actual transfer
     const transferResp = await unionClient.transferAsset(transactionPayload)
     if (transferResp.isErr()) {
-      console.error("[EVMTx] Transfer error:", transferResp.error)
+      consola.error("[%s] Transfer error:", chainType, transferResp.error)
       return
     }
 
-    console.info("[EVMTx] Transfer success:", transferResp.value)
+    consola.info("[%s] Transfer success:", chainType, transferResp.value)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error(`[EVMTx] Transfer exception: ${msg}`)
+    consola.error("[%s] Transfer exception: %s", chainType, msg)
   }
 }
 
 /**
- * Main function that calls `checkPackets` repeatedly,
- * then does EVM transfers, in an infinite loop.
+ * This loop runs your IBC checks on the interval specified by `config.cycleIntervalMs`.
+ * (For example, once every hour if config.cycleIntervalMs = 3600000)
  */
-export async function main() {
+async function runIbcChecksForever(config: ConfigFile) {
+  const chainPairs: ChainPair[] = config.interactions
+
+  while (true) {
+    consola.info("\n========== Starting IBC cross-chain checks ==========")
+    for (const pair of chainPairs) {
+      consola.info(
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+      )
+      try {
+        await checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs)
+        consola.info(`Check complete for pair ${pair.sourceChain} <-> ${pair.destinationChain}`)
+      } catch (err) {
+        consola.error(
+          `Error while checking pair ${pair.sourceChain} <-> ${pair.destinationChain}:`,
+          err
+        )
+      }
+    }
+
+    // Optionally clear the reportedBlockHashes set every 3 cycles
+    sleepCycleCount++
+    if (sleepCycleCount % 3 === 0) {
+      reportedBlockHashes.clear()
+      consola.info("Cleared reported block hashes.")
+    }
+
+    // Sleep for whatever cycleIntervalMs is set to (e.g. 1 hour)
+    consola.info(`IBC checks done. Sleeping for ${config.cycleIntervalMs / 1000 / 60} minutes...`)
+    await new Promise(resolve => setTimeout(resolve, config.cycleIntervalMs))
+  }
+}
+
+/**
+ * This loop runs your transfer tasks every 10 minutes,
+ * regardless of how often IBC checks happen.
+ */
+async function runTransfersForever(config: ConfigFile) {
+  const transfers: TransferConfig[] = config.transfers ?? []
+  const TEN_MINUTES_MS = 10 * 60 * 1000
+
+  while (true) {
+    if (transfers.length > 0) {
+      consola.info("\n========== Starting transfers tasks ==========")
+      for (const task of transfers) {
+        await doTransfer(task)
+      }
+    } else {
+      consola.info("No transfers configured. Skipping transfer step.")
+    }
+
+    consola.info(`Transfers done (or skipped). Sleeping 10 minutes...`)
+    await new Promise(resolve => setTimeout(resolve, TEN_MINUTES_MS))
+  }
+}
+
+/**
+ * Kick off both loops in parallel.
+ */
+async function main() {
   const argv = await yargs(hideBin(process.argv))
     .option("config", {
       alias: "c",
@@ -342,52 +419,14 @@ export async function main() {
     .parse()
 
   const configPath = argv.config
-  console.info(`Using config file: ${configPath}`)
+  consola.info(`Using config file: ${configPath}`)
 
   // Load configuration
   const config = loadConfig(configPath)
-  const chainPairs: ChainPair[] = config.interactions
-  const oneHourMs = config.cycleIntervalMs
 
-  // Optional array of EVM tasks
-  const evmTransfers: EvmTransferConfig[] = config.evmTransfers ?? []
-
-  while (true) {
-    console.info("\n========== Starting IBC cross-chain checks ==========")
-    for (const pair of chainPairs) {
-      console.info(
-        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-      )
-      try {
-        await checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs)
-        console.info(`Check complete for pair ${pair.sourceChain} <-> ${pair.destinationChain}`)
-      } catch (err) {
-        console.error(
-          `Error while checking pair ${pair.sourceChain} <-> ${pair.destinationChain}:`,
-          err
-        )
-      }
-    }
-
-    // Optionally clear the reportedBlockHashes set every 3 cycles
-    sleepCycleCount++
-    if (sleepCycleCount % 3 === 0) {
-      reportedBlockHashes.clear()
-      console.info("Cleared reported block hashes.")
-    }
-
-    // Now do the EVM transfers for each config item:
-    if (evmTransfers.length > 0) {
-      console.info("\n========== Starting EVM transfer tasks ==========")
-      for (const task of evmTransfers) {
-        await doEvmTransfer(task)
-      }
-    }
-
-    console.info(`\nAll checks & EVM tasks done. Sleeping for ${oneHourMs / 1000 / 60} minutes...`)
-    await new Promise(resolve => setTimeout(resolve, oneHourMs))
-  }
+  // Start both infinite loops in parallel:
+  await Promise.all([runIbcChecksForever(config), runTransfersForever(config)])
 }
 
 // Just call `main()` immediately
-main().catch(err => console.error("Error in main()", err))
+main().catch(err => consola.error("Error in main()", err))
