@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "state-lens-ics23-move-light-client-types"
+name    = "state-lens-ics23-smt-light-client-types"
 version = "0.1.0"
 
 [dependencies]
