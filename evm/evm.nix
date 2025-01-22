@@ -605,6 +605,10 @@ _: {
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
                   ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > state-lens-ics23-ics23-client.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtClient.json \
+                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > state-lens-ics23-smt-client.json
               ''
           );
 
@@ -715,6 +719,12 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
+              name = "eth-deploy-${args.network}-state-lens-ics23-smt-client";
+              value = eth-deploy-single ({ kind = "StateLensIcs23SmtClient"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
               name = "eth-deploy-${args.network}-ucs03";
               value = eth-deploy-single ({ kind = "UCS03"; } // args);
             }) networks
@@ -780,6 +790,18 @@ _: {
                 {
                   dry = false;
                   protocol = "StateLensIcs23Ics23Client";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-upgrade-${args.network}-state-lens-ics23-smt-client";
+              value = eth-upgrade (
+                {
+                  dry = false;
+                  protocol = "StateLensIcs23SmtClient";
                 }
                 // args
               );
