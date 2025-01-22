@@ -494,32 +494,6 @@ contract DeployStateLensIcs23SmtClient is UnionScript {
     }
 }
 
-contract RegisterIcs23SmtClient is Script {
-    using LibString for *;
-
-    address immutable handler;
-    address immutable client;
-
-    constructor() {
-        handler = vm.envAddress("IBC_HANDLER");
-        client = vm.envAddress("CLIENT");
-    }
-
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-
-        address owner = vm.addr(privateKey);
-
-        vm.startBroadcast(privateKey);
-
-        IBCHandler(handler).registerClient(
-            LightClients.STATE_LENS_ICS23_SMT, StateLensIcs23SmtClient(client)
-        );
-
-        vm.stopBroadcast();
-    }
-}
-
 contract DeployIBC is UnionScript {
     Deployer immutable deployer;
 

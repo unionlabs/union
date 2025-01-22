@@ -127,7 +127,7 @@ impl ClientType {
     /// [ICS23]: https://github.com/cosmos/ics23
     pub const STATE_LENS_ICS23_ICS23: &'static str = "state-lens/ics23/ics23";
 
-    /// A client tracking a [Aptos] chain, verified through that chain's consensus as
+    /// A client tracking an [Aptos] chain, verified through that chain's consensus as
     /// settled on an intermediary [ICS-23] chain.
     ///
     /// [ICS23]: https://github.com/cosmos/ics23

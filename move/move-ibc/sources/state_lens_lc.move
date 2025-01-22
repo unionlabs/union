@@ -294,15 +294,4 @@ module ibc::statelens_lc {
 
         object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
     }
-
-    #[test]
-    fun decode_test() {
-        let client_state = x"0531373030300100000013000000e898300000000000000020004000";
-        let client_state = decode_client_state(client_state);
-        let consensus_state =
-            x"000000000000000000000000000000000000000000000000181c75935aab8000f5c411575dae56d013ca1b7626896a9e96b457c14043091768d3d021fd5ebf333a42f6ef5bdc9ebe38b19ba1b8578f6e20e2a552bba787951c185159c721a165";
-        let consensus_state = decode_consensus_state(consensus_state);
-        std::debug::print(&client_state);
-        std::debug::print(&consensus_state);
-    }
 }

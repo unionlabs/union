@@ -108,6 +108,12 @@ pub struct Config {
     pub movement_rest_url: String,
 
     /// The relayers that are allowed to modify this light client
+    ///
+    /// Note that the light client had to be permissioned for now since
+    /// we are waiting for our [PR] to be merged so that we can fetch
+    /// the necessary proofs.
+    ///
+    /// [PR]: https://github.com/movementlabsxyz/movement/pull/645
     pub whitelisted_relayers: Vec<cosmwasm_std::Addr>,
 }
 

@@ -235,6 +235,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                             let signed_tx = raw.sign(pk, pk.public_key()).unwrap();
 
+                            // TODO(aeryz): we normally should've send a batch transaction but
+                            // movement don't allow it now.
                             dbg!(&signed_tx);
                             let res = self
                                 .aptos_client
