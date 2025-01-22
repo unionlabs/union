@@ -20,3 +20,15 @@ pub fn instantiate(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     ibc_union_light_client::query::<MovementLightClient>(deps, env, msg).map_err(Into::into)
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MigrateMsg {}
+
+#[entry_point]
+pub fn migrate(
+    _deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+) -> Result<Response, IbcClientError<MovementLightClient>> {
+    Ok(Response::new())
+}

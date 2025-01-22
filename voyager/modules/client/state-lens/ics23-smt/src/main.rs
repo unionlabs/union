@@ -1,5 +1,4 @@
 use alloy::sol_types::SolValue;
-use ethereum_light_client_types::StorageProof;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -7,12 +6,12 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     self,
-    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
 };
@@ -37,7 +36,6 @@ async fn main() {
 pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcCosmwasm,
-    IbcMoveAptos,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -48,7 +46,6 @@ impl TryFrom<String> for SupportedIbcInterface {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
-            IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -59,7 +56,6 @@ impl SupportedIbcInterface {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
-            SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
         }
     }
 }
@@ -83,11 +79,10 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(ClientType::STATE_LENS_ICS23_MPT)?;
-        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
+        info.ensure_client_type(ClientType::STATE_LENS_ICS23_SMT)?;
+        info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
         info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)
-            .or(info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM))
-            .or(info.ensure_ibc_interface(IbcInterface::IBC_MOVE_APTOS))?;
+            .or(info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM))?;
 
         Ok(Self {
             ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
@@ -117,15 +112,7 @@ impl Module {
                     )
                 })
             }
-            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {err}"),
-                        None::<()>,
-                    )
-                }),
-            SupportedIbcInterface::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
+            SupportedIbcInterface::IbcCosmwasm => <ClientState>::decode_as::<Bincode>(client_state)
                 .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
@@ -215,7 +202,6 @@ impl ClientModuleServer for Module {
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
-                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
             })
             .map(Into::into)
     }
@@ -251,26 +237,27 @@ impl ClientModuleServer for Module {
             .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>(),
-                SupportedIbcInterface::IbcMoveAptos => header.encode_as::<Bcs>(),
             })
             .map(Into::into)
     }
 
     #[instrument]
-    async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to deserialize proof: {err}"),
-                None::<()>,
-            )
-        })?;
-        match self.ibc_interface {
-            // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
-            // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
-            SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
-            SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
-            SupportedIbcInterface::IbcMoveAptos => Ok(proof.encode_as::<Bcs>().into()),
-        }
+    async fn encode_proof(&self, _: &Extensions, _proof: Value) -> RpcResult<Bytes> {
+        // TODO(aeryz): we cannot verify the proofs on evm yet, this will be mock until we have cw
+        // impl.
+        Ok(vec![].into())
+        // let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
+        //     ErrorObject::owned(
+        //         FATAL_JSONRPC_ERROR_CODE,
+        //         format!("unable to deserialize proof: {err}"),
+        //         None::<()>,
+        //     )
+        // })?;
+        // match self.ibc_interface {
+        //     // TODO: extract to unionlabs? this is MPT proofs encoding for EVM
+        //     // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
+        //     SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
+        //     SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
+        // }
     }
 }

@@ -163,9 +163,13 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, _client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+        let client_type = self
+            .client_id_to_type(self.ibc_handler_address.into(), None, (client_id,))
+            .await
+            .map_err(rest_error_to_rpc_error)?;
         Ok(ClientInfo {
-            client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
+            client_type: ClientType::new(client_type),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
             metadata: Default::default(),
         })

@@ -108,7 +108,6 @@ module ibc::cometbls_lc {
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {
-        // Return error code, 0 for success
         let state = borrow_global<State>(get_client_address(client_id));
         height::get_revision_height(&state.client_state.latest_height)
     }

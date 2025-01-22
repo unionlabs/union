@@ -2233,6 +2233,7 @@ dependencies = [
  "ibc-union-msg",
  "ics23",
  "lazy_static",
+ "serde",
  "serde_json",
  "tendermint-light-client",
  "tendermint-verifier",
@@ -11317,6 +11318,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "state-lens-ics23-smt-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "hex-literal",
+ "protos",
+ "serde",
+ "state-lens-light-client-types",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-light-client-types"
 version = "0.1.0"
 dependencies = [
@@ -13005,6 +13020,7 @@ dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "chain-utils",
+ "cosmwasm-std 2.1.4",
  "jsonrpsee",
  "movement-light-client-types",
  "serde",
@@ -13051,6 +13067,27 @@ dependencies = [
  "serde",
  "serde_json",
  "state-lens-ics23-mpt-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-state-lens-ics23-smt"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "movement-light-client-types",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-smt-light-client-types",
  "tokio",
  "tracing",
  "unionlabs",
@@ -13172,6 +13209,32 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-state-lens-ics23-smt"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "chain-utils",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "state-lens-ics23-smt-light-client-types",
  "state-lens-light-client-types",
  "thiserror",
  "tokio",

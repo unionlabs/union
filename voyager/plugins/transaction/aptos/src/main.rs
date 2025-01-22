@@ -235,16 +235,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                             let signed_tx = raw.sign(pk, pk.public_key()).unwrap();
 
+                            // TODO(aeryz): we normally should've send a batch transaction but
+                            // movement don't allow it now.
                             dbg!(&signed_tx);
+                            let res = self
+                                .aptos_client
+                                .submit(&signed_tx.clone().into_inner())
+                                .await
+                                .unwrap();
 
+                            dbg!(&res);
                             txs.push(signed_tx.into_inner());
                         }
-
-                        dbg!(&txs);
-
-                        let res = self.aptos_client.submit_batch(&txs).await.unwrap();
-
-                        dbg!(&res);
 
                         // res.into_inner().transaction_failures
 

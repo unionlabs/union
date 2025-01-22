@@ -18,6 +18,8 @@ import {StateLensIcs23Ics23Client} from
     "../contracts/clients/StateLensIcs23Ics23Client.sol";
 import {StateLensIcs23MptClient} from
     "../contracts/clients/StateLensIcs23MptClient.sol";
+import {StateLensIcs23SmtClient} from
+    "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
@@ -46,6 +48,7 @@ library LightClients {
     string constant COMETBLS = "cometbls";
     string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
+    string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
 
     function make(
         string memory lightClient
@@ -146,6 +149,24 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployStateLensIcs23SmtClient(
+        IBCHandler handler,
+        address owner
+    ) internal returns (StateLensIcs23SmtClient) {
+        return StateLensIcs23SmtClient(
+            deploy(
+                LightClients.make(LightClients.STATE_LENS_ICS23_SMT),
+                abi.encode(
+                    address(new StateLensIcs23SmtClient()),
+                    abi.encodeCall(
+                        StateLensIcs23SmtClient.initialize,
+                        (address(handler), owner)
+                    )
+                )
+            )
+        );
+    }
+
     function deployCometbls(
         IBCHandler handler,
         address owner
@@ -235,6 +256,7 @@ abstract contract UnionScript is UnionBase {
             CometblsClient,
             StateLensIcs23MptClient,
             StateLensIcs23Ics23Client,
+            StateLensIcs23SmtClient,
             PingPong,
             UCS01Relay,
             UCS02NFT,
@@ -247,6 +269,8 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23MptClient(handler, owner);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
             deployStateLensIcs23Ics23Client(handler, owner);
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+            deployStateLensIcs23SmtClient(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
@@ -256,6 +280,7 @@ abstract contract UnionScript is UnionBase {
             cometblsClient,
             stateLensIcs23MptClient,
             stateLensIcs23Ics23Client,
+            stateLensIcs23SmtClient,
             pingpong,
             relay,
             nft,
@@ -425,6 +450,50 @@ contract DeployStateLensIcs23Ics23Client is UnionScript {
     }
 }
 
+contract DeployStateLensIcs23SmtClient is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        address handler = getDeployed(IBC.BASED);
+
+        vm.startBroadcast(privateKey);
+
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+            deployStateLensIcs23SmtClient(IBCHandler(handler), owner);
+
+        vm.stopBroadcast();
+
+        console.log(
+            "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
+        );
+    }
+}
+
 contract DeployIBC is UnionScript {
     Deployer immutable deployer;
 
@@ -445,6 +514,7 @@ contract DeployIBC is UnionScript {
             CometblsClient cometblsClient,
             StateLensIcs23MptClient stateLensIcs23MptClient,
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
+            StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
@@ -456,6 +526,9 @@ contract DeployIBC is UnionScript {
         );
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
+        );
+        handler.registerClient(
+            LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
         );
 
         vm.stopBroadcast();
@@ -469,6 +542,9 @@ contract DeployIBC is UnionScript {
         );
         console.log(
             "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+        );
+        console.log(
+            "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
@@ -496,6 +572,7 @@ contract DeployDeployerAndIBC is UnionScript {
             CometblsClient cometblsClient,
             StateLensIcs23MptClient stateLensIcs23MptClient,
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
+            StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
             UCS01Relay relay,
             UCS02NFT nft,
@@ -507,6 +584,9 @@ contract DeployDeployerAndIBC is UnionScript {
         );
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
+        );
+        handler.registerClient(
+            LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
         );
 
         vm.stopBroadcast();
@@ -520,6 +600,9 @@ contract DeployDeployerAndIBC is UnionScript {
         );
         console.log(
             "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+        );
+        console.log(
+            "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS01: ", address(relay));
@@ -565,6 +648,8 @@ contract GetDeployed is Script {
             getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
         address stateLensIcs23Ics23Client =
             getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
+        address stateLensIcs23SmtClient =
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
         address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
         address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
         address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
@@ -596,6 +681,14 @@ contract GetDeployed is Script {
                 abi.encodePacked(
                     "StateLensIcs23Ics23Client: ",
                     stateLensIcs23Ics23Client.toHexString()
+                )
+            )
+        );
+        console.log(
+            string(
+                abi.encodePacked(
+                    "StateLensIcs23SmtClient: ",
+                    stateLensIcs23SmtClient.toHexString()
                 )
             )
         );
@@ -782,6 +875,21 @@ contract GetDeployed is Script {
         impls.serialize(
             implOf(stateLensIcs23Ics23Client).toHexString(),
             implStateLensIcs23Ics23Client
+        );
+
+        string memory implStateLensIcs23SmtClient =
+            "implStateLensIcs23SmtClient";
+        implStateLensIcs23SmtClient.serialize(
+            "contract",
+            string(
+                "contracts/clients/StateLensIcs23SmtClient.sol:StateLensIcs23SmtClient"
+            )
+        );
+        implStateLensIcs23SmtClient =
+            implStateLensIcs23SmtClient.serialize("args", bytes(hex""));
+        impls.serialize(
+            implOf(stateLensIcs23SmtClient).toHexString(),
+            implStateLensIcs23SmtClient
         );
 
         string memory implUCS00 = "implUCS00";
@@ -1177,6 +1285,48 @@ contract UpgradeStateLensIcs23Ics23Client is Script {
         vm.startBroadcast(privateKey);
         address newImplementation = address(new StateLensIcs23Ics23Client());
         StateLensIcs23Ics23Client(stateLensIcs23Ics23Client).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
+        vm.stopBroadcast();
+    }
+}
+
+contract UpgradeStateLensIcs23SmtClient is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address stateLensIcs23SmtClient =
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
+        console.log(
+            string(
+                abi.encodePacked(
+                    "StateLensIcs23SmtClient: ",
+                    stateLensIcs23SmtClient.toHexString()
+                )
+            )
+        );
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new StateLensIcs23SmtClient());
+        StateLensIcs23SmtClient(stateLensIcs23SmtClient).upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();

@@ -52,13 +52,25 @@ library StateLensIcs23MptLib {
     function encode(
         ConsensusState memory consensusState
     ) internal pure returns (bytes memory) {
-        return abi.encode(consensusState);
+        return abi.encode(
+            consensusState.timestamp,
+            consensusState.stateRoot,
+            consensusState.storageRoot
+        );
     }
 
     function encode(
         ClientState memory clientState
     ) internal pure returns (bytes memory) {
-        return abi.encode(clientState);
+        return abi.encode(
+            clientState.l2ChainId,
+            clientState.l1ClientId,
+            clientState.l2ClientId,
+            clientState.l2LatestHeight,
+            clientState.timestampOffset,
+            clientState.stateRootOffset,
+            clientState.storageRootOffset
+        );
     }
 
     function commit(
