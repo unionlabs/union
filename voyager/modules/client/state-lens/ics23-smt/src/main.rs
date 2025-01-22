@@ -1,4 +1,4 @@
-use ethereum_light_client_types::StorageProof;
+use alloy::sol_types::SolValue;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -6,7 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use state_lens_ics23_move_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
@@ -105,13 +105,9 @@ impl Module {
     }
 
     pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<SelfClientState> {
-        println!(
-            "client_state: {:?}?",
-            <SelfClientState>::decode_as::<EthAbi>(client_state).unwrap()
-        );
         match self.ibc_interface {
             SupportedIbcInterface::IbcSolidity => {
-                <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+                ClientState::abi_decode_params(client_state, true).map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {err}"),
@@ -208,7 +204,7 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
             })
             .map(Into::into)

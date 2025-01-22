@@ -5,7 +5,7 @@ use jsonrpsee::{
 use movement_light_client_types::ConsensusState as MovementConsensusState;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use state_lens_ics23_move_light_client_types::{client_state::Extra, ClientState, ConsensusState};
+use state_lens_ics23_smt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{

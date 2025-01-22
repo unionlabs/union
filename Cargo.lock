@@ -13223,7 +13223,7 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-smt"
 version = "0.1.0"
 dependencies = [
- "beacon-api-types",
+ "alloy",
  "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
