@@ -64,6 +64,36 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
   })
     .extend(publicActions)
     .extend(client => ({
+      transferAssetNew: async ({
+        baseAmount,
+        baseToken,
+        quoteAmount,
+        quoteToken,
+        receiver,
+        sourceChannelId,
+        ucs03address
+      }: {
+        baseAmount: bigint
+        baseToken: string
+        quoteAmount: bigint
+        quoteToken: string
+        receiver: string
+        sourceChannelId: number
+        ucs03address: `0x${string}`
+      }): Promise<Result<Hex, Error>> => {
+        return await transferAssetFromEvm(client, {
+          account: client.account,
+          baseToken: baseToken as `0x${string}`,
+          baseAmount,
+          simulate: true,
+          receiver,
+          quoteToken: quoteToken as `0x${string}`,
+          quoteAmount,
+          sourceChannelId,
+          ucs03address
+        })
+      },
+
       transferAsset: async ({
         amount,
         account,
