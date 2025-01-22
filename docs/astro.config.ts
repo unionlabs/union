@@ -147,13 +147,30 @@ export default defineConfig({
               label: "Introduction",
               link: "/"
             },
-            /*
             {
               label: "Connect",
               items: [
                 {
-                  label: "App",
-                  link: "/connect/app"
+                  label: "Apps",
+                  items: [
+                    {
+                      label: "Asset Transfer",
+                      items: [
+                        {
+                          label: "Introduction",
+                          link: "/connect/app/asset-transfer"
+                        },
+                        {
+                          label: "CosmWasm",
+                          link: "/connect/app/asset-transfer/cosmwasm"
+                        },
+                        {
+                          label: "Solidity",
+                          link: "/connect/app/asset-transfer/solidity"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   label: "New Chain",
@@ -161,7 +178,6 @@ export default defineConfig({
                 }
               ]
             },
-            */
             {
               label: "Protocol",
               items: [
