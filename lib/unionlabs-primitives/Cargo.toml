@@ -1,9 +1,15 @@
 [package]
+name    = "unionlabs-primitives"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "unionlabs-primitives"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.0.1"
+
+[lints]
+workspace = true
 
 [dependencies]
 alloy-primitives = { workspace = true, optional = true }
@@ -25,9 +31,6 @@ uint = "0.9.0"
 
 [dev-dependencies]
 unionlabs = { workspace = true, features = ["test-utils"] }
-
-[lints]
-workspace = true
 
 [features]
 default = ["serde", "base64"]

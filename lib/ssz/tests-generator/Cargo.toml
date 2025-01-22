@@ -1,10 +1,12 @@
 [package]
+name    = "ssz-tests-generator"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ssz-tests-generator"
-publish      = false
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
 
 [lints]
 workspace = true

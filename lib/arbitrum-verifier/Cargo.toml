@@ -1,9 +1,12 @@
 [package]
+name    = "arbitrum-verifier"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "arbitrum-verifier"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
 
 [lints]
 workspace = true

@@ -1,12 +1,14 @@
 [package]
+name    = "voyager"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
-include      = [".sqlx"]
 license-file = { workspace = true }
-name         = "voyager"
-publish      = false
+publish      = { workspace = true }
 repository   = { workspace = true }
-resolver     = "2"
-version      = "0.1.0"
+
+include = [".sqlx"]
 
 [package.metadata.crane]
 test-include = []

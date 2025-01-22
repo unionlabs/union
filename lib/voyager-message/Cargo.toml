@@ -1,10 +1,12 @@
 [package]
+name    = "voyager-message"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "voyager-message"
+publish      = { workspace = true }
 repository   = { workspace = true }
-resolver     = "2"
-version      = "0.1.0"
 
 [lints]
 workspace = true

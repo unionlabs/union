@@ -1,9 +1,15 @@
 [package]
+name    = "aptos-verifier"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "aptos-verifier"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 bcs         = { workspace = true }
@@ -11,6 +17,3 @@ hex-literal = { workspace = true }
 sha3        = { workspace = true }
 thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
-
-[lints]
-workspace = true

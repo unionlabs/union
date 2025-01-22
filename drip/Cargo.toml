@@ -1,9 +1,15 @@
 [package]
+name    = "drip"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "drip"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 chain-utils        = { workspace = true }
@@ -26,5 +32,3 @@ async-sqlite       = "0.2.2"
 axum               = "0.7.5"
 recaptcha-verify   = "0.1.5"
 subtle-encoding    = { workspace = true, features = ["bech32-preview"] }
-[lints]
-workspace = true
