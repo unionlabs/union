@@ -73,7 +73,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
   })
     .extend(publicActions)
     .extend(client => ({
-      transferAssetNew: async ({
+      transferAsset: async ({
         baseAmount,
         baseToken,
         quoteAmount,

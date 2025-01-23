@@ -39,7 +39,7 @@ export interface CosmosClientParameters {
 
 export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
-    transferAssetNew: async ({
+    transferAsset: async ({
       baseAmount,
       baseToken,
       quoteAmount,

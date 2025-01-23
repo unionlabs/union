@@ -76,7 +76,7 @@ const stargazeClient = createUnionClient({
   transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
 })
 
-const transfer = await stargazeClient.transferAssetNew({
+const transfer = await stargazeClient.transferAsset({
   baseToken: STARS_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,

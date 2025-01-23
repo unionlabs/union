@@ -66,7 +66,7 @@ if (approveResponse.isErr()) {
 
 consola.info("approval tx hash", approveResponse.value)
 
-const transfer = await holeskyClient.transferAssetNew({
+const transfer = await holeskyClient.transferAsset({
   baseToken: LINK_CONTRACT_ADDRESS,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
