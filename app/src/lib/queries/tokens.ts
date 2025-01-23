@@ -37,7 +37,10 @@ export const tokenInfoQuery = (chainId: string, denom: string, chains: Array<Cha
 
       // note the non-decoded denom is used
       let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
-      console.log("graphqltoken", graphqlToken)
+
+      if (graphqlToken?.wrapping && graphqlToken.wrapping.length > 0) {
+        tokenInfoMulti.combined.wrapping = graphqlToken.wrapping
+      }
 
       // GraphQL info
       if (graphqlToken?.representations && graphqlToken.representations.length > 0) {

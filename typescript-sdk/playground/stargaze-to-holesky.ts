@@ -37,7 +37,7 @@ const cliArgs = parseArgs({
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
 const STARS_DENOM = "ustars"
-const AMOUNT = 13n
+const AMOUNT = 420n
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 const SOURCE_CHAIN_ID = "elgafar-1"
 const DESTINATION_CHAIN_ID = "17000"
