@@ -35,7 +35,6 @@ import type {
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { bech32AddressToHex } from "#mod.ts"
 import { generateSalt } from "#utilities/index.ts"
-import type { createTokenAddress } from "@aptos-labs/ts-sdk"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [

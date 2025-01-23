@@ -9,7 +9,6 @@ import {
   getQuoteToken,
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
-import { evmApproveTransferAsset } from "#evm/transfer"
 
 const cliArgs = parseArgs({
   args: process.argv.slice(2),
