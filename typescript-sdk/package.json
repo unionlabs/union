@@ -15,12 +15,7 @@
     },
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md",
-    "package.json"
-  ],
+  "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
     "build": "tsup --config='tsup.config.ts'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
@@ -73,9 +68,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "keywords": [
-    "web3",
-    "cross-chain",
-    "ibc"
-  ]
+  "keywords": ["web3", "cross-chain", "ibc"]
 }

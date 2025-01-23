@@ -75,7 +75,7 @@ export const getQuoteToken = async (
 
   let wrappingTokens = wrapping.value.v1_ibc_union_tokens
 
-  // if it is, quote token is the unwrapped verison of the warpped token.
+  // if it is, quote token is the unwrapped verison of the wrapped token.
   if (wrappingTokens.length > 0) {
     let quote_token = wrappingTokens.at(0)?.wrapping.at(0)?.unwrapped_address_hex
     if (quote_token) {

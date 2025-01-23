@@ -1,16 +1,10 @@
-import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
-import { privateKeyToAccount } from "viem/accounts"
-import { holesky, sepolia } from "viem/chains"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
-import { evmApproveTransferAsset } from "#evm/transfer"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),

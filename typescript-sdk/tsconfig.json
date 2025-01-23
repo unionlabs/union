@@ -6,9 +6,7 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
     "skipLibCheck": true,
@@ -40,30 +38,12 @@
         }
       }
     ],
-    "types": [
-      "node",
-      "bun"
-    ],
+    "types": ["node", "bun"],
     "paths": {
-      "#*": [
-        "./src/*"
-      ]
+      "#*": ["./src/*"]
     }
   },
-  "exclude": [
-    "**/dist/**"
-  ],
-  "include": [
-    "src",
-    "test",
-    "scripts",
-    "playground",
-    "knip.json"
-  ],
-  "files": [
-    "reset.d.ts",
-    "tsup.config.ts",
-    "environment.d.ts",
-    "vitest.config.ts"
-  ]
+  "exclude": ["**/dist/**"],
+  "include": ["src", "test", "scripts", "playground", "knip.json"],
+  "files": ["reset.d.ts", "tsup.config.ts", "environment.d.ts", "vitest.config.ts"]
 }

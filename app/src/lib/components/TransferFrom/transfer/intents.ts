@@ -2,8 +2,6 @@ import { derived, type Readable } from "svelte/store"
 import type { Chain } from "$lib/types"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import { showUnsupported } from "$lib/stores/user.ts"
-import { get } from "svelte/store"
 import type { BalanceData } from "$lib/queries/balance"
 
 export type AssetListItem = BalanceData & {

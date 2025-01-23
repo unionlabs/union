@@ -8,8 +8,7 @@ import {
   type CustomTransport,
   type FallbackTransport,
   createPublicClient,
-  http,
-  toHex
+  http
 } from "viem"
 import {
   // evmSameChainTransfer,
