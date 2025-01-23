@@ -5,7 +5,7 @@ import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 import type { Chain, TokenInfoMulti } from "$lib/types"
 import { erc20ReadMulticall } from "./balance/evm/multicall.ts"
-import type { Address } from "viem"
+import { hexToString, isHex, type Address } from "viem"
 
 export const tokensQuery = () =>
   createQuery({
@@ -21,14 +21,23 @@ export const tokenInfoQuery = (chainId: string, denom: string, chains: Array<Cha
   createQuery({
     queryKey: ["token-info", chainId, denom],
     queryFn: async (): Promise<TokenInfoMulti> => {
+      let denomDecoded = denom
+
       let tokenInfoMulti: TokenInfoMulti = {
         onchain: null,
         graphql: null,
-        combined: { decimals: 0, symbol: denom, wrapping: [] }
+        combined: { decimals: 0, symbol: denomDecoded, wrapping: [] }
       }
       let chain = chains.find(c => c.chain_id === chainId) ?? null
       if (chain === null) return tokenInfoMulti
+      if (chain.rpc_type === "cosmos" && isHex(denom)) {
+        denomDecoded = hexToString(denom)
+        tokenInfoMulti.combined.symbol = denomDecoded
+      }
+
+      // note the non-decoded denom is used
       let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
+      console.log("graphqltoken", graphqlToken)
 
       // GraphQL info
       if (graphqlToken?.representations && graphqlToken.representations.length > 0) {
@@ -57,8 +66,8 @@ export const tokenInfoQuery = (chainId: string, denom: string, chains: Array<Cha
         const results = await erc20ReadMulticall({
           chainId: chain.chain_id,
           functionNames: ["decimals", "symbol", "name"],
-          address: denom.toLowerCase() as Address,
-          contractAddresses: [denom.toLowerCase()] as Array<Address>
+          address: denomDecoded.toLowerCase() as Address,
+          contractAddresses: [denomDecoded.toLowerCase()] as Array<Address>
         })
 
         tokenInfoMulti.onchain = {
