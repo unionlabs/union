@@ -42,7 +42,7 @@ import {
 const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql"
 
 // Set to track reported block hashes
-const reportedBlockHashes = new Set<string>()
+const reportedsendTxHashes = new Set<string>()
 
 // Variable to track sleep cycles
 let sleepCycleCount = 0
@@ -91,8 +91,10 @@ interface Packet {
   destination_chain_id: string
 
   // optional fields
-  packet_send_block_hash?: string | null
-  packet_recv_block_hash?: string | null
+  packet_send_transaction_hash?: string | null
+  packet_recv_transaction_hash?: string | null
+  write_ack_transaction_hash?: string | null
+  packet_ack_transaction_hash?: string | null
 }
 
 // Set global fetch and Headers
@@ -176,8 +178,10 @@ export async function checkPackets(
         packet_ack_timestamp
         source_chain_id
         destination_chain_id
-        packet_send_block_hash
-        packet_recv_block_hash
+        packet_send_transaction_hash
+        packet_recv_transaction_hash
+        write_ack_transaction_hash
+        packet_ack_transaction_hash
       }
     }
   `
@@ -196,7 +200,6 @@ export async function checkPackets(
     consola.info(
       `Found ${data.length} packets in the last ${searchRangeMs}ms for ${sourceChain} <-> ${destinationChain}`
     )
-
     // Check each packet
     for (const p of data) {
       const sendStr = p.packet_send_timestamp
@@ -217,59 +220,59 @@ export async function checkPackets(
       const writeAckStr = p.write_ack_timestamp
       const ackStr = p.packet_ack_timestamp
 
-      const blockHash = p.packet_send_block_hash ?? "?"
+      const sendTxHash = p.packet_send_transaction_hash ?? "?"
 
-      if (reportedBlockHashes.has(blockHash)) {
+      if (reportedsendTxHashes.has(sendTxHash)) {
         continue
       }
 
       // 1) RECV
       if (!recvStr) {
         consola.error(
-          `[RECV MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        reportedBlockHashes.add(blockHash)
+        reportedsendTxHashes.add(sendTxHash)
         continue
       } else {
         const recvTimeMs = new Date(recvStr).getTime()
         if (recvTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, blockHash=${blockHash}`
+            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`
           )
-          reportedBlockHashes.add(blockHash)
+          reportedsendTxHashes.add(sendTxHash)
         }
       }
 
       // 2) WRITE_ACK
       if (!writeAckStr) {
         consola.error(
-          `[WRITE_ACK MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        reportedBlockHashes.add(blockHash)
+        reportedsendTxHashes.add(sendTxHash)
         continue
       } else {
         const writeAckTimeMs = new Date(writeAckStr).getTime()
         if (writeAckTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[WRITE_ACK TOO LATE] >${timeframeMs}ms. blockHash=${blockHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`
+            `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`
           )
-          reportedBlockHashes.add(blockHash)
+          reportedsendTxHashes.add(sendTxHash)
         }
       }
 
       // 3) ACK
       if (!ackStr) {
         consola.error(
-          `[ACK MISSING] >${timeframeMs}ms since send. BlockHash=${blockHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
-        reportedBlockHashes.add(blockHash)
+        reportedsendTxHashes.add(sendTxHash)
       } else {
         const ackTimeMs = new Date(ackStr).getTime()
         if (ackTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, blockHash=${blockHash}`
+            `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`
           )
-          reportedBlockHashes.add(blockHash)
+          reportedsendTxHashes.add(sendTxHash)
         }
       }
     }
@@ -367,10 +370,10 @@ async function runIbcChecksForever(config: ConfigFile) {
       }
     }
 
-    // Optionally clear the reportedBlockHashes set every 3 cycles
+    // Optionally clear the reportedsendTxHashes set every 3 cycles
     sleepCycleCount++
     if (sleepCycleCount % 3 === 0) {
-      reportedBlockHashes.clear()
+      reportedsendTxHashes.clear()
       consola.info("Cleared reported block hashes.")
     }
 
