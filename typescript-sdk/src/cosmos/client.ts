@@ -11,8 +11,8 @@ import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { fallback, createClient, type HttpTransport, toHex } from "viem"
 import type {
   OfflineSigner,
-  TransferAssetParametersNew,
-  TransferAssetsParameters
+  TransferAssetParameters,
+  TransferAssetsParametersLegacy
 } from "../types.ts"
 
 export const cosmosChainId = [
@@ -47,7 +47,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       receiver,
       sourceChannelId,
       ucs03address
-    }: TransferAssetParametersNew<CosmosChainId>): Promise<Result<string, Error>> => {
+    }: TransferAssetParameters<CosmosChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
       if (!rpcUrl) return err(new Error("No cosmos RPC URL found"))
@@ -89,7 +89,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       relayContractAddress,
       account = parameters.account,
       gasPrice = parameters.gasPrice
-    }: TransferAssetsParameters<CosmosChainId>): Promise<Result<string, Error>> => {
+    }: TransferAssetsParametersLegacy<CosmosChainId>): Promise<Result<string, Error>> => {
       const sourceChainId = parameters.chainId
       const rpcUrl = parameters.transport({}).value?.url
 
@@ -157,7 +157,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       relayContractAddress,
       account = parameters?.account,
       gasPrice = parameters?.gasPrice
-    }: TransferAssetsParameters<CosmosChainId>): Promise<Result<string, Error>> => {
+    }: TransferAssetsParametersLegacy<CosmosChainId>): Promise<Result<string, Error>> => {
       const sourceChainId = parameters.chainId
       const rpcUrl = parameters.transport({}).value?.url
 

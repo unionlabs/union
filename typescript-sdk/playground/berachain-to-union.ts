@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
 
@@ -47,7 +47,7 @@ try {
     destinationChainId: "union-testnet-8",
     // or `client.cosmos.account.address` if you want to send to yourself
     receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-  } satisfies TransferAssetsParameters<"80084">
+  } satisfies TransferAssetsParametersLegacy<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

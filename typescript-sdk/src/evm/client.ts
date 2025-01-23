@@ -27,11 +27,11 @@ import {
   berachainTestnetbArtio
 } from "viem/chains"
 import type {
-  TransferAssetsParameters,
+  TransferAssetsParametersLegacy,
   LooseAutocomplete,
   Hex,
   HexAddress,
-  TransferAssetParametersNew
+  TransferAssetParameters
 } from "../types.ts"
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { bech32AddressToHex } from "#mod.ts"
@@ -81,7 +81,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         receiver,
         sourceChannelId,
         ucs03address
-      }: TransferAssetParametersNew<EvmChainId>): Promise<Result<Hex, Error>> => {
+      }: TransferAssetParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         if (!client.account) return err(new Error("No account found"))
 
         /**
@@ -134,7 +134,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         simulate = true,
         destinationChainId,
         autoApprove = false
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
 
@@ -199,7 +199,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         simulate = true,
         destinationChainId
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         let _receiver: HexAddress
 
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
@@ -229,7 +229,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         destinationChainId,
         relayContractAddress
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<string, Error>> => {
         const sourceChainId = parameters.chainId
 
         if (sourceChainId === destinationChainId) {

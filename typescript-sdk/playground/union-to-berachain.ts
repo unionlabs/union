@@ -6,7 +6,7 @@ import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexToBytes } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 import { berachainTestnetbArtio } from "viem/chains"
 
 /* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
@@ -47,7 +47,7 @@ try {
     // or `client.evm.account.address` if you want to send to yourself
     receiver: berachainAccount.address,
     destinationChainId: `${berachainTestnetbArtio.id}`
-  } satisfies TransferAssetsParameters<"union-testnet-8">
+  } satisfies TransferAssetsParametersLegacy<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

@@ -9,7 +9,7 @@ import {
 import { err, type Result } from "neverthrow"
 import { bech32AddressToHex } from "../convert.ts"
 import { cosmosChainId } from "../cosmos/client.ts"
-import type { TransferAssetsParameters } from "../types.ts"
+import type { TransferAssetsParametersLegacy } from "../types.ts"
 import { Aptos, Network, AptosConfig } from "@aptos-labs/ts-sdk"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
@@ -92,7 +92,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         },
         //
         transferAsset: async (
-          transferParameters: TransferAssetsParameters<AptosChainId>
+          transferParameters: TransferAssetsParametersLegacy<AptosChainId>
         ): Promise<Result<string, Error>> => {
           const aptosClient = await client.getAptosClient({
             authAccess: transferParameters.authAccess
@@ -161,7 +161,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
           })
         },
         simulateTransaction: async (
-          transferParameters: TransferAssetsParameters<AptosChainId>
+          transferParameters: TransferAssetsParametersLegacy<AptosChainId>
         ): Promise<Result<string, Error>> => {
           const aptosClient = await client.getAptosClient({
             authAccess: transferParameters.authAccess

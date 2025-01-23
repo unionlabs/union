@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/arbitrum-to-stride.ts --private-key "..."` --estimate-gas */
 
@@ -41,7 +41,7 @@ try {
     destinationChainId: "stride-internal-1",
     // or `client.cosmos.account.address` if you want to send to yourself
     receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
-  } satisfies TransferAssetsParameters<"80084">
+  } satisfies TransferAssetsParametersLegacy<"80084">
 
   // const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

@@ -5,7 +5,7 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { hexToBytes } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/stride-to-union.ts --private-key "..."` */
 
@@ -42,7 +42,7 @@ try {
     denomAddress: "ustrd",
     destinationChainId: "union-testnet-8",
     receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-  } satisfies TransferAssetsParameters<"stride-internal-1">
+  } satisfies TransferAssetsParametersLegacy<"stride-internal-1">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

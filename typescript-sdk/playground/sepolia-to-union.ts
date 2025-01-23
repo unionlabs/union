@@ -5,7 +5,7 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -48,7 +48,7 @@ try {
     destinationChainId: "union-testnet-8",
     // or `client.cosmos.account.address` if you want to send to yourself
     receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
-  } satisfies TransferAssetsParameters<"11155111">
+  } satisfies TransferAssetsParametersLegacy<"11155111">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

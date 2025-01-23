@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/arbitrum-to-arbitrum.ts --private-key "..."` --estimate-gas */
 
@@ -40,7 +40,7 @@ try {
     denomAddress: LINK_CONTRACT_ADDRESS,
     destinationChainId: `${arbitrumSepolia.id}`,
     receiver: "0xf4212614C7Fe0B3feef75057E88b2E77a7E23e83"
-  } satisfies TransferAssetsParameters<"80084">
+  } satisfies TransferAssetsParametersLegacy<"80084">
 
   // const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

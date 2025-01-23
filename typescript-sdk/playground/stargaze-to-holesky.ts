@@ -8,7 +8,7 @@ import { consola } from "../scripts/logger.ts"
 import { hexToBytes } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/union-to-holesky.ts --private-key "..."` --estimate-gas */
 
@@ -44,7 +44,7 @@ try {
     denomAddress: "ustars",
     destinationChainId: `${holesky.id}`,
     receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
-  } satisfies TransferAssetsParameters<"elgafar-1">
+  } satisfies TransferAssetsParametersLegacy<"elgafar-1">
 
   // const gasEstimationResponse = await client.simulateTransaction(transferPayload)
 

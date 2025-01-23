@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky, sepolia } from "viem/chains"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/sepolia-to-holesky.ts --private-key "..."` */
 
@@ -42,7 +42,7 @@ try {
     receiver: RECEIVER,
     denomAddress: LINK_CONTRACT_ADDRESS,
     autoApprove: true
-  } satisfies TransferAssetsParameters<"11155111">
+  } satisfies TransferAssetsParametersLegacy<"11155111">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
