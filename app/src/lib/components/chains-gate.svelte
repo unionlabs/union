@@ -6,7 +6,6 @@ import { recommendedUcs03ChannelsQuery } from "$lib/queries/channels"
 import { tokensQuery } from "$lib/queries/tokens"
 import { type Readable, derived } from "svelte/store"
 import { isHex } from "viem"
-import { isString } from "util"
 
 let chains = chainsQuery()
 let ucs03channels = recommendedUcs03ChannelsQuery()
@@ -87,7 +86,7 @@ let checkedUcs03Channels: Readable<Array<Ucs03Channel>> = derived(ucs03channels,
 })
 </script>
 
-{#if !!$chains.data || !!$ucs03channels.data}
+{#if !!$chains.data && !!$ucs03channels.data}
   <slot chains={$checkedChains} ucs03channels={$checkedUcs03Channels} />
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
