@@ -20,7 +20,7 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const LINK_CONTRACT_ADDRESS: `0x${string}` = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
+const BASE_TOKEN: `0x${string}` = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B" // LINK<-Holesky
 const AMOUNT = 13n
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 const SOURCE_CHAIN_ID = "17000"
@@ -36,7 +36,7 @@ if (channel === null) {
 
 consola.info("channel", channel)
 
-const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, LINK_CONTRACT_ADDRESS, channel)
+const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, BASE_TOKEN, channel)
 
 if (quoteToken.isErr()) {
   consola.error("could not get quote token")
@@ -44,6 +44,18 @@ if (quoteToken.isErr()) {
 }
 
 consola.info("quote token", quoteToken.value)
+
+const transferArgs = {
+  baseToken: BASE_TOKEN,
+  baseAmount: AMOUNT,
+  quoteToken: quoteToken.value.quote_token,
+  quoteAmount: AMOUNT,
+  receiver: RECEIVER,
+  sourceChannelId: channel.source_channel_id,
+  ucs03address: `0x${channel.source_port_id}`
+} as const
+
+consola.info("transfer args", transferArgs)
 
 const holeskyClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
@@ -53,16 +65,6 @@ const holeskyClient = createUnionClient({
     http(holesky?.rpcUrls.default.http.at(0))
   ])
 })
-
-const transferArgs = {
-  baseToken: LINK_CONTRACT_ADDRESS,
-  baseAmount: AMOUNT,
-  quoteToken: quoteToken.value.quote_token,
-  quoteAmount: AMOUNT,
-  receiver: RECEIVER,
-  sourceChannelId: channel.source_channel_id,
-  ucs03address: `0x${channel.source_port_id}`
-} as const
 
 const approveResponse = await holeskyClient.approveErc20(transferArgs)
 
