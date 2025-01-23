@@ -8,6 +8,7 @@ import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
+import LoadingDots from "$lib/components/loading-dots.svelte"
 
 interface Props {
   stores: {
@@ -79,6 +80,15 @@ let { rawIntents, intents, validation } = stores
         {#if $validation.errors.receiver}
           <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
         {/if}
+        {#await $intents.channel}
+          <LoadingDots/>
+        {:then chan}
+        <pre>
+          {JSON.stringify(chan, null, 2)}
+        </pre>
+
+
+        {/await}
       </div>
     </div>
     <Button
