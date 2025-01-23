@@ -41,7 +41,7 @@ const transactionPayload = {
   receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
 } satisfies TransferAssetsParametersLegacy<"421614">
 
-const approval = await client.approveTransaction(transactionPayload)
+const approval = await client.approveTransactionLegacy(transactionPayload)
 
 if (approval.isErr()) {
   consola.error(approval.error)

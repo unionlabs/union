@@ -191,7 +191,18 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           ucs03address
         })
       },
-      approveTransaction: async ({
+      approveErc20: async ({
+        baseAmount,
+        baseToken,
+        ucs03address
+      }: { baseAmount: bigint; baseToken: Hex; ucs03address: Hex }) => {
+        return await evmApproveTransferAsset(client, {
+          amount: baseAmount,
+          denomAddress: baseToken,
+          receiver: ucs03address
+        })
+      },
+      approveTransactionLegacy: async ({
         amount,
         account,
         receiver,

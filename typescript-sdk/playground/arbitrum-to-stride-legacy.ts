@@ -53,7 +53,7 @@ try {
   // consola.success("Arbitrum to Stride gas estimation:", gasEstimationResponse.value)
   // if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  const approval = await client.approveTransaction(transactionPayload)
+  const approval = await client.approveTransactionLegacy(transactionPayload)
   if (approval.isErr()) {
     consola.error("Approval failed", approval.error)
     process.exit(1)
