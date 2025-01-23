@@ -170,12 +170,21 @@ export default defineConfig({
                         }
                       ]
                     }
+                    // {
+                    //   label: "Custom Data",
+                    //   items: [
+                    //     {
+                    //       label: "Introduction",
+                    //       link: "/connect/app/custom-data"
+                    //     }
+                    //   ]
+                    // }
                   ]
-                },
-                {
-                  label: "New Chain",
-                  link: "/connect/new-chain"
                 }
+                // {
+                //   label: "New Chain",
+                //   link: "/connect/new-chain"
+                // }
               ]
             },
             {
