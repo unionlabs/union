@@ -26,7 +26,13 @@ import {
   arbitrumSepolia,
   berachainTestnetbArtio
 } from "viem/chains"
-import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
+import type {
+  TransferAssetsParameters,
+  LooseAutocomplete,
+  Hex,
+  HexAddress,
+  TransferAssetParametersNew
+} from "../types.ts"
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { bech32AddressToHex } from "#mod.ts"
 import { generateSalt } from "#utilities/index.ts"
@@ -75,15 +81,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         receiver,
         sourceChannelId,
         ucs03address
-      }: {
-        baseAmount: bigint
-        baseToken: string
-        quoteAmount: bigint
-        quoteToken: string
-        receiver: string
-        sourceChannelId: number
-        ucs03address: string
-      }): Promise<Result<Hex, Error>> => {
+      }: TransferAssetParametersNew<EvmChainId>): Promise<Result<Hex, Error>> => {
         if (!client.account) return err(new Error("No account found"))
 
         /**
@@ -96,7 +94,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           abi: ucs03ZkgmAbi,
           chain: client.chain,
           functionName: "transfer",
-          address: ucs03address as `0x${string}`,
+          address: ucs03address,
           /**
               "channelId": "uint32"
               "receiver": "bytes"

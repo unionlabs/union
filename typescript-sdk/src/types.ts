@@ -57,6 +57,24 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
         }
       : undefined)
 
+export type TransferAssetParametersNew<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> =
+  {
+    baseAmount: bigint
+    baseToken: string
+    quoteAmount: bigint
+    quoteToken: string
+    receiver: string
+    sourceChannelId: number
+  } & (CHAIN_ID extends CosmosChainId
+    ? {
+        ucs03address: string
+      }
+    : CHAIN_ID extends EvmChainId
+      ? {
+          ucs03address: HexAddress
+        }
+      : undefined)
+
 /** Currently supported networks. */
 export type Network = "evm" | "cosmos" | "aptos"
 

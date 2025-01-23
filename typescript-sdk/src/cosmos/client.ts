@@ -9,7 +9,11 @@ import { generateSalt, timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex, hexAddressToBech32 } from "../convert.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { fallback, createClient, type HttpTransport, toHex } from "viem"
-import type { OfflineSigner, TransferAssetsParameters } from "../types.ts"
+import type {
+  OfflineSigner,
+  TransferAssetParametersNew,
+  TransferAssetsParameters
+} from "../types.ts"
 
 export const cosmosChainId = [
   "mocha-4",
@@ -43,15 +47,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       receiver,
       sourceChannelId,
       ucs03address
-    }: {
-      baseAmount: bigint
-      baseToken: string
-      quoteAmount: bigint
-      quoteToken: string
-      receiver: string
-      sourceChannelId: number
-      ucs03address: string
-    }): Promise<Result<string, Error>> => {
+    }: TransferAssetParametersNew<CosmosChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
       if (!rpcUrl) return err(new Error("No cosmos RPC URL found"))
