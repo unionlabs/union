@@ -126,7 +126,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         }).map(res => res)
       },
 
-      transferAsset: async ({
+      transferAssetLegacy: async ({
         amount,
         account,
         receiver,

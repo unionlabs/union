@@ -60,7 +60,7 @@ try {
 
   consola.info("approve:", `${explorerURL}/${approval.value}`)
 
-  const transfer = await client.transferAsset(transactionPayload)
+  const transfer = await client.transferAssetLegacy(transactionPayload)
 
   if (transfer.isErr()) {
     consola.error("Transfer failed", transfer.error)

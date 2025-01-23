@@ -61,7 +61,7 @@ consola.success("Arbitrum to Union gas cost:", gasEstimationResponse.value)
 
 if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-const transfer = await client.transferAsset(transactionPayload)
+const transfer = await client.transferAssetLegacy(transactionPayload)
 
 if (transfer.isErr()) {
   console.error(transfer.error)

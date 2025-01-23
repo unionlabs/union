@@ -57,7 +57,7 @@ try {
   //   process.exit(1)
   // }
 
-  const transfer = await client.transferAsset(transferPayload)
+  const transfer = await client.transferAssetLegacy(transferPayload)
 
   if (transfer.isErr()) {
     console.error(transfer.error)

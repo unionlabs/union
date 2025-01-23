@@ -80,7 +80,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       })
     },
 
-    transferAsset: async ({
+    transferAssetLegacy: async ({
       memo: _memo,
       amount,
       receiver,
