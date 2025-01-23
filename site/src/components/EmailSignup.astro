@@ -1,0 +1,36 @@
+---
+const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  const email = event.target.email.value;
+  const payload = {
+    email,
+    audienceId: "fce6d558-d118-4071-ae77-6b8b141550bd",
+  };
+
+  try {
+    const response = await fetch("https://uorqzpuryrgfnecadajo.supabase.co/functions/v1/email-signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      console.log("Form submitted successfully");
+    } else {
+      console.error("Failed to submit form", await response.text());
+    }
+  } catch (error) {
+    console.error("An error occurred", error);
+  }
+};
+---
+
+<form is:raw onsubmit="handleSubmit(event)">
+  <label for="email">Email:</label>
+  <input type="email" id="email" name="email" required />
+  <button type="submit">Submit</button>
+</form>
+
