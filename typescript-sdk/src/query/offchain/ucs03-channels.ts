@@ -2,7 +2,7 @@ import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, http } from "viem"
-import { err, ok, type Result } from "neverthrow"
+import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 
 const channelsQuery = graphql(/*  GraphQL */ `
@@ -57,17 +57,27 @@ export const getQuoteToken = async (
   channel: Channel
 ): Promise<Result<{ quote_token: string; type: "UNWRAPPED" | "NEW_WRAPPED" }, Error>> => {
   // check if the denom is wrapped
-  let wrapping = (
-    await request(GRAQPHQL_URL, tokenWrappingQuery, {
+  let wrapping = await ResultAsync.fromPromise(
+    request(GRAQPHQL_URL, tokenWrappingQuery, {
       base_token,
       destination_channel_id: channel.source_channel_id, // not a mistake! because we're unwrapping
       source_chain_id
-    })
-  ).v1_ibc_union_tokens
+    }),
+    error => {
+      console.error("@unionlabs/client-[getQuoteToken]", error)
+      return new Error("failed to get quote token from graphql", { cause: error })
+    }
+  )
+
+  if (wrapping.isErr()) {
+    return err(wrapping.error)
+  }
+
+  let wrappingTokens = wrapping.value.v1_ibc_union_tokens
 
   // if it is, quote token is the unwrapped verison of the warpped token.
-  if (wrapping.length > 0) {
-    let quote_token = wrapping.at(0)?.wrapping.at(0)?.unwrapped_address_hex
+  if (wrappingTokens.length > 0) {
+    let quote_token = wrappingTokens.at(0)?.wrapping.at(0)?.unwrapped_address_hex
     if (quote_token) {
       return ok({ type: "UNWRAPPED", quote_token })
     }
@@ -81,14 +91,24 @@ export const getQuoteToken = async (
 
   // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
   // we do this by calling the ucs03 instance on the counterparty chain.
-  const [quote_token, _] = (await destinationChainClient.readContract({
-    address: `0x${channel.destination_port_id}`,
-    abi: ucs03ZkgmAbi,
-    functionName: "predictWrappedToken",
-    args: [0, channel.destination_channel_id, base_token]
-  })) as ["0x${string}", string]
+  const predictedQuoteToken = await ResultAsync.fromPromise(
+    destinationChainClient.readContract({
+      address: `0x${channel.destination_port_id}`,
+      abi: ucs03ZkgmAbi,
+      functionName: "predictWrappedToken",
+      args: [0, channel.destination_channel_id, base_token]
+    }),
+    error => {
+      console.error("@unionlabs/client-[getQuoteToken]", error)
+      return new Error("failed to get predict token using evm call", { cause: error })
+    }
+  )
 
-  return ok({ type: "NEW_WRAPPED", quote_token })
+  if (predictedQuoteToken.isErr()) {
+    return err(predictedQuoteToken.error)
+  }
+
+  return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value[0] })
 }
 
 export const getRecommendedChannels = async () => {

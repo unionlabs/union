@@ -35,6 +35,63 @@ export interface CosmosClientParameters {
 
 export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
+    transferAssetNew: async ({
+      baseAmount,
+      baseToken,
+      quoteAmount,
+      quoteToken,
+      receiver,
+      sourceChannelId,
+      ucs03address
+    }: {
+      baseAmount: bigint
+      baseToken: string
+      quoteAmount: bigint
+      quoteToken: string
+      receiver: string
+      sourceChannelId: number
+      ucs03address: string
+    }): Promise<Result<string, Error>> => {
+      const sourceChainId = parameters.chainId
+      const rpcUrl = parameters.transport({}).value?.url
+
+      if (!rpcUrl) return err(new Error("No cosmos RPC URL found"))
+      if (!parameters.account) return err(new Error("No cosmos signer found"))
+      if (!parameters.gasPrice) return err(new Error("No gas price found"))
+
+      // add a salt to each transfer to prevent hash collisions
+      // important because ibc-union does not use sequence numbers
+      // such that intents are possible based on deterministic packet hashes
+      const rawSalt = new Uint8Array(32)
+      crypto.getRandomValues(rawSalt)
+      const salt = toHex(rawSalt)
+
+      return await cosmwasmTransfer({
+        account: parameters.account,
+        rpcUrl,
+        gasPrice: parameters.gasPrice,
+        instructions: [
+          {
+            contractAddress: ucs03address,
+            msg: {
+              transfer: {
+                channel_id: sourceChannelId,
+                receiver: receiver,
+                base_token: baseToken,
+                base_amount: baseAmount,
+                quote_token: quoteToken,
+                quote_amount: quoteAmount,
+                timeout_height: 1000000000,
+                timeout_timestamp: 0,
+                salt
+              }
+            },
+            funds: [{ amount: baseAmount.toString(), denom: baseToken }]
+          }
+        ]
+      })
+    },
+
     transferAsset: async ({
       memo: _memo,
       amount,

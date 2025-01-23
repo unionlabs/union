@@ -3,13 +3,14 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
-import { createUnionClient } from "#mod.ts"
+import { createUnionClient, hexToBytes } from "#mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { evmApproveTransferAsset } from "#evm/transfer"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 const cliArgs = parseArgs({
   args: process.argv.slice(2),
@@ -20,11 +21,11 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const LINK_CONTRACT_ADDRESS = "0x685cE6742351ae9b618F383883D6d1e0c5A31B4B"
+const LINK_CONTRACT_ADDRESS = "ustars"
 const AMOUNT = 13n
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
-const SOURCE_CHAIN_ID = "17000"
-const DESTINATION_CHAIN_ID = "11155111"
+const SOURCE_CHAIN_ID = "elgafar-1"
+const DESTINATION_CHAIN_ID = "17000"
 
 const channels = await getRecommendedChannels()
 
@@ -44,29 +45,22 @@ if (quoteToken.isErr()) {
 
 consola.info("quote token", quoteToken.value)
 
-const holeskyClient = createUnionClient({
-  chainId: SOURCE_CHAIN_ID,
-  account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
-  transport: fallback([
-    http("https://rpc.17000.holesky.chain.kitchen"),
-    http(holesky?.rpcUrls.default.http.at(0))
-  ])
-})
-
-const approveResponse = await evmApproveTransferAsset(holeskyClient, {
-  amount: AMOUNT,
-  denomAddress: LINK_CONTRACT_ADDRESS,
-  receiver: `0x${channel.source_port_id}`
-})
-
-if (approveResponse.isErr()) {
-  consola.error(approveResponse)
+if (!PRIVATE_KEY) {
+  consola.error("no private key provided")
   process.exit(1)
 }
 
-consola.info("approval tx hash", approveResponse.value)
+const stargazeClient = createUnionClient({
+  chainId: SOURCE_CHAIN_ID,
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "stars"),
+  gasPrice: { amount: "0.025", denom: "ustars" },
+  transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
+})
 
-const transfer = await holeskyClient.transferAssetNew({
+// no approval required
+//
+
+const transfer = await stargazeClient.transferAssetNew({
   baseToken: LINK_CONTRACT_ADDRESS,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
