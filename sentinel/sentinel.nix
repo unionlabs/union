@@ -19,7 +19,7 @@
     {
       packages = {
         sentinel = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-joM2pEuAT8HHkTjVzxqQY6UvYV6cvJd1oxTt7MZBcOM=";
+          npmDepsHash = "sha256-TMCjwCmLKmjGGn1t0v3zq+f0XaluP4rvJtm5RWE14H4=";
           src = ./.;
           sourceRoot = "sentinel";
           npmFlags = [

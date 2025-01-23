@@ -23,7 +23,7 @@ import { hideBin } from "yargs/helpers"
 import consola from "consola"
 
 // For the EVM cross-chain transfer snippet:
-import { Address, fallback, http } from "viem"
+import { Address, fallback, http, fromHex } from "viem"
 import { bech32, hex, bytes } from "@scure/base"
 import { holesky, sepolia } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -35,7 +35,10 @@ import {
   createUnionClient,
   EvmChainId,
   type TransferAssetsParameters,
-  hexToBytes
+  hexToBytes,
+  getRecommendedChannels,
+  getChannelInfo,
+  getQuoteToken
 } from "@unionlabs/client"
 
 // Hasura endpoint
@@ -56,6 +59,7 @@ interface ChainPair {
 
 // Shape of the EVM transfer config
 interface TransferConfig {
+  enabled: boolean
   privateKey: string
   sourceChainIdEVM: EvmChainId
   sourceChainIdCosmos: CosmosChainId
@@ -64,7 +68,7 @@ interface TransferConfig {
   gasPriceDenom: string
   receiverAddress: Address
   denomAddress: Address
-  amount: bigint
+  amount_range: bigint[]
   cosmosAccountType: string
 }
 
@@ -103,6 +107,14 @@ if (!globalThis.fetch) {
 }
 if (!globalThis.Headers) {
   globalThis.Headers = Headers as any
+}
+
+function getRandomArbitrary(min_bigint: bigint, max_bigint: bigint) {
+  const min = Number(min_bigint)
+  const max = Number(max_bigint)
+  const value = Math.random() * (max - min) + min
+
+  return BigInt(Math.ceil(value))
 }
 
 // Parse command-line arguments
@@ -286,8 +298,13 @@ export async function checkPackets(
  * Adapt the logic as needed to match your chain IDs / workflow.
  */
 async function doTransfer(task: TransferConfig) {
+  if (!task.enabled) {
+    consola.info("Transfer task is disabled. Skipping.")
+    return
+  }
   const isCosmosChain = Boolean(task.sourceChainIdCosmos)
   const chainType = isCosmosChain ? "Cosmos" : "EVM"
+  const random_amount = getRandomArbitrary(task.amount_range[0], task.amount_range[1])
   try {
     consola.info(
       "\n[%s] Starting transfer for chainId=%s to chain=%s",
@@ -305,6 +322,26 @@ async function doTransfer(task: TransferConfig) {
     const transports = task.rpcs.map(rpc => http(rpc))
     const sourceChainId = isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM
 
+    const channels = await getRecommendedChannels()
+
+    const channel = getChannelInfo(sourceChainId, task.destinationChainId, channels)
+    if (channel === null) {
+      consola.error(
+        "No channel found. Source chain ID:",
+        sourceChainId,
+        " Destination chain ID:",
+        task.destinationChainId
+      )
+      return
+    }
+
+    const quoteToken = await getQuoteToken(sourceChainId, task.destinationChainId, channel)
+    if (quoteToken.isErr()) {
+      consola.info("could not get quote token")
+      consola.error(quoteToken.error)
+      process.exit(1)
+    }
+
     const unionClient = isCosmosChain
       ? createUnionClient({
           account: cosmosAccount,
@@ -318,27 +355,31 @@ async function doTransfer(task: TransferConfig) {
           transport: fallback(transports)
         })
 
-    const transactionPayload = isCosmosChain
-      ? ({
-          amount: BigInt(task.amount),
-          denomAddress: task.denomAddress,
-          destinationChainId: task.destinationChainId,
-          receiver: task.receiverAddress
-        } satisfies TransferAssetsParameters<typeof sourceChainId>)
-      : ({
-          amount: task.amount,
-          denomAddress: task.denomAddress,
-          destinationChainId: task.destinationChainId,
+    const txPayload = isCosmosChain
+      ? {
+          baseToken: task.denomAddress,
+          baseAmount: BigInt(random_amount),
+          quoteToken: quoteToken.value.quote_token,
+          quoteAmount: BigInt(random_amount),
           receiver: task.receiverAddress,
-          autoApprove: true
-        } satisfies TransferAssetsParameters<typeof sourceChainId>)
+          sourceChannelId: channel.source_channel_id,
+          ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`
+        }
+      : {
+          baseToken: task.denomAddress,
+          baseAmount: BigInt(random_amount),
+          quoteToken: quoteToken.value.quote_token,
+          quoteAmount: BigInt(random_amount),
+          receiver: task.receiverAddress,
+          sourceChannelId: channel.source_channel_id,
+          ucs03address: `0x${channel.source_port_id}` as `0x${string}`
+        }
 
-    const transferResp = await unionClient.transferAsset(transactionPayload)
+    const transferResp = await unionClient.transferAsset(txPayload)
     if (transferResp.isErr()) {
       consola.error("[%s] Transfer error:", chainType, transferResp.error)
       return
     }
-
     consola.info("[%s] Transfer success:", chainType, transferResp.value)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)

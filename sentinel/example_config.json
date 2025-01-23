@@ -7,5 +7,42 @@
       "timeframeMs": 1800000
     }
   ],
-  "transfers": []
+  "transfers": [
+    {
+      "enabled": false,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdEVM": "11155111",
+      "destinationChainId": "17000",
+      "rpcs": ["https://rpc.11155111.sepolia.chain.kitchen"],
+      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "denomAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "amount_range": [1, 100],
+      "gasPriceDenom": "--",
+      "cosmosAccountType": "--"
+    },
+    {
+      "enabled": true,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdCosmos": "elgafar-1",
+      "destinationChainId": "17000",
+      "rpcs": ["https://rpc.elgafar-1.stargaze.chain.kitchen"],
+      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "denomAddress": "ustars",
+      "amount_range": [1, 100],
+      "gasPriceDenom": "ustars",
+      "cosmosAccountType": "stars"
+    },
+    {
+      "enabled": true,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdCosmos": "bbn-test-5",
+      "destinationChainId": "17000",
+      "rpcs": ["https://rpc.bbn-test-5.babylon.chain.kitchen"],
+      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "denomAddress": "ubbn",
+      "amount_range": [1, 100],
+      "gasPriceDenom": "ubbn",
+      "cosmosAccountType": "bbn"
+    }
+  ]
 }
