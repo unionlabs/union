@@ -1,9 +1,9 @@
-import { fallback, http } from "viem"
+import { fallback, fromHex, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
-import { createUnionClient, hexToBytes } from "#mod.ts"
+import { createUnionClient, hexAddressToBech32, hexToBytes } from "#mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
@@ -11,6 +11,24 @@ import {
 } from "#query/offchain/ucs03-channels"
 import { evmApproveTransferAsset } from "#evm/transfer"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+
+// hack to encode bigints to json
+declare global {
+  interface BigInt {
+    toJSON: () => string
+  }
+}
+
+if (!BigInt.prototype.toJSON) {
+  Object.defineProperty(BigInt.prototype, "toJSON", {
+    value: function () {
+      return this.toString()
+    },
+    writable: true,
+    configurable: true
+  })
+}
+// end hack
 
 const cliArgs = parseArgs({
   args: process.argv.slice(2),
@@ -21,7 +39,7 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const LINK_CONTRACT_ADDRESS = "ustars"
+const STARS_DENOM = "ustars"
 const AMOUNT = 13n
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
 const SOURCE_CHAIN_ID = "elgafar-1"
@@ -37,9 +55,10 @@ if (channel === null) {
 
 consola.info("channel", channel)
 
-const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, LINK_CONTRACT_ADDRESS, channel)
+const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, STARS_DENOM, channel)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")
+  consola.error(quoteToken.error)
   process.exit(1)
 }
 
@@ -57,21 +76,19 @@ const stargazeClient = createUnionClient({
   transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
 })
 
-// no approval required
-//
-
 const transfer = await stargazeClient.transferAssetNew({
-  baseToken: LINK_CONTRACT_ADDRESS,
+  baseToken: STARS_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: `0x${channel.source_port_id}`
+  ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
 })
 
 if (transfer.isErr()) {
-  console.error(transfer.error)
+  consola.info("transfer submission failed")
+  consola.error(transfer.error)
   process.exit(1)
 }
 

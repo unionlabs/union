@@ -1,7 +1,7 @@
 import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, http } from "viem"
+import { createPublicClient, http, isAddress, toHex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 
@@ -91,15 +91,16 @@ export const getQuoteToken = async (
 
   // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
   // we do this by calling the ucs03 instance on the counterparty chain.
+  let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
+
   const predictedQuoteToken = await ResultAsync.fromPromise(
     destinationChainClient.readContract({
       address: `0x${channel.destination_port_id}`,
       abi: ucs03ZkgmAbi,
       functionName: "predictWrappedToken",
-      args: [0, channel.destination_channel_id, base_token]
+      args: [0, channel.destination_channel_id, baseToken]
     }),
     error => {
-      console.error("@unionlabs/client-[getQuoteToken]", error)
       return new Error("failed to get predict token using evm call", { cause: error })
     }
   )

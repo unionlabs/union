@@ -6,7 +6,7 @@ import {
 } from "./transfer.ts"
 import { err, type Result } from "neverthrow"
 import { timestamp } from "../utilities/index.ts"
-import { bech32AddressToHex } from "../convert.ts"
+import { bech32AddressToHex, hexAddressToBech32 } from "../convert.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { fallback, createClient, type HttpTransport, toHex } from "viem"
 import type { OfflineSigner, TransferAssetsParameters } from "../types.ts"
