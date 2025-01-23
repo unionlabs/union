@@ -16,7 +16,8 @@ _: {
               ${ensureAtRepositoryRoot}
 
               cd typescript-sdk
-              ${unstablePkgs.deno} publish
+              bun run build
+              npm publish --access='public' --no-git-tagsh
             '';
           };
         };
