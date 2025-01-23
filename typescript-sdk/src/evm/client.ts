@@ -8,7 +8,8 @@ import {
   type CustomTransport,
   type FallbackTransport,
   createPublicClient,
-  http
+  http,
+  toHex
 } from "viem"
 import {
   // evmSameChainTransfer,
@@ -16,7 +17,7 @@ import {
   evmApproveTransferAsset,
   transferAssetFromEvmSimulate
 } from "./transfer.ts"
-import { err, ok, type Result } from "neverthrow"
+import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { getHubbleChainDetails } from "../pfm.ts"
 import {
   sepolia,
@@ -27,6 +28,8 @@ import {
 } from "viem/chains"
 import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
+import { bech32AddressToHex } from "#mod.ts"
+import { generateSalt } from "#utilities/index.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [
@@ -79,19 +82,50 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         quoteToken: string
         receiver: string
         sourceChannelId: number
-        ucs03address: `0x${string}`
+        ucs03address: string
       }): Promise<Result<Hex, Error>> => {
-        return await transferAssetFromEvm(client, {
+        if (!client.account) return err(new Error("No account found"))
+
+        /**
+         * @dev
+         * `UCS03` zkgm contract `transfer` function:
+         * - https://github.com/unionlabs/union/blob/0fd24893d4a1173e9c6e150c826c162871d63262/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L301
+         */
+        const writeContractParameters = {
           account: client.account,
-          baseToken: baseToken as `0x${string}`,
-          baseAmount,
-          simulate: true,
-          receiver,
-          quoteToken: quoteToken as `0x${string}`,
-          quoteAmount,
-          sourceChannelId,
-          ucs03address
-        })
+          abi: ucs03ZkgmAbi,
+          chain: client.chain,
+          functionName: "transfer",
+          address: ucs03address as `0x${string}`,
+          /**
+              "channelId": "uint32"
+              "receiver": "bytes"
+              "baseToken": "address"
+              "baseAmount": "uint256"
+              "quoteToken": "bytes"
+              "quoteAmount": "uint256"
+              "timeoutHeight": "uint64"
+              "timeoutTimestamp": "uint64"
+              "salt": "bytes32"
+             */
+          args: [
+            sourceChannelId,
+            receiver.startsWith("0x")
+              ? getAddress(receiver)
+              : bech32AddressToHex({ address: receiver }),
+            baseToken,
+            baseAmount,
+            quoteToken,
+            quoteAmount,
+            0n, // TODO: customize timeoutheight
+            "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
+            generateSalt()
+          ]
+        } as const
+
+        return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {
+          return new Error("failed to execute evm call", { cause: error })
+        }).map(res => res)
       },
 
       transferAsset: async ({

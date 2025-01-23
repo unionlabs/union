@@ -5,7 +5,7 @@ import {
   cosmosSameChainTransferSimulate
 } from "./transfer.ts"
 import { err, type Result } from "neverthrow"
-import { timestamp } from "../utilities/index.ts"
+import { generateSalt, timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex, hexAddressToBech32 } from "../convert.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { fallback, createClient, type HttpTransport, toHex } from "viem"
@@ -52,19 +52,11 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       sourceChannelId: number
       ucs03address: string
     }): Promise<Result<string, Error>> => {
-      const sourceChainId = parameters.chainId
       const rpcUrl = parameters.transport({}).value?.url
 
       if (!rpcUrl) return err(new Error("No cosmos RPC URL found"))
       if (!parameters.account) return err(new Error("No cosmos signer found"))
       if (!parameters.gasPrice) return err(new Error("No gas price found"))
-
-      // add a salt to each transfer to prevent hash collisions
-      // important because ibc-union does not use sequence numbers
-      // such that intents are possible based on deterministic packet hashes
-      const rawSalt = new Uint8Array(32)
-      crypto.getRandomValues(rawSalt)
-      const salt = toHex(rawSalt)
 
       return await cosmwasmTransfer({
         account: parameters.account,
@@ -83,7 +75,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 quote_amount: quoteAmount,
                 timeout_height: 1000000000,
                 timeout_timestamp: 0,
-                salt
+                salt: generateSalt()
               }
             },
             funds: [{ amount: baseAmount.toString(), denom: baseToken }]
@@ -131,16 +123,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      // if (sourceChainId === "union-testnet-9") {
       if (!sourceChannel) return err(new Error("Source channel not found"))
       if (!relayContractAddress) return err(new Error("Relay contract address not found"))
-
-      // add a salt to each transfer to prevent hash collisions
-      // important because ibc-union does not use sequence numbers
-      // such that intents are possible based on deterministic packet hashes
-      const rawSalt = new Uint8Array(32)
-      crypto.getRandomValues(rawSalt)
-      const salt = toHex(rawSalt)
 
       const transfer = await cosmwasmTransfer({
         account,
@@ -159,7 +143,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 quote_amount: amount,
                 timeout_height: 1000000000,
                 timeout_timestamp: 0,
-                salt
+                salt: generateSalt()
               }
             },
             funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -167,34 +151,6 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         ]
       })
       return transfer
-      // }
-
-      // if (destinationChainId === "union-testnet-8") {
-      //   if (!sourceChannel) return err(new Error("Source channel not found"))
-
-      //   const [account_] = await account.getAccounts()
-      //   if (!account) return err(new Error("No account found"))
-
-      //   const transfer = await ibcTransfer({
-      //     account,
-      //     rpcUrl,
-      //     gasPrice,
-      //     messageTransfers: [
-      //       {
-      //         sourceChannel: sourceChannel.toString(),
-      //         sourcePort: "transfer",
-      //         sender: account_?.address,
-      //         token: { denom: denomAddress, amount: amount.toString() },
-      //         timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-      //         receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-      //         memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
-      //       }
-      //     ]
-      //   })
-      //   return transfer
-      // }
-
-      // return err(new Error("Unsupported network"))
     },
     simulateTransaction: async ({
       memo,
