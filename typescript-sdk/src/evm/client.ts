@@ -188,7 +188,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           quoteToken,
           quoteAmount: amount,
-          sourceChannel,
+          sourceChannelId: sourceChannel,
           ucs03address
         })
       },
