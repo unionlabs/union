@@ -1,14 +1,19 @@
 <script lang="ts">
-import type { Chain } from "$lib/types"
+import type { Chain, Ucs03Channel } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
+import { recommendedUcs03ChannelsQuery } from "$lib/queries/channels"
 import { tokensQuery } from "$lib/queries/tokens"
 import { type Readable, derived } from "svelte/store"
+import { isHex } from "viem"
+import { isString } from "util"
 
 let chains = chainsQuery()
+let ucs03channels = recommendedUcs03ChannelsQuery()
 // let tokens = tokensQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []
+const EMPTY_UCS03_CHANNELS: Array<Ucs03Channel> = []
 
 let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   // this will never happen, but is needed to satisfy svelte's prop type checker
@@ -57,10 +62,33 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     } as Chain
   })
 })
+
+let checkedUcs03Channels: Readable<Array<Ucs03Channel>> = derived(ucs03channels, $ucs03channels => {
+  // this will never happen, but is needed to satisfy svelte's prop type checker
+  if (
+    !$ucs03channels?.data ||
+    $ucs03channels.data === null ||
+    $ucs03channels.data === undefined ||
+    $ucs03channels.data.length === 0
+  ) {
+    return EMPTY_UCS03_CHANNELS
+  }
+  return $ucs03channels.data.filter(
+    chan =>
+      chan.source_chain_id &&
+      chan.source_connection_id !== null &&
+      chan.source_channel_id !== null &&
+      isHex(chan.source_port_id) &&
+      chan.destination_chain_id &&
+      chan.destination_connection_id !== null &&
+      chan.destination_channel_id !== null &&
+      isHex(chan.destination_port_id)
+  ) as Array<Ucs03Channel>
+})
 </script>
 
-{#if !!$chains.data}
-  <slot chains={$checkedChains} />
+{#if !!$chains.data || !!$ucs03channels.data}
+  <slot chains={$checkedChains} ucs03channels={$checkedUcs03Channels} />
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $chains.isError}
