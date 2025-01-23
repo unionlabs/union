@@ -47,6 +47,11 @@ export {
   getAptosAccountTransactions,
   getCosmosAccountTransactions
 } from "./query/on-chain.ts"
+export {
+  getRecommendedChannels,
+  getChannelInfo,
+  getQuoteToken
+} from "./query/offchain/ucs03-channels.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
 import type { ChainId, TransferAssetsParametersLegacy } from "./types.ts"

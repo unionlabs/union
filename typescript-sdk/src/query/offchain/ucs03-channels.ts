@@ -109,6 +109,17 @@ export const getQuoteToken = async (
     return err(predictedQuoteToken.error)
   }
 
+  if (
+    !(
+      "value" in predictedQuoteToken &&
+      Array.isArray(predictedQuoteToken.value) &&
+      predictedQuoteToken.value.length > 0 &&
+      typeof predictedQuoteToken.value[0] === "string"
+    )
+  ) {
+    return err(new Error(`invalid evm predict token response ${predictedQuoteToken}`))
+  }
+
   return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value[0] })
 }
 
