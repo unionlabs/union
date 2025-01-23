@@ -14,7 +14,9 @@ The Union team uses [Nix](https://nixos.org/) to manage developer environments. 
 
 This tutorial will assume that you have a working rust tool chain, including `cargo`.
 
-You will also need a chain that supports CosmWasm running where you plan to deploy ucs03 and your app. This tutorial will assume you're running the Union devnet.
+You will also need a chain that supports CosmWasm running where you plan to deploy ucs03 and your app. This tutorial will assume you are deploying your contract on `union-testnet-9`.
+
+Users will need to find a valid RPC node to use as `RPC_URL` throughout the tutorial.
 
 # Tutorial
 
@@ -69,15 +71,13 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256, WasmMsg,
+    to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, Uint256, WasmMsg,
 };
-
-use crate::ContractError;
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Transfer {
@@ -103,7 +103,7 @@ pub enum Ucs03ExecuteMsg {
         quote_amount: Uint256,
         timeout_height: u64,
         timeout_timestamp: u64,
-        salt: [u8; 32],
+        salt: String,
     },
 }
 
@@ -113,7 +113,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     _msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> StdResult<Response> {
     Ok(Response::default())
 }
 
@@ -123,7 +123,7 @@ pub fn execute(
     env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> StdResult<Response> {
     match msg {
         ExecuteMsg::Transfer {
             channel_id,
@@ -157,9 +157,9 @@ fn transfer(
     quote_token: String,
     quote_amount: Uint256,
     contract_address: String,
-) -> Result<Response, ContractError> {
+) -> StdResult<Response> {
     let msg = WasmMsg::Execute {
-        contract_addr: contract_address.to_string(),
+        contract_addr: contract_address,
         msg: to_json_binary(&Ucs03ExecuteMsg::Transfer {
             channel_id,
             receiver: receiver.clone(),
@@ -167,9 +167,9 @@ fn transfer(
             base_amount,
             quote_token,
             quote_amount,
-            timeout_height: 0,
-            timeout_timestamp: 0,
-            salt: [0; 32],
+            timeout_height: 1000000000000,
+            timeout_timestamp: 2737670312,
+            salt: "0x5dbda6be8b35e888c9d4e64c3ce080fbc735e8b907ca5a38222ac522d085ec2b".to_string(),
         })
         .expect("can convert into json binary"),
         funds: vec![Coin {
@@ -185,7 +185,6 @@ fn transfer(
         .add_attribute("amount", base_amount.to_string()))
 }
 ```
-
 ### Building the Contract
 
 With this contract code ready, the WASM blob can be built.
@@ -217,8 +216,8 @@ uniond tx wasm store ./build/contract.wasm \
     --from $KEY_NAME \
     --gas auto \
     --gas-adjustment 1.4 \
-    --chain-id union-devnet-1 \
-    --node http://localhost:26657/ \
+    --chain-id union-testnet-9 \
+    --node $RPC_URL \
     --yes
 
 TX_HASH=..
@@ -226,27 +225,27 @@ TX_HASH=..
 
 Be sure to copy the `CODE_ID` of the newly stored code. Using the previous transaction hash, you can see it by running this command:
 ```sh
-uniond query tx $TX_HASH --node http://localhost:26657 | rg -C 1 "code_id"  
+uniond query tx $TX_HASH --node $RPC_URL | rg -C 1 "code_id"  
 ```
 
 Next, submit a transaction to instantiate the contract. Copy the value of the **NEW** transaction hash into a shell variable (`TX_HASH`).
 
 ```sh
 uniond tx wasm instantiate $CODE_ID "{}" \
-  --node http://localhost:26657/ \
+  --node $RPC_URL \
   --from $KEY_NAME \
-  --label your-contract \
+  --label $CONTRACT_NAME \
   --no-admin \
   --gas auto \
   --gas-adjustment 1.4 \
-  --chain-id union-devnet-1
+  --chain-id union-testnet-9
 
 TX_HASH=..
 ```
 
 You can then get the contract address by running:
 ```sh
-uniond query tx $TX_HASH --node http://localhost:26657 | rg -C 1 "_contract_address"  
+uniond query tx $TX_HASH --node $RPC_URL | rg -C 1 "_contract_address"  
 ```
 
 ## Example Transfer
@@ -255,16 +254,18 @@ With the address of your contract in hand, a sample transfer can now be conducte
 
 First, prepare a `payload.json` that will hold the main message of the transfer.
 
+This will send UNO to a Holesky address of your choice
+
 ```json title="payload.json"  
 {
   "transfer": {
-    "channel_id": 1,
-    "receiver": "<RECEIVER_ADDRESS>",
+    "channel_id": 7,
+    "receiver": "<RECEIVER_ADDRESS_HEX_PREFIXED>",
     "base_token": "muno",
     "base_amount": 1000000,
-    "quote_token": "",
-    "quote_amount": 0,
-    "contract_address": "<UCS03_CONTRACT_ADDRESS>",
+    "quote_token": "0x5dbda6be8b35e888c9d4e64c3ce080fbc735e8b907ca5a38222ac522d085ec2b",
+    "quote_amount": "1000000",
+    "contract_address": "union19hspxmypfxsdsnxttma8rxvp7dtcmzhl9my0ee64avg358vlpawsdvucqa",
   }
 }
 ```
@@ -277,7 +278,7 @@ uniond \
         --from $KEY_NAME \
         --gas auto \
         --gas-adjustment 1.4 \
-        --chain-id union-devnet-1 \
-        --node http://localhost:26657 \
+        --chain-id union-testnet-9 \
+        --node $RPC_URL \
         --amount 2000000muno
 ```
