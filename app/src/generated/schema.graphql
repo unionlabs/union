@@ -153,6 +153,23 @@ input bigint_comparison_exp {
   _nin: [bigint!]
 }
 
+scalar bytea
+
+"""
+Boolean expression to compare columns of type "bytea". All fields are combined with logical 'AND'.
+"""
+input bytea_comparison_exp {
+  _eq: bytea
+  _gt: bytea
+  _gte: bytea
+  _in: [bytea!]
+  _is_null: Boolean
+  _lt: bytea
+  _lte: bytea
+  _neq: bytea
+  _nin: [bytea!]
+}
+
 """ordering argument of a cursor"""
 enum cursor_ordering {
   """ascending ordering of the cursor"""
@@ -781,6 +798,26 @@ type query_root {
   ): [v1_ibc_union_chains!]!
 
   """
+  fetch data from the table: "v1_ibc_union.channel_recommendations"
+  """
+  v1_ibc_union_channel_recommendations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_channel_recommendations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_channel_recommendations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_channel_recommendations_bool_exp
+  ): [v1_ibc_union_channel_recommendations!]!
+
+  """
   fetch data from the table: "v1_ibc_union.channels"
   """
   v1_ibc_union_channels(
@@ -1079,6 +1116,26 @@ type query_root {
     """filter the rows returned"""
     where: v1_ibc_union_statistics_bool_exp
   ): [v1_ibc_union_statistics!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.streaks"
+  """
+  v1_ibc_union_streaks(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_streaks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_streaks_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_streaks_bool_exp
+  ): [v1_ibc_union_streaks!]!
 
   """
   fetch data from the table: "v1_ibc_union.token_representation_source_unwrapping"
@@ -2315,6 +2372,40 @@ type subscription_root {
   ): [v1_ibc_union_chains!]!
 
   """
+  fetch data from the table: "v1_ibc_union.channel_recommendations"
+  """
+  v1_ibc_union_channel_recommendations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_channel_recommendations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_channel_recommendations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_channel_recommendations_bool_exp
+  ): [v1_ibc_union_channel_recommendations!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.channel_recommendations"
+  """
+  v1_ibc_union_channel_recommendations_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_channel_recommendations_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_channel_recommendations_bool_exp
+  ): [v1_ibc_union_channel_recommendations!]!
+
+  """
   fetch data from the table: "v1_ibc_union.channels"
   """
   v1_ibc_union_channels(
@@ -2823,6 +2914,40 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_ibc_union_statistics_bool_exp
   ): [v1_ibc_union_statistics!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.streaks"
+  """
+  v1_ibc_union_streaks(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_streaks_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_streaks_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_streaks_bool_exp
+  ): [v1_ibc_union_streaks!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.streaks"
+  """
+  v1_ibc_union_streaks_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_streaks_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_streaks_bool_exp
+  ): [v1_ibc_union_streaks!]!
 
   """
   fetch data from the table: "v1_ibc_union.token_representation_source_unwrapping"
@@ -6447,6 +6572,14 @@ type v1_ibc_union_chains {
     """filter the rows returned"""
     where: v1_ibc_union_explorers_bool_exp
   ): [v1_ibc_union_explorers!]!
+
+  """
+  A computed field, executes function "v1_ibc_union.get_chain_features"
+  """
+  features(
+    """JSON select path"""
+    path: String
+  ): jsonb
   logo_uri: String
   rpc_type: String
 
@@ -6502,6 +6635,7 @@ input v1_ibc_union_chains_bool_exp {
   enabled: Boolean_comparison_exp
   enabled_staging: Boolean_comparison_exp
   explorers: v1_ibc_union_explorers_bool_exp
+  features: jsonb_comparison_exp
   logo_uri: String_comparison_exp
   rpc_type: String_comparison_exp
   rpcs: v1_ibc_union_rpcs_bool_exp
@@ -6518,6 +6652,7 @@ input v1_ibc_union_chains_order_by {
   enabled: order_by
   enabled_staging: order_by
   explorers_aggregate: v1_ibc_union_explorers_aggregate_order_by
+  features: order_by
   logo_uri: order_by
   rpc_type: order_by
   rpcs_aggregate: v1_ibc_union_rpcs_aggregate_order_by
@@ -6575,6 +6710,140 @@ input v1_ibc_union_chains_stream_cursor_value_input {
   logo_uri: String
   rpc_type: String
   testnet: Boolean
+}
+
+"""
+columns and relationships of "v1_ibc_union.channel_recommendations"
+"""
+type v1_ibc_union_channel_recommendations {
+  """An object relationship"""
+  destination_chain: v1_ibc_union_chains
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  destination_port_id: bytea
+
+  """An object relationship"""
+  source_chain: v1_ibc_union_chains
+  source_chain_id: String
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  source_port_id: bytea
+  status: String
+  version: String
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.channel_recommendations". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_channel_recommendations_bool_exp {
+  _and: [v1_ibc_union_channel_recommendations_bool_exp!]
+  _not: v1_ibc_union_channel_recommendations_bool_exp
+  _or: [v1_ibc_union_channel_recommendations_bool_exp!]
+  destination_chain: v1_ibc_union_chains_bool_exp
+  destination_chain_id: String_comparison_exp
+  destination_channel_id: Int_comparison_exp
+  destination_client_id: Int_comparison_exp
+  destination_connection_id: Int_comparison_exp
+  destination_port_id: bytea_comparison_exp
+  source_chain: v1_ibc_union_chains_bool_exp
+  source_chain_id: String_comparison_exp
+  source_channel_id: Int_comparison_exp
+  source_client_id: Int_comparison_exp
+  source_connection_id: Int_comparison_exp
+  source_port_id: bytea_comparison_exp
+  status: String_comparison_exp
+  version: String_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.channel_recommendations".
+"""
+input v1_ibc_union_channel_recommendations_order_by {
+  destination_chain: v1_ibc_union_chains_order_by
+  destination_chain_id: order_by
+  destination_channel_id: order_by
+  destination_client_id: order_by
+  destination_connection_id: order_by
+  destination_port_id: order_by
+  source_chain: v1_ibc_union_chains_order_by
+  source_chain_id: order_by
+  source_channel_id: order_by
+  source_client_id: order_by
+  source_connection_id: order_by
+  source_port_id: order_by
+  status: order_by
+  version: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.channel_recommendations"
+"""
+enum v1_ibc_union_channel_recommendations_select_column {
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_channel_id
+
+  """column name"""
+  destination_client_id
+
+  """column name"""
+  destination_connection_id
+
+  """column name"""
+  destination_port_id
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_channel_id
+
+  """column name"""
+  source_client_id
+
+  """column name"""
+  source_connection_id
+
+  """column name"""
+  source_port_id
+
+  """column name"""
+  status
+
+  """column name"""
+  version
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_channel_recommendations"
+"""
+input v1_ibc_union_channel_recommendations_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_channel_recommendations_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_channel_recommendations_stream_cursor_value_input {
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  destination_port_id: bytea
+  source_chain_id: String
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  source_port_id: bytea
+  status: String
+  version: String
 }
 
 """
@@ -7454,6 +7723,9 @@ type v1_ibc_union_fungible_asset_orders {
 
   """An object relationship"""
   base_token_details: v1_ibc_union_assets
+
+  """An object relationship"""
+  base_token_meta: v1_ibc_union_tokens
   base_token_name: String
   base_token_path: String
   base_token_symbol: String
@@ -7504,6 +7776,9 @@ type v1_ibc_union_fungible_asset_orders {
 
   """An object relationship"""
   quote_token_details: v1_ibc_union_assets
+
+  """An object relationship"""
+  quote_token_meta: v1_ibc_union_tokens
   receiver: String
   receiver_display: String
   receiver_normalized: String
@@ -7565,6 +7840,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   base_amount: String_comparison_exp
   base_token: String_comparison_exp
   base_token_details: v1_ibc_union_assets_bool_exp
+  base_token_meta: v1_ibc_union_tokens_bool_exp
   base_token_name: String_comparison_exp
   base_token_path: String_comparison_exp
   base_token_symbol: String_comparison_exp
@@ -7606,6 +7882,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   quote_amount: String_comparison_exp
   quote_token: String_comparison_exp
   quote_token_details: v1_ibc_union_assets_bool_exp
+  quote_token_meta: v1_ibc_union_tokens_bool_exp
   receiver: String_comparison_exp
   receiver_display: String_comparison_exp
   receiver_normalized: String_comparison_exp
@@ -7643,6 +7920,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   base_amount: order_by
   base_token: order_by
   base_token_details: v1_ibc_union_assets_order_by
+  base_token_meta: v1_ibc_union_tokens_order_by
   base_token_name: order_by
   base_token_path: order_by
   base_token_symbol: order_by
@@ -7684,6 +7962,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   quote_amount: order_by
   quote_token: order_by
   quote_token_details: v1_ibc_union_assets_order_by
+  quote_token_meta: v1_ibc_union_tokens_order_by
   receiver: order_by
   receiver_display: order_by
   receiver_normalized: order_by
@@ -8703,11 +8982,77 @@ input v1_ibc_union_statistics_stream_cursor_value_input {
 }
 
 """
+columns and relationships of "v1_ibc_union.streaks"
+"""
+type v1_ibc_union_streaks {
+  """An object relationship"""
+  destination_chain: v1_ibc_union_chains
+  end_timestamp: timestamptz
+  seconds: Int
+  start_timestamp: timestamptz
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.streaks". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_streaks_bool_exp {
+  _and: [v1_ibc_union_streaks_bool_exp!]
+  _not: v1_ibc_union_streaks_bool_exp
+  _or: [v1_ibc_union_streaks_bool_exp!]
+  destination_chain: v1_ibc_union_chains_bool_exp
+  end_timestamp: timestamptz_comparison_exp
+  seconds: Int_comparison_exp
+  start_timestamp: timestamptz_comparison_exp
+}
+
+"""Ordering options when selecting data from "v1_ibc_union.streaks"."""
+input v1_ibc_union_streaks_order_by {
+  destination_chain: v1_ibc_union_chains_order_by
+  end_timestamp: order_by
+  seconds: order_by
+  start_timestamp: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.streaks"
+"""
+enum v1_ibc_union_streaks_select_column {
+  """column name"""
+  end_timestamp
+
+  """column name"""
+  seconds
+
+  """column name"""
+  start_timestamp
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_streaks"
+"""
+input v1_ibc_union_streaks_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_streaks_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_streaks_stream_cursor_value_input {
+  end_timestamp: timestamptz
+  seconds: Int
+  start_timestamp: timestamptz
+}
+
+"""
 columns and relationships of "v1_ibc_union.token_representation_source_unwrapping"
 """
 type v1_ibc_union_token_representation_source_unwrapping {
   destination_channel_id: Int
-  internal_source_id: String
+  index: Int
+  internal_source_id: Int
+  unwrapped_address_hex: String
 
   """An object relationship"""
   unwrapped_chain: v1_ibc_union_chains
@@ -8736,6 +9081,8 @@ order by avg() on columns of table "v1_ibc_union.token_representation_source_unw
 """
 input v1_ibc_union_token_representation_source_unwrapping_avg_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8746,7 +9093,9 @@ input v1_ibc_union_token_representation_source_unwrapping_bool_exp {
   _not: v1_ibc_union_token_representation_source_unwrapping_bool_exp
   _or: [v1_ibc_union_token_representation_source_unwrapping_bool_exp!]
   destination_channel_id: Int_comparison_exp
-  internal_source_id: String_comparison_exp
+  index: Int_comparison_exp
+  internal_source_id: Int_comparison_exp
+  unwrapped_address_hex: String_comparison_exp
   unwrapped_chain: v1_ibc_union_chains_bool_exp
   unwrapped_denom: String_comparison_exp
 }
@@ -8756,7 +9105,9 @@ order by max() on columns of table "v1_ibc_union.token_representation_source_unw
 """
 input v1_ibc_union_token_representation_source_unwrapping_max_order_by {
   destination_channel_id: order_by
+  index: order_by
   internal_source_id: order_by
+  unwrapped_address_hex: order_by
   unwrapped_denom: order_by
 }
 
@@ -8765,7 +9116,9 @@ order by min() on columns of table "v1_ibc_union.token_representation_source_unw
 """
 input v1_ibc_union_token_representation_source_unwrapping_min_order_by {
   destination_channel_id: order_by
+  index: order_by
   internal_source_id: order_by
+  unwrapped_address_hex: order_by
   unwrapped_denom: order_by
 }
 
@@ -8774,7 +9127,9 @@ Ordering options when selecting data from "v1_ibc_union.token_representation_sou
 """
 input v1_ibc_union_token_representation_source_unwrapping_order_by {
   destination_channel_id: order_by
+  index: order_by
   internal_source_id: order_by
+  unwrapped_address_hex: order_by
   unwrapped_chain: v1_ibc_union_chains_order_by
   unwrapped_denom: order_by
 }
@@ -8787,7 +9142,13 @@ enum v1_ibc_union_token_representation_source_unwrapping_select_column {
   destination_channel_id
 
   """column name"""
+  index
+
+  """column name"""
   internal_source_id
+
+  """column name"""
+  unwrapped_address_hex
 
   """column name"""
   unwrapped_denom
@@ -8798,6 +9159,8 @@ order by stddev() on columns of table "v1_ibc_union.token_representation_source_
 """
 input v1_ibc_union_token_representation_source_unwrapping_stddev_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8805,6 +9168,8 @@ order by stddev_pop() on columns of table "v1_ibc_union.token_representation_sou
 """
 input v1_ibc_union_token_representation_source_unwrapping_stddev_pop_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8812,6 +9177,8 @@ order by stddev_samp() on columns of table "v1_ibc_union.token_representation_so
 """
 input v1_ibc_union_token_representation_source_unwrapping_stddev_samp_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8828,7 +9195,9 @@ input v1_ibc_union_token_representation_source_unwrapping_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_token_representation_source_unwrapping_stream_cursor_value_input {
   destination_channel_id: Int
-  internal_source_id: String
+  index: Int
+  internal_source_id: Int
+  unwrapped_address_hex: String
   unwrapped_denom: String
 }
 
@@ -8837,6 +9206,8 @@ order by sum() on columns of table "v1_ibc_union.token_representation_source_unw
 """
 input v1_ibc_union_token_representation_source_unwrapping_sum_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8844,6 +9215,8 @@ order by var_pop() on columns of table "v1_ibc_union.token_representation_source
 """
 input v1_ibc_union_token_representation_source_unwrapping_var_pop_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8851,6 +9224,8 @@ order by var_samp() on columns of table "v1_ibc_union.token_representation_sourc
 """
 input v1_ibc_union_token_representation_source_unwrapping_var_samp_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8858,6 +9233,8 @@ order by variance() on columns of table "v1_ibc_union.token_representation_sourc
 """
 input v1_ibc_union_token_representation_source_unwrapping_variance_order_by {
   destination_channel_id: order_by
+  index: order_by
+  internal_source_id: order_by
 }
 
 """
@@ -8867,6 +9244,7 @@ type v1_ibc_union_token_representation_sources {
   """An object relationship"""
   source: v1_ibc_union_token_sources
   update_timestamp: timestamptz
+  updated_at: timestamptz
 
   """An array relationship"""
   wrapping(
@@ -8905,6 +9283,7 @@ input v1_ibc_union_token_representation_sources_bool_exp {
   _or: [v1_ibc_union_token_representation_sources_bool_exp!]
   source: v1_ibc_union_token_sources_bool_exp
   update_timestamp: timestamptz_comparison_exp
+  updated_at: timestamptz_comparison_exp
   wrapping: v1_ibc_union_token_representation_source_unwrapping_bool_exp
 }
 
@@ -8913,6 +9292,7 @@ order by max() on columns of table "v1_ibc_union.token_representation_sources"
 """
 input v1_ibc_union_token_representation_sources_max_order_by {
   update_timestamp: order_by
+  updated_at: order_by
 }
 
 """
@@ -8920,6 +9300,7 @@ order by min() on columns of table "v1_ibc_union.token_representation_sources"
 """
 input v1_ibc_union_token_representation_sources_min_order_by {
   update_timestamp: order_by
+  updated_at: order_by
 }
 
 """
@@ -8928,6 +9309,7 @@ Ordering options when selecting data from "v1_ibc_union.token_representation_sou
 input v1_ibc_union_token_representation_sources_order_by {
   source: v1_ibc_union_token_sources_order_by
   update_timestamp: order_by
+  updated_at: order_by
   wrapping_aggregate: v1_ibc_union_token_representation_source_unwrapping_aggregate_order_by
 }
 
@@ -8937,6 +9319,9 @@ select columns of table "v1_ibc_union.token_representation_sources"
 enum v1_ibc_union_token_representation_sources_select_column {
   """column name"""
   update_timestamp
+
+  """column name"""
+  updated_at
 }
 
 """
@@ -8953,12 +9338,14 @@ input v1_ibc_union_token_representation_sources_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_token_representation_sources_stream_cursor_value_input {
   update_timestamp: timestamptz
+  updated_at: timestamptz
 }
 
 """
 columns and relationships of "v1_ibc_union.token_representations"
 """
 type v1_ibc_union_token_representations {
+  address_hex: String
   decimals: Int
   name: String
 
@@ -9013,6 +9400,7 @@ input v1_ibc_union_token_representations_bool_exp {
   _and: [v1_ibc_union_token_representations_bool_exp!]
   _not: v1_ibc_union_token_representations_bool_exp
   _or: [v1_ibc_union_token_representations_bool_exp!]
+  address_hex: String_comparison_exp
   decimals: Int_comparison_exp
   name: String_comparison_exp
   sources: v1_ibc_union_token_representation_sources_bool_exp
@@ -9023,6 +9411,7 @@ input v1_ibc_union_token_representations_bool_exp {
 order by max() on columns of table "v1_ibc_union.token_representations"
 """
 input v1_ibc_union_token_representations_max_order_by {
+  address_hex: order_by
   decimals: order_by
   name: order_by
   symbol: order_by
@@ -9032,6 +9421,7 @@ input v1_ibc_union_token_representations_max_order_by {
 order by min() on columns of table "v1_ibc_union.token_representations"
 """
 input v1_ibc_union_token_representations_min_order_by {
+  address_hex: order_by
   decimals: order_by
   name: order_by
   symbol: order_by
@@ -9041,6 +9431,7 @@ input v1_ibc_union_token_representations_min_order_by {
 Ordering options when selecting data from "v1_ibc_union.token_representations".
 """
 input v1_ibc_union_token_representations_order_by {
+  address_hex: order_by
   decimals: order_by
   name: order_by
   sources_aggregate: v1_ibc_union_token_representation_sources_aggregate_order_by
@@ -9051,6 +9442,9 @@ input v1_ibc_union_token_representations_order_by {
 select columns of table "v1_ibc_union.token_representations"
 """
 enum v1_ibc_union_token_representations_select_column {
+  """column name"""
+  address_hex
+
   """column name"""
   decimals
 
@@ -9095,6 +9489,7 @@ input v1_ibc_union_token_representations_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_token_representations_stream_cursor_value_input {
+  address_hex: String
   decimals: Int
   name: String
   symbol: String
@@ -9195,6 +9590,8 @@ columns and relationships of "v1_ibc_union.token_unwrapping"
 """
 type v1_ibc_union_token_unwrapping {
   destination_channel_id: Int
+  index: Int
+  unwrapped_address_hex: String
 
   """An object relationship"""
   unwrapped_chain: v1_ibc_union_chains
@@ -9226,6 +9623,7 @@ order by avg() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_avg_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9236,6 +9634,8 @@ input v1_ibc_union_token_unwrapping_bool_exp {
   _not: v1_ibc_union_token_unwrapping_bool_exp
   _or: [v1_ibc_union_token_unwrapping_bool_exp!]
   destination_channel_id: Int_comparison_exp
+  index: Int_comparison_exp
+  unwrapped_address_hex: String_comparison_exp
   unwrapped_chain: v1_ibc_union_chains_bool_exp
   unwrapped_denom: String_comparison_exp
   wrapped_chain: v1_ibc_union_chains_bool_exp
@@ -9246,6 +9646,8 @@ order by max() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_max_order_by {
   destination_channel_id: order_by
+  index: order_by
+  unwrapped_address_hex: order_by
   unwrapped_denom: order_by
 }
 
@@ -9254,6 +9656,8 @@ order by min() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_min_order_by {
   destination_channel_id: order_by
+  index: order_by
+  unwrapped_address_hex: order_by
   unwrapped_denom: order_by
 }
 
@@ -9262,6 +9666,8 @@ Ordering options when selecting data from "v1_ibc_union.token_unwrapping".
 """
 input v1_ibc_union_token_unwrapping_order_by {
   destination_channel_id: order_by
+  index: order_by
+  unwrapped_address_hex: order_by
   unwrapped_chain: v1_ibc_union_chains_order_by
   unwrapped_denom: order_by
   wrapped_chain: v1_ibc_union_chains_order_by
@@ -9275,6 +9681,12 @@ enum v1_ibc_union_token_unwrapping_select_column {
   destination_channel_id
 
   """column name"""
+  index
+
+  """column name"""
+  unwrapped_address_hex
+
+  """column name"""
   unwrapped_denom
 }
 
@@ -9283,6 +9695,7 @@ order by stddev() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_stddev_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9290,6 +9703,7 @@ order by stddev_pop() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_stddev_pop_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9297,6 +9711,7 @@ order by stddev_samp() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_stddev_samp_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9313,6 +9728,8 @@ input v1_ibc_union_token_unwrapping_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_token_unwrapping_stream_cursor_value_input {
   destination_channel_id: Int
+  index: Int
+  unwrapped_address_hex: String
   unwrapped_denom: String
 }
 
@@ -9321,6 +9738,7 @@ order by sum() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_sum_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9328,6 +9746,7 @@ order by var_pop() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_var_pop_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9335,6 +9754,7 @@ order by var_samp() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_var_samp_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
@@ -9342,12 +9762,16 @@ order by variance() on columns of table "v1_ibc_union.token_unwrapping"
 """
 input v1_ibc_union_token_unwrapping_variance_order_by {
   destination_channel_id: order_by
+  index: order_by
 }
 
 """
 columns and relationships of "v1_ibc_union.tokens"
 """
 type v1_ibc_union_tokens {
+  address: bytea
+  address_hex: String
+
   """An object relationship"""
   chain: v1_ibc_union_chains
   denom: String
@@ -9405,6 +9829,8 @@ input v1_ibc_union_tokens_bool_exp {
   _and: [v1_ibc_union_tokens_bool_exp!]
   _not: v1_ibc_union_tokens_bool_exp
   _or: [v1_ibc_union_tokens_bool_exp!]
+  address: bytea_comparison_exp
+  address_hex: String_comparison_exp
   chain: v1_ibc_union_chains_bool_exp
   denom: String_comparison_exp
   representations: v1_ibc_union_token_representations_bool_exp
@@ -9415,6 +9841,7 @@ input v1_ibc_union_tokens_bool_exp {
 order by max() on columns of table "v1_ibc_union.tokens"
 """
 input v1_ibc_union_tokens_max_order_by {
+  address_hex: order_by
   denom: order_by
 }
 
@@ -9422,11 +9849,14 @@ input v1_ibc_union_tokens_max_order_by {
 order by min() on columns of table "v1_ibc_union.tokens"
 """
 input v1_ibc_union_tokens_min_order_by {
+  address_hex: order_by
   denom: order_by
 }
 
 """Ordering options when selecting data from "v1_ibc_union.tokens"."""
 input v1_ibc_union_tokens_order_by {
+  address: order_by
+  address_hex: order_by
   chain: v1_ibc_union_chains_order_by
   denom: order_by
   representations_aggregate: v1_ibc_union_token_representations_aggregate_order_by
@@ -9437,6 +9867,12 @@ input v1_ibc_union_tokens_order_by {
 select columns of table "v1_ibc_union.tokens"
 """
 enum v1_ibc_union_tokens_select_column {
+  """column name"""
+  address
+
+  """column name"""
+  address_hex
+
   """column name"""
   denom
 }
@@ -9454,6 +9890,8 @@ input v1_ibc_union_tokens_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_tokens_stream_cursor_value_input {
+  address: bytea
+  address_hex: String
   denom: String
 }
 
