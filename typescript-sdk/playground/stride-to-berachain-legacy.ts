@@ -7,7 +7,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { hexToBytes } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* `bun playground/stride-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -46,7 +46,7 @@ try {
     denomAddress: "ustrd",
     receiver: berachainAccount.address,
     destinationChainId: `${berachainTestnetbArtio.id}`
-  } satisfies TransferAssetsParameters<"stride-internal-1">
+  } satisfies TransferAssetsParametersLegacy<"stride-internal-1">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
@@ -59,7 +59,7 @@ try {
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  const transfer = await client.transferAsset(transactionPayload)
+  const transfer = await client.transferAssetLegacy(transactionPayload)
 
   if (transfer.isErr()) {
     consola.error(transfer.error)

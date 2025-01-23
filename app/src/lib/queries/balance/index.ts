@@ -17,8 +17,8 @@ export type AssetMetadata = {
 }
 
 export type BalanceData = {
+  denom: string
   balance: string
-  metadata: AssetMetadata
 }
 
 function normalizeAddress(denom: string): string {
@@ -146,8 +146,7 @@ function getAddressForChain(chain: Chain, addresses: UserAddresses): string | nu
 
 export function userBalancesQuery({
   userAddr,
-  chains,
-  connected = true
+  chains
 }: {
   userAddr: UserAddresses
   chains: Array<Chain>
@@ -165,18 +164,13 @@ export function userBalancesQuery({
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
       queryFn: async () => {
-        // HACK: augment chain assets part 1
-        let expandedAssets = [...chain.assets]
-
-        if (!connected) return []
-
         const address = getAddressForChain(chain, userAddr)
-        if (!address) return []
+        if (!address) return null
 
-        let rawBalances: Map<string, string> = new Map()
+        let rawBalances: Record<string, string> = {}
 
         if (chain.rpc_type === "evm") {
-          const tokenList = chain.assets.filter(asset => isAddress(asset.denom))
+          const tokenList = chain.tokens.filter(tokens => isAddress(tokens.denom))
           const multicallResults = await erc20ReadMulticall({
             chainId: chain.chain_id,
             functionNames: ["balanceOf"],
@@ -185,7 +179,7 @@ export function userBalancesQuery({
           })
 
           multicallResults.forEach((result, index) => {
-            rawBalances.set(tokenList[index].denom, result.balance?.toString() ?? "0")
+            rawBalances[tokenList[index].denom] = result.balance?.toString() ?? "0"
           })
         } else if (chain.rpc_type === "cosmos") {
           const url = chain.rpcs.find(rpc => rpc.type === "rest")?.url
@@ -198,16 +192,7 @@ export function userBalancesQuery({
 
           const cosmosBalances = await getCosmosChainBalances({ url, walletAddress: bech32Address })
           cosmosBalances.forEach(balance => {
-            rawBalances.set(balance.address, balance.balance.toString())
-            // HACK: augment chain assets part 2
-            expandedAssets.push({
-              denom: balance.address,
-              display_name: balance.symbol,
-              display_symbol: balance.symbol,
-              decimals: 0,
-              gas_token: false,
-              faucets: []
-            })
+            rawBalances[balance.address] = balance.balance.toString()
           })
         } else if (chain.rpc_type === "aptos") {
           const url = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
@@ -215,30 +200,11 @@ export function userBalancesQuery({
 
           const aptosBalances = await getAptosChainBalances({ url, walletAddress: address })
           aptosBalances.forEach(balance => {
-            rawBalances.set(balance.address, balance.balance.toString())
+            rawBalances[balance.address] = balance.balance.toString()
           })
         }
-        // Convert all assets to BalanceData format, including those with zero balance
-        const balances: Array<BalanceData> = await Promise.all(
-          // HACK: augment chain assets part 3
-          expandedAssets.map(async asset => {
-            const balance = rawBalances.get(asset.denom) ?? "0"
-            return {
-              balance,
-              metadata: await getAssetInfo(chain, normalizeAddress(asset.denom))
-            }
-          })
-        )
 
-        // Sort balances: non-zero balances first, then by balance amount (descending)
-        return balances.sort((a, b) => {
-          const aValue = BigInt(a.balance)
-          const bValue = BigInt(b.balance)
-          if (aValue === 0n && bValue === 0n) return 0
-          if (aValue === 0n) return 1
-          if (bValue === 0n) return -1
-          return bValue > aValue ? 1 : -1
-        })
+        return { chain_id: chain.chain_id, balances: rawBalances }
       }
     }))
   })

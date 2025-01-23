@@ -8,6 +8,7 @@ import { toDisplayName } from "$lib/utilities/chains.ts"
 import { formatUnits } from "viem"
 import { onMount } from "svelte"
 import { tokenInfoQuery } from "$lib/queries/tokens"
+import LoadingDots from "./loading-dots.svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -15,10 +16,9 @@ export let denom: string
 export let amount: string | number | bigint | null = null
 export let expanded = false
 
-let chain = chains.find(c => c.chain_id === chainId) ?? null
-let graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
-
-let tokenInfo = tokenInfoQuery(chainId, denom, chains)
+$: chain = chains.find(c => c.chain_id === chainId) ?? null
+$: graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
+$: tokenInfo = tokenInfoQuery(chainId, denom, chains)
 </script>
 
 {#if $tokenInfo.data}
@@ -66,4 +66,6 @@ let tokenInfo = tokenInfoQuery(chainId, denom, chains)
     </div>
   {/if}
 </div>
+{:else}
+  <div class="flex max-h-auto overflow-hidden text-muted-foreground"><div class="relative w-12 h-4"><LoadingDots class="absolute -top-4 size-12 h-12 w-12"/></div> <Truncate value={denom} type="address"/></div>
 {/if}

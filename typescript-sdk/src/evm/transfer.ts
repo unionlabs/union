@@ -14,7 +14,7 @@ import {
 } from "viem"
 
 export type EvmTransferParams = {
-  sourceChannel: number
+  sourceChannelId: number
   receiver: string
   baseToken: HexAddress
   baseAmount: bigint
@@ -49,7 +49,7 @@ export async function transferAssetFromEvm(
     baseAmount,
     quoteToken,
     quoteAmount,
-    sourceChannel,
+    sourceChannelId,
     simulate = true,
     ucs03address
   }: EvmTransferParams
@@ -87,7 +87,7 @@ export async function transferAssetFromEvm(
       "salt": "bytes32"
      */
     args: [
-      sourceChannel,
+      sourceChannelId,
       receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       baseToken,
       baseAmount,

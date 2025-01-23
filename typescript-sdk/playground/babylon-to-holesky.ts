@@ -36,10 +36,10 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const STARS_DENOM = "ustars"
-const AMOUNT = 13n
+const STARS_DENOM = "ubbn"
+const AMOUNT = 17n
 const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
-const SOURCE_CHAIN_ID = "elgafar-1"
+const SOURCE_CHAIN_ID = "bbn-test-5"
 const DESTINATION_CHAIN_ID = "17000"
 
 const channels = await getRecommendedChannels()
@@ -68,9 +68,9 @@ if (!PRIVATE_KEY) {
 
 const stargazeClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
-  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "stars"),
-  gasPrice: { amount: "0.025", denom: "ustars" },
-  transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "bbn"),
+  gasPrice: { amount: "0.025", denom: "ubbn" },
+  transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen")
 })
 
 const transfer = await stargazeClient.transferAsset({

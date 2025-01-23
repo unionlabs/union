@@ -49,7 +49,7 @@ export {
 } from "./query/on-chain.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
-import type { ChainId, TransferAssetsParameters } from "./types.ts"
+import type { ChainId, TransferAssetsParametersLegacy } from "./types.ts"
 
 export { http, fallback } from "viem"
 /**
@@ -73,6 +73,8 @@ export { http, fallback } from "viem"
 type EvmClient = ReturnType<typeof createEvmClient>
 type CosmosClient = ReturnType<typeof createCosmosClient>
 type AptosClient = ReturnType<typeof createAptosClient>
+
+export const GRAQPHQL_URL = "https://staging.graphql.union.build/v1/graphql"
 
 /**
  * @example
@@ -247,7 +249,7 @@ export {
   type AptosBrowserWallet,
   type CosmosClientParameters,
   type AptosClientParameters,
-  type TransferAssetsParameters,
+  type TransferAssetsParametersLegacy as TransferAssetsParameters,
   sepolia,
   scrollSepolia,
   arbitrumSepolia,

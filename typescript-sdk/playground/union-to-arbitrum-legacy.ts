@@ -3,13 +3,13 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
+import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexToBytes } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
-import { berachainTestnetbArtio } from "viem/chains"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
-/* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
+/* `bun playground/union-to-arbitrum.ts --private-key "..."` --estimate-gas */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -23,7 +23,7 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
-const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
@@ -31,7 +31,6 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 )
 
 const [account] = await cosmosAccount.getAccounts()
-console.info(account?.address)
 
 try {
   const client = createUnionClient({
@@ -45,9 +44,9 @@ try {
     amount: 1n,
     denomAddress: "muno",
     // or `client.evm.account.address` if you want to send to yourself
-    receiver: berachainAccount.address,
-    destinationChainId: `${berachainTestnetbArtio.id}`
-  } satisfies TransferAssetsParameters<"union-testnet-8">
+    receiver: evmAccount.address,
+    destinationChainId: `${arbitrumSepolia.id}`
+  } satisfies TransferAssetsParametersLegacy<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
@@ -56,7 +55,7 @@ try {
     process.exit(1)
   }
 
-  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
+  consola.success("Union to Arbitrum gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
@@ -65,7 +64,7 @@ try {
     process.exit(1)
   }
 
-  const transfer = await client.transferAsset(transactionPayload)
+  const transfer = await client.transferAssetLegacy(transactionPayload)
 
   if (transfer.isErr()) {
     console.error(transfer.error)

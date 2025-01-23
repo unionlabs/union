@@ -4,7 +4,7 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { http, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { http, createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
 /* node --import=tsx playground/aptos-to-union.ts --private-key $PRIVATE_KEY */
 
@@ -35,10 +35,10 @@ const transferPayload = {
   simulate: false,
   authAccess: "key",
   account: aptosAccount,
-  destinationChainId: "union-testnet-8",
-  receiver: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md",
+  destinationChainId: "2",
+  receiver: "0xe3579557fd55ed8fab0d1e211eb1c05d56d74650e7070b703925493c38fe2aed",
   denomAddress: "0x9935a6a334e070bcecf5b1abb1c842c123572e63e70f0539d79610c32954c06c"
-} satisfies TransferAssetsParameters<"2">
+} satisfies TransferAssetsParametersLegacy<"2">
 
 const simulateResult = await client.simulateTransaction(transferPayload)
 

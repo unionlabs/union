@@ -26,7 +26,9 @@ export type ChainId =
   | (typeof cosmosChainId)[number]
   | (typeof aptosChainId)[number]
 
-export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> = {
+export type TransferAssetsParametersLegacy<
+  CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId
+> = {
   memo?: string
   amount: bigint
   receiver: string
@@ -56,6 +58,23 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
           gasPrice?: { amount: string; denom: string }
         }
       : undefined)
+
+export type TransferAssetParameters<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> = {
+  baseAmount: bigint
+  baseToken: string
+  quoteAmount: bigint
+  quoteToken: string
+  receiver: string
+  sourceChannelId: number
+} & (CHAIN_ID extends CosmosChainId
+  ? {
+      ucs03address: string
+    }
+  : CHAIN_ID extends EvmChainId
+    ? {
+        ucs03address: HexAddress
+      }
+    : undefined)
 
 /** Currently supported networks. */
 export type Network = "evm" | "cosmos" | "aptos"

@@ -209,10 +209,15 @@ export async function cosmwasmTransfer({
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
-  const response = await _signingClient.executeMultiple(_account.address, instructions, "auto")
+  const response = ResultAsync.fromPromise(
+    _signingClient.executeMultiple(_account.address, instructions, "auto"),
+    error => {
+      return new Error("failed to execute cosmwasm call", { cause: error })
+    }
+  ).map(res => res.transactionHash)
 
   _signingClient.disconnect()
-  return ok(response.transactionHash)
+  return response
 }
 
 /**

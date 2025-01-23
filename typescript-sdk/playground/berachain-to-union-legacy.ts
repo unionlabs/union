@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
-import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
+import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { holesky, sepolia } from "viem/chains"
-import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { berachainTestnetbArtio } from "viem/chains"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
-/* `bun playground/sepolia-to-holesky.ts --private-key "..."` */
+/* `bun playground/berachain-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -21,28 +21,33 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
-const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
-const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
+console.info(berachainAccount.address)
+
+const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
+const DAI_CONTRACT_ADDRESS = "0x806Ef538b228844c73E8E692ADCFa8Eb2fCF729c"
 
 try {
   const client = createUnionClient({
-    chainId: "11155111",
-    account: evmAccount,
+    chainId: "80084",
+    account: berachainAccount,
     transport: fallback([
-      http("https://rpc.11155111.sepolia.chain.kitchen"),
-      http(sepolia?.rpcUrls.default.http.at(0))
+      http(
+        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+      ),
+      http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
     ])
   })
 
   const transactionPayload = {
-    amount: 420n,
-    destinationChainId: `${holesky.id}`,
-    receiver: RECEIVER,
-    denomAddress: LINK_CONTRACT_ADDRESS,
-    autoApprove: true
-  } satisfies TransferAssetsParameters<"11155111">
+    amount: 1n,
+    autoApprove: true,
+    denomAddress: DAI_CONTRACT_ADDRESS,
+    destinationChainId: "union-testnet-8",
+    // or `client.cosmos.account.address` if you want to send to yourself
+    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
+  } satisfies TransferAssetsParametersLegacy<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
@@ -51,7 +56,7 @@ try {
     process.exit(1)
   }
 
-  consola.success("Sepolia to Holesky gas cost:", gasEstimationResponse.value)
+  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
@@ -60,7 +65,7 @@ try {
     process.exit(1)
   }
 
-  const transfer = await client.transferAsset(transactionPayload)
+  const transfer = await client.transferAssetLegacy(transactionPayload)
 
   if (transfer.isErr()) {
     console.error(transfer.error)

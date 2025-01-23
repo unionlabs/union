@@ -10,6 +10,12 @@ npm install @unionlabs/client
 
 ## Development
 
+### Fetch latest schema
+
+```sh
+nix run .#ts-sdk-fetch-schema -L
+```
+
 ### Publishing
 
 Publish to npm registry:

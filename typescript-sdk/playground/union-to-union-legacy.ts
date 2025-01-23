@@ -36,7 +36,7 @@ try {
     transport: http("https://rpc.testnet-8.union.build")
   })
 
-  const transfer = await client.transferAsset({
+  const transfer = await client.transferAssetLegacy({
     amount: 1n,
     denomAddress: "muno",
     destinationChainId: "union-testnet-8",

@@ -20,6 +20,19 @@ _: {
             '';
           };
         };
+        ts-sdk-fetch-schema = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "ts-sdk-fetch-schema";
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd typescript-sdk/
+              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://staging.graphql.union.build/v1/graphql"
+
+              npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
+            '';
+          };
+        };
         ts-sdk-check = {
           type = "app";
           program = unstablePkgs.writeShellApplication {
