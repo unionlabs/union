@@ -18,75 +18,9 @@ You will also need a chain that supports CosmWasm running where you plan to depl
 
 # Tutorial
 
-0. Deploy ucs03
 1. Write your contract
 2. Deploy your contract
 3. Example transfer
-
-## Deploy ucs03
-
-If ucs03 is not already deployed as a smart contract on your target chain, you will need to have it deployed before continuing. If it's already deployed on the network, move on to [writing your own contract](.).
-
-### Building the ucs03 WASM Blob
-
-To begin, you will need the compiled WASM blob for ucs03, you can build this yourself from the [unionlabs/union](https://github.com/unionlabs/union) repository.
-
-Assuming you're using Nix, you can compile ucs03's WASM blob yourself as follows:
-
-```sh
-git clone https://github.com/unionlabs/union.git
-cd union
-nix build .#ibc-union-ucs03-zkgm
-```
-
-This should create a symlink called `result` with the following structure:
-
-<FileTree>
-- result
-  - lib
-    - ibc_union_ucs03_zkgm.wasm
-    - ibc_union_ucs03_zkgm.wasm.gz
-</FileTree>
-
-### Deploying ucs03
-
-With the WASM blob now available, submit a transaction to the network to store the blob. Copy the value of the transaction hash into a shell variable (`TX_HASH`).
-
-```sh
-uniond tx wasm store result/lib/ibc_union_ucs03_zkgm.wasm \
-  --from $KEY_NAME \
-  --gas auto \
-  --gas-adjustment 1.4 \
-  --node http://localhost:26657/ \
-  --chain-id union-devnet-1
-
-TX_HASH=..
-```
-
-Be sure to copy the `CODE_ID` of the newly stored code. Using the previous transaction hash, you can see it by running this command:
-```sh
-uniond query tx $TX_HASH --node http://localhost:26657 | rg -C 1 "code_id"  
-```
-
-Next, submit a transaction to instantiate the contract. ucs03 needs to be instantiated with the `ibc_host` configured. Copy the value of the **NEW** transaction hash into a shell variable (`TX_HASH`).
-
-```sh
-uniond tx wasm instantiate $CODE_ID "{\"ibc_host\":\"$IBC_HOST_ADDRESS\"}" \
-  --node http://localhost:26657/ \
-  --from $KEY_NAME \
-  --label ucs03-zkgm \
-  --no-admin \
-  --gas auto \
-  --gas-adjustment 1.4 \
-  --chain-id union-devnet-1
-
-TX_HASH=..
-```
-
-You can then get the contract address by running:
-```sh
-uniond query tx $TX_HASH --node http://localhost:26657 | rg -C 1 "_contract_address"  
-```
 
 ## Write Your Contract
 
