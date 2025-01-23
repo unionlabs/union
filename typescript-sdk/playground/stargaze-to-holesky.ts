@@ -1,18 +1,36 @@
-#!/usr/bin/env bun
-import "scripts/patch.ts"
-import { http } from "viem"
-import { holesky } from "viem/chains"
+import { fallback, fromHex, http } from "viem"
 import { parseArgs } from "node:util"
-import { raise } from "#utilities/index.ts"
-import { consola } from "../scripts/logger.ts"
-import { hexToBytes } from "#convert.ts"
+import { consola } from "scripts/logger"
 import { privateKeyToAccount } from "viem/accounts"
+import { holesky } from "viem/chains"
+import { createUnionClient, hexAddressToBech32, hexToBytes } from "#mod.ts"
+import {
+  getChannelInfo,
+  getQuoteToken,
+  getRecommendedChannels
+} from "#query/offchain/ucs03-channels"
+import { evmApproveTransferAsset } from "#evm/transfer"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
 
-/* `bun playground/union-to-holesky.ts --private-key "..."` --estimate-gas */
+// hack to encode bigints to json
+declare global {
+  interface BigInt {
+    toJSON: () => string
+  }
+}
 
-const { values } = parseArgs({
+if (!BigInt.prototype.toJSON) {
+  Object.defineProperty(BigInt.prototype, "toJSON", {
+    value: function () {
+      return this.toString()
+    },
+    writable: true,
+    configurable: true
+  })
+}
+// end hack
+
+const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
@@ -20,55 +38,58 @@ const { values } = parseArgs({
   }
 })
 
-const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
-const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
+const PRIVATE_KEY = cliArgs.values["private-key"]
+const STARS_DENOM = "ustars"
+const AMOUNT = 13n
+const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
+const SOURCE_CHAIN_ID = "elgafar-1"
+const DESTINATION_CHAIN_ID = "17000"
 
-const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const channels = await getRecommendedChannels()
 
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexToBytes(PRIVATE_KEY)),
-  "stars"
-)
-
-try {
-  const client = createUnionClient({
-    account: cosmosAccount,
-    chainId: "elgafar-1",
-    gasPrice: { amount: "0.025", denom: "ustars" },
-    transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
-  })
-
-  const transferPayload = {
-    amount: 1n,
-    denomAddress: "ustars",
-    destinationChainId: `${holesky.id}`,
-    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
-  } satisfies TransferAssetsParametersLegacy<"elgafar-1">
-
-  // const gasEstimationResponse = await client.simulateTransaction(transferPayload)
-
-  // consola.box("Union to holesky gas cost:", gasEstimationResponse)
-
-  // if (ONLY_ESTIMATE_GAS) process.exit(0)
-
-  // if (!gasEstimationResponse.isOk()) {
-  //   console.info("Transaction simulation failed")
-  //   process.exit(1)
-  // }
-
-  const transfer = await client.transferAssetLegacy(transferPayload)
-
-  if (transfer.isErr()) {
-    console.error(transfer.error)
-    process.exit(1)
-  }
-
-  consola.info(transfer.value)
-  process.exit(0)
-} catch (error) {
-  const errorMessage = error instanceof Error ? error.message : error
-  console.error(errorMessage)
-} finally {
-  process.exit(0)
+const channel = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
+if (channel === null) {
+  consola.info("no channel found")
+  process.exit(1)
 }
+
+consola.info("channel", channel)
+
+const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, STARS_DENOM, channel)
+if (quoteToken.isErr()) {
+  consola.info("could not get quote token")
+  consola.error(quoteToken.error)
+  process.exit(1)
+}
+
+consola.info("quote token", quoteToken.value)
+
+if (!PRIVATE_KEY) {
+  consola.error("no private key provided")
+  process.exit(1)
+}
+
+const stargazeClient = createUnionClient({
+  chainId: SOURCE_CHAIN_ID,
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "stars"),
+  gasPrice: { amount: "0.025", denom: "ustars" },
+  transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
+})
+
+const transfer = await stargazeClient.transferAsset({
+  baseToken: STARS_DENOM,
+  baseAmount: AMOUNT,
+  quoteToken: quoteToken.value.quote_token,
+  quoteAmount: AMOUNT,
+  receiver: RECEIVER,
+  sourceChannelId: channel.source_channel_id,
+  ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
+})
+
+if (transfer.isErr()) {
+  consola.info("transfer submission failed")
+  consola.error(transfer.error)
+  process.exit(1)
+}
+
+consola.info("transfer tx hash", transfer.value)
