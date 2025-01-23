@@ -40,12 +40,18 @@ This will create a project with the following folder structure.
   - src
     - Counter.sol
   - test
-    -Counter.t.sol
+    - Counter.t.sol
 </FileTree>
 
-Rename `script/Counter.s.sol` and `src/Counter.sol` to `script/Transfer.s.sol` and `src/Transfer.sol`. Delete the test folder as it won't be used in this example.
+- Rename `script/Counter.s.sol` -> `script/Transfer.s.sol`
+- Rename `src/Counter.sol` -> `src/Transfer.sol`.
+- Delete the `test/` folder as it won't be used in this example.
 
 ### Contract Source
+
+This demonstrates creating an interface, `Ucs03` to expose the transfer function from the already deployed ucs03-zkgm contract. Using the exposed interface of ucs03-zkgm, this contract has a function `transferAsset` to conduct a set transfer of 1 USDC.
+
+This tutorial only takes advantage of the `transfer` function from ucs03-zkgm. To see a full list of functions made available by ucs03-zkgm, refer to the solidity contract in our [repository](https://github.com/unionlabs/union/blob/49dfa17d04b52509e5122d13e79bfc4a65d4a811/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L296)
 
 ```solidity title="src/Transfer.sol"
 pragma solidity ^0.8.27;
@@ -87,8 +93,6 @@ contract Transfer {
     );
   }
 }
-
-
 ```
 
 ### Contract Running Script

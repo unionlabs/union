@@ -62,6 +62,8 @@ strip = true
 
 Below is a sample contract that can be pasted into `lib.rs`.
 
+This contract exposes the transfer message from ucs03-zkgm (`Ucs03ExecuteMsg`), then sends that message to the deployed ucs03-zkgm. To see all the messages exposed by ucs03-zkgm, refer to the contract in our [repository](https://github.com/unionlabs/union/blob/49dfa17d04b52509e5122d13e79bfc4a65d4a811/cosmwasm/ibc-union/app/ucs03-zkgm/src/msg.rs#L16)
+
 ```rust title="src/lib.rs"
 use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
