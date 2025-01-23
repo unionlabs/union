@@ -9,7 +9,6 @@ import { isHex } from "viem"
 
 let chains = chainsQuery()
 let ucs03channels = recommendedUcs03ChannelsQuery()
-// let tokens = tokensQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []
 const EMPTY_UCS03_CHANNELS: Array<Ucs03Channel> = []

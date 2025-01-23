@@ -7,8 +7,8 @@ import TransferFrom from "$lib/components/TransferFrom/index.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
-<ChainsGate let:chains>
+<ChainsGate let:chains let:ucs03channels>
   <div class="w-full flex flex-col justify-center items-center">
-    <TransferFrom {chains} />
+    <TransferFrom {chains} {ucs03channels}/>
   </div>
 </ChainsGate>

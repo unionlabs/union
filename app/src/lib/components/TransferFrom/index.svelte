@@ -7,16 +7,52 @@ import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.sv
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
-import type { Chain } from "$lib/types.ts"
+import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
+import { createRawIntentsStore } from "./transfer/raw-intents"
+import { derived } from "svelte/store"
+import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
+import { fromHex, isHex, toHex } from "viem"
 
 export let chains: Array<Chain>
+export let ucs03channels: Array<Ucs03Channel>
 
 let balances = userBalancesQuery({ chains, userAddr: $userAddress })
+const rawIntents = createRawIntentsStore()
 const stores = createTransferStore(chains, balances)
+
+let channel = derived(rawIntents, $rawIntents => {
+  if (!($rawIntents.source && $rawIntents.destination)) return null
+
+  return getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
+})
+
+let quoteToken = derived([rawIntents, channel], async ([$rawIntents, $channel]) => {
+  if ($channel === null || $rawIntents.asset === null) return null
+  const chain = chains.find(c => c.chain_id === $rawIntents.source)
+  if (!chain) return null
+
+  // decode from hex if cosmos to assert proper quote token prediction.
+  let baseToken =
+    chain.rpc_type === "cosmos" && isHex($rawIntents.asset)
+      ? fromHex($rawIntents.asset, "string")
+      : $rawIntents.asset
+
+  console.log({ baseToken })
+
+  return await getQuoteToken($rawIntents.source, baseToken, $channel)
+})
 </script>
 
+<div>{JSON.stringify($rawIntents)}</div>
+<div>{JSON.stringify($channel)}</div>
+
+{#await $quoteToken}
+loading..
+{:then quote}
+<div>{JSON.stringify(quote)}</div>
+{/await}
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
     <Intent {stores} {rotateTo}/>
@@ -35,7 +71,7 @@ const stores = createTransferStore(chains, balances)
   </div>
 
   <div slot="transfer" let:rotateTo class="w-full h-full">
-    <Transfer {stores} {rotateTo}/>
+    yay
   </div>
 </Cube>
 
