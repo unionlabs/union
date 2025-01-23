@@ -19,7 +19,11 @@ import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
 import Token from "./token.svelte"
 
-const source = $page.params.source
+// prefix a source with 0x if not there for cosmos tx hashes
+const source = $page.params.source.startsWith("0x")
+  ? $page.params.source.toLowerCase()
+  : `0x${$page.params.source.toLowerCase()}`
+
 export let chains: Array<Chain>
 
 let transfers = createQuery({

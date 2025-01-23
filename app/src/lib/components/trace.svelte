@@ -56,13 +56,19 @@ const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
 
 $: pTraces = ((): Array<Trace> => {
   let processedTraces = traces.map(t => {
-    let explorer = chains.find(c => c.chain_id === t.chain.chain_id)?.explorers?.at(0)
+    let chain = chains.find(c => c.chain_id === t.chain.chain_id)
+    let explorer = chain?.explorers?.at(0)
+
+    // For cosmos explorer, transaction hashes must not have 0x and must be all-uppercase.
+    let transaction_hash =
+      chain?.rpc_type === "cosmos" ? t.transaction_hash?.slice(2).toUpperCase() : t.transaction_hash
 
     return {
       ...t,
+      transaction_hash,
       status: t.transaction_hash ? "COMPLETED" : ("PENDING" as StepStatus),
       block_url: explorer ? `${explorer.block_url}${t.height}` : null,
-      transaction_url: explorer ? `${explorer.tx_url}${t.transaction_hash}` : null
+      transaction_url: explorer ? `${explorer.tx_url}${transaction_hash}` : null
     }
   })
 
