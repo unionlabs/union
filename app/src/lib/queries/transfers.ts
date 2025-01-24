@@ -22,12 +22,12 @@ const transferTransform = (tx: FragmentOf<typeof transferListDataFragment>) => {
     source: {
       hash: transfer.packet_send_transaction_hash || "unknown",
       chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
-      address: transfer.sender || "unknown"
+      address: transfer.sender_normalized || "unknown"
     },
     destination: {
       hash: transfer.packet_recv_transaction_hash || "unknown",
       chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
-      address: transfer.receiver || "unknown"
+      address: transfer.receiver_normalized || "unknown"
     },
     baseToken: transfer.base_token,
     baseAmount: transfer.base_amount,

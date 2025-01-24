@@ -44,6 +44,9 @@ rawIntents.subscribe(async () => {
   const chain = chains.find(c => c.chain_id === $rawIntents.source)
   if (!chain) return null
 
+  const destChain = chains.find(c => c.chain_id === $rawIntents.destination)
+  if (!destChain) return null
+
   // decode from hex if cosmos to assert proper quote token prediction.
   let baseToken =
     chain.rpc_type === "cosmos" && isHex($rawIntents.asset)
