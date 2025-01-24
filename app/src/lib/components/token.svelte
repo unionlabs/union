@@ -9,6 +9,8 @@ import { formatUnits } from "viem"
 import { onMount } from "svelte"
 import { tokenInfoQuery } from "$lib/queries/tokens"
 import LoadingDots from "./loading-dots.svelte"
+import { highlightItem } from "$lib/stores/highlight"
+import { cn } from "$lib/utilities/shadcn"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -23,13 +25,20 @@ $: tokenInfo = tokenInfoQuery(chainId, denom.toLowerCase(), chains)
 
 {#if $tokenInfo.data}
 {@const token = $tokenInfo.data}
-<div>
+<!-- svelte-ignore a11y-interactive-supports-focus -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div
+  class="flex flex-col gap-1"
+  on:mouseleave={() => highlightItem.set(null)}
+  on:mouseenter={() => {
+  highlightItem.set(denom ? { kind: "token", denom} : null)
+  }}>
   <div class="flex gap-1 items-center">
     <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"} />
       {#if amount !== null}
         {formatUnits(BigInt(amount), token.combined.decimals)}
       {/if}
-    <b><Truncate value={token.combined.symbol} type="symbol"/></b>
+    <span class={cn("inline-flex gap-1 transition-colors", $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate value={token.combined.symbol} type="symbol"/></b>
     <div class="text-muted-foreground text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
@@ -38,7 +47,7 @@ $: tokenInfo = tokenInfoQuery(chainId, denom.toLowerCase(), chains)
           chains,
         )}
       {/each}
-    </div>
+    </div></span>
   </div>
   {#if expanded}
     <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
