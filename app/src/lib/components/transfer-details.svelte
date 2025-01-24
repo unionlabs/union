@@ -123,11 +123,11 @@ let processedTransfers = derived(
             <section class="flex flex-col lg:flex-row gap-8">
               <div class="flex-col text-muted-foreground">
                 <DetailsHeading>Sender</DetailsHeading>
-                <Address address={transfer.sender} {chains} chainId={transfer.source_chain_id}  />
+                <Address showRaw address={transfer.sender_normalized} {chains} chainId={transfer.source_chain_id}  />
               </div>
               <div class="flex-1 lg:text-right flex-col text-muted-foreground">
                 <DetailsHeading>Receiver</DetailsHeading>
-                <Address address={transfer.receiver} {chains} chainId={transfer.destination_chain_id}  />
+                <Address showRaw address={transfer.receiver_normalized} {chains} chainId={transfer.destination_chain_id}  />
               </div>
             </section>
           </Card.Content>

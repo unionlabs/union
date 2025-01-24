@@ -25,7 +25,7 @@ import { routes } from "$lib/components/navigation/index.ts"
       alt="Union Logo"
       class="size-full max-w-32 h-12 select-none invert dark:invert-0"
     />
-    <Badge class="mb-0.5 ml-1">Testnet 9</Badge>
+    <Badge class="mb-0.5 ml-1">Testnet 9 Beta</Badge>
   </Button>
   <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25")}>
     <CmdK />

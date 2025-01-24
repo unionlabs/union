@@ -6,14 +6,13 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
         v1_ibc_union_fungible_asset_orders(
             where: { packet_send_transaction_hash: { _eq: $source_transaction_hash } }
         ) {
-            sender
-            # normalized_sender
+            
+            sender_normalized
             source_chain_id
             source_connection_id
             source_channel_id
             packet_send_transaction_hash
-            receiver
-            # normalized_receiver
+            receiver_normalized
             destination_chain_id
             destination_connection_id
             destination_channel_id
