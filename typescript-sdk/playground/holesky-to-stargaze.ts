@@ -59,6 +59,11 @@ if (quoteToken.isErr()) {
   process.exit(1)
 }
 
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.info("no quote token available")
+  process.exit(1)
+}
+
 consola.info("quote token", quoteToken.value)
 
 const transferArgs = {

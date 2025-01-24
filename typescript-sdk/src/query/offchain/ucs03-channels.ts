@@ -51,11 +51,20 @@ export type Channel = {
   destination_connection_id: number
 }
 
+function isPositiveInteger(str: string): boolean {
+  return /^[1-9]\d*$/.test(str)
+}
+
 export const getQuoteToken = async (
   source_chain_id: string,
   base_token: string,
   channel: Channel
-): Promise<Result<{ quote_token: string; type: "UNWRAPPED" | "NEW_WRAPPED" }, Error>> => {
+): Promise<
+  Result<
+    { quote_token: string; type: "UNWRAPPED" | "NEW_WRAPPED" } | { type: "NO_QUOTE_AVAILABLE" },
+    Error
+  >
+> => {
   // check if the denom is wrapped
   let wrapping = await ResultAsync.fromPromise(
     request(GRAQPHQL_URL, tokenWrappingQuery, {
@@ -81,6 +90,12 @@ export const getQuoteToken = async (
     if (quote_token) {
       return ok({ type: "UNWRAPPED", quote_token })
     }
+  }
+
+  // HACK: to check evm vs cosmos we check if te destination chain id  is a number
+  if (!isPositiveInteger(channel.destination_chain_id)) {
+    // we do not support sending new assets to cosmos chains yet.
+    return ok({ type: "NO_QUOTE_AVAILABLE" })
   }
 
   // if it is unknown, calculate the quotetoken
