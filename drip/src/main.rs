@@ -1,11 +1,4 @@
-use std::{
-    collections::HashMap,
-    ffi::OsString,
-    fmt,
-    fs::read_to_string,
-    rc::Rc,
-    time::Duration,
-};
+use std::{collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration};
 
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
@@ -423,7 +416,10 @@ impl SendRequestAggregator for Vec<SendRequest> {
 
         denom_map
             .into_iter()
-            .map(|(denom, (total_amount, _))| AggregatedSendRequest { denom, total_amount })
+            .map(|(denom, (total_amount, _))| AggregatedSendRequest {
+                denom,
+                total_amount,
+            })
             .collect()
     }
 }
