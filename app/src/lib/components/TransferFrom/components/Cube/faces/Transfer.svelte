@@ -224,160 +224,139 @@ const transfer = async () => {
         return
       }
     }
+  } else if (sourceChain.rpc_type === "evm") {
+    const connectorClient = await getConnectorClient(config)
+    const selectedChain = evmChainFromChainId(sourceChain.chain_id)
+
+    const unionClient = createUnionClient({
+      account: connectorClient.account,
+      chainId: sourceChain.chain_id as EvmChainId,
+      transport: custom(window.ethereum) as unknown as HttpTransport
+    })
+
+    if (!selectedChain) {
+      toast.error("From chain not found or supported")
+      return
+    }
+
+    if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
+
+    if (window.ethereum === undefined) raise("no ethereum browser extension")
+
+    if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
+      transferState.set({ kind: "SWITCHING_TO_CHAIN" })
+    }
+
+    if ($transferState.kind === "SWITCHING_TO_CHAIN") {
+      if ($transferState.warning) {
+        transferState.set({ kind: "APPROVING_ASSET" })
+        transfer()
+        return
+      }
+      // ^ the user is continuing continuing after having seen the warning
+
+      try {
+        await switchChain(config, { chainId: selectedChain.id })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
+        }
+        return
+      }
+      transferState.set({ kind: "APPROVING_ASSET" })
+    }
+
+    if ($transferState.kind === "APPROVING_ASSET") {
+      let hash: `0x${string}` | null = null
+
+      try {
+        const approve = await unionClient.approveErc20(transferArgs)
+
+        if (approve.isErr()) throw approve.error
+        hash = approve.value
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "APPROVING_ASSET", error })
+        }
+        return
+      }
+      transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
+    }
+
+    if ($transferState.kind === "AWAITING_APPROVAL_RECEIPT") {
+      try {
+        await waitForTransactionReceipt(config, { hash: $transferState.hash })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "AWAITING_APPROVAL_RECEIPT",
+            hash: $transferState.hash,
+            error
+          })
+        }
+        return
+      }
+      transferState.set({ kind: "SIMULATING_TRANSFER" })
+    }
+
+    if ($transferState.kind === "SIMULATING_TRANSFER") {
+      console.log("simulating transfer step")
+
+      if ($transferState.warning) {
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
+        transfer()
+        return
+      }
+
+      // ^ the user is continuing continuing after having seen the warning
+
+      console.log("confirming transfers test")
+
+      try {
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
+        }
+        return
+      }
+    }
+
+    if ($transferState.kind === "CONFIRMING_TRANSFER") {
+      try {
+        const transfer = await unionClient.transferAsset(transferArgs)
+        if (transfer.isErr()) throw transfer.error
+        transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "CONFIRMING_TRANSFER",
+            contractRequest: $transferState.contractRequest,
+            error
+          })
+        }
+      }
+    }
+
+    if ($transferState.kind === "AWAITING_TRANSFER_RECEIPT") {
+      try {
+        await waitForTransactionReceipt(config, {
+          hash: $transferState.transferHash
+        })
+        transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "AWAITING_TRANSFER_RECEIPT",
+            transferHash: $transferState.transferHash,
+            error
+          })
+        }
+      }
+    }
+  } else {
+    console.error("invalid rpc type")
   }
-  //   else if ($validation.transfer.sourceChain.rpc_type === "evm") {
-  //     const connectorClient = await getConnectorClient(config)
-  //     const selectedChain = evmChainFromChainId($validation.transfer.sourceChain.chain_id)
-  //
-  //     const unionClient = createUnionClient({
-  //       account: connectorClient.account,
-  //       chainId: $validation.transfer.sourceChain.chain_id as EvmChainId,
-  //       transport: custom(window.ethereum) as unknown as HttpTransport
-  //     })
-  //
-  //     if (!selectedChain) {
-  //       toast.error("From chain not found or supported")
-  //       return
-  //     }
-  //
-  //     if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
-  //
-  //     if (window.ethereum === undefined) raise("no ethereum browser extension")
-  //
-  //     if (stepBefore($transferState, "SWITCHING_TO_CHAIN")) {
-  //       transferState.set({ kind: "SWITCHING_TO_CHAIN" })
-  //     }
-  //
-  //     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
-  //       if ($transferState.warning) {
-  //         transferState.set({ kind: "APPROVING_ASSET" })
-  //         transfer()
-  //         return
-  //       }
-  //       // ^ the user is continuing continuing after having seen the warning
-  //
-  //       try {
-  //         await switchChain(config, { chainId: selectedChain.id })
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
-  //         }
-  //         return
-  //       }
-  //       transferState.set({ kind: "APPROVING_ASSET" })
-  //     }
-  //
-  //     if ($transferState.kind === "APPROVING_ASSET") {
-  //       let hash: `0x${string}` | null = null
-  //
-  //       try {
-  //         console.log({
-  //           amount: parsedAmount,
-  //           receiver: $validation.transfer.receiver,
-  //           denomAddress: getAddress($validation.transfer.asset.metadata.denom),
-  //           // TODO: verify chain id is correct
-  //           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
-  //         })
-  //
-  //         const approve = await unionClient.approveTransaction({
-  //           amount: parsedAmount,
-  //           receiver: $validation.transfer.receiver,
-  //           denomAddress: getAddress($validation.transfer.asset.metadata.denom),
-  //           // TODO: verify chain id is correct
-  //           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
-  //         })
-  //
-  //         if (approve.isErr()) throw approve.error
-  //         hash = approve.value
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({ kind: "APPROVING_ASSET", error })
-  //         }
-  //         return
-  //       }
-  //       transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
-  //     }
-  //
-  //     if ($transferState.kind === "AWAITING_APPROVAL_RECEIPT") {
-  //       try {
-  //         await waitForTransactionReceipt(config, { hash: $transferState.hash })
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({
-  //             kind: "AWAITING_APPROVAL_RECEIPT",
-  //             hash: $transferState.hash,
-  //             error
-  //           })
-  //         }
-  //         return
-  //       }
-  //       transferState.set({ kind: "SIMULATING_TRANSFER" })
-  //     }
-  //
-  //     if ($transferState.kind === "SIMULATING_TRANSFER") {
-  //       console.log("simulating transfer step")
-  //
-  //       if ($transferState.warning) {
-  //         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
-  //         transfer()
-  //         return
-  //       }
-  //
-  //       // ^ the user is continuing continuing after having seen the warning
-  //
-  //       console.log("confirming transfers test")
-  //
-  //       try {
-  //         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
-  //         }
-  //         return
-  //       }
-  //     }
-  //
-  //     if ($transferState.kind === "CONFIRMING_TRANSFER") {
-  //       try {
-  //         const transfer = await unionClient.transferAsset({
-  //           autoApprove: false,
-  //           amount: parsedAmount,
-  //           receiver: $validation.transfer.receiver,
-  //           denomAddress: getAddress($validation.transfer.asset.metadata.denom),
-  //           destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
-  //         })
-  //         if (transfer.isErr()) throw transfer.error
-  //         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({
-  //             kind: "CONFIRMING_TRANSFER",
-  //             contractRequest: $transferState.contractRequest,
-  //             error
-  //           })
-  //         }
-  //       }
-  //     }
-  //
-  //     if ($transferState.kind === "AWAITING_TRANSFER_RECEIPT") {
-  //       try {
-  //         await waitForTransactionReceipt(config, {
-  //           hash: $transferState.transferHash
-  //         })
-  //         transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
-  //       } catch (error) {
-  //         if (error instanceof Error) {
-  //           transferState.set({
-  //             kind: "AWAITING_TRANSFER_RECEIPT",
-  //             transferHash: $transferState.transferHash,
-  //             error
-  //           })
-  //         }
-  //       }
-  //     }
-  //   } else {
-  //console.error("invalid rpc type")
-  //}
 
   if ($transferState.kind === "TRANSFERRING") {
     await sleep(REDIRECT_DELAY_MS)
