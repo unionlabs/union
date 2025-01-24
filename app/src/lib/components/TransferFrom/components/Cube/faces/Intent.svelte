@@ -9,6 +9,8 @@ import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/typ
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
 import LoadingDots from "$lib/components/loading-dots.svelte"
+import Token from "$lib/components/token.svelte"
+import type { Chain } from "$lib/types"
 
 interface Props {
   stores: {
@@ -21,6 +23,18 @@ interface Props {
 
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
+export let chains: Array<Chain>
+export let transferArgs: Readable<
+  Promise<{
+    baseToken: string
+    baseAmount: bigint
+    quoteToken: string
+    quoteAmount: bigint
+    receiver: string
+    sourceChannelId: number
+    ucs03address: string
+  }>
+>
 
 let { rawIntents, intents, validation } = stores
 </script>
@@ -31,11 +45,11 @@ let { rawIntents, intents, validation } = stores
     <span class="font-bold uppercase">Transfer</span>
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
-    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
       <Direction {intents} {validation} {rawIntents} getSourceChain={() => rotateTo("sourceFace")}
                  getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {intents} {validation} {rawIntents} onSelectAsset={() => rotateTo("assetsFace")}/>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1 items-start">
         <Input
                 id="amount"
                 type="number"
@@ -59,9 +73,6 @@ let { rawIntents, intents, validation } = stores
         {#if $validation.errors.amount}
           <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
         {/if}
-      </div>
-
-      <div class="flex flex-col gap-1">
         <Input
                 type="text"
                 id="receiver"
@@ -80,20 +91,21 @@ let { rawIntents, intents, validation } = stores
         {#if $validation.errors.receiver}
           <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
         {/if}
-        {#await $intents.channel}
-          <LoadingDots/>
-        {:then chan}
-        <pre>
-          {JSON.stringify(chan, null, 2)}
-        </pre>
-
-
-        {/await}
       </div>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        {#await $transferArgs}
+          <LoadingDots/>
+        {:then transferArgs}
+          <div class="flex-1 flex flex-col items-center">
+            <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
+          </div>
+          <Button
+                  disabled={!$validation.isValid}
+                  on:click={() => rotateTo("verifyFace")}>Transfer
+          </Button>
+        {/await}
     </div>
-    <Button
-            disabled={!$validation.isValid}
-            on:click={() => rotateTo("verifyFace")}>Transfer
-    </Button>
   </div>
 </div>

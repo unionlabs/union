@@ -20,7 +20,7 @@ export type FieldErrors = Partial<Record<keyof FormFields, string>>
 export interface ValidTransfer {
   sourceChain: Chain
   destinationChain: Chain
-  asset: BalanceData
+  asset: string
   receiver: string
   amount: string
   sender: string
@@ -75,27 +75,26 @@ export function createValidationStore(
 
     // Required fields when asset is selected
     if ($rawIntents.asset) {
-      if (!$intents.selectedAsset) errors.asset = "Asset not found in wallet"
       if (!$rawIntents.amount) errors.amount = "Amount is required"
       if (!$rawIntents.receiver) errors.receiver = "Receiver is required"
 
       // Amount validation
-      if ($rawIntents.amount && $intents.selectedAsset) {
-        try {
-          const parsedAmount = parseUnits(
-            $rawIntents.amount,
-            $intents.selectedAsset.metadata.decimals ?? 0
-          )
-          if (parsedAmount <= 0n) {
-            errors.amount = "Amount must be greater than 0"
-          }
-          if (parsedAmount > BigInt($intents.selectedAsset.balance)) {
-            errors.amount = "Amount exceeds balance"
-          }
-        } catch {
-          errors.amount = "Invalid amount"
-        }
-      }
+      // if ($rawIntents.amount) {
+      //   try {
+      //     const parsedAmount = parseUnits(
+      //       $rawIntents.amount,
+      //       $intents.selectedAsset.metadata.decimals ?? 0
+      //     )
+      //     if (parsedAmount <= 0n) {
+      //       errors.amount = "Amount must be greater than 0"
+      //     }
+      //     if (parsedAmount > BigInt($intents.selectedAsset.balance)) {
+      //       errors.amount = "Amount exceeds balance"
+      //     }
+      //   } catch {
+      //     errors.amount = "Invalid amount"
+      //   }
+      // }
 
       if ($rawIntents.receiver && $rawIntents.destination) {
         if (aptosChainId.includes($rawIntents.destination) && !isHex($rawIntents.receiver)) {
@@ -124,7 +123,7 @@ export function createValidationStore(
     ([$rawIntents, $intents, $context, $errors]) => {
       if (Object.keys($errors).length > 0) return undefined
 
-      if (!($intents.sourceChain && $intents.destinationChain && $intents.selectedAsset)) {
+      if (!($intents.sourceChain && $intents.destinationChain)) {
         return undefined
       }
 
@@ -134,7 +133,7 @@ export function createValidationStore(
       return {
         sourceChain: $intents.sourceChain,
         destinationChain: $intents.destinationChain,
-        asset: $intents.selectedAsset,
+        asset: $rawIntents.asset,
         receiver: $rawIntents.receiver,
         amount: $rawIntents.amount,
         sender

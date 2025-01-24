@@ -20,7 +20,7 @@ export let getSourceChain: Props["getSourceChain"]
 export let getDestinationChain: Props["getDestinationChain"]
 </script>
 
-<div class="flex flex-col gap-1">
+<div class="flex flex-col gap-2">
   <Button
           variant="outline"
           type="button"

@@ -3,7 +3,6 @@ import type { Chain } from "$lib/types"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import type { BalanceData } from "$lib/queries/balance"
-import { getChannelInfo, getRecommendedChannels } from "@unionlabs/client"
 
 export type AssetListItem = BalanceData & {
   sourceChain: Chain
@@ -16,7 +15,6 @@ export interface IntentsStore {
   baseTokens: Array<{ denom: string; balance: string }>
   receiver: string
   amount: string
-  channel: Readable<Promise<ReturnType<typeof getChannelInfo> | null>>
 }
 
 export function createIntentStore(
@@ -44,29 +42,15 @@ export function createIntentStore(
     return baseTokens
   })
 
-  const channel = derived(
-    [sourceChain, destinationChain],
-    async ([$sourceChain, $destinationChain]) => {
-      if ($sourceChain === null || $destinationChain === null) return null
-
-      const channels = await getRecommendedChannels()
-
-      console.log({ channels })
-      let channel = getChannelInfo($sourceChain?.chain_id, $destinationChain?.chain_id, channels)
-      return channel
-    }
-  )
-
   return derived(
-    [sourceChain, destinationChain, baseTokens, rawIntents, channel, context],
-    ([$sourceChain, $destinationChain, $baseTokens, $rawIntents, $channel, $context]) => ({
+    [sourceChain, destinationChain, baseTokens, rawIntents, context],
+    ([$sourceChain, $destinationChain, $baseTokens, $rawIntents, $context]) => ({
       chains: $context.chains,
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
       baseTokens: $baseTokens,
       receiver: $rawIntents.receiver,
-      amount: $rawIntents.amount,
-      channel: $channel
+      amount: $rawIntents.amount
     })
   )
 }

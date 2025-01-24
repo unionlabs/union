@@ -24,11 +24,10 @@ const stores = createTransferStore(chains, balances)
 
 let channel = derived(rawIntents, $rawIntents => {
   if (!($rawIntents.source && $rawIntents.destination)) return null
-
   return getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
 })
 
-let quoteToken = derived([rawIntents, channel], async ([$rawIntents, $channel]) => {
+let transferArgs = derived([rawIntents, channel], async ([$rawIntents, $channel]) => {
   if ($channel === null || $rawIntents.asset === null) return null
   const chain = chains.find(c => c.chain_id === $rawIntents.source)
   if (!chain) return null
@@ -41,21 +40,40 @@ let quoteToken = derived([rawIntents, channel], async ([$rawIntents, $channel]) 
 
   console.log({ baseToken })
 
-  return await getQuoteToken($rawIntents.source, baseToken, $channel)
+  const quoteToken = await getQuoteToken($rawIntents.source, baseToken, $channel)
+
+  if (quoteToken.isErr()) {
+    return null
+  }
+
+  let ucs03address =
+    chain.rpc_type === "cosmos"
+      ? fromHex(`0x${$channel.source_port_id}`, "string")
+      : `0x${$channel.source_port_id}`
+
+  return {
+    baseToken,
+    baseAmount: BigInt($rawIntents.amount),
+    quoteToken: quoteToken.value.quote_token,
+    quoteAmount: BigInt($rawIntents.amount),
+    receiver: $rawIntents.receiver,
+    sourceChannelId: $channel.source_channel_id,
+    ucs03address
+  }
 })
 </script>
 
 <div>{JSON.stringify($rawIntents)}</div>
 <div>{JSON.stringify($channel)}</div>
 
-{#await $quoteToken}
+{#await $transferArgs}
 loading..
 {:then quote}
-<div>{JSON.stringify(quote)}</div>
+<pre>{JSON.stringify(quote, null, 2)}</pre>
 {/await}
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
-    <Intent {stores} {rotateTo}/>
+    <Intent {chains} {transferArgs} {stores} {rotateTo}/>
   </div>
 
   <div slot="source" let:rotateTo class="w-full h-full">
