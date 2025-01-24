@@ -3,7 +3,7 @@ import { derived } from "svelte/store"
 import type { IntentsStore } from "./intents.ts"
 import type { Chain } from "$lib/types"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
-import { isHex, parseUnits } from "viem"
+import { isHex } from "viem"
 import {
   evmChainId,
   aptosChainId,
@@ -13,7 +13,6 @@ import {
 } from "@unionlabs/client"
 import type { FormFields, RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
-import type { BalanceData } from "$lib/queries/balance"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
