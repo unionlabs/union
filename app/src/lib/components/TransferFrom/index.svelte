@@ -11,9 +11,10 @@ import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 import { createRawIntentsStore } from "./transfer/raw-intents"
-import { derived } from "svelte/store"
+import { derived, writable, type Writable } from "svelte/store"
 import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
 import { fromHex, isHex, toHex } from "viem"
+import { subscribe } from "graphql"
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -27,7 +28,18 @@ let channel = derived(rawIntents, $rawIntents => {
   return getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
 })
 
-let transferArgs = derived([rawIntents, channel], async ([$rawIntents, $channel]) => {
+let transferArgs: Writable<{
+  baseToken: string
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  ucs03address: string
+} | null> = writable(null)
+
+rawIntents.subscribe(async () => {
+  transferArgs.set(null)
   if ($channel === null || $rawIntents.asset === null) return null
   const chain = chains.find(c => c.chain_id === $rawIntents.source)
   if (!chain) return null
@@ -51,7 +63,9 @@ let transferArgs = derived([rawIntents, channel], async ([$rawIntents, $channel]
       ? fromHex(`0x${$channel.source_port_id}`, "string")
       : `0x${$channel.source_port_id}`
 
-  return {
+  console.log("setting")
+
+  transferArgs.set({
     baseToken,
     baseAmount: BigInt($rawIntents.amount),
     quoteToken: quoteToken.value.quote_token,
@@ -59,21 +73,17 @@ let transferArgs = derived([rawIntents, channel], async ([$rawIntents, $channel]
     receiver: $rawIntents.receiver,
     sourceChannelId: $channel.source_channel_id,
     ucs03address
-  }
+  })
 })
 </script>
 
 <div>{JSON.stringify($rawIntents)}</div>
 <div>{JSON.stringify($channel)}</div>
+<div>{JSON.stringify($transferArgs)}</div>
 
-{#await $transferArgs}
-loading..
-{:then quote}
-<pre>{JSON.stringify(quote, null, 2)}</pre>
-{/await}
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
-    <Intent {chains} {transferArgs} {stores} {rotateTo}/>
+    <Intent {chains} {channel} transferArgs={$transferArgs} {stores} {rotateTo}/>
   </div>
 
   <div slot="source" let:rotateTo class="w-full h-full">
@@ -89,7 +99,9 @@ loading..
   </div>
 
   <div slot="transfer" let:rotateTo class="w-full h-full">
-    yay
+    {#if $transferArgs && $channel}
+      <Transfer channel={$channel} transferArgs={$transferArgs}/>
+    {/if}
   </div>
 </Cube>
 

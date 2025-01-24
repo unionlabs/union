@@ -10,7 +10,8 @@ import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-
 import { Input } from "$lib/components/ui/input"
 import LoadingDots from "$lib/components/loading-dots.svelte"
 import Token from "$lib/components/token.svelte"
-import type { Chain } from "$lib/types"
+import type { Chain, Ucs03Channel } from "$lib/types"
+import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 
 interface Props {
   stores: {
@@ -24,17 +25,16 @@ interface Props {
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 export let chains: Array<Chain>
-export let transferArgs: Readable<
-  Promise<{
-    baseToken: string
-    baseAmount: bigint
-    quoteToken: string
-    quoteAmount: bigint
-    receiver: string
-    sourceChannelId: number
-    ucs03address: string
-  }>
->
+export let channel: Readable<Ucs03Channel | null>
+export let transferArgs: {
+  baseToken: string
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  ucs03address: string
+} | null
 
 let { rawIntents, intents, validation } = stores
 </script>
@@ -95,17 +95,18 @@ let { rawIntents, intents, validation } = stores
       </div>
 
       <div class="flex flex-col gap-1">
-        {#await $transferArgs}
+        {#if !transferArgs}
           <LoadingDots/>
-        {:then transferArgs}
-          <div class="flex-1 flex flex-col items-center">
+        {:else}
+          <div class="flex-1 flex flex-col items-center text-xs">
+            <div class="flex gap-4 text-muted-foreground">{$channel?.source_connection_id} | {$channel?.source_channel_id} <ArrowRightIcon />{$channel?.destination_connection_id} | {$channel?.destination_channel_id}</div> 
             <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
           </div>
           <Button
                   disabled={!$validation.isValid}
                   on:click={() => rotateTo("verifyFace")}>Transfer
           </Button>
-        {/await}
+        {/if}
     </div>
   </div>
 </div>
