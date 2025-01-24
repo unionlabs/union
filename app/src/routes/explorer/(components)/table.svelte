@@ -76,7 +76,7 @@ onDestroy(unsubscribe)
     <Table.Root>
       <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row>
+          <Table.Row class="hover:bg-inherit">
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
