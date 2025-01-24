@@ -38,7 +38,7 @@ import {
   hexToBytes,
   getRecommendedChannels,
   getChannelInfo,
-  getQuoteToken
+  getQuoteToken,
 } from "@unionlabs/client"
 
 // Hasura endpoint
@@ -55,6 +55,7 @@ interface ChainPair {
   sourceChain: string
   destinationChain: string
   timeframeMs: number
+  enabled: boolean
 }
 
 // Shape of the EVM transfer config
@@ -335,25 +336,15 @@ async function doTransfer(task: TransferConfig) {
       return
     }
 
-    const quoteToken = await getQuoteToken(sourceChainId, task.destinationChainId, channel)
+    const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress, channel)
+
+    consola.info("quoteToken: ", quoteToken, " chainId: ", sourceChainId, " denomAddr: ", task.denomAddress, " channel: ", channel)
+
     if (quoteToken.isErr()) {
       consola.info("could not get quote token")
       consola.error(quoteToken.error)
       process.exit(1)
     }
-
-    const unionClient = isCosmosChain
-      ? createUnionClient({
-          account: cosmosAccount,
-          chainId: task.sourceChainIdCosmos,
-          gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
-          transport: transports[0]
-        })
-      : createUnionClient({
-          account: evmAccount,
-          chainId: task.sourceChainIdEVM,
-          transport: fallback(transports)
-        })
 
     const txPayload = isCosmosChain
       ? {
@@ -374,6 +365,28 @@ async function doTransfer(task: TransferConfig) {
           sourceChannelId: channel.source_channel_id,
           ucs03address: `0x${channel.source_port_id}` as `0x${string}`
         }
+    let unionClient = null
+    if (isCosmosChain){
+      unionClient = createUnionClient({
+          account: cosmosAccount,
+          chainId: task.sourceChainIdCosmos,
+          gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
+          transport: transports[0]
+        })
+
+    } else {
+      unionClient = createUnionClient({
+        account: evmAccount,
+        chainId: task.sourceChainIdEVM,
+        transport: fallback(transports)
+      });
+      const approveResponse = await unionClient.approveErc20(txPayload)
+      consola.info("approve response: ", approveResponse)
+      if (approveResponse.isErr()) {
+        consola.error(approveResponse.error)
+        return
+      }
+    }
 
     const transferResp = await unionClient.transferAsset(txPayload)
     if (transferResp.isErr()) {
@@ -397,6 +410,10 @@ async function runIbcChecksForever(config: ConfigFile) {
   while (true) {
     consola.info("\n========== Starting IBC cross-chain checks ==========")
     for (const pair of chainPairs) {
+      if(!pair.enabled){
+        consola.info("Checking task is disabled. Skipping.")
+        return
+      }
       consola.info(
         `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
       )
