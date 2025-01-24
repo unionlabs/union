@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@unionlabs/client": "^0.0.50",
+    "@unionlabs/client": "^0.0.51",
     "consola": "^3.4.0",
     "graphql-request": "^7.1.2",
     "neverthrow": "^8.1.1",
