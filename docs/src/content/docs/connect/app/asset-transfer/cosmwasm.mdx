@@ -199,10 +199,6 @@ RUSTFLAGS='-C target-cpu=mvp -C opt-level=z' cargo build \
     -Z build-std-features=panic_immediate_abort
 
 mkdir -p build
-
-wasm-opt target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
-    -o build/contract.wasm \
-    -O3 --converge
 ```
 
 The contract can now be deployed.
