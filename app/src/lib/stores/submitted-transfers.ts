@@ -9,7 +9,7 @@ export const submittedTransfers = persisted<
       source_chain_id: string
       destination_chain_id: string
       packet_send_transaction_hash: string
-      sender_noralized: string
+      sender_normalized: string
       transfer_day: string
       receiver_normalized: string
       base_token: string

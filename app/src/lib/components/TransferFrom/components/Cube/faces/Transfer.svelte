@@ -627,7 +627,7 @@ let stepperSteps = derived(transferState, $transferState => {
         <Token amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={channel.destination_chain_id} {chains}/>
       </div>
       <div>
-        <h3 class="font-supermolot font-bold uppercase text-xl">Receipient</h3>
+        <h3 class="font-supermolot font-bold uppercase text-xl">Recipient</h3>
         <Address showChain showRaw address={transferArgs.receiver} {chains} chainId={channel.destination_chain_id}/>
       </div>
     </div>
