@@ -12,7 +12,12 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 import { createRawIntentsStore } from "./transfer/raw-intents.ts"
 import { derived, writable, type Writable } from "svelte/store"
-import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
+import {
+  bech32AddressToHex,
+  getChannelInfo,
+  getQuoteToken,
+  isValidBech32Address
+} from "@unionlabs/client"
 import { fromHex, isHex, toHex } from "viem"
 import { subscribe } from "graphql"
 
@@ -61,6 +66,11 @@ rawIntents.subscribe(async () => {
     return null
   }
 
+  const receiver =
+    destChain.rpc_type === "cosmos" && isValidBech32Address($rawIntents.receiver)
+      ? bech32AddressToHex({ address: $rawIntents.receiver })
+      : $rawIntents.receiver
+
   let ucs03address =
     chain.rpc_type === "cosmos"
       ? fromHex(`0x${$channel.source_port_id}`, "string")
@@ -73,7 +83,7 @@ rawIntents.subscribe(async () => {
     baseAmount: BigInt($rawIntents.amount),
     quoteToken: quoteToken.value.quote_token,
     quoteAmount: BigInt($rawIntents.amount),
-    receiver: $rawIntents.receiver,
+    receiver,
     sourceChannelId: $channel.source_channel_id,
     ucs03address
   })
