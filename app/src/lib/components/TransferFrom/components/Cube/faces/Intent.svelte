@@ -28,15 +28,18 @@ export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 export let chains: Array<Chain>
 export let channel: Readable<Ucs03Channel | null>
-export let transferArgs: {
-  baseToken: string
-  baseAmount: bigint
-  quoteToken: string
-  quoteAmount: bigint
-  receiver: string
-  sourceChannelId: number
-  ucs03address: string
-} | null
+export let transferArgs:
+  | {
+      baseToken: string
+      baseAmount: bigint
+      quoteToken: string
+      quoteAmount: bigint
+      receiver: string
+      sourceChannelId: number
+      ucs03address: string
+    }
+  | "NO_QUOTE_AVAILABLE"
+  | null
 
 let { rawIntents, intents, validation } = stores
 </script>
@@ -106,6 +109,8 @@ let { rawIntents, intents, validation } = stores
           {:else}
             {#if !transferArgs}
               <LoadingDots/>
+            {:else if transferArgs === "NO_QUOTE_AVAILABLE"}
+              No quote token available for this pair
             {:else}
               <div class="flex-1 flex flex-col items-center text-xs">
                 <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
