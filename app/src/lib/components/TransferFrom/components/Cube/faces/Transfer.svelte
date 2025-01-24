@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
+import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { derived, get, type Readable, writable, type Writable } from "svelte/store"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import { Button } from "$lib/components/ui/button"
@@ -32,6 +33,8 @@ import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
 import Truncate from "$lib/components/truncate.svelte"
 import { type Chain, type Ucs03Channel } from "$lib/types"
+import Token from "$lib/components/token.svelte"
+import Address from "$lib/components/address.svelte"
 
 export let chains: Array<Chain>
 export let channel: Ucs03Channel
@@ -613,6 +616,31 @@ let stepperSteps = derived(transferState, $transferState => {
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
+    {#if $transferState.kind === "PRE_TRANSFER"}
+    <div class="flex flex-col gap-6">
+      <div>
+        <h3 class="font-supermolot font-bold uppercase text-xl">Base Asset</h3>
+        <Token amount={transferArgs.baseAmount} denom={transferArgs.baseToken} chainId={channel.source_chain_id} {chains}/>
+      </div>
+      <div>
+        <h3 class="font-supermolot font-bold uppercase text-xl">Quote Asset</h3>
+        <Token amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={channel.destination_chain_id} {chains}/>
+      </div>
+      <div>
+        <h3 class="font-supermolot font-bold uppercase text-xl">Receipient</h3>
+        <Address showChain showRaw address={transferArgs.receiver} {chains} chainId={channel.destination_chain_id}/>
+      </div>
+    </div>
+    <div class="flex flex-1 flex-col justify-end items-center">
+
+      <div class="flex gap-4 text-muted-foreground text-xs">{channel?.source_connection_id} | {channel?.source_channel_id} <ArrowRightIcon />{channel?.destination_connection_id} | {channel?.destination_channel_id}</div> 
+    </div>
+
+    <Button
+            class="w-full mt-2"
+            on:click={transfer}>Confirm Transfer
+    </Button>
+    {:else}
     <Stepper
             steps={stepperSteps}
             on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
@@ -625,11 +653,6 @@ let stepperSteps = derived(transferState, $transferState => {
               transfer()
             }}
     />
-    {#if $transferState.kind === "PRE_TRANSFER"}
-    <Button
-            class="w-full mt-2"
-            on:click={transfer}>Transfer
-    </Button>
     {/if}
 </div>
 
