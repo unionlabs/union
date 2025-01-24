@@ -7,19 +7,83 @@ import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.sv
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
-import type { Chain } from "$lib/types.ts"
+import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
+import { createRawIntentsStore } from "./transfer/raw-intents.ts"
+import { derived, writable, type Writable } from "svelte/store"
+import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
+import { fromHex, isHex, toHex } from "viem"
+import { subscribe } from "graphql"
 
 export let chains: Array<Chain>
+export let ucs03channels: Array<Ucs03Channel>
 
 let balances = userBalancesQuery({ chains, userAddr: $userAddress })
+const rawIntents = createRawIntentsStore()
 const stores = createTransferStore(chains, balances)
+
+let channel = derived(rawIntents, $rawIntents => {
+  if (!($rawIntents.source && $rawIntents.destination)) return null
+  return getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
+})
+
+let transferArgs: Writable<{
+  baseToken: string
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  ucs03address: string
+} | null> = writable(null)
+
+rawIntents.subscribe(async () => {
+  transferArgs.set(null)
+  if ($channel === null || $rawIntents.asset === null) return null
+  const chain = chains.find(c => c.chain_id === $rawIntents.source)
+  if (!chain) return null
+
+  // decode from hex if cosmos to assert proper quote token prediction.
+  let baseToken =
+    chain.rpc_type === "cosmos" && isHex($rawIntents.asset)
+      ? fromHex($rawIntents.asset, "string")
+      : $rawIntents.asset
+
+  console.log({ baseToken })
+
+  const quoteToken = await getQuoteToken($rawIntents.source, baseToken, $channel)
+
+  if (quoteToken.isErr()) {
+    return null
+  }
+
+  let ucs03address =
+    chain.rpc_type === "cosmos"
+      ? fromHex(`0x${$channel.source_port_id}`, "string")
+      : `0x${$channel.source_port_id}`
+
+  console.log("setting")
+
+  transferArgs.set({
+    baseToken,
+    baseAmount: BigInt($rawIntents.amount),
+    quoteToken: quoteToken.value.quote_token,
+    quoteAmount: BigInt($rawIntents.amount),
+    receiver: $rawIntents.receiver,
+    sourceChannelId: $channel.source_channel_id,
+    ucs03address
+  })
+})
 </script>
+
+<div>{JSON.stringify($rawIntents)}</div>
+<div>{JSON.stringify($channel)}</div>
+<div>{JSON.stringify($transferArgs)}</div>
 
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
-    <Intent {stores} {rotateTo}/>
+    <Intent {chains} {channel} transferArgs={$transferArgs} {stores} {rotateTo}/>
   </div>
 
   <div slot="source" let:rotateTo class="w-full h-full">
@@ -35,7 +99,9 @@ const stores = createTransferStore(chains, balances)
   </div>
 
   <div slot="transfer" let:rotateTo class="w-full h-full">
-    <Transfer {stores} {rotateTo}/>
+    {#if $transferArgs && $channel}
+      <Transfer channel={$channel} transferArgs={$transferArgs} {chains}/>
+    {/if}
   </div>
 </Cube>
 

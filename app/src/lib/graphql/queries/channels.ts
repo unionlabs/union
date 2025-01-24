@@ -34,3 +34,18 @@ export const channelsQuery =
       status
   }
 }`)
+
+export const recommendedUcs03ChannelsQueryDocument = graphql(/*  GraphQL */ `
+  query Ucs03Channels {
+    v1_ibc_union_channel_recommendations(where: {version: {_eq: "ucs03-zkgm-0"}}) {
+      source_port_id
+      source_chain_id
+      source_channel_id
+      source_connection_id
+      destination_port_id
+      destination_chain_id
+      destination_channel_id
+      destination_connection_id
+    }
+  }
+`)

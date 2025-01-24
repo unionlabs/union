@@ -17,8 +17,8 @@ export let amount: string | number | bigint | null = null
 export let expanded = false
 
 $: chain = chains.find(c => c.chain_id === chainId) ?? null
-$: graphqlToken = chain?.tokens.find(t => t.denom === denom) ?? null
-$: tokenInfo = tokenInfoQuery(chainId, denom, chains)
+$: graphqlToken = chain?.tokens.find(t => t.denom.toLowerCase() === denom.toLowerCase()) ?? null
+$: tokenInfo = tokenInfoQuery(chainId, denom.toLowerCase(), chains)
 </script>
 
 {#if $tokenInfo.data}

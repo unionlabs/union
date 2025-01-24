@@ -3,8 +3,8 @@ import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-inten
 export const TRANSFER_DEBUG = true
 
 export const defaultParams: FormFields = {
-  source: "union-testnet-9",
-  destination: "",
+  source: "17000",
+  destination: "11155111",
   asset: "",
   receiver: "",
   amount: ""

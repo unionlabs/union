@@ -1,4 +1,4 @@
-import type { Address } from "viem"
+import type { Address, Hex } from "viem"
 
 export interface TransferAsset {
   [symbol: string]: {
@@ -57,6 +57,17 @@ export type Chain = {
   addr_prefix: string
   assets: Array<ChainAsset>
   tokens: Array<ChainToken>
+}
+
+export type Ucs03Channel = {
+  source_connection_id: number
+  source_channel_id: number
+  source_chain_id: string
+  source_port_id: Hex
+  destination_connection_id: number
+  destination_channel_id: number
+  destination_chain_id: string
+  destination_port_id: Hex
 }
 
 /** @deprecated */

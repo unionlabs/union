@@ -8,6 +8,11 @@ import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
+import LoadingDots from "$lib/components/loading-dots.svelte"
+import Token from "$lib/components/token.svelte"
+import type { Chain, Ucs03Channel } from "$lib/types"
+import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
+import { toDisplayName } from "$lib/utilities/chains"
 
 interface Props {
   stores: {
@@ -20,6 +25,17 @@ interface Props {
 
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
+export let chains: Array<Chain>
+export let channel: Readable<Ucs03Channel | null>
+export let transferArgs: {
+  baseToken: string
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  ucs03address: string
+} | null
 
 let { rawIntents, intents, validation } = stores
 </script>
@@ -30,11 +46,11 @@ let { rawIntents, intents, validation } = stores
     <span class="font-bold uppercase">Transfer</span>
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
-    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
       <Direction {intents} {validation} {rawIntents} getSourceChain={() => rotateTo("sourceFace")}
                  getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {intents} {validation} {rawIntents} onSelectAsset={() => rotateTo("assetsFace")}/>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1 items-start">
         <Input
                 id="amount"
                 type="number"
@@ -58,9 +74,6 @@ let { rawIntents, intents, validation } = stores
         {#if $validation.errors.amount}
           <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
         {/if}
-      </div>
-
-      <div class="flex flex-col gap-1">
         <Input
                 type="text"
                 id="receiver"
@@ -80,10 +93,29 @@ let { rawIntents, intents, validation } = stores
           <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
         {/if}
       </div>
-    </div>
-    <Button
-            disabled={!$validation.isValid}
-            on:click={() => rotateTo("verifyFace")}>Transfer
-    </Button>
+      </div>
+
+      {#if !$channel}
+      <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)} to {toDisplayName($rawIntents.destination, chains)}</div>
+      {:else}
+        {#if !$rawIntents.asset}
+          Select an asset
+        {:else}
+        <div class="flex flex-col gap-1">
+          {#if !transferArgs}
+            <LoadingDots/>
+          {:else}
+            <div class="flex-1 flex flex-col items-center text-xs">
+              <div class="flex gap-4 text-muted-foreground">{$channel?.source_connection_id} | {$channel?.source_channel_id} <ArrowRightIcon />{$channel?.destination_connection_id} | {$channel?.destination_channel_id}</div> 
+              <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
+            </div>
+            <Button
+                    disabled={!$validation.isValid}
+                    on:click={() => rotateTo("verifyFace")}>Transfer
+            </Button>
+          {/if}
+      </div>
+      {/if}
+    {/if}
   </div>
 </div>
