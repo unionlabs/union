@@ -100,7 +100,7 @@ rawIntents.subscribe(async () => {
 
   <div slot="transfer" let:rotateTo class="w-full h-full">
     {#if $transferArgs && $channel}
-      <Transfer channel={$channel} transferArgs={$transferArgs}/>
+      <Transfer channel={$channel} transferArgs={$transferArgs} {chains}/>
     {/if}
   </div>
 </Cube>

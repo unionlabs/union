@@ -49,7 +49,7 @@ const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 function transfer() {
-  const sourceChain = chains.find(c => c.chain_id === sourceChain)
+  const sourceChain = chains.find(c => c.chain_id === channel.source_chain_id)
   if (!sourceChain) {
     toast.error("source chain not found")
     return
@@ -75,9 +75,20 @@ async function evmTransfer(sourceChain: Chain) {
   const approveResponse = await evmClient.approveErc20(transferArgs)
 
   if (approveResponse.isErr()) {
-    toast.error(approveResponse.error)
-    process.exit(1)
+    toast.error(approveResponse.error.name)
+    return
   }
+
+  toast.info(`approval tx hash ${approveResponse.value}`)
+
+  const transfer = await evmClient.transferAsset(transferArgs)
+
+  if (transfer.isErr()) {
+    toast.error(`${transfer.error}`)
+    return
+  }
+
+  toast.info(`approval tx hash ${transfer.value}`)
 }
 </script>
 
