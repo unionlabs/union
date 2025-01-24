@@ -25,7 +25,7 @@ These links are only valid if you run a local ethereum devnet on an x86 machine.
 
 > \[!NOTE\]
 > The addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
-> Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
+> Production contracts will get solely upgraded through the proxy and have the same addresses across networks.
 
 All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
 
