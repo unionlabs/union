@@ -1,6 +1,6 @@
 <script is:inline>
   const handleSubmit = async (event) => {
-    event.preventDefault()
+    event.preventDefault();
 
     const email = event.target.email.value;
     const payload = {
@@ -17,7 +17,7 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (response.ok) {
@@ -54,4 +54,3 @@
 
   <button type="submit">Submit</button>
 </form>
-

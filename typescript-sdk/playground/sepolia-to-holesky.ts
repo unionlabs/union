@@ -19,7 +19,7 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const BASE_TOKEN: `0x${string}` = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" 
+const BASE_TOKEN: `0x${string}` = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 const AMOUNT = 13n
 const RECEIVER = "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
 const SOURCE_CHAIN_ID = "11155111"
