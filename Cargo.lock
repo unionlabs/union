@@ -2866,7 +2866,6 @@ dependencies = [
  "serde-utils",
  "sha2 0.10.8",
  "tendermint-light-client-types",
- "tendermint-rpc",
  "thiserror",
  "tokio",
  "tonic",
@@ -4392,13 +4391,13 @@ dependencies = [
  "chain-utils",
  "chrono",
  "clap 4.5.4",
+ "cometbft-rpc",
  "prost 0.12.6",
  "protos",
  "recaptcha-verify",
  "serde",
  "serde_json",
  "subtle-encoding",
- "tendermint-rpc",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -5041,7 +5040,6 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
- "eyre",
  "paste",
 ]
 

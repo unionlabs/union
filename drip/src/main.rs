@@ -16,9 +16,9 @@ use chain_utils::cosmos_sdk::{
 };
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
+use cometbft_rpc::Client as CmtClient;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
@@ -295,7 +295,7 @@ pub struct Config {
 pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
-    pub ws_url: WebSocketClientUrl,
+    pub ws_url: String,
     pub grpc_url: String,
     pub gas_config: GasConfig,
     pub signer: H256,
@@ -317,7 +317,7 @@ pub struct CaptchaBypassSecret(pub String);
 struct ChainClient {
     pub chain: Chain,
     pub signer: CosmosSigner,
-    pub tm_client: WebSocketClient,
+    pub tm_client: CmtClient,
 }
 
 impl CosmosSdkChainRpcs for ChainClient {
@@ -329,7 +329,7 @@ impl CosmosSdkChainRpcs for ChainClient {
         self.chain.grpc_url.clone()
     }
 
-    fn tm_client(&self) -> &WebSocketClient {
+    fn tm_client(&self) -> &CmtClient {
         &self.tm_client
     }
 
@@ -340,13 +340,9 @@ impl CosmosSdkChainRpcs for ChainClient {
 
 impl ChainClient {
     pub async fn new(chain: &Chain) -> Self {
-        let (tm_client, driver) = WebSocketClient::builder(chain.ws_url.clone())
-            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-            .build()
+        let tm_client = CmtClient::new(chain.ws_url.clone())
             .await
             .expect("unable to create tm client");
-
-        tokio::spawn(async move { driver.run().await });
 
         let chain_id = tm_client
             .status()
