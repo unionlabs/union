@@ -613,9 +613,6 @@ let stepperSteps = derived(transferState, $transferState => {
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
- 
-  
-
     <Stepper
             steps={stepperSteps}
             on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
@@ -628,6 +625,11 @@ let stepperSteps = derived(transferState, $transferState => {
               transfer()
             }}
     />
-    <button on:click={transfer}>go</button>
+    {#if $transferState.kind === "PRE_TRANSFER"}
+    <Button
+            class="w-full mt-2"
+            on:click={transfer}>Transfer
+    </Button>
+    {/if}
 </div>
 
