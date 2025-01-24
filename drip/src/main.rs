@@ -1,5 +1,4 @@
 use std::{
-    borrow::{Borrow, BorrowMut},
     collections::HashMap,
     ffi::OsString,
     fmt,
@@ -109,11 +108,9 @@ async fn main() {
 
     for chain in config.chains.clone() {
         info!(chain_id = chain.id, "spawning worker for chain");
-        let config = config.clone();
         let pool = pool.clone();
         tokio::spawn(async move {
             loop {
-                let config = config.clone();
                 let pool = pool.clone();
 
                 info!("spawning worker thread");
@@ -420,12 +417,17 @@ struct SendRequest {
     pub amount: u64,
 }
 
+struct AggregatedSendRequest {
+    denom: String,
+    total_amount: u64,
+}
+
 trait SendRequestAggregator {
-    fn aggregate_by_denom(&self) -> Vec<(String, u64, Vec<(String, u64)>)>;
+    fn aggregate_by_denom(&self) -> Vec<AggregatedSendRequest>;
 }
 
 impl SendRequestAggregator for Vec<SendRequest> {
-    fn aggregate_by_denom(&self) -> Vec<(String, u64, Vec<(String, u64)>)> {
+    fn aggregate_by_denom(&self) -> Vec<AggregatedSendRequest> {
         let mut denom_map: HashMap<String, (u64, Vec<(String, u64)>)> = HashMap::new();
 
         // Iterate over the requests and populate the hashmap
@@ -439,7 +441,7 @@ impl SendRequestAggregator for Vec<SendRequest> {
 
         denom_map
             .into_iter()
-            .map(|(denom, (total_amount, receiver_list))| (denom, total_amount, receiver_list))
+            .map(|(denom, (total_amount, _))| AggregatedSendRequest { denom, total_amount })
             .collect()
     }
 }
@@ -455,9 +457,9 @@ impl ChainClient {
                 address: self.signer.to_string(),
                 coins: agg_reqs
                     .iter()
-                    .map(|(denom, amount, _)| protos::cosmos::base::v1beta1::Coin {
-                        denom: denom.to_string(),
-                        amount: amount.to_string(),
+                    .map(|agg_req| protos::cosmos::base::v1beta1::Coin {
+                        denom: agg_req.denom.to_string(),
+                        amount: agg_req.total_amount.to_string(),
                     })
                     .collect(),
             }],
