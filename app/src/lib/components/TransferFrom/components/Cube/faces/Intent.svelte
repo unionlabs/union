@@ -13,6 +13,7 @@ import Token from "$lib/components/token.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types"
 import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
+import Address from "$lib/components/address.svelte"
 
 interface Props {
   stores: {
@@ -109,6 +110,9 @@ let { rawIntents, intents, validation } = stores
               <div class="flex-1 flex flex-col items-center text-xs">
                 <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
               </div>
+              {#if $validation.isValid}
+                <Address address={transferArgs.receiver} {chains} chainId={$channel.destination_chain_id}/>
+              {/if}
               <Button
                       class="w-full mt-2"
                       disabled={!$validation.isValid}
