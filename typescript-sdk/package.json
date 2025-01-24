@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -41,7 +41,7 @@
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.22.10"
+    "viem": "^2.22.13"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",

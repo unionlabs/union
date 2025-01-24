@@ -31,8 +31,9 @@ import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/typ
 import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
 import Truncate from "$lib/components/truncate.svelte"
-import type { Ucs03Channel } from "$lib/types"
+import type { Chain, Ucs03Channel } from "$lib/types"
 
+export let chains: Array<Chain>
 export let channel: Ucs03Channel
 export let transferArgs: {
   baseToken: string
@@ -46,17 +47,49 @@ export let transferArgs: {
 
 const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
+
+function transfer() {
+  const sourceChain = chains.find(c => c.chain_id === sourceChain)
+  if (!sourceChain) {
+    toast.error("source chain not found")
+    return
+  }
+
+  if (sourceChain.rpc_type === "evm") {
+    evmTransfer(sourceChain)
+    return
+  }
+  toast.error("cosmos currently unsupported")
+}
+
+async function evmTransfer(sourceChain: Chain) {
+  const connectorClient = await getConnectorClient(config)
+  const selectedChain = evmChainFromChainId(sourceChain.chain_id)
+
+  const evmClient = createUnionClient({
+    account: connectorClient.account,
+    chainId: sourceChain.chain_id as EvmChainId,
+    transport: custom(window.ethereum)
+  })
+
+  const approveResponse = await evmClient.approveErc20(transferArgs)
+
+  if (approveResponse.isErr()) {
+    toast.error(approveResponse.error)
+    process.exit(1)
+  }
+}
 </script>
 
 <div class="h-full w-full flex flex-col justify-between p-4 overflow-y-scroll">
   {JSON.stringify(channel)}
   {JSON.stringify(transferArgs)}
-</div>
-
 <Button
     disabled={!transferArgs}
     on:click={() => transfer()}>Transfer
 </Button>
+</div>
+
 
 
 
