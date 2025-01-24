@@ -18,6 +18,7 @@ import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
 import Token from "./token.svelte"
+import Address from "./address.svelte"
 
 // prefix a source with 0x if not there for cosmos tx hashes
 const source = $page.params.source.startsWith("0x")
@@ -122,51 +123,11 @@ let processedTransfers = derived(
             <section class="flex flex-col lg:flex-row gap-8">
               <div class="flex-col text-muted-foreground">
                 <DetailsHeading>Sender</DetailsHeading>
-                {#if sourceExplorer !== undefined}
-                  <a
-                    href={`/explorer/address/${transfer.sender}`}
-                    class="block text-sm underline break-words"
-                    ><Truncate
-                      class="underline"
-                      value={transfer.sender}
-                      type="address"
-                    />
-                  </a>{:else}<p class="text-sm break-words">
-                    <Truncate value={transfer.sender} type="address" />
-                  </p>{/if}
-                <p
-                  class={cn(
-                    "text-[10px] break-words",
-                    "normalized_sender" in transfer &&
-                      transfer.normalized_sender
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent",
-                  )}
-                ></p>
+                <Address address={transfer.sender} {chains} chainId={transfer.source_chain_id}  />
               </div>
               <div class="flex-1 lg:text-right flex-col text-muted-foreground">
                 <DetailsHeading>Receiver</DetailsHeading>
-                {#if destinationExplorer !== undefined}
-                  <a
-                    href={`/explorer/address/${transfer.receiver}`}
-                    class="block text-sm underline break-words"
-                    ><Truncate
-                      class="underline"
-                      value={transfer.receiver}
-                      type="address"
-                    />
-                  </a>{:else}<p class="text-sm break-words">
-                    <Truncate value={transfer.receiver} type="address" />
-                  </p>{/if}
-                <p
-                  class={cn(
-                    "text-[10px] break-words",
-                    "normalized_receiver" in transfer &&
-                      transfer.normalized_receiver
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent",
-                  )}
-                ></p>
+                <Address address={transfer.receiver} {chains} chainId={transfer.destination_chain_id}  />
               </div>
             </section>
           </Card.Content>

@@ -3,6 +3,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Tooltip from "$lib/components/ui/tooltip"
 import type { Chain } from "$lib/types"
+import Address from "../address.svelte"
 
 export let chains: Array<Chain>
 export let value: {
@@ -20,12 +21,5 @@ const chainDisplayName =
     <div class="font-bold">
         {chainDisplayName}
     </div>
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <div>{truncate(value.address, 8)}</div>
-    </Tooltip.Trigger>
-    <Tooltip.Content>
-      <p>{value.address}</p>
-    </Tooltip.Content>
-  </Tooltip.Root>
+    <Address address={value.address} chainId={value.chainId} {chains}/>
 </div>
