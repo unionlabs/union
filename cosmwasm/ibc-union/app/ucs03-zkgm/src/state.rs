@@ -7,6 +7,7 @@ use unionlabs::primitives::Bytes;
 #[cw_serde]
 pub struct Config {
     pub ibc_host: Addr,
+    pub token_minter: Addr,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
