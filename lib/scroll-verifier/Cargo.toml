@@ -19,6 +19,7 @@ evm-storage-verifier      = { workspace = true }
 rlp                       = { workspace = true }
 scroll-codec              = { workspace = true }
 scroll-light-client-types = { workspace = true }
+slotlib                   = { workspace = true }
 thiserror                 = { workspace = true }
 unionlabs                 = { workspace = true }
 zktrie                    = { workspace = true }

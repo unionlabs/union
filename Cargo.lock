@@ -1391,6 +1391,7 @@ dependencies = [
  "evm-storage-verifier",
  "rlp",
  "sha3 0.10.8",
+ "slotlib",
  "thiserror",
  "unionlabs",
 ]
@@ -7041,6 +7042,7 @@ dependencies = [
  "linea-types",
  "linea-zktrie",
  "rlp",
+ "slotlib",
  "thiserror",
  "unionlabs",
 ]
@@ -10351,6 +10353,7 @@ dependencies = [
  "rlp",
  "scroll-codec",
  "scroll-light-client-types",
+ "slotlib",
  "thiserror",
  "unionlabs",
  "zktrie",
@@ -10900,6 +10903,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "slot-calculator"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "hex-literal",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "slotlib",
+ "typed-arena",
+ "unionlabs",
+]
+
+[[package]]
+name = "slotlib"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -12758,6 +12784,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "sha3 0.10.8",
+ "slotlib",
  "ssz",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subtle-encoding",

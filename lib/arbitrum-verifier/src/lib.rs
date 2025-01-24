@@ -3,10 +3,8 @@ use core::fmt::Debug;
 use arbitrum_light_client_types::{ClientState, Header};
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use sha3::{Digest, Keccak256};
-use unionlabs::{
-    ethereum::slot::{MappingKey, Slot},
-    primitives::{H256, U256},
-};
+use slotlib::{MappingKey, Slot};
+use unionlabs::primitives::{H256, U256};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
