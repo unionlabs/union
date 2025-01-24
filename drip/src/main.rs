@@ -130,7 +130,7 @@ async fn main() {
                                         "SELECT id, denom, address FROM requests 
                                      WHERE tx_hash IS NULL AND chain_id IS ?1 LIMIT ?2",
                                     )
-                                    .expect("???");
+                                    .expect("SQL statement is valid");
 
                                 let mut rows = stmt
                                     .query((&chain.id, batch_size as i64))
@@ -391,24 +391,6 @@ impl ChainClient {
     }
 }
 
-// impl CosmosSdkChainRpcs for Chain {
-//     fn tm_chain_id(&self) -> String {
-//         self.chain_id.clone()
-//     }
-
-//     fn grpc_url(&self) -> String {
-//         self.grpc_url.clone()
-//     }
-
-//     fn tm_client(&self) -> &WebSocketClient {
-//         &self.tm_client
-//     }
-
-//     fn gas_config(&self) -> &GasConfig {
-//         &self.gas_config
-//     }
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct SendRequest {
     pub id: i64,
@@ -517,7 +499,6 @@ impl Mutation {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
         let bypass_secret = ctx.data::<Option<CaptchaBypassSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
-        // let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
 
         // Get chain config
         let Some(chain) = self.chains.iter().find(|c| c.id == chain_id) else {
