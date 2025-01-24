@@ -33,15 +33,19 @@ let channel = derived(rawIntents, $rawIntents => {
   return getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
 })
 
-let transferArgs: Writable<{
-  baseToken: string
-  baseAmount: bigint
-  quoteToken: string
-  quoteAmount: bigint
-  receiver: string
-  sourceChannelId: number
-  ucs03address: string
-} | null> = writable(null)
+let transferArgs: Writable<
+  | {
+      baseToken: string
+      baseAmount: bigint
+      quoteToken: string
+      quoteAmount: bigint
+      receiver: string
+      sourceChannelId: number
+      ucs03address: string
+    }
+  | "NO_QUOTE_AVAILABLE"
+  | null
+> = writable(null)
 
 rawIntents.subscribe(async () => {
   transferArgs.set(null)
@@ -63,7 +67,13 @@ rawIntents.subscribe(async () => {
   const quoteToken = await getQuoteToken($rawIntents.source, baseToken, $channel)
 
   if (quoteToken.isErr()) {
-    return null
+    transferArgs.set(null)
+    return
+  }
+
+  if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+    transferArgs.set("NO_QUOTE_AVAILABLE")
+    return
   }
 
   const receiver =
@@ -75,8 +85,6 @@ rawIntents.subscribe(async () => {
     chain.rpc_type === "cosmos"
       ? fromHex(`0x${$channel.source_port_id}`, "string")
       : `0x${$channel.source_port_id}`
-
-  console.log("setting")
 
   transferArgs.set({
     baseToken,
