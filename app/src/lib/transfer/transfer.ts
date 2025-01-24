@@ -9,7 +9,13 @@ import {
   type Chain as ViemChain,
   type CustomTransport
 } from "viem"
-import { arbitrumSepolia, scrollSepolia, berachainTestnetbArtio, sepolia } from "viem/chains"
+import {
+  arbitrumSepolia,
+  scrollSepolia,
+  berachainTestnetbArtio,
+  sepolia,
+  holesky
+} from "viem/chains"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 
 export type TransferState = DiscriminatedUnion<
@@ -75,26 +81,28 @@ export const chainToViemChain = (chain: Chain): ViemChain => {
     ? sepolia
     : chain.chain_id === "80084"
       ? berachainTestnetbArtio
-      : chain.chain_id === "421614"
-        ? arbitrumSepolia
-        : chain.chain_id === "534351"
-          ? scrollSepolia
-          : defineChain({
-              name: chain.display_name,
-              nativeCurrency: {
-                name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
-                /** 2-6 characters long */
-                symbol: nativeCurrency.display_symbol,
-                decimals: nativeCurrency.decimals
-              },
-              id: Number(chain.chain_id),
-              rpcUrls: {
-                default: {
-                  http: rpcUrls
-                }
-              },
-              testnet: chain.testnet
-            })
+      : chain.chain_id === "17000"
+        ? holesky
+        : chain.chain_id === "421614"
+          ? arbitrumSepolia
+          : chain.chain_id === "534351"
+            ? scrollSepolia
+            : defineChain({
+                name: chain.display_name,
+                nativeCurrency: {
+                  name: nativeCurrency.display_name ?? nativeCurrency.display_symbol,
+                  /** 2-6 characters long */
+                  symbol: nativeCurrency.display_symbol,
+                  decimals: nativeCurrency.decimals
+                },
+                id: Number(chain.chain_id),
+                rpcUrls: {
+                  default: {
+                    http: rpcUrls
+                  }
+                },
+                testnet: chain.testnet
+              })
 }
 
 export const createViemClients = (

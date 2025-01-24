@@ -1,53 +1,56 @@
 <script is:inline>
   /** @param {Event} event */
-  const handleSubmit = async event => {
-    event.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     // @ts-ignore
-    const email = event.target.email.value
+    const email = event.target.email.value;
     const payload = {
       email,
-      audienceId: 'fce6d558-d118-4071-ae77-6b8b141550bd',
-    }
+      audienceId: "fce6d558-d118-4071-ae77-6b8b141550bd",
+    };
 
     try {
       const response = await fetch(
-        'https://uorqzpuryrgfnecadajo.supabase.co/functions/v1/email-signup',
+        "https://uorqzpuryrgfnecadajo.supabase.co/functions/v1/email-signup",
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
         },
-      )
+      );
 
       if (response.ok) {
-        console.log('Form submitted successfully')
-        const thanks = `<h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">Thanks for signing up!</h3>`
-        const div = document.querySelector('div[data-signup-form=""]')
-        if (!div) return
+        console.log("Form submitted successfully");
+        const thanks = `<h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">Thanks for signing up!</h3>`;
+        const div = document.querySelector('div[data-signup-form=""]');
+        if (!div) return;
 
-        console.info(div)
-        div.innerHTML = thanks
+        console.info(div);
+        div.innerHTML = thanks;
       } else {
-        console.error('Failed to submit form', await response.text())
+        console.error("Failed to submit form", await response.text());
       }
     } catch (error) {
-      console.error('An error occurred', error)
+      console.error("An error occurred", error);
     }
-  }
+  };
 
   // Add the event listener to the form on client load
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form')
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form");
     if (form) {
-      form.addEventListener('submit', handleSubmit)
+      form.addEventListener("submit", handleSubmit);
     }
-  })
+  });
 </script>
 
-<div class="size-full flex flex-col items-center justify-center space-y-4" data-signup-form>
+<div
+  class="size-full flex flex-col items-center justify-center space-y-4"
+  data-signup-form
+>
   <h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">
     Follow the latest developments
   </h3>

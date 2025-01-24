@@ -5,6 +5,10 @@ import { hexAddressToBech32 } from "@unionlabs/client"
 import { isHex } from "viem"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 
+import { highlightItem } from "$lib/stores/highlight"
+import { cn } from "$lib/utilities/shadcn"
+import Truncate from "./truncate.svelte"
+
 export let chains: Array<Chain>
 export let chainId: string
 export let address: string | null
@@ -19,7 +23,13 @@ const parsedAddress =
 const explorer = chain?.explorers?.at(0)?.address_url ?? null
 </script>
 
-<div class="flex flex-col text-xs">
+<!-- svelte-ignore a11y-interactive-supports-focus -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div class={cn("flex flex-col text-xs transition-colors", $highlightItem?.kind === "address" && $highlightItem.address === address  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}
+  on:mouseleave={() => highlightItem.set(null)}
+  on:mouseenter={() => {
+  highlightItem.set(address ? { kind: "address", address} : null)
+  }}>
   <div class="flex gap-1 items-center">
   {#if parsedAddress}
     {#if !chain}
@@ -28,17 +38,17 @@ const explorer = chain?.explorers?.at(0)?.address_url ?? null
       {#if !explorer}
         {parsedAddress}
       {:else}
-        <a class="underline" href={`${explorer}/${parsedAddress}`}>{parsedAddress}</a>
-      {/if}{#if showChain}<ArrowLeftIcon />{toDisplayName(
+        <a class="underline" on:click={(e) => e.stopPropagation()} href={`${explorer}${parsedAddress}`}><Truncate class="underline" value={parsedAddress} type="address"/></a>
+      {/if}{#if showChain}<span class="text-muted-foreground flex gap-1"><ArrowLeftIcon />{toDisplayName(
             chainId,
             chains,
-          )}{/if}
+          )}</span>{/if}
     {/if}
   {/if}
   </div>
     {#if address && showRaw}
     <div class="text-muted-foreground">
-        RAW: {address}
+        <Truncate value={address} type="address"/>
     </div>
     {/if}
 </div>
