@@ -1,13 +1,14 @@
-import { fromHex, http } from "viem"
+import { fromHex, http, toHex } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { createUnionClient, hexToBytes } from "#mod.ts"
+import { bech32AddressToHex, createUnionClient, hexToBytes } from "#mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { privateKeyToAccount } from "viem/accounts"
 
 // hack to encode bigints to json
 declare global {
@@ -36,11 +37,11 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const STARS_DENOM = "ustars"
-const AMOUNT = 420n
-const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-const SOURCE_CHAIN_ID = "elgafar-1"
-const DESTINATION_CHAIN_ID = "17000"
+const STARS_DENOM = "0xa3570de1c0603051a08a5b2aa1d9ddd4e4e5339d" // wrapped STARS on holesky
+const AMOUNT = 1n
+const RECEIVER = bech32AddressToHex({ address: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4" })
+const SOURCE_CHAIN_ID = "17000"
+const DESTINATION_CHAIN_ID = "elgafar-1"
 
 const channels = await getRecommendedChannels()
 
@@ -61,27 +62,39 @@ if (quoteToken.isErr()) {
 
 consola.info("quote token", quoteToken.value)
 
-if (!PRIVATE_KEY) {
-  consola.error("no private key provided")
-  process.exit(1)
-}
-
-const stargazeClient = createUnionClient({
-  chainId: SOURCE_CHAIN_ID,
-  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "stars"),
-  gasPrice: { amount: "0.025", denom: "ustars" },
-  transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
-})
-
-const transfer = await stargazeClient.transferAsset({
+const transferArgs = {
   baseToken: STARS_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
+  ucs03address: `0x${channel.source_port_id}`
+}
+
+consola.info("transfer args", transferArgs)
+
+if (!PRIVATE_KEY) {
+  consola.error("no private key provided")
+  process.exit(1)
+}
+
+const evmClient = createUnionClient({
+  chainId: SOURCE_CHAIN_ID,
+  account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
+  transport: http("https://rpc.17000.holesky.chain.kitchen")
 })
+
+const approveResponse = await evmClient.approveErc20(transferArgs)
+
+if (approveResponse.isErr()) {
+  consola.error(approveResponse.error)
+  process.exit(1)
+}
+
+consola.info("approval tx hash", approveResponse.value)
+
+const transfer = await evmClient.transferAsset(transferArgs)
 
 if (transfer.isErr()) {
   consola.info("transfer submission failed")
