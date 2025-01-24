@@ -15,19 +15,19 @@
       "sourceChainIdEVM": "17000",
       "destinationChainId": "11155111",
       "rpcs": ["https://rpc.17000.holesky.chain.kitchen"],
-      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-      "denomAddress": "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4",
+      "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
+      "denomAddress": "0x44f60170849229d59a36831605C9D83fC5aF0934",
       "amount_range": [1, 100],
       "gasPriceDenom": "--",
       "cosmosAccountType": "--"
     },
     {
-      "enabled": true,
+      "enabled": false,
       "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
       "sourceChainIdEVM": "11155111",
       "destinationChainId": "17000",
       "rpcs": ["https://rpc.11155111.sepolia.chain.kitchen"],
-      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
       "denomAddress": "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4",
       "amount_range": [1, 100],
       "gasPriceDenom": "--",
@@ -39,9 +39,9 @@
       "sourceChainIdCosmos": "elgafar-1",
       "destinationChainId": "17000",
       "rpcs": ["https://rpc.elgafar-1.stargaze.chain.kitchen"],
-      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
       "denomAddress": "ustars",
-      "amount_range": [1, 100],
+      "amount_range": [1000000, 1000000],
       "gasPriceDenom": "ustars",
       "cosmosAccountType": "stars"
     },
@@ -51,11 +51,35 @@
       "sourceChainIdCosmos": "bbn-test-5",
       "destinationChainId": "17000",
       "rpcs": ["https://rpc.bbn-test-5.babylon.chain.kitchen"],
-      "receiverAddress": "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+      "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
       "denomAddress": "ubbn",
-      "amount_range": [1, 100],
+      "amount_range": [1000000, 1000000],
       "gasPriceDenom": "ubbn",
       "cosmosAccountType": "bbn"
+    },
+    {
+      "enabled": true,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdEVM": "17000",
+      "destinationChainId": "bbn-test-5",
+      "rpcs": ["https://rpc.17000.holesky.chain.kitchen"],
+      "receiverAddress": "bbn14vcpe0yt8xdzaapm8yy6tm26sf45rdgu4u2ka9",
+      "denomAddress": "0x2520a4568143de9287ea8089aea59434e072363e",
+      "amount_range": [1, 10],
+      "gasPriceDenom": "---",
+      "cosmosAccountType": "---"
+    },
+    {
+      "enabled": true,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdEVM": "17000",
+      "destinationChainId": "elgafar-1",
+      "rpcs": ["https://rpc.17000.holesky.chain.kitchen"],
+      "receiverAddress": "stars14vcpe0yt8xdzaapm8yy6tm26sf45rdguk7v6fd",
+      "denomAddress": "0xa3570DE1c0603051A08A5b2aa1d9DdD4e4e5339D",
+      "amount_range": [1, 10],
+      "gasPriceDenom": "---",
+      "cosmosAccountType": "---"
     }
   ]
 }

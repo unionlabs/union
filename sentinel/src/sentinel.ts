@@ -336,7 +336,7 @@ async function doTransfer(task: TransferConfig) {
       return
     }
 
-    const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress, channel)
+    const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel)
 
     consola.info("quoteToken: ", quoteToken, " chainId: ", sourceChainId, " denomAddr: ", task.denomAddress, " channel: ", channel)
 
