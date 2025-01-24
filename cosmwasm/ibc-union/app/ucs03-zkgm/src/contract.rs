@@ -6,7 +6,7 @@ use base58::ToBase58;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Reply,
-    Response, StdError, SubMsg, SubMsgResult, Uint128, Uint256,
+    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -386,14 +386,14 @@ fn refund(
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
         let minter = CONFIG.load(deps.storage)?.token_minter;
-        messages.push(
+        messages.push(make_wasm_msg(
             TokenFactoryMsg::MintTokens {
                 denom: base_denom,
                 amount: base_amount.into(),
                 mint_to_address: sender.into_string(),
-            }
-            .into_wasm(minter)?,
-        );
+            },
+            minter,
+        )?);
     } else {
         messages.push(
             BankMsg::Send {
@@ -444,14 +444,14 @@ fn acknowledge_fungible_asset_order(
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
                         let minter = CONFIG.load(deps.storage)?.token_minter;
-                        messages.push(
+                        messages.push(make_wasm_msg(
                             TokenFactoryMsg::MintTokens {
                                 denom: base_denom,
                                 amount: base_amount.into(),
                                 mint_to_address: market_maker.into_string(),
-                            }
-                            .into_wasm(minter)?,
-                        );
+                            },
+                            minter,
+                        )?);
                     } else {
                         messages.push(
                             BankMsg::Send {
@@ -717,13 +717,13 @@ fn execute_fungible_asset_order(
                 subdenom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
-            messages.push(
+            messages.push(make_wasm_msg(
                 TokenFactoryMsg::CreateDenom {
                     subdenom: wrapped_denom,
-                }
-                .into_wasm(&minter)?,
-            );
-            messages.push(
+                },
+                &minter,
+            )?);
+            messages.push(make_wasm_msg(
                 TokenFactoryMsg::SetDenomMetadata {
                     denom: subdenom.clone(),
                     metadata: Metadata {
@@ -736,32 +736,32 @@ fn execute_fungible_asset_order(
                         uri: None,
                         uri_hash: None,
                     },
-                }
-                .into_wasm(&minter)?,
-            );
+                },
+                &minter,
+            )?);
             TOKEN_ORIGIN.save(
                 deps.storage,
                 subdenom.clone(),
                 &Uint256::from_u128(packet.destination_channel_id as _),
             )?;
         };
-        messages.push(
+        messages.push(make_wasm_msg(
             TokenFactoryMsg::MintTokens {
                 denom: subdenom.clone(),
                 amount: quote_amount.into(),
                 mint_to_address: receiver.into_string(),
-            }
-            .into_wasm(&minter)?,
-        );
+            },
+            &minter,
+        )?);
         if fee_amount > 0 {
-            messages.push(
+            messages.push(make_wasm_msg(
                 TokenFactoryMsg::MintTokens {
                     denom: subdenom,
                     amount: fee_amount.into(),
                     mint_to_address: relayer.into_string(),
-                }
-                .into_wasm(&minter)?,
-            );
+                },
+                &minter,
+            )?);
         }
     } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
         let quote_token = String::from_utf8(Vec::from(order.quote_token))
@@ -913,14 +913,14 @@ fn transfer(
             if path == Uint256::from(channel_id)
                 && unwrapped_asset == Some(quote_token.clone()) =>
         {
-            messages.push(
+            messages.push(make_wasm_msg(
                 TokenFactoryMsg::BurnTokens {
                     denom: base_token.clone(),
                     amount: base_amount,
                     burn_from_address: env.contract.address.into_string(),
-                }
-                .into_wasm(&minter)?,
-            )
+                },
+                &minter,
+            )?)
         }
         // Escrow and update the balance, the counterparty will mint the token
         _ => {
@@ -993,4 +993,8 @@ fn transfer(
         .into(),
     );
     Ok(Response::new().add_messages(messages))
+}
+
+fn make_wasm_msg(msg: TokenFactoryMsg, minter: impl Into<String>) -> StdResult<CosmosMsg> {
+    Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, vec![])?))
 }

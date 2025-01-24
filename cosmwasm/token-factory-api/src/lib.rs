@@ -1,7 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Coin, CosmosMsg, CustomMsg, CustomQuery, Empty, QueryRequest,
-    StdError, StdResult, Uint128,
+    to_json_binary, Coin, CustomMsg, CustomQuery, Empty, QueryRequest, StdResult, Uint128,
 };
 
 /// Special messages to be supported by any chain that supports token_factory
@@ -89,16 +88,6 @@ pub struct DenomUnit {
 #[cw_serde]
 pub struct Params {
     pub denom_creation_fee: Vec<Coin>,
-}
-
-impl TokenFactoryMsg {
-    pub fn into_wasm(self, contract_addr: impl Into<String>) -> Result<CosmosMsg, StdError> {
-        Ok(CosmosMsg::Wasm(wasm_execute(contract_addr, &self, vec![])?))
-    }
-
-    pub fn into_custom(self) -> CosmosMsg<TokenFactoryMsg> {
-        CosmosMsg::Custom(self)
-    }
 }
 
 impl CustomMsg for TokenFactoryMsg {}

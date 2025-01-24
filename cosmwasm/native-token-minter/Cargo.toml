@@ -1,0 +1,16 @@
+[package]
+name = "native-token-minter"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+cosmwasm-std = { workspace = true, features = [ "std" ] }
+token-factory-api = { workspace = true }
+cosmwasm-schema = { workspace = true }
+
+[lints]
+workspace = true

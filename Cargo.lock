@@ -7899,6 +7899,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-token-minter"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "token-factory-api",
+]
+
+[[package]]
 name = "near-account-id"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

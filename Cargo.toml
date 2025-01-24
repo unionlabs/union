@@ -175,7 +175,7 @@ members = [
   "lib/ibc-classic-spec",
   "lib/state-lens-light-client-types",
   "lib/create3",
-  "lib/linea-types",
+  "lib/linea-types", "cosmwasm/native-token-minter",
 ]
 
 [workspace.package]
