@@ -67,11 +67,13 @@ rawIntents.subscribe(async () => {
   const quoteToken = await getQuoteToken($rawIntents.source, baseToken, $channel)
 
   if (quoteToken.isErr()) {
-    return null
+    transferArgs.set(null)
+    return;
   }
 
   if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
-    return "NO_QUOTE_AVAILABLE"
+    transferArgs.set("NO_QUOTE_AVAILABLE")
+    return;
   }
 
   const receiver =
@@ -84,7 +86,6 @@ rawIntents.subscribe(async () => {
       ? fromHex(`0x${$channel.source_port_id}`, "string")
       : `0x${$channel.source_port_id}`
 
-  console.log("setting")
 
   transferArgs.set({
     baseToken,

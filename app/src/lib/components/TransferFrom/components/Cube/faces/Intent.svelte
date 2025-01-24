@@ -110,7 +110,7 @@ let { rawIntents, intents, validation } = stores
             {#if !transferArgs}
               <LoadingDots/>
             {:else if transferArgs === "NO_QUOTE_AVAILABLE"}
-              No quote token available for this pair
+              <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is currently not supported and will be enabled in an update soon.</div>
             {:else}
               <div class="flex-1 flex flex-col items-center text-xs">
                 <Token amount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
