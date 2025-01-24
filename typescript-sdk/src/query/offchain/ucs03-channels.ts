@@ -94,7 +94,7 @@ export const getQuoteToken = async (
 
   // HACK: to check evm vs cosmos we check if te destination chain id  is a number
   if (!isPositiveInteger(channel.destination_chain_id)) {
-    // we donn't support sending new assets to cosmos chains yet.
+    // we do not support sending new assets to cosmos chains yet.
     return ok({ type: "NO_QUOTE_AVAILABLE" })
   }
 
