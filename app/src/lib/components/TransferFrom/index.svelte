@@ -68,12 +68,12 @@ rawIntents.subscribe(async () => {
 
   if (quoteToken.isErr()) {
     transferArgs.set(null)
-    return;
+    return
   }
 
   if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
     transferArgs.set("NO_QUOTE_AVAILABLE")
-    return;
+    return
   }
 
   const receiver =
@@ -85,7 +85,6 @@ rawIntents.subscribe(async () => {
     chain.rpc_type === "cosmos"
       ? fromHex(`0x${$channel.source_port_id}`, "string")
       : `0x${$channel.source_port_id}`
-
 
   transferArgs.set({
     baseToken,
