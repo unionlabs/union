@@ -194,6 +194,7 @@ members = [
   "cosmwasm/cw20-base",
   "lib/scroll-types",
   "lib/fork-schedules",
+  "lib/depolama",
 ]
 
 [workspace.package]

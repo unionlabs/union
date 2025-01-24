@@ -4531,6 +4531,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "depolama"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.1.4",
+ "unionlabs",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "der"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
