@@ -17,7 +17,7 @@ This tutorial assumes ucs03-zkgm has been deployed to the EVM you're deploying y
 
 # Transfer
 
-To demonstrate asset transfers with ucs03, this tutorial will walk you through creating a simple contract that sends USDC to Union.
+To demonstrate asset transfers with ucs03, this tutorial will walk you through creating a simple contract that sends UNO to Union.
 
 ## Project Bootstrapping
 
@@ -49,7 +49,7 @@ This will create a project with the following folder structure.
 
 ### Contract Source
 
-This demonstrates creating an interface, `Ucs03` to expose the transfer function from the already deployed ucs03-zkgm contract. Using the exposed interface of ucs03-zkgm, this contract has a function `transferAsset` to conduct a set transfer of 1 USDC.
+This demonstrates creating an interface, `Ucs03` to expose the transfer function from the already deployed ucs03-zkgm contract. Using the exposed interface of ucs03-zkgm, this contract has a function `transferAsset` to conduct a set transfer of 1 UNO.
 
 This tutorial only takes advantage of the `transfer` function from ucs03-zkgm. To see a full list of functions made available by ucs03-zkgm, refer to the solidity contract in our [repository](https://github.com/unionlabs/union/blob/49dfa17d04b52509e5122d13e79bfc4a65d4a811/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L296)
 
@@ -105,14 +105,14 @@ import {Transfer} from "../src/Transfer.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
 contract TransferScript is Script {
-  address public constant USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+  address public constant UNO = 0xF2865969cF99A28Bb77e25494fE12D5180fE0efD;
 
   function run() public {
     uint256 privateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(privateKey);
     Transfer transfer = new Transfer();
 
-    IERC20(USDC).transfer(address(transfer), 1500000);
+    IERC20(UNO).transfer(address(transfer), 1500000);
 
     console.log("transferring");
     transfer.transferAsset();
