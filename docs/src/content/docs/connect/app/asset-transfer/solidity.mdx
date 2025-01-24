@@ -121,3 +121,14 @@ contract TransferScript is Script {
   }
 }
 ```
+
+## Deploying the contract
+
+The contract can then be deployed to Holesky as follows.
+
+```sh
+forge script script/Transfer.s.sol:TransferScript \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast
+```
