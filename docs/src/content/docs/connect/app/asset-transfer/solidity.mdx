@@ -73,23 +73,23 @@ interface Ucs03 {
 }
 
 contract Transfer {
-  address public constant relay = 0xD0081080Ae8493cf7340458Eaf4412030df5FEEb;
-  address public constant usdc = 0xa833B03D8ED1228C4791cBfAb22b3ED57954429F;
-  address public constant receiver = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    address public constant relay = 0x7B7872fEc715C787A1BE3f062AdeDc82b3B06144;
+    address public constant muno = 0xF2865969cF99A28Bb77e25494fE12D5180fE0efD;
+    bytes32 public constant salt = bytes32("0xF2865969cF99A28Bb77e25494fE1");
 
   function transferAsset() public {
-    IERC20(usdc).approve(relay, 1000000);
+    IERC20(muno).approve(relay, 1000000);
 
     Ucs03(relay).transfer(
       90,
-      hex"a833B03D8ED1228C4791cBfAb22b3ED57954429F",
-      receiver,
+      hex"1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      muno,
       1000000,
-      "usdc",
+      "muno",
       1000000,
-      1000000,
-      0,
-      bytes32("")
+      1000000000000,
+      2737670312,
+      salt
     );
   }
 }
