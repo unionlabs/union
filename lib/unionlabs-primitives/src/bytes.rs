@@ -1,5 +1,7 @@
 use alloc::borrow::Cow;
-use core::{cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr};
+use core::{
+    array::TryFromSliceError, cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr,
+};
 
 use crate::{
     encoding::{Encoding, HexPrefixed},
@@ -244,6 +246,22 @@ impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes
 
     fn try_from(value: Bytes<EBytes>) -> Result<Self, Self::Error> {
         Self::try_from(value.into_vec())
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> TryFrom<Bytes<E>> for [u8; BYTES] {
+    type Error = Bytes<E>;
+
+    fn try_from(value: Bytes<E>) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_vec()).map_err(Bytes::new)
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> TryFrom<&Bytes<E>> for [u8; BYTES] {
+    type Error = TryFromSliceError;
+
+    fn try_from(value: &Bytes<E>) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_ref())
     }
 }
 

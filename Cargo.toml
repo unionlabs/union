@@ -192,6 +192,7 @@ members = [
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/cw20-base",
   "lib/scroll-types",
+  "lib/depolama",
 ]
 
 [workspace.package]
