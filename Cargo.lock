@@ -7950,6 +7950,8 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "thiserror",
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
 ]

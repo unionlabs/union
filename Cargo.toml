@@ -175,7 +175,10 @@ members = [
   "lib/ibc-classic-spec",
   "lib/state-lens-light-client-types",
   "lib/create3",
-  "lib/linea-types", "cosmwasm/native-token-minter", "cosmwasm/cw20-token-minter", "cosmwasm/ucs03-zkgm-token-minter-api",
+  "lib/linea-types",
+  "cosmwasm/native-token-minter",
+  "cosmwasm/cw20-token-minter",
+  "cosmwasm/ucs03-zkgm-token-minter-api",
 ]
 
 [workspace.package]
@@ -244,7 +247,7 @@ ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = 
 ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
 ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
 
-ucs03-zkgm-token-minter-api          = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
+ucs03-zkgm-token-minter-api = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }

@@ -4,7 +4,7 @@ use cosmwasm_std::{
     MessageInfo, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg,
 };
 use token_factory_api::TokenFactoryMsg;
-use ucs03_zkgm_msg::{ExecuteMsg, LocalTokenMsg};
+use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg};
 
 use crate::{
     error::Error,

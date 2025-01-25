@@ -10,6 +10,8 @@ version                = "0.0.0"
 [dependencies]
 cosmwasm-schema             = { version = "1.5" }
 cosmwasm-std                = { version = "1.5" }
+cw-storage-plus             = { version = "1.2" }
+thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 
