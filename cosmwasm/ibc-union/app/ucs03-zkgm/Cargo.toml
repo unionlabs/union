@@ -18,19 +18,19 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy             = { workspace = true, features = ["sol-types"] }
-base58            = { version = "0.2" }
-cosmwasm-schema   = { version = "1.5" }
-cosmwasm-std      = { version = "1.5" }
-cw-storage-plus   = { version = "1.2" }
-ethabi            = { workspace = true }
-ibc-union-msg     = { workspace = true }
-ibc-union-spec    = { workspace = true, features = ["serde"] }
-serde             = { workspace = true, features = ["derive"] }
-thiserror         = { workspace = true }
-token-factory-api = { workspace = true }
-unionlabs         = { workspace = true, features = ["ethabi"] }
-ucs03-zkgm-msg = { workspace = true }
+alloy                       = { workspace = true, features = ["sol-types"] }
+base58                      = { version = "0.2" }
+cosmwasm-schema             = { version = "1.5" }
+cosmwasm-std                = { version = "1.5" }
+cw-storage-plus             = { version = "1.2" }
+ethabi                      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+ibc-union-spec              = { workspace = true, features = ["serde"] }
+serde                       = { workspace = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+token-factory-api           = { workspace = true }
+ucs03-zkgm-token-minter-api = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 hex        = { workspace = true }

@@ -1,22 +1,22 @@
 [package]
-name = "cw20-token-minter"
-version = "0.1.0"
-authors.workspace = true
-edition.workspace = true
+authors.workspace      = true
+edition.workspace      = true
 license-file.workspace = true
-publish.workspace = true
-repository.workspace = true
+name                   = "cw20-token-minter"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-cosmwasm-std = { version = "1.5" }
-cw20 = "1.1.2"
-cw20-base = { version = "1.1.2", features = ["library"] }
-token-factory-api = { workspace = true }
-cosmwasm-schema = { version = "1.5" }
-cw-storage-plus   = { version = "1.2" }
-serde = { workspace = true, features = [ "derive" ] }
-thiserror = { workspace = true}
-ucs03-zkgm-msg = { workspace = true }
+cosmwasm-schema             = { version = "1.5" }
+cosmwasm-std                = { version = "1.5" }
+cw-storage-plus             = { version = "1.2" }
+cw20                        = "1.1.2"
+cw20-base                   = { version = "1.1.2", features = ["library"] }
+serde                       = { workspace = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+token-factory-api           = { workspace = true }
+ucs03-zkgm-token-minter-api = { workspace = true }
 
 [lints]
 workspace = true

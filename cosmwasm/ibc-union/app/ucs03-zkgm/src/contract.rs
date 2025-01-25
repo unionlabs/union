@@ -14,7 +14,7 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::types::Packet;
 use token_factory_api::{Metadata, MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
-use ucs03_zkgm_msg::LocalTokenMsg;
+use ucs03_zkgm_token_minter_api::LocalTokenMsg;
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -1009,7 +1009,7 @@ fn transfer(
 }
 
 fn make_wasm_msg(
-    msg: impl Into<ucs03_zkgm_msg::ExecuteMsg>,
+    msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
     minter: impl Into<String>,
     funds: Vec<Coin>,
 ) -> StdResult<CosmosMsg> {

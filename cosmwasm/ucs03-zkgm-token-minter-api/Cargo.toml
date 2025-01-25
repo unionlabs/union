@@ -1,5 +1,5 @@
 [package]
-name = "ucs03-zkgm-msg"
+name = "ucs03-zkgm-token-minter-api"
 version = "0.1.0"
 authors.workspace = true
 edition.workspace = true
