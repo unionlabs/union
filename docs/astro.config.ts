@@ -148,46 +148,6 @@ export default defineConfig({
               link: "/"
             },
             {
-              label: "Connect",
-              items: [
-                {
-                  label: "Apps",
-                  items: [
-                    {
-                      label: "Asset Transfer",
-                      items: [
-                        {
-                          label: "Introduction",
-                          link: "/connect/app/asset-transfer"
-                        },
-                        {
-                          label: "CosmWasm",
-                          link: "/connect/app/asset-transfer/cosmwasm"
-                        },
-                        {
-                          label: "Solidity",
-                          link: "/connect/app/asset-transfer/solidity"
-                        }
-                      ]
-                    }
-                    // {
-                    //   label: "Custom Data",
-                    //   items: [
-                    //     {
-                    //       label: "Introduction",
-                    //       link: "/connect/app/custom-data"
-                    //     }
-                    //   ]
-                    // }
-                  ]
-                }
-                // {
-                //   label: "New Chain",
-                //   link: "/connect/new-chain"
-                // }
-              ]
-            },
-            {
               label: "Protocol",
               items: [
                 {
@@ -219,6 +179,46 @@ export default defineConfig({
               autogenerate: {
                 directory: "/architecture"
               }
+            },
+            {
+              label: "Connect",
+              items: [
+                {
+                  label: "Apps",
+                  items: [
+                    {
+                      label: "Asset Transfer",
+                      items: [
+                        {
+                          label: "Introduction",
+                          link: "/connect/app/asset-transfer"
+                        },
+                        {
+                          label: "Solidity",
+                          link: "/connect/app/asset-transfer/solidity"
+                        },
+                        {
+                          label: "CosmWasm",
+                          link: "/connect/app/asset-transfer/cosmwasm"
+                        }
+                      ]
+                    }
+                    // {
+                    //   label: "Custom Data",
+                    //   items: [
+                    //     {
+                    //       label: "Introduction",
+                    //       link: "/connect/app/custom-data"
+                    //     }
+                    //   ]
+                    // }
+                  ]
+                }
+                // {
+                //   label: "New Chain",
+                //   link: "/connect/new-chain"
+                // }
+              ]
             },
             {
               label: "Concepts",
@@ -253,20 +253,6 @@ export default defineConfig({
                   label: "TypeScript SDK",
                   link: "/integrations/typescript",
                   badge: { variant: "success", text: "new" }
-                },
-                {
-                  label: "UCS01",
-                  badge: { variant: "success", text: "new" },
-                  items: [
-                    {
-                      label: "Solidity",
-                      link: "/integrations/ucs01/solidity"
-                    },
-                    {
-                      label: "CosmWasm",
-                      link: "/integrations/ucs01/cosmwasm"
-                    }
-                  ]
                 },
                 {
                   label: "API",
