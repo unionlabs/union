@@ -175,7 +175,7 @@ members = [
   "lib/ibc-classic-spec",
   "lib/state-lens-light-client-types",
   "lib/create3",
-  "lib/linea-types", "cosmwasm/native-token-minter",
+  "lib/linea-types", "cosmwasm/native-token-minter", "cosmwasm/cw20-token-minter", "cosmwasm/ucs03-zkgm-msg",
 ]
 
 [workspace.package]
@@ -243,6 +243,8 @@ ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
 ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = false }
 ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
 ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
+
+ucs03-zkgm-msg          = { path = "cosmwasm/ucs03-zkgm-msg", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }

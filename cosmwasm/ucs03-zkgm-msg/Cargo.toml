@@ -1,6 +1,6 @@
 [package]
-name = "native-token-minter"
-version = "0.0.0"
+name = "ucs03-zkgm-msg"
+version = "0.1.0"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -8,10 +8,10 @@ publish.workspace = true
 repository.workspace = true
 
 [dependencies]
-cosmwasm-std = { version = "1.5" }
 token-factory-api = { workspace = true }
+cosmwasm-std = { version = "1.5" }
 cosmwasm-schema = { version = "1.5" }
-ucs03-zkgm-msg = { workspace = true }
+enumorph = { workspace = true }
 
 [lints]
 workspace = true

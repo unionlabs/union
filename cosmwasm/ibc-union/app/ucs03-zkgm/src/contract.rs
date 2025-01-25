@@ -5,8 +5,8 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
+    to_json_binary, to_json_string, wasm_execute, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
+    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -14,6 +14,7 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::types::Packet;
 use token_factory_api::{Metadata, MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
+use ucs03_zkgm_msg::LocalTokenMsg;
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -374,6 +375,8 @@ fn refund(
     source_channel: u32,
     order: FungibleAssetOrder,
 ) -> Result<Response, ContractError> {
+    // 1. Native minter + sent native tokens: correct
+    // 2. Cw20 minter + sent native tokens:
     let sender = deps
         .api
         .addr_validate(str::from_utf8(&order.sender).map_err(|_| ContractError::InvalidSender)?)
@@ -383,9 +386,9 @@ fn refund(
     let base_denom = String::from_utf8(order.base_token.to_vec())
         .map_err(|_| ContractError::InvalidBaseToken)?;
     let mut messages = Vec::<CosmosMsg>::new();
+    let minter = CONFIG.load(deps.storage)?.token_minter;
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
-        let minter = CONFIG.load(deps.storage)?.token_minter;
         messages.push(make_wasm_msg(
             TokenFactoryMsg::MintTokens {
                 denom: base_denom,
@@ -393,18 +396,18 @@ fn refund(
                 mint_to_address: sender.into_string(),
             },
             minter,
+            vec![],
         )?);
     } else {
-        messages.push(
-            BankMsg::Send {
-                to_address: sender.into_string(),
-                amount: vec![Coin {
-                    denom: base_denom,
-                    amount: base_amount.into(),
-                }],
-            }
-            .into(),
-        );
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Transfer {
+                denom: base_denom,
+                recipient: sender.into_string(),
+                amount: base_amount.into(),
+            },
+            minter,
+            vec![],
+        )?);
     }
     Ok(Response::new().add_messages(messages))
 }
@@ -441,9 +444,9 @@ fn acknowledge_fungible_asset_order(
                         .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
                     let base_denom = String::from_utf8(order.base_token.to_vec())
                         .map_err(|_| ContractError::InvalidBaseToken)?;
+                    let minter = CONFIG.load(deps.storage)?.token_minter;
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
-                        let minter = CONFIG.load(deps.storage)?.token_minter;
                         messages.push(make_wasm_msg(
                             TokenFactoryMsg::MintTokens {
                                 denom: base_denom,
@@ -451,18 +454,18 @@ fn acknowledge_fungible_asset_order(
                                 mint_to_address: market_maker.into_string(),
                             },
                             minter,
+                            vec![],
                         )?);
                     } else {
-                        messages.push(
-                            BankMsg::Send {
-                                to_address: market_maker.into_string(),
-                                amount: vec![Coin {
-                                    denom: base_denom,
-                                    amount: base_amount.into(),
-                                }],
-                            }
-                            .into(),
-                        );
+                        messages.push(make_wasm_msg(
+                            LocalTokenMsg::Transfer {
+                                denom: base_denom,
+                                recipient: market_maker.into_string(),
+                                amount: base_amount.into(),
+                            },
+                            minter,
+                            vec![],
+                        )?);
                     }
                 }
                 _ => return Err(StdError::generic_err("unknown fill_type, impossible?").into()),
@@ -722,6 +725,7 @@ fn execute_fungible_asset_order(
                     subdenom: wrapped_denom,
                 },
                 &minter,
+                vec![],
             )?);
             messages.push(make_wasm_msg(
                 TokenFactoryMsg::SetDenomMetadata {
@@ -738,6 +742,7 @@ fn execute_fungible_asset_order(
                     },
                 },
                 &minter,
+                vec![],
             )?);
             TOKEN_ORIGIN.save(
                 deps.storage,
@@ -752,6 +757,7 @@ fn execute_fungible_asset_order(
                 mint_to_address: receiver.into_string(),
             },
             &minter,
+            vec![],
         )?);
         if fee_amount > 0 {
             messages.push(make_wasm_msg(
@@ -761,6 +767,7 @@ fn execute_fungible_asset_order(
                     mint_to_address: relayer.into_string(),
                 },
                 &minter,
+                vec![],
             )?);
         }
     } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
@@ -776,27 +783,25 @@ fn execute_fungible_asset_order(
                 None => Err(ContractError::InvalidChannelBalance),
             },
         )?;
-        messages.push(
-            BankMsg::Send {
-                to_address: receiver.into_string(),
-                amount: vec![Coin {
-                    denom: quote_token.clone(),
-                    amount: quote_amount.into(),
-                }],
-            }
-            .into(),
-        );
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Transfer {
+                denom: quote_token.clone(),
+                recipient: receiver.into_string(),
+                amount: quote_amount.into(),
+            },
+            &minter,
+            vec![],
+        )?);
         if fee_amount > 0 {
-            messages.push(
-                BankMsg::Send {
-                    to_address: relayer.into_string(),
-                    amount: vec![Coin {
-                        denom: quote_token,
-                        amount: fee_amount.into(),
-                    }],
-                }
-                .into(),
-            );
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::Transfer {
+                    denom: quote_token.clone(),
+                    recipient: relayer.into_string(),
+                    amount: quote_amount.into(),
+                },
+                minter,
+                vec![],
+            )?);
         }
     } else {
         return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
@@ -891,15 +896,10 @@ fn transfer(
     timeout_timestamp: u64,
     salt: H256,
 ) -> Result<Response, ContractError> {
+    // NOTE(aeryz): We don't check whether the funds are provided here. We check it in the
+    // minter because cw20 token minter doesn't require funds to be given in the native form.
     if base_amount.is_zero() {
         return Err(ContractError::InvalidAmount);
-    }
-    let contains_base_token = info
-        .funds
-        .iter()
-        .any(|coin| coin.denom == base_token && coin.amount == base_amount);
-    if !contains_base_token {
-        return Err(ContractError::MissingFunds);
     }
     // If the origin exists, the preimage exists
     let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
@@ -920,11 +920,22 @@ fn transfer(
                     burn_from_address: env.contract.address.into_string(),
                 },
                 &minter,
+                info.funds,
             )?)
         }
         // Escrow and update the balance, the counterparty will mint the token
         _ => {
             origin = None;
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::TakeFunds {
+                    from: env.contract.address.to_string(),
+                    denom: base_token.clone(),
+                    recipient: String::from_utf8_lossy(&receiver).to_string(),
+                    amount: base_amount,
+                },
+                &minter,
+                info.funds,
+            )?);
             CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
                 match balance {
                     Some(value) => value
@@ -935,12 +946,14 @@ fn transfer(
             })?;
         }
     };
-    let denom_metadata = deps.querier.query::<MetadataResponse>(
-        &TokenFactoryQuery::Metadata {
-            denom: base_token.clone(),
-        }
-        .into_wasm(&minter)?,
-    );
+    let denom_metadata = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
+        cosmwasm_std::WasmQuery::Smart {
+            contract_addr: minter.to_string(),
+            msg: to_json_binary(&TokenFactoryQuery::Metadata {
+                denom: base_token.clone(),
+            })?,
+        },
+    ));
     let default_name = "".into();
     let default_symbol = base_token.clone();
     let (base_token_name, base_token_symbol) = match denom_metadata {
@@ -995,6 +1008,11 @@ fn transfer(
     Ok(Response::new().add_messages(messages))
 }
 
-fn make_wasm_msg(msg: TokenFactoryMsg, minter: impl Into<String>) -> StdResult<CosmosMsg> {
-    Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, vec![])?))
+fn make_wasm_msg(
+    msg: impl Into<ucs03_zkgm_msg::ExecuteMsg>,
+    minter: impl Into<String>,
+    funds: Vec<Coin>,
+) -> StdResult<CosmosMsg> {
+    let msg = msg.into();
+    Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
 }

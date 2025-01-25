@@ -1,7 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{
-    to_json_binary, Coin, CustomMsg, CustomQuery, Empty, QueryRequest, StdResult, Uint128,
-};
+use cosmwasm_std::{Coin, CustomMsg, CustomQuery, Uint128};
 
 /// Special messages to be supported by any chain that supports token_factory
 #[cw_serde]
@@ -127,15 +125,6 @@ pub enum TokenFactoryQuery {
     /// Returns configuration params for TokenFactory modules
     #[returns(ParamsResponse)]
     Params {},
-}
-
-impl TokenFactoryQuery {
-    pub fn into_wasm(self, contract_addr: impl Into<String>) -> StdResult<QueryRequest<Empty>> {
-        Ok(QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
-            contract_addr: contract_addr.into(),
-            msg: to_json_binary(&self)?,
-        }))
-    }
 }
 
 impl CustomQuery for TokenFactoryQuery {}

@@ -1,6 +1,9 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{
+    entry_point, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 use token_factory_api::TokenFactoryMsg;
+use ucs03_zkgm_msg::{ExecuteMsg, LocalTokenMsg};
 
 #[cw_serde]
 pub struct InitMsg {}
@@ -11,7 +14,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     _msg: InitMsg,
-) -> Result<Response, ContractError> {
+) -> StdResult<Response> {
     Ok(Response::default())
 }
 
@@ -19,16 +22,50 @@ pub fn instantiate(
 pub struct MigrateMsg {}
 
 #[entry_point]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> StdResult<Response> {
     Ok(Response::new())
 }
 
 #[entry_point]
 pub fn execute(
-    _deps: DepsMut<TokenFactoryMsg>,
+    _deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
-    msg: TokenFactoryMsg,
+    info: MessageInfo,
+    msg: ExecuteMsg,
 ) -> StdResult<Response<TokenFactoryMsg>> {
-    Ok(Response::default().add_message(CosmosMsg::Custom(msg)))
+    let resp = match msg {
+        ExecuteMsg::Wrapped(msg) => {
+            if let TokenFactoryMsg::BurnTokens { denom, amount, .. } = &msg {
+                let contains_base_token = info
+                    .funds
+                    .iter()
+                    .any(|coin| &coin.denom == denom && &coin.amount == amount);
+                if !contains_base_token {
+                    panic!("missing funds");
+                }
+            }
+            Response::new().add_message(CosmosMsg::Custom(msg))
+        }
+        ExecuteMsg::Local(msg) => match msg {
+            LocalTokenMsg::TakeFunds { denom, amount, .. } => {
+                let contains_base_token = info
+                    .funds
+                    .iter()
+                    .any(|coin| coin.denom == denom && coin.amount == amount);
+                if !contains_base_token {
+                    panic!("missing funds");
+                }
+                Response::new()
+            }
+            LocalTokenMsg::Transfer {
+                denom,
+                recipient,
+                amount,
+            } => Response::new().add_message(BankMsg::Send {
+                to_address: recipient,
+                amount: vec![Coin { denom, amount }],
+            }),
+        },
+    };
+    Ok(resp)
 }

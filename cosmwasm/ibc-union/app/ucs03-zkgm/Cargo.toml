@@ -30,6 +30,7 @@ serde             = { workspace = true, features = ["derive"] }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
 unionlabs         = { workspace = true, features = ["ethabi"] }
+ucs03-zkgm-msg = { workspace = true }
 
 [dev-dependencies]
 hex        = { workspace = true }
