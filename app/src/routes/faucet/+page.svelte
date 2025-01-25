@@ -91,6 +91,8 @@ const requestUnoFromFaucet = async () => {
   if ($unoFaucetState.kind === "SUBMITTING") {
     try {
       const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
+        chainId: "union-testnet-9",
+        denom: "muno",
         address,
         captchaToken: $unoFaucetState.captchaToken
       })
