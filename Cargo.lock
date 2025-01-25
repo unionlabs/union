@@ -6455,6 +6455,7 @@ dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
+ "depolama",
  "ethabi",
  "hex",
  "ibc-union-msg",
