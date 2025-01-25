@@ -198,6 +198,21 @@ pub trait DepsExt: Storage {
     /// This will return an error if the value cannot be decoded.
     fn maybe_read<S: Store>(&self, k: &S::Key) -> StdResult<Option<S::Value>>;
 
+    /// Read a value from the store, run the provided closure on the result, and then store the new
+    /// value.
+    ///
+    /// If the value does not exist yet in the store, `f` will be called with `None`, otherwise it
+    /// will be called with `Some(S::Value)`.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded.
+    fn upsert<S: Store>(
+        &mut self,
+        k: &S::Key,
+        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
+    ) -> StdResult<S::Value>;
+
     /// Write a value to the store.
     fn write<S: Store>(&mut self, k: &S::Key, v: &S::Value);
 
@@ -226,6 +241,14 @@ impl<T: Storage + 'static> DepsExt for T {
         (self as &mut dyn Storage).write::<S>(k, v);
     }
 
+    fn upsert<S: Store>(
+        &mut self,
+        k: &S::Key,
+        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
+    ) -> StdResult<S::Value> {
+        (self as &mut dyn Storage).upsert::<S>(k, f)
+    }
+
     #[cfg(feature = "iterator")]
     fn iter<S: Store>(
         &self,
@@ -250,6 +273,17 @@ impl DepsExt for dyn Storage {
 
     fn write<S: Store>(&mut self, k: &S::Key, v: &S::Value) {
         self.set(&key::<S>(k), &S::encode_value(v));
+    }
+
+    fn upsert<S: Store>(
+        &mut self,
+        k: &S::Key,
+        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
+    ) -> StdResult<S::Value> {
+        let value = self.maybe_read::<S>(k)?;
+        let v = f(value)?;
+        self.write::<S>(k, &v);
+        Ok(v)
     }
 
     #[cfg(feature = "iterator")]
