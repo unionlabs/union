@@ -1659,10 +1659,7 @@ impl Module {
                     event: into_value::<ibc_union_spec::event::FullEvent>(event),
                 }))
             }
-            IbcEvent::WasmPacketRecv {
-                packet,
-                relayer_msg,
-            } => {
+            IbcEvent::WasmPacketRecv { packet, maker_msg } => {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
