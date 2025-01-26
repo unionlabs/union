@@ -25,6 +25,7 @@ ark-serialize                 = { version = "0.5.0" }
 beacon-api-types              = { workspace = true }
 bincode                       = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+depolama                      = { workspace = true }
 ethereum-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 ethereum-sync-protocol        = { workspace = true }
 evm-storage-verifier          = { workspace = true }

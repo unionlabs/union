@@ -51,7 +51,13 @@
         keyType = "bn254";
         validatorCount = 4;
         sdkVersion = 50;
-        genesisOverwrites = {
+        genesisOverwrites = dbg {
+          consensus.params = {
+            block = {
+              max_bytes = "10485760";
+              max_gas = "200000000";
+            };
+          };
           app_state = {
             gov.params = {
               max_deposit_period = "12s";

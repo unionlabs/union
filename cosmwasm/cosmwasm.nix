@@ -35,9 +35,9 @@
           private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas_config = {
             gas_denom = "muno";
-            gas_multiplier = "1.5";
-            gas_price = "1.5";
-            max_gas = 10000000;
+            gas_multiplier = "1.1";
+            gas_price = "1.0";
+            max_gas = 200000000;
           };
           ucs03_type = "cw20";
           bech32_prefix = "union";
@@ -55,7 +55,7 @@
             gas_denom = "muno";
             gas_multiplier = "1.1";
             gas_price = "1.0";
-            max_gas = 10000000;
+            max_gas = 200000000;
           };
           apps = {
             ucs03 = ucs03-configs.cw20;

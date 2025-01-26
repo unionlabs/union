@@ -3,7 +3,6 @@ use unionlabs::{primitives::Bytes, tuple::AsTuple};
 use crate::types::ChannelId;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, AsTuple)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
     feature = "serde",

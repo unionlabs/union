@@ -2,7 +2,8 @@ use beacon_api_types::{
     chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     slot::Slot,
 };
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Empty, StdError, StdResult};
+use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ethereum_light_client_types::{
     ClientState, ClientStateV1, ConsensusState, Header, LightClientUpdate, Misbehaviour,
     StorageProof,
@@ -22,7 +23,7 @@ use ibc_union_light_client::{
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::{
-    encoding::Bincode,
+    encoding::{Bincode, DecodeAs, EncodeAs},
     ensure,
     ethereum::ibc_commitment_key,
     ibc::core::client::height::Height,
@@ -136,11 +137,14 @@ impl IbcClient for EthereumLightClient {
         Ok(ClientCreationResult::new()
             .overwrite_client_state(ClientState::V1(client_state))
             .add_storage_write(
-                sync_committee_store_key(current_sync_period),
+                current_sync_period.to_le_bytes().into(),
                 InverseSyncCommittee::take_inverse(&initial_sync_committee.current_sync_committee),
             )
             .add_storage_write(
-                sync_committee_store_key(current_sync_period + 1),
+                {
+                    let sync_period = current_sync_period + 1;
+                    sync_period.to_le_bytes().into()
+                },
                 InverseSyncCommittee::take_inverse(&initial_sync_committee.next_sync_committee),
             ))
     }
@@ -265,7 +269,7 @@ pub fn verify_header<C: ChainSpec>(
             .ok_or(Error::IntegerOverflow)?;
 
     let sync_committee = ctx
-        .read_self_storage::<InverseSyncCommittee>(&sync_committee_store_key_by_slot::<C>(
+        .read_self_storage::<SyncCommitteeStore>(compute_sync_committee_period_at_slot::<C>(
             header
                 .consensus_update
                 .update_data()
@@ -353,8 +357,8 @@ fn update_state<C: ChainSpec>(
     if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {
         let current_epoch =
             compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
-        state_update = state_update.add_storage_write(
-            sync_committee_store_key(current_epoch + 1),
+        state_update = state_update.add_storage_write::<SyncCommitteeStore>(
+            current_epoch + 1,
             InverseSyncCommittee::take_inverse(&update.next_sync_committee),
         );
     }
@@ -401,7 +405,7 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     let epoch = compute_epoch_at_slot::<C>(slot_1);
 
     let sync_committee = ctx
-        .read_self_storage::<InverseSyncCommittee>(&sync_committee_store_key(epoch))?
+        .read_self_storage::<SyncCommitteeStore>(epoch)?
         .as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match misbehaviour.update_1 {
         LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
@@ -459,14 +463,47 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     Ok(())
 }
 
-fn sync_committee_store_key(sync_period: u64) -> Bytes {
-    sync_period.to_le_bytes().into()
-}
+pub enum SyncCommitteeStore {}
+impl Store for SyncCommitteeStore {
+    const PREFIX: Prefix = Prefix::new(b"sync_committee");
 
-fn sync_committee_store_key_by_slot<C: ChainSpec>(slot: Slot) -> Bytes {
-    compute_sync_committee_period_at_slot::<C>(slot)
-        .to_le_bytes()
-        .into()
+    type Key = u64;
+    type Value = InverseSyncCommittee;
+}
+impl KeyCodec<u64> for SyncCommitteeStore {
+    fn encode_key(key: &u64) -> Bytes {
+        key.to_be_bytes().into()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<u64> {
+        raw.try_into()
+            .map_err(|_| {
+                StdError::generic_err(format!(
+                    "invalid key: expected {N} bytes, found {}: {raw}",
+                    raw.len(),
+                    N = u64::BITS / 8,
+                ))
+            })
+            .map(u64::from_be_bytes)
+    }
+}
+impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
+    fn encode_value(value: &InverseSyncCommittee) -> Bytes {
+        value.encode_as::<Bincode>().into()
+    }
+
+    fn decode_value(raw: &Bytes) -> StdResult<InverseSyncCommittee> {
+        if raw.len() % 4 != 0 {
+            Err(StdError::generic_err(format!(
+                "invalid length; expected multiple of 4 bytes but found {}: raw",
+                raw.len()
+            )))
+        } else {
+            InverseSyncCommittee::decode_as::<Bincode>(raw).map_err(|e| {
+                StdError::generic_err(format!("unable to decode {}: {e}", stringify!($ty)))
+            })
+        }
+    }
 }
 
 // #[cfg(test)]

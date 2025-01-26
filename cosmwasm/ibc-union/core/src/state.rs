@@ -1,8 +1,7 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, marker::PhantomData};
 
-use cosmwasm_std::{Addr, Binary, StdError, StdResult};
-use cw_storage_plus::{Item, Map};
-use depolama::{Prefix, Store};
+use cosmwasm_std::{Addr, StdError, StdResult};
+use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_spec::types::{Channel, Connection};
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EncodeAs},
@@ -10,119 +9,76 @@ use unionlabs::{
     ByteArrayExt,
 };
 
-pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
-
-pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
-
-pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
-
-pub const CONTRACT_CHANNELS: Map<Addr, BTreeSet<u32>> = Map::new("contract_channels");
-
-pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
-
-pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
-
-pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
-
-// From client type to contract implementation
-pub const CLIENT_REGISTRY: Map<&str, Addr> = Map::new("client_registry");
-
-// From client id to client type
-pub const CLIENT_TYPES: Map<u32, String> = Map::new("client_types");
-
-// From client id to contract implementation
-pub const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
-
-pub const NEXT_CLIENT_ID: Item<u32> = Item::new("next_client_id");
-
-pub const NEXT_CONNECTION_ID: Item<u32> = Item::new("next_connection_id");
-
-pub const NEXT_CHANNEL_ID: Item<u32> = Item::new("next_channel_id");
-
-macro_rules! unit_key {
-    () => {
-        type Key = ();
-
-        fn encode_key((): &Self::Key) -> Bytes {
-            [].into()
-        }
-
-        fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
-            decode_unit_key(raw)
-        }
-    };
-}
-
 macro_rules! u32_key {
-    () => {
-        type Key = u32;
+    ($ty:ty) => {
+        impl KeyCodec<u32> for $ty {
+            fn encode_key(key: &u32) -> Bytes {
+                key.to_be_bytes().into()
+            }
 
-        fn encode_key(key: &Self::Key) -> Bytes {
-            key.to_be_bytes().into()
-        }
-
-        fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
-            read_fixed_bytes(raw).map(u32::from_be_bytes)
+            fn decode_key(raw: &Bytes) -> StdResult<u32> {
+                read_fixed_bytes(raw).map(u32::from_be_bytes)
+            }
         }
     };
 }
 
 macro_rules! u32_value {
-    () => {
-        type Value = u32;
+    ($ty:ty) => {
+        impl ValueCodec<u32> for $ty {
+            fn encode_value(value: &u32) -> Bytes {
+                value.to_be_bytes().into()
+            }
 
-        fn encode_value(value: &Self::Value) -> Bytes {
-            value.to_be_bytes().into()
-        }
-
-        fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
-            read_fixed_bytes(raw).map(u32::from_be_bytes)
+            fn decode_value(raw: &Bytes) -> StdResult<u32> {
+                read_fixed_bytes(raw).map(u32::from_be_bytes)
+            }
         }
     };
 }
 
 macro_rules! bytes_value {
-    () => {
-        type Value = Bytes;
+    ($ty:ty) => {
+        impl ValueCodec<Bytes> for $ty {
+            fn encode_value(value: &Bytes) -> Bytes {
+                value.clone()
+            }
 
-        fn encode_value(value: &Self::Value) -> Bytes {
-            value.clone()
-        }
-
-        fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
-            Ok(raw.clone())
+            fn decode_value(raw: &Bytes) -> StdResult<Bytes> {
+                Ok(raw.clone())
+            }
         }
     };
 }
 
 macro_rules! bincode_value {
     ($ty:ty) => {
-        type Value = $ty;
+        impl ValueCodec<<$ty as Store>::Value> for $ty {
+            fn encode_value(value: &<$ty as Store>::Value) -> Bytes {
+                value.encode_as::<Bincode>().into()
+            }
 
-        fn encode_value(value: &Self::Value) -> Bytes {
-            value.encode_as::<Bincode>().into()
-        }
-
-        fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
-            <$ty>::decode_as::<Bincode>(raw).map_err(|e| {
-                StdError::generic_err(format!("unable to decode {}: {e}", stringify!($ty)))
-            })
+            fn decode_value(raw: &Bytes) -> StdResult<<$ty as Store>::Value> {
+                <<$ty as Store>::Value>::decode_as::<Bincode>(raw).map_err(|e| {
+                    StdError::generic_err(format!("unable to decode {}: {e}", stringify!($ty)))
+                })
+            }
         }
     };
 }
 
 macro_rules! addr_value {
-    () => {
-        type Value = Addr;
+    ($ty:ty) => {
+        impl ValueCodec<Addr> for $ty {
+            fn encode_value(value: &Addr) -> Bytes {
+                value.as_bytes().into()
+            }
 
-        fn encode_value(value: &Self::Value) -> Bytes {
-            value.as_bytes().into()
-        }
-
-        fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
-            String::from_utf8(raw.to_vec())
-                .map(Addr::unchecked)
-                .map_err(|e| StdError::generic_err(format!("invalid value: {e}")))
+            fn decode_value(raw: &Bytes) -> StdResult<Addr> {
+                String::from_utf8(raw.to_vec())
+                    .map(Addr::unchecked)
+                    .map_err(|e| StdError::generic_err(format!("invalid value: {e}")))
+            }
         }
     };
 }
@@ -131,52 +87,55 @@ pub enum QueryStore {}
 impl Store for QueryStore {
     const PREFIX: Prefix = Prefix::new(b"query_store");
 
-    unit_key!();
-
-    bytes_value!();
+    type Key = ();
+    type Value = Bytes;
 }
+bytes_value!(QueryStore);
 
 pub enum ChannelOwner {}
 impl Store for ChannelOwner {
     const PREFIX: Prefix = Prefix::new(b"channel_owner");
 
-    u32_key!();
-
-    addr_value!();
+    type Key = u32;
+    type Value = Addr;
 }
+u32_key!(ChannelOwner);
+addr_value!(ChannelOwner);
 
 pub enum Channels {}
 impl Store for Channels {
     const PREFIX: Prefix = Prefix::new(b"channels");
 
-    u32_key!();
-
-    bincode_value!(Channel);
+    type Key = u32;
+    type Value = Channel;
 }
+u32_key!(Channels);
+bincode_value!(Channels);
 
 pub enum ContractChannels {}
 impl Store for ContractChannels {
-    const PREFIX: Prefix = Prefix::new(b"channels");
+    const PREFIX: Prefix = Prefix::new(b"contract_channels");
 
     type Key = Addr;
-
     type Value = BTreeSet<u32>;
-
-    fn encode_key(key: &Self::Key) -> Bytes {
+}
+impl KeyCodec<Addr> for ContractChannels {
+    fn encode_key(key: &Addr) -> Bytes {
         key.as_bytes().into()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+    fn decode_key(raw: &Bytes) -> StdResult<Addr> {
         String::from_utf8(raw.to_vec())
             .map(Addr::unchecked)
             .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
     }
-
-    fn encode_value(value: &Self::Value) -> Bytes {
+}
+impl ValueCodec<BTreeSet<u32>> for ContractChannels {
+    fn encode_value(value: &BTreeSet<u32>) -> Bytes {
         value.iter().flat_map(|n| n.to_be_bytes()).collect()
     }
 
-    fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
+    fn decode_value(raw: &Bytes) -> StdResult<BTreeSet<u32>> {
         if raw.len() % 4 != 0 {
             Err(StdError::generic_err(format!(
                 "invalid length; expected multiple of 4 bytes but found {}: raw",
@@ -201,27 +160,32 @@ pub enum Connections {}
 impl Store for Connections {
     const PREFIX: Prefix = Prefix::new(b"connections");
 
-    u32_key!();
-
-    bincode_value!(Connection);
+    type Key = u32;
+    type Value = Connection;
 }
+u32_key!(Connections);
+bincode_value!(Connections);
 
 pub enum ClientStates {}
 impl Store for ClientStates {
     const PREFIX: Prefix = Prefix::new(b"client_states");
 
-    u32_key!();
+    type Key = u32;
 
-    bytes_value!();
+    type Value = Bytes;
 }
+u32_key!(ClientStates);
+bytes_value!(ClientStates);
 
 pub enum ClientConsensusStates {}
 impl Store for ClientConsensusStates {
     const PREFIX: Prefix = Prefix::new(b"client_consensus_states");
 
     type Key = (u32, u64);
-
-    fn encode_key(key: &Self::Key) -> Bytes {
+    type Value = Bytes;
+}
+impl KeyCodec<(u32, u64)> for ClientConsensusStates {
+    fn encode_key(key: &(u32, u64)) -> Bytes {
         key.0
             .to_be_bytes()
             .into_iter()
@@ -229,7 +193,7 @@ impl Store for ClientConsensusStates {
             .collect()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+    fn decode_key(raw: &Bytes) -> StdResult<(u32, u64)> {
         read_fixed_bytes::<12>(raw).map(|arr| {
             (
                 u32::from_be_bytes(arr.array_slice::<0, 4>()),
@@ -237,91 +201,133 @@ impl Store for ClientConsensusStates {
             )
         })
     }
-
-    bytes_value!();
 }
+bytes_value!(ClientConsensusStates);
 
+// From client type to contract implementation
 pub enum ClientRegistry {}
 impl Store for ClientRegistry {
     const PREFIX: Prefix = Prefix::new(b"client_registry");
 
+    type Value = Addr;
     type Key = String;
-
-    fn encode_key(key: &Self::Key) -> Bytes {
+}
+impl KeyCodec<String> for ClientRegistry {
+    fn encode_key(key: &String) -> Bytes {
         key.as_bytes().into()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+    fn decode_key(raw: &Bytes) -> StdResult<String> {
         String::from_utf8(raw.to_vec())
             .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
     }
-
-    addr_value!();
 }
+addr_value!(ClientRegistry);
 
+// From client id to client type
 pub enum ClientTypes {}
 impl Store for ClientTypes {
     const PREFIX: Prefix = Prefix::new(b"client_types");
 
-    u32_key!();
+    type Key = u32;
 
     type Value = String;
-
-    fn encode_value(value: &Self::Value) -> Bytes {
+}
+u32_key!(ClientTypes);
+impl ValueCodec<String> for ClientTypes {
+    fn encode_value(value: &String) -> Bytes {
         value.as_bytes().into()
     }
 
-    fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
+    fn decode_value(raw: &Bytes) -> StdResult<String> {
         String::from_utf8(raw.to_vec())
             .map_err(|e| StdError::generic_err(format!("invalid value: {e}")))
     }
 }
 
+// From client id to contract implementation
 pub enum ClientImpls {}
 impl Store for ClientImpls {
     const PREFIX: Prefix = Prefix::new(b"client_impls");
 
-    u32_key!();
+    type Key = u32;
+    type Value = Addr;
+}
+u32_key!(ClientImpls);
+addr_value!(ClientImpls);
 
-    addr_value!();
+// From client id to client storage
+pub enum ClientStore<S: Store> {
+    __(PhantomData<fn() -> S>),
+}
+impl<S: Store> Store for ClientStore<S> {
+    const PREFIX: Prefix = Prefix::new(b"client_store");
+
+    type Key = (u32, S::Key);
+    type Value = S::Value;
+}
+impl<S: Store> KeyCodec<(u32, S::Key)> for ClientStore<S> {
+    fn encode_key((client_id, key): &(u32, S::Key)) -> Bytes {
+        client_id
+            .to_be_bytes()
+            .into_iter()
+            .chain(S::PREFIX.iter_with_separator().copied())
+            .chain(S::encode_key(key))
+            .collect()
+    }
+    fn decode_key(raw: &Bytes) -> StdResult<(u32, S::Key)> {
+        if raw.len() >= 4 {
+            let client_id =
+                u32::from_be_bytes(raw[0..4].try_into().expect("size is checked; qed;"));
+
+            // TODO: Improve the Bytes type such that we don't need to re-allocate here
+            let key = S::decode_key(&raw[4..].into())?;
+
+            Ok((client_id, key))
+        } else {
+            Err(StdError::generic_err(format!(
+                "invalid key: expected at least {N} bytes, found {}: {raw}",
+                raw.len(),
+                N = u32::BITS / 8,
+            )))
+        }
+    }
+}
+impl<S: Store> ValueCodec<S::Value> for ClientStore<S> {
+    fn encode_value(value: &S::Value) -> Bytes {
+        S::encode_value(value)
+    }
+    fn decode_value(raw: &Bytes) -> StdResult<S::Value> {
+        S::decode_value(raw)
+    }
 }
 
 pub enum NextClientId {}
 impl Store for NextClientId {
     const PREFIX: Prefix = Prefix::new(b"next_client_id");
 
-    unit_key!();
-
-    u32_value!();
+    type Key = ();
+    type Value = u32;
 }
+u32_value!(NextClientId);
 
 pub enum NextConnectionId {}
 impl Store for NextConnectionId {
     const PREFIX: Prefix = Prefix::new(b"next_connection_id");
 
-    unit_key!();
-
-    u32_value!();
+    type Key = ();
+    type Value = u32;
 }
+u32_value!(NextConnectionId);
 
 pub enum NextChannelId {}
 impl Store for NextChannelId {
     const PREFIX: Prefix = Prefix::new(b"next_channel_id");
 
-    unit_key!();
-
-    u32_value!();
+    type Key = ();
+    type Value = u32;
 }
-
-fn decode_unit_key(raw: &Bytes) -> Result<(), StdError> {
-    if raw.is_empty() {
-        Ok(())
-    } else {
-        Err(StdError::generic_err(format!(
-            "key must be empty, found {raw}"
-        )))
-    }
-}
+u32_value!(NextChannelId);
 
 fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
     raw.try_into().map_err(|_| {

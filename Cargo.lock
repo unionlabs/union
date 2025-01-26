@@ -4535,6 +4535,7 @@ name = "depolama"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-std 2.1.4",
+ "num-traits",
  "unionlabs",
  "unionlabs-primitives",
 ]
@@ -5159,6 +5160,7 @@ dependencies = [
  "beacon-api-types",
  "bincode 2.0.0-rc.3",
  "cosmwasm-std 2.1.4",
+ "depolama",
  "ethereum-light-client-types",
  "ethereum-sync-protocol",
  "ethereum-sync-protocol-types",
@@ -6661,13 +6663,13 @@ dependencies = [
  "bincode 2.0.0-rc.3",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
+ "depolama",
  "ethabi",
  "hex",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
- "serde_json",
+ "serde-json-wasm 1.0.1",
  "strum 0.26.3",
  "thiserror 1.0.69",
  "unionlabs",
@@ -6680,7 +6682,8 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
+ "depolama",
+ "ibc-union",
  "ibc-union-msg",
  "macros",
  "schemars",

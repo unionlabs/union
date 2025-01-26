@@ -7,7 +7,7 @@ use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
     Response, StdResult,
 };
-use cw_storage_plus::Item;
+use depolama::{RawStore, StorageExt};
 use ibc_union_msg::{
     lightclient::{
         QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
@@ -37,20 +37,18 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
+use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
 
 use crate::{
     state::{
-        CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
-        CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, CONTRACT_CHANNELS, NEXT_CHANNEL_ID,
-        NEXT_CLIENT_ID, NEXT_CONNECTION_ID, QUERY_STORE,
+        ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
+        ClientStore, ClientTypes, Connections, ContractChannels, NextChannelId, NextClientId,
+        NextConnectionId, QueryStore,
     },
     ContractError,
 };
 
 type ContractResult = Result<Response, ContractError>;
-
-pub const CLIENT_STORAGE_PREFIX: &str = "client/";
 
 pub mod events {
     pub mod client {
@@ -151,6 +149,13 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        ExecuteMsg::BOOTSTRAP(storage) => {
+            for (k, v) in storage {
+                deps.storage.set(&k, &v);
+            }
+
+            Ok(Response::default())
+        }
         ExecuteMsg::RegisterClient(MsgRegisterClient {
             client_type,
             client_address,
@@ -441,7 +446,7 @@ fn migrate_state(
     consensus_state: unionlabs::primitives::Bytes,
     height: u64,
 ) -> Result<Response, ContractError> {
-    let client_addr = CLIENT_IMPLS.load(deps.storage, client_id)?;
+    let client_addr = deps.storage.read::<ClientImpls>(&client_id)?;
 
     if client_addr != sender {
         return Err(ContractError::UnauthorizedMigration {
@@ -451,9 +456,9 @@ fn migrate_state(
         });
     }
 
-    CLIENT_STATES.update(deps.storage, client_id, |s| {
+    deps.storage.upsert::<ClientStates, _>(&client_id, |s| {
         let _ = s.ok_or(ContractError::CannotMigrateWithNoClientState { client_id })?;
-        Ok::<Binary, ContractError>(client_state.to_vec().into())
+        Ok::<_, ContractError>(client_state.to_vec().into())
     })?;
 
     store_commit(
@@ -462,10 +467,12 @@ fn migrate_state(
         &commit(client_state),
     );
 
-    CLIENT_CONSENSUS_STATES.update(deps.storage, (client_id, height), |s| {
-        let _ = s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
-        Ok::<Binary, ContractError>(consensus_state.to_vec().into())
-    })?;
+    deps.storage
+        .upsert::<ClientConsensusStates, _>(&(client_id, height), |s| {
+            let _ =
+                s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
+            Ok::<Bytes, ContractError>(consensus_state.to_vec().into())
+        })?;
 
     store_commit(
         deps.branch(),
@@ -485,14 +492,23 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct IbcUnionMigrateMsg {}
 
+pub mod version {
+    use std::num::NonZeroU32;
+
+    use unionlabs::option_unwrap;
+
+    pub const INIT: NonZeroU32 = option_unwrap!(NonZeroU32::new(1));
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, _version| {
-        Ok((Response::default(), None))
+    msg.run(deps, init, |_deps, _migrate, version| match version {
+        version::INIT => Ok((Response::new(), None)),
+        _ => Err(UpgradeError::UnknownStateVersion(version).into()),
     })
 }
 
@@ -500,9 +516,9 @@ pub(crate) fn init(
     deps: DepsMut<'_>,
     InitMsg {}: InitMsg,
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
-    NEXT_CHANNEL_ID.save(deps.storage, &0)?;
-    NEXT_CONNECTION_ID.save(deps.storage, &0)?;
-    NEXT_CLIENT_ID.save(deps.storage, &0)?;
+    deps.storage.write_item::<NextChannelId>(&0);
+    deps.storage.write_item::<NextConnectionId>(&0);
+    deps.storage.write_item::<NextClientId>(&0);
 
     Ok((Response::default(), None))
 }
@@ -513,7 +529,7 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
     }
     let channel_id = packets[0].source_channel_id;
     let serialized_packets =
-        serde_json::to_string(&packets).expect("packet serialization is infallible; qed;");
+        serde_json_wasm::to_string(&packets).expect("packet serialization is infallible; qed;");
     let batch_commitment_key = BatchPacketsPath::from_packets(&packets).key();
     for packet in packets {
         if packet.source_channel_id != channel_id {
@@ -544,9 +560,9 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
     let channel_id = packets[0].destination_channel_id;
     let batch_commitment_key = BatchReceiptsPath::from_packets(&packets).key();
     let serialized_packets =
-        serde_json::to_string(&packets).expect("packet serialization is infallible; qed;");
+        serde_json_wasm::to_string(&packets).expect("packet serialization is infallible; qed;");
     let serialized_acks =
-        serde_json::to_string(&acks).expect("bytes serialization is infallible; qed;");
+        serde_json_wasm::to_string(&acks).expect("bytes serialization is infallible; qed;");
     for (packet, ack) in packets.into_iter().zip(acks.iter()) {
         if packet.destination_channel_id != channel_id {
             return Err(ContractError::BatchSameChannelOnly);
@@ -622,7 +638,7 @@ fn timeout_packet(
         return Err(ContractError::TimeoutHeightNotReached);
     }
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
     Ok(Response::new()
         .add_event(
             Event::new(events::packet::TIMEOUT)
@@ -670,7 +686,7 @@ fn acknowledge_packet(
         },
     )?;
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
@@ -718,13 +734,12 @@ fn register_client(
     client_type: String,
     client_address: Addr,
 ) -> Result<Response, ContractError> {
-    if CLIENT_REGISTRY
-        .may_load(deps.storage, &client_type)?
-        .is_some()
-    {
-        return Err(ContractError::ClientTypeAlreadyExists);
-    }
-    CLIENT_REGISTRY.save(deps.storage, &client_type, &client_address)?;
+    let client_address = deps
+        .storage
+        .upsert::<ClientRegistry, _>(&client_type, |client_impl| match client_impl {
+            Some(_) => Err(ContractError::ClientTypeAlreadyExists),
+            None => Ok(client_address),
+        })?;
 
     Ok(Response::new().add_event(
         Event::new(events::client::REGISTER)
@@ -740,10 +755,10 @@ fn create_client(
     consensus_state_bytes: Vec<u8>,
     _relayer: Addr,
 ) -> Result<Response, ContractError> {
-    let client_impl = CLIENT_REGISTRY.load(deps.storage, &client_type)?;
+    let client_impl = deps.storage.read::<ClientRegistry>(&client_type)?;
     let client_id = next_client_id(deps.branch())?;
-    CLIENT_TYPES.save(deps.storage, client_id, &client_type)?;
-    CLIENT_IMPLS.save(deps.storage, client_id, &client_impl)?;
+    deps.storage.write::<ClientTypes>(&client_id, &client_type);
+    deps.storage.write::<ClientImpls>(&client_id, &client_impl);
     let verify_creation_response = query_light_client::<VerifyCreationResponse>(
         deps.as_ref(),
         client_impl,
@@ -756,12 +771,12 @@ fn create_client(
     if let Some(cs) = verify_creation_response.client_state_bytes {
         client_state_bytes = cs.into_vec();
     }
-    CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, verify_creation_response.latest_height),
+    deps.storage
+        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, verify_creation_response.latest_height),
         &consensus_state_bytes.to_vec().into(),
-    )?;
+    );
     store_commit(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
@@ -778,7 +793,8 @@ fn create_client(
     );
 
     for (k, v) in verify_creation_response.storage_writes {
-        store_client_data(deps.branch(), client_id, k, v);
+        deps.storage
+            .write::<ClientStore<RawStore>>(&(client_id, k), &v);
     }
     let response = verify_creation_response
         .events
@@ -798,19 +814,6 @@ fn create_client(
     )
 }
 
-fn store_client_data(deps: DepsMut<'_>, client_id: u32, key: Bytes, value: Bytes) {
-    deps.storage.set(
-        [
-            CLIENT_STORAGE_PREFIX.as_bytes(),
-            client_id.to_le_bytes().as_slice(),
-            &key,
-        ]
-        .concat()
-        .as_slice(),
-        &value,
-    );
-}
-
 fn update_client(
     mut deps: DepsMut,
     client_id: u32,
@@ -821,7 +824,8 @@ fn update_client(
     let update = {
         // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
         // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
-        QUERY_STORE.save(deps.storage, &client_message.into())?;
+        deps.storage
+            .write_item::<QueryStore>(&client_message.into());
 
         let status = query_light_client::<Status>(
             deps.as_ref(),
@@ -841,20 +845,18 @@ fn update_client(
                 caller: relayer.into(),
             },
         )?;
-        QUERY_STORE.remove(deps.storage);
+        deps.storage.delete_item::<QueryStore>();
         update
     };
+
     if let Some(client_state_bytes) = update.client_state_bytes {
         store_commit(
             deps.branch(),
             &ClientStatePath { client_id }.key(),
             &commit(&client_state_bytes),
         );
-        CLIENT_STATES.save(
-            deps.storage,
-            client_id,
-            &client_state_bytes.into_vec().into(),
-        )?;
+        deps.storage
+            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
     }
 
     store_commit(
@@ -867,14 +869,14 @@ fn update_client(
         &commit(&update.consensus_state_bytes),
     );
 
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, update.height),
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, update.height),
         &update.consensus_state_bytes.into_vec().into(),
-    )?;
+    );
 
     for (k, v) in update.storage_writes {
-        store_client_data(deps.branch(), client_id, k, v);
+        deps.storage
+            .write::<ClientStore<RawStore>>(&(client_id, k), &v);
     }
 
     Ok(
@@ -979,7 +981,7 @@ fn connection_open_ack(
     proof_height: u64,
     _relayer: Addr,
 ) -> ContractResult {
-    let mut connection = CONNECTIONS.load(deps.storage, connection_id)?;
+    let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Init {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
@@ -1037,7 +1039,7 @@ fn connection_open_confirm(
     proof_height: u64,
     _relayer: Addr,
 ) -> ContractResult {
-    let mut connection = CONNECTIONS.load(deps.storage, connection_id)?;
+    let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::TryOpen {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
@@ -1215,7 +1217,7 @@ fn channel_open_ack(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Init {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1223,7 +1225,7 @@ fn channel_open_ack(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::TryOpen,
         connection_id: connection.counterparty_connection_id,
@@ -1284,7 +1286,7 @@ fn channel_open_confirm(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1292,7 +1294,7 @@ fn channel_open_confirm(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::Open,
         connection_id: connection.counterparty_connection_id,
@@ -1343,7 +1345,7 @@ fn channel_open_confirm(
 }
 
 fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1353,7 +1355,7 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
     ensure_connection_state(deps.as_ref(), channel.connection_id)?;
     channel.state = ChannelState::Closed;
     save_channel(deps.branch(), channel_id, &channel)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::CLOSE_INIT).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1384,7 +1386,7 @@ fn channel_close_confirm(
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1392,7 +1394,7 @@ fn channel_close_confirm(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::Closed,
         connection_id: connection.counterparty_connection_id,
@@ -1417,7 +1419,7 @@ fn channel_close_confirm(
         },
     )?;
     channel.state = ChannelState::Closed;
-    CHANNELS.save(deps.storage, channel_id, &channel)?;
+    deps.storage.write::<Channels>(&channel_id, &channel);
     store_commit(
         deps.branch(),
         &ChannelPath { channel_id }.key(),
@@ -1481,7 +1483,7 @@ fn process_receive(
 
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
-    let port_id = CHANNEL_OWNER.load(deps.storage, destination_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&destination_channel)?;
     for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
         if packet.timeout_height > 0 && (env.block.height >= packet.timeout_height) {
             return Err(ContractError::ReceivedTimedOutPacketHeight {
@@ -1557,7 +1559,7 @@ fn write_acknowledgement(
     }
 
     // make sure the caller owns the channel
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id,
@@ -1608,7 +1610,7 @@ fn send_packet(
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id: source_channel_id,
@@ -1627,7 +1629,7 @@ fn send_packet(
     };
 
     let serialized_packet =
-        serde_json::to_string(&packet).expect("packet serialization is infallible; qed;");
+        serde_json_wasm::to_string(&packet).expect("packet serialization is infallible; qed;");
 
     let packet_attrs = packet_to_attrs(&packet);
     let packet_attr_hash = packet_to_attr_hash(&packet);
@@ -1649,26 +1651,26 @@ fn send_packet(
         .set_data(serialized_packet.as_bytes()))
 }
 
-fn increment(deps: DepsMut, item: Item<u32>) -> Result<u32, ContractError> {
-    item.update(deps.storage, |item| {
-        item.checked_add(1).ok_or(ContractError::ArithmeticOverflow)
-    })
-}
-
 fn next_channel_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CHANNEL_ID)
+    deps.storage
+        .increment_item::<NextChannelId>()
+        .map_err(Into::into)
 }
 
 fn next_connection_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CONNECTION_ID)
+    deps.storage
+        .increment_item::<NextConnectionId>()
+        .map_err(Into::into)
 }
 
 fn next_client_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CLIENT_ID)
+    deps.storage
+        .increment_item::<NextClientId>()
+        .map_err(Into::into)
 }
 
 fn client_impl(deps: Deps, client_id: u32) -> Result<Addr, ContractError> {
-    Ok(CLIENT_IMPLS.load(deps.storage, client_id)?)
+    Ok(deps.storage.read::<ClientImpls>(&client_id)?)
 }
 
 fn commit(bytes: impl AsRef<[u8]>) -> H256 {
@@ -1706,7 +1708,8 @@ fn save_connection(
     connection_id: u32,
     connection: &Connection,
 ) -> Result<(), ContractError> {
-    CONNECTIONS.save(deps.storage, connection_id, connection)?;
+    deps.storage
+        .write::<Connections>(&connection_id, connection);
     store_commit(
         deps,
         &ConnectionPath { connection_id }.key(),
@@ -1732,23 +1735,24 @@ fn create_channel(
         counterparty_port_id,
         version,
     };
-    CHANNEL_OWNER.save(deps.storage, channel_id, &owner)?;
-    CONTRACT_CHANNELS.update(deps.storage, owner, |v| -> Result<_, ContractError> {
-        Ok(match v {
-            Some(mut set) => {
-                let inserted = set.insert(channel_id);
-                assert!(inserted, "impossible, channel has been just created");
-                set
-            }
-            None => BTreeSet::from([channel_id]),
-        })
-    })?;
+    deps.storage.write::<ChannelOwner>(&channel_id, &owner);
+    deps.storage
+        .upsert::<ContractChannels, _>(&owner, |v| -> Result<_, ContractError> {
+            Ok(match v {
+                Some(mut set) => {
+                    let inserted = set.insert(channel_id);
+                    assert!(inserted, "impossible, channel has been just created");
+                    set
+                }
+                None => BTreeSet::from([channel_id]),
+            })
+        })?;
     save_channel(deps, channel_id, &channel)?;
     Ok((channel_id, channel))
 }
 
 fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(), ContractError> {
-    CHANNELS.save(deps.storage, channel_id, channel)?;
+    deps.storage.write::<Channels>(&channel_id, channel);
     store_commit(
         deps,
         &ChannelPath { channel_id }.key(),
@@ -1758,7 +1762,7 @@ fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(),
 }
 
 fn ensure_connection_state(deps: Deps, connection_id: u32) -> Result<Connection, ContractError> {
-    let connection = CONNECTIONS.load(deps.storage, connection_id)?;
+    let connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Open {
         Err(ContractError::ConnectionInvalidState {
             got: connection.state,
@@ -1770,7 +1774,7 @@ fn ensure_connection_state(deps: Deps, connection_id: u32) -> Result<Connection,
 }
 
 fn ensure_channel_state(deps: Deps, channel_id: u32) -> Result<Channel, ContractError> {
-    let channel = CHANNELS.load(deps.storage, channel_id)?;
+    let channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1804,13 +1808,13 @@ fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u6
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
-            &CLIENT_TYPES.load(deps.storage, client_id)?,
+            &deps.storage.read::<ClientTypes>(&client_id)?,
         )?),
         QueryMsg::GetClientImpl { client_id } => {
             Ok(to_json_binary(&client_impl(deps, client_id)?)?)
         }
         QueryMsg::GetRegisteredClientType { client_type } => Ok(to_json_binary(
-            &CLIENT_REGISTRY.load(deps.storage, &client_type)?,
+            &deps.storage.read::<ClientRegistry>(&client_type)?,
         )?),
         QueryMsg::GetTimestampAtHeight { client_id, height } => Ok(to_json_binary(
             &get_timestamp_at_height(deps, client_id, height)?,
@@ -1824,15 +1828,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             )?;
             Ok(to_json_binary(&latest_height)?)
         }
-        QueryMsg::GetClientState { client_id } => {
-            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
-            Ok(to_json_binary(&client_state)?)
-        }
-        QueryMsg::GetConsensusState { client_id, height } => {
-            let consensus_state =
-                CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
-            Ok(to_json_binary(&consensus_state)?)
-        }
+        QueryMsg::GetClientState { client_id } => Ok(to_json_binary(
+            &deps.storage.read::<ClientStates>(&client_id)?,
+        )?),
+        QueryMsg::GetConsensusState { client_id, height } => Ok(to_json_binary(
+            &deps
+                .storage
+                .read::<ClientConsensusStates>(&(client_id, height))?,
+        )?),
         QueryMsg::GetStatus { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
             let status = query_light_client::<Status>(
@@ -1844,15 +1847,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         }
         QueryMsg::GetChannels { contract } => {
             let contract = deps.api.addr_validate(&contract)?;
-            let channels = CONTRACT_CHANNELS.load(deps.storage, contract)?;
+            let channels = deps.storage.read::<ContractChannels>(&contract)?;
             Ok(to_json_binary(&channels)?)
         }
         QueryMsg::GetChannel { channel_id } => {
-            let channel = CHANNELS.load(deps.storage, channel_id)?;
+            let channel = deps.storage.read::<Channels>(&channel_id)?;
             Ok(to_json_binary(&channel)?)
         }
         QueryMsg::GetConnection { connection_id } => {
-            let connection = CONNECTIONS.load(deps.storage, connection_id)?;
+            let connection = deps.storage.read::<Connections>(&connection_id)?;
             Ok(to_json_binary(&connection)?)
         }
         QueryMsg::GetBatchPackets { batch_hash } => {

@@ -1,10 +1,10 @@
 //! # `depolama`
 //!
 //! `depolama` is a simple storage interface for cosmwasm contracts.
-
-//! ```
+//!
+//! ```rust
 //! use cosmwasm_std::{StdError, StdResult, testing::MockStorage};
-//! use depolama::{Bytes, Prefix, Store, DepsExt};
+//! use depolama::{Bytes, Prefix, Store, KeyCodec, ValueCodec, StorageExt};
 //!
 //! enum ExampleStore {}
 //!
@@ -14,12 +14,14 @@
 //!     type Key = u64;
 //!
 //!     type Value = u64;
+//! }
 //!
-//!     fn encode_key(key: &Self::Key) -> Bytes {
+//! impl KeyCodec<u64> for ExampleStore {
+//!     fn encode_key(key: &u64) -> Bytes {
 //!         key.to_be_bytes().into()
 //!     }
 //!
-//!     fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+//!     fn decode_key(raw: &Bytes) -> StdResult<u64> {
 //!         raw.try_into().map(u64::from_be_bytes).map_err(|_| {
 //!             StdError::generic_err(format!(
 //!                 "invalid key: expected 8 bytes, found {}: {raw}",
@@ -27,12 +29,14 @@
 //!             ))
 //!         })
 //!     }
+//! }
 //!
-//!     fn encode_value(value: &Self::Value) -> Bytes {
+//! impl ValueCodec<u64> for ExampleStore {
+//!     fn encode_value(value: &u64) -> Bytes {
 //!         value.to_be_bytes().into()
 //!     }
 //!
-//!     fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
+//!     fn decode_value(raw: &Bytes) -> StdResult<u64> {
 //!         raw.try_into().map(u64::from_be_bytes).map_err(|_| {
 //!             StdError::generic_err(format!(
 //!                 "invalid value: expected 8 bytes, found {}: {raw}",
@@ -56,7 +60,11 @@
 
 #![warn(clippy::pedantic, missing_docs)]
 
-use cosmwasm_std::{StdError, StdResult, Storage};
+use cosmwasm_std::{
+    to_json_binary, Addr, Empty, OverflowError, OverflowOperation, Querier, QueryRequest, StdError,
+    StdResult, Storage, WasmQuery,
+};
+use num_traits::{CheckedAdd, One};
 #[doc(no_inline)]
 pub use unionlabs_primitives::Bytes;
 
@@ -66,7 +74,7 @@ pub use unionlabs_primitives::Bytes;
 /// a cosmwasm contract. Additionally, the key and value codecs are defined directly on this
 /// interface, as opposed to on the key/ value types themselves, allowing storage implementors to
 /// more easily use external types without relying on direct integration with this crate.
-pub trait Store {
+pub trait Store: KeyCodec<Self::Key> + ValueCodec<Self::Value> {
     /// The prefix for this store. See [`Prefix`] for more information.
     const PREFIX: Prefix;
 
@@ -75,13 +83,19 @@ pub trait Store {
 
     /// The value stored in this store.
     type Value;
+}
 
+/// The key encoding and decoding for a [`Store`].
+///
+/// This trait is implemented for all stores with `type Key = ()`, enabling "item store"
+/// functionality on [`StorageExt`].
+pub trait KeyCodec<Key> {
     /// Encode the given key for writing to storage.
     ///
     /// # Implementor's Note
     ///
-    /// This function is expected to be isomorphic with [`Store::decode_key`].
-    fn encode_key(key: &Self::Key) -> Bytes;
+    /// This function is expected to be isomorphic with [`KeyCodec::decode_key`].
+    fn encode_key(key: &Key) -> Bytes;
 
     /// Decode the key for this store.
     ///
@@ -91,15 +105,34 @@ pub trait Store {
     ///
     /// # Implementor's Note
     ///
-    /// This function is expected to be isomorphic with [`Store::encode_key`].
-    fn decode_key(raw: &Bytes) -> StdResult<Self::Key>;
+    /// This function is expected to be isomorphic with [`KeyCodec::encode_key`].
+    fn decode_key(raw: &Bytes) -> StdResult<Key>;
+}
 
+impl<T: Store<Key = ()>> KeyCodec<()> for T {
+    fn encode_key((): &()) -> Bytes {
+        [].into()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<()> {
+        if raw.is_empty() {
+            Ok(())
+        } else {
+            Err(StdError::generic_err(format!(
+                "key must be empty, found {raw}"
+            )))
+        }
+    }
+}
+
+/// The value encoding and decoding for a [`Store`].
+pub trait ValueCodec<Value> {
     /// Encode the given value for writing to storage.
     ///
     /// # Implementor's Note
     ///
-    /// This function is expected to be isomorphic with [`Store::decode_value`].
-    fn encode_value(value: &Self::Value) -> Bytes;
+    /// This function is expected to be isomorphic with [`ValueCodec::decode_value`].
+    fn encode_value(value: &Value) -> Bytes;
 
     /// Decode the value for this store.
     ///
@@ -109,14 +142,19 @@ pub trait Store {
     ///
     /// # Implementor's Note
     ///
-    /// This function is expected to be isomorphic with [`Store::encode_value`].
-    fn decode_value(raw: &Bytes) -> StdResult<Self::Value>;
+    /// This function is expected to be isomorphic with [`ValueCodec::encode_value`].
+    fn decode_value(raw: &Bytes) -> StdResult<Value>;
 }
 
 /// A storage prefix for a [`Store`] implementation.
 ///
 /// A prefix is arbitrary, potentially empty, non-zero bytes.
-pub struct Prefix(&'static [u8]);
+pub struct Prefix(PrefixInner);
+
+enum PrefixInner {
+    Unprefixed,
+    Prefix(&'static [u8]),
+}
 
 impl Prefix {
     /// The separator byte used to separate the store prefix and the keys.
@@ -143,7 +181,33 @@ impl Prefix {
             i += 1;
         }
 
-        Self(prefix)
+        Self(PrefixInner::Prefix(prefix))
+    }
+
+    /// Construct a new un-prefixed store prefix.
+    ///
+    /// If a store's prefix is un-prefixed, no `0x00` byte will be written in the key. This is in
+    /// contrast to an *empty* prefix (`Prefix::new(b"")`), where the key will be `[0x00]`.
+    ///
+    /// This can be useful when dealing with nested stores, or if you want a more strongly-typed
+    /// interface to the root store of a contract.
+    ///
+    /// # Warning
+    ///
+    /// Un-prefixed stores run the risk of colliding with other (potentially prefixed) stores. Be
+    /// sure to use this with caution!
+    ///
+    /// ```rust
+    /// # use depolama::Prefix;
+    /// let empty_prefix = Prefix::new(b"").iter_with_separator().copied().collect::<Vec<_>>();
+    /// let no_prefix = Prefix::unprefixed().iter_with_separator().copied().collect::<Vec<_>>();
+    ///
+    /// assert_eq!(empty_prefix, [Prefix::SEPARATOR]);
+    /// assert!(no_prefix.is_empty());
+    /// ```
+    #[must_use = "constructing a `Prefix` has no effect"]
+    pub const fn unprefixed() -> Self {
+        Self(PrefixInner::Unprefixed)
     }
 
     /// Returns the length of the prefix, not including the prefix separator byte.
@@ -160,10 +224,13 @@ impl Prefix {
     #[must_use = "reading the length has no effect"]
     #[allow(clippy::len_without_is_empty)]
     pub const fn len(&self) -> usize {
-        self.0.len()
+        match self.0 {
+            PrefixInner::Unprefixed => 0,
+            PrefixInner::Prefix(prefix) => prefix.len(),
+        }
     }
 
-    /// Return an iterator over the prefix keys and the seperator byte.
+    /// Return an iterator over the prefix bytes and the separator byte (if any).
     ///
     /// # Example
     ///
@@ -175,15 +242,37 @@ impl Prefix {
     ///         .iter_with_separator()
     ///         .copied()
     ///         .collect::<Vec<_>>()
-    /// )
+    /// );
+    ///
+    /// // for unprefixed stores, this will return an empty iterator:
+    /// assert_eq!(
+    ///     b"",
+    ///     &*Prefix::unprefixed()
+    ///         .iter_with_separator()
+    ///         .copied()
+    ///         .collect::<Vec<_>>()
+    /// );
     /// ```
     pub fn iter_with_separator(&self) -> impl Iterator<Item = &u8> {
-        self.0.iter().chain(&[Self::SEPARATOR])
+        match self.0 {
+            // chain is required to keep the types the same for both branches
+            PrefixInner::Unprefixed => [].iter().chain(&[]),
+            PrefixInner::Prefix(prefix) => prefix.iter().chain(&[Self::SEPARATOR]),
+        }
     }
 }
 
+/// The raw store prefix for the store.
+pub fn raw_key<S: Store>(key: &S::Key) -> Bytes {
+    S::PREFIX
+        .iter_with_separator()
+        .copied()
+        .chain(S::encode_key(key))
+        .collect()
+}
+
 /// Extension trait for [`cosmwasm_std::Storage`] implementations to work with [`Store`]s.
-pub trait DepsExt: Storage {
+pub trait StorageExt {
     /// Read a value from the store.
     ///
     /// # Errors
@@ -191,12 +280,32 @@ pub trait DepsExt: Storage {
     /// This will return an error if the value is not found or cannot be decoded.
     fn read<S: Store>(&self, k: &S::Key) -> StdResult<S::Value>;
 
+    /// Read the value from the item store.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value has not been set or cannot be decoded.
+    #[inline]
+    fn read_item<S: Store<Key = ()>>(&self) -> StdResult<S::Value> {
+        self.read::<S>(&())
+    }
+
     /// Read a value from the store, returning `None` if the value is not found.
     ///
     /// # Errors
     ///
     /// This will return an error if the value cannot be decoded.
     fn maybe_read<S: Store>(&self, k: &S::Key) -> StdResult<Option<S::Value>>;
+
+    /// Read the value from the item store, returning `None` if the value has not been set.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded.
+    #[inline]
+    fn maybe_read_item<S: Store<Key = ()>>(&self) -> StdResult<Option<S::Value>> {
+        self.maybe_read::<S>(&())
+    }
 
     /// Read a value from the store, run the provided closure on the result, and then store the new
     /// value.
@@ -207,14 +316,71 @@ pub trait DepsExt: Storage {
     /// # Errors
     ///
     /// This will return an error if the value cannot be decoded.
-    fn upsert<S: Store>(
+    #[inline]
+    fn upsert<S: Store, E: From<StdError>>(
         &mut self,
         k: &S::Key,
-        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
-    ) -> StdResult<S::Value>;
+        f: impl FnOnce(Option<S::Value>) -> Result<S::Value, E>,
+    ) -> Result<S::Value, E> {
+        let value = self.maybe_read::<S>(k)?;
+        let v = f(value)?;
+        self.write::<S>(k, &v);
+        Ok(v)
+    }
+
+    /// Read the value from the item store, run the provided closure on the result, and then store
+    /// the new value.
+    ///
+    /// If the value has not yet been set in the item store, `f` will be called with `None`,
+    /// otherwise it will be called with `Some(S::Value)`.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded.
+    #[inline]
+    fn upsert_item<S: Store<Key = ()>, E: From<StdError>>(
+        &mut self,
+        f: impl FnOnce(Option<S::Value>) -> Result<S::Value, E>,
+    ) -> Result<S::Value, E> {
+        self.upsert::<S, E>(&(), f)
+    }
 
     /// Write a value to the store.
     fn write<S: Store>(&mut self, k: &S::Key, v: &S::Value);
+
+    /// Write the value to the item store.
+    #[inline]
+    fn write_item<S: Store<Key = ()>>(&mut self, v: &S::Value) {
+        self.write::<S>(&(), v);
+    }
+
+    /// Increment the value under the item store.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded, or if the value would overflow.
+    #[inline]
+    fn increment_item<S: Store<Key = (), Value: One + CheckedAdd>>(
+        &mut self,
+    ) -> Result<S::Value, StdError> {
+        let value = self.read::<S>(&())?;
+        let v = value
+            .checked_add(&S::Value::one())
+            .ok_or(StdError::overflow(OverflowError::new(
+                OverflowOperation::Add,
+            )))?;
+        self.write::<S>(&(), &v);
+        Ok(v)
+    }
+
+    /// Delete a value from the store.
+    fn delete<S: Store>(&mut self, k: &S::Key);
+
+    /// Delete the value from the item store.
+    #[inline]
+    fn delete_item<S: Store<Key = ()>>(&mut self) {
+        self.delete::<S>(&());
+    }
 
     /// Iterate over all of the (key, value) pairs in the store.
     ///
@@ -228,7 +394,7 @@ pub trait DepsExt: Storage {
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>>;
 }
 
-impl<T: Storage + 'static> DepsExt for T {
+impl<T: Storage> StorageExt for T {
     fn read<S: Store>(&self, k: &S::Key) -> StdResult<S::Value> {
         (self as &dyn Storage).read::<S>(k)
     }
@@ -241,12 +407,8 @@ impl<T: Storage + 'static> DepsExt for T {
         (self as &mut dyn Storage).write::<S>(k, v);
     }
 
-    fn upsert<S: Store>(
-        &mut self,
-        k: &S::Key,
-        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
-    ) -> StdResult<S::Value> {
-        (self as &mut dyn Storage).upsert::<S>(k, f)
+    fn delete<S: Store>(&mut self, k: &S::Key) {
+        (self as &mut dyn Storage).delete::<S>(k);
     }
 
     #[cfg(feature = "iterator")]
@@ -258,35 +420,33 @@ impl<T: Storage + 'static> DepsExt for T {
     }
 }
 
-impl DepsExt for dyn Storage {
+impl<'a> StorageExt for dyn Storage + 'a {
+    #[inline]
     fn read<S: Store>(&self, k: &S::Key) -> StdResult<S::Value> {
         self.maybe_read::<S>(k)?
             .ok_or_else(|| StdError::generic_err(format!("key {} not present", S::encode_key(k))))
     }
 
+    #[inline]
     fn maybe_read<S: Store>(&self, k: &S::Key) -> StdResult<Option<S::Value>> {
-        match self.get(&key::<S>(k)) {
+        match self.get(&raw_key::<S>(k)) {
             Some(v) => S::decode_value(&Bytes::new(v)).map(Some),
             None => Ok(None),
         }
     }
 
+    #[inline]
     fn write<S: Store>(&mut self, k: &S::Key, v: &S::Value) {
-        self.set(&key::<S>(k), &S::encode_value(v));
+        self.set(&raw_key::<S>(k), &S::encode_value(v));
     }
 
-    fn upsert<S: Store>(
-        &mut self,
-        k: &S::Key,
-        f: impl FnOnce(Option<S::Value>) -> StdResult<S::Value>,
-    ) -> StdResult<S::Value> {
-        let value = self.maybe_read::<S>(k)?;
-        let v = f(value)?;
-        self.write::<S>(k, &v);
-        Ok(v)
+    #[inline]
+    fn delete<S: Store>(&mut self, k: &S::Key) {
+        self.remove(&raw_key::<S>(k));
     }
 
     #[cfg(feature = "iterator")]
+    #[inline]
     fn iter<S: Store>(
         &self,
         order: cosmwasm_std::Order,
@@ -305,12 +465,77 @@ impl DepsExt for dyn Storage {
     }
 }
 
-fn key<S: Store>(key: &S::Key) -> Bytes {
-    S::PREFIX
-        .iter_with_separator()
-        .copied()
-        .chain(S::encode_key(key))
-        .collect()
+/// Extension trait for [`cosmwasm_std::Querier`] implementations to work with [`Store`]s.
+pub trait QuerierExt {
+    /// Read a value from the store of another contract.
+    ///
+    /// # Errors
+    ///
+    /// This will error if the cross contract call fails, or if the value cannot be decoded.
+    fn read<S: Store>(&self, addr: &Addr, key: &S::Key) -> StdResult<S::Value>;
+
+    /// Read a value from the item store of another contract.
+    ///
+    /// # Errors
+    ///
+    /// This will error if the cross contract call fails, or if the value cannot be decoded.
+    fn read_item<S: Store<Key = ()>>(&self, addr: &Addr) -> StdResult<S::Value>;
+}
+
+impl QuerierExt for dyn Querier + '_ {
+    #[inline]
+    fn read<S: Store>(&self, addr: &Addr, key: &S::Key) -> StdResult<S::Value> {
+        let raw_value = self
+            .raw_query(
+                &to_json_binary(&QueryRequest::<Empty>::Wasm(WasmQuery::Raw {
+                    contract_addr: addr.into(),
+                    key: raw_key::<S>(key).into_vec().into(),
+                }))
+                .expect("serialization is infallible; qed;"),
+            )
+            .into_result()
+            .map_err(|e| StdError::generic_err(e.to_string()))?
+            .into_result()
+            .map_err(StdError::generic_err)?;
+
+        S::decode_value(&<Vec<u8>>::from(raw_value).into())
+    }
+
+    #[inline]
+    fn read_item<S: Store<Key = ()>>(&self, addr: &Addr) -> StdResult<S::Value> {
+        self.read::<S>(addr, &())
+    }
+}
+
+/// A raw, un-prefixed store implementation.
+///
+/// This is equivalent to directly reading `deps.storage`, but with a slightly nicer api and
+/// composes nicely with the apis in this crate.
+pub enum RawStore {}
+impl Store for RawStore {
+    const PREFIX: Prefix = Prefix::unprefixed();
+
+    type Key = Bytes;
+
+    type Value = Bytes;
+}
+impl KeyCodec<Bytes> for RawStore {
+    fn encode_key(key: &Bytes) -> Bytes {
+        key.clone()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<Bytes> {
+        Ok(raw.clone())
+    }
+}
+impl ValueCodec<Bytes> for RawStore {
+    fn encode_value(value: &Bytes) -> Bytes {
+        value.clone()
+    }
+
+    fn decode_value(raw: &Bytes) -> StdResult<Bytes> {
+        Ok(raw.clone())
+    }
 }
 
 #[cfg(test)]
@@ -328,12 +553,14 @@ mod tests {
         type Key = u64;
 
         type Value = (u64, u64);
+    }
 
-        fn encode_key(key: &Self::Key) -> Bytes {
+    impl KeyCodec<u64> for TestStore {
+        fn encode_key(key: &u64) -> Bytes {
             key.to_be_bytes().into()
         }
 
-        fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+        fn decode_key(raw: &Bytes) -> StdResult<u64> {
             raw.try_into().map(u64::from_be_bytes).map_err(|_| {
                 StdError::generic_err(format!(
                     "invalid key: expected 8 bytes, found {}: {raw}",
@@ -341,15 +568,17 @@ mod tests {
                 ))
             })
         }
+    }
 
-        fn encode_value(value: &Self::Value) -> Bytes {
+    impl ValueCodec<(u64, u64)> for TestStore {
+        fn encode_value(value: &(u64, u64)) -> Bytes {
             [value.0.to_be_bytes(), value.1.to_be_bytes()]
                 .into_iter()
                 .flatten()
                 .collect()
         }
 
-        fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
+        fn decode_value(raw: &Bytes) -> StdResult<(u64, u64)> {
             raw.try_into()
                 .map(|arr: [u8; 16]| {
                     (
@@ -396,51 +625,42 @@ mod tests {
     }
 
     #[test]
+    #[allow(non_local_definitions)]
     fn no_overlap() {
         enum A {}
-
         impl Store for A {
             const PREFIX: Prefix = Prefix::new(&[1]);
             type Key = Bytes;
             type Value = Bytes;
-
-            fn encode_key(key: &Self::Key) -> Bytes {
-                key.clone()
-            }
-
-            fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
-                Ok(raw.clone())
-            }
-
-            fn encode_value(value: &Self::Value) -> Bytes {
-                value.clone()
-            }
-
-            fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
-                Ok(raw.clone())
-            }
         }
 
         enum B {}
-
         impl Store for B {
             const PREFIX: Prefix = Prefix::new(&[1, 1]);
             type Key = Bytes;
             type Value = Bytes;
+        }
 
-            fn encode_key(key: &Self::Key) -> Bytes {
+        trait BytesStore {}
+        impl BytesStore for A {}
+        impl BytesStore for B {}
+
+        impl<T: BytesStore> KeyCodec<Bytes> for T {
+            fn encode_key(key: &Bytes) -> Bytes {
                 key.clone()
             }
 
-            fn decode_key(raw: &Bytes) -> StdResult<Self::Key> {
+            fn decode_key(raw: &Bytes) -> StdResult<Bytes> {
                 Ok(raw.clone())
             }
+        }
 
-            fn encode_value(value: &Self::Value) -> Bytes {
+        impl<T: BytesStore> ValueCodec<Bytes> for T {
+            fn encode_value(value: &Bytes) -> Bytes {
                 value.clone()
             }
 
-            fn decode_value(raw: &Bytes) -> StdResult<Self::Value> {
+            fn decode_value(raw: &Bytes) -> StdResult<Bytes> {
                 Ok(raw.clone())
             }
         }

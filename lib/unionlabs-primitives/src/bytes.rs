@@ -70,6 +70,12 @@ impl<E: Encoding> Bytes<E> {
         Bytes::new(self.bytes)
     }
 
+    #[must_use = "converting bytes to bytes with a different encoding has no effect"]
+    #[inline]
+    pub fn as_encoding<E2: Encoding>(&self) -> &Bytes<E2> {
+        unsafe { &*core::ptr::from_ref::<Bytes<E>>(self).cast::<Bytes<E2>>() }
+    }
+
     #[must_use = "converting to a vec has no effect"]
     pub fn into_vec(self) -> Vec<u8> {
         self.bytes.into()
@@ -416,5 +422,12 @@ mod tests {
         assert_eq!(BASE64_STR, decoded.to_string());
 
         assert_eq!(&*decoded, RAW_VALUE);
+    }
+
+    #[test]
+    fn as_encoding() {
+        let bz = <Bytes>::new(b"bytes");
+        let bz_base64 = bz.as_encoding::<Base64>();
+        assert_eq!(bz_base64, &bz);
     }
 }
