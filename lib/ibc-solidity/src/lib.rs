@@ -283,7 +283,7 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketRecv(Packet packet, address relayer, bytes relayer_msg);
+            event PacketRecv(Packet packet, address relayer, bytes maker_msg);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)

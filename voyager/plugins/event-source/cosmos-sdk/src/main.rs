@@ -1622,7 +1622,7 @@ impl Module {
                     .await?;
 
                 let event = ibc_union_spec::event::PacketAck {
-                    packet_data: packet.data.into(),
+                    packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
                         source_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.source_channel_id,
@@ -1659,7 +1659,11 @@ impl Module {
                     event: into_value::<ibc_union_spec::event::FullEvent>(event),
                 }))
             }
-            IbcEvent::WasmPacketRecv { packet, maker_msg } => {
+            IbcEvent::WasmPacketRecv {
+                packet,
+                maker,
+                maker_msg,
+            } => {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
@@ -1712,7 +1716,7 @@ impl Module {
                     .unwrap();
 
                 let event = ibc_union_spec::event::PacketRecv {
-                    packet_data: packet.data.into(),
+                    packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
                         source_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.source_channel_id,
@@ -1725,7 +1729,6 @@ impl Module {
                         destination_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.destination_channel_id,
                             version: destination_channel.version.clone(),
-
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.client_id,
                                 connection_id: destination_channel.connection_id,
@@ -1734,7 +1737,7 @@ impl Module {
                         timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
-                    relayer_msg: relayer_msg.into_encoding(),
+                    maker_msg: maker_msg.into_encoding(),
                 }
                 .into();
 
@@ -1806,7 +1809,7 @@ impl Module {
                     .unwrap();
 
                 let event = ibc_union_spec::event::WriteAck {
-                    packet_data: packet.data.into(),
+                    packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
                         source_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.source_channel_id,
@@ -1819,7 +1822,6 @@ impl Module {
                         destination_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.destination_channel_id,
                             version: destination_channel.version.clone(),
-
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.client_id,
                                 connection_id: destination_channel.connection_id,

@@ -1,4 +1,4 @@
-#![warn(clippy::unwrap_used)]
+// #![warn(clippy::unwrap_used)]
 
 use std::{
     fmt::Debug,
@@ -22,7 +22,7 @@ use voyager_vm::ItemId;
 use crate::{
     context::{LoadedModulesInfo, Modules, WithId},
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
-    into_value, json_rpc_error_to_queue_error,
+    into_value,
     module::{
         ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient,
         RawProofModuleClient, RawStateModuleClient,

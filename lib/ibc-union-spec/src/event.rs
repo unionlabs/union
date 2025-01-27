@@ -273,7 +273,7 @@ pub struct PacketRecv {
 
     pub packet: PacketMetadata,
 
-    pub relayer_msg: Bytes,
+    pub maker_msg: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

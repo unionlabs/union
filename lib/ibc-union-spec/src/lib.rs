@@ -185,7 +185,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             event,
             %chain_id,
             data.packet_data = %e.packet_data,
-            data.relayer_msg = %e.relayer_msg,
+            data.maker_msg = %e.maker_msg,
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
