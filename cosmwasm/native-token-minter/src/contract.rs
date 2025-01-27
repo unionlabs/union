@@ -1,9 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    QueryRequest, Response, StdResult,
 };
-use token_factory_api::TokenFactoryMsg;
-use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg};
+use token_factory_api::{TokenFactoryMsg, TokenFactoryQuery};
+use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg};
 
 use crate::{error::Error, state::ADMIN};
 
@@ -82,4 +83,32 @@ pub fn execute(
         },
     };
     Ok(resp)
+}
+
+#[entry_point]
+pub fn query(deps: Deps<TokenFactoryQuery>, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
+    match msg {
+        QueryMsg::Metadata { denom } => {
+            let denom_metadata =
+                deps.querier
+                    .query::<token_factory_api::MetadataResponse>(
+                        &QueryRequest::<TokenFactoryQuery>::Custom(TokenFactoryQuery::Metadata {
+                            denom: denom.clone(),
+                        }),
+                    );
+            let default_name = "".into();
+            let default_symbol = denom.clone();
+            let (name, symbol) = match denom_metadata {
+                Ok(token_factory_api::MetadataResponse {
+                    metadata: Some(metadata),
+                }) => (
+                    metadata.name.unwrap_or(default_name),
+                    metadata.symbol.unwrap_or(default_symbol),
+                ),
+                _ => (default_name, default_symbol),
+            };
+
+            Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+        }
+    }
 }

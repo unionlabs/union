@@ -25,4 +25,13 @@ pub enum ExecuteMsg {
     Local(LocalTokenMsg),
 }
 
-pub type QueryMsg = token_factory_api::TokenFactoryQuery;
+#[cw_serde]
+pub enum QueryMsg {
+    Metadata { denom: String },
+}
+
+#[cw_serde]
+pub struct MetadataResponse {
+    pub name: String,
+    pub symbol: String,
+}

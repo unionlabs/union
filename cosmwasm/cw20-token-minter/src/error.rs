@@ -22,4 +22,7 @@ pub enum Error {
 
     #[error("contract creation event not found during handling `reply`")]
     ContractCreationEventNotFound,
+
+    #[error("token with denom `{0}` does not exist")]
+    TokenDoesNotExist(String),
 }

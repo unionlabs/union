@@ -1,10 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env,
-    MessageInfo, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg,
+    entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env,
+    MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg,
 };
+use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use token_factory_api::TokenFactoryMsg;
-use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg};
+use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg};
 
 use crate::{
     error::Error,
@@ -240,5 +241,25 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
         Ok(Response::new())
     } else {
         Err(Error::UnexpectedReply(reply.id))
+    }
+}
+
+#[entry_point]
+pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
+    match msg {
+        QueryMsg::Metadata { denom } => {
+            let addr = DENOM_TO_ADDR
+                .load(deps.storage, denom.clone())
+                .map_err(|_| Error::TokenDoesNotExist(denom))?;
+
+            let TokenInfoResponse { name, symbol, .. } =
+                deps.querier
+                    .query(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+                        contract_addr: addr.to_string(),
+                        msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
+                    }))?;
+
+            Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+        }
     }
 }
