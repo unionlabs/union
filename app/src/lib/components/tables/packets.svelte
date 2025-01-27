@@ -14,7 +14,6 @@ import {
   packetsByChannelIdQuery
 } from "$lib/queries/packets"
 import { timestamp } from "$lib/stores/page.ts"
-import CellCopy from "../table-cells/cell-copy.svelte"
 
 // export let chains: Array<Chain>
 export let chain_id: string | undefined = undefined

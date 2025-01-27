@@ -98,10 +98,6 @@ rawIntents.subscribe(async () => {
 })
 </script>
 
-<div>{JSON.stringify($rawIntents)}</div>
-<div>{JSON.stringify($channel)}</div>
-<div>{JSON.stringify($transferArgs)}</div>
-
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
     <Intent {chains} {channel} transferArgs={$transferArgs} {stores} {rotateTo}/>

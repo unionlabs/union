@@ -47,24 +47,16 @@ function toggleExpand(chainId: string) {
 
   <!-- Chain List -->
   <div class="flex flex-col h-full overflow-y-scroll">
-    <div class="p-2 space-y-2 h-full">
       {#each $context.chains as chain}
         <div>
-          <Button
-                  variant="ghost"
-                  class="px-4 py-2 w-full rounded-none flex justify-between items-center"
+          <button
+                  class="px-2 py-1 w-full hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
                   on:click={() => setChain(selected, chain.chain_id)}
           >
             <div class="flex items-center gap-2">
               <span>{chain.display_name}</span>
             </div>
-            <button
-                    class="border-2 border-black h-8 w-8 hover:bg-gray-200 active:border-gray-400"
-                    on:click|stopPropagation={() => toggleExpand(chain.chain_id)}
-            >
-              <span>i</span>
-            </button>
-          </Button>
+          </button>
 
           <!-- Expanded Info Panel -->
           {#if expandedChainId === chain.chain_id}
@@ -98,6 +90,5 @@ function toggleExpand(chainId: string) {
           {/if}
         </div>
       {/each}
-    </div>
   </div>
 </div>
