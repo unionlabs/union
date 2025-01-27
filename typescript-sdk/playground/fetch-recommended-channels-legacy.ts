@@ -42,6 +42,10 @@ if (quoteToken.isErr()) {
   consola.info("could not get quote token")
   process.exit(1)
 }
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.info("no quote token available")
+  process.exit(1)
+}
 
 console.log(JSON.stringify(quoteToken.value))
 
@@ -54,6 +58,10 @@ consola.info({ channel })
 let quoteToken2 = await getQuoteToken("17000", LINK_CONTRACT_ADDRESS, channel2)
 if (quoteToken2.isErr()) {
   consola.info("could not get quote token")
+  process.exit(1)
+}
+if (quoteToken2.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.info("no quote token available")
   process.exit(1)
 }
 

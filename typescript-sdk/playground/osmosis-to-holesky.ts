@@ -38,7 +38,7 @@ const cliArgs = parseArgs({
 const PRIVATE_KEY = cliArgs.values["private-key"]
 const STARS_DENOM = "uosmo"
 const AMOUNT = 17n
-const RECEIVER = "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177"
+const RECEIVER = "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
 const SOURCE_CHAIN_ID = "osmo-test-5"
 const DESTINATION_CHAIN_ID = "17000"
 
@@ -56,6 +56,10 @@ const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, STARS_DENOM, channel)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")
   consola.error(quoteToken.error)
+  process.exit(1)
+}
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.info("no quote token available")
   process.exit(1)
 }
 
