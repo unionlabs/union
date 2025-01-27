@@ -6,8 +6,15 @@ use unionlabs::primitives::{Bytes, H256};
 use crate::state::Config;
 
 #[cw_serde]
+pub enum TokenMinterInitMsg {
+    Cw20 { cw20_code_id: u64 },
+    Native,
+}
+
+#[cw_serde]
 pub struct InitMsg {
     pub config: Config,
+    pub minter_init_msg: TokenMinterInitMsg,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

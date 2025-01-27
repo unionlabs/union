@@ -61,4 +61,6 @@ pub enum ContractError {
     UnableToValidateMultiplexTarget,
     #[error("feature is not yet implemented")]
     Unimplemented,
+    #[error("contract creation event not found during handling `reply`")]
+    ContractCreationEventNotFound,
 }

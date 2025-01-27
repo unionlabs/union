@@ -33,5 +33,6 @@ ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
-hex        = { workspace = true }
-serde_json = { workspace = true }
+hex         = { workspace = true }
+hex-literal = { workspace = true }
+serde_json  = { workspace = true }
