@@ -7,6 +7,9 @@ publish.workspace      = true
 repository.workspace   = true
 version                = "0.1.0"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 cosmwasm-schema             = { version = "1.5" }
 cosmwasm-std                = { version = "1.5" }

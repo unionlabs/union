@@ -24,3 +24,5 @@ pub enum ExecuteMsg {
     Wrapped(TokenFactoryMsg),
     Local(LocalTokenMsg),
 }
+
+pub type QueryMsg = token_factory_api::TokenFactoryQuery;
