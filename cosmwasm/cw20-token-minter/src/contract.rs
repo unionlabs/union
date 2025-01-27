@@ -14,18 +14,24 @@ use crate::{
 pub const NATIVE_TOKEN_STORE_PREFIX: u32 = 0x1;
 
 #[cw_serde]
-pub struct InitMsg {
-    config: Config,
+pub enum TokenMinterInitMsg {
+    Cw20 { cw20_code_id: u64 },
 }
 
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    msg: InitMsg,
+    _: Env,
+    info: MessageInfo,
+    TokenMinterInitMsg::Cw20 { cw20_code_id }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
-    CONFIG.save(deps.storage, &msg.config)?;
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            admin: info.sender,
+            cw20_code_id,
+        },
+    )?;
     Ok(Response::default())
 }
 
@@ -94,13 +100,19 @@ pub fn execute(
             }
             TokenFactoryMsg::SetDenomMetadata { denom, metadata } => {
                 DENOM_TO_BE_STORED.save(deps.storage, &denom)?;
+                let name = metadata.name.expect("metadata name exists");
+                let symbol = metadata.symbol.expect("metadata symbol exists");
                 let msg = WasmMsg::Instantiate {
                     admin: Some(env.contract.address.to_string()),
                     code_id: config.cw20_code_id,
                     label: denom,
                     msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
-                        name: metadata.name.expect("metadata name exists"),
-                        symbol: metadata.symbol.expect("metadata name exists"),
+                        name: if !name.is_empty() {
+                            name
+                        } else {
+                            symbol.clone()
+                        },
+                        symbol,
                         decimals: 0,
                         initial_balances: vec![],
                         mint: Some(cw20::MinterResponse {
@@ -215,7 +227,7 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
             .map_err(Error::SubMsgError)?
             .events
             .into_iter()
-            .find(|e| &e.ty == "wasm")
+            .find(|e| &e.ty == "instantiate")
             .ok_or(Error::ContractCreationEventNotFound)?
             .attributes
             .into_iter()
