@@ -104,8 +104,6 @@ const requestUnoFromFaucet = async () => {
         return
       }
 
-      console.log(result)
-
       if (result.send.startsWith("ERROR")) {
         console.error(result.send)
         unoFaucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
