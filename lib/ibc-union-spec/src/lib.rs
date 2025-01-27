@@ -169,13 +169,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
@@ -189,13 +189,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
@@ -209,13 +209,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
@@ -229,13 +229,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
@@ -249,13 +249,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
@@ -268,13 +268,13 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
             data.packet.source_channel.version = %e.packet.source_channel.version,
-            data.packet.source_channel = %e.packet.source_channel.connection.client_id,
-            data.packet.source_channel = %e.packet.source_channel.connection.connection_id,
+            data.packet.source_channel.connection.client_id = %e.packet.source_channel.connection.client_id,
+            data.packet.source_channel.connection.connection_id = %e.packet.source_channel.connection.connection_id,
 
             data.packet.destination_channel.channel_id = %e.packet.destination_channel.channel_id,
             data.packet.destination_channel.version = %e.packet.destination_channel.version,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.client_id,
-            data.packet.destination_channel = %e.packet.destination_channel.connection.connection_id,
+            data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
+            data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
             data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,

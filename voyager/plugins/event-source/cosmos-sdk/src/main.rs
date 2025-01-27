@@ -39,8 +39,7 @@ use voyager_message::{
     into_value,
     module::{PluginInfo, PluginServer},
     rpc::missing_state,
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
@@ -95,12 +94,18 @@ fn default_chunk_block_fetch_size() -> u64 {
     10
 }
 
+#[derive(clap::Subcommand)]
+pub enum Cmd {
+    /// Return an op to fetch the events from a single block from the chain.
+    FetchSingleBlock { height: Height },
+}
+
 impl Plugin for Module {
     type Call = ModuleCall;
     type Callback = ModuleCallback;
 
     type Config = Config;
-    type Cmd = DefaultCmd;
+    type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
@@ -142,8 +147,21 @@ impl Plugin for Module {
         }
     }
 
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
+    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
+        match cmd {
+            Cmd::FetchSingleBlock { height } => {
+                print!(
+                    "{}",
+                    into_value(call::<VoyagerMessage>(PluginMessage::new(
+                        plugin_name(&config.chain_id),
+                        ModuleCall::from(FetchTransactions {
+                            height,
+                            page: const { option_unwrap!(NonZeroU32::new(1)) }
+                        })
+                    )))
+                )
+            }
+        }
     }
 }
 
@@ -1545,7 +1563,7 @@ impl Module {
                     .await?;
 
                 let event = ibc_union_spec::event::PacketSend {
-                    packet_data: packet.data.into(),
+                    packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
                         source_channel: ibc_union_spec::event::ChannelMetadata {
                             channel_id: packet.source_channel_id,
@@ -1661,7 +1679,7 @@ impl Module {
             }
             IbcEvent::WasmPacketRecv {
                 packet,
-                maker,
+                maker: _,
                 maker_msg,
             } => {
                 let destination_channel = voyager_client
