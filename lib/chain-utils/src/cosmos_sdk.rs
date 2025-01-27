@@ -238,18 +238,14 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         }
         .encode_as::<Proto>();
 
-        let tx_hash_normalized: H256 = sha2::Sha256::new()
+        let tx_hash: H256 = sha2::Sha256::new()
             .chain_update(&tx_raw_bytes)
             .finalize()
             .into();
-        let tx_hash = hex::encode_upper(tx_hash_normalized);
 
-        if let Ok(tx) = self.tm_client().tx(tx_hash.parse().unwrap(), false).await {
-            debug!(%tx_hash_normalized, "tx already included");
-            return Ok((
-                tx_hash_normalized,
-                tx.tx_result.gas_used.inner().try_into().unwrap(),
-            ));
+        if let Ok(tx) = self.tm_client().tx(tx_hash, false).await {
+            debug!(%tx_hash, "tx already included");
+            return Ok((tx_hash, tx.tx_result.gas_used.inner().try_into().unwrap()));
         }
 
         let response = self
@@ -259,11 +255,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             .map_err(BroadcastTxCommitError::BroadcastTxSync)
             .unwrap();
 
-        assert_eq!(
-            tx_hash,
-            response.hash.to_string(),
-            "tx hash calculated incorrectly"
-        );
+        assert_eq!(tx_hash, response.hash, "tx hash calculated incorrectly");
 
         info!(
             check_tx_code = ?response.code,
@@ -309,17 +301,14 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
-            let tx_inclusion = self.tm_client().tx(tx_hash.parse().unwrap(), false).await;
+            let tx_inclusion = self.tm_client().tx(tx_hash, false).await;
 
             debug!(?tx_inclusion);
 
             match tx_inclusion {
                 Ok(tx) => {
                     if tx.tx_result.code == 0 {
-                        break Ok((
-                            tx_hash_normalized,
-                            tx.tx_result.gas_used.inner().try_into().unwrap(),
-                        ));
+                        break Ok((tx_hash, tx.tx_result.gas_used.inner().try_into().unwrap()));
                     } else {
                         let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
                             &tx.tx_result.codespace,
