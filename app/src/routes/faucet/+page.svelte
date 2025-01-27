@@ -96,7 +96,7 @@ const requestUnoFromFaucet = async () => {
         address,
         captchaToken: $unoFaucetState.captchaToken
       })
-      if (result.faucet2 === null) {
+      if (result.drip_drop === null) {
         unoFaucetState.set({
           kind: "RESULT_ERR",
           error: "Empty faucet response"
@@ -104,15 +104,15 @@ const requestUnoFromFaucet = async () => {
         return
       }
 
-      if (result.faucet2.send.startsWith("ERROR")) {
-        console.error(result.faucet2.send)
+      if (result.drip_drop.send.startsWith("ERROR")) {
+        console.error(result.drip_drop.send)
         unoFaucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
         return
       }
 
       unoFaucetState.set({
         kind: "RESULT_OK",
-        message: result.faucet2.send
+        message: result.drip_drop.send
       })
     } catch (error) {
       unoFaucetState.set({
