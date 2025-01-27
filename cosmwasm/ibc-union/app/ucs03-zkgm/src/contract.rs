@@ -7,6 +7,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, to_json_string, wasm_execute, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
     QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
+    WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -26,32 +27,41 @@ use crate::{
         ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_BATCH,
         OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
-    msg::{EurekaMsg, ExecuteMsg, InitMsg, MigrateMsg},
+    msg::{EurekaMsg, ExecuteMsg, InitMsg},
     state::{
         CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
-        TOKEN_ORIGIN,
+        TOKEN_MINTER, TOKEN_ORIGIN,
     },
     ContractError,
 };
 
 pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 
-pub const REPLY_ID: u64 = 0x1337;
+pub const EXECUTE_REPLY_ID: u64 = 0x1337;
+pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
+    _: Env,
+    info: MessageInfo,
     msg: InitMsg,
 ) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
-    Ok(Response::default())
-}
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::new())
+    let msg = WasmMsg::Instantiate {
+        admin: Some(info.sender.to_string()),
+        code_id: msg.config.token_minter_code_id,
+        msg: to_json_binary(&msg.minter_init_msg)?,
+        funds: vec![],
+        label: "zkgm-token-minter".to_string(),
+    };
+    Ok(Response::new().add_submessage(SubMsg {
+        id: TOKEN_INIT_REPLY_ID,
+        msg: msg.into(),
+        gas_limit: None,
+        reply_on: cosmwasm_std::ReplyOn::Success,
+    }))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -103,7 +113,7 @@ pub fn execute(
                                 },
                                 vec![],
                             )?,
-                            REPLY_ID,
+                            EXECUTE_REPLY_ID,
                         )))
                     }
                 }
@@ -386,7 +396,7 @@ fn refund(
     let base_denom = String::from_utf8(order.base_token.to_vec())
         .map_err(|_| ContractError::InvalidBaseToken)?;
     let mut messages = Vec::<CosmosMsg>::new();
-    let minter = CONFIG.load(deps.storage)?.token_minter;
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
         messages.push(make_wasm_msg(
@@ -444,7 +454,7 @@ fn acknowledge_fungible_asset_order(
                         .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
                     let base_denom = String::from_utf8(order.base_token.to_vec())
                         .map_err(|_| ContractError::InvalidBaseToken)?;
-                    let minter = CONFIG.load(deps.storage)?.token_minter;
+                    let minter = TOKEN_MINTER.load(deps.storage)?;
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
                         messages.push(make_wasm_msg(
@@ -710,7 +720,7 @@ fn execute_fungible_asset_order(
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
     let mut messages = Vec::<CosmosMsg>::new();
-    let minter = CONFIG.load(deps.storage)?.token_minter;
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
         let subdenom = factory_denom(&wrapped_denom, env.contract.address.as_str());
@@ -819,65 +829,86 @@ fn execute_fungible_asset_order(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
-    if reply.id != REPLY_ID {
-        return Err(ContractError::UnknownReply { id: reply.id });
-    }
-    let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
-    let packet = EXECUTING_PACKET.load(deps.storage)?;
-    EXECUTING_PACKET.remove(deps.storage);
-    match reply.result {
-        SubMsgResult::Ok(_) => {
-            // If the execution succedeed ack is guaranteed to exist.
-            let execution_ack = EXECUTION_ACK.load(deps.storage)?;
-            EXECUTION_ACK.remove(deps.storage);
-            match execution_ack {
-                // Specific value when the execution must be replayed by a MM. No
-                // side effects were executed. We break the TX for MMs to be able to
-                // replay the packet.
-                ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
-                ack if !ack.is_empty() => {
+    match reply.id {
+        EXECUTE_REPLY_ID => {
+            let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
+            let packet = EXECUTING_PACKET.load(deps.storage)?;
+            EXECUTING_PACKET.remove(deps.storage);
+            match reply.result {
+                SubMsgResult::Ok(_) => {
+                    // If the execution succedeed ack is guaranteed to exist.
+                    let execution_ack = EXECUTION_ACK.load(deps.storage)?;
+                    EXECUTION_ACK.remove(deps.storage);
+                    match execution_ack {
+                        // Specific value when the execution must be replayed by a MM. No
+                        // side effects were executed. We break the TX for MMs to be able to
+                        // replay the packet.
+                        ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
+                        ack if !ack.is_empty() => {
+                            let zkgm_ack = Ack {
+                                tag: TAG_ACK_SUCCESS,
+                                inner_ack: Vec::from(ack).into(),
+                            }
+                            .abi_encode_params();
+                            Ok(Response::new().add_message(wasm_execute(
+                                &ibc_host,
+                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                    MsgWriteAcknowledgement {
+                                        channel_id: packet.destination_channel_id,
+                                        packet,
+                                        acknowledgement: zkgm_ack.into(),
+                                    },
+                                ),
+                                vec![],
+                            )?))
+                        }
+                        // Async acknowledgement, we don't write anything
+                        _ => Ok(Response::new()),
+                    }
+                }
+                // Something went horribly wrong.
+                SubMsgResult::Err(e) => {
                     let zkgm_ack = Ack {
-                        tag: TAG_ACK_SUCCESS,
-                        inner_ack: Vec::from(ack).into(),
+                        tag: TAG_ACK_FAILURE,
+                        inner_ack: Default::default(),
                     }
                     .abi_encode_params();
-                    Ok(Response::new().add_message(wasm_execute(
-                        &ibc_host,
-                        &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                            MsgWriteAcknowledgement {
-                                channel_id: packet.destination_channel_id,
-                                packet,
-                                acknowledgement: zkgm_ack.into(),
-                            },
-                        ),
-                        vec![],
-                    )?))
+                    Ok(Response::new()
+                        .add_attribute("fatal_error", to_json_string(&e)?)
+                        .add_message(wasm_execute(
+                            &ibc_host,
+                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                MsgWriteAcknowledgement {
+                                    channel_id: packet.destination_channel_id,
+                                    packet,
+                                    acknowledgement: zkgm_ack.into(),
+                                },
+                            ),
+                            vec![],
+                        )?))
                 }
-                // Async acknowledgement, we don't write anything
-                _ => Ok(Response::new()),
             }
         }
-        // Something went horribly wrong.
-        SubMsgResult::Err(e) => {
-            let zkgm_ack = Ack {
-                tag: TAG_ACK_FAILURE,
-                inner_ack: Default::default(),
-            }
-            .abi_encode_params();
-            Ok(Response::new()
-                .add_attribute("fatal_error", to_json_string(&e)?)
-                .add_message(wasm_execute(
-                    &ibc_host,
-                    &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                        MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel_id,
-                            packet,
-                            acknowledgement: zkgm_ack.into(),
-                        },
-                    ),
-                    vec![],
-                )?))
+        TOKEN_INIT_REPLY_ID => {
+            let addr = reply
+                .result
+                .into_result()
+                .expect("token init only captures success case")
+                .events
+                .into_iter()
+                .find(|e| &e.ty == "instantiate")
+                .ok_or(ContractError::ContractCreationEventNotFound)?
+                .attributes
+                .into_iter()
+                .find(|a| &a.key == "_contract_address")
+                .ok_or(ContractError::ContractCreationEventNotFound)?
+                .value;
+
+            TOKEN_MINTER.save(deps.storage, &deps.api.addr_validate(&addr)?)?;
+
+            Ok(Response::new())
         }
+        _ => Err(ContractError::UnknownReply { id: reply.id }),
     }
 }
 
@@ -906,7 +937,7 @@ fn transfer(
     let mut messages = Vec::<CosmosMsg>::new();
     // TODO: handle forward path
     let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
-    let minter = CONFIG.load(deps.storage)?.token_minter;
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
         Some(path)
@@ -1015,4 +1046,12 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
+}
+
+#[test]
+pub fn test_fucking() {
+    let t = hex_literal::hex!("79e489e8a9267d8ef2ae96b1d0965e69e42be338c603e330da8a64ce5e6490aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000f000000000000000000000000000000000000000000000000000000000000002c756e696f6e3164383467743663777839333873616e306874687a37793666307234663030676a7177683539770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c73746172733171637661767870787733743864396a376d7761657139776779746b6635767770757476357834000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c463579374b42376f457667736e4c41694c72417532327564784e3575746152376435527464473862535a42390000000000000000000000000000000000000000");
+    let packet = ZkgmPacket::abi_decode_params(t.as_slice(), false).unwrap();
+    let inst = FungibleAssetOrder::abi_decode_params(&packet.instruction.operand, false).unwrap();
+    panic!("{inst:?}");
 }

@@ -6275,6 +6275,7 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "ethabi",
  "hex",
+ "hex-literal",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
