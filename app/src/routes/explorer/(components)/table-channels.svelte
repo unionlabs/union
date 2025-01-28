@@ -9,6 +9,8 @@ import { derived } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types"
+import type { ChainFeature } from "$lib/types.ts"
+import { page } from "$app/stores"
 
 let channels = createQuery({
   queryKey: ["channels"],
@@ -35,7 +37,17 @@ let channels = createQuery({
     }))
 })
 
-let channelsDataStore = derived(channels, $channels => $channels.data ?? [])
+let channelsDataStore = derived([channels, page], ([$channels, $page]) => {
+  const enabledChainIds = $page.data.features
+    .filter((chain: ChainFeature) => chain.features[0]?.channel_list)
+    .map((chain: ChainFeature) => chain.chain_id)
+
+  return ($channels.data ?? []).filter(
+    channel =>
+      enabledChainIds.includes(channel.source_chain.chain_id) &&
+      enabledChainIds.includes(channel.destination_chain.chain_id)
+  )
+})
 
 type DataRow = UnwrapReadable<typeof channelsDataStore>[number]
 

@@ -14,6 +14,9 @@ import {
   packetsByChannelIdQuery
 } from "$lib/queries/packets"
 import { timestamp } from "$lib/stores/page.ts"
+import CellCopy from "../table-cells/cell-copy.svelte"
+import { page } from "$app/stores"
+import type { ChainFeature } from "$lib/types.ts"
 
 // export let chains: Array<Chain>
 export let chain_id: string | undefined = undefined
@@ -29,11 +32,22 @@ let packets = chain_id
     : packetsByChainIdQuery(12, chain_id, timestamp)
   : packetsQuery(12, timestamp)
 
-let packetsDataStore = derived(packets, $packets =>
-  ($packets.data ?? []).map(item => ({
-    ...item,
-    timestamp: item.timestamp?.toString() ?? ""
-  }))
+let packetsDataStore = derived([packets, page], ([$packets, $page]) =>
+  ($packets.data ?? [])
+    .filter(packet => {
+      const enabledChainIds = $page.data.features
+        .filter((chain: ChainFeature) => chain.features[0]?.packet_list)
+        .map((chain: ChainFeature) => chain.chain_id)
+
+      return (
+        enabledChainIds.includes(packet.source.chain_id) &&
+        enabledChainIds.includes(packet.destination.chain_id)
+      )
+    })
+    .map(item => ({
+      ...item,
+      timestamp: item.timestamp?.toString() ?? ""
+    }))
 )
 
 type PacketRow = UnwrapReadable<typeof packetsDataStore>[number] & { timestamp?: string }

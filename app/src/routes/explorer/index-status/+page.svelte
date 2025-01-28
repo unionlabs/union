@@ -11,6 +11,8 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import CellDurationText from "$lib/components/table-cells//cell-duration-text.svelte"
 import CellChainIndex from "$lib/components/table-cells//cell-chain-index.svelte"
 import { indexStatusQuery } from "$lib/graphql/queries/index-status.ts"
+import type { ChainFeature } from "$lib/types.ts"
+import { page } from "$app/stores"
 
 let indexStatus = createQuery({
   queryKey: ["index-status"],
@@ -24,7 +26,13 @@ let indexStatus = createQuery({
   }
 })
 
-let indexStatusDataStore = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
+let indexStatusDataStore = derived([indexStatus, page], ([$indexStatus, $page]) => {
+  const enabledChainIds = $page.data.features
+    .filter((chain: ChainFeature) => chain.features[0]?.index_status)
+    .map((chain: ChainFeature) => chain.chain_id)
+
+  return ($indexStatus.data ?? []).filter(status => enabledChainIds.includes(status.chain.chain_id))
+})
 
 type DataRow = UnwrapReadable<typeof indexStatusDataStore>[number]
 

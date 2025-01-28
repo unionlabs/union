@@ -2,4 +2,4 @@
 import TablePackets from "$lib/components/tables/packets.svelte"
 </script>
 
-<TablePackets/>
+<TablePackets />
