@@ -22,7 +22,7 @@ use voyager_message::{
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
-    rpc::missing_state,
+    rpc::{missing_state, ProofType},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -264,7 +264,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(continuation)
                     }
                     None => {
-                        info!("consensus state does not exist, queueing update for l2 client");
+                        info!("consensus state does not exist, queuing update for l2 client");
                         Ok(conc([
                             // update the L2 client on L1 and then dispatch the continuation
                             promise(
@@ -402,15 +402,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         QueryHeight::Specific(l1_latest_height),
                         l2_consensus_state_path,
                     )
-                    .await?
-                    .proof;
+                    .await?;
+
+                if l2_consensus_state_proof.proof_type != ProofType::Membership {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "proof of the l2 consensus state must be a membership proof",
+                        None::<()>,
+                    ));
+                }
+
                 debug!(?l2_consensus_state_proof);
 
                 let l2_consensus_state_proof_bytes = voyager_client
                     .encode_proof::<IbcUnion>(
                         l1_client_info.client_type.clone(),
                         state_lens_client_info.ibc_interface,
-                        l2_consensus_state_proof,
+                        l2_consensus_state_proof.proof,
                     )
                     .await?;
 
