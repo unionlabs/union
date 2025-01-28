@@ -18,6 +18,7 @@ use tracing::{error, instrument};
 use unionlabs::{
     bech32::Bech32,
     bounded::BoundedI64,
+    cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     primitives::H256,
     ErrorReporter,
@@ -26,6 +27,7 @@ use voyager_message::{
     core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    rpc::ProofType,
     ProofModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
@@ -116,7 +118,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> RpcResult<(Value, ProofType)> {
         let data = [0x03]
             .into_iter()
             .chain(*self.ibc_host_contract_address.data())
@@ -144,44 +146,53 @@ impl ProofModuleServer<IbcUnion> for Module {
                 true,
             )
             .await
-            .map_err(rpc_error("error querying connection proof", None))?;
+            .map_err(rpc_error("error querying ibc proof", None))?;
 
-        Ok(into_value(
-            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .response
-                    .proof_ops
-                    .ok_or_else(|| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "proofOps must be present on abci query when called with prove = true",
-                            None::<()>,
-                        )
-                    })?
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
-                            &*op.data,
-                        )
-                        .map_err(|e| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                format!("invalid height value: {}", ErrorReporter(e)),
-                                Some(json!({ "height": at })),
-                            )
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-            })
-            .map_err(|e| {
+        let proofs = query_result
+            .response
+            .proof_ops
+            .ok_or_else(|| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!("invalid height value: {}", ErrorReporter(e)),
-                    Some(json!({ "height": at })),
+                    "proofOps must be present on abci query when called with prove = true",
+                    None::<()>,
                 )
-            })?,
-        ))
+            })?
+            .ops
+            .into_iter()
+            .map(|op| {
+                <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("invalid height value: {}", ErrorReporter(e)),
+                            Some(json!({ "height": at })),
+                        )
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let proof =
+            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("invalid merkle proof value: {}", ErrorReporter(e)),
+                        Some(json!({ "height": at })),
+                    )
+                })?;
+
+        let proof_type = if proof
+            .proofs
+            .iter()
+            .any(|p| matches!(&p, CommitmentProof::Nonexist(_)))
+        {
+            ProofType::NonMembership
+        } else {
+            ProofType::Membership
+        };
+
+        Ok((into_value(proof), proof_type))
     }
 }
 

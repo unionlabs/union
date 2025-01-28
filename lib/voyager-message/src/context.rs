@@ -562,38 +562,38 @@ impl Context {
         )
         .await?;
 
-        main_rpc_server.start(Arc::new(modules));
-
         info!("checking for plugin health...");
 
-        {
-            let mut futures = plugins
-                .iter()
-                .map(|(name, client)| async move {
-                    match client
-                        .client
-                        .wait_until_connected(Duration::from_secs(10))
-                        .instrument(debug_span!("health check", %name))
-                        .await
-                    {
-                        Ok(_) => {
-                            info!("plugin {name} connected")
-                        }
-                        Err(_) => {
-                            warn!("plugin {name} failed to connect after 10 seconds")
-                        }
+        let futures = plugins
+            .iter()
+            .map(|(name, client)| async move {
+                match client
+                    .client
+                    .wait_until_connected(Duration::from_secs(10))
+                    .instrument(debug_span!("health check", %name))
+                    .await
+                {
+                    Ok(()) => {
+                        info!("plugin {name} connected")
                     }
-                })
-                .collect::<FuturesUnordered<_>>();
+                    Err(_) => {
+                        warn!("plugin {name} failed to connect after 10 seconds")
+                    }
+                }
+            })
+            .collect::<FuturesUnordered<_>>();
 
-            match cancellation_token
-                .run_until_cancelled(async { while let Some(()) = futures.next().await {} })
-                .await
-            {
-                Some(()) => {}
-                None => return Err(anyhow!("startup error")),
-            }
+        match cancellation_token
+            .run_until_cancelled(futures.collect::<Vec<_>>())
+            .await
+        {
+            Some(_) => {}
+            None => return Err(anyhow!("startup error")),
         }
+
+        main_rpc_server.start(Arc::new(modules));
+
+        info!("started");
 
         Ok(Self {
             rpc_server: main_rpc_server,

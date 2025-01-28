@@ -512,6 +512,7 @@ fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
 
     Ok(buf)
 }
+
 #[model]
 struct MoveMembershipProof {
     sub_proof: ics23::existence_proof::ExistenceProof,

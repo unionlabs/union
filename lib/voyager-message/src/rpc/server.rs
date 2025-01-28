@@ -342,15 +342,19 @@ impl Server {
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, path)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }
@@ -415,15 +419,19 @@ impl Server {
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, into_value(path.clone()))
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                trace!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }

@@ -323,7 +323,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         match row {
             Some(row) => {
-                let span = info_span!("processing item", id = row.id);
+                let span = info_span!("processing item", item_id = row.id);
 
                 trace!(%row.item);
 
@@ -384,20 +384,22 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
                             sqlx::query(
                                 "
-                                INSERT INTO queue (item)
-                                SELECT * FROM UNNEST($1::JSONB[])
+                                INSERT INTO queue (item, parents)
+                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
                                 ",
                             )
+                            .bind(vec![row.id])
                             .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
                             .execute(tx.as_mut())
                             .await?;
 
                             sqlx::query(
                                 "
-                                INSERT INTO optimize (item, tag)
-                                SELECT * FROM UNNEST($1::JSONB[], $2::TEXT[])
+                                INSERT INTO optimize (item, tag, parents)
+                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
                                 ",
                             )
+                            .bind(vec![row.id])
                             .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
                             .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
                             .execute(tx.as_mut())

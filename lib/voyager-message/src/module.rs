@@ -13,6 +13,7 @@ use crate::{
         ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     },
     data::Data,
+    rpc::ProofType,
     RawClientId, VoyagerMessage,
 };
 
@@ -350,14 +351,18 @@ pub trait ProofModule<V: IbcSpec> {
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the state as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
+    async fn query_ibc_proof(
+        &self,
+        at: Height,
+        path: V::StorePath,
+    ) -> RpcResult<(Value, ProofType)>;
 }
 
 /// Type-erased version of [`ProofModuleClient`].
 #[rpc(client, namespace = "proof")]
 pub trait RawProofModule {
     #[method(name = "queryIbcProof")]
-    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
+    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<(Value, ProofType)>;
 }
 
 /// Client modules provide functionality to interact with a single light client
