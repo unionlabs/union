@@ -1,5 +1,5 @@
 use cosmwasm_std::StdError;
-use token_factory_api::TokenFactoryMsg;
+use ucs03_zkgm_token_minter_api::WrappedTokenMsg;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -28,5 +28,5 @@ pub enum Error {
     TokenDoesNotExist(String),
 
     #[error("unexpected execute msg: {0:?}")]
-    UnexpectedExecuteMsg(TokenFactoryMsg),
+    UnexpectedExecuteMsg(WrappedTokenMsg),
 }

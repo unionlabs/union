@@ -4,7 +4,9 @@ use cosmwasm_std::{
     QueryRequest, Response, StdResult,
 };
 use token_factory_api::{TokenFactoryMsg, TokenFactoryQuery};
-use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg};
+use ucs03_zkgm_token_minter_api::{
+    BaseTokenResponse, ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg,
+};
 
 use crate::{error::Error, state::ADMIN};
 
@@ -47,6 +49,7 @@ pub fn execute(
 
     let resp = match msg {
         ExecuteMsg::Wrapped(msg) => {
+            let msg: TokenFactoryMsg = msg.into();
             if let TokenFactoryMsg::BurnTokens { denom, amount, .. } = &msg {
                 let contains_base_token = info
                     .funds
@@ -88,6 +91,9 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps<TokenFactoryQuery>, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
+        QueryMsg::BaseToken { base_token } => {
+            Ok(to_json_binary(&BaseTokenResponse { base_token })?)
+        }
         QueryMsg::Metadata { denom } => {
             let denom_metadata =
                 deps.querier

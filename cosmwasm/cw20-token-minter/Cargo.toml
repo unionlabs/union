@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmwasm-schema             = { version = "1.5" }
-cosmwasm-std                = { version = "1.5", features = [ "cosmwasm_1_3"] }
+cosmwasm-std                = { version = "1.5", features = ["cosmwasm_1_3"] }
 cw-storage-plus             = { version = "1.2" }
 cw20                        = "1.1.2"
 cw20-base                   = { version = "1.1.2", features = ["library"] }

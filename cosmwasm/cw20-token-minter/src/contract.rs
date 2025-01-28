@@ -5,12 +5,13 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
-use token_factory_api::TokenFactoryMsg;
-use ucs03_zkgm_token_minter_api::{ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg};
+use ucs03_zkgm_token_minter_api::{
+    BaseTokenResponse, ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, WrappedTokenMsg,
+};
 
 use crate::{
     error::Error,
-    state::{Config, CONFIG, DENOM_TO_ADDR, DENOM_TO_BE_STORED},
+    state::{Config, ADDR_TO_DENOM, CONFIG, DENOM_TO_ADDR, DENOM_TO_BE_STORED},
 };
 
 pub const NATIVE_TOKEN_STORE_PREFIX: u32 = 0x1;
@@ -60,13 +61,12 @@ pub fn execute(
 
     let response = match msg {
         ExecuteMsg::Wrapped(msg) => match msg {
-            TokenFactoryMsg::CreateDenom { metadata, .. } => {
-                let metadata = metadata.expect("metadata exists");
+            WrappedTokenMsg::CreateDenom { metadata, .. } => {
                 // the first denom is always the same as the generated denom
                 let denom = metadata.denom_units[0].denom.clone();
                 DENOM_TO_BE_STORED.save(deps.storage, &denom)?;
-                let name = metadata.name.expect("metadata name exists");
-                let symbol = metadata.symbol.expect("metadata symbol exists");
+                let name = metadata.name;
+                let symbol = metadata.symbol;
                 let msg = WasmMsg::Instantiate {
                     admin: Some(env.contract.address.to_string()),
                     code_id: config.cw20_code_id,
@@ -95,10 +95,7 @@ pub fn execute(
                     reply_on: ReplyOn::Success,
                 })
             }
-            TokenFactoryMsg::ChangeAdmin { .. } => {
-                panic!("admin is always this contract")
-            }
-            TokenFactoryMsg::MintTokens {
+            WrappedTokenMsg::MintTokens {
                 denom,
                 amount,
                 mint_to_address,
@@ -116,14 +113,25 @@ pub fn execute(
                 )?;
                 Response::new().add_message(msg)
             }
-            TokenFactoryMsg::BurnTokens { denom, amount, .. } => {
+            WrappedTokenMsg::BurnTokens {
+                denom,
+                amount,
+                sender,
+                ..
+            } => {
                 let addr = DENOM_TO_ADDR
                     .load(deps.storage, denom.clone())
                     .map_err(|_| Error::CantMint(denom))?;
-                let msg = wasm_execute(addr, &cw20::Cw20ExecuteMsg::Burn { amount }, vec![])?;
+                let msg = wasm_execute(
+                    addr,
+                    &cw20::Cw20ExecuteMsg::BurnFrom {
+                        owner: sender.to_string(),
+                        amount,
+                    },
+                    vec![],
+                )?;
                 Response::new().add_message(msg)
             }
-            _ => return Err(Error::UnexpectedExecuteMsg(msg)),
         },
         ExecuteMsg::Local(msg) => match msg {
             LocalTokenMsg::TakeFunds {
@@ -223,7 +231,10 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
             .ok_or(Error::ContractCreationEventNotFound)?
             .value;
 
-        DENOM_TO_ADDR.save(deps.storage, denom, &Addr::unchecked(addr))?;
+        let addr = deps.api.addr_validate(&addr)?;
+
+        DENOM_TO_ADDR.save(deps.storage, denom.clone(), &addr)?;
+        ADDR_TO_DENOM.save(deps.storage, addr, &denom)?;
 
         Ok(Response::new())
     } else {
@@ -234,6 +245,12 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
 #[entry_point]
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
+        QueryMsg::BaseToken { base_token } => {
+            let base_token = ADDR_TO_DENOM
+                .load(deps.storage, Addr::unchecked(base_token.clone()))
+                .unwrap_or(base_token);
+            Ok(to_json_binary(&BaseTokenResponse { base_token })?)
+        }
         QueryMsg::Metadata { denom } => match DENOM_TO_ADDR.load(deps.storage, denom.clone()) {
             Ok(addr) => {
                 let TokenInfoResponse { name, symbol, .. } = query_token_info(deps, addr.as_str())?;

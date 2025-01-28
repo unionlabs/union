@@ -5,17 +5,19 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env,
-    MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128,
-    Uint256, WasmMsg,
+    to_json_binary, to_json_string, wasm_execute, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
+    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
+    WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::types::Packet;
-use token_factory_api::{DenomUnit, Metadata, TokenFactoryMsg};
-use ucs03_zkgm_token_minter_api::{LocalTokenMsg, MetadataResponse};
+use token_factory_api::DenomUnit;
+use ucs03_zkgm_token_minter_api::{
+    BaseTokenResponse, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg,
+};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -400,7 +402,7 @@ fn refund(
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
         messages.push(make_wasm_msg(
-            TokenFactoryMsg::MintTokens {
+            WrappedTokenMsg::MintTokens {
                 denom: base_denom,
                 amount: base_amount.into(),
                 mint_to_address: sender.into_string(),
@@ -458,7 +460,7 @@ fn acknowledge_fungible_asset_order(
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
                         messages.push(make_wasm_msg(
-                            TokenFactoryMsg::MintTokens {
+                            WrappedTokenMsg::MintTokens {
                                 denom: base_denom,
                                 amount: base_amount.into(),
                                 mint_to_address: market_maker.into_string(),
@@ -731,22 +733,18 @@ fn execute_fungible_asset_order(
                 &Vec::from(order.base_token.clone()).into(),
             )?;
             messages.push(make_wasm_msg(
-                TokenFactoryMsg::CreateDenom {
+                WrappedTokenMsg::CreateDenom {
                     subdenom: wrapped_denom,
-                    metadata: Some(Metadata {
-                        description: None,
+                    metadata: Metadata {
                         denom_units: vec![DenomUnit {
                             denom: subdenom.clone(),
                             exponent: 0,
                             aliases: vec![],
                         }],
-                        base: None,
-                        display: Some(subdenom.clone()),
-                        name: Some(order.base_token_name),
-                        symbol: Some(order.base_token_symbol),
-                        uri: None,
-                        uri_hash: None,
-                    }),
+                        display: subdenom.clone(),
+                        name: order.base_token_name,
+                        symbol: order.base_token_symbol,
+                    },
                 },
                 &minter,
                 vec![],
@@ -758,7 +756,7 @@ fn execute_fungible_asset_order(
             )?;
         };
         messages.push(make_wasm_msg(
-            TokenFactoryMsg::MintTokens {
+            WrappedTokenMsg::MintTokens {
                 denom: subdenom.clone(),
                 amount: quote_amount.into(),
                 mint_to_address: receiver.into_string(),
@@ -768,7 +766,7 @@ fn execute_fungible_asset_order(
         )?);
         if fee_amount > 0 {
             messages.push(make_wasm_msg(
-                TokenFactoryMsg::MintTokens {
+                WrappedTokenMsg::MintTokens {
                     denom: subdenom,
                     amount: fee_amount.into(),
                     mint_to_address: relayer.into_string(),
@@ -929,12 +927,20 @@ fn transfer(
     if base_amount.is_zero() {
         return Err(ContractError::InvalidAmount);
     }
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     // If the origin exists, the preimage exists
+    let BaseTokenResponse { base_token } =
+        deps.querier
+            .query(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+                contract_addr: minter.to_string(),
+                msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::BaseToken {
+                    base_token,
+                })?,
+            }))?;
     let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
     let mut messages = Vec::<CosmosMsg>::new();
     // TODO: handle forward path
     let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
-    let minter = TOKEN_MINTER.load(deps.storage)?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
         Some(path)
@@ -942,10 +948,11 @@ fn transfer(
                 && unwrapped_asset == Some(quote_token.clone()) =>
         {
             messages.push(make_wasm_msg(
-                TokenFactoryMsg::BurnTokens {
+                WrappedTokenMsg::BurnTokens {
                     denom: base_token.clone(),
                     amount: base_amount,
                     burn_from_address: minter.to_string(),
+                    sender: info.sender.clone(),
                 },
                 &minter,
                 info.funds,
@@ -1043,24 +1050,4 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
-}
-
-#[test]
-pub fn test_fucking() {
-    let t = hex_literal::hex!("79e489e8a9267d8ef2ae96b1d0965e69e42be338c603e330da8a64ce5e6490cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000002a62626e31786530726e6c6833753035716b7779746b776d797a6c383661306d767077667867663274377500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e3164383467743663777839333873616e306874687a37793666307234663030676a71776835397700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000073666163746f72792f62626e3163633330686a30376d617061383565323963636171386a326a38767234676b7032746d7a637668703672643939656564353430736666647a6b682f4366446259716e5a4e5a734e6b447544706f3662665244336f7a66724a414537717534666257756b6f51474b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f00000000000000000000000000000000000000000000000000000000");
-    let packet = ZkgmPacket::abi_decode_params(t.as_slice(), false).unwrap();
-    let inst = FungibleAssetOrder::abi_decode_params(&packet.instruction.operand, false).unwrap();
-    panic!("{inst:?}");
-}
-
-#[test]
-pub fn aedlnaesnd() {
-    panic!(
-        "{}",
-        predict_wrapped_denom(
-            "0".parse().unwrap(),
-            22,
-            b"factory/union1gk3qcw5tlajduwez3uxgpzsydymht2q0qtjyfz6zeq0azsju8c3qqu8hds/QbT8RvrS1NmUfkGmEynCigyFpWBxgarbkbijuYT9369".into()
-        )
-    );
 }

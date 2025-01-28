@@ -12,4 +12,6 @@ pub const CONFIG: Item<Config> = Item::new("conf");
 
 pub const DENOM_TO_ADDR: Map<String, Addr> = Map::new("dta");
 
+pub const ADDR_TO_DENOM: Map<Addr, String> = Map::new("atd");
+
 pub const DENOM_TO_BE_STORED: Item<String> = Item::new("dtbs");
