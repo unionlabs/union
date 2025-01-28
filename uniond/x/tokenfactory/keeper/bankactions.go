@@ -50,13 +50,5 @@ func (k Keeper) burnFrom(ctx sdk.Context, amount sdk.Coin, burnFrom string) erro
 		return fmt.Errorf("failed to burn from blocked address: %s", addr)
 	}
 
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx,
-		addr,
-		types.ModuleName,
-		sdk.NewCoins(amount))
-	if err != nil {
-		return err
-	}
-
-	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(amount))
+	return k.bankKeeper.BurnCoins(ctx, addr.Bytes(), sdk.NewCoins(amount))
 }
