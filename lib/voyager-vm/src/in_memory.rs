@@ -104,17 +104,17 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         };
 
         match op {
-            Some((id, item)) => {
-                let span = info_span!("processing item", %id);
+            Some((item_id, item)) => {
+                let span = info_span!("processing item", %item_id);
 
                 self.done
                     .lock()
                     .expect("mutex is poisoned")
-                    .insert(id, item.clone());
+                    .insert(item_id, item.clone());
 
                 let (r, res) = f(
                     item.op.clone(),
-                    ItemId::new(i64::from(id)).expect("infallible"),
+                    ItemId::new(i64::from(item_id)).expect("infallible"),
                 )
                 .instrument(span)
                 .await;
@@ -130,7 +130,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                                     optimizer_queue.entry(tag.to_owned()).or_default().insert(
                                         self.idx.fetch_add(1, Ordering::SeqCst),
                                         Item {
-                                            parents: vec![id],
+                                            parents: vec![item_id],
                                             op,
                                         },
                                     );
@@ -139,7 +139,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                                     ready.insert(
                                         self.idx.fetch_add(1, Ordering::SeqCst),
                                         Item {
-                                            parents: vec![id],
+                                            parents: vec![item_id],
                                             op,
                                         },
                                     );

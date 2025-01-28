@@ -1,8 +1,11 @@
+// #![warn(clippy::unwrap_used)]
+
 use std::{
     fmt::Debug,
     sync::{Arc, OnceLock},
 };
 
+use anyhow::anyhow;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -250,9 +253,9 @@ impl Server {
                             .ibc_spec_handlers
                             .handlers
                             .get(ibc_spec_id)
-                            .unwrap()
+                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
                             .client_state_path)(client_id.clone())
-                        .unwrap(),
+                        .map_err(|err| fatal_error(&*err))?,
                     )
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -339,15 +342,19 @@ impl Server {
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, path)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }
@@ -412,15 +419,19 @@ impl Server {
                     .map_err(fatal_error)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, into_value(path.clone()))
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                trace!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }

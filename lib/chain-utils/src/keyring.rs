@@ -4,7 +4,7 @@ use crossbeam_queue::ArrayQueue;
 use futures::Future;
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
-use tracing::{info_span, warn, Instrument};
+use tracing::{debug, info_span, Instrument};
 
 pub trait ChainKeyring {
     type Address: Hash + Eq + Clone + Display + Send + Sync;
@@ -88,7 +88,7 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         f: F,
     ) -> Option<Fut::Output> {
         let Some(address) = self.addresses_buffer.pop() else {
-            warn!(keyring = %self.name, "high traffic in keyring");
+            debug!(keyring = %self.name, "high traffic in keyring");
             return None;
         };
 

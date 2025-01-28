@@ -1,5 +1,6 @@
 use std::num::NonZeroU64;
 
+use ibc_union_spec::types::Packet;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bech32::Bech32,
@@ -302,27 +303,28 @@ pub enum IbcEvent {
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {
         #[serde(with = "stringified_json")]
-        packet: ibc_solidity::Packet,
+        packet: Packet,
     },
 
     #[serde(rename = "wasm-packet_recv")]
     WasmPacketRecv {
         #[serde(with = "stringified_json")]
-        packet: ibc_solidity::Packet,
-        relayer_msg: Bytes<HexUnprefixed>,
+        packet: Packet,
+        maker: Bech32<Bytes>,
+        maker_msg: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-packet_ack")]
     WasmPacketAck {
         #[serde(with = "stringified_json")]
-        packet: ibc_solidity::Packet,
+        packet: Packet,
         acknowledgement: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-write_ack")]
     WasmWriteAck {
         #[serde(with = "stringified_json")]
-        packet: ibc_solidity::Packet,
+        packet: Packet,
         acknowledgement: Bytes<HexUnprefixed>,
     },
 }

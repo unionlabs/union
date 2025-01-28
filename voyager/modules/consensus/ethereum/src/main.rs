@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -108,7 +110,11 @@ impl ConsensusModule for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url).await?;
 
-        let spec = beacon_api_client.spec().await.unwrap().data;
+        let spec = beacon_api_client
+            .spec()
+            .await
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+            .data;
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(
@@ -139,7 +145,11 @@ impl ConsensusModuleServer for Module {
                 .map(|response| Height::new(response.data.finalized_header.execution.block_number))
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         } else {
-            Ok(Height::new(self.provider.get_block_number().await.unwrap()))
+            self.provider
+                .get_block_number()
+                .await
+                .map(Height::new)
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         }
     }
 
@@ -166,8 +176,8 @@ impl ConsensusModuleServer for Module {
                     BlockTransactionsKind::Hashes,
                 )
                 .await
-                .unwrap()
-                .unwrap()
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+                .ok_or_else(|| ErrorObject::owned(-1, "latest block not found", None::<()>))?
                 .header
                 .timestamp
         };

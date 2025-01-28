@@ -181,7 +181,7 @@ impl ClientT for Client {
             .as_deref()
             .ok_or_else(|| {
                 jsonrpsee::core::client::Error::Custom(format!(
-                    "not yet connected (request: {method})",
+                    "not yet connected (notification: {method})",
                 ))
             })?
             .notification(method, params)
