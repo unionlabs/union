@@ -762,6 +762,26 @@ type query_root {
   ): [v1_health_check!]!
 
   """
+  fetch data from the table: "v1_ibc_union.app_chain_configurations"
+  """
+  v1_ibc_union_app_chain_configurations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_app_chain_configurations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_app_chain_configurations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_app_chain_configurations_bool_exp
+  ): [v1_ibc_union_app_chain_configurations!]!
+
+  """
   fetch data from the table: "v1_ibc_union.assets"
   """
   v1_ibc_union_assets(
@@ -2306,6 +2326,40 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_health_check_bool_exp
   ): [v1_health_check!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.app_chain_configurations"
+  """
+  v1_ibc_union_app_chain_configurations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_app_chain_configurations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_app_chain_configurations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_app_chain_configurations_bool_exp
+  ): [v1_ibc_union_app_chain_configurations!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.app_chain_configurations"
+  """
+  v1_ibc_union_app_chain_configurations_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_app_chain_configurations_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_app_chain_configurations_bool_exp
+  ): [v1_ibc_union_app_chain_configurations!]!
 
   """
   fetch data from the table: "v1_ibc_union.assets"
@@ -6366,6 +6420,123 @@ input v1_health_check_stream_cursor_value_input {
 }
 
 """
+columns and relationships of "v1_ibc_union.app_chain_configurations"
+"""
+type v1_ibc_union_app_chain_configurations {
+  """An object relationship"""
+  chain: v1_ibc_union_chains
+  channel_list: Boolean
+  connection_list: Boolean
+  environment: String
+  index_status: Boolean
+  packet_list: Boolean
+  transfer_list: Boolean
+  transfer_submission: Boolean
+}
+
+"""
+order by aggregate values of table "v1_ibc_union.app_chain_configurations"
+"""
+input v1_ibc_union_app_chain_configurations_aggregate_order_by {
+  count: order_by
+  max: v1_ibc_union_app_chain_configurations_max_order_by
+  min: v1_ibc_union_app_chain_configurations_min_order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.app_chain_configurations". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_app_chain_configurations_bool_exp {
+  _and: [v1_ibc_union_app_chain_configurations_bool_exp!]
+  _not: v1_ibc_union_app_chain_configurations_bool_exp
+  _or: [v1_ibc_union_app_chain_configurations_bool_exp!]
+  chain: v1_ibc_union_chains_bool_exp
+  channel_list: Boolean_comparison_exp
+  connection_list: Boolean_comparison_exp
+  environment: String_comparison_exp
+  index_status: Boolean_comparison_exp
+  packet_list: Boolean_comparison_exp
+  transfer_list: Boolean_comparison_exp
+  transfer_submission: Boolean_comparison_exp
+}
+
+"""
+order by max() on columns of table "v1_ibc_union.app_chain_configurations"
+"""
+input v1_ibc_union_app_chain_configurations_max_order_by {
+  environment: order_by
+}
+
+"""
+order by min() on columns of table "v1_ibc_union.app_chain_configurations"
+"""
+input v1_ibc_union_app_chain_configurations_min_order_by {
+  environment: order_by
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.app_chain_configurations".
+"""
+input v1_ibc_union_app_chain_configurations_order_by {
+  chain: v1_ibc_union_chains_order_by
+  channel_list: order_by
+  connection_list: order_by
+  environment: order_by
+  index_status: order_by
+  packet_list: order_by
+  transfer_list: order_by
+  transfer_submission: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.app_chain_configurations"
+"""
+enum v1_ibc_union_app_chain_configurations_select_column {
+  """column name"""
+  channel_list
+
+  """column name"""
+  connection_list
+
+  """column name"""
+  environment
+
+  """column name"""
+  index_status
+
+  """column name"""
+  packet_list
+
+  """column name"""
+  transfer_list
+
+  """column name"""
+  transfer_submission
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_app_chain_configurations"
+"""
+input v1_ibc_union_app_chain_configurations_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_app_chain_configurations_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_app_chain_configurations_stream_cursor_value_input {
+  channel_list: Boolean
+  connection_list: Boolean
+  environment: String
+  index_status: Boolean
+  packet_list: Boolean
+  transfer_list: Boolean
+  transfer_submission: Boolean
+}
+
+"""
 columns and relationships of "v1_ibc_union.assets"
 """
 type v1_ibc_union_assets {
@@ -6643,13 +6814,23 @@ type v1_ibc_union_chains {
     where: v1_ibc_union_explorers_bool_exp
   ): [v1_ibc_union_explorers!]!
 
-  """
-  A computed field, executes function "v1_ibc_union.get_chain_features"
-  """
+  """An array relationship"""
   features(
-    """JSON select path"""
-    path: String
-  ): jsonb
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_app_chain_configurations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_app_chain_configurations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_app_chain_configurations_bool_exp
+  ): [v1_ibc_union_app_chain_configurations!]!
   logo_uri: String
   rpc_type: String
 
@@ -6705,7 +6886,7 @@ input v1_ibc_union_chains_bool_exp {
   enabled: Boolean_comparison_exp
   enabled_staging: Boolean_comparison_exp
   explorers: v1_ibc_union_explorers_bool_exp
-  features: jsonb_comparison_exp
+  features: v1_ibc_union_app_chain_configurations_bool_exp
   logo_uri: String_comparison_exp
   rpc_type: String_comparison_exp
   rpcs: v1_ibc_union_rpcs_bool_exp
@@ -6722,7 +6903,7 @@ input v1_ibc_union_chains_order_by {
   enabled: order_by
   enabled_staging: order_by
   explorers_aggregate: v1_ibc_union_explorers_aggregate_order_by
-  features: order_by
+  features_aggregate: v1_ibc_union_app_chain_configurations_aggregate_order_by
   logo_uri: order_by
   rpc_type: order_by
   rpcs_aggregate: v1_ibc_union_rpcs_aggregate_order_by
@@ -6792,7 +6973,7 @@ type v1_ibc_union_channel_recommendations {
   destination_channel_id: Int
   destination_client_id: Int
   destination_connection_id: Int
-  destination_port_id: bytea
+  destination_port_id: String
 
   """An object relationship"""
   source_chain: v1_ibc_union_chains
@@ -6800,7 +6981,7 @@ type v1_ibc_union_channel_recommendations {
   source_channel_id: Int
   source_client_id: Int
   source_connection_id: Int
-  source_port_id: bytea
+  source_port_id: String
   status: String
   version: String
 }
@@ -6817,13 +6998,13 @@ input v1_ibc_union_channel_recommendations_bool_exp {
   destination_channel_id: Int_comparison_exp
   destination_client_id: Int_comparison_exp
   destination_connection_id: Int_comparison_exp
-  destination_port_id: bytea_comparison_exp
+  destination_port_id: String_comparison_exp
   source_chain: v1_ibc_union_chains_bool_exp
   source_chain_id: String_comparison_exp
   source_channel_id: Int_comparison_exp
   source_client_id: Int_comparison_exp
   source_connection_id: Int_comparison_exp
-  source_port_id: bytea_comparison_exp
+  source_port_id: String_comparison_exp
   status: String_comparison_exp
   version: String_comparison_exp
 }
@@ -6906,12 +7087,12 @@ input v1_ibc_union_channel_recommendations_stream_cursor_value_input {
   destination_channel_id: Int
   destination_client_id: Int
   destination_connection_id: Int
-  destination_port_id: bytea
+  destination_port_id: String
   source_chain_id: String
   source_channel_id: Int
   source_client_id: Int
   source_connection_id: Int
-  source_port_id: bytea
+  source_port_id: String
   status: String
   version: String
 }
@@ -12967,4 +13148,3 @@ input v1_ucs1_paths_stream_cursor_input {
 input v1_ucs1_paths_stream_cursor_value_input {
   """Channel-id (of the forwarding destination)."""
   channel_id: String
-}
