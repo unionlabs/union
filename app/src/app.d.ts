@@ -3,6 +3,9 @@ import type { LeapWindow } from "@leapwallet/types"
 import type { AptosBrowserWallet } from "@unionlabs/client"
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
 
+type FeaturesQuery = ReturnType<typeof enabledFeatures>
+type Features = NonNullable<FeaturesQuery["data"]>["v1_ibc_union_chains"]
+
 declare module "@tanstack/svelte-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
     class: string
@@ -19,7 +22,11 @@ interface AptosWindow {
 }
 
 declare global {
-  namespace App {}
+  namespace App {
+    interface PageData {
+      features: Features
+    }
+  }
 
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
     EventEmitter: typeof EventEmitter
