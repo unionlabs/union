@@ -31,8 +31,8 @@ export default defineConfig(config => {
     plugins,
     build: { target: "es2020" },
     define: {
-      'import.meta.env.ENVIRONMENT': JSON.stringify(ENVIRONMENT),
-      'import.meta.env.NODE_ENV': JSON.stringify(NODE_ENV)
+      "import.meta.env.ENVIRONMENT": JSON.stringify(ENVIRONMENT),
+      "import.meta.env.NODE_ENV": JSON.stringify(NODE_ENV)
     },
     esbuild: {
       drop: dropLogStatements ? ["console", "debugger"] : []
