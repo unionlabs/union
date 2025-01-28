@@ -188,7 +188,7 @@ impl ClientModuleInfo {
             .any(|expected| expected == self.ibc_interface.as_str())
         {
             Err(UnexpectedIbcInterfaceError {
-                expected: expected_interfaces,
+                expected: expected_interfaces.join(","),
                 found: self.ibc_interface.to_string(),
             })
         } else {
@@ -277,9 +277,9 @@ pub struct UnexpectedClientTypeError {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected:?}`, but the config specifies `{found}`")]
+#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcInterfaceError {
-    pub expected: Vec<String>,
+    pub expected: String,
     pub found: String,
 }
 
