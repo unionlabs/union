@@ -13148,3 +13148,4 @@ input v1_ucs1_paths_stream_cursor_input {
 input v1_ucs1_paths_stream_cursor_value_input {
   """Channel-id (of the forwarding destination)."""
   channel_id: String
+}
