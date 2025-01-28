@@ -10,10 +10,10 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-clap        = { workspace = true, features = ["derive", "help"] }
-hex-literal = { workspace = true }
-sha2        = { workspace = true }
-sha3        = { workspace = true }
-slotlib     = { workspace = true }
-typed-arena = "2.0"
-unionlabs   = { workspace = true, features = ["rlp"] }
+clap         = { workspace = true, features = ["derive", "help"] }
+hex-literal  = { workspace = true }
+proc-macro2  = "1.0.93"
+slotlib      = { workspace = true }
+syn-solidity = "0.8.19"
+typed-arena  = "2.0"
+unionlabs    = { workspace = true, features = ["rlp"] }

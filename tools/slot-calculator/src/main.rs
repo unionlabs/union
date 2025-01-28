@@ -1,151 +1,98 @@
-use std::{collections::VecDeque, str::FromStr, vec};
-
 use clap::{Arg, Command};
+use proc_macro2::TokenStream;
 use slotlib::{MappingKey, Slot};
+use std::{collections::VecDeque, str::FromStr};
+use syn_solidity::{parse2, Item, Type};
 use typed_arena::Arena;
 use unionlabs::primitives::{H256, U256};
 
 // Examples:
-// mapping(uint256 => uint256) => ["uint256"]
-// mapping(uint256 => uint256[]) => ["uint256", "uint256[]"]
-// mapping(uint256 => mapping(uint256 => uint256)) => ["uint256", "uint256"]
-// mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256)[])[]) => ["uint256", "mapping[]", "uint256", "mapping[]", "uint256"]
-// mapping(uint256 => mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256)[]))[]) => ["uint256", "mapping[]", "uint256", "uint256", "mapping[]", "uint256"]
-// mapping(uint256 => mapping(uint256 => uint256)[]) => ["uint256", "mapping[]", "uint256"]
-fn parse_layout(layout: &str) -> Result<Vec<String>, String> {
-    // 1. Basic validation
-    if !layout.starts_with("mapping(") || !layout.ends_with(')') {
-        return Err("Invalid layout".to_string());
+// mapping(uint256 => uint256)
+// uint256[] => ["uint256[]"]
+// mapping(uint256 => uint256[])
+// mapping(uint256 => mapping(uint256 => uint256))
+// mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256)[])[])
+// mapping(uint256 => mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256)[]))[])
+// mapping(uint256 => mapping(uint256 => uint256)[])
+fn parse_layout(layout: &mut String) -> Result<Type, String> {
+    // Check if the layout already includes a visibility modifier and a variable name
+    if !layout.contains("public") && !layout.contains("internal") && !layout.contains("private") {
+        layout.push_str(" public dummyName;");
     }
 
-    // 2. Remove all 'mapping', then strip the first '(' and last ')' character.
-    let mut sanitized = layout.replace("mapping", "");
-    sanitized = sanitized[1..sanitized.len() - 1].to_string();
+    let parsed_layout = layout
+        .parse::<TokenStream>()
+        .map_err(|_| "Failed to parse layout".to_string())?;
+    let parsed_layout = parse2(parsed_layout).map_err(|e| e.to_string())?;
 
-    // 3. Split by '=>', trim and remove any leftover '('
-    let mut split_by_arrow: Vec<String> = sanitized
-        .split("=>")
-        .map(|s| s.trim().replace("(", ""))
-        .collect();
-
-    // cloning the array so we can iterate indexes from the *original* split_by_arrow
-    // while we modify the *current* split_by_arrow in place.
-    let original_split = split_by_arrow.clone();
-
-    for (i, element) in original_split.iter().enumerate() {
-        let mapping_array_count = element.matches(")[]").count();
-        if mapping_array_count == 0 {
-            continue;
-        }
-
-        // 1) split element by ")[]"
-        // 2) skip the first chunk
-        // 3) in each chunk, count how many times ')' appears, subtract 1
-        // 4) reverse at the end
-        let mut skip_indexes: Vec<usize> = element
-            .split(")[]")
-            .skip(1)
-            .map(|chunk| chunk.matches(')').count())
-            .collect();
-        skip_indexes.reverse();
-
-        // For each occurrence, insert "mapping[]" at index (i - j - skipCount).
-        for j in 1..=mapping_array_count {
-            let skip_count = skip_indexes[j - 1];
-            let insert_index = (i as usize) - (j as usize) - (skip_count as usize);
-            split_by_arrow.insert(insert_index as usize, "mapping[]".to_string());
-        }
+    match &parsed_layout.items[0] {
+        Item::Variable(var) => match &var.ty {
+            Type::Mapping(map) => Ok(Type::Mapping(map.clone())),
+            Type::Array(arr) => Ok(Type::Array(arr.clone())),
+            _ => return Err("Unsupported type".to_string()),
+        },
+        _ => return Err("Unsupported item".to_string()),
     }
-
-    // 4. Final check on the last element:
-    // if it doesn't have "[]" or if it still contains ")[]", pop it
-    if let Some(last) = split_by_arrow.last() {
-        if !last.contains("[]") || last.contains(")[]") {
-            split_by_arrow.pop();
-        }
-    }
-
-    Ok(split_by_arrow)
 }
 
-// MappingKey + U32
-#[derive(Debug)]
-pub enum KeyTypes<'a> {
-    MappingIndex(MappingKey<'a>),
-    ArrayIndex(U256),
-}
-
-fn parse_keys<'a>(parsed_layout: &Vec<String>, keys: &'a str) -> Vec<KeyTypes<'a>> {
-    let split_keys: Vec<&str> = keys.split(" ").collect();
-    let mut final_keys: Vec<KeyTypes<'a>> = vec![];
-    for (i, parsed_layout_elem) in parsed_layout.iter().enumerate() {
-        if (*parsed_layout_elem).contains("[]") {
-            final_keys.push(KeyTypes::ArrayIndex(
-                split_keys[i].parse::<u32>().unwrap().into(),
-            ));
-        } else if *parsed_layout_elem == "uint256" {
-            final_keys.push(KeyTypes::MappingIndex(MappingKey::Uint256(
-                split_keys[i].parse::<u32>().unwrap().into(),
-            )));
-        } else if *parsed_layout_elem == "string" {
-            final_keys.push(KeyTypes::MappingIndex(MappingKey::String(split_keys[i])));
-        } else if *parsed_layout_elem == "uint64" {
-            final_keys.push(KeyTypes::MappingIndex(MappingKey::Uint64(
-                split_keys[i].parse::<u64>().unwrap(),
-            )));
-        } else if *parsed_layout_elem == "bytes32" {
-            final_keys.push(KeyTypes::MappingIndex(MappingKey::Bytes32(
-                H256::from_str(split_keys[i]).unwrap(),
-            )));
-        } else {
-            panic!("Unrecognized key!");
-        };
+fn parse_mapping_key<'a>(key_type: &'a Type, key: &'a str) -> MappingKey<'a> {
+    match key_type {
+        Type::Uint(_, size) => {
+            let size = size.and_then(|s| Some(s.get())).unwrap_or(256);
+            match size {
+                256 => MappingKey::Uint256(U256::from(
+                    key.parse::<u64>().expect("Invalid uint256 key"),
+                )),
+                64 => MappingKey::Uint64(key.parse::<u64>().expect("Invalid uint64 key")),
+                _ => panic!("Unsupported uint size: {}", size),
+            }
+        }
+        Type::FixedBytes(_, size) => {
+            let size = size.get();
+            match size {
+                32 => MappingKey::Bytes32(H256::from_str(key).expect("Invalid bytes32 key")),
+                _ => panic!("Unsupported bytes size: {}", size),
+            }
+        }
+        Type::String(_) => MappingKey::String(key),
+        _ => panic!("Unsupported mapping key type"),
     }
-
-    final_keys
 }
 
-// ["uint256", "mapping[]", "uint256"]
 fn build_slot<'a>(
-    parsed_layout: &mut VecDeque<String>,
-    parsed_keys: &mut VecDeque<KeyTypes<'a>>,
+    parsed_layout: &'a Type,
+    keys: &mut VecDeque<&'a str>,
     arena: &'a Arena<Slot<'a>>,
 ) -> &'a Slot<'a> {
-    if parsed_layout.is_empty() {
-        return arena.alloc(Slot::Offset(U256::from(0u32)));
-    }
-
-    let layout_part = parsed_layout.pop_front().unwrap();
-
-    if layout_part.contains("[]") {
-        let KeyTypes::ArrayIndex(i) = parsed_keys.pop_front().unwrap() else {
-            panic!("Expected an array index but got a mapping key!");
-        };
-        arena.alloc(Slot::Array(
-            build_slot(parsed_layout, parsed_keys, arena),
-            i,
-        ))
-    } else {
-        let KeyTypes::MappingIndex(mk) = parsed_keys.pop_front().unwrap() else {
-            panic!("Expected a mapping key but got an array index!");
-        };
-        arena.alloc(Slot::Mapping(
-            build_slot(parsed_layout, parsed_keys, arena),
-            mk,
-        ))
+    let key: &str = match keys.pop_front() {
+        Some(k) => k,
+        None => return arena.alloc(Slot::Offset(U256::from(0u32))),
+    };
+    match parsed_layout {
+        Type::Mapping(mapping) => arena.alloc(Slot::Mapping(
+            build_slot(mapping.value.as_ref(), keys, arena),
+            parse_mapping_key(mapping.key.as_ref(), key),
+        )),
+        Type::Array(arr) => arena.alloc(Slot::Array(
+            build_slot(arr.ty.as_ref(), keys, arena),
+            U256::from(key.parse::<u64>().expect("Invalid array index")),
+        )),
+        _ => panic!("Unsupported layout type or wrong key count."),
     }
 }
 
 fn calculate_slot(layout: &str, keys: &str) -> U256 {
-    let parsed_layout = parse_layout(layout).unwrap();
-    let parsed_keys = parse_keys(&parsed_layout, keys);
-
-    // we need a queue structure for popping first elements more efficiently, therefore we're using VecDeque
-    let mut parsed_layout = VecDeque::from(parsed_layout);
-    let mut parsed_keys = VecDeque::from(parsed_keys);
+    let parsed_layout = parse_layout(&mut layout.to_string()).unwrap();
+    let mut split_keys: VecDeque<&str> = keys.split(" ").collect();
 
     let arena = Arena::new();
-    let slot = build_slot(&mut parsed_layout, &mut parsed_keys, &arena);
+    let slot = build_slot(&parsed_layout, &mut split_keys, &arena);
+    if split_keys.len() != 0 {
+        eprintln!(
+            "Warning: Unused keys: {:?}. The calculated slot might be wrong. Please check the layout and keys you provided.",
+            split_keys
+        );
+    }
     slot.slot()
 }
 
@@ -179,7 +126,6 @@ fn main() {
         .map(|s| s.to_string())
         .collect();
 
-    // Combine user-provided keys into "123 1 100" form:
     let keys_str = keys_collected.join(" ");
 
     let slot_hex = calculate_slot(layout, &keys_str);
@@ -192,7 +138,7 @@ fn main() {
 
 #[test]
 fn test_calculate_slot() {
-    let layout = "mapping(uint256 => mapping(uint256 => uint256)[])";
+    let layout = "mapping(uint256 => mapping(uint256 => uint256)[]) public test;";
     let keys = "100 1 123";
 
     let slot = calculate_slot(layout, keys);
