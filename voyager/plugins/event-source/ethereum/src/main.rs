@@ -877,7 +877,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 timeout_height: event.packet.timeout_height,
                                 timeout_timestamp: event.packet.timeout_timestamp,
                             },
-                            relayer_msg: event.relayer_msg.into(),
+                            maker_msg: event.maker_msg.into(),
                         }
                         .into();
 

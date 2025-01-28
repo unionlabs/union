@@ -1,8 +1,11 @@
+// #![warn(clippy::unwrap_used)]
+
 use std::{
     fmt::Debug,
     sync::{Arc, OnceLock},
 };
 
+use anyhow::anyhow;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -250,9 +253,9 @@ impl Server {
                             .ibc_spec_handlers
                             .handlers
                             .get(ibc_spec_id)
-                            .unwrap()
+                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
                             .client_state_path)(client_id.clone())
-                        .unwrap(),
+                        .map_err(|err| fatal_error(&*err))?,
                     )
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
