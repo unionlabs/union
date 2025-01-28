@@ -4,10 +4,9 @@ export const trailingSlash = "ignore"
 
 import { fetchFeatures } from "$lib/queries/features"
 
-import { PUBLIC_ENVIRONMENT } from "$env/static/public"
-
 export const load = async () => {
-  const environment = PUBLIC_ENVIRONMENT.toUpperCase()
+  const environment = import.meta.env.ENVIRONMENT.toUpperCase()
+  console.log(environment)
   const features = await fetchFeatures(environment)
 
   const modifiedFeatures = features.map(chain => {
