@@ -1,4 +1,5 @@
 use cosmwasm_std::StdError;
+use token_factory_api::TokenFactoryMsg;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -25,4 +26,7 @@ pub enum Error {
 
     #[error("token with denom `{0}` does not exist")]
     TokenDoesNotExist(String),
+
+    #[error("unexpected execute msg: {0:?}")]
+    UnexpectedExecuteMsg(TokenFactoryMsg),
 }

@@ -1,7 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env,
-    MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg,
+    entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, DenomMetadataResponse,
+    Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg,
+    WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use token_factory_api::TokenFactoryMsg;
@@ -59,47 +60,10 @@ pub fn execute(
 
     let response = match msg {
         ExecuteMsg::Wrapped(msg) => match msg {
-            TokenFactoryMsg::CreateDenom { .. } => Response::new(),
-            TokenFactoryMsg::ChangeAdmin { .. } => {
-                panic!("admin is always this contract")
-            }
-            TokenFactoryMsg::MintTokens {
-                denom,
-                amount,
-                mint_to_address,
-            } => {
-                let addr = DENOM_TO_ADDR
-                    .load(deps.storage, denom.clone())
-                    .map_err(|_| Error::CantMint(denom))?;
-                let msg = wasm_execute(
-                    addr,
-                    &cw20::Cw20ExecuteMsg::Mint {
-                        recipient: mint_to_address,
-                        amount,
-                    },
-                    vec![],
-                )?;
-                Response::new().add_message(msg)
-            }
-            TokenFactoryMsg::BurnTokens {
-                denom,
-                amount,
-                burn_from_address,
-            } => {
-                let addr = DENOM_TO_ADDR
-                    .load(deps.storage, denom.clone())
-                    .map_err(|_| Error::CantMint(denom))?;
-                let msg = wasm_execute(
-                    addr,
-                    &cw20::Cw20ExecuteMsg::BurnFrom {
-                        owner: burn_from_address,
-                        amount,
-                    },
-                    vec![],
-                )?;
-                Response::new().add_message(msg)
-            }
-            TokenFactoryMsg::SetDenomMetadata { denom, metadata } => {
+            TokenFactoryMsg::CreateDenom { metadata, .. } => {
+                let metadata = metadata.expect("metadata exists");
+                // the first denom is always the same as the generated denom
+                let denom = metadata.denom_units[0].denom.clone();
                 DENOM_TO_BE_STORED.save(deps.storage, &denom)?;
                 let name = metadata.name.expect("metadata name exists");
                 let symbol = metadata.symbol.expect("metadata symbol exists");
@@ -131,6 +95,35 @@ pub fn execute(
                     reply_on: ReplyOn::Success,
                 })
             }
+            TokenFactoryMsg::ChangeAdmin { .. } => {
+                panic!("admin is always this contract")
+            }
+            TokenFactoryMsg::MintTokens {
+                denom,
+                amount,
+                mint_to_address,
+            } => {
+                let addr = DENOM_TO_ADDR
+                    .load(deps.storage, denom.clone())
+                    .map_err(|_| Error::CantMint(denom))?;
+                let msg = wasm_execute(
+                    addr,
+                    &cw20::Cw20ExecuteMsg::Mint {
+                        recipient: mint_to_address,
+                        amount,
+                    },
+                    vec![],
+                )?;
+                Response::new().add_message(msg)
+            }
+            TokenFactoryMsg::BurnTokens { denom, amount, .. } => {
+                let addr = DENOM_TO_ADDR
+                    .load(deps.storage, denom.clone())
+                    .map_err(|_| Error::CantMint(denom))?;
+                let msg = wasm_execute(addr, &cw20::Cw20ExecuteMsg::Burn { amount }, vec![])?;
+                Response::new().add_message(msg)
+            }
+            _ => return Err(Error::UnexpectedExecuteMsg(msg)),
         },
         ExecuteMsg::Local(msg) => match msg {
             LocalTokenMsg::TakeFunds {
@@ -149,11 +142,8 @@ pub fn execute(
                     save_native_token(deps, &denom);
                     Response::new()
                 } else {
-                    let addr = DENOM_TO_ADDR
-                        .load(deps.storage, denom.clone())
-                        .map_err(|_| Error::CantMint(denom))?;
                     let msg = wasm_execute(
-                        addr,
+                        denom,
                         &cw20::Cw20ExecuteMsg::TransferFrom {
                             owner: from,
                             recipient,
@@ -175,11 +165,8 @@ pub fn execute(
                         amount: vec![Coin { denom, amount }],
                     })
                 } else {
-                    let addr = DENOM_TO_ADDR
-                        .load(deps.storage, denom.clone())
-                        .map_err(|_| Error::CantMint(denom))?;
                     let msg = wasm_execute(
-                        addr,
+                        denom,
                         &cw20::Cw20ExecuteMsg::Transfer { recipient, amount },
                         vec![],
                     )?;
@@ -247,19 +234,41 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
 #[entry_point]
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
-        QueryMsg::Metadata { denom } => {
-            let addr = DENOM_TO_ADDR
-                .load(deps.storage, denom.clone())
-                .map_err(|_| Error::TokenDoesNotExist(denom))?;
+        QueryMsg::Metadata { denom } => match DENOM_TO_ADDR.load(deps.storage, denom.clone()) {
+            Ok(addr) => {
+                let TokenInfoResponse { name, symbol, .. } = query_token_info(deps, addr.as_str())?;
 
-            let TokenInfoResponse { name, symbol, .. } =
-                deps.querier
-                    .query(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
-                        contract_addr: addr.to_string(),
-                        msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
-                    }))?;
+                Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+            }
+            Err(_) => match query_token_info(deps, &denom) {
+                Ok(TokenInfoResponse { name, symbol, .. }) => {
+                    Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+                }
+                Err(_) => {
+                    let denom_metadata = deps.querier.query(&QueryRequest::Bank(
+                        cosmwasm_std::BankQuery::DenomMetadata {
+                            denom: denom.clone(),
+                        },
+                    ));
 
-            Ok(to_json_binary(&MetadataResponse { name, symbol })?)
-        }
+                    let (name, symbol) = match denom_metadata {
+                        Ok(DenomMetadataResponse { metadata, .. }) => {
+                            (metadata.name, metadata.symbol)
+                        }
+                        _ => (denom.clone(), denom.clone()),
+                    };
+
+                    Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+                }
+            },
+        },
     }
+}
+
+fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {
+    deps.querier
+        .query(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+            contract_addr: addr.to_string(),
+            msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
+        }))
 }

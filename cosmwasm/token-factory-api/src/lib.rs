@@ -17,7 +17,7 @@ pub enum TokenFactoryMsg {
     CreateDenom {
         subdenom: String,
         // TODO: upgrade tokenfactory to handle this
-        // metadata: Option<Metadata>,
+        metadata: Option<Metadata>,
     },
     /// ChangeAdmin changes the admin for a factory denom.
     /// Can only be called by the current contract admin.
@@ -43,7 +43,7 @@ pub enum TokenFactoryMsg {
     },
     /// Contracts can set metadata for an existing factory denom that they are
     /// admin of.
-    SetDenomMetadata { denom: String, metadata: Metadata },
+    SetMetadata { denom: String, metadata: Metadata },
 }
 
 /// This maps to cosmos.bank.v1beta1.Metadata protobuf struct
@@ -77,9 +77,9 @@ pub struct DenomUnit {
     /// 1 denom = 1^exponent base_denom
     /// (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom' with
     /// exponent = 6, thus: 1 atom = 10^6 uatom).
-    exponent: u32,
+    pub exponent: u32,
     /// aliases is a list of string aliases for the given denom
-    aliases: Vec<String>,
+    pub aliases: Vec<String>,
 }
 
 /// This maps to tokenfactory.v1beta1.Params protobuf struct

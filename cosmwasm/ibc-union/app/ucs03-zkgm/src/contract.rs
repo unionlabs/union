@@ -5,16 +5,16 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
-    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
-    WasmMsg,
+    to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env,
+    MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128,
+    Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::types::Packet;
-use token_factory_api::{Metadata, TokenFactoryMsg};
+use token_factory_api::{DenomUnit, Metadata, TokenFactoryMsg};
 use ucs03_zkgm_token_minter_api::{LocalTokenMsg, MetadataResponse};
 use unionlabs::{
     ethereum::keccak256,
@@ -692,7 +692,7 @@ fn execute_batch(
 #[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
     deps: DepsMut,
-    env: Env,
+    _: Env,
     _info: MessageInfo,
     packet: Packet,
     relayer: Addr,
@@ -723,7 +723,7 @@ fn execute_fungible_asset_order(
     let minter = TOKEN_MINTER.load(deps.storage)?;
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
-        let subdenom = factory_denom(&wrapped_denom, env.contract.address.as_str());
+        let subdenom = factory_denom(&wrapped_denom, minter.as_str());
         if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, subdenom.clone()) {
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
@@ -733,23 +733,20 @@ fn execute_fungible_asset_order(
             messages.push(make_wasm_msg(
                 TokenFactoryMsg::CreateDenom {
                     subdenom: wrapped_denom,
-                },
-                &minter,
-                vec![],
-            )?);
-            messages.push(make_wasm_msg(
-                TokenFactoryMsg::SetDenomMetadata {
-                    denom: subdenom.clone(),
-                    metadata: Metadata {
+                    metadata: Some(Metadata {
                         description: None,
-                        denom_units: vec![],
+                        denom_units: vec![DenomUnit {
+                            denom: subdenom.clone(),
+                            exponent: 0,
+                            aliases: vec![],
+                        }],
                         base: None,
-                        display: None,
+                        display: Some(subdenom.clone()),
                         name: Some(order.base_token_name),
                         symbol: Some(order.base_token_symbol),
                         uri: None,
                         uri_hash: None,
-                    },
+                    }),
                 },
                 &minter,
                 vec![],
@@ -915,7 +912,7 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
 #[allow(clippy::too_many_arguments)]
 fn transfer(
     deps: DepsMut,
-    env: Env,
+    _: Env,
     info: MessageInfo,
     channel_id: u32,
     receiver: Bytes,
@@ -948,7 +945,7 @@ fn transfer(
                 TokenFactoryMsg::BurnTokens {
                     denom: base_token.clone(),
                     amount: base_amount,
-                    burn_from_address: env.contract.address.into_string(),
+                    burn_from_address: minter.to_string(),
                 },
                 &minter,
                 info.funds,
@@ -959,9 +956,9 @@ fn transfer(
             origin = None;
             messages.push(make_wasm_msg(
                 LocalTokenMsg::TakeFunds {
-                    from: env.contract.address.to_string(),
+                    from: info.sender.to_string(),
                     denom: base_token.clone(),
-                    recipient: String::from_utf8_lossy(&receiver).to_string(),
+                    recipient: minter.to_string(),
                     amount: base_amount,
                 },
                 &minter,
@@ -1031,6 +1028,14 @@ fn transfer(
     Ok(Response::new().add_messages(messages))
 }
 
+#[cosmwasm_schema::cw_serde]
+pub struct MigrateMsg {}
+
+#[cosmwasm_std::entry_point]
+pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::default())
+}
+
 fn make_wasm_msg(
     msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
     minter: impl Into<String>,
@@ -1038,4 +1043,24 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
+}
+
+#[test]
+pub fn test_fucking() {
+    let t = hex_literal::hex!("79e489e8a9267d8ef2ae96b1d0965e69e42be338c603e330da8a64ce5e6490cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000002a62626e31786530726e6c6833753035716b7779746b776d797a6c383661306d767077667867663274377500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c756e696f6e3164383467743663777839333873616e306874687a37793666307234663030676a71776835397700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000073666163746f72792f62626e3163633330686a30376d617061383565323963636171386a326a38767234676b7032746d7a637668703672643939656564353430736666647a6b682f4366446259716e5a4e5a734e6b447544706f3662665244336f7a66724a414537717534666257756b6f51474b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f00000000000000000000000000000000000000000000000000000000");
+    let packet = ZkgmPacket::abi_decode_params(t.as_slice(), false).unwrap();
+    let inst = FungibleAssetOrder::abi_decode_params(&packet.instruction.operand, false).unwrap();
+    panic!("{inst:?}");
+}
+
+#[test]
+pub fn aedlnaesnd() {
+    panic!(
+        "{}",
+        predict_wrapped_denom(
+            "0".parse().unwrap(),
+            22,
+            b"factory/union1gk3qcw5tlajduwez3uxgpzsydymht2q0qtjyfz6zeq0azsju8c3qqu8hds/QbT8RvrS1NmUfkGmEynCigyFpWBxgarbkbijuYT9369".into()
+        )
+    );
 }

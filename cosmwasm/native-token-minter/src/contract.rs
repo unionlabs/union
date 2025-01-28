@@ -96,16 +96,14 @@ pub fn query(deps: Deps<TokenFactoryQuery>, _: Env, msg: QueryMsg) -> Result<Bin
                             denom: denom.clone(),
                         }),
                     );
-            let default_name = "".into();
-            let default_symbol = denom.clone();
             let (name, symbol) = match denom_metadata {
                 Ok(token_factory_api::MetadataResponse {
                     metadata: Some(metadata),
                 }) => (
-                    metadata.name.unwrap_or(default_name),
-                    metadata.symbol.unwrap_or(default_symbol),
+                    metadata.name.unwrap_or(denom.clone()),
+                    metadata.symbol.unwrap_or(denom),
                 ),
-                _ => (default_name, default_symbol),
+                _ => (denom.clone(), denom),
             };
 
             Ok(to_json_binary(&MetadataResponse { name, symbol })?)
