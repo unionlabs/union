@@ -1,17 +1,19 @@
 [package]
+name    = "voyager-message"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "voyager-message"
+publish      = { workspace = true }
 repository   = { workspace = true }
-resolver     = "2"
-version      = "0.1.0"
 
 [lints]
 workspace = true
 
 [dependencies]
-anyhow                         = "1.0.93"
-chain-utils                    = { workspace = true }
+anyhow = "1.0.93"
+# chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }
@@ -34,7 +36,7 @@ tokio-util                     = "0.7.11"
 tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json", "env-filter"] }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
-voyager-core                   = { workspace = true, features = ["schemars"] }
+voyager-core                   = { workspace = true, features = ["schemars", "serde"] }
 voyager-vm                     = { workspace = true }
 
 [dev-dependencies]

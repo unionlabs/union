@@ -43,6 +43,7 @@ files.extend-exclude = [
   "package-lock.json",
   "moonlight-ii.json",
   "app/src/generated",
+  "typescript-sdk/src/generated",
   "app/scripts/_index.ts",
   "lib/pg-queue/migrations",
   "./site/src/content/openapi/**",

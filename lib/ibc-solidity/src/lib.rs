@@ -340,10 +340,6 @@ maybe_sol_attr! {
             error ErrInvalidInitialConsensusState();
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         enum ConnectionState {
             Unspecified,
             Init,
@@ -351,10 +347,6 @@ maybe_sol_attr! {
             Open
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct Connection {
             ConnectionState state;
             uint32 client_id;
@@ -362,10 +354,6 @@ maybe_sol_attr! {
             uint32 counterparty_connection_id;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         enum ChannelState {
             Unspecified,
             Init,
@@ -374,10 +362,6 @@ maybe_sol_attr! {
             Closed
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct Channel {
             ChannelState state;
             uint32 connection_id;
@@ -398,10 +382,6 @@ maybe_sol_attr! {
             uint64 timeout_timestamp;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgCreateClient {
             string client_type;
             bytes client_state_bytes;
@@ -409,30 +389,18 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgUpdateClient {
             uint32 client_id;
             bytes client_message;
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgConnectionOpenInit {
             uint32 client_id;
             uint32 counterparty_client_id;
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgConnectionOpenTry {
             uint32 counterparty_client_id;
             uint32 counterparty_connection_id;
@@ -442,10 +410,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgConnectionOpenAck {
             uint32 connection_id;
             uint32 counterparty_connection_id;
@@ -454,10 +418,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgConnectionOpenConfirm {
             uint32 connection_id;
             bytes proof_ack;
@@ -474,10 +434,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgChannelOpenTry {
             address port_id;
             Channel channel;
@@ -487,10 +443,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgChannelOpenAck {
             uint32 channel_id;
             string counterparty_version;
@@ -500,10 +452,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgChannelOpenConfirm {
             uint32 channel_id;
             bytes proof_ack;
@@ -511,19 +459,11 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgChannelCloseInit {
             uint32 channel_id;
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgChannelCloseConfirm {
             uint32 channel_id;
             bytes proof_init;
@@ -531,10 +471,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgPacketRecv {
             Packet[] packets;
             bytes[] relayer_msgs;
@@ -543,10 +479,6 @@ maybe_sol_attr! {
             uint64 proof_height;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgPacketAcknowledgement {
             Packet[] packets;
             bytes[] acknowledgements;
@@ -555,10 +487,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgPacketTimeout {
             Packet packet;
             bytes proof;
@@ -566,10 +494,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgIntentPacketRecv {
             Packet[] packets;
             bytes[] market_maker_msgs;
@@ -577,19 +501,11 @@ maybe_sol_attr! {
             bytes emptyProof;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgBatchSend {
             uint32 source_channel;
             Packet[] packets;
         }
 
-        #[cfg_attr(
-            feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            serde(deny_unknown_fields)
-        )]
         struct MsgBatchAcks {
             uint32 source_channel;
             Packet[] packets;

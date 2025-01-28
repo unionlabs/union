@@ -255,6 +255,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         client_type: ClientType::new(ClientType::BEACON_KIT),
                         counterparty_chain_id: counterparty_chain_id.clone(),
                         chain_id: self.l1_chain_id.clone(),
+                        client_id: RawClientId::new(self.l1_client_id),
                         update_from,
                         update_to,
                     }),

@@ -1,18 +1,20 @@
 [package]
+name    = "voyager-core"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "voyager-core"
+publish      = { workspace = true }
 repository   = { workspace = true }
-resolver     = "2"
-version      = "0.1.0"
 
 [lints]
 workspace = true
 
 [dependencies]
 macros     = { workspace = true }
-schemars   = { workspace = true, optional = true }
-serde      = { workspace = true, features = ["derive"] }
+schemars   = { workspace = true, optional = true, features = ["derive"] }
+serde      = { workspace = true, optional = true, features = ["derive"] }
 serde_json = { workspace = true }
 unionlabs  = { workspace = true }
 
@@ -20,5 +22,7 @@ unionlabs  = { workspace = true }
 hex-literal = { workspace = true }
 
 [features]
-default  = []
+default = []
+
 schemars = ["dep:schemars"]
+serde    = ["dep:serde"]

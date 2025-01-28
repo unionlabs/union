@@ -1082,7 +1082,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-move-ibc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "move-bindgen",
  "tokio",
@@ -1311,7 +1311,7 @@ dependencies = [
 
 [[package]]
 name = "aptos-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "bcs 0.1.6",
  "hex-literal",
@@ -1352,7 +1352,7 @@ dependencies = [
 
 [[package]]
 name = "arbitrum-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
  "arbitrum-verifier",
@@ -1370,7 +1370,7 @@ dependencies = [
 
 [[package]]
 name = "arbitrum-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
@@ -1384,7 +1384,7 @@ dependencies = [
 
 [[package]]
 name = "arbitrum-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
  "error_reporter",
@@ -2154,7 +2154,7 @@ dependencies = [
 
 [[package]]
 name = "beacon-api"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "beacon-api-types",
  "reqwest 0.11.27",
@@ -2170,7 +2170,7 @@ dependencies = [
 
 [[package]]
 name = "beacon-api-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "bincode 2.0.0-rc.3",
  "hex-literal",
@@ -2220,7 +2220,7 @@ dependencies = [
 
 [[package]]
 name = "berachain-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "beacon-api-types",
@@ -2233,6 +2233,7 @@ dependencies = [
  "ibc-union-msg",
  "ics23",
  "lazy_static",
+ "serde",
  "serde_json",
  "tendermint-light-client",
  "tendermint-verifier",
@@ -2242,7 +2243,7 @@ dependencies = [
 
 [[package]]
 name = "berachain-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
@@ -2840,7 +2841,7 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chain-utils"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "beacon-api",
  "berachain-light-client-types",
@@ -3106,7 +3107,7 @@ dependencies = [
 
 [[package]]
 name = "cometbft-rpc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "cometbft-types",
@@ -3125,7 +3126,7 @@ dependencies = [
 
 [[package]]
 name = "cometbft-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "bincode 2.0.0-rc.3",
  "cometbft-types",
@@ -3142,7 +3143,7 @@ dependencies = [
 
 [[package]]
 name = "cometbls-groth16-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "ark-ff 0.4.2",
  "byteorder",
@@ -3157,7 +3158,7 @@ dependencies = [
 
 [[package]]
 name = "cometbls-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "cometbls-groth16-verifier",
@@ -3176,7 +3177,7 @@ dependencies = [
 
 [[package]]
 name = "cometbls-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bcs 0.1.6",
@@ -3359,7 +3360,7 @@ dependencies = [
 
 [[package]]
 name = "cosmos-sdk-event"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-types",
  "enumorph",
@@ -3566,7 +3567,7 @@ dependencies = [
 
 [[package]]
 name = "create3"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -4279,7 +4280,7 @@ dependencies = [
 
 [[package]]
 name = "devnet-compose"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cliclack",
  "console",
@@ -4292,7 +4293,7 @@ dependencies = [
 
 [[package]]
 name = "devnet-utils"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "bip39",
@@ -4382,7 +4383,7 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "drip"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-graphql",
  "async-graphql-axum",
@@ -4726,7 +4727,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "base64 0.21.7",
@@ -4751,7 +4752,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
@@ -4765,7 +4766,7 @@ dependencies = [
 
 [[package]]
 name = "ethereum-sync-protocol"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "beacon-api-types",
  "hex-literal",
@@ -4804,7 +4805,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "evm-storage-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hash-db",
  "hash256-std-hasher",
@@ -5317,7 +5318,7 @@ dependencies = [
 
 [[package]]
 name = "galois-rpc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-types",
  "protos",
@@ -5470,7 +5471,7 @@ dependencies = [
 
 [[package]]
 name = "gnark-key-parser"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "arith",
  "ark-ff 0.4.2",
@@ -5481,7 +5482,7 @@ dependencies = [
 
 [[package]]
 name = "gnark-mimc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "ark-bls12-377",
  "ark-bn254",
@@ -5900,7 +5901,7 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hubble"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "aptos-rest-client",
@@ -6102,7 +6103,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-classic-spec"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "enumorph",
  "macros",
@@ -6116,7 +6117,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-solidity"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "schemars",
@@ -6125,7 +6126,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-union"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "cosmwasm-schema 2.1.4",
@@ -6133,7 +6134,6 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "ethabi",
  "hex",
- "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -6145,7 +6145,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-union-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
@@ -6161,7 +6161,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-union-movement-lc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -6182,21 +6182,25 @@ dependencies = [
 
 [[package]]
 name = "ibc-union-msg"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
- "ibc-solidity",
+ "ibc-union-spec",
  "serde",
  "unionlabs-primitives",
 ]
 
 [[package]]
 name = "ibc-union-spec"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
+ "alloy-sol-types",
  "enumorph",
  "ibc-solidity",
+ "ibc-union-spec",
+ "schemars",
  "serde",
  "sha3 0.10.8",
+ "thiserror",
  "tracing",
  "unionlabs",
  "voyager-core",
@@ -6204,7 +6208,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-union-ucs00-pingpong"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
@@ -6219,7 +6223,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-union-ucs03-zkgm"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "base58 0.2.0",
@@ -6228,8 +6232,8 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "ethabi",
  "hex",
- "ibc-solidity",
  "ibc-union-msg",
+ "ibc-union-spec",
  "serde",
  "serde_json",
  "thiserror",
@@ -6239,7 +6243,7 @@ dependencies = [
 
 [[package]]
 name = "ics008-wasm-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-std 2.1.4",
  "frame-support-procedural",
@@ -6255,7 +6259,7 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "hex",
@@ -7010,7 +7014,7 @@ dependencies = [
 
 [[package]]
 name = "linea-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
@@ -7021,7 +7025,7 @@ dependencies = [
 
 [[package]]
 name = "linea-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "serde",
  "unionlabs",
@@ -7029,7 +7033,7 @@ dependencies = [
 
 [[package]]
 name = "linea-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "evm-storage-verifier",
  "gnark-mimc",
@@ -7043,7 +7047,7 @@ dependencies = [
 
 [[package]]
 name = "linea-zktrie"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "gnark-mimc",
  "hex",
@@ -7154,7 +7158,7 @@ dependencies = [
 
 [[package]]
 name = "macros"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7767,7 +7771,7 @@ dependencies = [
 
 [[package]]
 name = "movement-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
@@ -7779,7 +7783,7 @@ dependencies = [
 
 [[package]]
 name = "mpc-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-sqlite",
  "base64 0.21.7",
@@ -7804,7 +7808,7 @@ dependencies = [
 
 [[package]]
 name = "mpc-coordinator"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "hex",
@@ -7818,7 +7822,7 @@ dependencies = [
 
 [[package]]
 name = "mpc-shared"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hex",
  "postgrest",
@@ -7849,7 +7853,7 @@ dependencies = [
 
 [[package]]
 name = "multicall"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-std 2.1.4",
  "hex",
@@ -8484,7 +8488,7 @@ dependencies = [
 
 [[package]]
 name = "parse-wasm-client-type"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "unionlabs",
@@ -8695,7 +8699,7 @@ dependencies = [
 
 [[package]]
 name = "pg-queue"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "frame-support-procedural",
  "futures-util",
@@ -8997,7 +9001,7 @@ dependencies = [
 
 [[package]]
 name = "poseidon-rs"
-version = "0.0.10"
+version = "0.0.0"
 dependencies = [
  "criterion 0.3.6",
  "ethereum-types",
@@ -9647,7 +9651,7 @@ dependencies = [
 
 [[package]]
 name = "reconnecting-jsonrpc-ws-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "arc-swap",
  "jsonrpsee",
@@ -10294,7 +10298,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scroll-api"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "reqwest 0.11.27",
  "serde",
@@ -10306,7 +10310,7 @@ dependencies = [
 
 [[package]]
 name = "scroll-codec"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "hex-literal",
@@ -10317,7 +10321,7 @@ dependencies = [
 
 [[package]]
 name = "scroll-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
@@ -10327,7 +10331,7 @@ dependencies = [
 
 [[package]]
 name = "scroll-rpc"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "jsonrpsee",
  "macros",
@@ -10341,7 +10345,7 @@ dependencies = [
 
 [[package]]
 name = "scroll-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "evm-storage-verifier",
  "rlp",
@@ -10525,7 +10529,7 @@ dependencies = [
 
 [[package]]
 name = "serde-utils"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "bitvec 1.0.1",
@@ -11205,7 +11209,7 @@ dependencies = [
 
 [[package]]
 name = "ssz"
-version = "0.5.3"
+version = "0.0.0"
 dependencies = [
  "derivative",
  "hex-literal",
@@ -11227,7 +11231,7 @@ dependencies = [
 
 [[package]]
 name = "ssz-derive"
-version = "0.5.3"
+version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -11236,7 +11240,7 @@ dependencies = [
 
 [[package]]
 name = "ssz-tests-generator"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hex",
  "serde",
@@ -11266,19 +11270,20 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "state-lens-ics23-ics23-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "hex-literal",
  "protos",
  "serde",
+ "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
 ]
 
 [[package]]
 name = "state-lens-ics23-mpt-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbls-light-client",
  "cosmwasm-std 2.1.4",
@@ -11299,27 +11304,46 @@ dependencies = [
 
 [[package]]
 name = "state-lens-ics23-mpt-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
  "hex-literal",
  "protos",
  "serde",
+ "state-lens-ics23-mpt-light-client-types",
+ "state-lens-light-client-types",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "state-lens-ics23-smt-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "hex-literal",
+ "protos",
+ "serde",
+ "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
 ]
 
 [[package]]
 name = "state-lens-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
+ "bcs 0.1.6",
  "bincode 2.0.0-rc.3",
  "hex-literal",
- "protos",
  "serde",
+ "serde_json",
+ "state-lens-light-client-types",
  "thiserror",
+ "tuple_join",
  "unionlabs",
 ]
 
@@ -11461,7 +11485,7 @@ dependencies = [
 
 [[package]]
 name = "subset-of"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "subset-of-derive",
 ]
@@ -11662,7 +11686,7 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "cometbft-types",
@@ -11682,7 +11706,7 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.0-rc.3",
@@ -11744,7 +11768,7 @@ dependencies = [
 
 [[package]]
 name = "tendermint-verifier"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-types",
  "ed25519-dalek 2.1.1",
@@ -11870,7 +11894,7 @@ dependencies = [
 
 [[package]]
 name = "tidy"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cargo-util-schemas",
  "cargo_metadata",
@@ -11980,7 +12004,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token-factory-api"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
@@ -12507,6 +12531,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuple_join"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae565222358314fef3ea725134985d8a11c893b750e536cf59d3afb8e865c766"
+
+[[package]]
 name = "twofish"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12568,7 +12598,7 @@ checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 
 [[package]]
 name = "ucs00-pingpong"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
@@ -12579,7 +12609,7 @@ dependencies = [
 
 [[package]]
 name = "ucs02-nft"
-version = "1.0.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
@@ -12692,7 +12722,7 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
 name = "unionlabs"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "base64 0.21.7",
@@ -12739,15 +12769,17 @@ dependencies = [
 
 [[package]]
 name = "unionlabs-primitives"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "alloy-primitives",
+ "alloy-sol-types",
  "base64 0.21.7",
  "bincode 2.0.0-rc.3",
  "generic-array 0.14.7",
  "hex",
  "primitive-types 0.12.2",
  "rlp",
+ "schemars",
  "serde",
  "serde_bytes",
  "thiserror",
@@ -12758,7 +12790,7 @@ dependencies = [
 
 [[package]]
 name = "unionvisor"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "color-eyre",
@@ -12915,7 +12947,7 @@ checksum = "051eb1abcf10076295e815102942cc58f9d5e3b4560e46e53c21e8ff6f3af7b1"
 
 [[package]]
 name = "voyager"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "axum 0.6.20",
@@ -12947,7 +12979,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-bootstrap-module-cometbls"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "cometbls-light-client-types",
@@ -12965,7 +12997,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-bootstrap-module-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -12983,11 +13015,12 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-bootstrap-module-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "chain-utils",
+ "cosmwasm-std 2.1.4",
  "jsonrpsee",
  "movement-light-client-types",
  "serde",
@@ -13001,7 +13034,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -13022,7 +13055,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-mpt"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -13042,8 +13075,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-state-lens-ics23-smt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "cometbft-rpc",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "movement-light-client-types",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-smt-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-tendermint"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "ics23",
@@ -13062,7 +13116,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-module-cometbls"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "ark-bn254",
@@ -13086,7 +13140,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-module-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "beacon-api-types",
  "ethereum-light-client-types",
@@ -13102,7 +13156,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-module-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "chain-utils",
  "jsonrpsee",
@@ -13118,7 +13172,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-module-state-lens-ics23-ics23"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "futures",
@@ -13140,8 +13194,9 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-module-state-lens-ics23-mpt"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
+ "alloy",
  "beacon-api-types",
  "chain-utils",
  "enumorph",
@@ -13165,8 +13220,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-state-lens-ics23-smt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "chain-utils",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "state-lens-ics23-smt-light-client-types",
+ "state-lens-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-tendermint"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "jsonrpsee",
  "macros",
@@ -13182,7 +13263,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-berachain"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
@@ -13213,7 +13294,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-cometbls"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "cometbft-types",
@@ -13238,7 +13319,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -13260,7 +13341,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
@@ -13284,7 +13365,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-state-lens"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "enumorph",
@@ -13306,7 +13387,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-client-update-plugin-tendermint"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "cometbft-types",
@@ -13326,7 +13407,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-consensus-module-berachain"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
@@ -13355,7 +13436,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-consensus-module-cometbls"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "jsonrpsee",
@@ -13370,7 +13451,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-consensus-module-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -13386,7 +13467,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-consensus-module-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
@@ -13402,7 +13483,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-consensus-module-tendermint"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "jsonrpsee",
@@ -13417,7 +13498,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-core"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hex-literal",
  "macros",
@@ -13429,7 +13510,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-event-source-plugin-cosmos-sdk"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13456,7 +13537,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-event-source-plugin-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api",
@@ -13476,7 +13557,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-event-source-plugin-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
@@ -13500,10 +13581,9 @@ dependencies = [
 
 [[package]]
 name = "voyager-message"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
- "chain-utils",
  "clap 4.5.4",
  "enumorph",
  "futures",
@@ -13533,7 +13613,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-periodic-client-update-plugin"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "jsonrpsee",
@@ -13548,7 +13628,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-plugin-packet-filter"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "ibc-classic-spec",
  "jsonrpsee",
@@ -13564,7 +13644,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-plugin-transaction-batch"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "either",
@@ -13588,7 +13668,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-proof-module-cosmos-sdk"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13609,7 +13689,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-proof-module-cosmos-sdk-union"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13629,7 +13709,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-proof-module-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "ethereum-light-client-types",
@@ -13646,7 +13726,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-proof-module-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
@@ -13666,7 +13746,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-state-module-cosmos-sdk"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13688,7 +13768,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-state-module-cosmos-sdk-union"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13711,7 +13791,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-state-module-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "ibc-solidity",
@@ -13728,7 +13808,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-state-module-movement"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
@@ -13753,7 +13833,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-transaction-plugin-aptos"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-crypto",
  "aptos-move-ibc",
@@ -13776,7 +13856,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-transaction-plugin-cosmos-sdk"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "bip32",
  "chain-utils",
@@ -13804,7 +13884,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-transaction-plugin-ethereum"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "alloy",
  "bip32",
@@ -13826,7 +13906,7 @@ dependencies = [
 
 [[package]]
 name = "voyager-vm"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "criterion 0.5.1",
  "either",
@@ -14389,7 +14469,7 @@ source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e
 
 [[package]]
 name = "zktrie"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hex",
  "lazy_static",

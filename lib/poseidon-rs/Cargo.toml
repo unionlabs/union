@@ -7,13 +7,10 @@ license     = "Apache-2.0"
 name        = "poseidon-rs"
 readme      = "README.md"
 repository  = "https://github.com/arnaucube/poseidon-rs"
-version     = "0.0.10"
+version     = "0.0.0"
 
 [lints]
 workspace = true
-
-[package.metadata.crane]
-test-include = []
 
 [dependencies]
 ethereum-types = { version = "0.14", default-features = false }

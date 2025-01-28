@@ -14,13 +14,12 @@ use futures::{
     Future, FutureExt, StreamExt, TryStreamExt,
 };
 use jsonrpsee::{
-    core::{client::ClientT, RpcResult},
+    core::client::ClientT,
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, ErrorObjectOwned},
 };
-use macros::model;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
@@ -29,29 +28,29 @@ use tracing::{
     Instrument,
 };
 use unionlabs::{
-    ethereum::keccak256,
-    primitives::{encoding::HexUnprefixed, Bytes},
-    traits::Member,
-    ErrorReporter,
+    ethereum::keccak256, primitives::encoding::HexUnprefixed, traits::Member, ErrorReporter,
 };
 use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 
 use crate::{
-    core::{ChainId, ClientType, IbcInterface, IbcSpec},
-    into_value,
+    context::ibc_spec_handler::IbcSpecHandlers,
+    core::{ChainId, ClientType, IbcInterface},
     module::{
-        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginClient, PluginInfo,
+        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    IdThreadClient, ParamsWithItemId, RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    IdThreadClient, ParamsWithItemId, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
 pub const STARTUP_ERROR_EXIT_CODE: u8 = 14;
 
-#[derive(macros::Debug)]
+pub mod equivalent_chain_ids;
+pub mod ibc_spec_handler;
+
+#[derive(Debug)]
 pub struct Context {
     pub rpc_server: Server,
 
@@ -81,64 +80,6 @@ pub struct Modules {
     // ibc version id => handler
     #[debug(skip)]
     pub ibc_spec_handlers: IbcSpecHandlers,
-}
-
-pub struct IbcSpecHandlers {
-    pub(crate) handlers: HashMap<IbcSpecId, IbcSpecHandler>,
-}
-
-impl IbcSpecHandlers {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            handlers: HashMap::default(),
-        }
-    }
-
-    pub fn register<S: IbcSpec>(&mut self) {
-        self.handlers.insert(S::ID, IbcSpecHandler::new::<S>());
-    }
-
-    pub fn get(&self, ibc_spec_id: &IbcSpecId) -> RpcResult<&IbcSpecHandler> {
-        self.handlers.get(ibc_spec_id).ok_or_else(|| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unknown IBC spec `{ibc_spec_id}`"),
-                None::<()>,
-            )
-        })
-    }
-}
-
-/// A type-erased version of the methods on [`IbcSpec`] (essentially a vtable).
-pub struct IbcSpecHandler {
-    pub client_state_path: fn(RawClientId) -> anyhow::Result<Value>,
-    pub consensus_state_path: fn(RawClientId, String) -> anyhow::Result<Value>,
-    pub msg_update_client: fn(RawClientId, Bytes) -> anyhow::Result<Value>,
-}
-
-impl IbcSpecHandler {
-    pub const fn new<T: IbcSpec>() -> Self {
-        Self {
-            client_state_path: |client_id| {
-                Ok(into_value(T::client_state_path(serde_json::from_value(
-                    client_id.0,
-                )?)))
-            },
-            consensus_state_path: |client_id, height| {
-                Ok(into_value(T::consensus_state_path(
-                    serde_json::from_value(client_id.0)?,
-                    height.parse()?,
-                )))
-            },
-            msg_update_client: |client_id, client_message| {
-                Ok(into_value(T::update_client_datagram(
-                    serde_json::from_value(client_id.0)?,
-                    client_message,
-                )))
-            },
-        }
-    }
 }
 
 impl voyager_vm::ContextT for Context {}
@@ -193,10 +134,6 @@ impl ModuleRpcClient {
         )
     }
 
-    // pub fn client(&self) -> &impl jsonrpsee::core::client::ClientT {
-    //     &self.client
-    // }
-
     pub fn client(&self) -> &reconnecting_jsonrpc_ws_client::Client {
         &self.client
     }
@@ -207,6 +144,8 @@ where
     for<'a> &'a Self: ClientT,
 {
     fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
+        trace!(?item_id, "threading id");
+
         IdThreadClient {
             client: self,
             item_id,
@@ -284,8 +223,8 @@ fn make_module_rpc_server_socket_path(name: &str) -> String {
     )
 }
 
-#[model]
-#[derive(Hash, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PluginConfig {
     pub path: PathBuf,
     pub config: Value,
@@ -293,8 +232,8 @@ pub struct PluginConfig {
     pub enabled: bool,
 }
 
-#[model]
-#[derive(JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ModulesConfig {
     pub state: Vec<ModuleConfig<StateModuleInfo>>,
     pub proof: Vec<ModuleConfig<ProofModuleInfo>>,
@@ -303,8 +242,8 @@ pub struct ModulesConfig {
     pub client_bootstrap: Vec<ModuleConfig<ClientBootstrapModuleInfo>>,
 }
 
-#[model]
-#[derive(JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ModuleConfig<T> {
     pub path: PathBuf,
     pub info: T,
@@ -327,6 +266,7 @@ impl Context {
     pub async fn new(
         plugin_configs: Vec<PluginConfig>,
         module_configs: ModulesConfig,
+        equivalent_chain_ids: equivalent_chain_ids::EquivalentChainIds,
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
@@ -432,15 +372,20 @@ impl Context {
                  ibc_spec_id,
              },
              rpc_client| {
-                let prev = modules
-                    .state_modules
-                    .insert((chain_id.clone(), ibc_spec_id.clone()), rpc_client);
+                for equivalent_chain_id in
+                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                {
+                    let prev = modules.state_modules.insert(
+                        (equivalent_chain_id.clone(), ibc_spec_id.clone()),
+                        rpc_client.clone(),
+                    );
 
-                if prev.is_some() {
-                    return Err(anyhow!(
-                        "multiple state modules configured for chain id \
-                        `{chain_id}` and IBC version `{ibc_spec_id}`",
-                    ));
+                    if prev.is_some() {
+                        return Err(anyhow!(
+                            "multiple state modules configured for chain id \
+                            `{equivalent_chain_id}` and IBC version `{ibc_spec_id}`",
+                        ));
+                    }
                 }
 
                 Ok(())
@@ -458,15 +403,20 @@ impl Context {
                  ibc_spec_id,
              },
              rpc_client| {
-                let prev = modules
-                    .proof_modules
-                    .insert((chain_id.clone(), ibc_spec_id.clone()), rpc_client);
+                for equivalent_chain_id in
+                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                {
+                    let prev = modules.proof_modules.insert(
+                        (equivalent_chain_id.clone(), ibc_spec_id.clone()),
+                        rpc_client.clone(),
+                    );
 
-                if prev.is_some() {
-                    return Err(anyhow!(
-                        "multiple proof modules configured for chain id \
-                        `{chain_id}` and IBC version `{ibc_spec_id}`",
-                    ));
+                    if prev.is_some() {
+                        return Err(anyhow!(
+                            "multiple proof modules configured for chain id \
+                            `{equivalent_chain_id}` and IBC version `{ibc_spec_id}`",
+                        ));
+                    }
                 }
 
                 Ok(())
@@ -484,23 +434,27 @@ impl Context {
                  consensus_type,
              },
              rpc_client| {
-                let prev = modules
-                    .consensus_modules
-                    .insert(chain_id.clone(), rpc_client);
+                for equivalent_chain_id in
+                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                {
+                    let prev = modules
+                        .consensus_modules
+                        .insert(equivalent_chain_id.clone(), rpc_client.clone());
 
-                if prev.is_some() {
-                    return Err(anyhow!(
-                        "multiple consensus modules configured for chain id `{}`",
-                        chain_id
-                    ));
+                    if prev.is_some() {
+                        return Err(anyhow!(
+                            "multiple consensus modules configured for chain id `{}`",
+                            equivalent_chain_id
+                        ));
+                    }
+
+                    let None = modules
+                        .chain_consensus_types
+                        .insert(equivalent_chain_id.clone(), consensus_type.clone())
+                    else {
+                        unreachable!()
+                    };
                 }
-
-                let None = modules
-                    .chain_consensus_types
-                    .insert(chain_id.clone(), consensus_type.clone())
-                else {
-                    unreachable!()
-                };
 
                 Ok(())
             },
@@ -571,32 +525,37 @@ impl Context {
                  chain_id,
              },
              rpc_client| {
-                let prev = modules
-                    .client_bootstrap_modules
-                    .insert((chain_id.clone(), client_type.clone()), rpc_client.clone());
+                for equivalent_chain_id in
+                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                {
+                    let prev = modules.client_bootstrap_modules.insert(
+                        (equivalent_chain_id.clone(), client_type.clone()),
+                        rpc_client.clone(),
+                    );
 
-                if prev.is_some() {
-                    return Err(anyhow!(
-                        "multiple client bootstrap modules configured for client \
-                        type `{client_type}` and chain id `{chain_id}`",
-                    ));
+                    if prev.is_some() {
+                        return Err(anyhow!(
+                            "multiple client bootstrap modules configured for client \
+                            type `{client_type}` and chain id `{equivalent_chain_id}`",
+                        ));
+                    }
+
+                    // TODO: Check consistency with client_consensus_types and chain_id?
+
+                    // if let Some(previous_consensus_type) = modules
+                    //     .client_consensus_types
+                    //     .insert(client_type.clone(), consensus_type.clone())
+                    // {
+                    //     if previous_consensus_type != consensus_type {
+                    //         return Err(anyhow!(
+                    //             "inconsistency in client consensus types: \
+                    //             client type `{client_type}` is registered \
+                    //             as tracking both `{previous_consensus_type}` \
+                    //             and `{consensus_type}`"
+                    //         ));
+                    //     }
+                    // }
                 }
-
-                // TODO: Check consistency with client_consensus_types and chain_id?
-
-                // if let Some(previous_consensus_type) = modules
-                //     .client_consensus_types
-                //     .insert(client_type.clone(), consensus_type.clone())
-                // {
-                //     if previous_consensus_type != consensus_type {
-                //         return Err(anyhow!(
-                //             "inconsistency in client consensus types: \
-                //             client type `{client_type}` is registered \
-                //             as tracking both `{previous_consensus_type}` \
-                //             and `{consensus_type}`"
-                //         ));
-                //     }
-                // }
 
                 Ok(())
             },
@@ -656,7 +615,7 @@ impl Context {
     pub fn plugin(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&(impl PluginClient<Value, Value> + '_), PluginNotFound> {
+    ) -> Result<&reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
         Ok(self
             .plugins
             .get(name.as_ref())
@@ -847,7 +806,8 @@ impl Modules {
     }
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct LoadedModulesInfo {
     pub state: Vec<StateModuleInfo>,
     pub proof: Vec<ProofModuleInfo>,
@@ -856,16 +816,16 @@ pub struct LoadedModulesInfo {
     pub client_bootstrap: Vec<ClientBootstrapModuleInfo>,
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(skip_all, fields(%plugin_name))]
 async fn plugin_child_process(
-    name: String,
+    plugin_name: String,
     module_config: PluginConfig,
     cancellation_token: CancellationToken,
 ) {
-    let client_socket = ModuleRpcClient::make_socket_path(&name);
-    let server_socket = make_module_rpc_server_socket_path(&name);
+    let client_socket = ModuleRpcClient::make_socket_path(&plugin_name);
+    let server_socket = make_module_rpc_server_socket_path(&plugin_name);
 
-    info!(%client_socket, %server_socket, "starting plugin {name}");
+    info!(%client_socket, %server_socket, "starting plugin {plugin_name}");
 
     let mut cmd = tokio::process::Command::new(&module_config.path);
     cmd.arg("run");
@@ -886,16 +846,16 @@ async fn plugin_child_process(
     .await
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(skip_all, fields(%module_name))]
 async fn module_child_process<Info: Serialize>(
-    name: String,
+    module_name: String,
     module_config: ModuleConfig<Info>,
     cancellation_token: CancellationToken,
 ) {
-    let client_socket = ModuleRpcClient::make_socket_path(&name);
-    let server_socket = make_module_rpc_server_socket_path(&name);
+    let client_socket = ModuleRpcClient::make_socket_path(&module_name);
+    let server_socket = make_module_rpc_server_socket_path(&module_name);
 
-    info!(%client_socket, %server_socket, "starting module {name}");
+    info!(%client_socket, %server_socket, "starting module {module_name}");
 
     lazarus_pit(
         &module_config.path,
@@ -973,7 +933,7 @@ async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: Cancellation
                             .code()
                             .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
                         {
-                            error!(%id, "invalid config for plugin");
+                            error!(%id, "invalid config for plugin or module");
                             cancellation_token.cancel();
                         }
                     }

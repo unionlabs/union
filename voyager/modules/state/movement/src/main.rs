@@ -1,9 +1,15 @@
 use std::fmt::Debug;
 
-use aptos_move_ibc::{channel::Channel, connection_end::ConnectionEnd, ibc::ClientExt as _};
+use aptos_move_ibc::{
+    channel::Channel as AptosChannel, connection_end::ConnectionEnd, ibc::ClientExt as _,
+};
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
-use ibc_union_spec::{IbcUnion, StorePath};
+use ibc_union_spec::{
+    path::StorePath,
+    types::{Channel, ChannelState, Connection, ConnectionState},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -157,9 +163,13 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, _client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+        let client_type = self
+            .client_id_to_type(self.ibc_handler_address.into(), None, (client_id,))
+            .await
+            .map_err(rest_error_to_rpc_error)?;
         Ok(ClientInfo {
-            client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
+            client_type: ClientType::new(client_type),
             ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
             metadata: Default::default(),
         })
@@ -252,84 +262,6 @@ impl StateModuleServer<IbcUnion> for Module {
             }
         })
     }
-
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    // async fn query_ibc_proof(&self, _: &Extensions, at: Height, _path: Path) -> RpcResult<Value> {
-    //     let ledger_version = self.ledger_version_of_height(at.revision_height).await;
-
-    //     let vault_addr = self
-    //         .get_vault_addr(self.ibc_handler_address.into(), Some(ledger_version))
-    //         .await
-    //         .unwrap();
-
-    //     let _address_str = self
-    //         .aptos_client
-    //         .get_account_resource(
-    //             vault_addr.into(),
-    //             &format!("{}::ibc::IBCStore", self.ibc_handler_address),
-    //         )
-    //         .await
-    //         .unwrap()
-    //         .into_inner()
-    //         .unwrap()
-    //         .data["commitments"]["handle"]
-    //         .clone()
-    //         .as_str()
-    //         .unwrap()
-    //         .to_owned();
-    //     let _address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
-
-    //     // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
-    //     // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
-    //     // let storage_proof = get_storage_proof(
-    //     //     &self.ctx.movement_rpc_url,
-    //     //     address,
-    //     //     hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
-    //     //     at.revision_height,
-    //     // ).await;
-
-    //     Ok(into_value(StorageProof {
-    //         state_value: None,
-    //         proof: SparseMerkleProof {
-    //             leaf: None,
-    //             siblings: Vec::new(),
-    //         },
-    //     }))
-    // }
-
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    // async fn query_raw_unfinalized_trusted_client_state(
-    //     &self,
-    //     e: &Extensions,
-    //     client_id: ClientId,
-    // ) -> RpcResult<RawClientState<'static>> {
-    //     let height = self.query_latest_height(e).await?;
-
-    //     let client_state = serde_json::from_value::<Bytes>(
-    //         self.query_ibc_state(
-    //             e,
-    //             height,
-    //             ClientStatePath {
-    //                 client_id: client_id.clone(),
-    //             }
-    //             .into(),
-    //         )
-    //         .await?,
-    //     )
-    //     .unwrap();
-
-    //     let ClientInfo {
-    //         client_type,
-    //         ibc_interface,
-    //         metadata: _,
-    //     } = self.client_info(e, client_id.clone()).await?;
-
-    //     Ok(RawClientState {
-    //         client_type,
-    //         ibc_interface,
-    //         bytes: client_state.0.into(),
-    //     })
-    // }
 }
 
 pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
@@ -397,14 +329,13 @@ pub async fn get_storage_proof(
     }
 }
 
-fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
-    ibc_solidity::Connection {
+fn convert_connection(connection: ConnectionEnd) -> Connection {
+    Connection {
         state: match connection.state {
-            0 => ibc_solidity::ConnectionState::Unspecified,
-            1 => ibc_solidity::ConnectionState::Init,
-            2 => ibc_solidity::ConnectionState::TryOpen,
-            3 => ibc_solidity::ConnectionState::Open,
-            _ => panic!("connection state cannot be greater than 3"),
+            1 => ConnectionState::Init,
+            2 => ConnectionState::TryOpen,
+            3 => ConnectionState::Open,
+            _ => panic!("connection state must be 1..=3"),
         },
         client_id: connection.client_id,
         counterparty_client_id: connection.counterparty_client_id,
@@ -412,15 +343,14 @@ fn convert_connection(connection: ConnectionEnd) -> ibc_solidity::Connection {
     }
 }
 
-fn convert_channel(channel: Channel) -> ibc_solidity::Channel {
-    ibc_solidity::Channel {
+fn convert_channel(channel: AptosChannel) -> Channel {
+    Channel {
         state: match channel.state {
-            0 => ibc_solidity::ChannelState::Unspecified,
-            1 => ibc_solidity::ChannelState::Init,
-            2 => ibc_solidity::ChannelState::TryOpen,
-            3 => ibc_solidity::ChannelState::Open,
-            4 => ibc_solidity::ChannelState::Closed,
-            _ => panic!("channel state cannot be greater than 4"),
+            1 => ChannelState::Init,
+            2 => ChannelState::TryOpen,
+            3 => ChannelState::Open,
+            4 => ChannelState::Closed,
+            _ => panic!("channel state must be 1..=4"),
         },
         connection_id: channel.connection_id,
         counterparty_channel_id: channel.counterparty_channel_id,

@@ -46,7 +46,7 @@ cd $HOME
 # determine your system architecture
 RELEASE="uniond-release-$(uname -m)-linux"
 # get the version we want to install
-VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
+VERSION="${chainVersion({chainId: 'union-testnet-9'}).current}"
 
 curl --location \\
         https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
@@ -248,7 +248,7 @@ pub fn execute_transfer(
 You will be using the same RPC url across examples, so good to export it to an environment variable:
 
 ```sh frame="none"
-export RPC_URL="https://rpc.testnet-8.union.build:443"
+export RPC_URL="https://rpc.testnet-9.union.build:443"
 ```
 
 ### Building the Contract
@@ -302,7 +302,7 @@ WALLET_ADDRESS=union1...
 To fund the wallet, we will use the faucet. You can find the faucet [here](https://app.union.build/faucet).
 
 ```sh title="Ensure the wallet is funded"
-curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jq '.balances'[0]
+curl https://rest.testnet-9.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jq '.balances'[0]
 ```
 
 ```sh title="Deploy the contract"
@@ -310,7 +310,7 @@ $HOME/uniond tx wasm store ./build/contract.wasm \
     --from $WALLET_NAME \
     --gas auto \
     --gas-adjustment 1.4 \
-    --chain-id union-testnet-8 \
+    --chain-id union-testnet-9 \
     --keyring-backend test \
     --home /home/$USER/.union \
     --node $RPC_URL --yes
@@ -323,7 +323,7 @@ DEPLOY_TX_HASH=txhash-value-of-previous-command
 
 ... and use it to query the transaction to get the `code_id`:
 ```sh frame="none"
-$HOME/uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg -C 1 "code_id"
+$HOME/uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-9.union.build:443 | rg -C 1 "code_id"
 ```
 
 Record the code-id:
@@ -341,7 +341,7 @@ $HOME/uniond \
     --from $WALLET_NAME \
     --gas auto \
     --gas-adjustment 1.4 \
-    --chain-id union-testnet-8 \
+    --chain-id union-testnet-9 \
     --keyring-backend test \
     --home /home/$USER/.union \
     --node $RPC_URL --yes
@@ -355,7 +355,7 @@ INSTANTIATE_TX_HASH=txhash-value-of-previous-command
 ... and use it to query the transaction to get the `_contract_address` (you'll see it twice):
 
 ```sh frame="none" 
-$HOME/uniond query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg -C 1 "_contract_address"
+$HOME/uniond query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-9.union.build:443 | rg -C 1 "_contract_address"
 ```
 
 Record the contract address
@@ -392,7 +392,7 @@ $HOME/uniond \
         --from $WALLET_NAME \
         --gas auto \
         --gas-adjustment 1.4 \
-        --chain-id union-testnet-8 \
+        --chain-id union-testnet-9 \
         --keyring-backend test \
         --home /home/$USER/.union \
         --node $RPC_URL --amount 2muno

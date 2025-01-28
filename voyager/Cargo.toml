@@ -1,12 +1,14 @@
 [package]
+name    = "voyager"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
-include      = [".sqlx"]
 license-file = { workspace = true }
-name         = "voyager"
-publish      = false
+publish      = { workspace = true }
 repository   = { workspace = true }
-resolver     = "2"
-version      = "0.1.0"
+
+include = [".sqlx"]
 
 [package.metadata.crane]
 test-include = []
@@ -21,12 +23,12 @@ clap               = { workspace = true, features = ["default", "derive", "env",
 derive_more        = { workspace = true }
 futures            = { workspace = true }
 ibc-classic-spec   = { workspace = true }
-ibc-union-spec     = { workspace = true }
+ibc-union-spec     = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["client", "full", "tracing"] }
 pg-queue           = { workspace = true }
 pin-utils          = "0.1.0"
 prometheus         = "0.13.4"
-reqwest            = { workspace = true, features = ["tokio-rustls"] }
+reqwest            = { workspace = true, features = ["tokio-rustls", "json"] }
 schemars           = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }

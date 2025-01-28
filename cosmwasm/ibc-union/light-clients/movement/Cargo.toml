@@ -1,9 +1,15 @@
 [package]
+name    = "ibc-union-movement-lc"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union-movement-lc"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 aptos-verifier              = { workspace = true }
@@ -23,9 +29,6 @@ unionlabs                   = { workspace = true }
 [dev-dependencies]
 aptos-crypto = { workspace = true }
 aptos-types  = { workspace = true }
-
-[lints]
-workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]

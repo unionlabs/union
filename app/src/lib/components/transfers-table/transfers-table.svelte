@@ -33,11 +33,10 @@ const columns: Array<ColumnDef<DataRow>> = [
     cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
-    accessorKey: "tokens",
-    cell: info => flexRender(CellAssets, { value: info.getValue() })
+    accessorKey: "token",
+    cell: info => flexRender(CellAssets, { chains, token: info.getValue() })
   },
   {
-    header: () => "Time",
     accessorKey: "timestamp",
     cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   }

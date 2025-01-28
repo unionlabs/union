@@ -28,6 +28,16 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noPropertyAccessFromIndexSignature": true,
+    "plugins": [
+      {
+        "template": "gql",
+        "name": "gql.tada/ts-plugin",
+        "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
+        "schema": {
+          "url": "https://staging.graphql.union.build/v1/graphql"
+        }
+      }
+    ],
     "types": ["node", "bun"],
     "paths": {
       "#*": ["./src/*"]

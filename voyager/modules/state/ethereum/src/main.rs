@@ -7,10 +7,14 @@ use alloy::{
     transports::BoxTransport,
 };
 use ibc_solidity::{
-    Channel, Connection, ILightClient,
+    ILightClient,
     Ibc::{self, IbcInstance},
 };
-use ibc_union_spec::{BatchPacketsPath, BatchReceiptsPath, IbcUnion, StorePath};
+use ibc_union_spec::{
+    path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
+    types::{Channel, Connection},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -191,7 +195,15 @@ impl Module {
                     None::<()>,
                 )
             })?
-            ._0;
+            ._0
+            .try_into()
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!("invalid connection: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?;
 
         Ok(Some(raw))
     }
@@ -237,7 +249,7 @@ impl Module {
                 )
             })?;
 
-        let channel = ibc_solidity::Channel::abi_decode_params(&raw, true).map_err(|e| {
+        let channel = Channel::abi_decode_params(&raw, true).map_err(|e| {
             ErrorObject::owned(
                 -1,
                 format!("error decoding channel: {}", ErrorReporter(e)),

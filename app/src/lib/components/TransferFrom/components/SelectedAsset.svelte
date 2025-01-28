@@ -5,6 +5,7 @@ import { truncate } from "$lib/utilities/format.ts"
 import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import Token from "$lib/components/token.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -28,10 +29,8 @@ export let onSelectAsset: Props["onSelectAsset"]
           class="border-2 font-bold"
           on:click={onSelectAsset}
   >
-    {#if $intents.selectedAsset}
-      {truncate($intents.selectedAsset.metadata.display_symbol || $intents.selectedAsset.metadata.denom, 18)}
-    {:else if $rawIntents.asset}
-      {truncate($rawIntents.asset, 6)}
+    {#if $rawIntents.asset && $intents.sourceChain}
+      <Token chains={$intents.chains} chainId={$intents.sourceChain.chain_id} denom={$rawIntents.asset}/>
     {:else}
       Select Asset
     {/if}

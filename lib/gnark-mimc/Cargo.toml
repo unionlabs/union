@@ -1,9 +1,15 @@
 [package]
+name    = "gnark-mimc"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "gnark-mimc"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 ark-bls12-377 = { version = "0.4", default-features = false, features = ["curve"] }
@@ -18,6 +24,3 @@ unionlabs     = { workspace = true }
 serde       = { workspace = true }
 serde-utils = { workspace = true }
 serde_json  = { workspace = true }
-
-[lints]
-workspace = true

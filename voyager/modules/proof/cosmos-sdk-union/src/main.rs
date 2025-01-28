@@ -6,7 +6,7 @@ use std::{
     num::ParseIntError,
 };
 
-use ibc_union_spec::{IbcUnion, StorePath};
+use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},

@@ -1,21 +1,37 @@
 [package]
+name    = "ibc-union-spec"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union-spec"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
-
-[dependencies]
-enumorph     = { workspace = true }
-ibc-solidity = { workspace = true, features = ["serde"] }
-serde        = { workspace = true, features = ["derive"] }
-sha3         = { workspace = true }
-tracing      = { workspace = true, optional = true }
-unionlabs    = { workspace = true }
-voyager-core = { workspace = true }
 
 [lints]
 workspace = true
 
+[dependencies]
+alloy-sol-types = { workspace = true, optional = true }
+enumorph        = { workspace = true }
+ibc-solidity    = { workspace = true, optional = true }
+schemars        = { workspace = true, optional = true, features = ["derive"] }
+serde           = { workspace = true, optional = true, features = ["derive"] }
+sha3            = { workspace = true }
+thiserror       = { workspace = true }
+tracing         = { workspace = true, optional = true }
+unionlabs       = { workspace = true }
+voyager-core    = { workspace = true }
+
+[dev-dependencies]
+ibc-solidity   = { workspace = true }
+ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", "ibc-solidity-compat"] }
+
 [features]
-tracing = ["dep:tracing"]
+default = []
+
+ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
+ibc-solidity-compat = ["dep:ibc-solidity"]
+schemars            = ["dep:schemars", "voyager-core/schemars", "unionlabs/schemars"]
+serde               = ["dep:serde", "voyager-core/serde"]
+tracing             = ["dep:tracing"]

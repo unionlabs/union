@@ -4,9 +4,12 @@ use std::{
     process::ExitCode,
 };
 
-use cargo_metadata::MetadataCommand;
-use cargo_util_schemas::manifest::{InheritableDependency, TomlInheritedDependency, TomlManifest};
+use cargo_metadata::{semver::Version, MetadataCommand};
+use cargo_util_schemas::manifest::{
+    InheritableDependency, InheritableField, TomlInheritedDependency, TomlManifest,
+};
 use clap::Parser;
+use tracing::{error, info, warn};
 
 #[derive(Parser)]
 struct App {
@@ -40,6 +43,43 @@ fn main() -> ExitCode {
     let mut is_err = false;
 
     for (member, member_manifest) in &workspace_member_manifests {
+        if member_manifest
+            .lints
+            .as_ref()
+            .is_none_or(|lints| !lints.workspace)
+        {
+            is_err = true;
+
+            error!(
+                member = %member.name,
+                "all packages must inherit workspace lints"
+            );
+        };
+
+        let package = member_manifest.package.as_ref().unwrap();
+
+        match package.version.as_ref() {
+            Some(InheritableField::Inherit(_)) => {
+                is_err = true;
+
+                error!(
+                    member = %member.name,
+                    "all packages must specify their version as 0.0.0"
+                );
+            }
+            Some(InheritableField::Value(version)) => {
+                if version != &Version::new(0, 0, 0) {
+                    is_err = true;
+
+                    error!(
+                        member = %member.name,
+                        "all packages must be 0.0.0 until they are published"
+                    );
+                }
+            }
+            None => todo!(),
+        }
+
         let Some(ref deps) = member_manifest.dependencies else {
             continue;
         };
@@ -52,7 +92,7 @@ fn main() -> ExitCode {
                         || dep_name.as_ref() == "cw-storage-plus"
                         || dep_name.as_ref() == "axum"
                     {
-                        tracing::warn!(
+                        warn!(
                             member = %member.name,
                             "{dep_name} is being ignored for deduplication checks as there are currently multiple incompatible versions being used in the repo"
                         );
@@ -61,7 +101,7 @@ fn main() -> ExitCode {
                     if workspace_dependencies.contains_key(dep_name) {
                         is_err = true;
 
-                        tracing::error!(
+                        error!(
                             member = %member.name,
                             "`{dep_name}` exists in workspace.dependencies and should be used instead",
                         );
@@ -78,7 +118,7 @@ fn main() -> ExitCode {
                             ..
                         }
                     ) {
-                        tracing::error!(
+                        error!(
                             member = %member.name,
                             "specifying `default-features = false` for `{dep_name}` has no effect as it is a workspace dependency",
                         );
@@ -107,7 +147,7 @@ fn main() -> ExitCode {
         .into_iter()
         .for_each(|(dep, packages)| {
             if packages.len() >= 2 && !workspace_dependencies.contains_key(dep)  {
-                tracing::info!(
+                info!(
                     "`{dep}` is used in multiple crates ({}), consider making it a workspace dependency", packages.join(", ")
                 )
             }
@@ -116,7 +156,7 @@ fn main() -> ExitCode {
     if is_err {
         ExitCode::FAILURE
     } else {
-        tracing::info!("no issues to report");
+        info!("no issues to report");
         ExitCode::SUCCESS
     }
 }

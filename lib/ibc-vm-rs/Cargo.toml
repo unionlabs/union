@@ -1,9 +1,15 @@
 [package]
+name    = "ibc-vm-rs"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-vm-rs"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 enumorph                 = { workspace = true }
@@ -16,9 +22,6 @@ serde                    = { workspace = true }
 serde-utils              = { workspace = true }
 thiserror                = { workspace = true }
 unionlabs                = { workspace = true }
-
-[lints]
-workspace = true
 
 [features]
 schemars = ["dep:schemars", "unionlabs/schemars"]

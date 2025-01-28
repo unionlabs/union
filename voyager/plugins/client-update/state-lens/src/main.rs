@@ -1,15 +1,19 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use call::FetchUpdateAfterL1Update;
-use ibc_union_spec::{ConsensusStatePath, IbcUnion};
+use ibc_union_spec::{
+    path::{ClientStatePath, ConsensusStatePath},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, instrument};
-use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
+use unionlabs::ErrorReporter;
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
@@ -18,7 +22,9 @@ use voyager_message::{
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    rpc::missing_state,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
@@ -30,6 +36,9 @@ use crate::{
 pub mod call;
 pub mod callback;
 
+pub type StateLensClientState =
+    state_lens_light_client_types::ClientState<serde_json::Map<String, serde_json::Value>>;
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
@@ -37,24 +46,17 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub l0_client_id: u32,
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
-    pub l2_client_type: ClientType,
+    /// The ID of the chain this plugin creates updates for.
+    pub chain_id: ChainId,
+    /// The state lens client type (state-lens/*/*) that this plugin creates updates for.
     pub state_lens_client_type: ClientType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub l0_client_id: u32,
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
-    pub l2_client_type: ClientType,
+    pub chain_id: ChainId,
     pub state_lens_client_type: ClientType,
-    pub host_chain_id: ChainId,
 }
 
 impl Plugin for Module {
@@ -66,30 +68,15 @@ impl Plugin for Module {
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Self {
-            l0_client_id: config.l0_client_id,
-            l1_client_id: config.l1_client_id,
-            l1_chain_id: config.l1_chain_id,
-            l2_chain_id: config.l2_chain_id,
-            l2_client_type: config.l2_client_type,
+            chain_id: config.chain_id,
             state_lens_client_type: config.state_lens_client_type,
         })
     }
 
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
-            name: plugin_name(
-                config.l0_client_id,
-                config.l1_client_id,
-                &config.l2_chain_id,
-            ),
-            // interest_filter: UpdateHook::filter(
-            //     &config.l2_chain_id,
-            //     &config.state_lens_client_type,
-            // ),
-            interest_filter: format!(
-                r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}" and ."@value".client_type == "{}" and ."@value".counterparty_chain_id == "{}"] | any"#,
-                config.l2_chain_id, config.state_lens_client_type, config.host_chain_id
-            ),
+            name: plugin_name(&config.chain_id, &config.state_lens_client_type),
+            interest_filter: UpdateHook::filter(&config.chain_id, &config.state_lens_client_type),
         }
     }
 
@@ -98,21 +85,21 @@ impl Plugin for Module {
     }
 }
 
-fn plugin_name(l0_client_id: u32, l1_client_id: u32, l2_chain_id: &ChainId) -> String {
+fn plugin_name(chain_id: &ChainId, state_lens_client_type: &ClientType) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
-    format!("{PLUGIN_NAME}/{l0_client_id}/{l1_client_id}/{l2_chain_id}")
+    format!("{PLUGIN_NAME}/{chain_id}/{state_lens_client_type}")
 }
 
 impl Module {
     fn plugin_name(&self) -> String {
-        plugin_name(self.l0_client_id, self.l1_client_id, &self.l2_chain_id)
+        plugin_name(&self.chain_id, &self.state_lens_client_type)
     }
 }
 
 #[async_trait]
 impl PluginServer<ModuleCall, ModuleCallback> for Module {
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -123,11 +110,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.l2_chain_id, &self.state_lens_client_type, |fetch| {
+                    UpdateHook::new(&self.chain_id, &self.state_lens_client_type, |fetch| {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
                                 counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                client_id: fetch
+                                    .client_id
+                                    .clone()
+                                    .decode_spec::<IbcUnion>()
+                                    .unwrap(),
+                                // .map_err(|e| {
+                                //     ErrorObject::owned(
+                                //         FATAL_JSONRPC_ERROR_CODE,
+                                //         format!("invalid client id `{}`", fetch.client_id),
+                                //         None::<()>,
+                                //     )
+                                // })?,
                                 update_from: fetch.update_from,
                                 update_to: fetch.update_to,
                             }),
@@ -143,72 +142,147 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, ext: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 counterparty_chain_id,
+                client_id,
                 update_from,
                 update_to,
             }) => {
-                let voy_client = ext.try_get::<VoyagerClient>()?;
-                let l1_latest_height = voy_client
-                    .query_latest_height(self.l1_chain_id.clone(), true)
+                let voyager_client = ext.try_get::<VoyagerClient>()?;
+
+                // state lens client running on the counterparty, tracking self.chain_id
+                let raw_state_lens_client_state = voyager_client
+                    .query_ibc_state(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        ClientStatePath { client_id },
+                    )
+                    .await?
+                    .state
+                    .ok_or_else(missing_state(
+                        "state lens client state doesn't exist?",
+                        None,
+                    ))?;
+
+                debug!(?raw_state_lens_client_state);
+
+                let state_lens_client_state_info = voyager_client
+                    .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
                     .await?;
-                let l2_consensus_state_proof = serde_json::from_value::<MerkleProof>(
-                    voy_client
-                        .query_ibc_proof(
-                            self.l1_chain_id.clone(),
-                            QueryHeight::Specific(l1_latest_height),
-                            ConsensusStatePath {
-                                client_id: self.l1_client_id,
-                                height: update_to.height(),
-                            },
-                        )
-                        .await
-                        .expect("big trouble")
-                        .proof,
-                )
-                .expect("impossible");
-                let l2_merkle_proof = unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
-                    protos::ibc::core::commitment::v1::MerkleProof::from(l2_consensus_state_proof),
-                )
-                .expect("impossible");
+
+                debug!(?state_lens_client_state_info);
+
+                let state_lens_client_state_json = voyager_client
+                    .decode_client_state::<IbcUnion>(
+                        state_lens_client_state_info.client_type.clone(),
+                        state_lens_client_state_info.ibc_interface,
+                        raw_state_lens_client_state,
+                    )
+                    .await?;
+
+                debug!(%state_lens_client_state_json);
+
+                let state_lens_client_state = serde_json::from_value::<
+                    state_lens_light_client_types::ClientState<
+                        serde_json::Map<String, serde_json::Value>,
+                    >,
+                >(state_lens_client_state_json)
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "unable to deserialize state lens client state: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
+
+                debug!(?state_lens_client_state);
+
+                let l1_client_meta = voyager_client
+                    .client_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        state_lens_client_state.l1_client_id,
+                    )
+                    .await?;
+
+                debug!(?l1_client_meta);
+
+                let l1_latest_height = voyager_client
+                    .query_latest_height(
+                        ChainId::new(state_lens_client_state.l2_chain_id.clone()),
+                        true,
+                    )
+                    .await?;
+
+                debug!(%l1_latest_height);
+
+                assert_eq!(state_lens_client_state.l2_chain_id, self.chain_id.as_str());
+
+                let l2_consensus_state_proof = voyager_client
+                    .query_ibc_state(
+                        l1_client_meta.chain_id.clone(),
+                        QueryHeight::Specific(l1_latest_height),
+                        ConsensusStatePath {
+                            client_id: state_lens_client_state.l2_client_id,
+                            height: update_to.height(),
+                        },
+                    )
+                    .await?
+                    .state;
+
+                debug!(%l1_latest_height);
+
                 let continuation = call(PluginMessage::new(
                     self.plugin_name(),
                     ModuleCall::from(FetchUpdateAfterL1Update {
                         counterparty_chain_id,
+                        state_lens_client_state: state_lens_client_state.clone(),
+                        client_id,
                         update_from,
                         update_to,
                     }),
                 ));
-                // If the L2 consensus proof exists on the L1, we don't have to update the L2 on the L1.
-                match l2_merkle_proof {
-                    unionlabs::union::ics23::merkle_proof::MerkleProof::Membership(_, _) => {
-                        Ok(continuation)
-                    }
-                    _ => Ok(conc([
-                        // Update the L2 (eth) client on L1 (union) and then dispatch the continuation
+
+                let l2_client_type = voyager_client
+                    .client_info::<IbcUnion>(
+                        l1_client_meta.chain_id.clone(),
+                        state_lens_client_state.l2_client_id,
+                    )
+                    .await?
+                    .client_type;
+
+                // if the L2 consensus state exists on the L1, we don't have to update the L2 on the L1.
+                match l2_consensus_state_proof {
+                    Some(_) => Ok(continuation),
+                    None => Ok(conc([
+                        // update the L2 client on L1 and then dispatch the continuation
                         promise(
                             [call(FetchUpdateHeaders {
-                                client_type: self.l2_client_type.clone(),
-                                chain_id: self.l2_chain_id.clone(),
-                                counterparty_chain_id: self.l1_chain_id.clone(),
+                                client_type: l2_client_type,
+                                chain_id: self.chain_id.clone(),
+                                counterparty_chain_id: l1_client_meta.chain_id.clone(),
+                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
                                 update_from,
                                 update_to,
                             })],
                             [],
                             AggregateMsgUpdateClientsFromOrderedHeaders {
                                 ibc_spec_id: IbcUnion::ID,
-                                chain_id: self.l1_chain_id.clone(),
-                                client_id: RawClientId::new(self.l1_client_id),
+                                chain_id: l1_client_meta.chain_id.clone(),
+                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
                             },
                         ),
                         seq([
                             call(WaitForTrustedHeight {
-                                chain_id: self.l1_chain_id.clone(),
+                                chain_id: l1_client_meta.chain_id.clone(),
                                 ibc_spec_id: IbcUnion::ID,
-                                client_id: RawClientId::new(self.l1_client_id),
+                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
                                 height: update_to,
                                 finalized: true,
                             }),
@@ -219,93 +293,138 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             }
             ModuleCall::FetchUpdateAfterL1Update(FetchUpdateAfterL1Update {
                 counterparty_chain_id,
-                ..
+                state_lens_client_state,
+                client_id,
+                update_from: _,
+                update_to,
             }) => {
-                let voy_client = ext.try_get::<VoyagerClient>()?;
-                let l1_latest_height = voy_client
-                    .query_latest_height(self.l1_chain_id.clone(), false)
-                    .await?;
-                debug!("l1 latest height {}", l1_latest_height);
-                let l0_client_meta = voy_client
+                let voyager_client = ext.try_get::<VoyagerClient>()?;
+
+                // the client on the counterparty that is tracking the L1
+                let l1_client_meta = voyager_client
                     .client_meta::<IbcUnion>(
                         counterparty_chain_id.clone(),
                         QueryHeight::Latest,
-                        self.l0_client_id,
+                        state_lens_client_state.l1_client_id,
                     )
                     .await?;
-                let l1_client_meta = voy_client
+                debug!(?l1_client_meta);
+
+                // the client on the counterparty that is tracking the L1
+                let l1_client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        state_lens_client_state.l1_client_id,
+                    )
+                    .await?;
+                debug!(?l1_client_info);
+
+                // the client on the L1 that is tracking the L2
+                let l2_client_meta = voyager_client
                     .client_meta::<IbcUnion>(
-                        self.l1_chain_id.clone(),
-                        QueryHeight::Specific(l1_latest_height),
-                        self.l1_client_id,
+                        l1_client_meta.chain_id.clone(),
+                        QueryHeight::Latest,
+                        state_lens_client_state.l2_client_id,
                     )
                     .await?;
-                // The client has been updated to at least update_to
-                let update_to = l1_client_meta.counterparty_height;
-                debug!("l0 client meta {:?}", l0_client_meta);
+                debug!(?l1_client_meta);
+
+                let l1_latest_height = voyager_client
+                    .query_latest_height(l1_client_meta.chain_id.clone(), false)
+                    .await?;
+                debug!(
+                    "l1 ({}) latest height {}",
+                    l1_client_meta.chain_id, l1_latest_height
+                );
+
+                // client meta of the state lens client on the counterparty
+                let state_lens_client_meta = voyager_client
+                    .client_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        client_id,
+                    )
+                    .await?;
+                debug!(?state_lens_client_meta);
+
+                let state_lens_client_info = voyager_client
+                    .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
+                    .await?;
+                debug!(?state_lens_client_info);
+
+                // ensure that the l2 client on the l1 has been updated to at least update_to
+                if l2_client_meta.counterparty_height < update_to {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "l2_client_meta.counterparty_height is {} but update_to \
+                            request is {update_to}",
+                            l2_client_meta.counterparty_height
+                        ),
+                        None::<()>,
+                    ));
+                }
+
+                let update_to = l2_client_meta.counterparty_height;
 
                 let l2_consensus_state_path = ConsensusStatePath {
-                    client_id: self.l1_client_id,
+                    client_id: state_lens_client_state.l2_client_id,
                     height: update_to.height(),
                 };
 
-                let l2_consensus_state = voy_client
+                let l2_consensus_state = voyager_client
                     .query_ibc_state(
-                        self.l1_chain_id.clone(),
+                        l1_client_meta.chain_id.clone(),
                         QueryHeight::Specific(l1_latest_height),
                         l2_consensus_state_path.clone(),
                     )
                     .await?
-                    .state;
+                    .state
+                    .ok_or_else(missing_state("l2 consensus on l1 doesn't exist", None))?;
 
-                debug!("l2 consensus state {:?}", l2_consensus_state);
+                debug!(?l2_consensus_state);
 
-                let l2_consensus_state_proof = voy_client
+                let l2_consensus_state_proof = voyager_client
                     .query_ibc_proof(
-                        self.l1_chain_id.clone(),
+                        l1_client_meta.chain_id.clone(),
                         QueryHeight::Specific(l1_latest_height),
                         l2_consensus_state_path,
                     )
-                    .await
-                    .expect("big trouble")
+                    .await?
                     .proof;
+                debug!(?l2_consensus_state_proof);
 
-                let state_lens_client = voy_client
-                    .client_info::<IbcUnion>(counterparty_chain_id.clone(), self.l0_client_id)
-                    .await?;
-
-                debug!("l2 consensus state proof {:?}", l2_consensus_state_proof);
-
-                let l2_consensus_state_proof_bytes = voy_client
+                let l2_consensus_state_proof_bytes = voyager_client
                     .encode_proof::<IbcUnion>(
-                        ClientType::new(ClientType::COMETBLS),
-                        state_lens_client.ibc_interface,
+                        l1_client_info.client_type.clone(),
+                        state_lens_client_info.ibc_interface,
                         l2_consensus_state_proof,
                     )
                     .await?;
 
-                // Dispatch an update for the L1 on the destination, then dispatch the L2 update on the destination
+                // dispatch an update for the L1 on the destination, then dispatch the L2 update on the destination
                 Ok(conc([
                     promise(
                         [call(FetchUpdateHeaders {
-                            client_type: ClientType::new(ClientType::COMETBLS),
-                            chain_id: self.l1_chain_id.clone(),
+                            client_type: l1_client_info.client_type,
+                            chain_id: l1_client_meta.chain_id.clone(),
                             counterparty_chain_id: counterparty_chain_id.clone(),
-                            update_from: l0_client_meta.counterparty_height,
+                            client_id: RawClientId::new(state_lens_client_state.l1_client_id),
+                            update_from: l1_client_meta.counterparty_height,
                             update_to: l1_latest_height,
                         })],
                         [],
                         AggregateMsgUpdateClientsFromOrderedHeaders {
                             ibc_spec_id: IbcUnion::ID,
                             chain_id: counterparty_chain_id.clone(),
-                            client_id: RawClientId::new(self.l0_client_id),
+                            client_id: RawClientId::new(state_lens_client_state.l1_client_id),
                         },
                     ),
                     seq([
                         call(WaitForTrustedHeight {
                             chain_id: counterparty_chain_id,
                             ibc_spec_id: IbcUnion::ID,
-                            client_id: RawClientId::new(self.l0_client_id),
+                            client_id: RawClientId::new(state_lens_client_state.l1_client_id),
                             height: l1_latest_height,
                             finalized: false,
                         }),
@@ -326,7 +445,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,
@@ -335,4 +454,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         match callback {}
     }
+}
+
+#[test]
+fn json() {
+    serde_json::from_str::<StateLensClientState>(r#"{"l2_chain_id":"elgafar-1","l1_client_id":3,"l2_client_id":14,"l2_latest_height":14268576,"contract_address":"0x83cd1201e1dfd6605349a902146daf50f2b8f254b152b96b882e3dfc47c583bc"}"#).unwrap();
 }

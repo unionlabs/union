@@ -16,6 +16,7 @@ mod logging;
 mod metrics;
 mod postgres;
 mod race_client;
+mod token_fetcher;
 mod token_list;
 
 #[cfg(not(target_env = "msvc"))]
@@ -62,11 +63,24 @@ async fn main() -> color_eyre::eyre::Result<()> {
         });
     });
 
-    let tokens_updates = async move {
+    let token_fetcher_db = db.clone();
+    let token_fetcher = async move {
         let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
         interval.tick().await;
         loop {
             info!("updating tokens");
+            token_fetcher::update_tokens(&token_fetcher_db).await?;
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(token_fetcher);
+
+    let tokens_updates = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+        interval.tick().await;
+        loop {
+            info!("updating tokens (legacy)");
             token_list::update_tokens(db.clone(), args.tokens_urls.clone()).await?;
             interval.tick().await;
         }

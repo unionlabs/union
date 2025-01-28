@@ -1,10 +1,12 @@
 [package]
-authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+name    = "ibc-union"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union"
-repository   = "https://github.com/unionlabs/union"
-version      = "1.0.0"
+publish      = { workspace = true }
+repository   = { workspace = true }
 
 [lints]
 workspace = true
@@ -16,17 +18,16 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy                    = { workspace = true, features = ["sol-types"] }
-cosmwasm-schema          = { workspace = true }
-cosmwasm-std             = { workspace = true, features = ["abort"] }
-cw-storage-plus          = { workspace = true }
-ethabi                   = { workspace = true }
-hex                      = { workspace = true }
-ibc-solidity             = { workspace = true, features = ["serde"] }
-ibc-union-msg            = { workspace = true }
-ibc-union-spec.workspace = true
-serde                    = { workspace = true, features = ["derive"] }
-serde_json               = { workspace = true }
-strum                    = { version = "0.26.3", features = ["derive"] }
-thiserror                = { workspace = true }
-unionlabs                = { workspace = true, features = ["ethabi"] }
+alloy           = { workspace = true, features = ["sol-types"] }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort"] }
+cw-storage-plus = { workspace = true }
+ethabi          = { workspace = true }
+hex             = { workspace = true }
+ibc-union-msg   = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["ethabi", "serde"] }
+serde           = { workspace = true, features = ["derive"] }
+serde_json      = { workspace = true }
+strum           = { version = "0.26.3", features = ["derive"] }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true, features = ["ethabi"] }

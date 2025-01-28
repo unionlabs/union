@@ -56,10 +56,6 @@
       url = "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
       flake = false;
     };
-    bls-eth-go = {
-      url = "git+https://github.com/herumi/bls-eth-go-binary?ref=refs/tags/v1.33.0&submodules=1";
-      flake = false;
-    };
     cosmosproto = {
       url = "github:cosmos/cosmos-proto?ref=refs/tags/v1.0.0-beta.5";
       flake = false;
@@ -126,22 +122,6 @@
     };
 
     # uniond versions
-    v0_21_0 = {
-      url = "github:unionlabs/union/release-v0.21.0";
-      flake = false;
-    };
-    v0_22_0 = {
-      url = "github:unionlabs/union/release-v0.22.0";
-      flake = false;
-    };
-    v0_23_0 = {
-      url = "github:unionlabs/union/release-v0.23.0";
-      flake = false;
-    };
-    v0_24_0 = {
-      url = "github:unionlabs/union/release-v0.24.0";
-      flake = false;
-    };
     v0_25_0 = {
       url = "github:unionlabs/union/release/uniond/v0.25.0";
       flake = false;

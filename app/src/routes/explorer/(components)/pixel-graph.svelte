@@ -4,7 +4,7 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 export let data: Array<{ count: number; day: string }> = []
 
 $: minValue = 0
-$: maxValue = data.length > 0 ? Math.max(...data.map(d => d.count)) : 0
+$: maxValue = Array.isArray(data) && data.length > 0 ? Math.max(...data.map(d => d.count)) : 0
 
 function normalize(
   value: number,
@@ -18,7 +18,7 @@ function normalize(
 }
 
 $: normalizedData =
-  data.length > 0
+  Array.isArray(data) && data.length > 0
     ? data.map(d => ({
         ...d,
         normalizedValue: Math.floor(normalize(d.count, minValue, maxValue, 0, 9))
@@ -28,6 +28,7 @@ $: normalizedData =
 
 <div class="flex flex-row-reverse items-end gap-[2.5px]">
   {#each normalizedData as data}
+    {#if Array.isArray(data.normalizedValue)}
     <Tooltip.Root>
       <Tooltip.Trigger>
         <div class="bar flex flex-col-reverse gap-[1px] group cursor-crosshair">
@@ -45,6 +46,7 @@ $: normalizedData =
         {/if}
       </Tooltip.Content>
     </Tooltip.Root>
+    {/if}
   {/each}
 </div>
 

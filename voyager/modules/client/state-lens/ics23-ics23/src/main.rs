@@ -51,12 +51,9 @@ impl ClientModule for Module {
     }
 }
 
-type SelfConsensusState = ConsensusState;
-type SelfClientState = ClientState;
-
 impl Module {
-    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -65,8 +62,8 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<EthAbi>(client_state).map_err(|err| {
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
+        ClientState::abi_decode_params(client_state, true).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {}", ErrorReporter(err)),
@@ -151,7 +148,7 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|cs| cs.abi_encode_params())
             .map(Into::into)
     }
 
@@ -174,26 +171,6 @@ impl ClientModuleServer for Module {
             })
             .map(|cs| cs.encode_as::<EthAbi>())
             .map(Into::into)
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        _client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        _consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        todo!()
     }
 
     #[instrument]

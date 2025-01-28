@@ -1,7 +1,8 @@
 import { derived, type Readable } from "svelte/store"
 import type { Chain, UserAddresses } from "$lib/types"
-import { balanceStore, userAddress } from "./balances.ts"
-import type { BalanceData } from "$lib/queries/balance"
+import { userAddress } from "./balances.ts"
+import type { BalanceData, userBalancesQuery } from "$lib/queries/balance"
+import type { UnwrapReadable } from "$lib/utilities/types.ts"
 
 export type ChainBalances = {
   chainId: string
@@ -13,36 +14,13 @@ export type BalancesList = Array<ChainBalances>
 export interface ContextStore {
   chains: Array<Chain>
   userAddress: UserAddresses
-  balances: BalancesList
+  balances: UnwrapReadable<ReturnType<typeof userBalancesQuery>>
 }
 
-export function createContextStore(chains: Array<Chain>): Readable<ContextStore> {
-  const balances = derived(balanceStore, ($rawBalances: Array<Array<BalanceData>>) => {
-    console.log("context", $rawBalances)
-    if ($rawBalances?.length === 0) {
-      return chains.map(chain => ({
-        chainId: chain.chain_id,
-        balances: []
-      }))
-    }
-
-    return chains.map((chain, chainIndex) => {
-      const chainBalances = $rawBalances[chainIndex]
-
-      if (!chainBalances || chainBalances.length === 0) {
-        return {
-          chainId: chain.chain_id,
-          balances: []
-        }
-      }
-
-      return {
-        chainId: chain.chain_id,
-        balances: chainBalances
-      }
-    })
-  }) as Readable<BalancesList>
-
+export function createContextStore(
+  chains: Array<Chain>,
+  balances: ReturnType<typeof userBalancesQuery>
+): Readable<ContextStore> {
   return derived([userAddress, balances], ([$userAddress, $balances]) => ({
     chains,
     userAddress: $userAddress,

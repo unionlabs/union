@@ -1,8 +1,13 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, slice_partition_dedup)]
 
-use std::{borrow::Cow, env::VarError, fmt::Debug, future::Future, time::Duration};
+use std::{
+    borrow::Cow,
+    env::VarError,
+    fmt::{self, Debug},
+    future::Future,
+    time::Duration,
+};
 
-use chain_utils::BoxDynError;
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use futures::FutureExt;
 use jsonrpsee::{
@@ -39,7 +44,7 @@ use voyager_core::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
     IbcStorePathKey, QueryHeight, Timestamp,
 };
-use voyager_vm::{ItemId, QueueError, QueueMessage};
+use voyager_vm::{BoxDynError, ItemId, QueueError, QueueMessage};
 
 use crate::{
     call::Call,
@@ -108,6 +113,12 @@ impl TypedValueParser for RawClientIdValueParser {
             s.parse::<Value>()
                 .unwrap_or_else(|_| Value::String(s.to_owned())),
         ))
+    }
+}
+
+impl fmt::Display for RawClientId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -540,6 +551,8 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         R: DeserializeOwned,
         Params: ToRpcParams + Send,
     {
+        trace!(item_id = ?self.item_id);
+
         match self.item_id {
             Some(item_id) => {
                 self.client
@@ -648,6 +661,21 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)?;
 
         Ok(proof)
+    }
+
+    pub async fn decode_client_state<V: IbcSpec>(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        client_state_bytes: Bytes,
+    ) -> RpcResult<Value> {
+        let client_state = self
+            .0
+            .decode_client_state(client_type, ibc_interface, V::ID, client_state_bytes)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(client_state)
     }
 
     pub async fn query_ibc_state<P: IbcStorePathKey>(
@@ -892,6 +920,8 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
                         ..request
                     };
 
+                    trace!("request is for item_id {}", item_id.raw());
+
                     request.extensions.insert(item_id);
 
                     request.extensions.insert(VoyagerClient(IdThreadClient {
@@ -905,11 +935,18 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
                         .instrument(info_span!("item_id", item_id = item_id.raw()))
                         .left_future();
                 }
-                Err(_) => {
+                Err(err) => {
+                    trace!(
+                        "unable to parse item_id from request: {}",
+                        ErrorReporter(err)
+                    );
+
                     request.params = Some(params);
                 }
             }
         };
+
+        trace!("request is not for a queue item");
 
         request.extensions.insert(VoyagerClient(IdThreadClient {
             client: self.client.clone(),

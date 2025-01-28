@@ -99,6 +99,30 @@ impl Height {
     }
 }
 
+// Implement once this is stabilized: https://github.com/rust-lang/rust/issues/42168
+// impl Step for Height {
+//     fn steps_between(start: &Self, end: &Self) -> Option<usize> {
+//         start
+//             .revision_matches(end)
+//             .then(|| <u64 as Step>::steps_between(&start.height(), &end.height()))
+//             .flatten()
+//     }
+
+//     fn forward_checked(start: Self, count: usize) -> Option<Self> {
+//         start
+//             .revision_matches(end)
+//             .then(|| <u64 as Step>::forward_checked(&start.height(), &end.height()))
+//             .flatten()
+//     }
+
+//     fn backward_checked(start: Self, count: usize) -> Option<Self> {
+//         start
+//             .revision_matches(end)
+//             .then(|| <u64 as Step>::backward_checked(&start.height(), &end.height()))
+//             .flatten()
+//     }
+// }
+
 impl FromStr for Height {
     type Err = HeightFromStrError;
 
@@ -225,7 +249,7 @@ impl ::schemars::JsonSchema for Height {
     }
 
     fn schema_id() -> alloc::borrow::Cow<'static, str> {
-        alloc::borrow::Cow::Borrowed(concat!(module_path!(), "::NonGenericType"))
+        alloc::borrow::Cow::Borrowed(concat!(module_path!(), "::Height"))
     }
 
     fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {

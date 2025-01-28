@@ -1,5 +1,6 @@
 ---
 import BlinkWhale from "./BlinkWhale.astro"
+import EmailSignup from "./EmailSignup.astro"
 const menuSections = [
   {
     title: "Products",
@@ -13,8 +14,8 @@ const menuSections = [
         name: "Testnet App"
       },
       {
-        url: "https://docs.union.build/integrations/api/graphql/",
-        name: "GraphQL API"
+        url: "https://dashboard.union.build/",
+        name: "Dashboard"
       }
     ]
   },
@@ -106,6 +107,7 @@ function isInternal(menuItem: { url: string }): boolean {
       ))
     }
   </ul>
+  <EmailSignup />
 
   <p class="text-center block font-bold mt-4 font-supermolot text-accent-500">
     <BlinkWhale />

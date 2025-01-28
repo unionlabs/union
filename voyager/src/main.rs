@@ -27,7 +27,10 @@ use tracing_subscriber::EnvFilter;
 use voyager_message::{
     call::{FetchBlocks, FetchUpdateHeaders},
     callback::AggregateMsgUpdateClientsFromOrderedHeaders,
-    context::{get_plugin_info, Context, IbcSpecHandler, ModulesConfig},
+    context::{
+        equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
+        ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
+    },
     core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
     rpc::{IbcState, VoyagerRpcClient},
@@ -138,7 +141,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             }
             ConfigCmd::Default => print_json(&Config {
                 schema: None,
-                plugins: vec![],
+                equivalent_chain_ids: EquivalentChainIds::default(),
                 modules: ModulesConfig {
                     state: vec![],
                     proof: vec![],
@@ -146,6 +149,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     client: vec![],
                     client_bootstrap: vec![],
                 },
+                plugins: vec![],
                 voyager: VoyagerConfig {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
@@ -322,10 +326,15 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 QueryHeight::Latest => {
                     let config = get_voyager_config()?;
 
-                    let context = Context::new(config.plugins, config.modules, |h| {
-                        h.register::<IbcClassic>();
-                        h.register::<IbcUnion>();
-                    })
+                    let context = Context::new(
+                        config.plugins,
+                        config.modules,
+                        config.equivalent_chain_ids,
+                        |h| {
+                            h.register::<IbcClassic>();
+                            h.register::<IbcUnion>();
+                        },
+                    )
                     .await?;
 
                     let latest_height = context
@@ -340,10 +349,15 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 QueryHeight::Finalized => {
                     let config = get_voyager_config()?;
 
-                    let context = Context::new(config.plugins, config.modules, |h| {
-                        h.register::<IbcClassic>();
-                        h.register::<IbcUnion>();
-                    })
+                    let context = Context::new(
+                        config.plugins,
+                        config.modules,
+                        config.equivalent_chain_ids,
+                        |h| {
+                            h.register::<IbcClassic>();
+                            h.register::<IbcUnion>();
+                        },
+                    )
                     .await?;
 
                     let latest_height = context
@@ -509,10 +523,15 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             } => {
                 let voyager_config = get_voyager_config()?;
 
-                let ctx = Context::new(voyager_config.plugins, voyager_config.modules, |h| {
-                    h.register::<IbcClassic>();
-                    h.register::<IbcUnion>();
-                })
+                let ctx = Context::new(
+                    voyager_config.plugins,
+                    voyager_config.modules,
+                    voyager_config.equivalent_chain_ids,
+                    |h| {
+                        h.register::<IbcClassic>();
+                        h.register::<IbcUnion>();
+                    },
+                )
                 .await?;
 
                 // weird race condition in Context::new that i don't feel like debugging right now
@@ -546,10 +565,15 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             } => {
                 let voyager_config = get_voyager_config()?;
 
-                let ctx = Context::new(voyager_config.plugins, voyager_config.modules, |h| {
-                    h.register::<IbcClassic>();
-                    h.register::<IbcUnion>();
-                })
+                let ctx = Context::new(
+                    voyager_config.plugins,
+                    voyager_config.modules,
+                    voyager_config.equivalent_chain_ids,
+                    |h| {
+                        h.register::<IbcClassic>();
+                        h.register::<IbcUnion>();
+                    },
+                )
                 .await?;
 
                 // weird race condition in Context::new that i don't feel like debugging right now
@@ -579,6 +603,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         client_type: client_info.client_type,
                         chain_id: client_meta.chain_id,
                         counterparty_chain_id: on.clone(),
+                        client_id: client_id.clone(),
                         update_from: client_meta.counterparty_height,
                         update_to,
                     })],
@@ -715,17 +740,19 @@ pub mod utils {
                         client_type: client_type.clone(),
                     }),
                 ),
-                IbcSpecId::UNION => IbcDatagram::new::<IbcUnion>(ibc_union_spec::Datagram::from(
-                    ibc_union_spec::MsgCreateClient {
-                        client_type,
-                        client_state_bytes: client_module
-                            .encode_client_state(self_client_state, metadata)
-                            .await?,
-                        consensus_state_bytes: client_module
-                            .encode_consensus_state(self_consensus_state)
-                            .await?,
-                    },
-                )),
+                IbcSpecId::UNION => {
+                    IbcDatagram::new::<IbcUnion>(ibc_union_spec::datagram::Datagram::from(
+                        ibc_union_spec::datagram::MsgCreateClient {
+                            client_type,
+                            client_state_bytes: client_module
+                                .encode_client_state(self_client_state, metadata)
+                                .await?,
+                            consensus_state_bytes: client_module
+                                .encode_consensus_state(self_consensus_state)
+                                .await?,
+                        },
+                    ))
+                }
                 _ => bail!("unknown IBC version id `{ibc_spec_id}`"),
             }],
         }))

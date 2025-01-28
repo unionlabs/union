@@ -1,18 +1,26 @@
 [package]
+name    = "unionlabs-primitives"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "unionlabs-primitives"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.0.1"
+
+[lints]
+workspace = true
 
 [dependencies]
 alloy-primitives = { workspace = true, optional = true }
+alloy-sol-types  = { workspace = true, optional = true }
 base64           = { workspace = true, optional = true, features = ["std"] }
 bincode          = { workspace = true, optional = true, features = ["alloc"] }
 generic-array    = { workspace = true, optional = true }
 hex              = { workspace = true, features = ["std"] }
 primitive-types  = { workspace = true }
 rlp              = { workspace = true, optional = true }
+schemars         = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }
 serde_bytes      = { version = "0.11.15", optional = true }
 thiserror        = { workspace = true }
@@ -24,18 +32,17 @@ uint = "0.9.0"
 [dev-dependencies]
 unionlabs = { workspace = true, features = ["test-utils"] }
 
-[lints]
-workspace = true
-
 [features]
 default = ["serde", "base64"]
 
-base64  = ["dep:base64"]
-bincode = ["dep:bincode"]
-rlp     = ["dep:rlp"]
-serde   = ["dep:serde", "dep:serde_bytes"]
+base64   = ["dep:base64"]
+bincode  = ["dep:bincode"]
+rlp      = ["dep:rlp"]
+schemars = ["dep:schemars"]
+serde    = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
+alloy-sol-types-compat = ["dep:alloy-sol-types"]
 generic-array-compat = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
 primitive-types-compat = [
   # TODO: Make this dep optional again once we switch to ruint

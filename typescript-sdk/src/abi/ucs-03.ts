@@ -64,7 +64,7 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
-    name: "OP_FUNGIBLE_ASSET_TRANSFER",
+    name: "OP_FUNGIBLE_ASSET_ORDER",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
@@ -89,13 +89,15 @@ export const ucs03ZkgmAbi = [
   { type: "error", name: "ErrInvalidAssetName", inputs: [] },
   { type: "error", name: "ErrInvalidAssetOrigin", inputs: [] },
   { type: "error", name: "ErrInvalidAssetSymbol", inputs: [] },
+  { type: "error", name: "ErrInvalidBatchInstruction", inputs: [] },
   { type: "error", name: "ErrInvalidFillType", inputs: [] },
   { type: "error", name: "ErrInvalidHops", inputs: [] },
   { type: "error", name: "ErrInvalidIBCVersion", inputs: [] },
+  { type: "error", name: "ErrInvalidMultiplexSender", inputs: [] },
   { type: "error", name: "ErrOnlyMaker", inputs: [] },
   { type: "error", name: "ErrUnauthorized", inputs: [] },
   { type: "error", name: "ErrUnimplemented", inputs: [] },
-  { type: "error", name: "ErrUnknownSyscall", inputs: [] },
+  { type: "error", name: "ErrUnknownOpcode", inputs: [] },
   { type: "error", name: "ErrUnsupportedVersion", inputs: [] },
   { type: "constructor", inputs: [], stateMutability: "nonpayable" },
   {
@@ -104,6 +106,20 @@ export const ucs03ZkgmAbi = [
     inputs: [],
     outputs: [{ name: "", type: "string", internalType: "string" }],
     stateMutability: "view"
+  },
+  {
+    type: "function",
+    name: "call",
+    inputs: [
+      { name: "channelId", type: "uint32", internalType: "uint32" },
+      { name: "contractAddress", type: "bytes", internalType: "bytes" },
+      { name: "contractCalldata", type: "bytes", internalType: "bytes" },
+      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
+      { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+      { name: "salt", type: "bytes32", internalType: "bytes32" }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -419,6 +435,25 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
+    name: "transferAndCall",
+    inputs: [
+      { name: "channelId", type: "uint32", internalType: "uint32" },
+      { name: "receiver", type: "bytes", internalType: "bytes" },
+      { name: "baseToken", type: "address", internalType: "address" },
+      { name: "baseAmount", type: "uint256", internalType: "uint256" },
+      { name: "quoteToken", type: "bytes", internalType: "bytes" },
+      { name: "quoteAmount", type: "uint256", internalType: "uint256" },
+      { name: "contractAddress", type: "bytes", internalType: "bytes" },
+      { name: "contractCalldata", type: "bytes", internalType: "bytes" },
+      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
+      { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+      { name: "salt", type: "bytes32", internalType: "bytes32" }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
+  },
+  {
+    type: "function",
     name: "transferOwnership",
     inputs: [{ name: "newOwner", type: "address", internalType: "address" }],
     outputs: [],
@@ -490,15 +525,17 @@ export const ucs03ZkgmAbi = [
   { type: "error", name: "ErrInvalidAssetName", inputs: [] },
   { type: "error", name: "ErrInvalidAssetOrigin", inputs: [] },
   { type: "error", name: "ErrInvalidAssetSymbol", inputs: [] },
+  { type: "error", name: "ErrInvalidBatchInstruction", inputs: [] },
   { type: "error", name: "ErrInvalidFillType", inputs: [] },
   { type: "error", name: "ErrInvalidHops", inputs: [] },
   { type: "error", name: "ErrInvalidIBCVersion", inputs: [] },
+  { type: "error", name: "ErrInvalidMultiplexSender", inputs: [] },
   { type: "error", name: "ErrNotIBC", inputs: [] },
   { type: "error", name: "ErrNotImplemented", inputs: [] },
   { type: "error", name: "ErrOnlyMaker", inputs: [] },
   { type: "error", name: "ErrUnauthorized", inputs: [] },
   { type: "error", name: "ErrUnimplemented", inputs: [] },
-  { type: "error", name: "ErrUnknownSyscall", inputs: [] },
+  { type: "error", name: "ErrUnknownOpcode", inputs: [] },
   { type: "error", name: "ErrUnsupportedVersion", inputs: [] },
   { type: "error", name: "ExpectedPause", inputs: [] },
   { type: "error", name: "FailedInnerCall", inputs: [] },

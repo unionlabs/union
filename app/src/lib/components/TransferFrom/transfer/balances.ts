@@ -2,7 +2,6 @@ import type { UserAddresses } from "$lib/types.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
-import type { BalanceData } from "$lib/queries/balance"
 import { derived, type Readable, writable } from "svelte/store"
 
 export let userAddress: Readable<UserAddresses> = derived(
@@ -14,4 +13,6 @@ export let userAddress: Readable<UserAddresses> = derived(
   })
 )
 
-export const balanceStore = writable<Array<Array<BalanceData>>>([])
+export const balanceStore = writable<Array<{ chain_id: string; balances: Record<string, string> }>>(
+  []
+)

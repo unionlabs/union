@@ -221,7 +221,7 @@ You need to confirm that the connection is opened on both sides:
 
 ```bash frame="none"
 # Query the connection on Union
-uniond query ibc connection end $UNION_CONNECTION_ID --node https://rpc.testnet-8.union.build:443 	
+uniond query ibc connection end $UNION_CONNECTION_ID --node https://rpc.testnet-9.union.build:443 	
 
 # Query the connection on your chain
 $NODE_BIN query ibc connection end $YOUR_CONNECTION_ID --node $YOUR_RPC
@@ -254,7 +254,7 @@ Make sure the `state` of the channel is `OPEN` on both ends:
 
 ```bash frame="none"
 # Query the connection on Union
-uniond query ibc channel end $UCS01_PORT_ID $UNION_CHANNEL_ID --node https://rpc.testnet-8.union.build:443 	
+uniond query ibc channel end $UCS01_PORT_ID $UNION_CHANNEL_ID --node https://rpc.testnet-9.union.build:443 	
 
 # Query the connection on your chain
 $NODE_BIN query ibc channel end transfer $YOUR_CHANNEL_ID --node $YOUR_RPC

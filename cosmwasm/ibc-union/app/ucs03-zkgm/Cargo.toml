@@ -1,10 +1,12 @@
 [package]
-authors      = ["Union.fi Labs"]
+name    = "ibc-union-ucs03-zkgm"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ibc-union-ucs03-zkgm"
-repository   = "https://github.com/unionlabs/union"
-version      = "1.0.0"
+publish      = { workspace = true }
+repository   = { workspace = true }
 
 [lints]
 workspace = true
@@ -22,8 +24,8 @@ cosmwasm-schema   = { version = "1.5" }
 cosmwasm-std      = { version = "1.5" }
 cw-storage-plus   = { version = "1.2" }
 ethabi            = { workspace = true }
-ibc-solidity      = { workspace = true, features = ["serde"] }
 ibc-union-msg     = { workspace = true }
+ibc-union-spec    = { workspace = true, features = ["serde"] }
 serde             = { workspace = true, features = ["derive"] }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }

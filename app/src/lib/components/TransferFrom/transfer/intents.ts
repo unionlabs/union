@@ -2,21 +2,17 @@ import { derived, type Readable } from "svelte/store"
 import type { Chain } from "$lib/types"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import { showUnsupported } from "$lib/stores/user.ts"
-import { get } from "svelte/store"
 import type { BalanceData } from "$lib/queries/balance"
 
 export type AssetListItem = BalanceData & {
   sourceChain: Chain
 }
 
-export type SelectedAsset = BalanceData | null
-
 export interface IntentsStore {
+  chains: Array<Chain>
   sourceChain: Chain | null
   destinationChain: Chain | null
-  selectedAsset: SelectedAsset
-  sourceAssets: Array<AssetListItem>
+  baseTokens: Array<{ denom: string; balance: string }>
   receiver: string
   amount: string
 }
@@ -35,31 +31,24 @@ export function createIntentStore(
       $context.chains.find(chain => chain.chain_id === $intents.destination) ?? null
   )
 
-  const sourceAssets = derived([context, sourceChain], ([$context, $sourceChain]) => {
+  const baseTokens = derived([context, sourceChain], ([$context, $sourceChain]) => {
     if (!$sourceChain) return []
+    let balances = $context.balances.find(c => c.data?.chain_id === $sourceChain.chain_id)
+    let baseTokens = $sourceChain.tokens.map(token => ({
+      denom: token.denom,
+      balance: balances?.data?.balances[token.denom] ?? "0"
+    }))
 
-    const chainBalances =
-      $context.balances.find(chain => chain.chainId === $sourceChain.chain_id)?.balances || []
-
-    return chainBalances
-      .filter(balance => get(showUnsupported) || balance.metadata.metadata_level !== "none")
-      .map(balance => ({
-        ...balance,
-        sourceChain: $sourceChain
-      }))
-  })
-
-  const selectedAsset = derived([sourceAssets, rawIntents], ([$sourceAssets, $rawIntents]) => {
-    return $sourceAssets.find(x => x.metadata.denom === $rawIntents.asset) ?? null
+    return baseTokens
   })
 
   return derived(
-    [sourceChain, destinationChain, selectedAsset, sourceAssets, rawIntents],
-    ([$sourceChain, $destinationChain, $selectedAsset, $sourceAssets, $rawIntents]) => ({
+    [sourceChain, destinationChain, baseTokens, rawIntents, context],
+    ([$sourceChain, $destinationChain, $baseTokens, $rawIntents, $context]) => ({
+      chains: $context.chains,
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
-      selectedAsset: $selectedAsset,
-      sourceAssets: $sourceAssets,
+      baseTokens: $baseTokens,
       receiver: $rawIntents.receiver,
       amount: $rawIntents.amount
     })

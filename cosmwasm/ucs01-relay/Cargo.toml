@@ -1,11 +1,12 @@
 [package]
-authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+name    = "ucs01-relay"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "ucs01-relay"
-publish      = false
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "1.0.1"
 
 [lints]
 workspace = true

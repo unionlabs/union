@@ -1,16 +1,19 @@
 [package]
+name    = "aptos-move-ibc"
+version = "0.0.0"
+
+authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
-name         = "aptos-move-ibc"
+publish      = { workspace = true }
 repository   = { workspace = true }
-version      = "0.1.0"
+
+[lints]
+workspace = true
 
 [dependencies]
 move-bindgen = { workspace = true }
 tracing      = { workspace = true }
-
-[lints]
-workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

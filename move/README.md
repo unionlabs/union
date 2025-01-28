@@ -5,4 +5,5 @@ N thousand specifies a new namespace:
 
 - IBC: 35xxx
   - Cometbls light client: 351xx
+  - State lens light client: 352xx
 - UCS01 Relay: 36xxx

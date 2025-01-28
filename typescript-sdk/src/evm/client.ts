@@ -16,7 +16,7 @@ import {
   evmApproveTransferAsset,
   transferAssetFromEvmSimulate
 } from "./transfer.ts"
-import { err, ok, type Result } from "neverthrow"
+import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { getHubbleChainDetails } from "../pfm.ts"
 import {
   sepolia,
@@ -25,8 +25,16 @@ import {
   arbitrumSepolia,
   berachainTestnetbArtio
 } from "viem/chains"
-import type { TransferAssetsParameters, LooseAutocomplete, Hex, HexAddress } from "../types.ts"
-import { ucs03ZkgmAbi } from "#abi/ucs-03.ts"
+import type {
+  TransferAssetsParametersLegacy,
+  LooseAutocomplete,
+  Hex,
+  HexAddress,
+  TransferAssetParameters
+} from "../types.ts"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
+import { bech32AddressToHex } from "#mod.ts"
+import { generateSalt } from "#utilities/index.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [
@@ -65,6 +73,59 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
+        baseAmount,
+        baseToken,
+        quoteAmount,
+        quoteToken,
+        receiver,
+        sourceChannelId,
+        ucs03address
+      }: TransferAssetParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
+        if (!client.account) return err(new Error("No account found"))
+
+        /**
+         * @dev
+         * `UCS03` zkgm contract `transfer` function:
+         * - https://github.com/unionlabs/union/blob/0fd24893d4a1173e9c6e150c826c162871d63262/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L301
+         */
+        const writeContractParameters = {
+          account: client.account,
+          abi: ucs03ZkgmAbi,
+          chain: client.chain,
+          functionName: "transfer",
+          address: ucs03address,
+          /**
+              "channelId": "uint32"
+              "receiver": "bytes"
+              "baseToken": "address"
+              "baseAmount": "uint256"
+              "quoteToken": "bytes"
+              "quoteAmount": "uint256"
+              "timeoutHeight": "uint64"
+              "timeoutTimestamp": "uint64"
+              "salt": "bytes32"
+             */
+          args: [
+            sourceChannelId,
+            receiver.startsWith("0x")
+              ? getAddress(receiver)
+              : bech32AddressToHex({ address: receiver }),
+            baseToken,
+            baseAmount,
+            quoteToken,
+            quoteAmount,
+            0n, // TODO: customize timeoutheight
+            "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
+            generateSalt()
+          ]
+        } as const
+
+        return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {
+          return new Error("failed to execute evm call", { cause: error })
+        }).map(res => res)
+      },
+
+      transferAssetLegacy: async ({
         amount,
         account,
         receiver,
@@ -72,7 +133,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         simulate = true,
         destinationChainId,
         autoApprove = false
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
 
@@ -126,18 +187,29 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           quoteToken,
           quoteAmount: amount,
-          sourceChannel,
+          sourceChannelId: sourceChannel,
           ucs03address
         })
       },
-      approveTransaction: async ({
+      approveErc20: async ({
+        baseAmount,
+        baseToken,
+        ucs03address
+      }: { baseAmount: bigint; baseToken: Hex; ucs03address: Hex }) => {
+        return await evmApproveTransferAsset(client, {
+          amount: baseAmount,
+          denomAddress: baseToken,
+          receiver: ucs03address
+        })
+      },
+      approveTransactionLegacy: async ({
         amount,
         account,
         receiver,
         denomAddress,
         simulate = true,
         destinationChainId
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         let _receiver: HexAddress
 
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
@@ -167,7 +239,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         destinationChainId,
         relayContractAddress
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+      }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<string, Error>> => {
         const sourceChainId = parameters.chainId
 
         if (sourceChainId === destinationChainId) {

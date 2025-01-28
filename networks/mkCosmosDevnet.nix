@@ -603,19 +603,17 @@ let
           mkdir -p $out/checksums
           echo -n $(cat "${checksum}") > "$out/checksums/$(basename $wasm .wasm)"
           mkdir -p $out/addresses
-          ${
-            builtins.concatStringsSep "\n" (
-              pkgs.lib.imap0 (
-                idx:
-                { salt, ... }:
-                ''
-                  echo -n "$(cat ${
-                    getContractAddress creator checksum salt
-                  })" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
-                ''
-              ) instances
-            )
-          }
+          ${builtins.concatStringsSep "\n" (
+            pkgs.lib.imap0 (
+              idx:
+              { salt, ... }:
+              ''
+                echo -n "$(cat ${
+                  getContractAddress creator checksum salt
+                })" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
+              ''
+            ) instances
+          )}
         done
       '';
 

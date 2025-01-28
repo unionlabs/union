@@ -19,7 +19,7 @@ _: {
     {
       packages = {
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-0/ZhKkptxBVBWbOmN6izS/8hROPs27rk0nDK+5xtukw=";
+          npmDepsHash = "sha256-ZXPdOFx9IyZNGVbKXSBm1rDA3rkwgQYQROrAX35E09c=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [
@@ -62,7 +62,7 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
-              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://purple.graphql.union.build/v1/graphql"
+              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://staging.graphql.union.build/v1/graphql"
 
               npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';

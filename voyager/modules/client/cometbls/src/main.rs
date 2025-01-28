@@ -323,26 +323,6 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument(skip_all)]
-    async fn reencode_counterparty_client_state(
-        &self,
-        _: &Extensions,
-        client_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        Ok(client_state)
-    }
-
-    #[instrument(skip_all)]
-    async fn reencode_counterparty_consensus_state(
-        &self,
-        _: &Extensions,
-        consensus_state: Bytes,
-        _client_type: ClientType,
-    ) -> RpcResult<Bytes> {
-        Ok(consensus_state)
-    }
-
-    #[instrument(skip_all)]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
             .map_err(|err| {

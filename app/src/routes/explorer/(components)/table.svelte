@@ -1,4 +1,6 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
+
 import { onDestroy } from "svelte"
 import { derived } from "svelte/store"
 import {
@@ -16,7 +18,6 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import * as Card from "$lib/components/ui/card/index.ts"
-import { showUnsupported } from "$lib/stores/user.ts"
 
 type DataRow = $$Generic
 
@@ -75,11 +76,7 @@ onDestroy(unsubscribe)
     <Table.Root>
       <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row>
-
-            {#if $hasUrls}
-              <th aria-label="Item Detail Links"></th>
-            {/if}
+          <Table.Row class="hover:bg-inherit">
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
@@ -93,79 +90,26 @@ onDestroy(unsubscribe)
           </Table.Row>
         {/each}
       </Table.Header>
-      <!-- TODO: make this DRY !-->
       <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
           {@const url = $rows[row.index].original.url ?? undefined}
-
-          {@const containsAsset = $rows[row.index].original.assets}
-          {#if containsAsset}
-            {@const isSupported = hasInfoProperty(containsAsset)}
-            {#if $showUnsupported || isSupported}
-              <Table.Row
-                class={cn("relative", onClick !== undefined ? 'cursor-pointer' : '',
-              index % 2 === 0 ? 'bg-secondary/10 dark:bg-secondary/30 ' : 'bg-transparent',
-              isSupported ? '' : 'opacity-50'
-
-            )}
-                on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
-              >
-                {#if $hasUrls}
-                <td>
-                  <a
-                    href={url}
-                    aria-label={url}
-                    class="row-link"
-                  ></a>
-                </td>
-                {/if}
-                {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-                  <Table.Cell>
-                    <svelte:component
-                      this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    />
-                  </Table.Cell>
-                {/each}
-              </Table.Row>
-            {/if}
-          {:else}
-            <Table.Row
-              class={cn("relative", onClick !== undefined ? 'cursor-pointer' : '',
-              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-            )}
-              on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
-            >
-              {#if $hasUrls}
-                <td>
-                  <a
-                    href={url}
-                    aria-label={url}
-                    class="row-link"
-                  ></a>
-                </td>
-              {/if}
-              {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-                <Table.Cell>
-                  <svelte:component
-                    this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  />
-                </Table.Cell>
-              {/each}
-            </Table.Row>
-          {/if}
+          <Table.Row
+            class={cn("cursor-pointer",
+            index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+          )}
+            on:click={(e) => {if (url) { goto(url)}}}
+          >
+            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+              <Table.Cell>
+                <svelte:component
+                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                />
+              </Table.Cell>
+            {/each}
+          </Table.Row>
         {/each}
       </Table.Body>
     </Table.Root>
   </div>
 </Card.Root>
 
-<style lang="postcss">
-  .row-link {
-    position: absolute;
-    top: 0;
-    left: 0;
-    content: "";
-    width: 100%;
-    height: 100%;
-  }
-</style>

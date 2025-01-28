@@ -76,7 +76,7 @@ $: translateZ = width / 2
 
 <div class="h-screen w-full flex items-center justify-center perspective-[2000px]">
   <div
-          class="relative transform-style-preserve-3d transition-transform duration-1000"
+          class="relative transform-style-preserve-3d transition-transform duration-500"
           style={`width: ${width}px; height: ${height}px; transform: rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`}
   >
     <FaceWrapper {width} {height} {translateZ} visible rotateY={"0deg"}>
