@@ -14,18 +14,11 @@ pub struct Header {
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::sol_types::SolValue;
-    use unionlabs::encoding::{Encode, EthAbi};
+    use unionlabs::{ibc::core::client::height::Height, impl_ethabi_via_try_from_into};
 
     use crate::Header;
 
-    impl Encode<EthAbi> for Header {
-        fn encode(self) -> Vec<u8> {
-            Into::<SolHeader>::into(self).abi_encode_params()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {}
+    impl_ethabi_via_try_from_into!(Header => SolHeader);
 
     alloy::sol! {
         struct SolHeader {
@@ -43,6 +36,17 @@ pub mod ethabi {
                 l2Height: value.l2_height.height(),
                 l2InclusionProof: value.l2_consensus_state_proof.into(),
                 l2ConsensusState: value.l2_consensus_state.into(),
+            }
+        }
+    }
+
+    impl From<SolHeader> for Header {
+        fn from(value: SolHeader) -> Self {
+            Self {
+                l1_height: Height::new(value.l1Height),
+                l2_height: Height::new(value.l2Height),
+                l2_consensus_state_proof: value.l2InclusionProof.into(),
+                l2_consensus_state: value.l2ConsensusState.into(),
             }
         }
     }

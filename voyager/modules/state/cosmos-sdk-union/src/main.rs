@@ -23,7 +23,7 @@ use prost::Message;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument};
+use tracing::{debug, error, instrument};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
@@ -110,6 +110,7 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
+    #[instrument(skip_all, fields(?height))]
     pub async fn query_smart<Q: Serialize, R: DeserializeOwned>(
         &self,
         query: &Q,
@@ -127,6 +128,8 @@ impl Module {
                 height,
             )
             .await?;
+
+        debug!(?response);
 
         Ok(response.value.map(|value| {
             serde_json::from_slice(
@@ -158,7 +161,7 @@ impl Module {
             )
             .await
             .map_err(rpc_error(
-                format_args!("error fetching abci query"),
+                "error fetching abci query",
                 Some(json!({ "height": height, "path": data })),
             ))
             .map(|response| response.response)

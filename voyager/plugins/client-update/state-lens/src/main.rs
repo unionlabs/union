@@ -12,7 +12,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 use unionlabs::ErrorReporter;
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
@@ -259,36 +259,48 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 // if the L2 consensus state exists on the L1, we don't have to update the L2 on the L1.
                 match l2_consensus_state_proof {
-                    Some(_) => Ok(continuation),
-                    None => Ok(conc([
-                        // update the L2 client on L1 and then dispatch the continuation
-                        promise(
-                            [call(FetchUpdateHeaders {
-                                client_type: l2_client_type,
-                                chain_id: self.chain_id.clone(),
-                                counterparty_chain_id: l1_client_meta.chain_id.clone(),
-                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
-                                update_from,
-                                update_to,
-                            })],
-                            [],
-                            AggregateMsgUpdateClientsFromOrderedHeaders {
-                                ibc_spec_id: IbcUnion::ID,
-                                chain_id: l1_client_meta.chain_id.clone(),
-                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
-                            },
-                        ),
-                        seq([
-                            call(WaitForTrustedHeight {
-                                chain_id: l1_client_meta.chain_id.clone(),
-                                ibc_spec_id: IbcUnion::ID,
-                                client_id: RawClientId::new(state_lens_client_state.l2_client_id),
-                                height: update_to,
-                                finalized: true,
-                            }),
-                            continuation,
-                        ]),
-                    ])),
+                    Some(_) => {
+                        info!("consensus state already exists");
+                        Ok(continuation)
+                    }
+                    None => {
+                        info!("consensus state does not exist, queueing update for l2 client");
+                        Ok(conc([
+                            // update the L2 client on L1 and then dispatch the continuation
+                            promise(
+                                [call(FetchUpdateHeaders {
+                                    client_type: l2_client_type,
+                                    chain_id: self.chain_id.clone(),
+                                    counterparty_chain_id: l1_client_meta.chain_id.clone(),
+                                    client_id: RawClientId::new(
+                                        state_lens_client_state.l2_client_id,
+                                    ),
+                                    update_from,
+                                    update_to,
+                                })],
+                                [],
+                                AggregateMsgUpdateClientsFromOrderedHeaders {
+                                    ibc_spec_id: IbcUnion::ID,
+                                    chain_id: l1_client_meta.chain_id.clone(),
+                                    client_id: RawClientId::new(
+                                        state_lens_client_state.l2_client_id,
+                                    ),
+                                },
+                            ),
+                            seq([
+                                call(WaitForTrustedHeight {
+                                    chain_id: l1_client_meta.chain_id.clone(),
+                                    ibc_spec_id: IbcUnion::ID,
+                                    client_id: RawClientId::new(
+                                        state_lens_client_state.l2_client_id,
+                                    ),
+                                    height: update_to,
+                                    finalized: true,
+                                }),
+                                continuation,
+                            ]),
+                        ]))
+                    }
                 }
             }
             ModuleCall::FetchUpdateAfterL1Update(FetchUpdateAfterL1Update {
