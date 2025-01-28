@@ -112,7 +112,7 @@
           description = "Array for cross-chain transfers.";
         };
         privkeys_for_loadtest = mkOption {
-          type = types.listOf types.attrs;
+          type = types.listOf types.str;
           description = "Array for privkeys_for_loadtest for loadtesting.";
         };
         logLevel = mkOption {

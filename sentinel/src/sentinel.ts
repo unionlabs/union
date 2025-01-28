@@ -357,8 +357,8 @@ async function doTransfer(task: TransferConfig) {
       return
     }
 
-    if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
-      consola.info("no quote token available")
+    if ((quoteToken.value.type as string) === "NO_QUOTE_AVAILABLE") {
+      consola.info("No quote token available")
       return
     }
 
@@ -368,7 +368,7 @@ async function doTransfer(task: TransferConfig) {
       ? {
           baseToken: task.denomAddress,
           baseAmount: BigInt(random_amount),
-          quoteToken: quoteToken.value.quote_token,
+          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
           quoteAmount: BigInt(random_amount),
           receiver: task.receiverAddress,
           sourceChannelId: channel.source_channel_id,
@@ -377,7 +377,7 @@ async function doTransfer(task: TransferConfig) {
       : {
           baseToken: task.denomAddress,
           baseAmount: BigInt(random_amount),
-          quoteToken: quoteToken.value.quote_token,
+          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
           quoteAmount: BigInt(random_amount),
           receiver: task.receiverAddress,
           sourceChannelId: channel.source_channel_id,
