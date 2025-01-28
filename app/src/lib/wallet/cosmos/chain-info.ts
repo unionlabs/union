@@ -225,6 +225,56 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
   features: []
 }
 
+export const elgafarLeapChainInfo: LeapExtendedInfo = {
+  chainId: "elgafar-1",
+  chainName: "Stargaze Testnet",
+  rpc: "https://rpc.elgafar-1.stargaze-apis.com",
+  rest: "https://rest.elgafar-1.stargaze-apis.com",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "stars",
+    bech32PrefixAccPub: "starspub",
+    bech32PrefixValAddr: "starsvaloper",
+    bech32PrefixValPub: "starsvaloperpub",
+    bech32PrefixConsAddr: "starsvalcons",
+    bech32PrefixConsPub: "starsvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "STARS",
+      coinMinimalDenom: "ustars",
+      coinDecimals: 6,
+      coinGeckoId: "stargaze"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "STARS",
+      coinMinimalDenom: "ustars",
+      coinDecimals: 6,
+      coinGeckoId: "stargaze"
+    }
+  ],
+  gasPriceStep: {
+    low: 0.03,
+    average: 0.04,
+    high: 0.05
+  },
+  stakeCurrency: {
+    coinDenom: "STARS",
+    coinMinimalDenom: "ustars",
+    coinDecimals: 6,
+    coinGeckoId: "stargaze"
+  },
+  theme: {
+    primaryColor: "#E2447B",
+    gradient: "linear-gradient(180deg, rgba(226, 68, 123, 0.32) 0%, rgba(226, 68, 123, 0) 100%)"
+  },
+  image: "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/stargaze/asset/stargaze.png"
+}
+
 export const strideLeapChainInfo: LeapExtendedInfo = {
   chainId: "stride-internal-1",
   chainName: "Stride Testnet",
@@ -290,7 +340,8 @@ const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "union-testnet-9": unionLeapChainInfo,
-  "stride-internal-1": strideLeapChainInfo
+  "stride-internal-1": strideLeapChainInfo,
+  "elgafar-1": elgafarLeapChainInfo,
   // TODO: add stargaze leap definition
 }
 
