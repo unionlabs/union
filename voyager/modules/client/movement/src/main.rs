@@ -46,7 +46,7 @@ impl ClientModule for Module {
     async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::MOVEMENT)?;
         info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
-        info.ensure_ibc_interface(vec![IbcInterface::IBC_COSMWASM])?;
+        info.ensure_ibc_interface([IbcInterface::IBC_COSMWASM])?;
 
         Ok(Module {})
     }

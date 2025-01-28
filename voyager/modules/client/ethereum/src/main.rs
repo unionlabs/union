@@ -47,7 +47,7 @@ impl ClientModule for Module {
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::ETHEREUM)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
-        info.ensure_ibc_interface(vec![IbcInterface::IBC_COSMWASM])?;
+        info.ensure_ibc_interface([IbcInterface::IBC_COSMWASM])?;
 
         Ok(Self {
             chain_spec: config.chain_spec,

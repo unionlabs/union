@@ -176,20 +176,21 @@ impl ClientModuleInfo {
 
     pub fn ensure_ibc_interface(
         &self,
-        expected_interfaces: Vec<impl AsRef<str>>,
+        expected_interfaces: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<(), UnexpectedIbcInterfaceError> {
         if !expected_interfaces
-            .iter()
+            .into_iter()
             .any(|expected| expected.as_ref() == self.ibc_interface.as_str())
         {
             Err(UnexpectedIbcInterfaceError {
-                expected: self.ibc_interface.clone(),
-                found: expected_interfaces
-                    .iter()
+                expected: expected_interfaces
+                    .into_iter()
                     .map(|s| s.as_ref().to_string())
                     .collect(),
+                found: self.ibc_interface.clone(),
             })
         } else {
+            // If a match is found, return Ok
             Ok(())
         }
     }
