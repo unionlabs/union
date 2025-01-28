@@ -272,7 +272,8 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
     primaryColor: "#E2447B",
     gradient: "linear-gradient(180deg, rgba(226, 68, 123, 0.32) 0%, rgba(226, 68, 123, 0) 100%)"
   },
-  image: "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/stargaze/asset/stargaze.png"
+  image:
+    "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/stargaze/asset/stargaze.png"
 }
 
 export const strideLeapChainInfo: LeapExtendedInfo = {
@@ -341,7 +342,7 @@ const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "union-testnet-9": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
-  "elgafar-1": elgafarLeapChainInfo,
+  "elgafar-1": elgafarLeapChainInfo
   // TODO: add stargaze leap definition
 }
 
