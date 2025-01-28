@@ -6,8 +6,16 @@
       "destinationChain": "elgafar-1",
       "sourceChain": "17000",
       "timeframeMs": 1800000
+    },
+    {
+      "enabled": true,
+      "destinationChain": "osmo-test-5",
+      "sourceChain": "17000",
+      "timeframeMs": 5600000
     }
   ],
+  "load_test_request": 0,
+  "privkeys_for_loadtest": [],
   "transfers": [
     {
       "enabled": false,
@@ -41,7 +49,7 @@
       "rpcs": ["https://rpc.elgafar-1.stargaze.chain.kitchen"],
       "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
       "denomAddress": "ustars",
-      "amount_range": [1000000, 1000000],
+      "amount_range": [1, 100],
       "gasPriceDenom": "ustars",
       "cosmosAccountType": "stars"
     },
@@ -53,12 +61,12 @@
       "rpcs": ["https://rpc.bbn-test-5.babylon.chain.kitchen"],
       "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
       "denomAddress": "ubbn",
-      "amount_range": [1000000, 1000000],
+      "amount_range": [1, 100],
       "gasPriceDenom": "ubbn",
       "cosmosAccountType": "bbn"
     },
     {
-      "enabled": true,
+      "enabled": false,
       "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
       "sourceChainIdEVM": "17000",
       "destinationChainId": "bbn-test-5",
@@ -70,13 +78,37 @@
       "cosmosAccountType": "---"
     },
     {
-      "enabled": true,
+      "enabled": false,
       "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
       "sourceChainIdEVM": "17000",
       "destinationChainId": "elgafar-1",
       "rpcs": ["https://rpc.17000.holesky.chain.kitchen"],
       "receiverAddress": "stars14vcpe0yt8xdzaapm8yy6tm26sf45rdguk7v6fd",
       "denomAddress": "0xa3570DE1c0603051A08A5b2aa1d9DdD4e4e5339D",
+      "amount_range": [1, 100],
+      "gasPriceDenom": "---",
+      "cosmosAccountType": "---"
+    },
+    {
+      "enabled": true,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdCosmos": "osmo-test-5",
+      "destinationChainId": "17000",
+      "rpcs": ["https://rpc.osmo-test-5.osmosis.chain.kitchen"],
+      "receiverAddress": "0xFBf2B6f136fEB11B738592c7c5cF63b83825fF46",
+      "denomAddress": "uosmo",
+      "amount_range": [1, 100],
+      "gasPriceDenom": "uosmo",
+      "cosmosAccountType": "osmo"
+    },
+    {
+      "enabled": false,
+      "privateKey": "c7a7febac36c64d3cd757747494e4de734af5f05339a2fc818f589709e738fff",
+      "sourceChainIdEVM": "17000",
+      "destinationChainId": "osmo-test-5",
+      "rpcs": ["https://rpc.17000.holesky.chain.kitchen"],
+      "receiverAddress": "osmo14vcpe0yt8xdzaapm8yy6tm26sf45rdgu2egh5w",
+      "denomAddress": "0xdea42cad4400bb80bed65c4ced0bbdbb56e6bee2",
       "amount_range": [1, 10],
       "gasPriceDenom": "---",
       "cosmosAccountType": "---"

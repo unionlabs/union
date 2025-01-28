@@ -99,6 +99,10 @@
           type = types.number;
           description = "Interval between cycles in milliseconds";
         };
+        load_test_request = mkOption {
+          type = types.number;
+          description = "load_test_request for request counter. 0 if no loadtest.";
+        };
         interactions = mkOption {
           type = types.listOf types.attrs;
           description = "Interactions for cross-chain communication.";
@@ -106,6 +110,10 @@
         transfers = mkOption {
           type = types.listOf types.attrs;
           description = "Array for cross-chain transfers.";
+        };
+        privkeys_for_loadtest = mkOption {
+          type = types.listOf types.attrs;
+          description = "Array for privkeys_for_loadtest for loadtesting.";
         };
         logLevel = mkOption {
           type = types.str;
@@ -129,6 +137,8 @@
                   cycleIntervalMs = cfg.cycleIntervalMs;
                   interactions = cfg.interactions;
                   transfers = cfg.transfers;
+                  privkeys_for_loadtest = cfg.privkeys_for_loadtest;
+                  load_test_request = cfg.load_test_request;
                 })
               }
             '';

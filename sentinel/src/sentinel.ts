@@ -38,7 +38,7 @@ import {
   hexToBytes,
   getRecommendedChannels,
   getChannelInfo,
-  getQuoteToken,
+  getQuoteToken
 } from "@unionlabs/client"
 
 // Hasura endpoint
@@ -78,6 +78,8 @@ interface ConfigFile {
   interactions: ChainPair[]
   cycleIntervalMs: number
   transfers?: TransferConfig[] // optional array
+  privkeys_for_loadtest?: string[]
+  load_test_request: number
 }
 
 // The shape of Hasura’s response
@@ -155,7 +157,7 @@ export async function checkPackets(
   const now = Date.now()
 
   // We'll query more than the timeframe to ensure we catch all
-  const searchRangeMs = timeframeMs * 2
+  const searchRangeMs = timeframeMs * 10
   const sinceDate = new Date(now - searchRangeMs).toISOString()
 
   consola.info(
@@ -204,7 +206,7 @@ export async function checkPackets(
     srcChain: sourceChain,
     dstChain: destinationChain
   }
-
+  //EEE48878CB7D9CE8DF02B87763FE6A8D8ECA7ACE77F9F483142415B0FFFD52FA
   try {
     // Post to Hasura
     const response = await request<HasuraResponse>(HASURA_ENDPOINT, query, variables)
@@ -338,13 +340,29 @@ async function doTransfer(task: TransferConfig) {
 
     const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel)
 
-    consola.info("quoteToken: ", quoteToken, " chainId: ", sourceChainId, " denomAddr: ", task.denomAddress, " channel: ", channel)
+    consola.info(
+      "quoteToken: ",
+      quoteToken,
+      " chainId: ",
+      sourceChainId,
+      " denomAddr: ",
+      task.denomAddress,
+      " channel: ",
+      channel
+    )
 
     if (quoteToken.isErr()) {
       consola.info("could not get quote token")
       consola.error(quoteToken.error)
-      process.exit(1)
+      return
     }
+
+    if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+      consola.info("no quote token available")
+      return
+    }
+
+    consola.info("quote token", quoteToken.value)
 
     const txPayload = isCosmosChain
       ? {
@@ -366,20 +384,19 @@ async function doTransfer(task: TransferConfig) {
           ucs03address: `0x${channel.source_port_id}` as `0x${string}`
         }
     let unionClient = null
-    if (isCosmosChain){
+    if (isCosmosChain) {
       unionClient = createUnionClient({
-          account: cosmosAccount,
-          chainId: task.sourceChainIdCosmos,
-          gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
-          transport: transports[0]
-        })
-
+        account: cosmosAccount,
+        chainId: task.sourceChainIdCosmos,
+        gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
+        transport: transports[0]
+      })
     } else {
       unionClient = createUnionClient({
         account: evmAccount,
         chainId: task.sourceChainIdEVM,
         transport: fallback(transports)
-      });
+      })
       const approveResponse = await unionClient.approveErc20(txPayload)
       consola.info("approve response: ", approveResponse)
       if (approveResponse.isErr()) {
@@ -410,9 +427,9 @@ async function runIbcChecksForever(config: ConfigFile) {
   while (true) {
     consola.info("\n========== Starting IBC cross-chain checks ==========")
     for (const pair of chainPairs) {
-      if(!pair.enabled){
+      if (!pair.enabled) {
         consola.info("Checking task is disabled. Skipping.")
-        return
+        continue
       }
       consola.info(
         `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
@@ -463,6 +480,51 @@ async function runTransfersForever(config: ConfigFile) {
     await new Promise(resolve => setTimeout(resolve, TEN_MINUTES_MS))
   }
 }
+function sleepSync(ms: number) {
+  const end = Date.now() + ms
+  while (Date.now() < end) {
+    // Busy-wait for the specified duration
+  }
+}
+/**
+ * A "fire-and-forget" style load test function.
+ *
+ * This will trigger N parallel transfers *without* awaiting their completion.
+ *
+ * @param task The transfer configuration
+ * @param totalRequests How many transfer calls to spawn
+ * @param privKeys Optional array of private keys to rotate through
+ */
+function doTransferLoadTest(task: TransferConfig, totalRequests: number, privKeys?: string[]) {
+  if (!task.enabled) {
+    consola.info("Transfer task is disabled. Skipping.")
+    return
+  }
+
+  const useKeys = privKeys?.length ? privKeys : [task.privateKey]
+
+  // Kick off multiple transfers in parallel
+  for (let i = 0; i < totalRequests; i++) {
+    const index = i % useKeys.length
+    const newPrivateKey = useKeys[index]
+    const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
+    consola.info("Starting transfer", i + 1, "with key", newPrivateKey)
+
+    if (i > 0 && i % 10 === 0) {
+      consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
+      sleepSync(5000) // Block the loop for 10 seconds
+    }
+
+    // Fire the asynchronous function but do NOT await
+    doTransfer(loadTask).catch(err => {
+      // Optionally catch errors so they don't become unhandled rejections
+      consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
+    })
+  }
+
+  // Since we are not awaiting, this function will return immediately.
+  consola.info(`Kicked off ${totalRequests} parallel transfers for load test.`)
+}
 
 /**
  * Kick off both loops in parallel.
@@ -484,9 +546,27 @@ async function main() {
 
   // Load configuration
   const config = loadConfig(configPath)
+  const is_loadtest = config.load_test_request > 0 ? true : false
+  if (is_loadtest) {
+    // Run a one-time load test
+    const transfers: TransferConfig[] = config.transfers ?? []
+    if (transfers.length === 0) {
+      consola.warn("No transfers configured. Nothing to load-test.")
+      return
+    }
 
-  // Start both infinite loops in parallel:
-  await Promise.all([runIbcChecksForever(config), runTransfersForever(config)])
+    consola.info("========== Starting Load Test ==========")
+    for (const task of transfers) {
+      doTransferLoadTest(task, config.load_test_request, config.privkeys_for_loadtest)
+    }
+    // You can exit after scheduling them if you don't want
+    // to remain running. Or keep the process alive if needed.
+    // If you prefer to exit:
+    // process.exit(0)
+  } else {
+    // Normal mode: run IBC checks + transfer tasks in parallel
+    await Promise.all([runIbcChecksForever(config), runTransfersForever(config)])
+  }
 }
 
 // Just call `main()` immediately
