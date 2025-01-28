@@ -214,7 +214,7 @@ async function doTransfer(task) {
             return;
         }
         if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
-            consola.info("no quote token available");
+            consola.info("No quote token available");
             return;
         }
         consola.info("quote token", quoteToken.value);
