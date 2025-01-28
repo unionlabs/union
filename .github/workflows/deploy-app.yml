@@ -28,6 +28,7 @@ jobs:
       pull-requests: write
     env:
       npm_config_yes: true
+      PUBLIC_ENVIRONMENT: 'preview'
       ENVIRONMENT: 'preview'
     environment: 'app-preview'
     if: github.event_name == 'pull_request'
@@ -42,6 +43,7 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
@@ -74,6 +76,7 @@ jobs:
     runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
+      PUBLIC_ENVIRONMENT: 'preview'
       ENVIRONMENT: 'preview'
     if: github.event_name == 'workflow_dispatch'
     steps:
@@ -87,11 +90,13 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
@@ -101,6 +106,7 @@ jobs:
     runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
+      PUBLIC_ENVIRONMENT: 'staging'
       ENVIRONMENT: 'staging'
     environment: 'app-staging'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -115,11 +121,13 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
@@ -129,6 +137,7 @@ jobs:
     runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
+      PUBLIC_ENVIRONMENT: 'production'
       ENVIRONMENT: 'production'
     environment: 'app-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/release/app'
@@ -143,11 +152,13 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
+          PUBLIC_ENVIRONMENT: ${{ env.PUBLIC_ENVIRONMENT }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
