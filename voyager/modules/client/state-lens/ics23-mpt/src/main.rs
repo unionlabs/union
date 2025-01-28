@@ -81,7 +81,11 @@ impl ClientModule for Module {
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_ICS23_MPT)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
-        info.ensure_ibc_interface([IbcInterface::IBC_SOLIDITY, IbcInterface::IBC_COSMWASM])?;
+        info.ensure_ibc_interface([
+            IbcInterface::IBC_SOLIDITY,
+            IbcInterface::IBC_COSMWASM,
+            IbcInterface::IBC_MOVE_APTOS,
+        ])?;
 
         Ok(Self {
             ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
