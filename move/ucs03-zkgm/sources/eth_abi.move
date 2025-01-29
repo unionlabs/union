@@ -82,8 +82,22 @@ module zkgm::ethabi {
         byte_data // Return the decoded bytes
     }
 
+    public fun decode_bytes_from_offset(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        let i = *index;
+        let offset = (decode_uint(buf, &mut i) as u64);
+        *index = *index + 32;
+        decode_bytes(buf, &mut offset)
+    }
+
     public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         string::utf8(decode_bytes(buf, index))
+    }
+
+    public fun decode_string_from_offset(buf: &vector<u8>, index: &mut u64): String {
+        let i = *index;
+        let offset = (decode_uint(buf, &mut i) as u64);
+        *index = *index + 32;
+        decode_string(buf, &mut offset)
     }
 
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
