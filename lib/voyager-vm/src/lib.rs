@@ -50,7 +50,7 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         &'a self,
         item: Op<T>,
         filter: &'a T::Filter,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a;
 
     /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `filter` before being reenqueued.
     ///
@@ -70,6 +70,13 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         tag: &'a str,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct EnqueueResult {
+    pub queue: Vec<ItemId>,
+    pub optimize: Vec<ItemId>,
 }
 
 /// The ID of an item in the queue.
@@ -444,8 +451,19 @@ impl<T: QueueMessage> Op<T> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum QueueError {
+    /// A fatal error occurred while processing the op, and cannot be retried.
+    ///
+    /// It will be marked as failed and not retried.
     #[error("fatal error while handling message")]
     Fatal(#[source] BoxDynError),
+    /// The message cannot be processed for some domain-specific reason.
+    ///
+    /// It will be marked as failed and not retried.
+    #[error("unprocessable message")]
+    Unprocessable(#[source] BoxDynError),
+    /// An error occurred while processing the message, and the message should be retried.
+    ///
+    /// It will be requeued in the queue.
     #[error("error while handling message")]
     Retry(#[source] BoxDynError),
 }
@@ -453,6 +471,10 @@ pub enum QueueError {
 impl QueueError {
     pub fn fatal(e: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::Fatal(Box::new(e))
+    }
+
+    pub fn unprocessable(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Unprocessable(Box::new(e))
     }
 
     pub fn retry(e: impl std::error::Error + Send + Sync + 'static) -> Self {

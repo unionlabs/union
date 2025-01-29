@@ -217,34 +217,33 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                 print_json(&get_plugin_info(&plugin_config)?);
             }
-            PluginCmd::Call { plugin_name, args } => match plugin_name {
-                Some(module_name) => {
-                    let plugin_config = get_voyager_config()?
-                        .plugins
-                        .into_iter()
-                        .try_find(|plugin_config| {
-                            <anyhow::Result<_>>::Ok(
-                                module_name == get_plugin_info(plugin_config)?.name,
-                            )
-                        })?
-                        .ok_or(anyhow!("plugin not found"))?;
+            PluginCmd::Call { plugin_name, args } => {
+                let plugin_config = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .try_find(|plugin_config| {
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
+                    })?
+                    .ok_or(anyhow!("plugin not found"))?;
 
-                    tokio::process::Command::new(&plugin_config.path)
-                        .arg("cmd")
-                        .arg("--config")
-                        .arg(plugin_config.config.to_string())
-                        .args(args)
-                        .spawn()?
-                        .wait()
-                        .await?;
-                }
-                None => {
-                    println!("available plugins and modules");
-                    for module_config in get_voyager_config()?.plugins {
-                        println!("  {}", get_plugin_info(&module_config)?.name);
-                    }
-                }
-            },
+                tokio::process::Command::new(&plugin_config.path)
+                    .arg("cmd")
+                    .arg("--config")
+                    .arg(plugin_config.config.to_string())
+                    .args(args)
+                    .spawn()?
+                    .wait()
+                    .await?;
+            }
+            PluginCmd::List => {
+                let list = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .map(|module_config| get_plugin_info(&module_config).map(|p| p.name))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                print_json(&list);
+            }
         },
         Command::Module(cmd) => match cmd {
             ModuleCmd::State(_) => todo!(),
@@ -305,15 +304,18 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     if requeue {
                         if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
-                            q.enqueue(
-                                record,
-                                &JaqInterestFilter::new(vec![]).expect("empty filter can be built"),
-                            )
-                            .await?;
+                            let res = q
+                                .enqueue(
+                                    record,
+                                    &JaqInterestFilter::new(vec![])
+                                        .expect("empty filter can be built"),
+                                )
+                                .await?;
+                            print_json(&res);
                         }
+                    } else {
+                        print_json(&record);
                     }
-
-                    print_json(&record);
                 }
             }
         }

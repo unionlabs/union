@@ -142,6 +142,19 @@ impl ProofModuleServer<IbcClassic> for Module {
                 Some(json!({ "height": at, "path": path })),
             ))?;
 
+        // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
+        if query_result.response.code == 26 {
+            return Err(ErrorObject::owned(
+                -1,
+                "attempted to query state at a nonexistent height, \
+                potentially due to load balanced rpc endpoints",
+                Some(json!({
+                    "height": at,
+                    "path": path
+                })),
+            ));
+        }
+
         let proofs = query_result
             .response
             .proof_ops

@@ -34,8 +34,7 @@ use rpc::{SelfClientState, SelfConsensusState};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, value::RawValue, Value};
 use tracing::{
-    debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace,
-    Instrument,
+    debug, debug_span, error, info_span, instrument, instrument::Instrumented, trace, Instrument,
 };
 use unionlabs::{
     ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
@@ -108,7 +107,8 @@ impl TypedValueParser for RawClientIdValueParser {
     ) -> Result<Self::Value, clap::Error> {
         let s = StringValueParser::new().parse_ref(cmd, arg, value)?;
 
-        // attempt to parse the string as json, if that fails just treat the whole string as a json string value
+        // attempt to parse the string as json, if that fails just treat the whole string as a json
+        // string value
         Ok(RawClientId(
             s.parse::<Value>()
                 .unwrap_or_else(|_| Value::String(s.to_owned())),
@@ -144,17 +144,19 @@ impl RawClientId {
     }
 }
 
-/// Error code for fatal errors. If a plugin or module responds with this error
-/// code, it will be treated as fatal and not retried.
+/// Error code for fatal errors. If a plugin or module responds with this error code, it will be
+/// treated as fatal and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
-/// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm`
-/// [`QueueError`].
+/// Error code for unprocessable messages. If a plugin or module responds with this error code, it
+/// will be treated as fatal and not retried.
+pub const UNPROCESSABLE_JSONRPC_ERROR_CODE: i32 = -0xDEADC0D; // 🐟
+
+/// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm` [`QueueError`].
 ///
-/// All errors are treated as retryable, unless `error` is a `Call` variant and
-/// the contained [`ErrorObject`] is deemed to be fatal. See
-/// [`error_object_to_queue_error`] for more information on the conversion from
-/// [`ErrorObject`] to [`QueueError`].
+/// All errors are treated as retryable, unless `error` is a `Call` variant and the contained
+/// [`ErrorObject`] is deemed to be fatal. See [`error_object_to_queue_error`] for more information
+/// on the conversion from [`ErrorObject`] to [`QueueError`].
 pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> QueueError {
     match error {
         jsonrpsee::core::client::Error::Call(error) => error_object_to_queue_error(error),
@@ -166,17 +168,20 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
 ///
 /// Certain error codes are treated as fatal (i.e. not retryable):
 ///
-/// - [`FATAL_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by
-///   plugin and modules to denote that a fatal error has occurred, and this
-///   message is not retryable.
-/// - [`METHOD_NOT_FOUND_CODE`]: The plugin or module does not expose the method
-///   that was attempted to be called. This indicates a bug in the plugin or
-///   module.
-/// - [`PARSE_ERROR_CODE`] or [`INVALID_PARAMS_CODE`]: The custom message sent
-///   to the plugin or module could not be deserialized. This could either be
-///   due a bug in the plugin or module (JSON serialization not roundtripping
-///   correctly) or a message that was manually inserted into the queue via
-///   `/enqueue`.
+/// - [`FATAL_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by plugins and modules to
+///   denote that a fatal error has occurred, and this message is not retryable.
+/// - [`METHOD_NOT_FOUND_CODE`]: The plugin or module does not expose the method that was attempted
+///   to be called. This indicates a bug in the plugin or module.
+/// - [`PARSE_ERROR_CODE`] or [`INVALID_PARAMS_CODE`]: The custom message sent to the plugin or
+///   module could not be deserialized. This could either be due a bug in the plugin or module (JSON
+///   serialization not roundtripping correctly) or a message that was manually inserted into the
+///   queue via `/enqueue`.
+///
+/// Certain error codes are treated as unprocessable (i.e. not retryable, but not due to a fatal
+/// error):
+///
+/// - [`UNPROCESSABLE_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by plugins and
+///   modules to denote that a message cannot be processed.
 pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
     if error.code() == FATAL_JSONRPC_ERROR_CODE
         || error.code() == METHOD_NOT_FOUND_CODE
@@ -184,6 +189,8 @@ pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
         || error.code() == PARSE_ERROR_CODE
     {
         QueueError::Fatal(Box::new(error.into_owned()))
+    } else if error.code() == UNPROCESSABLE_JSONRPC_ERROR_CODE {
+        QueueError::Unprocessable(Box::new(error.into_owned()))
     } else {
         QueueError::Retry(Box::new(error.into_owned()))
     }
@@ -191,8 +198,7 @@ pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
 
 /// A message specific to a plugin.
 ///
-/// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to
-/// plugins.
+/// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to plugins.
 #[model]
 pub struct PluginMessage {
     pub plugin: String,
@@ -892,7 +898,7 @@ async fn run_server<
     trace!(methods = ?*rpcs, "registered methods");
     let addr = ipc_server.endpoint();
     let server_handle = ipc_server.start(rpcs).await.unwrap();
-    info!("listening on {addr}");
+    debug!("listening on {addr}");
 
     tokio::spawn(
         server_handle

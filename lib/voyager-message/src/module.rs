@@ -82,10 +82,10 @@ pub struct ConsensusModuleInfo {
     pub chain_id: ChainId,
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
     pub consensus_type: ConsensusType,
-    // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily have the same client and consensus state types?
-    // /// The type of client this consensus module provides state for.
-    // #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
-    // pub client_type: ClientType,
+    // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily
+    // have the same client and consensus state types? /// The type of client this consensus
+    // module provides state for. #[arg(value_parser(|s: &str|
+    // ok(ClientType::new(s.to_owned()))))] pub client_type: ClientType,
 }
 
 impl ConsensusModuleInfo {
@@ -256,28 +256,36 @@ pub struct UnexpectedChainIdError {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
+#[error(
+    "invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`"
+)]
 pub struct UnexpectedConsensusTypeError {
     pub expected: ConsensusType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
+#[error(
+    "invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`"
+)]
 pub struct UnexpectedClientTypeError {
     pub expected: ClientType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
+#[error(
+    "invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`"
+)]
 pub struct UnexpectedIbcInterfaceError {
     pub expected: IbcInterface,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`")]
+#[error(
+    "invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`"
+)]
 pub struct UnexpectedIbcVersionIdError {
     pub expected: IbcSpecId,
     pub found: String,
@@ -423,7 +431,9 @@ pub trait ConsensusModule {
     async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<Timestamp>;
 }
 
-/// Client bootstrap modules provide the initial client and consensus states for a client. This is notably separate from the [`ConsensusModule`], since it is possible for different client types (with different state types) to track the same consensus.
+/// Client bootstrap modules provide the initial client and consensus states for a client. This is
+/// notably separate from the [`ConsensusModule`], since it is possible for different client types
+/// (with different state types) to track the same consensus.
 #[rpc(client, server, namespace = "clientBootstrap")]
 pub trait ClientBootstrapModule {
     /// The client state of this chain at the specified [`Height`].
