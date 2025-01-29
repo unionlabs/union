@@ -20,12 +20,10 @@ use cometbft_rpc::Client as CmtClient;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, info_span, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
-    primitives::{encoding::HexUnprefixed, H256},
-    signer::CosmosSigner,
-    ErrorReporter,
+    primitives::{encoding::HexUnprefixed, H256}, signer::CosmosSigner, ErrorReporter
 };
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
@@ -100,7 +98,8 @@ async fn main() {
     let config = config.clone();
 
     for chain in config.chains.clone() {
-        info!(chain_id = chain.id, "spawning worker for chain");
+        let _chain_polling_span = info_span!("chain_polling", chain_id = chain.id).entered();
+        info!("spawning worker for chain");
         let pool = pool.clone();
         tokio::spawn(async move {
             loop {
@@ -111,9 +110,9 @@ async fn main() {
                 let handle = tokio::spawn(async move {
                     // recreate each time so that if this task panics, the keyring gets rebuilt
                     // make sure to panic *here* so that the tokio task will catch the panic!
-                    info!(chain_id = chain.id, "creating chain client");
+                    info!("creating chain client");
                     let chain_client = ChainClient::new(&chain).await;
-                    info!(chain_id = chain.id, "entering worker poll loop");
+                    info!("entering polling loop");
                     loop {
                         let chain = chain.clone();
                         let requests: Vec<SendRequest> = pool
@@ -142,7 +141,6 @@ async fn main() {
                                     else {
                                         error!(
                                         %denom, 
-                                        chain_id=&chain.id, 
                                         "dropping request for unknown denom");
                                         break;
                                     };
@@ -459,7 +457,6 @@ impl ChainClient {
             .await?;
 
         info!(
-            chain_id=self.chain.id,
             ?requests,
             %tx_hash,
             %gas_used,
