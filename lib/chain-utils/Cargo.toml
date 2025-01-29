@@ -36,7 +36,6 @@ scroll-rpc                              = { workspace = true }
 serde                                   = { workspace = true, features = ["derive"] }
 sha2                                    = { workspace = true }
 tendermint-light-client-types.workspace = true
-tendermint-rpc                          = { workspace = true, features = ["http-client", "websocket-client", "default"] }
 thiserror                               = { workspace = true }
 tokio                                   = { workspace = true }
 tonic                                   = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }

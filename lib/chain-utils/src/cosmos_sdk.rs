@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 #[allow(unused_imports, reason = "it is used???")]
 use bip32::secp256k1::ecdsa::signature::SignatureEncoding;
+use cometbft_rpc::Client;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
-use tendermint_rpc::{Client, WebSocketClient};
 use tracing::{debug, error, info, warn};
 use unionlabs::{
     cosmos::{
@@ -71,7 +71,7 @@ pub trait CosmosSdkChainRpcs {
     // not named `chain_id` so it doesn't cause ambiguities with `Chain::chain_id`
     fn tm_chain_id(&self) -> String;
     fn grpc_url(&self) -> String;
-    fn tm_client(&self) -> &WebSocketClient;
+    fn tm_client(&self) -> &Client;
     fn gas_config(&self) -> &GasConfig;
 }
 
@@ -238,32 +238,24 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         }
         .encode_as::<Proto>();
 
-        let tx_hash_normalized: H256 = sha2::Sha256::new()
+        let tx_hash: H256 = sha2::Sha256::new()
             .chain_update(&tx_raw_bytes)
             .finalize()
             .into();
-        let tx_hash = hex::encode_upper(tx_hash_normalized);
 
-        if let Ok(tx) = self.tm_client().tx(tx_hash.parse().unwrap(), false).await {
-            debug!(%tx_hash_normalized, "tx already included");
-            return Ok((
-                tx_hash_normalized,
-                tx.tx_result.gas_used.try_into().unwrap(),
-            ));
+        if let Ok(tx) = self.tm_client().tx(tx_hash, false).await {
+            debug!(%tx_hash, "tx already included");
+            return Ok((tx_hash, tx.tx_result.gas_used.inner().try_into().unwrap()));
         }
 
         let response = self
             .tm_client()
-            .broadcast_tx_sync(tx_raw_bytes.clone())
+            .broadcast_tx_sync(&tx_raw_bytes.clone())
             .await
             .map_err(BroadcastTxCommitError::BroadcastTxSync)
             .unwrap();
 
-        assert_eq!(
-            tx_hash,
-            response.hash.to_string(),
-            "tx hash calculated incorrectly"
-        );
+        assert_eq!(tx_hash, response.hash, "tx hash calculated incorrectly");
 
         info!(
             check_tx_code = ?response.code,
@@ -271,10 +263,10 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             check_tx_log = %response.log
         );
 
-        if response.code.is_err() {
+        if response.code != 0 {
             let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
                 &response.codespace,
-                response.code.value(),
+                response.code,
             );
 
             error!(%error, "cosmos tx failed");
@@ -284,7 +276,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
 
         let mut target_height = self
             .tm_client()
-            .latest_block()
+            .block(None)
             .await
             .map_err(BroadcastTxCommitError::QueryLatestHeight)?
             .block
@@ -296,7 +288,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             let reached_height = 'l: loop {
                 let current_height = self
                     .tm_client()
-                    .latest_block()
+                    .block(None)
                     .await
                     .map_err(BroadcastTxCommitError::QueryLatestHeight)?
                     .block
@@ -309,28 +301,25 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
-            let tx_inclusion = self.tm_client().tx(tx_hash.parse().unwrap(), false).await;
+            let tx_inclusion = self.tm_client().tx(tx_hash, false).await;
 
             debug!(?tx_inclusion);
 
             match tx_inclusion {
                 Ok(tx) => {
-                    if tx.tx_result.code.is_ok() {
-                        break Ok((
-                            tx_hash_normalized,
-                            tx.tx_result.gas_used.try_into().unwrap(),
-                        ));
+                    if tx.tx_result.code == 0 {
+                        break Ok((tx_hash, tx.tx_result.gas_used.inner().try_into().unwrap()));
                     } else {
                         let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
                             &tx.tx_result.codespace,
-                            tx.tx_result.code.value(),
+                            tx.tx_result.code,
                         );
                         warn!(
                             %error,
                             %tx_hash,
 
                             ?tx.tx_result.code,
-                            tx.tx_result.data = %::serde_utils::to_hex(&tx.tx_result.data),
+                            tx.tx_result.data = %::serde_utils::to_hex(tx.tx_result.data.expect("tx has data")),
                             %tx.tx_result.log,
                             %tx.tx_result.info,
                             %tx.tx_result.gas_wanted,
@@ -348,7 +337,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                     break Err(BroadcastTxCommitError::Inclusion(err));
                 }
                 Err(_) => {
-                    target_height = reached_height.increment();
+                    target_height = reached_height.add(&1);
                     i += 1;
                     continue;
                 }
@@ -515,14 +504,14 @@ impl<T: CosmosSdkChain + CosmosSdkChainRpcs> CosmosSdkChainIbcExt for T {}
 
 impl<T: CosmosSdkChainRpcs> CosmosSdkChainExt for T {}
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum BroadcastTxCommitError {
     #[error("error querying latest height")]
-    QueryLatestHeight(#[source] tendermint_rpc::Error),
+    QueryLatestHeight(#[source] cometbft_rpc::JsonRpcError),
     #[error("error sending broadcast_tx_sync")]
-    BroadcastTxSync(#[source] tendermint_rpc::Error),
+    BroadcastTxSync(#[source] cometbft_rpc::JsonRpcError),
     #[error("tx was not included")]
-    Inclusion(#[source] tendermint_rpc::Error),
+    Inclusion(#[source] cometbft_rpc::JsonRpcError),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
     #[error("tx simulation failed")]
