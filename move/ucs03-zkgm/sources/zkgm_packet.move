@@ -10,6 +10,18 @@ module zkgm::zkgm_packet {
         instruction: Instruction
     }
 
+    public fun salt(zkgm_pack: &ZkgmPacket): vector<u8> {
+        zkgm_pack.salt
+    }
+
+    public fun path(zkgm_pack: &ZkgmPacket): u256 {
+        zkgm_pack.path
+    }
+
+    public fun instruction(zkgm_pack: &ZkgmPacket): Instruction {
+        zkgm_pack.instruction
+    }
+
     public fun new(salt: vector<u8>, path: u256, instruction: Instruction): ZkgmPacket {
         ZkgmPacket {
             salt,

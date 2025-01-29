@@ -10,6 +10,7 @@ module zkgm::zkgm_relay {
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
     use zkgm::multiplex::{Self, Multiplex};
+    use zkgm::acknowledgement::{Self, Acknowledgement};
 
     use ibc::ibc;
     use ibc::helpers;
@@ -449,7 +450,157 @@ module zkgm::zkgm_relay {
         if (fungible_asset_order::base_token_path(&order) != origin){
             abort E_INVALID_ASSET_ORIGIN
         };
+    }
 
+    public fun on_recv_packet<T: key + store + drop>(
+        ibc_packet: Packet, relayer: address, relayer_msg: vector<u8>
+    ) acquires RelayStore, SignerRef {
+        // We can call execute_internal directly
+        let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
+        let zkgm_packet = zkgm_packet::decode(raw_zkgm_packet);
+
+        let acknowledgement = execute_internal<T>(
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                zkgm_packet::salt(&zkgm_packet),
+                zkgm_packet::path(&zkgm_packet),
+                zkgm_packet::instruction(&zkgm_packet)
+            );
+
+        if (vector::length(&acknowledgement) == 0) {
+            abort E_ACK_EMPTY
+        } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
+            abort E_ONLY_MAKER
+        } else {
+            let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
+            let return_value =
+                acknowledgement::encode(
+                    &new_ack
+                );
+            dispatcher_zkgm::set_return_value<ZKGMProof>(
+                new_ucs_relay_proof(), return_value
+            );
+        }
+    }
+
+    fun execute_internal<T: key + store + drop>(
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        instruction: Instruction
+    ): (vector<u8>) acquires RelayStore, SignerRef {
+        if (instruction::version(&instruction) != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
+            b""
+            // TODO: uncomment this after implemented
+            // execute_fungible_asset_order(
+            //     ibc_packet,
+            // relayer,
+            // relayer_msg,
+            // salt,
+            // path,
+            //     fungible_asset_order::decode(instruction::operand(&instruction))
+            // )
+        } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            let decode_idx = 0x20;
+            execute_batch<T>(
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                batch::decode(instruction::operand(&instruction), &mut decode_idx)
+            )
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
+            let decode_idx = 0x20;
+            execute_forward(
+                ibc_packet,
+                relayer_msg,
+                salt,
+                path,
+                forward::decode(instruction::operand(&instruction), &mut decode_idx)
+            )
+        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
+            b""
+            // TODO: uncomment this after implemented
+            // execute_multiplex(
+            //     ibc_packet,
+            // relayer,
+            // relayer_msg,
+            // salt,
+            // path,
+            //     multiplex::decode(instruction::operand(&instruction))
+            // )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun execute_batch<T: key + store + drop>(
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        batch_packet: Batch
+    ): (vector<u8>) acquires RelayStore, SignerRef {
+        let instructions = batch::instructions(&batch_packet);
+        let l = vector::length(&instructions);
+        let acks = vector::empty();
+        let i = 0;
+        while (i < l) {
+            let instruction = *vector::borrow(&instructions, i);
+            vector::push_back(
+                &mut acks,
+                execute_internal<T>(
+                    ibc_packet,
+                    relayer,
+                    relayer_msg,
+                    salt,
+                    path,
+                    instruction
+                )
+            );
+            if (vector::length(vector::borrow(&acks, i)) == 0) {
+                abort E_BATCH_MUST_BE_SYNC
+            };
+        };
+        let batch_ack = batch_ack::new(acks);
+        batch_ack::encode(&batch_ack)
+    }
+
+    fun execute_forward(
+        ibc_packet: Packet,
+        _relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        forward_packet: Forward
+    ): (vector<u8>) acquires RelayStore, SignerRef {
+        let zkgm_pack = zkgm_packet::new(
+            salt,
+            update_channel_path(path, ibc::packet::destination_channel(&ibc_packet)),
+            *forward::instruction(&forward_packet)
+        );
+        let sent_packet =
+            ibc::ibc::send_packet(
+                &get_signer(),
+                get_self_address(),
+                forward::channel_id(&forward_packet),
+                forward::timeout_height(&forward_packet),
+                forward::timeout_timestamp(&forward_packet),
+                zkgm_packet::encode(
+                    &zkgm_pack
+                )
+            );
+        let packet_hash = commitment::commit_packet(&sent_packet);
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.in_flight_packet, packet_hash, ibc_packet);
+        ACK_EMPTY
     }
 
     #[test]
