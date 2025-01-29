@@ -214,10 +214,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 debug!(?l1_client_meta);
 
                 let l1_latest_height = voyager_client
-                    .query_latest_height(
-                        ChainId::new(state_lens_client_state.l2_chain_id.clone()),
-                        true,
-                    )
+                    .query_latest_height(l1_client_meta.chain_id.clone(), true)
                     .await?;
 
                 debug!(%l1_latest_height);
