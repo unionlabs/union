@@ -5,13 +5,13 @@ use token_factory_api::{DenomUnit, TokenFactoryMsg};
 
 #[cw_serde]
 pub enum LocalTokenMsg {
-    TakeFunds {
+    Escrow {
         from: String,
         denom: String,
         recipient: String,
         amount: Uint128,
     },
-    Transfer {
+    Unescrow {
         denom: String,
         recipient: String,
         amount: Uint128,
@@ -105,8 +105,13 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum QueryMsg {
-    Metadata { denom: String },
+    /// Query the unwrapped version of the provided token. If the provided token is not a wrapped token, it will be returned as-is.
     BaseToken { base_token: String },
+    /// Query the metadata of a token.
+    Metadata {
+        /// `denom` is either a normal token denom, or a cosmwasm contract address of a cw20 token that was created through the `cw20-token-minter`.
+        denom: String,
+    },
 }
 
 #[cw_serde]

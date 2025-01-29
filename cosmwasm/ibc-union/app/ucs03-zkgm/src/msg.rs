@@ -3,18 +3,31 @@ use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
 use ibc_union_spec::types::Packet;
 use unionlabs::primitives::{Bytes, H256};
 
-use crate::state::Config;
-
-#[cw_serde]
-pub enum TokenMinterInitMsg {
-    Cw20 { cw20_code_id: u64 },
-    Native,
-}
-
 #[cw_serde]
 pub struct InitMsg {
     pub config: Config,
     pub minter_init_msg: TokenMinterInitMsg,
+}
+
+#[cw_serde]
+pub struct Config {
+    /// The address of the `ibc-union` contract running on this chain.
+    pub ibc_host: Addr,
+    /// The code id of the `ucs03-zkgm-token-minter-api` implementor. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.
+    pub token_minter_code_id: u64,
+}
+
+#[cw_serde]
+pub enum TokenMinterInitMsg {
+    /// Instantiate `ucs03-zkgm` with a cw20 minter implementation.
+    Cw20 {
+        /// The code id of [`cw20-base`] to use for cw20 tokens. This will be threaded to the `cw20-token-minter` by `ucs03-zkgm`.
+        ///
+        /// [`cw20-base`]: https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#base
+        cw20_base_code_id: u64,
+    },
+    /// Instantiate `ucs03-zkgm` with a native tokenfactory minter implementation.
+    Native,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

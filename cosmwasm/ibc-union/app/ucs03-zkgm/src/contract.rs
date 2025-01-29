@@ -42,6 +42,11 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 
+pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
+
+/// Instantiate `ucs03-zkgm`.
+///
+/// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][crate::msg::TokenMinterInitMsg]. The admin of the minter contract is set to the instantiator of `ucs03-zkgm`, under the assumption that the caller will also set themselves as admin, as it is not possible for a contract to check the admin of itself during instantiation.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -56,8 +61,9 @@ pub fn instantiate(
         code_id: msg.config.token_minter_code_id,
         msg: to_json_binary(&msg.minter_init_msg)?,
         funds: vec![],
-        label: "zkgm-token-minter".to_string(),
+        label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
     };
+
     Ok(Response::new().add_submessage(SubMsg {
         id: TOKEN_INIT_REPLY_ID,
         msg: msg.into(),
@@ -75,10 +81,10 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::IbcUnionMsg(ibc_msg) => {
-            let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
-            if info.sender != ibc_host {
+            if info.sender != CONFIG.load(deps.storage)?.ibc_host {
                 return Err(ContractError::OnlyIBCHost);
             }
+
             match ibc_msg {
                 IbcUnionMsg::OnChannelOpenInit { version, .. } => {
                     enforce_version(&version, None)?;
@@ -412,7 +418,7 @@ fn refund(
         )?);
     } else {
         messages.push(make_wasm_msg(
-            LocalTokenMsg::Transfer {
+            LocalTokenMsg::Unescrow {
                 denom: base_denom,
                 recipient: sender.into_string(),
                 amount: base_amount.into(),
@@ -470,7 +476,7 @@ fn acknowledge_fungible_asset_order(
                         )?);
                     } else {
                         messages.push(make_wasm_msg(
-                            LocalTokenMsg::Transfer {
+                            LocalTokenMsg::Unescrow {
                                 denom: base_denom,
                                 recipient: market_maker.into_string(),
                                 amount: base_amount.into(),
@@ -789,7 +795,7 @@ fn execute_fungible_asset_order(
             },
         )?;
         messages.push(make_wasm_msg(
-            LocalTokenMsg::Transfer {
+            LocalTokenMsg::Unescrow {
                 denom: quote_token.clone(),
                 recipient: receiver.into_string(),
                 amount: quote_amount.into(),
@@ -799,7 +805,7 @@ fn execute_fungible_asset_order(
         )?);
         if fee_amount > 0 {
             messages.push(make_wasm_msg(
-                LocalTokenMsg::Transfer {
+                LocalTokenMsg::Unescrow {
                     denom: quote_token.clone(),
                     recipient: relayer.into_string(),
                     amount: quote_amount.into(),
@@ -962,7 +968,7 @@ fn transfer(
         _ => {
             origin = None;
             messages.push(make_wasm_msg(
-                LocalTokenMsg::TakeFunds {
+                LocalTokenMsg::Escrow {
                     from: info.sender.to_string(),
                     denom: base_token.clone(),
                     recipient: minter.to_string(),

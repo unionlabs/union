@@ -28,5 +28,5 @@ pub enum Error {
     TokenDoesNotExist(String),
 
     #[error("unexpected execute msg: {0:?}")]
-    UnexpectedExecuteMsg(WrappedTokenMsg),
+    UnexpectedExecuteMsg(Box<WrappedTokenMsg>),
 }

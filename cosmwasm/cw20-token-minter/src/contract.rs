@@ -72,6 +72,7 @@ pub fn execute(
                     code_id: config.cw20_code_id,
                     label: denom,
                     msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
+                        // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
                         name: if !name.is_empty() {
                             name
                         } else {
@@ -134,7 +135,7 @@ pub fn execute(
             }
         },
         ExecuteMsg::Local(msg) => match msg {
-            LocalTokenMsg::TakeFunds {
+            LocalTokenMsg::Escrow {
                 from,
                 recipient,
                 denom,
@@ -162,7 +163,7 @@ pub fn execute(
                     Response::new().add_message(msg)
                 }
             }
-            LocalTokenMsg::Transfer {
+            LocalTokenMsg::Unescrow {
                 denom,
                 recipient,
                 amount,

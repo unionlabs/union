@@ -41,9 +41,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
-    let admin = ADMIN.load(deps.storage)?;
-
-    if admin != info.sender {
+    if info.sender != ADMIN.load(deps.storage)? {
         return Err(Error::OnlyAdmin);
     }
 
@@ -65,7 +63,7 @@ pub fn execute(
             Response::new().add_message(CosmosMsg::Custom(msg))
         }
         ExecuteMsg::Local(msg) => match msg {
-            LocalTokenMsg::TakeFunds { denom, amount, .. } => {
+            LocalTokenMsg::Escrow { denom, amount, .. } => {
                 let contains_base_token = info
                     .funds
                     .iter()
@@ -75,7 +73,7 @@ pub fn execute(
                 }
                 Response::new()
             }
-            LocalTokenMsg::Transfer {
+            LocalTokenMsg::Unescrow {
                 denom,
                 recipient,
                 amount,
