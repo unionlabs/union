@@ -23,7 +23,9 @@ use tokio::net::TcpListener;
 use tracing::{debug, error, info, info_span, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
-    primitives::{encoding::HexUnprefixed, H256}, signer::CosmosSigner, ErrorReporter
+    primitives::{encoding::HexUnprefixed, H256},
+    signer::CosmosSigner,
+    ErrorReporter,
 };
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
@@ -140,7 +142,7 @@ async fn main() {
                                         chain.coins.iter().find(|coin| coin.denom == denom)
                                     else {
                                         error!(
-                                        %denom, 
+                                        %denom,
                                         "dropping request for unknown denom");
                                         break;
                                     };
