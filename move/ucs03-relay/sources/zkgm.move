@@ -83,7 +83,7 @@ module ucs03::zkgm_relay {
         instruction: Instruction
     }
 
-    struct MultiplexPacket has copy, drop, store {
+    struct Multiplex has copy, drop, store {
         sender: vector<u8>,
         eureka: bool,
         contract_address: vector<u8>,
@@ -92,6 +92,19 @@ module ucs03::zkgm_relay {
 
     struct Batch has copy, drop, store {
         instructions: vector<Instruction>
+    }
+
+    struct FungibleAssetOrder has copy, drop, store {
+        sender: vector<u8>,
+        receiver: vector<u8>,
+        base_token: vector<u8>,
+        base_amount: u64,
+        base_token_path: u256,
+        base_token_symbol: string::String,
+        base_token_name: string::String,
+        quote_token: vector<u8>,
+        ask_amount: u64,
+        only_maker: bool
     }
 
     struct OnZkgmParams has copy, drop, store {
@@ -116,19 +129,6 @@ module ucs03::zkgm_relay {
         relayer: address
     }
 
-    struct FungibleAssetTransferPacket has copy, drop, store {
-        sender: vector<u8>,
-        receiver: vector<u8>,
-        sent_token: vector<u8>,
-        sent_token_prefix: u256,
-        sent_symbol: string::String,
-        sent_name: string::String,
-        sent_amount: u64,
-        ask_token: vector<u8>,
-        ask_amount: u64,
-        only_maker: bool
-    }
-
     struct Acknowledgement has copy, drop, store {
         tag: u256,
         inner_ack: vector<u8>
@@ -138,7 +138,7 @@ module ucs03::zkgm_relay {
         acknowledgements: vector<vector<u8>>
     }
 
-    struct AssetTransferAcknowledgement has copy, drop, store {
+    struct FungibleAssetOrderAck has copy, drop, store {
         fill_type: u256,
         market_maker: vector<u8>
     }
@@ -287,7 +287,7 @@ module ucs03::zkgm_relay {
     }
 
     public fun encode_asset_transfer_ack(
-        ack: &AssetTransferAcknowledgement
+        ack: &FungibleAssetOrderAck
     ): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
@@ -307,7 +307,7 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun decode_asset_transfer_ack(buf: vector<u8>): AssetTransferAcknowledgement {
+    public fun decode_asset_transfer_ack(buf: vector<u8>): FungibleAssetOrderAck {
         let index = 0x20;
         let fill_type = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
@@ -320,7 +320,7 @@ module ucs03::zkgm_relay {
                 }
             );
 
-        AssetTransferAcknowledgement { fill_type: fill_type, market_maker: market_maker }
+        FungibleAssetOrderAck { fill_type: fill_type, market_maker: market_maker }
     }
 
     public fun decode_batch_ack(buf: vector<u8>): BatchAcknowledgement {
@@ -534,7 +534,7 @@ module ucs03::zkgm_relay {
         }
     }
 
-    public fun decode_multiplex(buf: vector<u8>): MultiplexPacket {
+    public fun decode_multiplex(buf: vector<u8>): Multiplex {
         let index = 0x40;
         let eureka = ethabi::decode_uint(&buf, &mut index) == 1;
         index = index + 0x20 * 2;
@@ -542,7 +542,7 @@ module ucs03::zkgm_relay {
         let contract_address = ethabi::decode_bytes(&buf, &mut index);
         let contract_calldata = ethabi::decode_bytes(&buf, &mut index);
 
-        MultiplexPacket {
+        Multiplex {
             sender: sender,
             eureka: eureka,
             contract_address: contract_address,
@@ -563,7 +563,7 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun decode_fungible_asset_transfer(buf: vector<u8>): FungibleAssetTransferPacket {
+    public fun decode_fungible_asset_transfer(buf: vector<u8>): FungibleAssetOrder {
         let index = 0x80;
         let sent_token_prefix = ethabi::decode_uint(&buf, &mut index);
         index = index + 0x40;
@@ -578,7 +578,7 @@ module ucs03::zkgm_relay {
         let sent_name = ethabi::decode_string(&buf, &mut index);
         let ask_token = ethabi::decode_bytes(&buf, &mut index);
 
-        FungibleAssetTransferPacket {
+        FungibleAssetOrder {
             sender: sender,
             receiver: receiver,
             sent_token: sent_token,
@@ -898,7 +898,7 @@ module ucs03::zkgm_relay {
     fun acknowledge_fungible_asset_transfer(
         ibc_packet: Packet,
         _salt: vector<u8>,
-        transfer_packet: FungibleAssetTransferPacket,
+        transfer_packet: FungibleAssetOrder,
         success: bool,
         inner_ack: vector<u8>
     ) acquires SignerRef {
@@ -973,7 +973,7 @@ module ucs03::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         _salt: vector<u8>,
-        multiplex_packet: MultiplexPacket,
+        multiplex_packet: Multiplex,
         success: bool,
         ack: vector<u8>
     ) {
@@ -1078,13 +1078,13 @@ module ucs03::zkgm_relay {
     }
 
     fun timeout_fungible_asset_transfer(
-        ibc_packet: Packet, _salt: vector<u8>, transfer_packet: FungibleAssetTransferPacket
+        ibc_packet: Packet, _salt: vector<u8>, transfer_packet: FungibleAssetOrder
     ) acquires SignerRef {
         refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
     }
 
     fun refund(
-        source_channel: u32, asset_transfer_packet: FungibleAssetTransferPacket
+        source_channel: u32, asset_transfer_packet: FungibleAssetOrder
     ) acquires SignerRef {
         let sender = from_bcs::to_address(asset_transfer_packet.sender);
         let sent_token = from_bcs::to_address(asset_transfer_packet.sender);
@@ -1135,7 +1135,7 @@ module ucs03::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         _salt: vector<u8>,
-        multiplex_packet: MultiplexPacket
+        multiplex_packet: Multiplex
     ) {
         if (!multiplex_packet.eureka) {
             let multiplex_ibc_packet =
@@ -1160,6 +1160,15 @@ module ucs03::zkgm_relay {
 
             engine_zkgm::dispatch(param, contract_address);
         }
+    }
+
+    public entry fun transfer (
+        channel_id: u32,
+        bytes: u32,
+        base_token: vector<u8>,
+        
+    ) {
+        
     }
 
     public entry fun execute<T: key + store + drop>(
@@ -1251,7 +1260,7 @@ module ucs03::zkgm_relay {
         _relayer_msg: vector<u8>,
         _salt: vector<u8>,
         path: u256,
-        transfer_packet: FungibleAssetTransferPacket
+        transfer_packet: FungibleAssetOrder
     ): (vector<u8>) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         if (transfer_packet.only_maker) {
@@ -1325,7 +1334,7 @@ module ucs03::zkgm_relay {
             };
         };
         encode_asset_transfer_ack(
-            &AssetTransferAcknowledgement {
+            &FungibleAssetOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: ACK_EMPTY
             }
@@ -1398,7 +1407,7 @@ module ucs03::zkgm_relay {
         relayer: address,
         relayer_msg: vector<u8>,
         _salt: vector<u8>,
-        multiplex_packet: MultiplexPacket
+        multiplex_packet: Multiplex
     ): (vector<u8>) {
         let contract_address = from_bcs::to_address(multiplex_packet.contract_address);
         if (multiplex_packet.eureka) {
@@ -1509,7 +1518,7 @@ module ucs03::zkgm_relay {
         sender: &signer,
         channel_id: u32,
         _path: u256,
-        transfer_packet: FungibleAssetTransferPacket
+        transfer_packet: FungibleAssetOrder
     ) acquires RelayStore, SignerRef {
         let store = borrow_global<RelayStore>(get_vault_addr());
 
@@ -1585,7 +1594,7 @@ module ucs03::zkgm_relay {
         _sender: &signer,
         _channel_id: u32,
         _path: u256,
-        _multiplex_packet: MultiplexPacket
+        _multiplex_packet: Multiplex
     ) {}
 
     public fun on_packet<T: key, P: key + store + drop>(
@@ -1795,7 +1804,7 @@ module ucs03::zkgm_relay {
     fun test_encode_decode_asset_transfer_ack() {
         let output =
             x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let ack_data = AssetTransferAcknowledgement {
+        let ack_data = FungibleAssetOrderAck {
             fill_type: 7788909223344,
             market_maker: b"hellloo"
         };
@@ -2005,7 +2014,7 @@ module ucs03::zkgm_relay {
     fun test_decode_multiplex() {
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000002a3078354233384461366137303163353638353435644366634230334663423837356635366265646443340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000617468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c7468697369736d79616464726573737a6c756c626200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005a4578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c446174614578616d706c6553797363616c6c44617461000000000000";
-        let multiplex_pack = MultiplexPacket {
+        let multiplex_pack = Multiplex {
             sender: b"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
             eureka: true,
             contract_address: b"thisismyaddresszlulthisismyaddresszlulthisismyaddresszlulthisismyaddresszlulthisismyaddresszlulbb",
@@ -2026,7 +2035,7 @@ module ucs03::zkgm_relay {
 
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000007c37bdc730000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f307853656e646572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001130785265636569766572416464726573730000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012307853656e74546f6b656e4164647265737300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014535353535353535353535353535353594d424f4c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000155454545454545454545454546f6b656e204e616d6500000000000000000000000000000000000000000000000000000000000000000000000000000000000011307841736b546f6b656e41646472657373000000000000000000000000000000";
-        let fatp = FungibleAssetTransferPacket {
+        let fatp = FungibleAssetOrder {
             sender: b"0xSenderAddress",
             receiver: b"0xReceiverAddress",
             sent_token: b"0xSentTokenAddress",
