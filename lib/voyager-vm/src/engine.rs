@@ -2,7 +2,7 @@ use std::{future::Future, time::Duration};
 
 use futures::{stream, FutureExt, Stream, StreamExt};
 use tokio::time::sleep;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 use unionlabs::ErrorReporter;
 
 use crate::{defer, now, seq, BoxDynError, Context, Queue, QueueError, QueueMessage};
@@ -46,6 +46,11 @@ impl<'a, T: QueueMessage, Q: Queue<T>> Engine<'a, T, Q> {
                             Err(QueueError::Fatal(fatal)) => {
                                 let full_err = ErrorReporter(&*fatal);
                                 error!(error = %full_err, "fatal error");
+                                (None, Err(full_err.to_string()))
+                            }
+                            Err(QueueError::Unprocessable(unprocessable)) => {
+                                let full_err = ErrorReporter(&*unprocessable);
+                                info!(error = %full_err, "unprocessable message");
                                 (None, Err(full_err.to_string()))
                             }
                             Err(QueueError::Retry(retry)) => {

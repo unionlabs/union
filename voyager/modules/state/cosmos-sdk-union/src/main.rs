@@ -147,7 +147,8 @@ impl Module {
         data: Bytes,
         height: Option<Height>,
     ) -> RpcResult<QueryResponse> {
-        self.cometbft_client
+        let response = self
+            .cometbft_client
             .abci_query(
                 &path,
                 &data,
@@ -164,7 +165,22 @@ impl Module {
                 "error fetching abci query",
                 Some(json!({ "height": height, "path": data })),
             ))
-            .map(|response| response.response)
+            .map(|response| response.response)?;
+
+        // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
+        if response.code == 26 {
+            Err(ErrorObject::owned(
+                -1,
+                "attempted to query state at a nonexistent height, \
+                potentially due to load balanced rpc endpoints",
+                Some(json!({
+                    "height": height,
+                    "path": path
+                })),
+            ))
+        } else {
+            Ok(response)
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]

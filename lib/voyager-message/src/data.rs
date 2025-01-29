@@ -108,7 +108,8 @@ pub struct DecodedHeaderMeta {
     pub height: Height,
 }
 
-// client update plugins produce this data which is then used when constructing the OrderedClientUpdates
+// client update plugins produce this data which is then used when constructing the
+// OrderedClientUpdates
 #[model]
 pub struct OrderedHeaders {
     pub headers: Vec<(DecodedHeaderMeta, Value)>,

@@ -444,8 +444,19 @@ impl<T: QueueMessage> Op<T> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum QueueError {
+    /// A fatal error occurred while processing the op, and cannot be retried.
+    ///
+    /// It will be marked as failed and not retried.
     #[error("fatal error while handling message")]
     Fatal(#[source] BoxDynError),
+    /// The message cannot be processed for some domain-specific reason.
+    ///
+    /// It will be marked as failed and not retried.
+    #[error("unprocessable message")]
+    Unprocessable(#[source] BoxDynError),
+    /// An error occurred while processing the message, and the message should be retried.
+    ///
+    /// It will be requeued in the queue.
     #[error("error while handling message")]
     Retry(#[source] BoxDynError),
 }
@@ -453,6 +464,10 @@ pub enum QueueError {
 impl QueueError {
     pub fn fatal(e: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::Fatal(Box::new(e))
+    }
+
+    pub fn unprocessable(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Unprocessable(Box::new(e))
     }
 
     pub fn retry(e: impl std::error::Error + Send + Sync + 'static) -> Self {
