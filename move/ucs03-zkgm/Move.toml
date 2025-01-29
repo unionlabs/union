@@ -1,17 +1,22 @@
 [package]
-name = "ucs03-zkgm"
-version = "1.0.0"
 authors = []
+name    = "ucs03-zkgm"
+version = "1.0.0"
 
 [addresses]
+ibc  = "_"
 zkgm = "_"
 
 [dev-addresses]
+ibc  = "0x22222"
 zkgm = "0xbeef"
 
 [dependencies.AptosFramework]
-git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "movement"
+git    = "https://github.com/aeryz/aptos-core.git"
+rev    = "movement"
 subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies]
+ibc = { local = "../move-ibc" }
 
 [dev-dependencies]

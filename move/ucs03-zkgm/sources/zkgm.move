@@ -3,7 +3,13 @@ module zkgm::zkgm_relay {
     use zkgm::ethabi;
     use zkgm::dispatcher_zkgm;
     use zkgm::engine_zkgm;
-    use zkgm::instruction::{Instruction, encode as encode_instruction, decode as decode_instruction};
+    use zkgm::batch::{Self, Batch};
+    use zkgm::batch_ack::{Self, BatchAck};
+    use zkgm::instruction::{Self, Instruction};
+    use zkgm::zkgm_packet::{Self, ZkgmPacket};
+    use zkgm::forward::{Self, Forward};
+    use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
+    use zkgm::multiplex::{Self, Multiplex};
 
     use ibc::ibc;
     use ibc::helpers;
@@ -69,12 +75,6 @@ module zkgm::zkgm_relay {
         ZKGMProof {}
     }
 
-    struct ZkgmPacket has copy, drop, store {
-        salt: vector<u8>,
-        path: u256,
-        instruction: Instruction
-    }
-    
     struct SignerRef has key {
         self_ref: object::ExtendRef,
         self_address: address
@@ -280,69 +280,177 @@ module zkgm::zkgm_relay {
         // TODO: fill this
     }
 
-    // public entry fun send(
-    //     sender: &signer,
-    //     channel_id: u32,
-    //     timeout_height: u64,
-    //     timeout_timestamp: u64,
-    //     salt: vector<u8>,
-    //     version: u8,
-    //     opcode: u8,
-    //     operand: vector<u8>
-    // ) acquires SignerRef, RelayStore {
-    //     let instruction = Instruction { version: version, opcode: opcode, operand: operand };
-    //     verify_internal(sender, channel_id, 0, instruction);
-    //     ibc::ibc::send_packet(
-    //         &get_signer(),
-    //         get_self_address(),
-    //         channel_id,
-    //         timeout_height,
-    //         timeout_timestamp,
-    //         encode_packet(&ZkgmPacket { salt: salt, path: 0, instruction: instruction })
-    //     );
-    // }
+    public entry fun send(
+        sender: &signer,
+        channel_id: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: vector<u8>,
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>
+    ) acquires SignerRef, RelayStore {
+        let instruction = instruction::new(version, opcode, operand);
+        verify_internal(sender, channel_id, 0, instruction);
+        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
+        ibc::ibc::send_packet(
+            &get_signer(),
+            get_self_address(),
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            zkgm_packet::encode(&zkgm_pack)
+        );
+    }
 
-    // fun verify_internal(
-    //     sender: &signer,
-    //     channel_id: u32,
-    //     path: u256,
-    //     instruction: Instruction
-    // ) acquires RelayStore, SignerRef {
-    //     if (instruction.version != ZKGM_VERSION_0) {
-    //         abort E_UNSUPPORTED_VERSION
-    //     };
-    //     if (instruction.opcode == OP_FUNGIBLE_ASSET_ORDER) {
-    //         verify_fungible_asset_transfer(
-    //             sender,
-    //             channel_id,
-    //             path,
-    //             decode_fungible_asset_order(instruction.operand)
-    //         )
-    //     } else if (instruction.opcode == OP_BATCH) {
-    //         verify_batch(
-    //             sender,
-    //             channel_id,
-    //             path,
-    //             decode_batch_packet(instruction.operand)
-    //         )
-    //     } else if (instruction.opcode == SYSCALL_FORWARD) {
-    //         verify_forward(
-    //             sender,
-    //             channel_id,
-    //             path,
-    //             decode_forward(instruction.operand)
-    //         )
-    //     } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
-    //         verify_multiplex(
-    //             sender,
-    //             channel_id,
-    //             path,
-    //             decode_multiplex(instruction.operand)
-    //         )
-    //     } else {
-    //         abort E_UNKNOWN_SYSCALL
-    //     }
-    // }
+    fun verify_internal(
+        sender: &signer,
+        channel_id: u32,
+        path: u256,
+        instruction: Instruction
+    ) acquires RelayStore, SignerRef {
+        if (instruction::version(&instruction) != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
+            verify_fungible_asset_order(
+                sender,
+                channel_id,
+                path,
+                fungible_asset_order::decode(instruction::operand(&instruction))
+            )
+        } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            let decode_idx = 0x20;
+            verify_batch(
+                sender,
+                channel_id,
+                path,
+                batch::decode(instruction::operand(&instruction), &mut decode_idx)
+            )
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
+            let decode_idx = 0x20;
+            verify_forward(
+                sender,
+                channel_id,
+                path,
+                forward::decode(instruction::operand(&instruction), &mut decode_idx)
+            )
+        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
+            verify_multiplex(
+                sender,
+                channel_id,
+                path,
+                multiplex::decode(instruction::operand(&instruction))
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun verify_batch(
+        sender: &signer,
+        channel_id: u32,
+        path: u256,
+        batch_packet: Batch
+    ) acquires RelayStore, SignerRef {
+        let instructions = batch::instructions(&batch_packet);
+        let l = vector::length(&instructions);
+        let i = 0;
+        while (i < l) {
+            verify_internal(
+                sender,
+                channel_id,
+                path,
+                *vector::borrow(&instructions, i)
+            );
+        }
+    }
+
+    fun verify_forward(
+        sender: &signer,
+        channel_id: u32,
+        path: u256,
+        forward_packet: Forward
+    ) acquires RelayStore, SignerRef {
+        verify_internal(
+            sender,
+            channel_id,
+            update_channel_path(path, forward::channel_id(&forward_packet)),
+            *forward::instruction(&forward_packet)
+        );
+    }
+
+    fun verify_multiplex(
+        _sender: &signer,
+        _channel_id: u32,
+        _path: u256,
+        _multiplex_packet: Multiplex
+    ) {}
+
+    fun verify_fungible_asset_order(
+        sender: &signer,
+        channel_id: u32,
+        _path: u256,
+        order: FungibleAssetOrder
+    ) acquires RelayStore, SignerRef {
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+
+        let base_amount = fungible_asset_order::base_amount(&order);
+
+        if(base_amount == 0) {
+            abort E_INVALID_AMOUNT
+        };
+
+        let base_token = from_bcs::to_address(*fungible_asset_order::base_token(&order));
+
+        let asset = get_metadata(base_token);
+        let name = zkgm::fa_coin::name_with_metadata(asset);
+        let symbol = zkgm::fa_coin::symbol_with_metadata(asset);
+
+        if (*fungible_asset_order::base_token_name(&order) != name) {
+            abort E_INVALID_ASSET_NAME
+        };
+        if (*fungible_asset_order::base_token_symbol(&order) != symbol) {
+            abort E_INVALID_ASSET_SYMBOL
+        };
+        let origin = *smart_table::borrow_with_default(
+            &store.token_origin, base_token, &0
+        );
+
+        if (last_channel_from_path(origin) == channel_id) {
+            zkgm::fa_coin::burn_with_metadata(
+                &get_signer(),
+                signer::address_of(sender),
+                (base_amount as u64),
+                asset
+            );
+        } else {
+            primary_fungible_store::transfer(
+                sender,
+                asset,
+                signer::address_of(&get_signer()),
+                (base_amount as u64)
+            );
+
+            let balance_key = ChannelBalancePair {
+                channel: channel_id,
+                token: base_token
+            };
+
+            let curr_balance =
+                *smart_table::borrow(&store.channel_balance, balance_key);
+
+            smart_table::upsert(
+                &mut store.channel_balance,
+                balance_key,
+                curr_balance + (base_amount as u256)
+            );
+        };
+        if (fungible_asset_order::base_token_path(&order) != origin){
+            abort E_INVALID_ASSET_ORIGIN
+        };
+
+    }
 
     #[test]
     public fun test_fls() {
