@@ -18,7 +18,7 @@ pub const NATIVE_TOKEN_STORE_PREFIX: u32 = 0x1;
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {
-    Cw20 { cw20_code_id: u64 },
+    Cw20 { cw20_base_code_id: u64 },
 }
 
 #[entry_point]
@@ -26,13 +26,13 @@ pub fn instantiate(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    TokenMinterInitMsg::Cw20 { cw20_code_id }: TokenMinterInitMsg,
+    TokenMinterInitMsg::Cw20 { cw20_base_code_id }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
     CONFIG.save(
         deps.storage,
         &Config {
             admin: info.sender,
-            cw20_code_id,
+            cw20_base_code_id,
         },
     )?;
     Ok(Response::default())
@@ -69,7 +69,7 @@ pub fn execute(
                 let symbol = metadata.symbol;
                 let msg = WasmMsg::Instantiate {
                     admin: Some(env.contract.address.to_string()),
-                    code_id: config.cw20_code_id,
+                    code_id: config.cw20_base_code_id,
                     label: denom,
                     msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
                         // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.

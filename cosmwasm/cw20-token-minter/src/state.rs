@@ -5,7 +5,7 @@ use cw_storage_plus::{Item, Map};
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
-    pub cw20_code_id: u64,
+    pub cw20_base_code_id: u64,
 }
 
 pub const CONFIG: Item<Config> = Item::new("conf");
