@@ -16,6 +16,66 @@ module zkgm::fungible_asset_order {
         quote_amount: u256,
     }
 
+    public fun new(
+        sender: vector<u8>,
+        receiver: vector<u8>,
+        base_token: vector<u8>,
+        base_amount: u256,
+        base_token_symbol: String,
+        base_token_name: String,
+        base_token_path: u256,
+        quote_token: vector<u8>,
+        quote_amount: u256,
+    ): FungibleAssetOrder {
+        FungibleAssetOrder {    
+            sender,
+            receiver,
+            base_token,
+            base_amount,
+            base_token_symbol,
+            base_token_name,
+            base_token_path,
+            quote_token,
+            quote_amount,
+        }
+    }
+
+    public fun sender(order: &FungibleAssetOrder): &vector<u8> {
+        &order.sender
+    }
+
+    public fun receiver(order: &FungibleAssetOrder): &vector<u8> {
+        &order.receiver
+    }
+
+    public fun base_token(order: &FungibleAssetOrder): &vector<u8> {
+        &order.base_token
+    }
+
+    public fun base_amount(order: &FungibleAssetOrder): u256 {
+        order.base_amount
+    }
+
+    public fun base_token_symbol(order: &FungibleAssetOrder): &String {
+        &order.base_token_symbol
+    }
+
+    public fun base_token_name(order: &FungibleAssetOrder): &String {
+        &order.base_token_name
+    }
+
+    public fun base_token_path(order: &FungibleAssetOrder): u256 {
+        order.base_token_path
+    }
+
+    public fun quote_token(order: &FungibleAssetOrder): &vector<u8> {
+        &order.quote_token
+    }
+
+    public fun quote_amount(order: &FungibleAssetOrder): u256 {
+        order.quote_amount
+    }
+
     public fun encode(order: &FungibleAssetOrder): vector<u8> {
         let buf = vector::empty();
 
