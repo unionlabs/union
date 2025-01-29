@@ -50,7 +50,7 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         &'a self,
         item: Op<T>,
         filter: &'a T::Filter,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a;
 
     /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `filter` before being reenqueued.
     ///
@@ -70,6 +70,13 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         tag: &'a str,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct EnqueueResult {
+    pub queue: Vec<ItemId>,
+    pub optimize: Vec<ItemId>,
 }
 
 /// The ID of an item in the queue.

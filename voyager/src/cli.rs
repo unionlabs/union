@@ -194,10 +194,12 @@ pub enum PluginCmd {
     Info { plugin_name: String },
     /// Call a plugin directly from the CLI.
     Call {
-        plugin_name: Option<String>,
+        plugin_name: String,
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
         args: Vec<String>,
     },
+    /// List all available plugins.
+    List,
 }
 
 #[derive(Debug, Subcommand)]

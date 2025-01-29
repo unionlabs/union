@@ -14,7 +14,7 @@ use tracing::{debug, info_span, warn, Instrument};
 use crate::{
     filter::{FilterResult, InterestFilter},
     pass::Pass,
-    Captures, ItemId, Op, Queue, QueueMessage,
+    Captures, EnqueueResult, ItemId, Op, Queue, QueueMessage,
 };
 
 #[derive(DebugNoBound, CloneNoBound)]
@@ -50,7 +50,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         &'a self,
         op: Op<T>,
         filter: &'a T::Filter,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a {
         debug!(?op, "enqueueing new item");
 
         let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
@@ -81,7 +81,10 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
 
         debug!("enqueued new item");
 
-        futures::future::ok(())
+        futures::future::ok(EnqueueResult {
+            queue: vec![],
+            optimize: vec![],
+        })
     }
 
     async fn process<'a, F, Fut, R>(
