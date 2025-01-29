@@ -152,7 +152,7 @@ async fn main() {
                                         receiver,
                                         denom,
                                         amount: coin.amount,
-                                    }); //todo fix amount
+                                    });
                                 }
 
                                 Ok(requests)
