@@ -136,16 +136,14 @@ CREATE POLICY view_all
       true
     );
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS current_queue AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.current_queue AS
   (
-    SELECT *, (SELECT COUNT(*) FROM queue qq
-                WHERE
-                NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = qq.id)
-                AND qq.score > q.score
-    ) + 1 AS position FROM queue q
+    SELECT *, ROW_NUMBER() OVER(ORDER BY score DESC) AS position
+    FROM queue q
     WHERE
     -- Contribution round not started
     NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
+    ORDER BY q.score DESC
   );
 
 CREATE UNIQUE INDEX idx_current_queue_id ON current_queue(id);
@@ -662,7 +660,7 @@ ALTER VIEW current_user_state SET (security_invoker = off);
 -- Logging     --
 -----------------
 CREATE TABLE log(
-  id smallserial PRIMARY KEY,
+  id bigserial PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT(now()),
   message jsonb NOT NULL
 );
