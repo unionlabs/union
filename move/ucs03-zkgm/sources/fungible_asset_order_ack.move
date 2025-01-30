@@ -8,14 +8,8 @@ module zkgm::fungible_asset_order_ack {
         market_maker: vector<u8>
     }
 
-    public fun new(
-        fill_type: u256,
-        market_maker: vector<u8>
-    ): FungibleAssetOrderAck {
-        FungibleAssetOrderAck {    
-            fill_type,
-            market_maker,
-        }
+    public fun new(fill_type: u256, market_maker: vector<u8>): FungibleAssetOrderAck {
+        FungibleAssetOrderAck { fill_type, market_maker }
     }
 
     public fun fill_type(order: &FungibleAssetOrderAck): u256 {

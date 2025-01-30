@@ -93,7 +93,9 @@ module zkgm::ethabi {
         string::utf8(decode_bytes(buf, index))
     }
 
-    public fun decode_string_from_offset(buf: &vector<u8>, index: &mut u64): String {
+    public fun decode_string_from_offset(
+        buf: &vector<u8>, index: &mut u64
+    ): String {
         let i = *index;
         let offset = (decode_uint(buf, &mut i) as u64);
         *index = *index + 32;

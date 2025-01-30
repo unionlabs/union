@@ -8,9 +8,7 @@ module zkgm::batch_ack {
     }
 
     public fun new(acknowledgements: vector<vector<u8>>): BatchAck {
-        BatchAck {
-            acknowledgements
-        }        
+        BatchAck { acknowledgements }
     }
 
     public fun acknowledgements(batch_ack: &BatchAck): vector<vector<u8>> {
@@ -169,6 +167,4 @@ module zkgm::batch_ack {
         assert!(vector::length(&ack_data_decoded.acknowledgements) == 0, 1);
 
     }
-
-
 }

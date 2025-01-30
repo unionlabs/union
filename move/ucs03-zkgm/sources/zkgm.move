@@ -3,7 +3,7 @@ module zkgm::zkgm_relay {
     use zkgm::dispatcher_zkgm;
     use zkgm::engine_zkgm;
     use zkgm::batch::{Self, Batch};
-    use zkgm::batch_ack::{Self,};
+    use zkgm::batch_ack::{Self};
     use zkgm::instruction::{Self, Instruction};
     use zkgm::zkgm_packet::{Self};
     use zkgm::forward::{Self, Forward};
@@ -229,7 +229,7 @@ module zkgm::zkgm_relay {
         object::is_object(token)
     }
 
-        /// Find last set (most significant bit).
+    /// Find last set (most significant bit).
     /// Returns the index of the most significant bit of `x`.
     /// If `x` is zero, returns 256.
     public fun fls(x: u256): u256 {
@@ -329,7 +329,7 @@ module zkgm::zkgm_relay {
         salt: vector<u8>
     ) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        if(base_amount == 0) {
+        if (base_amount == 0) {
             abort E_INVALID_AMOUNT
         };
 
@@ -341,14 +341,9 @@ module zkgm::zkgm_relay {
             &store.token_origin, base_token, &0
         );
 
-        let (wrapped_address, _salt) =
-            predict_wrapped_token(
-                0,
-                channel_id,
-                quote_token
-            );
-        if (last_channel_from_path(origin) == channel_id &&
-            base_token == wrapped_address) {
+        let (wrapped_address, _salt) = predict_wrapped_token(0, channel_id, quote_token);
+        if (last_channel_from_path(origin) == channel_id
+            && base_token == wrapped_address) {
             zkgm::fa_coin::burn_with_metadata(
                 &get_signer(),
                 signer::address_of(sender),
@@ -365,13 +360,9 @@ module zkgm::zkgm_relay {
                 (base_amount as u64)
             );
 
-            let balance_key = ChannelBalancePair {
-                channel: channel_id,
-                token: base_token
-            };
+            let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
 
-            let curr_balance =
-                *smart_table::borrow(&store.channel_balance, balance_key);
+            let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
 
             smart_table::upsert(
                 &mut store.channel_balance,
@@ -380,27 +371,29 @@ module zkgm::zkgm_relay {
             );
         };
 
-        let fungible_asset_order = fungible_asset_order::new(
-            bcs::to_bytes(&signer::address_of(sender)),
-            receiver,
-            bcs::to_bytes(&base_token),
-            origin,
-            symbol,
-            name,
-            base_amount,
-            bcs::to_bytes(&quote_token),
-            quote_amount
-        );
+        let fungible_asset_order =
+            fungible_asset_order::new(
+                bcs::to_bytes(&signer::address_of(sender)),
+                receiver,
+                bcs::to_bytes(&base_token),
+                origin,
+                symbol,
+                name,
+                base_amount,
+                bcs::to_bytes(&quote_token),
+                quote_amount
+            );
         let operand = fungible_asset_order::encode(&fungible_asset_order);
-        let zkgm_pack = zkgm_packet::new(
-            salt,
-            0,
-            instruction::new(
-                ZKGM_VERSION_0,
-                OP_FUNGIBLE_ASSET_ORDER,
-                operand
-            )
-        );
+        let zkgm_pack =
+            zkgm_packet::new(
+                salt,
+                0,
+                instruction::new(
+                    ZKGM_VERSION_0,
+                    OP_FUNGIBLE_ASSET_ORDER,
+                    operand
+                )
+            );
         ibc::ibc::send_packet(
             &get_signer(),
             get_self_address(),
@@ -423,22 +416,20 @@ module zkgm::zkgm_relay {
         let data = vector::empty<u8>();
         vector::append(&mut data, bcs::to_bytes(&signer::address_of(sender)));
         vector::append(&mut data, bcs::to_bytes(&salt));
-        let multiplex = multiplex::new(
-            bcs::to_bytes(&signer::address_of(sender)),
-            true,
-            bcs::to_bytes(&contract_address),
-            contract_calldata
-        );
+        let multiplex =
+            multiplex::new(
+                bcs::to_bytes(&signer::address_of(sender)),
+                true,
+                bcs::to_bytes(&contract_address),
+                contract_calldata
+            );
         let operand = multiplex::encode(&multiplex);
-        let zkgm_pack = zkgm_packet::new(
-            data,
-            0,
-            instruction::new(
-                ZKGM_VERSION_0,
-                OP_MULTIPLEX,
-                operand
-            )
-        );
+        let zkgm_pack =
+            zkgm_packet::new(
+                data,
+                0,
+                instruction::new(ZKGM_VERSION_0, OP_MULTIPLEX, operand)
+            );
         ibc::ibc::send_packet(
             &get_signer(),
             get_self_address(),
@@ -566,7 +557,7 @@ module zkgm::zkgm_relay {
 
         let base_amount = fungible_asset_order::base_amount(&order);
 
-        if(base_amount == 0) {
+        if (base_amount == 0) {
             abort E_INVALID_AMOUNT
         };
 
@@ -601,13 +592,9 @@ module zkgm::zkgm_relay {
                 (base_amount as u64)
             );
 
-            let balance_key = ChannelBalancePair {
-                channel: channel_id,
-                token: base_token
-            };
+            let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
 
-            let curr_balance =
-                *smart_table::borrow(&store.channel_balance, balance_key);
+            let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
 
             smart_table::upsert(
                 &mut store.channel_balance,
@@ -615,7 +602,7 @@ module zkgm::zkgm_relay {
                 curr_balance + (base_amount as u256)
             );
         };
-        if (fungible_asset_order::base_token_path(&order) != origin){
+        if (fungible_asset_order::base_token_path(&order) != origin) {
             abort E_INVALID_ASSET_ORIGIN
         };
     }
@@ -627,7 +614,8 @@ module zkgm::zkgm_relay {
         let raw_zkgm_packet = ibc::packet::data(&ibc_packet);
         let zkgm_packet = zkgm_packet::decode(raw_zkgm_packet);
 
-        let acknowledgement = execute_internal<T>(
+        let acknowledgement =
+            execute_internal<T>(
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -642,10 +630,7 @@ module zkgm::zkgm_relay {
             abort E_ONLY_MAKER
         } else {
             let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
-            let return_value =
-                acknowledgement::encode(
-                    &new_ack
-                );
+            let return_value = acknowledgement::encode(&new_ack);
             dispatcher_zkgm::set_return_value<ZKGMProof>(
                 new_ucs_relay_proof(), return_value
             );
@@ -666,10 +651,10 @@ module zkgm::zkgm_relay {
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             execute_fungible_asset_order(
                 ibc_packet,
-            relayer,
-            relayer_msg,
-            salt,
-            path,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
                 fungible_asset_order::decode(instruction::operand(&instruction))
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
@@ -744,11 +729,14 @@ module zkgm::zkgm_relay {
         path: u256,
         forward_packet: Forward
     ): (vector<u8>) acquires RelayStore, SignerRef {
-        let zkgm_pack = zkgm_packet::new(
-            salt,
-            update_channel_path(path, ibc::packet::destination_channel(&ibc_packet)),
-            *forward::instruction(&forward_packet)
-        );
+        let zkgm_pack =
+            zkgm_packet::new(
+                salt,
+                update_channel_path(
+                    path, ibc::packet::destination_channel(&ibc_packet)
+                ),
+                *forward::instruction(&forward_packet)
+            );
         let sent_packet =
             ibc::ibc::send_packet(
                 &get_signer(),
@@ -756,9 +744,7 @@ module zkgm::zkgm_relay {
                 forward::channel_id(&forward_packet),
                 forward::timeout_height(&forward_packet),
                 forward::timeout_timestamp(&forward_packet),
-                zkgm_packet::encode(
-                    &zkgm_pack
-                )
+                zkgm_packet::encode(&zkgm_pack)
             );
         let packet_hash = commitment::commit_packet(&sent_packet);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
@@ -773,7 +759,8 @@ module zkgm::zkgm_relay {
         _salt: vector<u8>,
         multiplex_packet: Multiplex
     ): (vector<u8>) {
-        let contract_address = from_bcs::to_address(*multiplex::contract_address(&multiplex_packet));
+        let contract_address =
+            from_bcs::to_address(*multiplex::contract_address(&multiplex_packet));
         if (multiplex::eureka(&multiplex_packet)) {
             let param =
                 copyable_any::pack<OnZkgmParams>(
@@ -790,7 +777,8 @@ module zkgm::zkgm_relay {
                 ibc::packet::source_channel(&ibc_packet),
                 ibc::packet::destination_channel(&ibc_packet),
                 multiplex::encode_multiplex_sender_and_calldata(
-                    *multiplex::sender(&multiplex_packet), *multiplex::contract_calldata(&multiplex_packet)
+                    *multiplex::sender(&multiplex_packet),
+                    *multiplex::contract_calldata(&multiplex_packet)
                 ),
                 ibc::packet::timeout_height(&ibc_packet),
                 ibc::packet::timeout_timestamp(&ibc_packet)
@@ -824,7 +812,8 @@ module zkgm::zkgm_relay {
     ): (vector<u8>) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
-        if (fungible_asset_order::quote_amount(&order) > fungible_asset_order::base_amount(&order)) {
+        if (fungible_asset_order::quote_amount(&order)
+            > fungible_asset_order::base_amount(&order)) {
             abort E_INVALID_AMOUNT
         };
 
@@ -834,9 +823,12 @@ module zkgm::zkgm_relay {
                 ibc::packet::destination_channel(&ibc_packet),
                 *fungible_asset_order::base_token(&order)
             );
-        let quote_token = from_bcs::to_address(*fungible_asset_order::quote_token(&order));
+        let quote_token =
+            from_bcs::to_address(*fungible_asset_order::quote_token(&order));
         let receiver = from_bcs::to_address(*fungible_asset_order::receiver(&order));
-        let fee = fungible_asset_order::base_amount(&order) - fungible_asset_order::quote_amount(&order);
+        let fee =
+            fungible_asset_order::base_amount(&order)
+                - fungible_asset_order::quote_amount(&order);
         // ------------------------------------------------------------------
         // TODO: no idea if the code below will work lol, it looks promising though
         // ------------------------------------------------------------------
@@ -888,17 +880,16 @@ module zkgm::zkgm_relay {
                     (fungible_asset_order::quote_amount(&order) as u64)
                 );
                 if (fee > 0) {
-                    primary_fungible_store::transfer(&get_signer(), asset, relayer, (fee as u64));
+                    primary_fungible_store::transfer(
+                        &get_signer(), asset, relayer, (fee as u64)
+                    );
                 }
             };
         };
-        let new_asset_order_ack = fungible_asset_order_ack::new(
-            FILL_TYPE_PROTOCOL,
-            ACK_EMPTY
-        );
+        let new_asset_order_ack =
+            fungible_asset_order_ack::new(FILL_TYPE_PROTOCOL, ACK_EMPTY);
         fungible_asset_order_ack::encode(&new_asset_order_ack)
     }
-
 
     public fun on_acknowledge_packet(
         ibc_packet: Packet, acknowledgement: vector<u8>, relayer: address
@@ -1012,7 +1003,8 @@ module zkgm::zkgm_relay {
                         relayer: relayer
                     }
                 );
-            let contract_address = from_bcs::to_address(*multiplex::sender(&multiplex_packet));
+            let contract_address =
+                from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
             engine_zkgm::dispatch(param, contract_address);
         }
@@ -1034,7 +1026,9 @@ module zkgm::zkgm_relay {
         while (i < l) {
             let syscall_ack = inner_ack;
             if (success) {
-                syscall_ack = *vector::borrow(&batch_ack::acknowledgements(&batch_ack), i);
+                syscall_ack = *vector::borrow(
+                    &batch_ack::acknowledgements(&batch_ack), i
+                );
             };
             acknowledge_internal(
                 ibc_packet,
@@ -1064,14 +1058,23 @@ module zkgm::zkgm_relay {
     ) acquires SignerRef {
         if (success) {
             let asset_order_ack = fungible_asset_order_ack::decode(&inner_ack);
-            if (fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_PROTOCOL) {
+            if (fungible_asset_order_ack::fill_type(&asset_order_ack)
+                == FILL_TYPE_PROTOCOL) {
                 // The protocol is filled, fee was paid to relayer.
-            } else if (fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_MARKETMAKER) {
-                let market_maker = from_bcs::to_address(*fungible_asset_order_ack::market_maker(&asset_order_ack));
-                let base_token = from_bcs::to_address(*fungible_asset_order::base_token(&transfer_packet));
+            } else if (fungible_asset_order_ack::fill_type(&asset_order_ack)
+                == FILL_TYPE_MARKETMAKER) {
+                let market_maker =
+                    from_bcs::to_address(
+                        *fungible_asset_order_ack::market_maker(&asset_order_ack)
+                    );
+                let base_token =
+                    from_bcs::to_address(
+                        *fungible_asset_order::base_token(&transfer_packet)
+                    );
                 let asset = get_metadata(base_token);
-                if (last_channel_from_path(fungible_asset_order::base_token_path(&transfer_packet))
-                    == ibc::packet::source_channel(&ibc_packet)) {
+                if (last_channel_from_path(
+                    fungible_asset_order::base_token_path(&transfer_packet)
+                ) == ibc::packet::source_channel(&ibc_packet)) {
                     zkgm::fa_coin::mint_with_metadata(
                         &get_signer(),
                         market_maker,
@@ -1097,13 +1100,16 @@ module zkgm::zkgm_relay {
     fun refund(
         source_channel: u32, asset_order_packet: FungibleAssetOrder
     ) acquires SignerRef {
-        let sender = from_bcs::to_address(*fungible_asset_order::sender(&asset_order_packet));
-        let base_token = from_bcs::to_address(*fungible_asset_order::base_token(&asset_order_packet));
+        let sender =
+            from_bcs::to_address(*fungible_asset_order::sender(&asset_order_packet));
+        let base_token =
+            from_bcs::to_address(*fungible_asset_order::base_token(&asset_order_packet));
 
         let asset = get_metadata(base_token);
 
-        if (last_channel_from_path(fungible_asset_order::base_token_path(&asset_order_packet))
-            == source_channel) {
+        if (last_channel_from_path(
+            fungible_asset_order::base_token_path(&asset_order_packet)
+        ) == source_channel) {
             zkgm::fa_coin::mint_with_metadata(
                 &get_signer(),
                 sender,
@@ -1166,7 +1172,7 @@ module zkgm::zkgm_relay {
             timeout_fungible_asset_order(
                 ibc_packet,
                 salt,
-                fungible_asset_order::decode(instruction::operand(&instruction)),
+                fungible_asset_order::decode(instruction::operand(&instruction))
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
             let decode_idx = 0x20;
@@ -1249,7 +1255,8 @@ module zkgm::zkgm_relay {
                         relayer: relayer
                     }
                 );
-            let contract_address = from_bcs::to_address(*multiplex::sender(&multiplex_packet));
+            let contract_address =
+                from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
             engine_zkgm::dispatch(param, contract_address);
         }

@@ -9,10 +9,7 @@ module zkgm::acknowledgement {
     }
 
     public fun new(tag: u256, inner_ack: vector<u8>): Acknowledgement {
-        Acknowledgement {
-            tag,
-            inner_ack
-        }        
+        Acknowledgement { tag, inner_ack }
     }
 
     public fun tag(ack: &Acknowledgement): u256 {
@@ -71,5 +68,4 @@ module zkgm::acknowledgement {
         assert!(ack_data_decoded.tag == 7788909223344, 1);
         assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
     }
-
 }
