@@ -18,12 +18,45 @@ use crate::indexer::{
     HappyRangeFetcher,
 };
 
+enum FinalizerLoopResult {
+    RunAgain,
+    TryAgainLater,
+}
+
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_finalizer(&self, fetcher_client: T) -> Result<(), IndexerError> {
-        let chunk_size: u64 = self.chunk_size.try_into().unwrap();
         loop {
-            if let Some(block_range_to_finalize) = self.block_range_to_finalize().await? {
-                info!("{}: begin", block_range_to_finalize);
+            match self.run_finalizer_loop(&fetcher_client).await {
+                Ok(FinalizerLoopResult::RunAgain) => {
+                    debug!("run again");
+                }
+                Ok(FinalizerLoopResult::TryAgainLater) => {
+                    debug!(
+                        "try again later (sleep {}s)",
+                        self.finalizer_config.retry_later_sleep.as_secs()
+                    );
+                    sleep(self.finalizer_config.retry_later_sleep).await;
+                }
+                Err(error) => {
+                    warn!(
+                        "error in finalizer loop: {error} => try again later (sleep {}s)",
+                        self.finalizer_config.retry_later_sleep.as_secs()
+                    );
+                    sleep(self.finalizer_config.retry_later_sleep).await;
+                }
+            }
+        }
+    }
+
+    async fn run_finalizer_loop(
+        &self,
+        fetcher_client: &T,
+    ) -> Result<FinalizerLoopResult, IndexerError> {
+        let chunk_size: u64 = self.chunk_size.try_into().unwrap();
+
+        match self.block_range_to_finalize().await {
+            Ok(Some(block_range_to_finalize)) => {
+                info!("{block_range_to_finalize}: begin");
 
                 match fetcher_client
                     .fetch_single(BlockSelection::LastFinalized, FetchMode::Lazy)
@@ -31,11 +64,7 @@ impl<T: FetcherClient> Indexer<T> {
                 {
                     Ok(last_finalized) => {
                         let reference = last_finalized.reference();
-                        trace!(
-                            "{}: current finalized: {}",
-                            block_range_to_finalize,
-                            reference
-                        );
+                        trace!("{block_range_to_finalize}: current finalized: {reference}");
 
                         // consider the block to be finalized if it's >= than the consensus height, considering the finalization delay blocks.
                         let consensus_height_with_safety_margin = reference
@@ -57,72 +86,78 @@ impl<T: FetcherClient> Indexer<T> {
                                 min(end_until_finalized, end_until_last_tracked_block),
                             );
 
-                            let range_to_finalize = (block_range_to_finalize.start_inclusive
+                            let range_to_finalize: BlockRange = (block_range_to_finalize
+                                .start_inclusive
                                 ..range_to_finalize_end_exclusive)
                                 .into();
-                            debug!(
-                                "{}: finalizing: {}",
-                                block_range_to_finalize, range_to_finalize
-                            );
+
+                            debug!("{block_range_to_finalize}: finalizing: {range_to_finalize}");
 
                             self.finalize_blocks(
                                 &last_finalized,
-                                range_to_finalize,
+                                range_to_finalize.clone(),
                                 consensus_height_with_safety_margin,
                             )
                             .instrument(info_span!("finalize"))
                             .await?;
                         } else {
-                            trace!(
-                                "{}: nothing to finalize (before finalized {})",
-                                block_range_to_finalize,
-                                reference
-                            );
+                            trace!("{block_range_to_finalize}: nothing to finalize (before finalized {reference})");
                         }
 
-                        if let Some(height) = self
+                        match self
                             .next_block_to_monitor(consensus_height_with_safety_margin)
-                            .await?
+                            .await
                         {
-                            let range_to_monitor = (height
-                                ..(min(
-                                    height + chunk_size,
-                                    block_range_to_finalize.end_exclusive,
-                                )))
-                                .into();
-                            debug!(
-                                "{}: monitoring: {}",
-                                block_range_to_finalize, range_to_monitor
-                            );
+                            Ok(Some(height)) => {
+                                let range_to_monitor = (height
+                                    ..(min(
+                                        height + chunk_size,
+                                        block_range_to_finalize.end_exclusive,
+                                    )))
+                                    .into();
+                                debug!("{block_range_to_finalize}: monitoring: {range_to_monitor}");
 
-                            self.finalize_blocks(
-                                &last_finalized,
-                                range_to_monitor,
-                                consensus_height_with_safety_margin,
-                            )
-                            .instrument(info_span!("monitor"))
-                            .await?;
-                        } else {
-                            trace!("{}: nothing to update", block_range_to_finalize);
+                                self.finalize_blocks(
+                                    &last_finalized,
+                                    range_to_monitor,
+                                    consensus_height_with_safety_margin,
+                                )
+                                .instrument(info_span!("monitor"))
+                                .await?;
 
-                            if !some_blocks_needs_to_be_finalized {
-                                info!("idle finalize run => retry later");
-                                sleep(self.finalizer_config.retry_later_sleep).await;
+                                Ok(FinalizerLoopResult::RunAgain)
+                            }
+                            Ok(None) => {
+                                trace!("{}: nothing to update", block_range_to_finalize);
+
+                                match some_blocks_needs_to_be_finalized {
+                                    true => Ok(FinalizerLoopResult::RunAgain),
+                                    false => Ok(FinalizerLoopResult::TryAgainLater),
+                                }
+                            }
+                            Err(error) => {
+                                warn!("{block_range_to_finalize}: error fetching next block to monitor {error} => retry later");
+                                Ok(FinalizerLoopResult::TryAgainLater)
                             }
                         }
                     }
                     Err(IndexerError::NoBlock(_)) => {
                         info!("no finalized height => retry later");
-                        sleep(self.finalizer_config.retry_later_sleep).await;
+                        Ok(FinalizerLoopResult::TryAgainLater)
                     }
                     Err(error) => {
                         warn!("error fetching finalized height ({}) => retry later", error);
-                        sleep(self.finalizer_config.retry_later_sleep).await;
+                        Err(error)
                     }
                 }
-            } else {
+            }
+            Ok(None) => {
                 info!("nothing to finalize => retry later");
-                sleep(self.finalizer_config.retry_later_sleep).await;
+                Ok(FinalizerLoopResult::TryAgainLater)
+            }
+            Err(error) => {
+                warn!("error trying to fetch block range to finalize ({error}) => retry later");
+                Err(IndexerError::ProviderError(error))
             }
         }
     }
