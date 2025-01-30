@@ -776,6 +776,263 @@ module zkgm::zkgm_relay {
         fungible_asset_order_ack::encode(&new_asset_order_ack)
     }
 
+
+    public fun on_acknowledge_packet(
+        ibc_packet: Packet, acknowledgement: vector<u8>, relayer: address
+    ) acquires RelayStore, SignerRef {
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+
+        let packet_hash = commitment::commit_packet(&ibc_packet);
+        let parent =
+            smart_table::borrow_mut_with_default(
+                &mut store.in_flight_packet,
+                packet_hash,
+                packet::default()
+            );
+        if (packet::timeout_timestamp(parent) != 0
+            || packet::timeout_height(parent) != 0) {
+            ibc::ibc::write_acknowledgement(*parent, acknowledgement);
+            smart_table::upsert(
+                &mut store.in_flight_packet, packet_hash, packet::default()
+            );
+        } else {
+            let zkgm_packet = zkgm_packet::decode(ibc::packet::data(&ibc_packet));
+            let zkgm_ack = acknowledgement::decode(&acknowledgement);
+            acknowledge_internal(
+                ibc_packet,
+                relayer,
+                zkgm_packet::salt(&zkgm_packet),
+                zkgm_packet::instruction(&zkgm_packet),
+                acknowledgement::tag(&zkgm_ack) == ACK_SUCCESS,
+                *acknowledgement::inner_ack(&zkgm_ack)
+            )
+        }
+    }
+
+    fun acknowledge_internal(
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        instruction: Instruction,
+        success: bool,
+        inner_ack: vector<u8>
+    ) acquires SignerRef {
+        if (instruction::version(&instruction) != ZKGM_VERSION_0) {
+            abort E_UNSUPPORTED_VERSION
+        };
+        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
+            acknowledge_fungible_asset_transfer(
+                ibc_packet,
+                salt,
+                fungible_asset_order::decode(instruction::operand(&instruction)),
+                success,
+                inner_ack
+            )
+        } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            let decode_idx = 0x20;
+            acknowledge_batch(
+                ibc_packet,
+                relayer,
+                salt,
+                batch::decode(instruction::operand(&instruction), &mut decode_idx),
+                success,
+                inner_ack
+            )
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
+            let decode_idx = 0x20;
+            acknowledge_forward(
+                ibc_packet,
+                salt,
+                forward::decode(instruction::operand(&instruction), &mut decode_idx),
+                success,
+                inner_ack
+            )
+        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
+            acknowledge_multiplex(
+                ibc_packet,
+                relayer,
+                salt,
+                multiplex::decode(instruction::operand(&instruction)),
+                success,
+                inner_ack
+            )
+        } else {
+            abort E_UNKNOWN_SYSCALL
+        }
+    }
+
+    fun acknowledge_multiplex(
+        ibc_packet: Packet,
+        relayer: address,
+        _salt: vector<u8>,
+        multiplex_packet: Multiplex,
+        success: bool,
+        ack: vector<u8>
+    ) {
+        if (success && !multiplex::eureka(&multiplex_packet)) {
+            let multiplex_ibc_packet =
+                ibc::packet::new(
+                    ibc::packet::source_channel(&ibc_packet),
+                    ibc::packet::destination_channel(&ibc_packet),
+                    multiplex::encode_multiplex_sender_and_calldata(
+                        *multiplex::contract_address(&multiplex_packet),
+                        *multiplex::contract_calldata(&multiplex_packet)
+                    ),
+                    ibc::packet::timeout_height(&ibc_packet),
+                    ibc::packet::timeout_timestamp(&ibc_packet)
+                );
+            let param =
+                copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
+                    IIBCModuleOnAcknowledgementPacketParams {
+                        packet: multiplex_ibc_packet,
+                        acknowledgement: ack,
+                        relayer: relayer
+                    }
+                );
+            let contract_address = from_bcs::to_address(*multiplex::sender(&multiplex_packet));
+
+            engine_zkgm::dispatch(param, contract_address);
+        }
+    }
+
+    fun acknowledge_batch(
+        ibc_packet: Packet,
+        relayer: address,
+        salt: vector<u8>,
+        batch_packet: Batch,
+        success: bool,
+        inner_ack: vector<u8>
+    ) acquires SignerRef {
+        let instructions = batch::instructions(&batch_packet);
+        let l = vector::length(&instructions);
+        let idx = 0x40;
+        let batch_ack = batch_ack::decode(&inner_ack, &mut idx);
+        let i = 0;
+        while (i < l) {
+            let syscall_ack = inner_ack;
+            if (success) {
+                syscall_ack = *vector::borrow(&batch_ack::acknowledgements(&batch_ack), i);
+            };
+            acknowledge_internal(
+                ibc_packet,
+                relayer,
+                salt,
+                *vector::borrow(&instructions, i),
+                success,
+                syscall_ack
+            );
+        }
+    }
+
+    fun acknowledge_forward(
+        _ibc_packet: Packet,
+        _salt: vector<u8>,
+        _forward_packet: Forward,
+        _success: bool,
+        _inner_ack: vector<u8>
+    ) {}
+
+    fun acknowledge_fungible_asset_transfer(
+        ibc_packet: Packet,
+        _salt: vector<u8>,
+        transfer_packet: FungibleAssetOrder,
+        success: bool,
+        inner_ack: vector<u8>
+    ) acquires SignerRef {
+        if (success) {
+            let asset_transfer_ack = fungible_asset_order_ack::decode(&inner_ack);
+            if (fungible_asset_order_ack::fill_type(&asset_transfer_ack) == FILL_TYPE_PROTOCOL) {
+                // The protocol is filled, fee was paid to relayer.
+            } else if (fungible_asset_order_ack::fill_type(&asset_transfer_ack) == FILL_TYPE_MARKETMAKER) {
+                let market_maker = from_bcs::to_address(*fungible_asset_order_ack::market_maker(&asset_transfer_ack));
+                let base_token = from_bcs::to_address(*fungible_asset_order::base_token(&transfer_packet));
+                let asset = get_metadata(base_token);
+                if (last_channel_from_path(fungible_asset_order::base_token_path(&transfer_packet))
+                    == ibc::packet::source_channel(&ibc_packet)) {
+                    zkgm::fa_coin::mint_with_metadata(
+                        &get_signer(),
+                        market_maker,
+                        (fungible_asset_order::base_amount(&transfer_packet) as u64),
+                        asset
+                    );
+                } else {
+                    primary_fungible_store::transfer(
+                        &get_signer(),
+                        asset,
+                        market_maker,
+                        (fungible_asset_order::base_amount(&transfer_packet) as u64)
+                    );
+                }
+            } else {
+                abort E_INVALID_FILL_TYPE
+            }
+        } else {
+            refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
+        };
+    }
+
+    fun refund(
+        source_channel: u32, asset_transfer_packet: FungibleAssetOrder
+    ) acquires SignerRef {
+        let sender = from_bcs::to_address(*fungible_asset_order::sender(&asset_transfer_packet));
+        let base_token = from_bcs::to_address(*fungible_asset_order::base_token(&asset_transfer_packet));
+
+        let asset = get_metadata(base_token);
+
+        if (last_channel_from_path(fungible_asset_order::base_token_path(&asset_transfer_packet))
+            == source_channel) {
+            zkgm::fa_coin::mint_with_metadata(
+                &get_signer(),
+                sender,
+                (fungible_asset_order::base_amount(&asset_transfer_packet) as u64),
+                asset
+            );
+        } else {
+            primary_fungible_store::transfer(
+                &get_signer(),
+                asset,
+                sender,
+                (fungible_asset_order::base_amount(&asset_transfer_packet) as u64)
+            );
+        }
+    }
+    public fun on_channel_open_init(
+        _connection_id: u32, _channel_id: u32, version: String
+    ) {
+        if (!is_valid_version(version)) {
+            abort E_INVALID_IBC_VERSION
+        };
+    }
+
+    public fun on_channel_open_try(
+        _connection_id: u32,
+        _channel_id: u32,
+        _counterparty_channel_id: u32,
+        version: String,
+        counterparty_version: String
+    ) {
+        if (!is_valid_version(version)) {
+            abort E_INVALID_IBC_VERSION
+        };
+        if (!is_valid_version(counterparty_version)) {
+            abort E_INVALID_IBC_VERSION
+        };
+    }
+
+    public fun on_channel_open_ack(
+        _channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
+    ) {}
+
+    public fun on_channel_open_confirm(_channel_id: u32) {}
+
+    public fun on_channel_close_init(_channel_id: u32) {
+        abort E_INFINITE_GAME
+    }
+
+    public fun on_channel_close_confirm(_channel_id: u32) {
+        abort E_INFINITE_GAME
+    }
+    
     #[test]
     public fun test_fls() {
         assert!(fls(0) == 256, 1);
