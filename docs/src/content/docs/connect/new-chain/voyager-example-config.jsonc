@@ -1,5 +1,5 @@
 {
-  // modules provide specific funtionality for ibc. they take both an info object, which is the same per module type, and a config object, which is specific to the module implementation (i.e. rpc urls, contract addresses).
+  // modules provide specific functionality for ibc. they take both an info object, which is the same per module type, and a config object, which is specific to the module implementation (i.e. rpc urls, contract addresses).
   "modules": {
     // state modules describe how to read state from a chain
     //
@@ -144,7 +144,7 @@
           "chain_id": "",
           "consensus_type": "tendermint"
         },
-        // these values are the same as the stae and proof modules.
+        // these values are the same as the state and proof modules.
         "config": {
           "ws_url": "",
           "grpc_url": ""
@@ -471,9 +471,7 @@
         "chain_id": "union-testnet-9",
         "ws_url": "http://rpc.testnet-9.union.build",
         "grpc_url": "http://grpc.testnet-9.union.build",
-        "prover_endpoints": [
-          "https://galois.testnet-9.union.build:443"
-        ]
+        "prover_endpoints": ["https://galois.testnet-9.union.build:443"]
       }
     },
     // TODO: Configure these properly
