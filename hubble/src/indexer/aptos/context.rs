@@ -6,7 +6,6 @@ use url::Url;
 pub struct AptosContext {
     pub rpc_urls: Vec<Url>,
     pub tx_search_max_page_size: u16,
-    pub client_tracking: bool,
 }
 
 impl Display for AptosContext {

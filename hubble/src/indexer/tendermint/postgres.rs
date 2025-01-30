@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
 use crate::{
@@ -201,27 +201,4 @@ pub async fn delete_tm_block_transactions_events(
     schedule_replication_reset(tx, chain_id, height, "block reorg (delete)").await?;
 
     Ok(())
-}
-
-pub async fn unmapped_client_ids(
-    pg_pool: &PgPool,
-    internal_chain_id: i32,
-) -> sqlx::Result<Vec<String>> {
-    let result = sqlx::query!(
-        r#"
-        SELECT    cc.client_id
-        FROM      v1_cosmos.create_client cc
-        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
-        WHERE     cc.internal_chain_id = $1
-        AND       cl.chain_id IS NULL
-        "#,
-        internal_chain_id,
-    )
-    .fetch_all(pg_pool)
-    .await?
-    .into_iter()
-    .map(|record| record.client_id.expect("each record to have a client_id"))
-    .collect_vec();
-
-    Ok(result)
 }

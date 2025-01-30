@@ -1,7 +1,6 @@
 use alloy::{
     eips::BlockId,
-    network::{AnyNetwork, AnyRpcBlock, Network},
-    primitives::TxHash,
+    network::{AnyNetwork, AnyRpcBlock},
     providers::{Provider as AlloyProvider, ProviderBuilder, RootProvider},
     rpc::types::{BlockTransactionsKind, Filter, Log},
     transports::{
@@ -93,21 +92,5 @@ impl Provider {
             .race(provider_id.map(Into::into), |c| c.get_logs(filter))
             .await
             .map(Into::into)
-    }
-
-    pub async fn get_transaction_by_hash(
-        &self,
-        tx_hash: TxHash,
-        provider_id: Option<RpcProviderId>,
-    ) -> Result<
-        Option<RpcResult<<AnyNetwork as Network>::TransactionResponse>>,
-        RpcError<TransportErrorKind>,
-    > {
-        self.rpc_client
-            .race_some(provider_id.map(Into::into), |c| {
-                c.get_transaction_by_hash(tx_hash)
-            })
-            .await
-            .map(|op| op.map(Into::into))
     }
 }

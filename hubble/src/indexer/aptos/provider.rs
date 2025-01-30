@@ -98,17 +98,4 @@ impl Provider {
             .await
             .map(Into::into)
     }
-
-    pub async fn get_transaction_by_version(
-        &self,
-        version: u64,
-        provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<Response<Transaction>>, RestError> {
-        self.rpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.get_transaction_by_version(version)
-            })
-            .await
-            .map(Into::into)
-    }
 }

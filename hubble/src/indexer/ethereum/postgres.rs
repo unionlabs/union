@@ -127,39 +127,6 @@ pub async fn delete_eth_log(
     Ok(())
 }
 
-pub struct UnmappedClient {
-    pub transaction_hash: String,
-    pub height: BlockHeight,
-    pub client_id: Option<String>,
-}
-
-pub async fn unmapped_clients(
-    pg_pool: &PgPool,
-    internal_chain_id: i32,
-) -> sqlx::Result<Vec<UnmappedClient>> {
-    let result = sqlx::query!(
-        r#"
-        SELECT cc.transaction_hash, cc.height, cc.client_id
-        FROM   v1_evm.client_created cc
-        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
-        WHERE  cc.internal_chain_id = $1
-        AND    cl.chain_id IS NULL
-        "#,
-        internal_chain_id
-    )
-    .fetch_all(pg_pool)
-    .await?
-    .into_iter()
-    .map(|record| UnmappedClient {
-        transaction_hash: record.transaction_hash.expect("client-created event to have transaction hash"),
-        height: record.height.expect("client-created event to have a height").try_into().unwrap(),
-        client_id: record.client_id,
-    })
-    .collect_vec();
-
-    Ok(result)
-}
-
 pub async fn transaction_filter(
     pg_pool: &PgPool,
     internal_chain_id: i32,

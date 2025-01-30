@@ -9,7 +9,6 @@ use crate::indexer::{
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 200;
-const DEFAULT_CLIENT_TRACKING: bool = true;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -19,7 +18,6 @@ pub struct Config {
     pub rpc_urls: Vec<Url>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
-    pub client_tracking: Option<bool>,
 }
 
 impl Config {
@@ -32,7 +30,6 @@ impl Config {
             self.finalizer,
             EthContext {
                 rpc_urls: self.rpc_urls,
-                client_tracking: self.client_tracking.unwrap_or(DEFAULT_CLIENT_TRACKING),
             },
         ))
     }

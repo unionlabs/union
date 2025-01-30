@@ -20,7 +20,6 @@ use crate::{
         aptos::{
             block_handle::{AptosBlockHandle, BlockDetails},
             context::AptosContext,
-            create_client_tracker::schedule_create_client_checker,
             provider::{Provider, RpcProviderId},
         },
     },
@@ -240,7 +239,7 @@ impl FetcherClient for AptosFetcherClient {
 
     async fn create(
         pg_pool: sqlx::PgPool,
-        join_set: &mut JoinSet<Result<(), IndexerError>>,
+        _join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: AptosContext,
     ) -> Result<Self, IndexerError> {
         let provider = Provider::new(context.rpc_urls);
@@ -266,13 +265,6 @@ impl FetcherClient for AptosFetcherClient {
                 .get_inner_logged();
 
             tx.commit().await?;
-
-            if context.client_tracking {
-                info!("scheduling client tracking");
-                schedule_create_client_checker(pg_pool, join_set, provider.clone(), chain_id.db);
-            } else {
-                info!("client tracking disabled");
-            }
 
             Ok(AptosFetcherClient {
                 chain_id,

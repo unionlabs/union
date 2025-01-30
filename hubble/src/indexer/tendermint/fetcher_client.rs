@@ -16,7 +16,6 @@ use futures::{
 };
 use itertools::Itertools;
 use jsonrpsee::types::{error::INTERNAL_ERROR_CODE, ErrorObject};
-use regex::Regex;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
@@ -32,7 +31,6 @@ use crate::{
         tendermint::{
             block_handle::{BlockDetails, BlockHeader, TmBlockHandle},
             context::TmContext,
-            create_client_tracker::schedule_create_client_checker,
             postgres::{PgBlock, PgEvent, PgTransaction},
             provider::{Provider, RpcProviderId},
         },
@@ -44,7 +42,6 @@ use crate::{
 pub struct TmFetcherClient {
     pub chain_id: ChainId,
     pub provider: Provider,
-    pub filter: Option<Regex>,
     pub tx_search_max_page_size: u8,
 }
 
@@ -224,49 +221,41 @@ impl TmFetcherClient {
 
         let mut block_index = 0;
 
-        let pg_transactions = transactions_response
-            .into_iter()
-            .filter(|tx| tx.tx_result.code == TX_RESULT_CODE_OK)
-            .map(|tx| {
-                let transaction_hash = tx.hash.to_string();
-                let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
-                pg_events.extend(tx.tx_result.events.into_iter().enumerate().filter_map(
-                    |(i, event)| {
-                        if self
-                            .filter
-                            .as_ref()
-                            .is_some_and(|filter| filter.is_match(event.ty.as_str()))
-                        {
+        let pg_transactions =
+            transactions_response
+                .into_iter()
+                .filter(|tx| tx.tx_result.code == TX_RESULT_CODE_OK)
+                .map(|tx| {
+                    let transaction_hash = tx.hash.to_string();
+                    let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
+                    pg_events.extend(tx.tx_result.events.into_iter().enumerate().map(
+                        |(i, event)| {
+                            let event = PgEvent {
+                                chain_id: self.chain_id,
+                                block_hash: block_reference.hash.clone(),
+                                block_height: block_reference.height,
+                                time: block_reference.timestamp,
+                                data: serde_json::to_value(event).unwrap().replace_escape_chars(),
+                                transaction_hash: Some(transaction_hash.clone()),
+                                transaction_index: Some(i.try_into().unwrap()),
+                                block_index,
+                            };
+
                             block_index += 1;
-                            return None;
-                        }
-
-                        let event = PgEvent {
-                            chain_id: self.chain_id,
-                            block_hash: block_reference.hash.clone(),
-                            block_height: block_reference.height,
-                            time: block_reference.timestamp,
-                            data: serde_json::to_value(event).unwrap().replace_escape_chars(),
-                            transaction_hash: Some(transaction_hash.clone()),
-                            transaction_index: Some(i.try_into().unwrap()),
-                            block_index,
-                        };
-
-                        block_index += 1;
-                        Some(event)
-                    },
-                ));
-                PgTransaction {
-                    chain_id: self.chain_id,
-                    block_hash: block_reference.hash.clone(),
-                    block_height: block_reference.height,
-                    time: block_reference.timestamp,
-                    data,
-                    hash: transaction_hash,
-                    index: tx.index.try_into().unwrap(),
-                }
-            })
-            .collect::<Vec<_>>();
+                            event
+                        },
+                    ));
+                    PgTransaction {
+                        chain_id: self.chain_id,
+                        block_hash: block_reference.hash.clone(),
+                        block_height: block_reference.height,
+                        time: block_reference.timestamp,
+                        data,
+                        hash: transaction_hash,
+                        index: tx.index.try_into().unwrap(),
+                    }
+                })
+                .collect::<Vec<_>>();
 
         // add all block events
         pg_events.extend(
@@ -533,10 +522,10 @@ impl FetcherClient for TmFetcherClient {
 
     async fn create(
         pg_pool: sqlx::PgPool,
-        join_set: &mut JoinSet<Result<(), IndexerError>>,
+        _join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: TmContext,
     ) -> Result<Self, IndexerError> {
-        let provider = Provider::new(context.rpc_urls, context.grpc_urls).await?;
+        let provider = Provider::new(context.rpc_urls).await?;
 
         info!("fetching chain-id from node");
         let chain_id = provider
@@ -560,17 +549,9 @@ impl FetcherClient for TmFetcherClient {
 
             tx.commit().await?;
 
-            if context.client_tracking {
-                info!("scheduling client tracking");
-                schedule_create_client_checker(pg_pool, join_set, provider.clone(), chain_id.db);
-            } else {
-                info!("client tracking disabled");
-            }
-
             Ok(TmFetcherClient {
                 chain_id,
                 provider,
-                filter: context.filter,
                 tx_search_max_page_size: context.tx_search_max_page_size,
             })
         }

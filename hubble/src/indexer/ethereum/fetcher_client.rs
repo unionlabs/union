@@ -24,7 +24,6 @@ use crate::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
-            create_client_tracker::schedule_create_client_checker,
             postgres::transaction_filter,
             provider::{Provider, RpcProviderId},
         },
@@ -265,7 +264,7 @@ impl FetcherClient for EthFetcherClient {
 
     async fn create(
         pg_pool: sqlx::PgPool,
-        join_set: &mut JoinSet<Result<(), IndexerError>>,
+        _join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: EthContext,
     ) -> Result<Self, IndexerError> {
         let provider = Provider::new(context.rpc_urls);
@@ -286,13 +285,6 @@ impl FetcherClient for EthFetcherClient {
             debug!("transaction-filter: {:?}", &transaction_filter);
 
             tx.commit().await?;
-
-            if context.client_tracking {
-                info!("scheduling client tracking");
-                schedule_create_client_checker(pg_pool, join_set, provider.clone(), chain_id.db);
-            } else {
-                info!("client tracking disabled");
-            }
 
             Ok(EthFetcherClient {
                 chain_id,
