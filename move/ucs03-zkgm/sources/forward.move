@@ -3,7 +3,7 @@ module zkgm::forward {
     use zkgm::instruction::{Self, Instruction};
 
     use std::vector;
-    use std::string::{Self, String};
+    use std::string::{Self};
 
     struct Forward has copy, drop, store {
         channel_id: u32,

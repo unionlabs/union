@@ -8,7 +8,7 @@ module zkgm::batch {
         instructions: vector<Instruction>
     }
 
-    public fun new(version: u8, opcode: u8, instructions: vector<Instruction>): Batch {
+    public fun new(instructions: vector<Instruction>): Batch {
         Batch {
             instructions
         }        

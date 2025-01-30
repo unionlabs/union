@@ -1,7 +1,6 @@
 module zkgm::fungible_asset_order_ack {
     use zkgm::ethabi;
 
-    use std::string::{Self, String};
     use std::vector;
 
     struct FungibleAssetOrderAck has copy, drop, store {

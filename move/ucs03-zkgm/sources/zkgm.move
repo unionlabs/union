@@ -1,6 +1,5 @@
 module zkgm::zkgm_relay {
     use zkgm::zkgm_helpers;
-    use zkgm::ethabi;
     use zkgm::dispatcher_zkgm;
     use zkgm::engine_zkgm;
     use zkgm::batch::{Self, Batch};
@@ -1292,6 +1291,97 @@ module zkgm::zkgm_relay {
 
     public fun on_channel_close_confirm(_channel_id: u32) {
         abort E_INFINITE_GAME
+    }
+
+    public fun on_packet<T: key, P: key + store + drop>(
+        _store: Object<T>
+    ): u64 acquires RelayStore, SignerRef {
+        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
+        let type_name_output = *copyable_any::type_name(&value);
+
+        if (type_name_output
+            == std::type_info::type_name<zkgm_helpers::RecvPacketParamsZKGM>()) {
+            let (pack, relayer, relayer_msg) =
+                zkgm_helpers::on_recv_packet_zkgm_deconstruct(
+                    copyable_any::unpack<zkgm_helpers::RecvPacketParamsZKGM>(value)
+                );
+            on_recv_packet<P>(pack, relayer, relayer_msg);
+        } else if (type_name_output
+            == std::type_info::type_name<zkgm_helpers::AcknowledgePacketParamsZKGM>()) {
+            let (pack, acknowledgement, relayer) =
+                zkgm_helpers::on_acknowledge_packet_deconstruct_zkgm(
+                    copyable_any::unpack<zkgm_helpers::AcknowledgePacketParamsZKGM>(value)
+                );
+            on_acknowledge_packet(pack, acknowledgement, relayer);
+        } else if (type_name_output
+            == std::type_info::type_name<zkgm_helpers::TimeoutPacketParamsZKGM>()) {
+            let (pack, relayer) =
+                zkgm_helpers::on_timeout_packet_deconstruct_zkgm(
+                    copyable_any::unpack<zkgm_helpers::TimeoutPacketParamsZKGM>(value)
+                );
+            on_timeout_packet(pack, relayer);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
+            let (connection_id, channel_id, version) =
+                helpers::on_channel_open_init_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenInitParams>(value)
+                );
+            on_channel_open_init(connection_id, channel_id, version);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenTryParams>()) {
+            let (
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            ) =
+                helpers::on_channel_open_try_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenTryParams>(value)
+                );
+            on_channel_open_try(
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenAckParams>()) {
+            let (channel_id, counterparty_channel_id, counterparty_version) =
+                helpers::on_channel_open_ack_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenAckParams>(value)
+                );
+            on_channel_open_ack(
+                channel_id, counterparty_channel_id, counterparty_version
+            );
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelOpenConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_open_confirm_deconstruct(
+                    copyable_any::unpack<helpers::ChannelOpenConfirmParams>(value)
+                );
+            on_channel_open_confirm(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelCloseInitParams>()) {
+            let channel_id =
+                helpers::on_channel_close_init_deconstruct(
+                    copyable_any::unpack<helpers::ChannelCloseInitParams>(value)
+                );
+            on_channel_close_init(channel_id);
+        } else if (type_name_output
+            == std::type_info::type_name<helpers::ChannelCloseConfirmParams>()) {
+            let channel_id =
+                helpers::on_channel_close_confirm_deconstruct(
+                    copyable_any::unpack<helpers::ChannelCloseConfirmParams>(value)
+                );
+            on_channel_close_confirm(channel_id);
+        } else {
+            std::debug::print(
+                &string::utf8(b"Invalid function type detected in on_packet function!")
+            );
+        };
+        0
     }
 
     #[test]
