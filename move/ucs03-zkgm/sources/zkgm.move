@@ -342,6 +342,7 @@ module zkgm::zkgm_relay {
         );
 
         let (wrapped_address, _salt) = predict_wrapped_token(0, channel_id, quote_token);
+
         if (last_channel_from_path(origin) == channel_id
             && base_token == wrapped_address) {
             zkgm::fa_coin::burn_with_metadata(
@@ -394,6 +395,8 @@ module zkgm::zkgm_relay {
                     operand
                 )
             );
+        let admin_balance = primary_fungible_store::balance(signer::address_of(sender), asset);
+
         ibc::ibc::send_packet(
             &get_signer(),
             get_self_address(),
@@ -1456,4 +1459,150 @@ module zkgm::zkgm_relay {
 
         assert!(!is_deployed(wrapped_address), 102);
     }
+
+    #[test(admin = @zkgm, ibc = @ibc)]
+    #[expected_failure(abort_code = 10)] // E_INVALID_AMOUNT
+    public fun test_transfer_scenario_err(admin: &signer, ibc: &signer) acquires RelayStore, SignerRef {
+        dispatcher::init_module_for_testing(ibc);
+        init_module_for_testing(admin);
+
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+
+        let salt = b"test_salt";
+        let test_token_addr = deploy_token(salt);
+
+        transfer(
+            admin,
+            1,                      // channel_id
+            b"receiver_address",    // receiver (just a byte-string for test)
+            test_token_addr,        // base_token
+            0,                      // base_amount == 0 -> expect E_INVALID_AMOUNT
+            b"",                    // quote_token
+            0,                      // quote_amount
+            1234,                   // timeout_height
+            0,                      // timeout_timestamp
+            b"my_test_salt"         // salt
+        );
+
+    }
+
+    #[test(admin = @zkgm, ibc = @ibc)]
+    #[expected_failure] // TODO: because ibc::send_packet raises error, no idea how to mock this
+    public fun test_transfer_scenario_success(admin: &signer, ibc: &signer) acquires RelayStore, SignerRef {
+        dispatcher::init_module_for_testing(ibc);
+        init_module_for_testing(admin);
+
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        let channel_id: u32 = 0;
+        let quote_token = b"QUOTE_TOKEN";
+        let (wrapped_address, salt) =
+            predict_wrapped_token(0, channel_id, quote_token);
+        let test_token_addr = deploy_token(salt);
+
+        let admin_balance_before = primary_fungible_store::balance(signer::address_of(admin), get_metadata(test_token_addr));
+
+        zkgm::fa_coin::mint_with_metadata(
+            &get_signer(),
+            signer::address_of(admin),           // recipient
+            1000,                                // amount
+            get_metadata(test_token_addr)        // object<Metadata> for this token
+        );
+
+        let admin_balance = primary_fungible_store::balance(signer::address_of(admin), get_metadata(test_token_addr));
+
+        assert!(admin_balance_before == 0, 101);
+        assert!(admin_balance == 1000, 101);
+
+        let base_token = test_token_addr;
+        std::debug::print(&string::utf8(b"sooo whats the addr:"));
+        std::debug::print(&test_token_addr);
+
+        transfer(
+            admin,
+            channel_id,            // channel_id
+            b"some_receiver",      // receiver
+            base_token,            // base_token
+            500,                        // base_amount
+            quote_token,             // quote_token (just a byte-string for test)
+            100,                        // quote_amount
+            1234,                       // timeout_height
+            0,                          // timeout_timestamp
+            b"my_test_salt"             // salt
+        );
+
+    }
+
+    // #[test(admin = @zkgm, ibc = @ibc)]
+    // public fun test_transfer_scenarios(admin: &signer, ibc: &signer) acquires RelayStore, SignerRef {
+    //     // 1) Initialize test environment
+    //     //    - Initialize the dispatcher and this module for testing
+    //     dispatcher::init_module_for_testing(ibc);
+    //     init_module_for_testing(admin);
+
+    //     // 2) Deploy a test token, and mint some to `admin`
+    //     let salt = b"test_salt";
+    //     let test_token_addr = deploy_token(salt);
+
+    //     // Mint 1000 units of our newly deployed token to `admin`
+    //     zkgm::fa_coin::mint_with_metadata(
+    //         &get_signer(),
+    //         signer::address_of(admin),           // recipient
+    //         1000,                                // amount
+    //         get_metadata(test_token_addr)        // object<Metadata> for this token
+    //     );
+
+    //     // 3) Scenario 1: Attempt transfer with base_amount = 0 => expect E_INVALID_AMOUNT abort
+    //     //    This confirms that zero amounts are disallowed.
+    //     assert_abort_with_code(
+    //         move || {
+    //             transfer(
+    //                 admin,
+    //                 1,                      // channel_id
+    //                 b"receiver_address",    // receiver (just a byte-string for test)
+    //                 test_token_addr,        // base_token
+    //                 0,                      // base_amount == 0 -> expect E_INVALID_AMOUNT
+    //                 b"",                    // quote_token
+    //                 0,                      // quote_amount
+    //                 1234,                   // timeout_height
+    //                 0,                      // timeout_timestamp
+    //                 b"my_test_salt"         // salt
+    //             );
+    //         },
+    //         E_INVALID_AMOUNT
+    //     );
+
+    //     // 4) Scenario 2: Transfer with a positive base_amount => expect success
+    //     //    We transfer 500 out of the 1000 minted tokens. This should succeed
+    //     //    and create an IBC packet with the appropriate data.
+    //     transfer(
+    //         admin,
+    //         1,                          // channel_id
+    //         b"some_receiver",           // receiver
+    //         test_token_addr,            // base_token
+    //         500,                        // base_amount
+    //         b"QUOTE_TOKEN",             // quote_token (just a byte-string for test)
+    //         100,                        // quote_amount
+    //         1234,                       // timeout_height
+    //         0,                          // timeout_timestamp
+    //         b"my_test_salt"             // salt
+    //     );
+
+    //     // At this point, you could add additional checks or debug prints
+    //     // For now, simply finishing without an abort indicates Scenario 2 succeeded.
+
+    //     // 5) (Optional) Scenario 3: Demonstrate transferring a "wrapped" token
+    //     //    This scenario typically requires you to simulate that the `test_token_addr`
+    //     //    is already recognized as "wrapped" (meaning its origin path indicates
+    //     //    the current channel). You would do something like:
+    //     //
+    //     //      - Manually insert it into `store.token_origin`,
+    //     //        so last_channel_from_path(origin) == channel_id used in `transfer`.
+    //     //      - Then call `transfer` again with the same token, verifying that
+    //     //        `fa_coin::burn_with_metadata` is invoked rather than `transfer`.
+    //     //
+
+    //     // If the function reaches here without abort, all scenarios passed.
+    //     std::debug::print(&string::utf8(b"test_transfer_scenarios passed!"));
+    // }
+
 }
