@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
+    cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     primitives::H256,
     ErrorReporter, WasmClientType,
@@ -26,6 +27,7 @@ use voyager_message::{
     core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    rpc::ProofType,
     ProofModule,
 };
 use voyager_vm::BoxDynError;
@@ -115,7 +117,7 @@ impl ProofModuleServer<IbcClassic> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> RpcResult<(Value, ProofType)> {
         const IBC_STORE_PATH: &str = "store/ibc/key";
 
         let path_string = path.to_string();
@@ -140,24 +142,46 @@ impl ProofModuleServer<IbcClassic> for Module {
                 Some(json!({ "height": at, "path": path })),
             ))?;
 
-        Ok(into_value(
-            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .response
-                    .proof_ops
+        // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
+        if query_result.response.code == 26 {
+            return Err(ErrorObject::owned(
+                -1,
+                "attempted to query state at a nonexistent height, \
+                potentially due to load balanced rpc endpoints",
+                Some(json!({
+                    "height": at,
+                    "path": path
+                })),
+            ));
+        }
+
+        let proofs = query_result
+            .response
+            .proof_ops
+            .unwrap()
+            .ops
+            .into_iter()
+            .map(|op| {
+                <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
                     .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
-                            &*op.data,
-                        )
-                        .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
             })
-            .unwrap(),
-        ))
+            .collect::<Vec<_>>();
+
+        let proof =
+            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
+                .unwrap();
+
+        let proof_type = if proof
+            .proofs
+            .iter()
+            .any(|p| matches!(&p, CommitmentProof::Nonexist(_)))
+        {
+            ProofType::NonMembership
+        } else {
+            ProofType::Membership
+        };
+
+        Ok((into_value(proof), proof_type))
     }
 }
 

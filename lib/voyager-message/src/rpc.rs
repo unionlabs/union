@@ -5,7 +5,7 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
 };
 use macros::model;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
 use voyager_core::{IbcSpecId, Timestamp};
@@ -167,16 +167,18 @@ impl IbcState<Value> {
 
 #[model]
 pub struct IbcProof {
-    // pub proof_type: ProofType,
+    pub proof_type: ProofType,
     /// The height that the proof was read at.
     pub height: Height,
     pub proof: Value,
 }
 
-// enum ProofType {
-//     Membership,
-//     NonMembership,
-// }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProofType {
+    Membership,
+    NonMembership,
+}
 
 #[model]
 pub struct SelfClientState {

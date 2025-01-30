@@ -23,7 +23,7 @@ use prost::Message;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument};
+use tracing::{debug, error, instrument};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
@@ -110,6 +110,7 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
+    #[instrument(skip_all, fields(?height))]
     pub async fn query_smart<Q: Serialize, R: DeserializeOwned>(
         &self,
         query: &Q,
@@ -128,6 +129,8 @@ impl Module {
             )
             .await?;
 
+        debug!(?response);
+
         Ok(response.value.map(|value| {
             serde_json::from_slice(
                 &QuerySmartContractStateResponse::decode(&*value)
@@ -144,7 +147,8 @@ impl Module {
         data: Bytes,
         height: Option<Height>,
     ) -> RpcResult<QueryResponse> {
-        self.cometbft_client
+        let response = self
+            .cometbft_client
             .abci_query(
                 &path,
                 &data,
@@ -158,10 +162,25 @@ impl Module {
             )
             .await
             .map_err(rpc_error(
-                format_args!("error fetching abci query"),
+                "error fetching abci query",
                 Some(json!({ "height": height, "path": data })),
             ))
-            .map(|response| response.response)
+            .map(|response| response.response)?;
+
+        // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
+        if response.code == 26 {
+            Err(ErrorObject::owned(
+                -1,
+                "attempted to query state at a nonexistent height, \
+                potentially due to load balanced rpc endpoints",
+                Some(json!({
+                    "height": height,
+                    "path": path
+                })),
+            ))
+        } else {
+            Ok(response)
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]

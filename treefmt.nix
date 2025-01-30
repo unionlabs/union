@@ -3,7 +3,7 @@
   pkgs,
   rust,
   jsPkgs,
-  movefmt,
+# movefmt,
 }:
 let
   unstablePkgs = jsPkgs;
@@ -118,11 +118,11 @@ in
         options = [ "fmt" ];
         includes = [ "*.sol" ];
       };
-      movefmt = {
-        command = "${movefmt}/bin/movefmt";
-        options = [ ];
-        includes = [ "*.move" ];
-      };
+      # movefmt = {
+      #   command = "${movefmt}/bin/movefmt";
+      #   options = [ ];
+      #   includes = [ "*.move" ];
+      # };
     };
     global = {
       hidden = true;

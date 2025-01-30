@@ -1,10 +1,18 @@
 import { graphql } from "gql.tada"
 
 export const faucetUnoMutation2 = graphql(/* GraphQL */ `
-  mutation FaucetUnoMutation2($address: String!, $captchaToken: String!) {
-    faucet2 {
-      send(toAddress: $address, captchaToken: $captchaToken)
-    }
+  mutation UnoFaucetMutation(
+    $chainId: String!,
+    $denom: String!,
+    $address: String!,
+    $captchaToken: String!
+  ) {
+    send(
+      chainId: $chainId,
+      denom: $denom,
+      address: $address,
+      captchaToken: $captchaToken
+    )
   }
 `)
 

@@ -1,9 +1,9 @@
 use std::{fmt::Debug, num::ParseIntError, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
+use cometbft_rpc::Client;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     ibc::core::client::height::Height, id::ClientId, primitives::H256, signer::CosmosSigner,
     WasmClientType,
@@ -18,7 +18,7 @@ use crate::{
 pub struct Union {
     pub chain_id: String,
     pub keyring: CosmosKeyring,
-    pub tm_client: WebSocketClient,
+    pub tm_client: Client,
     pub chain_revision: u64,
     pub prover_endpoints: Vec<String>,
     pub grpc_url: String,
@@ -30,7 +30,7 @@ pub struct Union {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub keyring: KeyringConfig,
-    pub ws_url: WebSocketClientUrl,
+    pub ws_url: String,
     pub prover_endpoints: Vec<String>,
     pub grpc_url: String,
     pub gas_config: GasConfig,
@@ -57,7 +57,7 @@ impl ChainKeyring for Union {
 #[derive(Debug, thiserror::Error)]
 pub enum UnionInitError {
     #[error("tendermint rpc error")]
-    Tendermint(#[from] tendermint_rpc::Error),
+    Tendermint(#[from] cometbft_rpc::JsonRpcError),
     #[error(
         "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
     )]
@@ -70,12 +70,7 @@ pub enum UnionInitError {
 
 impl Union {
     pub async fn new(config: Config) -> Result<Self, UnionInitError> {
-        let (tm_client, driver) = WebSocketClient::builder(config.ws_url)
-            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-            .build()
-            .await?;
-
-        tokio::spawn(async move { driver.run().await });
+        let tm_client = Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
@@ -152,7 +147,7 @@ impl CosmosSdkChainRpcs for Union {
         self.grpc_url.clone()
     }
 
-    fn tm_client(&self) -> &WebSocketClient {
+    fn tm_client(&self) -> &Client {
         &self.tm_client
     }
 }

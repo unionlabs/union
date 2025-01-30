@@ -9,7 +9,7 @@ use voyager_message::{
 };
 use voyager_vm::{BoxDynError, Op};
 
-use crate::config::default_rpc_laddr;
+use crate::config::{default_rest_laddr, default_rpc_laddr};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -68,6 +68,24 @@ pub enum Command {
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rpc_laddr()
+            )
+        )]
+        rpc_url: String,
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rest_laddr()
+            )
+        )]
+        rest_url: String,
     },
     /// Run Voyager.
     Start,
@@ -115,6 +133,15 @@ pub enum QueueCmd {
     Enqueue {
         #[arg(value_parser(|s: &str| serde_json::from_str::<Op<VoyagerMessage>>(s)))]
         op: Op<VoyagerMessage>,
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rest_laddr()
+            )
+        )]
+        rest_url: String,
     },
 
     // History {
@@ -167,10 +194,12 @@ pub enum PluginCmd {
     Info { plugin_name: String },
     /// Call a plugin directly from the CLI.
     Call {
-        plugin_name: Option<String>,
+        plugin_name: String,
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
         args: Vec<String>,
     },
+    /// List all available plugins.
+    List,
 }
 
 #[derive(Debug, Subcommand)]
@@ -251,6 +280,15 @@ pub enum MsgCmd {
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rest_laddr()
+            )
+        )]
+        rest_url: String,
     },
     UpdateClient {
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
@@ -266,6 +304,15 @@ pub enum MsgCmd {
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
+        #[arg(
+            long,
+            global = true,
+            default_value_t = format!(
+                "http://{}",
+                default_rest_laddr()
+            )
+        )]
+        rest_url: String,
     },
 }
 

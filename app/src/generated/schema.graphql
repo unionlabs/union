@@ -272,6 +272,7 @@ input jsonb_comparison_exp {
 type mutation_root {
   dydx_faucet: dydx_faucetMutation
   faucet2: faucet2Mutation
+  send(address: String!, captchaToken: String!, chainId: String!, denom: String!): String!
   stride_faucet: stride_faucetMutation
 }
 
@@ -335,7 +336,10 @@ type query_root {
     """filter the rows returned"""
     where: PfmArgs_bool_exp_bool_exp
   ): [PfmArgs!]!
+  handledTransfers(limit: Int, offsetTime: String): [Request!]!
   stride_faucet: stride_faucetQuery
+  transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
+  unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
 
   """
   fetch data from the table: "v1.acknowledge_packet"
@@ -4865,18 +4869,38 @@ type v1_channels {
 
   """An object relationship"""
   destination_chain: v1_chains
+
+  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
+
+  """Channel-id (of the destination)."""
   destination_channel_id: String
+
+  """Connection-id (of the destination)."""
   destination_connection_id: String
+
+  """Port-id (of the destination)."""
   destination_port_id: String
 
   """An object relationship"""
   source_chain: v1_chains
+
+  """Blockchain network identifier (of the source)."""
   source_chain_id: String
+
+  """Channel-id (of the source)."""
   source_channel_id: String
+
+  """Connection-id (of the source)."""
   source_connection_id: String
+
+  """Port-id (of the source)."""
   source_port_id: String
+
+  """Channel status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
+
+  """Opaque-channel version."""
   version: String
 }
 
@@ -4967,15 +4991,34 @@ input v1_channels_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_channels_stream_cursor_value_input {
+  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
+
+  """Channel-id (of the destination)."""
   destination_channel_id: String
+
+  """Connection-id (of the destination)."""
   destination_connection_id: String
+
+  """Port-id (of the destination)."""
   destination_port_id: String
+
+  """Blockchain network identifier (of the source)."""
   source_chain_id: String
+
+  """Channel-id (of the source)."""
   source_channel_id: String
+
+  """Connection-id (of the source)."""
   source_connection_id: String
+
+  """Port-id (of the source)."""
   source_port_id: String
+
+  """Channel status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
+
+  """Opaque-channel version."""
   version: String
 }
 
@@ -5645,15 +5688,29 @@ input v1_connection_open_try_stream_cursor_value_input {
 type v1_connections {
   """An object relationship"""
   destination_chain: v1_chains
+
+  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
+
+  """Client-id (of the destination)."""
   destination_client_id: String
+
+  """Connection-id (of the destination)."""
   destination_connection_id: String
 
   """An object relationship"""
   source_chain: v1_chains
+
+  """Blockchain network identifier (of the source)."""
   source_chain_id: String
+
+  """Client-id (of the source)."""
   source_client_id: String
+
+  """Connection-id (of the source)."""
   source_connection_id: String
+
+  """Connection status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
 }
 
@@ -5727,12 +5784,25 @@ input v1_connections_stream_cursor_input {
 
 """Initial value of the column from where the streaming should start"""
 input v1_connections_stream_cursor_value_input {
+  """Blockchain network identifier (of the destination)."""
   destination_chain_id: String
+
+  """Client-id (of the destination)."""
   destination_client_id: String
+
+  """Connection-id (of the destination)."""
   destination_connection_id: String
+
+  """Blockchain network identifier (of the source)."""
   source_chain_id: String
+
+  """Client-id (of the source)."""
   source_client_id: String
+
+  """Connection-id (of the source)."""
   source_connection_id: String
+
+  """Connection status: INIT | TRY | ACK | CONFIRM | ERROR."""
   status: String
 }
 

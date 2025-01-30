@@ -25,6 +25,7 @@ use voyager_message::{
     core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    rpc::ProofType,
     ProofModule,
 };
 use voyager_vm::BoxDynError;
@@ -116,7 +117,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         _path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> RpcResult<(Value, ProofType)> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         let vault_addr = self
@@ -150,13 +151,17 @@ impl ProofModuleServer<IbcUnion> for Module {
         //     at.revision_height,
         // ).await;
 
-        Ok(into_value(StorageProof {
-            state_value: None,
-            proof: SparseMerkleProof {
-                leaf: None,
-                siblings: Vec::new(),
-            },
-        }))
+        Ok((
+            into_value(StorageProof {
+                state_value: None,
+                proof: SparseMerkleProof {
+                    leaf: None,
+                    siblings: Vec::new(),
+                },
+            }),
+            // TODO: Implement properly, see above
+            ProofType::Membership,
+        ))
     }
 }
 

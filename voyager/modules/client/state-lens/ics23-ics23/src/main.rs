@@ -203,35 +203,39 @@ impl ClientModuleServer for Module {
     }
 }
 
+alloy::sol! {
+    #[derive(Debug)]
+    struct ExistenceProof {
+        bytes key;
+        bytes value;
+        bytes leafPrefix;
+        InnerOp[] path;
+    }
+
+    #[derive(Debug)]
+    struct NonExistenceProof {
+        bytes key;
+        ExistenceProof left;
+        ExistenceProof right;
+    }
+
+    #[derive(Debug)]
+    struct InnerOp {
+        bytes prefix;
+        bytes suffix;
+    }
+
+    #[derive(Debug)]
+    struct ProofSpec {
+        uint256 childSize;
+        uint256 minPrefixLength;
+        uint256 maxPrefixLength;
+    }
+}
+
 fn encode_merkle_proof_for_evm(
     proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
 ) -> Vec<u8> {
-    alloy::sol! {
-        struct ExistenceProof {
-            bytes key;
-            bytes value;
-            bytes leafPrefix;
-            InnerOp[] path;
-        }
-
-        struct NonExistenceProof {
-            bytes key;
-            ExistenceProof left;
-            ExistenceProof right;
-        }
-
-        struct InnerOp {
-            bytes prefix;
-            bytes suffix;
-        }
-
-        struct ProofSpec {
-            uint256 childSize;
-            uint256 minPrefixLength;
-            uint256 maxPrefixLength;
-        }
-    }
-
     let merkle_proof = ics23::merkle_proof::MerkleProof::try_from(
         protos::ibc::core::commitment::v1::MerkleProof::from(proof),
     )

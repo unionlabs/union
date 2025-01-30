@@ -10,8 +10,8 @@
 )]
 
 use std::{
-    collections::HashMap, ffi::OsStr, fmt::Write, fs::read_to_string, iter, net::SocketAddr,
-    path::PathBuf, process::ExitCode,
+    collections::HashMap, ffi::OsStr, fmt::Write, fs::read_to_string, iter, path::PathBuf,
+    process::ExitCode,
 };
 
 use anyhow::{anyhow, Context as _};
@@ -217,34 +217,33 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                 print_json(&get_plugin_info(&plugin_config)?);
             }
-            PluginCmd::Call { plugin_name, args } => match plugin_name {
-                Some(module_name) => {
-                    let plugin_config = get_voyager_config()?
-                        .plugins
-                        .into_iter()
-                        .try_find(|plugin_config| {
-                            <anyhow::Result<_>>::Ok(
-                                module_name == get_plugin_info(plugin_config)?.name,
-                            )
-                        })?
-                        .ok_or(anyhow!("plugin not found"))?;
+            PluginCmd::Call { plugin_name, args } => {
+                let plugin_config = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .try_find(|plugin_config| {
+                        <anyhow::Result<_>>::Ok(plugin_name == get_plugin_info(plugin_config)?.name)
+                    })?
+                    .ok_or(anyhow!("plugin not found"))?;
 
-                    tokio::process::Command::new(&plugin_config.path)
-                        .arg("cmd")
-                        .arg("--config")
-                        .arg(plugin_config.config.to_string())
-                        .args(args)
-                        .spawn()?
-                        .wait()
-                        .await?;
-                }
-                None => {
-                    println!("available plugins and modules");
-                    for module_config in get_voyager_config()?.plugins {
-                        println!("  {}", get_plugin_info(&module_config)?.name);
-                    }
-                }
-            },
+                tokio::process::Command::new(&plugin_config.path)
+                    .arg("cmd")
+                    .arg("--config")
+                    .arg(plugin_config.config.to_string())
+                    .args(args)
+                    .spawn()?
+                    .wait()
+                    .await?;
+            }
+            PluginCmd::List => {
+                let list = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .map(|module_config| get_plugin_info(&module_config).map(|p| p.name))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                print_json(&list);
+            }
         },
         Command::Module(cmd) => match cmd {
             ModuleCmd::State(_) => todo!(),
@@ -266,8 +265,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             };
 
             match cli_msg {
-                QueueCmd::Enqueue { op } => {
-                    send_enqueue(&get_voyager_config()?.voyager.rest_laddr, op).await?;
+                QueueCmd::Enqueue { op, rest_url } => {
+                    send_enqueue(&rest_url, op).await?;
                 }
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
                 // cli::QueueCmd::History { id, max_depth } => {
@@ -305,15 +304,18 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     if requeue {
                         if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
-                            q.enqueue(
-                                record,
-                                &JaqInterestFilter::new(vec![]).expect("empty filter can be built"),
-                            )
-                            .await?;
+                            let res = q
+                                .enqueue(
+                                    record,
+                                    &JaqInterestFilter::new(vec![])
+                                        .expect("empty filter can be built"),
+                                )
+                                .await?;
+                            print_json(&res);
                         }
+                    } else {
+                        print_json(&record);
                     }
-
-                    print_json(&record);
                 }
             }
         }
@@ -321,53 +323,21 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             chain_id,
             height,
             enqueue,
+            rpc_url,
+            rest_url,
         } => {
+            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
+
             let start_height = match height {
                 QueryHeight::Latest => {
-                    let config = get_voyager_config()?;
-
-                    let context = Context::new(
-                        config.plugins,
-                        config.modules,
-                        config.equivalent_chain_ids,
-                        |h| {
-                            h.register::<IbcClassic>();
-                            h.register::<IbcUnion>();
-                        },
-                    )
-                    .await?;
-
-                    let latest_height = context
-                        .rpc_server
-                        .query_latest_height(&chain_id, false)
-                        .await?;
-
-                    context.shutdown().await;
-
-                    latest_height
+                    voyager_client
+                        .query_latest_height(chain_id.clone(), false)
+                        .await?
                 }
                 QueryHeight::Finalized => {
-                    let config = get_voyager_config()?;
-
-                    let context = Context::new(
-                        config.plugins,
-                        config.modules,
-                        config.equivalent_chain_ids,
-                        |h| {
-                            h.register::<IbcClassic>();
-                            h.register::<IbcUnion>();
-                        },
-                    )
-                    .await?;
-
-                    let latest_height = context
-                        .rpc_server
-                        .query_latest_height(&chain_id, true)
-                        .await?;
-
-                    context.shutdown().await;
-
-                    latest_height
+                    voyager_client
+                        .query_latest_height(chain_id.clone(), true)
+                        .await?
                 }
                 QueryHeight::Specific(height) => height,
             };
@@ -379,7 +349,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
             if enqueue {
                 println!("enqueueing op for `{chain_id}` at `{start_height}`");
-                send_enqueue(&get_voyager_config()?.voyager.rest_laddr, op).await?;
+                send_enqueue(&rest_url, op).await?;
             } else {
                 print_json(&op);
             }
@@ -520,6 +490,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 height,
                 metadata,
                 enqueue,
+                rest_url,
             } => {
                 let voyager_config = get_voyager_config()?;
 
@@ -537,7 +508,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 // weird race condition in Context::new that i don't feel like debugging right now
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-                let msg = make_msg_create_client(
+                let op = make_msg_create_client(
                     &ctx,
                     tracking,
                     height,
@@ -551,9 +522,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                 if enqueue {
                     println!("enqueueing msg");
-                    send_enqueue(&voyager_config.voyager.rest_laddr, msg).await?;
+                    send_enqueue(&rest_url, op).await?;
                 } else {
-                    print_json(&msg);
+                    print_json(&op);
                 }
             }
             MsgCmd::UpdateClient {
@@ -562,6 +533,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 ibc_spec_id,
                 update_to,
                 enqueue,
+                rest_url,
             } => {
                 let voyager_config = get_voyager_config()?;
 
@@ -617,7 +589,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                 if enqueue {
                     println!("enqueueing msg");
-                    send_enqueue(&voyager_config.voyager.rest_laddr, op).await?;
+                    send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);
                 }
@@ -629,11 +601,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 }
 
 async fn send_enqueue(
-    rest_laddr: &SocketAddr,
+    rest_laddr: &str,
     op: Op<VoyagerMessage>,
 ) -> anyhow::Result<reqwest::Response> {
     Ok(reqwest::Client::new()
-        .post(format!("http://{rest_laddr}/enqueue"))
+        .post(format!("{rest_laddr}/enqueue"))
         .json(&op)
         .send()
         .await?)

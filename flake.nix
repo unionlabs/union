@@ -179,7 +179,7 @@
         ./lib/ssz/ssz.nix
         ./lib/unionlabs/unionlabs.nix
         ./hubble/hubble.nix
-        ./lib/aptos.nix
+        # ./lib/aptos.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix
         ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
@@ -519,7 +519,7 @@
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {
-            inherit (self'.packages) movefmt;
+            # inherit (self'.packages) movefmt;
             inherit
               pkgs
               jsPkgs

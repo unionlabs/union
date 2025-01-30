@@ -174,7 +174,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             }) => {
                 let trusted_commit = self
                     .cometbft_client
-                    .commit(Some(update_from.height().try_into().unwrap()))
+                    .commit(Some(update_from.increment().height().try_into().unwrap()))
                     .await
                     .unwrap();
 
@@ -186,7 +186,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let trusted_validators = self
                     .cometbft_client
-                    .all_validators(Some(update_from.height().try_into().unwrap()))
+                    .all_validators(Some(update_from.increment().height().try_into().unwrap()))
                     .await
                     .unwrap();
 

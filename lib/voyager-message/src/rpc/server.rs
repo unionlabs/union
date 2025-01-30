@@ -1,8 +1,11 @@
+// #![warn(clippy::unwrap_used)]
+
 use std::{
     fmt::Debug,
     sync::{Arc, OnceLock},
 };
 
+use anyhow::anyhow;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -84,8 +87,7 @@ impl Server {
             QueryHeight::Latest => {
                 let latest_height = self
                     .modules()?
-                    .consensus_module(chain_id)
-                    .map_err(fatal_error)?
+                    .consensus_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(false)
                     .await
@@ -98,8 +100,7 @@ impl Server {
             QueryHeight::Finalized => {
                 let latest_height = self
                     .modules()?
-                    .consensus_module(chain_id)
-                    .map_err(fatal_error)?
+                    .consensus_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(true)
                     .await
@@ -138,8 +139,7 @@ impl Server {
                 let latest_height = self
                     .inner
                     .modules()?
-                    .consensus_module(chain_id)
-                    .map_err(fatal_error)?
+                    .consensus_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(finalized)
                     .await
@@ -168,8 +168,7 @@ impl Server {
                 let latest_timestamp = self
                     .inner
                     .modules()?
-                    .consensus_module(chain_id)
-                    .map_err(fatal_error)?
+                    .consensus_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_timestamp(finalized)
                     .await
@@ -199,8 +198,7 @@ impl Server {
                 let client_info = self
                     .inner
                     .modules()?
-                    .state_module(chain_id, ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .state_module(chain_id, ibc_spec_id)?
                     .with_id(self.item_id)
                     .client_info_raw(client_id.clone())
                     .await
@@ -250,9 +248,9 @@ impl Server {
                             .ibc_spec_handlers
                             .handlers
                             .get(ibc_spec_id)
-                            .unwrap()
+                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
                             .client_state_path)(client_id.clone())
-                        .unwrap(),
+                        .map_err(|err| fatal_error(&*err))?,
                     )
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
@@ -265,7 +263,7 @@ impl Server {
                         &client_info.ibc_interface,
                         ibc_spec_id,
                     )
-                    .map_err(fatal_error)?
+                    ?
                     .with_id(self.item_id)
                     .decode_client_state_meta(client_state.as_str().unwrap().parse().unwrap())
                     .await
@@ -301,8 +299,7 @@ impl Server {
                 let state_module = self
                     .inner
                     .modules()?
-                    .state_module(&chain_id, &ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .state_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
                 let state = state_module
@@ -335,19 +332,22 @@ impl Server {
                 let proof_module = self
                     .inner
                     .modules()?
-                    .proof_module(&chain_id, &ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .proof_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, path)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }
@@ -366,8 +366,7 @@ impl Server {
                 let state_module = self
                     .inner
                     .modules()?
-                    .state_module(chain_id, &P::Spec::ID)
-                    .map_err(fatal_error)?
+                    .state_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
                 let state = state_module
@@ -408,19 +407,22 @@ impl Server {
                 let proof_module = self
                     .inner
                     .modules()?
-                    .proof_module(chain_id, &P::Spec::ID)
-                    .map_err(fatal_error)?
+                    .proof_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
-                let proof = proof_module
+                let (proof, proof_type) = proof_module
                     .query_ibc_proof_raw(height, into_value(path.clone()))
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                trace!(%proof, "fetched ibc proof");
+                debug!(%proof, ?proof_type, "fetched ibc proof");
 
-                Ok(IbcProof { height, proof })
+                Ok(IbcProof {
+                    height,
+                    proof,
+                    proof_type,
+                })
             })
             .await
     }
@@ -439,8 +441,7 @@ impl Server {
                 let client_bootstrap_module = self
                     .inner
                     .modules()?
-                    .client_bootstrap_module(&chain_id, &client_type)
-                    .map_err(fatal_error)?
+                    .client_bootstrap_module(&chain_id, &client_type)?
                     .with_id(self.item_id);
 
                 let state = client_bootstrap_module
@@ -470,8 +471,7 @@ impl Server {
                 let client_bootstrap_module = self
                     .inner
                     .modules()?
-                    .client_bootstrap_module(&chain_id, &client_type)
-                    .map_err(fatal_error)?
+                    .client_bootstrap_module(&chain_id, &client_type)?
                     .with_id(self.item_id);
 
                 let height = self.query_height(&chain_id, height).await?;
@@ -505,8 +505,7 @@ impl Server {
                 let client_module = self
                     .inner
                     .modules()?
-                    .client_module(client_type, ibc_interface, ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
                 let proof = client_module
@@ -537,8 +536,7 @@ impl Server {
                 let client_module = self
                     .inner
                     .modules()?
-                    .client_module(client_type, ibc_interface, ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
                 let meta = client_module
@@ -569,8 +567,7 @@ impl Server {
             .in_scope(|| async {
                 self.inner
                     .modules()?
-                    .client_module(client_type, ibc_interface, ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id)
                     .decode_client_state(client_state)
                     .await
@@ -591,8 +588,7 @@ impl Server {
             .in_scope(|| async {
                 self.inner
                     .modules()?
-                    .client_module(client_type, ibc_interface, ibc_spec_id)
-                    .map_err(fatal_error)?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id)
                     .decode_consensus_state(consensus_state)
                     .await

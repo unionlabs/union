@@ -7,7 +7,10 @@ use crate::core::ChainId;
 
 /// [`ChainId`] to consider equivalent.
 ///
-/// Some chains expose multiple chain IDs due to requirements of certain components used in the chain (for example, different execution environments running in the same chain may have different chain ID specifications for transaction signing). In cases such as this, multiple chain IDs can refer to the same "abstract machine" of a chain.
+/// Some chains expose multiple chain IDs due to requirements of certain components used in the
+/// chain (for example, different execution environments running in the same chain may have
+/// different chain ID specifications for transaction signing). In cases such as this, multiple
+/// chain IDs can refer to the same "abstract machine" of a chain.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(try_from = "Vec<HashSet<ChainId>>", into = "Vec<HashSet<ChainId>>")]
 // TODO: Implement JsonSchema manually to properly encode the constraints on the value

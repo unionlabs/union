@@ -13,7 +13,7 @@ use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 use voyager_vm::{
     filter::{FilterResult, InterestFilter},
     pass::{Pass, PassResult},
-    Captures, ItemId, Op, QueueMessage,
+    Captures, EnqueueResult, ItemId, Op, QueueMessage,
 };
 
 use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
@@ -223,7 +223,11 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         })
     }
 
-    async fn enqueue<'a>(&'a self, op: Op<T>, filter: &'a T::Filter) -> Result<(), Self::Error> {
+    async fn enqueue<'a>(
+        &'a self,
+        op: Op<T>,
+        filter: &'a T::Filter,
+    ) -> Result<EnqueueResult, Self::Error> {
         trace!("enqueue");
 
         let (optimize, ready): (Vec<_>, Vec<_>) =
@@ -248,7 +252,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         .fetch_all(tx.as_mut())
         .await?;
 
-        for ready in ready_ids {
+        for ready in &ready_ids {
             debug!(id = ready.id, "enqueued ready item");
         }
 
@@ -271,13 +275,22 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         .fetch_all(tx.as_mut())
         .await?;
 
-        for ready in optimize_further_ids {
+        for ready in &optimize_further_ids {
             debug!(id = ready.id, "enqueued optimize item");
         }
 
         tx.commit().await?;
 
-        Ok(())
+        Ok(EnqueueResult {
+            queue: ready_ids
+                .into_iter()
+                .map(|id| ItemId::new(id.id).expect("invalid id returned from database"))
+                .collect(),
+            optimize: optimize_further_ids
+                .into_iter()
+                .map(|id| ItemId::new(id.id).expect("invalid id returned from database"))
+                .collect(),
+        })
     }
 
     #[instrument(skip_all)]
@@ -323,7 +336,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         match row {
             Some(row) => {
-                let span = info_span!("processing item", id = row.id);
+                let span = info_span!("processing item", item_id = row.id);
 
                 trace!(%row.item);
 
@@ -384,20 +397,22 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
                             sqlx::query(
                                 "
-                                INSERT INTO queue (item)
-                                SELECT * FROM UNNEST($1::JSONB[])
+                                INSERT INTO queue (item, parents)
+                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
                                 ",
                             )
+                            .bind(vec![row.id])
                             .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
                             .execute(tx.as_mut())
                             .await?;
 
                             sqlx::query(
                                 "
-                                INSERT INTO optimize (item, tag)
-                                SELECT * FROM UNNEST($1::JSONB[], $2::TEXT[])
+                                INSERT INTO optimize (item, tag, parents)
+                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
                                 ",
                             )
+                            .bind(vec![row.id])
                             .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
                             .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
                             .execute(tx.as_mut())
@@ -564,13 +579,6 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         Ok(())
     }
-}
-
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "status", rename_all = "lowercase")]
-pub enum EnqueueStatus {
-    Ready,
-    Optimize,
 }
 
 fn de<T: DeserializeOwned>(s: &str) -> Result<T, serde_json::Error> {

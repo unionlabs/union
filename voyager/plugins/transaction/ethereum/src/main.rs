@@ -362,8 +362,6 @@ impl Module {
                         "submitted batched evm messages"
                     );
 
-                    let mut retry_msgs = vec![];
-
                     for (idx, (result, (msg, msg_name))) in
                         result._0.into_iter().zip(msg_names).enumerate()
                     {
@@ -392,10 +390,8 @@ impl Module {
                                 revert = %result.returnData,
                                 well_known = false,
                                 data = %serde_json::to_string(&msg).unwrap(),
-                                "evm message failed",
+                                "evm message failed with 0x revert, likely an ABI issue",
                             );
-
-                            retry_msgs.push((true, msg));
                         } else {
                             error!(
                                 msg = %msg_name,
@@ -405,22 +401,10 @@ impl Module {
                                 data = %serde_json::to_string(&msg).unwrap(),
                                 "evm message failed",
                             );
-
-                            retry_msgs.push((false, msg));
                         }
                     }
 
-                    // NOTE: An empty iterator returns false
-                    if retry_msgs
-                        .iter()
-                        .any(|(is_empty_revert, _)| *is_empty_revert)
-                    {
-                        Err(TxSubmitError::EmptyRevert(
-                            retry_msgs.into_iter().map(|(_, msg)| msg).collect(),
-                        ))
-                    } else {
-                        Ok(())
-                    }
+                    Ok(())
                 }
                 .instrument(info_span!(
                     "evm tx",

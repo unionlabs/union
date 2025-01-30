@@ -87,7 +87,8 @@ pub struct FetchBlocks {
 pub struct FetchUpdateHeaders {
     /// The type of client that is tracking the consensus on `self.chain_id`.
     pub client_type: ClientType,
-    /// The ID of the chain that is being tracked by the `self.client_id` client on `self.counterparty_chain_id`.
+    /// The ID of the chain that is being tracked by the `self.client_id` client on
+    /// `self.counterparty_chain_id`.
     pub chain_id: ChainId,
     /// The chain that the light client tracking `self.chain_id` is on.
     pub counterparty_chain_id: ChainId,
@@ -95,13 +96,15 @@ pub struct FetchUpdateHeaders {
     pub client_id: RawClientId,
     /// The currently trusted height of the client on `self.chain_id`.
     pub update_from: Height,
-    /// The *minimum* height to update the client to. This is assumed to be finalized. Note that the generated update may not be to this exact height, but it *must* be >= it.
+    /// The *minimum* height to update the client to. This is assumed to be finalized. Note that
+    /// the generated update may not be to this exact height, but it *must* be >= it.
     pub update_to: Height,
 }
 
 /// Submit a batch of transactions on the specified chain.
 ///
-/// This represents a request for transaction submission and must be picked up by a plugin. If it is not handled by a plugin, this will return with a fatal error.
+/// This represents a request for transaction submission and must be picked up by a plugin. If it is
+/// not handled by a plugin, this will return with a fatal error.
 ///
 /// # Implementor's Note
 ///

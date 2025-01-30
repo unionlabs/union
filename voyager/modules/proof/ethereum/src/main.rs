@@ -24,6 +24,7 @@ use voyager_message::{
     core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    rpc::ProofType,
     ProofModule,
 };
 use voyager_vm::BoxDynError;
@@ -85,7 +86,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> RpcResult<(Value, ProofType)> {
         let location = ibc_commitment_key(path.key());
 
         debug!(
@@ -124,6 +125,12 @@ impl ProofModuleServer<IbcUnion> for Module {
             proof: proof.proof.into_iter().map(|bytes| bytes.into()).collect(),
         };
 
-        Ok(into_value(proof))
+        let proof_type = if proof.value == U256::ZERO {
+            ProofType::NonMembership
+        } else {
+            ProofType::Membership
+        };
+
+        Ok((into_value(proof), proof_type))
     }
 }

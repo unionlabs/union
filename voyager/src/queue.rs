@@ -17,7 +17,8 @@ use voyager_message::{
     pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
 };
 use voyager_vm::{
-    engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, ItemId, Op, Queue,
+    engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, EnqueueResult,
+    ItemId, Op, Queue,
 };
 
 use crate::{api, config::Config};
@@ -76,9 +77,9 @@ impl Queue<VoyagerMessage> for QueueImpl {
         &'a self,
         item: Op<VoyagerMessage>,
         filter: &'a JaqInterestFilter,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a {
         async move {
-            match self {
+            let res = match self {
                 QueueImpl::InMemory(queue) => queue
                     .enqueue(item, filter)
                     .await
@@ -91,7 +92,7 @@ impl Queue<VoyagerMessage> for QueueImpl {
 
             trace!("queued");
 
-            Ok(())
+            Ok(res)
         }
     }
 

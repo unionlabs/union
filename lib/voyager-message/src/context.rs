@@ -41,7 +41,7 @@ use crate::{
         ProofModuleInfo, StateModuleInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    IdThreadClient, ParamsWithItemId, FATAL_JSONRPC_ERROR_CODE,
+    IdThreadClient, ParamsWithItemId, UNPROCESSABLE_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -562,38 +562,38 @@ impl Context {
         )
         .await?;
 
-        main_rpc_server.start(Arc::new(modules));
-
         info!("checking for plugin health...");
 
-        {
-            let mut futures = plugins
-                .iter()
-                .map(|(name, client)| async move {
-                    match client
-                        .client
-                        .wait_until_connected(Duration::from_secs(10))
-                        .instrument(debug_span!("health check", %name))
-                        .await
-                    {
-                        Ok(_) => {
-                            info!("plugin {name} connected")
-                        }
-                        Err(_) => {
-                            warn!("plugin {name} failed to connect after 10 seconds")
-                        }
+        let futures = plugins
+            .iter()
+            .map(|(name, client)| async move {
+                match client
+                    .client
+                    .wait_until_connected(Duration::from_secs(10))
+                    .instrument(debug_span!("health check", %name))
+                    .await
+                {
+                    Ok(()) => {
+                        info!("plugin {name} connected")
                     }
-                })
-                .collect::<FuturesUnordered<_>>();
+                    Err(_) => {
+                        warn!("plugin {name} failed to connect after 10 seconds")
+                    }
+                }
+            })
+            .collect::<FuturesUnordered<_>>();
 
-            match cancellation_token
-                .run_until_cancelled(async { while let Some(()) = futures.next().await {} })
-                .await
-            {
-                Some(()) => {}
-                None => return Err(anyhow!("startup error")),
-            }
+        match cancellation_token
+            .run_until_cancelled(futures.collect::<Vec<_>>())
+            .await
+        {
+            Some(_) => {}
+            None => return Err(anyhow!("startup error")),
         }
+
+        main_rpc_server.start(Arc::new(modules));
+
+        info!("started");
 
         Ok(Self {
             rpc_server: main_rpc_server,
@@ -961,7 +961,11 @@ macro_rules! module_error {
 
         impl From<$Error> for ErrorObjectOwned {
             fn from(value: $Error) -> Self {
-                ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
+                ErrorObject::owned(
+                    UNPROCESSABLE_JSONRPC_ERROR_CODE,
+                    value.to_string(),
+                    None::<()>,
+                )
             }
         }
 
@@ -998,7 +1002,9 @@ pub struct ConsensusModuleNotFound(pub ChainId);
 module_error!(ConsensusModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for client bootstrapping on chain `{chain_id}` for client type `{client_type}`")]
+#[error(
+    "no module loaded for client bootstrapping on chain `{chain_id}` for client type `{client_type}`"
+)]
 pub struct ClientBootstrapModuleNotFound {
     pub chain_id: ChainId,
     pub client_type: ClientType,
@@ -1011,7 +1017,7 @@ pub enum ClientModuleNotFound {
     #[error("no client module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType },
     #[error(
-        "no client module loaded supporting client type `{client_type}`, IBC interface `{ibc_interface}`, and IBC version `{ibc_spec_id}`",
+        "no client module loaded supporting client type `{client_type}`, IBC interface `{ibc_interface}`, and IBC version `{ibc_spec_id}`"
     )]
     NotFound {
         client_type: ClientType,
@@ -1062,7 +1068,7 @@ pub fn get_plugin_info(module_config: &PluginConfig) -> anyhow::Result<PluginInf
                     "unable to query info for module at path {}:\n{}",
                     &module_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
-                ))
+                ));
             }
         }
     }
