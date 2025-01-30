@@ -78,22 +78,10 @@
                 example = "amazing-testnet";
                 default = null;
               };
-              options.filter = mkOption {
-                type = types.nullOr types.str;
-                description = "A regex which if matches, removes the event from the insertion";
-                example = "coin_received";
-                default = null;
-              };
               options.rpc_urls = mkOption {
                 type = types.nullOr (types.listOf types.str);
                 description = "List of rpc urls";
                 example = [ "https://rpc.example.com" ];
-                default = null;
-              };
-              options.grpc_urls = mkOption {
-                type = types.nullOr (types.listOf types.str);
-                description = "List of grpc urls";
-                example = [ "https://grpc.example.com" ];
                 default = null;
               };
               options.type = mkOption {
@@ -152,12 +140,6 @@
                     };
                   }
                 );
-              };
-              options.client_tracking = mkOption {
-                type = types.nullOr types.bool;
-                description = "control if client tracking is enabled. when enabled it automatically creates client entries which registers the counterparty chain of a client.";
-                example = true;
-                default = null;
               };
             }
           );

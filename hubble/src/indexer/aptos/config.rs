@@ -10,7 +10,6 @@ use crate::indexer::{
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
 const DEFAULT_TRANSACTIONS_MAX_PAGE_SIZE: u16 = 100;
-const DEFAULT_CLIENT_TRACKING: bool = true;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -21,7 +20,6 @@ pub struct Config {
     pub tx_search_max_page_size: Option<u16>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
-    pub client_tracking: Option<bool>,
 }
 
 impl Config {
@@ -37,7 +35,6 @@ impl Config {
                 tx_search_max_page_size: self
                     .tx_search_max_page_size
                     .unwrap_or(DEFAULT_TRANSACTIONS_MAX_PAGE_SIZE),
-                client_tracking: self.client_tracking.unwrap_or(DEFAULT_CLIENT_TRACKING),
             },
         ))
     }

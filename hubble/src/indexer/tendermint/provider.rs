@@ -12,11 +12,6 @@ use cometbft_rpc::{
     Client, JsonRpcError,
 };
 use futures::future;
-use protos::ibc::{
-    core::client::v1::{QueryClientStateRequest, QueryClientStateResponse},
-    lightclients::wasm::v1::{QueryCodeRequest, QueryCodeResponse},
-};
-use tonic::Response;
 use unionlabs::aptos::block_info::BlockHeight;
 use url::Url;
 
@@ -28,7 +23,6 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct Provider {
     pub rpc_client: RaceClient<Client>,
-    pub grpc_client: RaceClient<GrpcClient>,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -74,29 +68,8 @@ impl<T> From<RaceClientResponse<T>> for RpcResult<T> {
     }
 }
 
-#[derive(Debug)]
-pub struct GrpcResult<T> {
-    pub provider_id: GrpcProviderId,
-    pub response: T,
-}
-
-impl<T> GrpcResult<T> {
-    fn new(race_client_id: RaceClientId, result: T) -> Self {
-        Self {
-            provider_id: GrpcProviderId { race_client_id },
-            response: result,
-        }
-    }
-}
-
-impl<T> From<RaceClientResponse<T>> for GrpcResult<T> {
-    fn from(value: RaceClientResponse<T>) -> Self {
-        GrpcResult::new(value.race_client_id, value.response)
-    }
-}
-
 impl Provider {
-    pub async fn new(rpc_urls: Vec<Url>, grpc_urls: Vec<Url>) -> Result<Self, IndexerError> {
+    pub async fn new(rpc_urls: Vec<Url>) -> Result<Self, IndexerError> {
         Ok(Self {
             rpc_client: {
                 RaceClient::new(
@@ -110,11 +83,9 @@ impl Provider {
                     .collect::<Result<Vec<_>, _>>()?,
                 )
             },
-            grpc_client: RaceClient::new(grpc_urls.into_iter().map(GrpcClient::new).collect()),
         })
     }
 
-    // RPC
     pub async fn status(
         &self,
         provider_id: Option<RpcProviderId>,
@@ -199,73 +170,6 @@ impl Provider {
             })
             .await
             .map(Into::into)
-    }
-
-    // GRPC
-    pub async fn client_state(
-        &self,
-        request: QueryClientStateRequest,
-        provider_id: Option<GrpcProviderId>,
-    ) -> Result<GrpcResult<Response<QueryClientStateResponse>>, IndexerError> {
-        self.grpc_client
-            .race(provider_id.map(Into::into), |c| {
-                c.client_state(request.clone())
-            })
-            .await
-            .map(Into::into)
-    }
-
-    pub async fn code(
-        &self,
-        request: QueryCodeRequest,
-        provider_id: Option<GrpcProviderId>,
-    ) -> Result<GrpcResult<Response<QueryCodeResponse>>, IndexerError> {
-        self.grpc_client
-            .race(provider_id.map(Into::into), |c| c.code(request.clone()))
-            .await
-            .map(Into::into)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct GrpcClient {
-    pub url: Url,
-}
-
-impl GrpcClient {
-    fn new(url: Url) -> Self {
-        Self { url }
-    }
-
-    async fn client_state(
-        &self,
-        request: QueryClientStateRequest,
-    ) -> Result<Response<QueryClientStateResponse>, IndexerError> {
-        let mut query_client = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.url.to_string().clone(),
-        )
-        .await?;
-
-        query_client
-            .client_state(request.clone())
-            .await
-            .map_err(IndexerError::from)
-    }
-
-    async fn code(
-        &self,
-        request: QueryCodeRequest,
-    ) -> Result<Response<QueryCodeResponse>, IndexerError> {
-        let mut query_client =
-            protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-                self.url.to_string().clone(),
-            )
-            .await?;
-
-        query_client
-            .code(request.clone())
-            .await
-            .map_err(IndexerError::from)
     }
 }
 

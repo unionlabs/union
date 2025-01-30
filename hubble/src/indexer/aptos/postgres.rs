@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
-use itertools::Itertools;
 use serde_json::Value;
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 use tracing::trace;
 
@@ -194,38 +193,6 @@ pub async fn active_contracts(
     .into_iter()
     .map(|record| record.address)
     .collect();
-
-    Ok(result)
-}
-pub struct UnmappedClient {
-    pub version: u64,
-    pub height: BlockHeight,
-    pub client_id: Option<String>,
-}
-
-pub async fn unmapped_clients(
-    pg_pool: &PgPool,
-    internal_chain_id: i32,
-) -> sqlx::Result<Vec<UnmappedClient>> {
-    let result = sqlx::query!(
-        r#"
-        SELECT cc.transaction_version, cc.height, cc.client_id
-        FROM   v1_aptos.client_created_event cc
-        LEFT JOIN hubble.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
-        WHERE  cc.internal_chain_id = $1
-        AND    cl.chain_id IS NULL
-        "#,
-        internal_chain_id
-    )
-    .fetch_all(pg_pool)
-    .await?
-    .into_iter()
-    .map(|record| UnmappedClient {
-        version: record.transaction_version.expect("client-created-event to have transaction version").try_into().unwrap(),
-        height: record.height.expect("client-created-event to have a height").try_into().unwrap(),
-        client_id: record.client_id,
-    })
-    .collect_vec();
 
     Ok(result)
 }

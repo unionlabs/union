@@ -6,7 +6,6 @@ use crate::indexer::api::IndexerError;
 mod block_handle;
 pub mod config;
 mod context;
-mod create_client_tracker;
 mod fetcher_client;
 mod postgres;
 mod provider;
