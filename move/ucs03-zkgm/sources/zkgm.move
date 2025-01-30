@@ -9,6 +9,7 @@ module zkgm::zkgm_relay {
     use zkgm::zkgm_packet::{Self, ZkgmPacket};
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
+    use zkgm::fungible_asset_order_ack::{Self, FungibleAssetOrderAck};
     use zkgm::multiplex::{Self, Multiplex};
     use zkgm::acknowledgement::{Self, Acknowledgement};
 
@@ -90,6 +91,28 @@ module zkgm::zkgm_relay {
         in_flight_packet: SmartTable<vector<u8>, Packet>,
         channel_balance: SmartTable<ChannelBalancePair, u256>,
         token_origin: SmartTable<address, u256>
+    }
+
+    struct OnZkgmParams has copy, drop, store {
+        sender: vector<u8>,
+        contract_calldata: vector<u8>
+    }
+
+    struct IIBCModuleOnRecvPacketParams has copy, drop, store {
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>
+    }
+
+    struct IIBCModuleOnAcknowledgementPacketParams has copy, drop, store {
+        packet: Packet,
+        acknowledgement: vector<u8>,
+        relayer: address
+    }
+
+    struct IIBCModuleOnTimeoutPacketParams has copy, drop, store {
+        packet: Packet,
+        relayer: address
     }
 
     struct Port<phantom T: key + store + drop> has key, copy, drop, store {
@@ -180,6 +203,28 @@ module zkgm::zkgm_relay {
         vector::append(&mut data, bcs::to_bytes(&destination_channel));
         vector::append(&mut data, token);
         data
+    }
+
+    public fun predict_wrapped_token(
+        path: u256, destination_channel: u32, token: vector<u8>
+    ): (address, vector<u8>) {
+        let salt = hash::sha3_256(serialize_salt(path, destination_channel, token));
+
+        let wrapped_address = object::create_object_address(&get_vault_addr(), salt);
+        (wrapped_address, salt)
+    }
+
+    public fun deploy_token(salt: vector<u8>): address acquires SignerRef {
+        zkgm::fa_coin::initialize(
+            &get_signer(),
+            string::utf8(b""),
+            string::utf8(b""),
+            18,
+            string::utf8(b""),
+            string::utf8(b""),
+            salt
+        );
+        zkgm::fa_coin::get_metadata_address(salt)
     }
 
     public fun is_deployed(token: address): bool {
@@ -496,16 +541,14 @@ module zkgm::zkgm_relay {
             abort E_UNSUPPORTED_VERSION
         };
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
-            b""
-            // TODO: uncomment this after implemented
-            // execute_fungible_asset_order(
-            //     ibc_packet,
-            // relayer,
-            // relayer_msg,
-            // salt,
-            // path,
-            //     fungible_asset_order::decode(instruction::operand(&instruction))
-            // )
+            execute_fungible_asset_order(
+                ibc_packet,
+            relayer,
+            relayer_msg,
+            salt,
+            path,
+                fungible_asset_order::decode(instruction::operand(&instruction))
+            )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
             let decode_idx = 0x20;
             execute_batch<T>(
@@ -526,16 +569,13 @@ module zkgm::zkgm_relay {
                 forward::decode(instruction::operand(&instruction), &mut decode_idx)
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            b""
-            // TODO: uncomment this after implemented
-            // execute_multiplex(
-            //     ibc_packet,
-            // relayer,
-            // relayer_msg,
-            // salt,
-            // path,
-            //     multiplex::decode(instruction::operand(&instruction))
-            // )
+            execute_multiplex(
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                salt,
+                multiplex::decode(instruction::operand(&instruction))
+            )
         } else {
             abort E_UNKNOWN_SYSCALL
         }
@@ -603,6 +643,139 @@ module zkgm::zkgm_relay {
         ACK_EMPTY
     }
 
+    fun execute_multiplex(
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        _salt: vector<u8>,
+        multiplex_packet: Multiplex
+    ): (vector<u8>) {
+        let contract_address = from_bcs::to_address(*multiplex::contract_address(&multiplex_packet));
+        if (multiplex::eureka(&multiplex_packet)) {
+            let param =
+                copyable_any::pack<OnZkgmParams>(
+                    OnZkgmParams {
+                        sender: *multiplex::sender(&multiplex_packet),
+                        contract_calldata: *multiplex::contract_calldata(&multiplex_packet)
+                    }
+                );
+            engine_zkgm::dispatch(param, contract_address);
+            return bcs::to_bytes(&ACK_SUCCESS)
+        };
+        let multiplex_ibc_packet =
+            ibc::packet::new(
+                ibc::packet::source_channel(&ibc_packet),
+                ibc::packet::destination_channel(&ibc_packet),
+                multiplex::encode_multiplex_sender_and_calldata(
+                    *multiplex::sender(&multiplex_packet), *multiplex::contract_calldata(&multiplex_packet)
+                ),
+                ibc::packet::timeout_height(&ibc_packet),
+                ibc::packet::timeout_timestamp(&ibc_packet)
+            );
+        let param =
+            copyable_any::pack<IIBCModuleOnRecvPacketParams>(
+                IIBCModuleOnRecvPacketParams {
+                    packet: multiplex_ibc_packet,
+                    relayer: relayer,
+                    relayer_msg: relayer_msg
+                }
+            );
+
+        engine_zkgm::dispatch(param, contract_address);
+
+        let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
+
+        if (vector::length(&acknowledgement) == 0) {
+            abort E_UNIMPLEMENTED
+        };
+        acknowledgement
+    }
+
+    fun execute_fungible_asset_order(
+        ibc_packet: Packet,
+        relayer: address,
+        _relayer_msg: vector<u8>,
+        _salt: vector<u8>,
+        path: u256,
+        order: FungibleAssetOrder
+    ): (vector<u8>) acquires RelayStore, SignerRef {
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+
+        if (fungible_asset_order::quote_amount(&order) > fungible_asset_order::base_amount(&order)) {
+            abort E_INVALID_AMOUNT
+        };
+
+        let (wrapped_address, salt) =
+            predict_wrapped_token(
+                path,
+                ibc::packet::destination_channel(&ibc_packet),
+                *fungible_asset_order::base_token(&order)
+            );
+        let quote_token = from_bcs::to_address(*fungible_asset_order::quote_token(&order));
+        let receiver = from_bcs::to_address(*fungible_asset_order::receiver(&order));
+        let fee = fungible_asset_order::base_amount(&order) - fungible_asset_order::quote_amount(&order);
+        // ------------------------------------------------------------------
+        // TODO: no idea if the code below will work lol, it looks promising though
+        // ------------------------------------------------------------------
+        if (quote_token == wrapped_address) {
+            if (!is_deployed(wrapped_address)) {
+                deploy_token(salt);
+                let value =
+                    update_channel_path(
+                        path, ibc::packet::destination_channel(&ibc_packet)
+                    );
+                smart_table::upsert(&mut store.token_origin, wrapped_address, value);
+            };
+            zkgm::fa_coin::mint_with_metadata(
+                &get_signer(),
+                receiver,
+                (fungible_asset_order::quote_amount(&order) as u64),
+                get_metadata(quote_token)
+            );
+            if (fee > 0) {
+                zkgm::fa_coin::mint_with_metadata(
+                    &get_signer(),
+                    relayer,
+                    (fee as u64),
+                    get_metadata(quote_token)
+                );
+            }
+        } else {
+            if (fungible_asset_order::base_token_path(&order)
+                == (ibc::packet::source_channel(&ibc_packet) as u256)) {
+                let balance_key = ChannelBalancePair {
+                    channel: ibc::packet::destination_channel(&ibc_packet),
+                    token: quote_token
+                };
+
+                let curr_balance =
+                    *smart_table::borrow(&store.channel_balance, balance_key);
+
+                smart_table::upsert(
+                    &mut store.channel_balance,
+                    balance_key,
+                    curr_balance - (fungible_asset_order::base_amount(&order) as u256)
+                );
+                let asset = get_metadata(quote_token);
+
+                primary_fungible_store::transfer(
+                    &get_signer(),
+                    asset,
+                    receiver,
+                    (fungible_asset_order::quote_amount(&order) as u64)
+                );
+                if (fee > 0) {
+                    primary_fungible_store::transfer(&get_signer(), asset, relayer, (fee as u64));
+                }
+            };
+        };
+        let new_asset_order_ack = fungible_asset_order_ack::new(
+            FILL_TYPE_PROTOCOL,
+            ACK_EMPTY
+        );
+        fungible_asset_order_ack::encode(&new_asset_order_ack)
+    }
+
     #[test]
     public fun test_fls() {
         assert!(fls(0) == 256, 1);
@@ -634,4 +807,39 @@ module zkgm::zkgm_relay {
         assert!(update_channel_path(44, 22) == 94489280556, 1);
     }
 
+    #[test(admin = @zkgm, ibc = @ibc)]
+    public fun test_predict_token(admin: &signer, ibc: &signer) acquires SignerRef {
+        dispatcher::init_module_for_testing(ibc);
+        // ibc::init_module(ibc);
+        init_module_for_testing(admin);
+
+        let path = 1;
+        let destination_channel = 1;
+        let token = b"test_token";
+        let (wrapped_address, salt) =
+            predict_wrapped_token(path, destination_channel, token);
+        let deployed_token_addr = deploy_token(salt);
+
+        std::debug::print(&string::utf8(b"wrapped address is: "));
+        std::debug::print(&wrapped_address);
+        std::debug::print(&string::utf8(b"deployed_token_addr is: "));
+        std::debug::print(&deployed_token_addr);
+
+        assert!(wrapped_address == deployed_token_addr, 101);
+        assert!(is_deployed(deployed_token_addr), 102);
+    }
+
+    #[test(admin = @zkgm, ibc = @ibc)]
+    public fun test_is_deployed_false(admin: &signer, ibc: &signer) {
+        dispatcher::init_module_for_testing(ibc);
+        init_module_for_testing(admin);
+
+        let path = 1;
+        let destination_channel = 1;
+        let token = b"never_deployed_salt";
+        let (wrapped_address, _salt) =
+            predict_wrapped_token(path, destination_channel, token);
+
+        assert!(!is_deployed(wrapped_address), 102);
+    }
 }
