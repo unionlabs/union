@@ -218,6 +218,13 @@ _: {
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
         {
+          network = "0g-testnet";
+          rpc-url = "https://evmrpc-testnet.0g.ai";
+          private-key = ''"$1"'';
+          extra-args = " --legacy --batch-size=1";
+          # extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+        }
+        {
           network = "scroll-testnet";
           rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
@@ -375,7 +382,7 @@ _: {
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast
+                --broadcast ${extra-args}
 
               popd
               rm -rf "$OUT"

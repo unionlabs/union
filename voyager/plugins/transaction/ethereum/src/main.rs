@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use alloy::{
     contract::{Error, RawCallBuilder},
-    network::EthereumWallet,
+    network::{AnyNetwork, EthereumWallet},
     providers::{PendingTransactionError, Provider, ProviderBuilder, RootProvider},
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
@@ -58,11 +58,14 @@ pub struct Module {
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
-    pub provider: RootProvider<BoxTransport>,
+    pub provider: RootProvider<BoxTransport, AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
     pub max_gas_price: Option<u128>,
+
+    pub fixed_gas_price: Option<u128>,
+
     pub legacy: bool,
 }
 
@@ -83,6 +86,10 @@ pub struct Config {
     #[serde(default)]
     pub max_gas_price: Option<u128>,
 
+    /// Temporary fix for 0g until they fix their eth_feeHistory endpoint
+    #[serde(default)]
+    pub fixed_gas_price: Option<u128>,
+
     #[serde(default)]
     pub legacy: bool,
 }
@@ -95,7 +102,10 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let provider = ProviderBuilder::new()
+            .network::<AnyNetwork>()
+            .on_builtin(&config.rpc_url)
+            .await?;
 
         let raw_chain_id = provider.get_chain_id().await?;
         let chain_id = ChainId::new(raw_chain_id.to_string());
@@ -131,6 +141,7 @@ impl Plugin for Module {
                 }),
             ),
             max_gas_price: config.max_gas_price,
+            fixed_gas_price: config.fixed_gas_price,
             legacy: config.legacy,
         })
     }
@@ -276,6 +287,7 @@ impl Module {
         ibc_messages: Vec<Datagram>,
     ) -> Result<(), TxSubmitError> {
         let signer = ProviderBuilder::new()
+            .network::<AnyNetwork>()
             .with_recommended_fillers()
             // .filler(<NonceFiller>::default())
             // .filler(ChainIdFiller::default())
@@ -313,12 +325,12 @@ impl Module {
             .map(|x| (x.0.clone(), x.0.name()))
             .collect::<Vec<_>>();
 
-        let call = multicall.multicall(
+        let mut call = multicall.multicall(
             msgs.into_iter()
-                .map(|(_, x)| Call3 {
+                .map(|(_, call)| Call3 {
                     target: self.ibc_handler_address.into(),
                     allowFailure: true,
-                    callData: x.calldata().clone(),
+                    callData: call.calldata().clone(),
                 })
                 .collect(),
         );
@@ -337,6 +349,10 @@ impl Module {
 
         info!(gas_estimate, gas_to_use, "gas estimatation successful");
 
+        if let Some(fixed_gas_price) = self.fixed_gas_price {
+            call = call.gas_price(fixed_gas_price);
+        }
+
         match call.gas(gas_to_use).send().await {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
@@ -347,6 +363,7 @@ impl Module {
 
                     let result = MulticallResult::decode_log_data(
                         receipt
+                            .inner
                             .inner
                             .logs()
                             .last()
@@ -430,11 +447,11 @@ impl Module {
 }
 
 #[allow(clippy::type_complexity)]
-fn process_msgs<T: Transport + Clone, P: Provider<T>>(
-    ibc_handler: &ibc_solidity::Ibc::IbcInstance<T, P>,
+fn process_msgs<T: Transport + Clone, P: Provider<T, AnyNetwork>>(
+    ibc_handler: &ibc_solidity::Ibc::IbcInstance<T, P, AnyNetwork>,
     msgs: Vec<Datagram>,
     relayer: H160,
-) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P>)>> {
+) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P, AnyNetwork>)>> {
     trace!(?msgs);
 
     msgs.clone()

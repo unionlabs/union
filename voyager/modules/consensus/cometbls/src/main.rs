@@ -28,7 +28,6 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-    pub grpc_url: String,
 
     pub ibc_host_contract_address: H256,
 }
@@ -37,7 +36,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -70,7 +68,6 @@ impl ConsensusModule for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ibc_host_contract_address: config
                 .ibc_host_contract_address
                 .map(|a| *a.data())
