@@ -3,14 +3,14 @@ module zkgm::zkgm_relay {
     use zkgm::dispatcher_zkgm;
     use zkgm::engine_zkgm;
     use zkgm::batch::{Self, Batch};
-    use zkgm::batch_ack::{Self, BatchAck};
+    use zkgm::batch_ack::{Self,};
     use zkgm::instruction::{Self, Instruction};
-    use zkgm::zkgm_packet::{Self, ZkgmPacket};
+    use zkgm::zkgm_packet::{Self};
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
-    use zkgm::fungible_asset_order_ack::{Self, FungibleAssetOrderAck};
+    use zkgm::fungible_asset_order_ack::{Self};
     use zkgm::multiplex::{Self, Multiplex};
-    use zkgm::acknowledgement::{Self, Acknowledgement};
+    use zkgm::acknowledgement::{Self};
 
     use ibc::ibc;
     use ibc::helpers;
@@ -22,7 +22,6 @@ module zkgm::zkgm_relay {
     use aptos_framework::object::{Self, Object};
     use aptos_std::copyable_any;
     use aptos_framework::function_info;
-    use aptos_framework::function_info::FunctionInfo;
 
     use std::string::{Self, String};
     use std::from_bcs;
@@ -357,7 +356,7 @@ module zkgm::zkgm_relay {
                 asset
             );
         } else {
-            let origin = 0;
+            origin = 0;
 
             primary_fungible_store::transfer(
                 sender,
