@@ -176,19 +176,19 @@ impl ClientModuleInfo {
 
     pub fn ensure_ibc_interface(
         &self,
-        expected_interfaces: impl IntoIterator<Item = impl AsRef<str>>,
+        expected_interfaces: impl IntoIterator<Item = &'static str>,
     ) -> Result<(), UnexpectedIbcInterfaceError> {
-        let expected_interfaces: Vec<String> = expected_interfaces
+        let expected_interfaces: Vec<IbcInterface> = expected_interfaces
             .into_iter()
-            .map(|s| s.as_ref().to_string())
+            .map(IbcInterface::new)
             .collect();
 
         if !expected_interfaces
             .iter()
-            .any(|expected| expected == self.ibc_interface.as_str())
+            .any(|e| e.as_str() == self.ibc_interface.as_str())
         {
             Err(UnexpectedIbcInterfaceError {
-                expected: expected_interfaces.join(","),
+                expected: expected_interfaces,
                 found: self.ibc_interface.to_string(),
             })
         } else {
@@ -277,9 +277,9 @@ pub struct UnexpectedClientTypeError {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`")]
+#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`", expected = expected.into_iter().map(|x| x.as_str()).collect::<Vec<_>>().join(","))]
 pub struct UnexpectedIbcInterfaceError {
-    pub expected: String,
+    pub expected: Vec<IbcInterface>,
     pub found: String,
 }
 
