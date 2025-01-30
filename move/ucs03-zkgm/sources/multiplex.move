@@ -10,6 +10,20 @@ module zkgm::multiplex {
         contract_calldata: vector<u8>
     }
 
+    public fun new(
+        sender: vector<u8>,
+        eureka: bool,
+        contract_address: vector<u8>,
+        contract_calldata: vector<u8>
+    ): Multiplex {
+        Multiplex {
+            sender,
+            eureka,
+            contract_address,
+            contract_calldata,
+        }
+    }
+
     public fun sender(multiplex: &Multiplex): &vector<u8> {
         &multiplex.sender
     }
