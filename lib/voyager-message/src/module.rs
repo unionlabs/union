@@ -277,7 +277,7 @@ pub struct UnexpectedClientTypeError {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`", expected = expected.into_iter().map(|x| x.as_str()).collect::<Vec<_>>().join(","))]
+#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`", expected = expected.iter().map(|x| x.as_str()).collect::<Vec<_>>().join(","))]
 pub struct UnexpectedIbcInterfaceError {
     pub expected: Vec<IbcInterface>,
     pub found: String,
