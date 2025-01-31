@@ -135,6 +135,7 @@ in
         "*.jpg"
         "*.svg"
         "*.jpeg"
+        "*.lock"
         ".git/**"
         "*.woff2"
         "*.lockb"

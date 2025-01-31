@@ -33,8 +33,8 @@ import type {
   TransferAssetParameters
 } from "../types.ts"
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
-import { bech32AddressToHex } from "#mod.ts"
-import { generateSalt } from "#utilities/index.ts"
+import { bech32AddressToHex } from "../convert.ts"
+import { generateSalt, timestamp } from "../utilities/index.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
 export const evmChains = [
@@ -135,6 +135,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         autoApprove = false
       }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
+        if (!account) return err(new Error("No account found"))
+
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
 
         const baseToken = denomAddress
@@ -210,6 +212,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         simulate = true,
         destinationChainId
       }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
+        if (!account) return err(new Error("No account found"))
+
         let _receiver: HexAddress
 
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
@@ -233,7 +237,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         })
       },
       simulateTransaction: async ({
-        memo,
+        memo = timestamp(),
         amount,
         receiver,
         denomAddress,
@@ -288,14 +292,18 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         if (!sourceChannel) return err(new Error("Source channel not found"))
         if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
+        const account =
+          typeof client.account === "string" ? client.account : client.account?.address
+        if (!account) return err(new Error("No account found"))
+
         return await transferAssetFromEvmSimulate(client, {
           memo,
           amount,
+          account,
           receiver,
           sourceChannel,
           relayContractAddress,
-          denomAddress: getAddress(denomAddress),
-          account: typeof client.account === "string" ? client.account : client.account?.address
+          denomAddress: getAddress(denomAddress)
         })
       }
     }))
