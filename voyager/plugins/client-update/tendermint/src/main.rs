@@ -41,7 +41,6 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-    pub grpc_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,7 +49,6 @@ pub struct Config {
     pub chain_id: ChainId,
 
     pub rpc_url: String,
-    pub grpc_url: String,
 }
 
 impl Plugin for Module {
@@ -90,7 +88,6 @@ impl Plugin for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
         })
     }
 
