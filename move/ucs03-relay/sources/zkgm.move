@@ -286,9 +286,7 @@ module ucs03::zkgm_relay {
         buf
     }
 
-    public fun encode_asset_transfer_ack(
-        ack: &FungibleAssetOrderAck
-    ): vector<u8> {
+    public fun encode_asset_transfer_ack(ack: &FungibleAssetOrderAck): vector<u8> {
         let buf = vector::empty<u8>();
         ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
@@ -1162,14 +1160,9 @@ module ucs03::zkgm_relay {
         }
     }
 
-    public entry fun transfer (
-        channel_id: u32,
-        bytes: u32,
-        base_token: vector<u8>,
-        
-    ) {
-        
-    }
+    public entry fun transfer(
+        channel_id: u32, bytes: u32, base_token: vector<u8>
+    ) {}
 
     public entry fun execute<T: key + store + drop>(
         //ibc_packet: Packet,

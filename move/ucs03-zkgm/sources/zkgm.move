@@ -395,7 +395,8 @@ module zkgm::zkgm_relay {
                     operand
                 )
             );
-        let admin_balance = primary_fungible_store::balance(signer::address_of(sender), asset);
+        let admin_balance =
+            primary_fungible_store::balance(signer::address_of(sender), asset);
 
         ibc::ibc::send_packet(
             &get_signer(),
@@ -1461,7 +1462,8 @@ module zkgm::zkgm_relay {
     }
 
     #[test(admin = @zkgm, ibc = @ibc)]
-    #[expected_failure(abort_code = 10)] // E_INVALID_AMOUNT
+    #[expected_failure(abort_code = 10)]
+    // E_INVALID_AMOUNT
     public fun test_transfer_scenario_err(admin: &signer, ibc: &signer) acquires RelayStore, SignerRef {
         dispatcher::init_module_for_testing(ibc);
         init_module_for_testing(admin);
@@ -1473,42 +1475,50 @@ module zkgm::zkgm_relay {
 
         transfer(
             admin,
-            1,                      // channel_id
-            b"receiver_address",    // receiver (just a byte-string for test)
-            test_token_addr,        // base_token
-            0,                      // base_amount == 0 -> expect E_INVALID_AMOUNT
-            b"",                    // quote_token
-            0,                      // quote_amount
-            1234,                   // timeout_height
-            0,                      // timeout_timestamp
-            b"my_test_salt"         // salt
+            1, // channel_id
+            b"receiver_address", // receiver (just a byte-string for test)
+            test_token_addr, // base_token
+            0, // base_amount == 0 -> expect E_INVALID_AMOUNT
+            b"", // quote_token
+            0, // quote_amount
+            1234, // timeout_height
+            0, // timeout_timestamp
+            b"my_test_salt" // salt
         );
 
     }
 
     #[test(admin = @zkgm, ibc = @ibc)]
-    #[expected_failure] // TODO: because ibc::send_packet raises error, no idea how to mock this
-    public fun test_transfer_scenario_success(admin: &signer, ibc: &signer) acquires RelayStore, SignerRef {
+    #[expected_failure]
+    // TODO: because ibc::send_packet raises error, no idea how to mock this
+    public fun test_transfer_scenario_success(
+        admin: &signer, ibc: &signer
+    ) acquires RelayStore, SignerRef {
         dispatcher::init_module_for_testing(ibc);
         init_module_for_testing(admin);
 
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let channel_id: u32 = 0;
         let quote_token = b"QUOTE_TOKEN";
-        let (wrapped_address, salt) =
-            predict_wrapped_token(0, channel_id, quote_token);
+        let (wrapped_address, salt) = predict_wrapped_token(0, channel_id, quote_token);
         let test_token_addr = deploy_token(salt);
 
-        let admin_balance_before = primary_fungible_store::balance(signer::address_of(admin), get_metadata(test_token_addr));
+        let admin_balance_before =
+            primary_fungible_store::balance(
+                signer::address_of(admin), get_metadata(test_token_addr)
+            );
 
         zkgm::fa_coin::mint_with_metadata(
             &get_signer(),
-            signer::address_of(admin),           // recipient
-            1000,                                // amount
-            get_metadata(test_token_addr)        // object<Metadata> for this token
+            signer::address_of(admin), // recipient
+            1000, // amount
+            get_metadata(test_token_addr) // object<Metadata> for this token
         );
 
-        let admin_balance = primary_fungible_store::balance(signer::address_of(admin), get_metadata(test_token_addr));
+        let admin_balance =
+            primary_fungible_store::balance(
+                signer::address_of(admin), get_metadata(test_token_addr)
+            );
 
         assert!(admin_balance_before == 0, 101);
         assert!(admin_balance == 1000, 101);
@@ -1519,15 +1529,15 @@ module zkgm::zkgm_relay {
 
         transfer(
             admin,
-            channel_id,            // channel_id
-            b"some_receiver",      // receiver
-            base_token,            // base_token
-            500,                        // base_amount
-            quote_token,             // quote_token (just a byte-string for test)
-            100,                        // quote_amount
-            1234,                       // timeout_height
-            0,                          // timeout_timestamp
-            b"my_test_salt"             // salt
+            channel_id, // channel_id
+            b"some_receiver", // receiver
+            base_token, // base_token
+            500, // base_amount
+            quote_token, // quote_token (just a byte-string for test)
+            100, // quote_amount
+            1234, // timeout_height
+            0, // timeout_timestamp
+            b"my_test_salt" // salt
         );
 
     }
@@ -1604,5 +1614,4 @@ module zkgm::zkgm_relay {
     //     // If the function reaches here without abort, all scenarios passed.
     //     std::debug::print(&string::utf8(b"test_transfer_scenarios passed!"));
     // }
-
 }
