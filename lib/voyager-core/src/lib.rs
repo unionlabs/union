@@ -114,6 +114,11 @@ impl ClientType {
     /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";
 
+    /// A client tracking the state of an [Ethermint] chain.
+    ///
+    /// [Ethermint]: https://github.com/0glabs/ethermint
+    pub const ETHERMINT: &'static str = "ethermint";
+
     /// A client tracking an EVM-compatible chain utilizing [MPT] as the storage layer, verified
     /// through that chain's consensus as settled on an intermediary [ICS-23] chain.
     ///
