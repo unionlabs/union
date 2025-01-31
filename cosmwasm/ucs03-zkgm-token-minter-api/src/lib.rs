@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
 use token_factory_api::{DenomUnit, TokenFactoryMsg};
 
@@ -20,30 +20,11 @@ pub enum LocalTokenMsg {
 
 #[cw_serde]
 pub struct Metadata {
-    /// denom_units represents the list of DenomUnit's for a given coin
-    pub denom_units: Vec<DenomUnit>,
-    /// display indicates the suggested denom that should be displayed in clients.
-    pub display: String,
     /// name defines the name of the token (eg: Cosmos Atom)
     pub name: String,
     /// symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
     /// be the same as the display.
     pub symbol: String,
-}
-
-impl From<Metadata> for token_factory_api::Metadata {
-    fn from(value: Metadata) -> Self {
-        Self {
-            description: None,
-            denom_units: value.denom_units,
-            base: None,
-            display: Some(value.display),
-            name: Some(value.name),
-            symbol: Some(value.symbol),
-            uri: None,
-            uri_hash: None,
-        }
-    }
 }
 
 #[cw_serde]
@@ -66,36 +47,6 @@ pub enum WrappedTokenMsg {
     },
 }
 
-impl From<WrappedTokenMsg> for TokenFactoryMsg {
-    fn from(value: WrappedTokenMsg) -> Self {
-        match value {
-            WrappedTokenMsg::CreateDenom { subdenom, metadata } => TokenFactoryMsg::CreateDenom {
-                subdenom,
-                metadata: Some(metadata.into()),
-            },
-            WrappedTokenMsg::MintTokens {
-                denom,
-                amount,
-                mint_to_address,
-            } => TokenFactoryMsg::MintTokens {
-                denom,
-                amount,
-                mint_to_address,
-            },
-            WrappedTokenMsg::BurnTokens {
-                denom,
-                amount,
-                burn_from_address,
-                ..
-            } => TokenFactoryMsg::BurnTokens {
-                denom,
-                amount,
-                burn_from_address,
-            },
-        }
-    }
-}
-
 #[cw_serde]
 #[derive(Enumorph)]
 pub enum ExecuteMsg {
@@ -105,8 +56,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum QueryMsg {
-    /// Query the unwrapped version of the provided token. If the provided token is not a wrapped token, it will be returned as-is.
-    BaseToken { base_token: String },
+    /// Query the identifier of a wrapped token. If the token is not a wrapped token, then it will return the token as is.
+    TokenToIdentifier { token: Binary },
     /// Query the metadata of a token.
     Metadata {
         /// `denom` is either a normal token denom, or a cosmwasm contract address of a cw20 token that was created through the `cw20-token-minter`.
@@ -121,6 +72,6 @@ pub struct MetadataResponse {
 }
 
 #[cw_serde]
-pub struct BaseTokenResponse {
-    pub base_token: String,
+pub struct TokenToIdentifierResponse {
+    pub token_identifier: Binary,
 }

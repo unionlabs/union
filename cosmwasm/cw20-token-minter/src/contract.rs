@@ -1,12 +1,13 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, DenomMetadataResponse,
-    Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg,
-    WasmMsg,
+    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult,
+    SubMsg, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
-    BaseTokenResponse, ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, WrappedTokenMsg,
+    ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, TokenToIdentifierResponse,
+    WrappedTokenMsg,
 };
 
 use crate::{
@@ -61,24 +62,26 @@ pub fn execute(
 
     let response = match msg {
         ExecuteMsg::Wrapped(msg) => match msg {
-            WrappedTokenMsg::CreateDenom { metadata, .. } => {
+            WrappedTokenMsg::CreateDenom {
+                metadata,
+                subdenom: denom,
+            } => {
                 // the first denom is always the same as the generated denom
-                let denom = metadata.denom_units[0].denom.clone();
                 DENOM_TO_BE_STORED.save(deps.storage, &denom)?;
                 let name = metadata.name;
-                let symbol = metadata.symbol;
+                // let symbol = metadata.symbol;
                 let msg = WasmMsg::Instantiate {
                     admin: Some(env.contract.address.to_string()),
                     code_id: config.cw20_base_code_id,
-                    label: denom,
+                    label: denom.clone(),
                     msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
                         // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
-                        name: if !name.is_empty() {
-                            name
+                        name: if name.is_empty() || name.len() > 50 {
+                            denom
                         } else {
-                            symbol.clone()
+                            name
                         },
-                        symbol,
+                        symbol: "ZKGM".to_string(),
                         decimals: 0,
                         initial_balances: vec![],
                         mint: Some(cw20::MinterResponse {
@@ -235,9 +238,13 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
         let addr = deps.api.addr_validate(&addr)?;
 
         DENOM_TO_ADDR.save(deps.storage, denom.clone(), &addr)?;
-        ADDR_TO_DENOM.save(deps.storage, addr, &denom)?;
+        ADDR_TO_DENOM.save(deps.storage, addr.clone(), &denom)?;
 
-        Ok(Response::new())
+        Ok(Response::new().add_event(
+            Event::new("cw20_instantiate")
+                .add_attribute("quote_token", denom)
+                .add_attribute("contract_address", addr),
+        ))
     } else {
         Err(Error::UnexpectedReply(reply.id))
     }
@@ -246,11 +253,21 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
 #[entry_point]
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
-        QueryMsg::BaseToken { base_token } => {
-            let base_token = ADDR_TO_DENOM
-                .load(deps.storage, Addr::unchecked(base_token.clone()))
-                .unwrap_or(base_token);
-            Ok(to_json_binary(&BaseTokenResponse { base_token })?)
+        QueryMsg::TokenToIdentifier { token } => {
+            let token_identifier = match String::from_utf8(token.to_vec()) {
+                Ok(str_token) => ADDR_TO_DENOM
+                    .load(deps.storage, Addr::unchecked(str_token))
+                    .map(String::into_bytes)
+                    .map(Into::into)
+                    .unwrap_or(token),
+                // If the token is not a utf8 string, it means it's coming from
+                // a remote chain. This means it can't be a wrapped token anyways.
+                Err(_) => token,
+            };
+
+            Ok(to_json_binary(&TokenToIdentifierResponse {
+                token_identifier,
+            })?)
         }
         QueryMsg::Metadata { denom } => match DENOM_TO_ADDR.load(deps.storage, denom.clone()) {
             Ok(addr) => {
@@ -289,4 +306,15 @@ fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {
             contract_addr: addr.to_string(),
             msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
         }))
+}
+
+/// Restricts the symbol to have a maximum of 12 characters. This restriction comes from
+/// CW20. We know that the symbol won't be smaller than 3 characters and it will always be
+/// UTF-8 thanks to the Cosmos SDK. So we only check the maximum character length.
+fn restrict_symbol(symbol: &str) -> String {
+    if symbol.len() > 12 {
+        symbol[..12].to_string()
+    } else {
+        symbol.to_string()
+    }
 }

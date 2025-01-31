@@ -5,18 +5,17 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
-    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
-    WasmMsg,
+    to_json_binary, to_json_string, wasm_execute, Addr, Binary, Coin, CosmosMsg, Deps, DepsMut,
+    Env, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult,
+    Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::types::Packet;
-use token_factory_api::DenomUnit;
 use ucs03_zkgm_token_minter_api::{
-    BaseTokenResponse, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg,
+    LocalTokenMsg, Metadata, MetadataResponse, TokenToIdentifierResponse, WrappedTokenMsg,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -399,12 +398,13 @@ fn refund(
         .api
         .addr_validate(str::from_utf8(&order.sender).map_err(|_| ContractError::InvalidSender)?)
         .map_err(|_| ContractError::UnableToValidateSender)?;
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    let base_token = query_wrapped_token_identifier(deps.as_ref(), &minter, &order.base_token)?;
     let base_amount =
         u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let base_denom = String::from_utf8(order.base_token.to_vec())
-        .map_err(|_| ContractError::InvalidBaseToken)?;
+    let base_denom =
+        String::from_utf8(base_token.to_vec()).map_err(|_| ContractError::InvalidBaseToken)?;
     let mut messages = Vec::<CosmosMsg>::new();
-    let minter = TOKEN_MINTER.load(deps.storage)?;
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
         messages.push(make_wasm_msg(
@@ -460,9 +460,11 @@ fn acknowledge_fungible_asset_order(
                                 .map_err(|_| ContractError::InvalidReceiver)?,
                         )
                         .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
-                    let base_denom = String::from_utf8(order.base_token.to_vec())
-                        .map_err(|_| ContractError::InvalidBaseToken)?;
                     let minter = TOKEN_MINTER.load(deps.storage)?;
+                    let base_denom =
+                        query_wrapped_token_identifier(deps.as_ref(), &minter, &order.base_token)?;
+                    let base_denom = String::from_utf8(base_denom.to_vec())
+                        .map_err(|_| ContractError::InvalidBaseToken)?;
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
                         messages.push(make_wasm_msg(
@@ -583,10 +585,6 @@ fn execute_internal(
             opcode: instruction.opcode,
         }),
     }
-}
-
-fn factory_denom(token: &str, contract: &str) -> String {
-    format!("factory/{}/{}", contract, token)
 }
 
 fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Bytes) -> String {
@@ -712,6 +710,8 @@ fn execute_fungible_asset_order(
     if order.quote_amount > order.base_amount {
         return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
     }
+
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     let wrapped_denom = predict_wrapped_denom(
         path,
         packet.destination_channel_id,
@@ -728,26 +728,18 @@ fn execute_fungible_asset_order(
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
     let mut messages = Vec::<CosmosMsg>::new();
-    let minter = TOKEN_MINTER.load(deps.storage)?;
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
-        let subdenom = factory_denom(&wrapped_denom, minter.as_str());
-        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, subdenom.clone()) {
+        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
-                subdenom.clone(),
+                wrapped_denom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
             messages.push(make_wasm_msg(
                 WrappedTokenMsg::CreateDenom {
-                    subdenom: wrapped_denom,
+                    subdenom: wrapped_denom.clone(),
                     metadata: Metadata {
-                        denom_units: vec![DenomUnit {
-                            denom: subdenom.clone(),
-                            exponent: 0,
-                            aliases: vec![],
-                        }],
-                        display: subdenom.clone(),
                         name: order.base_token_name,
                         symbol: order.base_token_symbol,
                     },
@@ -757,13 +749,13 @@ fn execute_fungible_asset_order(
             )?);
             TOKEN_ORIGIN.save(
                 deps.storage,
-                subdenom.clone(),
+                wrapped_denom.clone(),
                 &Uint256::from_u128(packet.destination_channel_id as _),
             )?;
         };
         messages.push(make_wasm_msg(
             WrappedTokenMsg::MintTokens {
-                denom: subdenom.clone(),
+                denom: wrapped_denom.clone(),
                 amount: quote_amount.into(),
                 mint_to_address: receiver.into_string(),
             },
@@ -773,7 +765,7 @@ fn execute_fungible_asset_order(
         if fee_amount > 0 {
             messages.push(make_wasm_msg(
                 WrappedTokenMsg::MintTokens {
-                    denom: subdenom,
+                    denom: wrapped_denom,
                     amount: fee_amount.into(),
                     mint_to_address: relayer.into_string(),
                 },
@@ -934,19 +926,18 @@ fn transfer(
         return Err(ContractError::InvalidAmount);
     }
     let minter = TOKEN_MINTER.load(deps.storage)?;
+    // Transfers happen from the local chain which means the base token will always be utf8 string
+    let base_token_id = String::from_utf8_lossy(&query_wrapped_token_identifier(
+        deps.as_ref(),
+        &minter,
+        base_token.as_bytes(),
+    )?)
+    .to_string();
     // If the origin exists, the preimage exists
-    let BaseTokenResponse { base_token } =
-        deps.querier
-            .query(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
-                contract_addr: minter.to_string(),
-                msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::BaseToken {
-                    base_token,
-                })?,
-            }))?;
-    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
+    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token_id.clone())?;
     let mut messages = Vec::<CosmosMsg>::new();
     // TODO: handle forward path
-    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
+    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_id.clone())?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
         Some(path)
@@ -955,7 +946,7 @@ fn transfer(
         {
             messages.push(make_wasm_msg(
                 WrappedTokenMsg::BurnTokens {
-                    denom: base_token.clone(),
+                    denom: base_token_id.clone(),
                     amount: base_amount,
                     burn_from_address: minter.to_string(),
                     sender: info.sender.clone(),
@@ -970,21 +961,23 @@ fn transfer(
             messages.push(make_wasm_msg(
                 LocalTokenMsg::Escrow {
                     from: info.sender.to_string(),
-                    denom: base_token.clone(),
+                    denom: base_token_id.clone(),
                     recipient: minter.to_string(),
                     amount: base_amount,
                 },
                 &minter,
                 info.funds,
             )?);
-            CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
-                match balance {
+            CHANNEL_BALANCE.update(
+                deps.storage,
+                (channel_id, base_token_id.clone()),
+                |balance| match balance {
                     Some(value) => value
                         .checked_add(base_amount.into())
                         .map_err(|_| ContractError::InvalidChannelBalance),
                     None => Ok(base_amount.into()),
-                }
-            })?;
+                },
+            )?;
         }
     };
     let MetadataResponse {
@@ -994,7 +987,7 @@ fn transfer(
         cosmwasm_std::WasmQuery::Smart {
             contract_addr: minter.to_string(),
             msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
-                denom: base_token.clone(),
+                denom: base_token_id.clone(),
             })?,
         },
     ))?;
@@ -1039,6 +1032,20 @@ fn transfer(
         .into(),
     );
     Ok(Response::new().add_messages(messages))
+}
+
+fn query_wrapped_token_identifier(deps: Deps, minter: &Addr, token: &[u8]) -> StdResult<Bytes> {
+    Ok(deps
+        .querier
+        .query::<TokenToIdentifierResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+            contract_addr: minter.to_string(),
+            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::TokenToIdentifier {
+                token: Binary(token.to_vec()),
+            })?,
+        }))?
+        .token_identifier
+        .to_vec()
+        .into())
 }
 
 #[cosmwasm_schema::cw_serde]

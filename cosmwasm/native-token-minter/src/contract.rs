@@ -5,10 +5,14 @@ use cosmwasm_std::{
 };
 use token_factory_api::{TokenFactoryMsg, TokenFactoryQuery};
 use ucs03_zkgm_token_minter_api::{
-    BaseTokenResponse, ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg,
+    ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, TokenToIdentifierResponse,
+    WrappedTokenMsg,
 };
 
-use crate::{error::Error, state::ADMIN};
+use crate::{
+    error::Error,
+    state::{ADMIN, WRAPPED_TOKEN_TO_DENOM},
+};
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {
@@ -37,7 +41,7 @@ pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> StdResult<Response> {
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
@@ -47,19 +51,67 @@ pub fn execute(
 
     let resp = match msg {
         ExecuteMsg::Wrapped(msg) => {
-            let msg: TokenFactoryMsg = msg.into();
-            if let TokenFactoryMsg::BurnTokens { denom, amount, .. } = &msg {
-                let contains_base_token = info
-                    .funds
-                    .iter()
-                    .any(|coin| &coin.denom == denom && coin.amount == amount);
-                if !contains_base_token {
-                    return Err(Error::MissingFunds {
-                        denom: denom.clone(),
-                        amount: *amount,
-                    });
+            let msg = match msg {
+                WrappedTokenMsg::CreateDenom { subdenom, metadata } => {
+                    WRAPPED_TOKEN_TO_DENOM.save(
+                        deps.storage,
+                        subdenom.clone(),
+                        &factory_denom(&subdenom, env.contract.address.as_str()),
+                    )?;
+                    TokenFactoryMsg::CreateDenom {
+                        subdenom: subdenom.clone(),
+                        metadata: Some(token_factory_api::Metadata {
+                            description: None,
+                            denom_units: vec![token_factory_api::DenomUnit {
+                                denom: subdenom.clone(),
+                                exponent: 0,
+                                aliases: vec![],
+                            }],
+                            base: None,
+                            display: Some(subdenom.clone()),
+                            name: Some(metadata.name),
+                            symbol: Some(metadata.symbol),
+                            uri: None,
+                            uri_hash: None,
+                        }),
+                    }
                 }
-            }
+                WrappedTokenMsg::MintTokens {
+                    denom,
+                    amount,
+                    mint_to_address,
+                } => {
+                    let denom = WRAPPED_TOKEN_TO_DENOM.load(deps.storage, denom)?;
+                    TokenFactoryMsg::MintTokens {
+                        denom,
+                        amount,
+                        mint_to_address,
+                    }
+                }
+                WrappedTokenMsg::BurnTokens {
+                    denom,
+                    amount,
+                    burn_from_address,
+                    ..
+                } => {
+                    let denom = WRAPPED_TOKEN_TO_DENOM.load(deps.storage, denom)?;
+                    let contains_base_token = info
+                        .funds
+                        .iter()
+                        .any(|coin| coin.denom == denom && coin.amount == amount);
+                    if !contains_base_token {
+                        return Err(Error::MissingFunds {
+                            denom: denom.clone(),
+                            amount,
+                        });
+                    }
+                    TokenFactoryMsg::BurnTokens {
+                        denom,
+                        amount,
+                        burn_from_address,
+                    }
+                }
+            };
             Response::new().add_message(CosmosMsg::Custom(msg))
         }
         ExecuteMsg::Local(msg) => match msg {
@@ -89,9 +141,9 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps<TokenFactoryQuery>, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
-        QueryMsg::BaseToken { base_token } => {
-            Ok(to_json_binary(&BaseTokenResponse { base_token })?)
-        }
+        QueryMsg::TokenToIdentifier { token } => Ok(to_json_binary(&TokenToIdentifierResponse {
+            token_identifier: token,
+        })?),
         QueryMsg::Metadata { denom } => {
             let denom_metadata =
                 deps.querier
@@ -113,4 +165,8 @@ pub fn query(deps: Deps<TokenFactoryQuery>, _: Env, msg: QueryMsg) -> Result<Bin
             Ok(to_json_binary(&MetadataResponse { name, symbol })?)
         }
     }
+}
+
+fn factory_denom(token: &str, contract: &str) -> String {
+    format!("factory/{}/{}", contract, token)
 }
