@@ -7,15 +7,13 @@ use cosmwasm_std::{
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, TokenToIdentifierResponse,
-    WrappedTokenMsg,
+    WrappedTokenMsg, CW20_QUOTE_TOKEN, CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
 };
 
 use crate::{
     error::Error,
     state::{Config, ADDR_TO_DENOM, CONFIG, DENOM_TO_ADDR, DENOM_TO_BE_STORED},
 };
-
-pub const NATIVE_TOKEN_STORE_PREFIX: u32 = 0x1;
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {
@@ -241,9 +239,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
         ADDR_TO_DENOM.save(deps.storage, addr.clone(), &denom)?;
 
         Ok(Response::new().add_event(
-            Event::new("cw20_token_creation")
-                .add_attribute("quote_token", denom)
-                .add_attribute("cw20_token_address", addr),
+            Event::new(CW20_TOKEN_CREATION_EVENT)
+                .add_attribute(CW20_QUOTE_TOKEN, denom)
+                .add_attribute(CW20_TOKEN_ADDRESS, addr),
         ))
     } else {
         Err(Error::UnexpectedReply(reply.id))

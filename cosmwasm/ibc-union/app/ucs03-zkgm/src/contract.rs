@@ -16,6 +16,7 @@ use ibc_union_msg::{
 use ibc_union_spec::types::Packet;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, TokenToIdentifierResponse, WrappedTokenMsg,
+    CW20_QUOTE_TOKEN, CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -828,22 +829,25 @@ fn execute_fungible_asset_order(
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
         CREATE_DENOM_REPLY_ID => {
+            // We are just emitting the token creation event so that the event is emitted from this
+            // contract.
+            let event = format!("wasm-{CW20_TOKEN_CREATION_EVENT}");
             match reply
                 .result
                 .into_result()
                 .expect("replies only if success")
                 .events
                 .into_iter()
-                .find(|e| &e.ty == "wasm-cw20_token_creation")
+                .find(|e| e.ty == event)
             {
                 Some(event) => {
                     let attrs: Vec<Attribute> = event
                         .attributes
                         .into_iter()
-                        .filter(|a| &a.key == "cw20_token_address" || &a.key == "quote_token")
+                        .filter(|a| a.key == CW20_TOKEN_ADDRESS || a.key == CW20_QUOTE_TOKEN)
                         .collect();
                     Ok(Response::new()
-                        .add_event(Event::new("cw20_token_creation").add_attributes(attrs)))
+                        .add_event(Event::new(CW20_TOKEN_CREATION_EVENT).add_attributes(attrs)))
                 }
                 None => Ok(Response::new()),
             }
@@ -1088,16 +1092,4 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
-}
-
-#[test]
-fn ads() {
-    panic!(
-        "{}",
-        hex::encode(&predict_wrapped_denom(
-            "0".parse().unwrap(),
-            6,
-            b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into(),
-        ))
-    );
 }

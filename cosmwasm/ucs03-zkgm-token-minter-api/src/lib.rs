@@ -1,7 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
-use token_factory_api::{DenomUnit, TokenFactoryMsg};
+
+pub const CW20_TOKEN_CREATION_EVENT: &str = "cw20_token_creation";
+pub const CW20_TOKEN_ADDRESS: &str = "cw20_token_address";
+pub const CW20_QUOTE_TOKEN: &str = "quote_token";
 
 #[cw_serde]
 pub enum LocalTokenMsg {

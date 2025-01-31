@@ -9,7 +9,7 @@ pub enum Error {
     #[error("only admin can execute")]
     OnlyAdmin,
 
-    #[error("this contract cant mint the token with denom {0} because it's not the owner")]
+    #[error("this contract can't mint the token with denom {0} because it's not the owner")]
     CantMint(String),
 
     #[error("unexpected reply ({0})")]
