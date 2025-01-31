@@ -4045,7 +4045,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-token-minter"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 1.5.8",
  "cosmwasm-std 1.5.8",
