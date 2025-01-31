@@ -1,4 +1,4 @@
-import { http } from "viem"
+import { getAddress, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { bech32AddressToHex, createUnionClient } from "#mod.ts"
@@ -59,16 +59,21 @@ if (quoteToken.isErr()) {
   process.exit(1)
 }
 
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.info("no quote token available")
+  process.exit(1)
+}
+
 consola.info("quote token", quoteToken.value)
 
 const transferArgs = {
-  baseToken: UBBN_DENOM,
+  baseToken: getAddress(UBBN_DENOM),
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: `0x${channel.source_port_id}`
+  ucs03address: getAddress(`0x${channel.source_port_id}`)
 }
 
 consola.info("transfer args", transferArgs)

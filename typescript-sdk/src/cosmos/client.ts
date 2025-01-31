@@ -226,7 +226,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (destinationChainId === "union-testnet-8") {
         if (!sourceChannel) return err(new Error("Source channel not found"))
         const [account_] = await account.getAccounts()
-        if (!account) return err(new Error("No account found"))
+        if (!(account && account_?.address)) return err(new Error("No account found"))
 
         const stamp = timestamp()
 
@@ -238,7 +238,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
             {
               sourceChannel: sourceChannel.toString(),
               sourcePort: "transfer",
-              sender: account_?.address,
+              sender: account_.address,
               token: { denom: denomAddress, amount: amount.toString() },
               timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
               receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,

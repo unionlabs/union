@@ -60,6 +60,7 @@ async function main() {
     // revert changes
     await resetVersions()
     consola.info("Reset package.json version")
+    return
   }
 }
 

@@ -101,7 +101,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
           let {
             memo,
             amount,
-            simulate,
+            simulate = true,
             receiver,
             denomAddress,
             destinationChainId,
@@ -143,6 +143,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             if (pfmMemo.isErr()) return err(pfmMemo.error)
             memo = pfmMemo.value
           }
+          if (!memo) return err(new Error("Memo is required"))
 
           const sourceChannel = chainDetails.value.sourceChannel
           relayContractAddress ??= chainDetails.value.relayContractAddress
@@ -211,6 +212,8 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             if (pfmMemo.isErr()) return err(pfmMemo.error)
             memo = pfmMemo.value
           }
+          if (!memo) return err(new Error("Memo is required"))
+
           const sourceChannel = chainDetails.value.sourceChannel
           relayContractAddress ??= chainDetails.value.relayContractAddress
 
