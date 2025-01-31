@@ -53,6 +53,7 @@ near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
+slotlib              = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
 
 [dev-dependencies]

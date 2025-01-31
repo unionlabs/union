@@ -1,10 +1,8 @@
 use sha2::Digest;
 use sha3::Keccak256;
+use slotlib::{MappingKey, Slot};
 
-use crate::{
-    ethereum::slot::{MappingKey, Slot},
-    primitives::{H256, U256},
-};
+use crate::primitives::{H256, U256};
 
 pub mod slot;
 

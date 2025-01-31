@@ -1,0 +1,15 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "slotlib"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+hex-literal          = { workspace = true }
+sha2                 = { workspace = true }
+sha3                 = { workspace = true }
+unionlabs-primitives = { workspace = true }
+
+[lints]
+workspace = true

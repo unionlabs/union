@@ -96,6 +96,7 @@ members = [
 
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
+  "tools/slot-calculator",
   "tools/tidy",
   "tools/move-bindgen",
   "lib/move-bindgen-derive",
@@ -176,6 +177,7 @@ members = [
   "lib/state-lens-light-client-types",
   "lib/create3",
   "lib/linea-types",
+  "lib/slotlib",
 ]
 
 [workspace.package]
@@ -264,6 +266,7 @@ movement-light-client-types = { path = "lib/movement-light-client-types", defaul
 cosmos-sdk-event = { path = "lib/cosmos-sdk-event", default-features = false }
 
 serde-utils      = { path = "lib/serde-utils", default-features = false }
+slotlib          = { path = "lib/slotlib", default-features = false }
 ssz              = { path = "lib/ssz", default-features = false }
 ssz-derive       = { path = "lib/ssz-derive", default-features = false }
 subset-of        = { path = "lib/subset-of", default-features = false }

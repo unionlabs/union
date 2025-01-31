@@ -21,5 +21,6 @@ linea-light-client-types = { workspace = true }
 linea-types              = { workspace = true }
 linea-zktrie             = { workspace = true }
 rlp                      = { workspace = true }
+slotlib                  = { workspace = true }
 thiserror                = { workspace = true }
 unionlabs                = { workspace = true }

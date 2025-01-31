@@ -4,10 +4,8 @@ use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use linea_light_client_types::{ClientState, Header};
 use linea_types::account::ZkAccount;
-use unionlabs::{
-    ethereum::slot::{MappingKey, Slot},
-    primitives::{H256, U256},
-};
+use slotlib::{MappingKey, Slot};
+use unionlabs::primitives::{H256, U256};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
