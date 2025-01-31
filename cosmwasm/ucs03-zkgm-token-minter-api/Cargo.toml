@@ -5,7 +5,7 @@ license-file.workspace = true
 name                   = "ucs03-zkgm-token-minter-api"
 publish.workspace      = true
 repository.workspace   = true
-version                = "0.1.0"
+version                = "0.0.0"
 
 [dependencies]
 cosmwasm-schema   = { version = "1.5" }
