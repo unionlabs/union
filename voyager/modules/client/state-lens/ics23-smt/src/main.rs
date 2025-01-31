@@ -11,6 +11,7 @@ use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     self,
+    aptos::{sparse_merkle_proof::SparseMerkleProof, storage_proof::StorageProof},
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
@@ -244,8 +245,15 @@ impl ClientModuleServer for Module {
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, _proof: Value) -> RpcResult<Bytes> {
         // TODO(aeryz): we cannot verify the proofs on evm yet, this will be mock until we have cw
-        // impl.
-        Ok(vec![].into())
+        Ok(StorageProof {
+            state_value: None,
+            proof: SparseMerkleProof {
+                leaf: None,
+                siblings: vec![],
+            },
+        }
+        .encode_as::<Bincode>()
+        .into())
         // let proof = serde_json::from_value::<StorageProof>(proof).map_err(|err| {
         //     ErrorObject::owned(
         //         FATAL_JSONRPC_ERROR_CODE,

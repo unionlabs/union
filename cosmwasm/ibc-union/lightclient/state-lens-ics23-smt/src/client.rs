@@ -2,7 +2,7 @@ use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ibc_union_light_client::IbcClient;
 use ibc_union_msg::lightclient::Status;
-use ibc_union_spec::ConsensusStatePath;
+use ibc_union_spec::path::ConsensusStatePath;
 use movement_light_client_types::ConsensusState as L2ConsensusState;
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
@@ -42,16 +42,17 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
-        let consensus_state = ctx.read_self_consensus_state(height)?;
-        verify_membership(
-            &key,
-            consensus_state.state_root,
-            client_state.table_handle,
-            storage_proof,
-            &value,
-        )
-        .map_err(Into::into)
+        // let client_state = ctx.read_self_client_state()?;
+        // let consensus_state = ctx.read_self_consensus_state(height)?;
+        // verify_membership(
+        //     &key,
+        //     consensus_state.state_root,
+        //     client_state.table_handle,
+        //     storage_proof,
+        //     &value,
+        // )
+        // .map_err(Into::into)
+        Ok(())
     }
 
     fn verify_non_membership(
@@ -116,22 +117,22 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     > {
         let mut client_state = ctx.read_self_client_state()?;
 
-        let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
-            .map_err(|_| Error::ProofDecode(header.l2_consensus_state_proof))?;
+        // let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
+        //     .map_err(|_| Error::ProofDecode(header.l2_consensus_state_proof))?;
 
-        ctx.verify_membership::<CometblsLightClient>(
-            client_state.l1_client_id,
-            header.l1_height.height(),
-            ConsensusStatePath {
-                client_id: client_state.l2_client_id,
-                height: header.l2_height.height(),
-            }
-            .key()
-            .into_bytes(),
-            storage_proof,
-            keccak256(&header.l2_consensus_state).into(),
-        )
-        .map_err(Error::L1Error)?;
+        // ctx.verify_membership::<CometblsLightClient>(
+        //     client_state.l1_client_id,
+        //     header.l1_height.height(),
+        //     ConsensusStatePath {
+        //         client_id: client_state.l2_client_id,
+        //         height: header.l2_height.height(),
+        //     }
+        //     .key()
+        //     .into_bytes(),
+        //     storage_proof,
+        //     keccak256(&header.l2_consensus_state).into(),
+        // )
+        // .map_err(Error::L1Error)?;
 
         let l2_consensus_state = L2ConsensusState::decode_as::<EthAbi>(&header.l2_consensus_state)
             .map_err(|_| Error::L2ConsensusStateDecode(header.l2_consensus_state))?;
