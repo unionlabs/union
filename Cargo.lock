@@ -4836,6 +4836,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethermint-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.0-rc.3",
+ "serde",
+ "tendermint-light-client-types",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "ethnum"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
