@@ -7,7 +7,6 @@ use std::{
     sync::Arc,
 };
 
-use cometbft_rpc::types::abci::response_query::QueryResponse;
 use dashmap::DashMap;
 use ibc_union_spec::{
     path::StorePath,
@@ -19,11 +18,10 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
-use prost::Message;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, instrument};
+use tracing::{debug, error, instrument, trace};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
@@ -116,42 +114,16 @@ impl Module {
         query: &Q,
         height: Option<Height>,
     ) -> RpcResult<Option<R>> {
-        let response = self
-            .abci_query(
-                "/cosmwasm.wasm.v1.Query/SmartContractState",
-                QuerySmartContractStateRequest {
-                    address: self.ibc_host_contract_address.to_string(),
-                    query_data: serde_json::to_vec(query).unwrap(),
-                }
-                .encode_to_vec()
-                .into(),
-                height,
-            )
-            .await?;
+        let path = "/cosmwasm.wasm.v1.Query/SmartContractState";
 
-        debug!(?response);
-
-        Ok(response.value.map(|value| {
-            serde_json::from_slice(
-                &QuerySmartContractStateResponse::decode(&*value)
-                    .unwrap()
-                    .data,
-            )
-            .unwrap()
-        }))
-    }
-
-    async fn abci_query(
-        &self,
-        path: &str,
-        data: Bytes,
-        height: Option<Height>,
-    ) -> RpcResult<QueryResponse> {
         let response = self
             .cometbft_client
-            .abci_query(
-                &path,
-                &data,
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                path,
+                &QuerySmartContractStateRequest {
+                    address: self.ibc_host_contract_address.to_string(),
+                    query_data: serde_json::to_vec(query).unwrap(),
+                },
                 height.map(|height| {
                     i64::try_from(height.height())
                         .expect("should be fine")
@@ -163,9 +135,8 @@ impl Module {
             .await
             .map_err(rpc_error(
                 "error fetching abci query",
-                Some(json!({ "height": height, "path": data })),
-            ))
-            .map(|response| response.response)?;
+                Some(json!({ "height": height, "path": path })),
+            ))?;
 
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
         if response.code == 26 {
@@ -179,7 +150,14 @@ impl Module {
                 })),
             ))
         } else {
-            Ok(response)
+            trace!(?response);
+
+            let value = response.value.map(|value| {
+                debug!("raw response: {}", String::from_utf8_lossy(&value.data));
+                serde_json::from_slice(&value.data).unwrap()
+            });
+
+            Ok(value)
         }
     }
 

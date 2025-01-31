@@ -112,6 +112,7 @@ members = [
 
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
+  "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
   "voyager/modules/proof/movement",
 
@@ -119,6 +120,7 @@ members = [
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
+  "voyager/modules/client/ethermint",
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
   "voyager/modules/client/state-lens/ics23-smt",
@@ -127,6 +129,7 @@ members = [
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
+  "voyager/modules/client-bootstrap/ethermint",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
@@ -142,6 +145,7 @@ members = [
   "voyager/plugins/client-update/ethereum",
   "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
+  "voyager/plugins/client-update/ethermint",
   "voyager/plugins/client-update/state-lens",
 
   "voyager/plugins/periodic-client-update",

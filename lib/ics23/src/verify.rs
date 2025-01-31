@@ -1,12 +1,15 @@
 use std::borrow::{Borrow, Cow};
 
-use unionlabs::cosmos::ics23::{
-    existence_proof::ExistenceProof,
-    hash_op::HashOp,
-    inner_op::InnerOp,
-    inner_spec::{InnerSpec, PositiveI32AsUsize},
-    non_existence_proof::NonExistenceProof,
-    proof_spec::ProofSpec,
+use unionlabs::{
+    cosmos::ics23::{
+        existence_proof::ExistenceProof,
+        hash_op::HashOp,
+        inner_op::InnerOp,
+        inner_spec::{InnerSpec, PositiveI32AsUsize},
+        non_existence_proof::NonExistenceProof,
+        proof_spec::ProofSpec,
+    },
+    primitives::Bytes,
 };
 
 use crate::{
@@ -18,28 +21,24 @@ use crate::{
 pub enum VerifyError {
     #[error("spec mismatch ({0})")]
     SpecMismatch(SpecMismatchError),
-    #[error("key and existence proof value doesn't match ({key:?}, {existence_proof_key:?})")]
+    #[error("key and existence proof key mismatch (key: {key}, existence_proof_key: {existence_proof_key})")]
     KeyAndExistenceProofKeyMismatch {
-        key: Vec<u8>,
-        existence_proof_key: Vec<u8>,
+        key: Bytes,
+        existence_proof_key: Bytes,
     },
-    #[error(
-        "value and existence proof value doesn't match ({value:?}, {existence_proof_value:?})"
-    )]
+    #[error("value and existence proof value mismatch (value: {value}, existence_proof_value: {existence_proof_value})")]
     ValueAndExistenceProofValueMismatch {
-        value: Vec<u8>,
-        existence_proof_value: Vec<u8>,
+        value: Bytes,
+        existence_proof_value: Bytes,
     },
     #[error("root calculation ({0})")]
     RootCalculation(CalculateRootError),
     #[error(
-        "calculated and given root doesn't match ({calculated_root}, {given_root})",
-        calculated_root = serde_utils::to_hex(calculated_root),
-        given_root = serde_utils::to_hex(given_root)
+        "calculated and given root doesn't match (calculated_root: {calculated_root}, given_root: {given_root})",
     )]
     CalculatedAndGivenRootMismatch {
-        calculated_root: Vec<u8>,
-        given_root: Vec<u8>,
+        calculated_root: Bytes,
+        given_root: Bytes,
     },
     #[error("key is not left of right proof")]
     KeyIsNotLeftOfRightProof,
@@ -59,7 +58,7 @@ pub enum VerifyError {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {
-    #[error("existence proof verification failed, ({0})")]
+    #[error("existence proof verification failed ({0})")]
     ExistenceProofVerify(VerifyError),
     #[error("proof does not exist")]
     ProofDoesNotExist,
@@ -381,14 +380,14 @@ fn verify_existence_proof(
     if key != &existence_proof.key[..] {
         return Err(VerifyError::KeyAndExistenceProofKeyMismatch {
             key: key.into(),
-            existence_proof_key: existence_proof.key.to_vec(),
+            existence_proof_key: existence_proof.key.clone(),
         });
     }
 
     if value != &existence_proof.value[..] {
         return Err(VerifyError::ValueAndExistenceProofValueMismatch {
             value: value.into(),
-            existence_proof_value: existence_proof.value.to_vec(),
+            existence_proof_value: existence_proof.value.clone(),
         });
     }
 
@@ -397,7 +396,7 @@ fn verify_existence_proof(
 
     if root != calc {
         return Err(VerifyError::CalculatedAndGivenRootMismatch {
-            calculated_root: calc,
+            calculated_root: calc.into(),
             given_root: root.into(),
         });
     }

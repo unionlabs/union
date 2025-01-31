@@ -868,7 +868,7 @@ async fn run_server<
         std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
     };
 
-    debug!("connected to voyager socket");
+    trace!("connected to voyager socket");
 
     let module_server = match new(new_t).await {
         Ok(ctx) => ctx,

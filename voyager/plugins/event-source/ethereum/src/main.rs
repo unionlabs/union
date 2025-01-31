@@ -8,7 +8,6 @@ use alloy::{
     sol_types::SolEventInterface,
     transports::BoxTransport,
 };
-use beacon_api::client::BeaconApiClient;
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
     event::{
@@ -65,7 +64,6 @@ pub struct Module {
     pub ibc_handler_address: H160,
 
     pub provider: RootProvider<BoxTransport>,
-    pub beacon_api_client: BeaconApiClient,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,8 +77,6 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
-    /// The RPC endpoint for the beacon chain.
-    pub beacon_rpc_url: String,
 }
 
 impl Plugin for Module {
@@ -130,7 +126,6 @@ impl Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            beacon_api_client: BeaconApiClient::new(config.beacon_rpc_url).await?,
         })
     }
 

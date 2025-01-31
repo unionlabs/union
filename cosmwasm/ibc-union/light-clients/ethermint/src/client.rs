@@ -7,7 +7,10 @@ use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client::verifier::Ed25519Verifier;
 use tendermint_light_client_types::{ConsensusState, Header};
 use tendermint_verifier::types::SignatureVerifier;
-use unionlabs::{encoding::Bincode, ibc::core::commitment::merkle_proof::MerkleProof};
+use unionlabs::{
+    encoding::Bincode, ethereum::ibc_commitment_key,
+    ibc::core::commitment::merkle_proof::MerkleProof,
+};
 
 use crate::errors::Error;
 
@@ -51,7 +54,10 @@ impl IbcClient for EthermintLightClient {
                     .key_prefix_storage
                     .into_iter()
                     .chain(client_state.ibc_contract_address)
-                    .chain(key)
+                    .chain(
+                        ibc_commitment_key(key.try_into().map_err(Error::InvalidKey)?)
+                            .to_be_bytes(),
+                    )
                     .collect::<Vec<_>>(),
             ],
             value,
@@ -80,8 +86,10 @@ impl IbcClient for EthermintLightClient {
                 client_state
                     .key_prefix_storage
                     .into_iter()
-                    .chain(client_state.ibc_contract_address)
-                    .chain(key)
+                    .chain(
+                        ibc_commitment_key(key.try_into().map_err(Error::InvalidKey)?)
+                            .to_be_bytes(),
+                    )
                     .collect::<Vec<_>>(),
             ],
         )

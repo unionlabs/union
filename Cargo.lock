@@ -13113,6 +13113,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-ethermint"
+version = "0.0.0"
+dependencies = [
+ "cometbft-rpc",
+ "ethermint-light-client-types",
+ "ics23",
+ "jsonrpsee",
+ "protos",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-movement"
 version = "0.0.0"
 dependencies = [
@@ -13246,6 +13266,23 @@ dependencies = [
  "jsonrpsee",
  "serde",
  "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-ethermint"
+version = "0.0.0"
+dependencies = [
+ "ethermint-light-client-types",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
  "tokio",
  "tracing",
  "unionlabs",
@@ -13431,6 +13468,27 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-ethermint"
+version = "0.0.0"
+dependencies = [
+ "cometbft-rpc",
+ "cometbft-types",
+ "enumorph",
+ "ethermint-light-client-types",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "thiserror",
  "tokio",
  "tracing",
  "unionlabs",
@@ -13639,7 +13697,6 @@ name = "voyager-event-source-plugin-ethereum"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "beacon-api",
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",
@@ -13816,6 +13873,26 @@ dependencies = [
  "jsonrpsee",
  "serde",
  "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-proof-module-ethermint"
+version = "0.0.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror",
  "tokio",
  "tracing",
  "unionlabs",

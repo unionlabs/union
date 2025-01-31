@@ -1,4 +1,5 @@
 use ibc_union_light_client::IbcClientError;
+use unionlabs::primitives::FixedBytesError;
 
 use crate::client::EthermintLightClient;
 
@@ -6,6 +7,8 @@ use crate::client::EthermintLightClient;
 pub enum Error {
     #[error("tendermint light client error")]
     Tendermint(#[source] tendermint_light_client::errors::Error),
+    #[error("invalid key")]
+    InvalidKey(#[source] FixedBytesError),
 }
 
 impl<T: Into<tendermint_light_client::errors::Error>> From<T> for Error {
