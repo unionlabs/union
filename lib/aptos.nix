@@ -37,7 +37,7 @@ _: {
 
       aptos = craneLib.buildPackage rec {
         pname = "movement";
-        version = "d34bb3e3dad03241967c0263a6f1fcfe6bccb7d7";
+        version = "001913f20f140aa8245cd55cbb492df91b6e0e0e";
 
         buildInputs = [
           pkgs.pkg-config
@@ -63,7 +63,7 @@ _: {
 
         src = builtins.fetchGit {
           url = "https://github.com/aeryz/aptos-core";
-          ref = "movement";
+          ref = "old-bump-tonic";
           rev = version;
         };
 
