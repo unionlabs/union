@@ -778,4 +778,12 @@ module ibc::cometbls_lc {
         std::debug::print(&path);
 
     }
+
+    #[test]
+    fun see_cons_state() {
+        let cons = x"0f00000000000000756e696f6e2d746573746e65742d390040563f61c8000000e0926517010000000000000000000000010900000000000000f01d370000000000f64b1e5af826603673cac212ceedb720fb845c66aa7ce71ca304905ad66b6e";
+        let cons = decode_client_state(cons);
+
+        std::debug::print(string::bytes(&cons.chain_id));
+    }
 }

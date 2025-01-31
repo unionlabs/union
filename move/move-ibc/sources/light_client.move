@@ -1,10 +1,12 @@
 module ibc::light_client {
     use ibc::cometbls_lc;
-    use ibc::statelens_lc;
+    use ibc::state_lens_ics23_mpt_lc;
+    use ibc::state_lens_ics23_ics23_lc;
     use std::string::{Self, String};
 
     const E_UNKNOWN_CLIENT_TYPE: u64 = 1;
     const CLIENT_TYPE_STATE_LENS_ICS23_MPT: vector<u8> = b"state-lens/ics23/mpt";
+    const CLIENT_TYPE_STATE_LENS_ICS23_ICS23: vector<u8> = b"state-lens/ics23/ics23";
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
     public fun create_client(
@@ -25,7 +27,16 @@ module ibc::light_client {
             return (client_state, consensus_state)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
             let (client_state, consensus_state) =
-                statelens_lc::create_client(
+                state_lens_ics23_mpt_lc::create_client(
+                    ibc_signer,
+                    client_id,
+                    client_state_bytes,
+                    consensus_state_bytes
+                );
+            return (client_state, consensus_state)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            let (client_state, consensus_state) =
+                state_lens_ics23_ics23_lc::create_client(
                     ibc_signer,
                     client_id,
                     client_state_bytes,
@@ -41,7 +52,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::status(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::status(client_id)
+            return state_lens_ics23_mpt_lc::status(client_id)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::status(client_id)
         };
         abort E_UNKNOWN_CLIENT_TYPE
 
@@ -51,7 +64,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::latest_height(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::latest_height(client_id)
+            return state_lens_ics23_mpt_lc::latest_height(client_id)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::latest_height(client_id)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -62,7 +77,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::check_for_misbehaviour(client_id, header)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::check_for_misbehaviour(client_id, header)
+            return state_lens_ics23_mpt_lc::check_for_misbehaviour(client_id, header)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::check_for_misbehaviour(client_id, header)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -73,7 +90,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::update_client(client_id, client_msg)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::update_client(client_id, client_msg)
+            return state_lens_ics23_mpt_lc::update_client(client_id, client_msg)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::update_client(client_id, client_msg)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -84,7 +103,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             cometbls_lc::report_misbehaviour(client_id, misbehaviour)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            statelens_lc::report_misbehaviour(client_id, misbehaviour)
+            state_lens_ics23_mpt_lc::report_misbehaviour(client_id, misbehaviour)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            state_lens_ics23_ics23_lc::report_misbehaviour(client_id, misbehaviour)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -95,7 +116,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::get_timestamp_at_height(client_id, height)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::get_timestamp_at_height(client_id, height)
+            return state_lens_ics23_mpt_lc::get_timestamp_at_height(client_id, height)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::get_timestamp_at_height(client_id, height)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -104,7 +127,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::get_client_state(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::get_client_state(client_id)
+            return state_lens_ics23_mpt_lc::get_client_state(client_id)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::get_client_state(client_id)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -115,7 +140,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::get_consensus_state(client_id, height)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::get_consensus_state(client_id, height)
+            return state_lens_ics23_mpt_lc::get_consensus_state(client_id, height)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::get_consensus_state(client_id, height)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -131,7 +158,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_membership(client_id, height, proof, key, value)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::verify_membership(client_id, height, proof, key, value)
+            return state_lens_ics23_mpt_lc::verify_membership(client_id, height, proof, key, value)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::verify_membership(client_id, height, proof, key, value)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -146,7 +175,9 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_non_membership(client_id, height, proof, path)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return statelens_lc::verify_non_membership(client_id, height, proof, path)
+            return state_lens_ics23_mpt_lc::verify_non_membership(client_id, height, proof, path)
+        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
+            return state_lens_ics23_ics23_lc::verify_non_membership(client_id, height, proof, path)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
