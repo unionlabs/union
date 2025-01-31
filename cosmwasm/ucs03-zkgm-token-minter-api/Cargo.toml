@@ -1,0 +1,17 @@
+[package]
+authors.workspace      = true
+edition.workspace      = true
+license-file.workspace = true
+name                   = "ucs03-zkgm-token-minter-api"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.0.0"
+
+[dependencies]
+cosmwasm-schema   = { version = "1.5" }
+cosmwasm-std      = { version = "1.5" }
+enumorph          = { workspace = true }
+token-factory-api = { workspace = true }
+
+[lints]
+workspace = true

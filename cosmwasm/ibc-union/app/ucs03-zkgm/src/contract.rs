@@ -5,15 +5,19 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_string, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
-    QueryRequest, Reply, Response, StdError, SubMsg, SubMsgResult, Uint128, Uint256,
+    to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin, CosmosMsg, Deps,
+    DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg,
+    SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::types::Packet;
-use token_factory_api::{Metadata, MetadataResponse, TokenFactoryMsg, TokenFactoryQuery};
+use ucs03_zkgm_token_minter_api::{
+    LocalTokenMsg, Metadata, MetadataResponse, TokenToIdentifierResponse, WrappedTokenMsg,
+    CW20_QUOTE_TOKEN, CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
+};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -25,47 +29,63 @@ use crate::{
         ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_BATCH,
         OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
-    msg::{EurekaMsg, ExecuteMsg, InitMsg, MigrateMsg},
+    msg::{EurekaMsg, ExecuteMsg, InitMsg},
     state::{
         CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
-        TOKEN_ORIGIN,
+        TOKEN_MINTER, TOKEN_ORIGIN,
     },
     ContractError,
 };
 
 pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 
-pub const REPLY_ID: u64 = 0x1337;
+pub const EXECUTE_REPLY_ID: u64 = 0x1337;
+pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
+pub const CREATE_DENOM_REPLY_ID: u64 = 0xdead;
 
+pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
+
+/// Instantiate `ucs03-zkgm`.
+///
+/// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][crate::msg::TokenMinterInitMsg]. The admin of the minter contract is set to the instantiator of `ucs03-zkgm`, under the assumption that the caller will also set themselves as admin, as it is not possible for a contract to check the admin of itself during instantiation.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut<TokenFactoryQuery>,
-    _env: Env,
-    _info: MessageInfo,
+    deps: DepsMut,
+    _: Env,
+    info: MessageInfo,
     msg: InitMsg,
 ) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
-    Ok(Response::default())
-}
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::new())
+    let msg = WasmMsg::Instantiate {
+        admin: Some(info.sender.to_string()),
+        code_id: msg.config.token_minter_code_id,
+        msg: to_json_binary(&msg.minter_init_msg)?,
+        funds: vec![],
+        label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
+    };
+
+    Ok(Response::new().add_submessage(SubMsg {
+        id: TOKEN_INIT_REPLY_ID,
+        msg: msg.into(),
+        gas_limit: None,
+        reply_on: cosmwasm_std::ReplyOn::Success,
+    }))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::IbcUnionMsg(ibc_msg) => {
-            let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
-            if info.sender != ibc_host {
+            if info.sender != CONFIG.load(deps.storage)?.ibc_host {
                 return Err(ContractError::OnlyIBCHost);
             }
+
             match ibc_msg {
                 IbcUnionMsg::OnChannelOpenInit { version, .. } => {
                     enforce_version(&version, None)?;
@@ -102,7 +122,7 @@ pub fn execute(
                                 },
                                 vec![],
                             )?,
-                            REPLY_ID,
+                            EXECUTE_REPLY_ID,
                         )))
                     }
                 }
@@ -189,12 +209,12 @@ fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<
 }
 
 fn timeout_packet(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
     relayer: Addr,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     timeout_internal(
         deps,
@@ -210,7 +230,7 @@ fn timeout_packet(
 
 #[allow(clippy::too_many_arguments)]
 fn timeout_internal(
-    mut deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -218,7 +238,7 @@ fn timeout_internal(
     salt: H256,
     _path: alloy::primitives::U256,
     instruction: Instruction,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     if instruction.version != ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
@@ -268,13 +288,13 @@ fn timeout_internal(
 }
 
 fn acknowledge_packet(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
     relayer: Addr,
     ack: Bytes,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     let ack = Ack::abi_decode_params(&ack, true)?;
     acknowledge_internal(
@@ -293,7 +313,7 @@ fn acknowledge_packet(
 
 #[allow(clippy::too_many_arguments)]
 fn acknowledge_internal(
-    mut deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -303,7 +323,7 @@ fn acknowledge_internal(
     instruction: Instruction,
     successful: bool,
     ack: Bytes,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     if instruction.version != ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
@@ -370,47 +390,51 @@ fn acknowledge_internal(
 }
 
 fn refund(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     source_channel: u32,
     order: FungibleAssetOrder,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
+    // 1. Native minter + sent native tokens: correct
+    // 2. Cw20 minter + sent native tokens:
     let sender = deps
         .api
         .addr_validate(str::from_utf8(&order.sender).map_err(|_| ContractError::InvalidSender)?)
         .map_err(|_| ContractError::UnableToValidateSender)?;
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    let base_token = query_wrapped_token_identifier(deps.as_ref(), &minter, &order.base_token)?;
     let base_amount =
         u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let base_denom = String::from_utf8(order.base_token.to_vec())
-        .map_err(|_| ContractError::InvalidBaseToken)?;
-    let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+    let base_denom =
+        String::from_utf8(base_token.to_vec()).map_err(|_| ContractError::InvalidBaseToken)?;
+    let mut messages = Vec::<CosmosMsg>::new();
     // TODO: handle forward path
     if order.base_token_path == source_channel.try_into().unwrap() {
-        messages.push(
-            TokenFactoryMsg::MintTokens {
+        messages.push(make_wasm_msg(
+            WrappedTokenMsg::MintTokens {
                 denom: base_denom,
                 amount: base_amount.into(),
                 mint_to_address: sender.into_string(),
-            }
-            .into(),
-        );
+            },
+            minter,
+            vec![],
+        )?);
     } else {
-        messages.push(
-            BankMsg::Send {
-                to_address: sender.into_string(),
-                amount: vec![Coin {
-                    denom: base_denom,
-                    amount: base_amount.into(),
-                }],
-            }
-            .into(),
-        );
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: base_denom,
+                recipient: sender.into_string(),
+                amount: base_amount.into(),
+            },
+            minter,
+            vec![],
+        )?);
     }
     Ok(Response::new().add_messages(messages))
 }
 
 #[allow(clippy::too_many_arguments)]
 fn acknowledge_fungible_asset_order(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     packet: Packet,
@@ -419,10 +443,10 @@ fn acknowledge_fungible_asset_order(
     _path: alloy::primitives::U256,
     order: FungibleAssetOrder,
     order_ack: Option<FungibleAssetOrderAck>,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     match order_ack {
         Some(successful_ack) => {
-            let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+            let mut messages = Vec::<CosmosMsg>::new();
             match successful_ack.fill_type {
                 FILL_TYPE_PROTOCOL => {
                     // Protocol filled, fee was paid on destination to the relayer.
@@ -438,29 +462,32 @@ fn acknowledge_fungible_asset_order(
                                 .map_err(|_| ContractError::InvalidReceiver)?,
                         )
                         .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
-                    let base_denom = String::from_utf8(order.base_token.to_vec())
+                    let minter = TOKEN_MINTER.load(deps.storage)?;
+                    let base_denom =
+                        query_wrapped_token_identifier(deps.as_ref(), &minter, &order.base_token)?;
+                    let base_denom = String::from_utf8(base_denom.to_vec())
                         .map_err(|_| ContractError::InvalidBaseToken)?;
                     // TODO: handle forward path
                     if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
-                        messages.push(
-                            TokenFactoryMsg::MintTokens {
+                        messages.push(make_wasm_msg(
+                            WrappedTokenMsg::MintTokens {
                                 denom: base_denom,
                                 amount: base_amount.into(),
                                 mint_to_address: market_maker.into_string(),
-                            }
-                            .into(),
-                        );
+                            },
+                            minter,
+                            vec![],
+                        )?);
                     } else {
-                        messages.push(
-                            BankMsg::Send {
-                                to_address: market_maker.into_string(),
-                                amount: vec![Coin {
-                                    denom: base_denom,
-                                    amount: base_amount.into(),
-                                }],
-                            }
-                            .into(),
-                        );
+                        messages.push(make_wasm_msg(
+                            LocalTokenMsg::Unescrow {
+                                denom: base_denom,
+                                recipient: market_maker.into_string(),
+                                amount: base_amount.into(),
+                            },
+                            minter,
+                            vec![],
+                        )?);
                     }
                 }
                 _ => return Err(StdError::generic_err("unknown fill_type, impossible?").into()),
@@ -473,13 +500,13 @@ fn acknowledge_fungible_asset_order(
 }
 
 fn execute_packet(
-    mut deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     let (ack, response) = execute_internal(
         deps.branch(),
@@ -498,7 +525,7 @@ fn execute_packet(
 
 #[allow(clippy::too_many_arguments)]
 fn execute_internal(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -507,7 +534,7 @@ fn execute_internal(
     salt: H256,
     path: alloy::primitives::U256,
     instruction: Instruction,
-) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+) -> Result<(Bytes, Response), ContractError> {
     if instruction.version != ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
@@ -562,10 +589,6 @@ fn execute_internal(
     }
 }
 
-fn factory_denom(token: &str, contract: &str) -> String {
-    format!("factory/{}/{}", contract, token)
-}
-
 fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Bytes) -> String {
     // TokenFactory denom name limit
     const MAX_DENOM_LENGTH: usize = 44;
@@ -592,7 +615,7 @@ fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Byt
 
 #[allow(clippy::too_many_arguments)]
 fn execute_multiplex(
-    deps: DepsMut<TokenFactoryQuery>,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     packet: Packet,
@@ -601,7 +624,7 @@ fn execute_multiplex(
     _salt: H256,
     _path: alloy::primitives::U256,
     multiplex: Multiplex,
-) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+) -> Result<(Bytes, Response), ContractError> {
     let contract_address = deps
         .api
         .addr_validate(
@@ -634,7 +657,7 @@ fn execute_multiplex(
 
 #[allow(clippy::too_many_arguments)]
 fn execute_batch(
-    mut deps: DepsMut<TokenFactoryQuery>,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     packet: Packet,
@@ -643,7 +666,7 @@ fn execute_batch(
     salt: H256,
     path: alloy::primitives::U256,
     batch: Batch,
-) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+) -> Result<(Bytes, Response), ContractError> {
     let mut response = Response::new();
     let mut acks = Vec::<Bytes>::with_capacity(batch.instructions.len());
     for (i, instruction) in batch.instructions.into_iter().enumerate() {
@@ -676,8 +699,8 @@ fn execute_batch(
 
 #[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
-    deps: DepsMut<TokenFactoryQuery>,
-    env: Env,
+    deps: DepsMut,
+    _: Env,
     _info: MessageInfo,
     packet: Packet,
     relayer: Addr,
@@ -685,10 +708,12 @@ fn execute_fungible_asset_order(
     _salt: H256,
     path: alloy::primitives::U256,
     order: FungibleAssetOrder,
-) -> Result<(Bytes, Response<TokenFactoryMsg>), ContractError> {
+) -> Result<(Bytes, Response), ContractError> {
     if order.quote_amount > order.base_amount {
         return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
     }
+
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     let wrapped_denom = predict_wrapped_denom(
         path,
         packet.destination_channel_id,
@@ -704,61 +729,54 @@ fn execute_fungible_asset_order(
             str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
-    let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+    let mut messages = Vec::<SubMsg>::new();
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
-        let subdenom = factory_denom(&wrapped_denom, env.contract.address.as_str());
-        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, subdenom.clone()) {
+        if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
-                subdenom.clone(),
+                wrapped_denom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
-            messages.push(
-                TokenFactoryMsg::CreateDenom {
-                    subdenom: wrapped_denom,
-                }
-                .into(),
-            );
-            messages.push(
-                TokenFactoryMsg::SetDenomMetadata {
-                    denom: subdenom.clone(),
-                    metadata: Metadata {
-                        description: None,
-                        denom_units: vec![],
-                        base: None,
-                        display: None,
-                        name: Some(order.base_token_name),
-                        symbol: Some(order.base_token_symbol),
-                        uri: None,
-                        uri_hash: None,
+            messages.push(SubMsg::reply_on_success(
+                make_wasm_msg(
+                    WrappedTokenMsg::CreateDenom {
+                        subdenom: wrapped_denom.clone(),
+                        metadata: Metadata {
+                            name: order.base_token_name,
+                            symbol: order.base_token_symbol,
+                        },
                     },
-                }
-                .into(),
-            );
+                    &minter,
+                    vec![],
+                )?,
+                CREATE_DENOM_REPLY_ID,
+            ));
             TOKEN_ORIGIN.save(
                 deps.storage,
-                subdenom.clone(),
+                wrapped_denom.clone(),
                 &Uint256::from_u128(packet.destination_channel_id as _),
             )?;
         };
-        messages.push(
-            TokenFactoryMsg::MintTokens {
-                denom: subdenom.clone(),
+        messages.push(SubMsg::new(make_wasm_msg(
+            WrappedTokenMsg::MintTokens {
+                denom: wrapped_denom.clone(),
                 amount: quote_amount.into(),
                 mint_to_address: receiver.into_string(),
-            }
-            .into(),
-        );
+            },
+            &minter,
+            vec![],
+        )?));
         if fee_amount > 0 {
-            messages.push(
-                TokenFactoryMsg::MintTokens {
-                    denom: subdenom,
+            messages.push(SubMsg::new(make_wasm_msg(
+                WrappedTokenMsg::MintTokens {
+                    denom: wrapped_denom,
                     amount: fee_amount.into(),
                     mint_to_address: relayer.into_string(),
-                }
-                .into(),
-            );
+                },
+                &minter,
+                vec![],
+            )?));
         }
     } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
         let quote_token = String::from_utf8(Vec::from(order.quote_token))
@@ -773,27 +791,25 @@ fn execute_fungible_asset_order(
                 None => Err(ContractError::InvalidChannelBalance),
             },
         )?;
-        messages.push(
-            BankMsg::Send {
-                to_address: receiver.into_string(),
-                amount: vec![Coin {
-                    denom: quote_token.clone(),
-                    amount: quote_amount.into(),
-                }],
-            }
-            .into(),
-        );
+        messages.push(SubMsg::new(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: quote_token.clone(),
+                recipient: receiver.into_string(),
+                amount: quote_amount.into(),
+            },
+            &minter,
+            vec![],
+        )?));
         if fee_amount > 0 {
-            messages.push(
-                BankMsg::Send {
-                    to_address: relayer.into_string(),
-                    amount: vec![Coin {
-                        denom: quote_token,
-                        amount: fee_amount.into(),
-                    }],
-                }
-                .into(),
-            );
+            messages.push(SubMsg::new(make_wasm_msg(
+                LocalTokenMsg::Unescrow {
+                    denom: quote_token.clone(),
+                    recipient: relayer.into_string(),
+                    amount: quote_amount.into(),
+                },
+                minter,
+                vec![],
+            )?));
         }
     } else {
         return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
@@ -805,82 +821,123 @@ fn execute_fungible_asset_order(
         }
         .abi_encode_params()
         .into(),
-        Response::new().add_messages(messages),
+        Response::new().add_submessages(messages),
     ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(
-    deps: DepsMut<TokenFactoryQuery>,
-    _env: Env,
-    reply: Reply,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
-    if reply.id != REPLY_ID {
-        return Err(ContractError::UnknownReply { id: reply.id });
-    }
-    let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
-    let packet = EXECUTING_PACKET.load(deps.storage)?;
-    EXECUTING_PACKET.remove(deps.storage);
-    match reply.result {
-        SubMsgResult::Ok(_) => {
-            // If the execution succedeed ack is guaranteed to exist.
-            let execution_ack = EXECUTION_ACK.load(deps.storage)?;
-            EXECUTION_ACK.remove(deps.storage);
-            match execution_ack {
-                // Specific value when the execution must be replayed by a MM. No
-                // side effects were executed. We break the TX for MMs to be able to
-                // replay the packet.
-                ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
-                ack if !ack.is_empty() => {
+pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
+    match reply.id {
+        CREATE_DENOM_REPLY_ID => {
+            // We are just emitting the token creation event so that the event is emitted from this
+            // contract.
+            let event = format!("wasm-{CW20_TOKEN_CREATION_EVENT}");
+            match reply
+                .result
+                .into_result()
+                .expect("replies only if success")
+                .events
+                .into_iter()
+                .find(|e| e.ty == event)
+            {
+                Some(event) => {
+                    let attrs: Vec<Attribute> = event
+                        .attributes
+                        .into_iter()
+                        .filter(|a| a.key == CW20_TOKEN_ADDRESS || a.key == CW20_QUOTE_TOKEN)
+                        .collect();
+                    Ok(Response::new()
+                        .add_event(Event::new(CW20_TOKEN_CREATION_EVENT).add_attributes(attrs)))
+                }
+                None => Ok(Response::new()),
+            }
+        }
+        EXECUTE_REPLY_ID => {
+            let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
+            let packet = EXECUTING_PACKET.load(deps.storage)?;
+            EXECUTING_PACKET.remove(deps.storage);
+            match reply.result {
+                SubMsgResult::Ok(_) => {
+                    // If the execution succedeed ack is guaranteed to exist.
+                    let execution_ack = EXECUTION_ACK.load(deps.storage)?;
+                    EXECUTION_ACK.remove(deps.storage);
+                    match execution_ack {
+                        // Specific value when the execution must be replayed by a MM. No
+                        // side effects were executed. We break the TX for MMs to be able to
+                        // replay the packet.
+                        ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
+                        ack if !ack.is_empty() => {
+                            let zkgm_ack = Ack {
+                                tag: TAG_ACK_SUCCESS,
+                                inner_ack: Vec::from(ack).into(),
+                            }
+                            .abi_encode_params();
+                            Ok(Response::new().add_message(wasm_execute(
+                                &ibc_host,
+                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                    MsgWriteAcknowledgement {
+                                        channel_id: packet.destination_channel_id,
+                                        packet,
+                                        acknowledgement: zkgm_ack.into(),
+                                    },
+                                ),
+                                vec![],
+                            )?))
+                        }
+                        // Async acknowledgement, we don't write anything
+                        _ => Ok(Response::new()),
+                    }
+                }
+                // Something went horribly wrong.
+                SubMsgResult::Err(e) => {
                     let zkgm_ack = Ack {
-                        tag: TAG_ACK_SUCCESS,
-                        inner_ack: Vec::from(ack).into(),
+                        tag: TAG_ACK_FAILURE,
+                        inner_ack: Default::default(),
                     }
                     .abi_encode_params();
-                    Ok(Response::new().add_message(wasm_execute(
-                        &ibc_host,
-                        &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                            MsgWriteAcknowledgement {
-                                channel_id: packet.destination_channel_id,
-                                packet,
-                                acknowledgement: zkgm_ack.into(),
-                            },
-                        ),
-                        vec![],
-                    )?))
+                    Ok(Response::new()
+                        .add_attribute("fatal_error", to_json_string(&e)?)
+                        .add_message(wasm_execute(
+                            &ibc_host,
+                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                MsgWriteAcknowledgement {
+                                    channel_id: packet.destination_channel_id,
+                                    packet,
+                                    acknowledgement: zkgm_ack.into(),
+                                },
+                            ),
+                            vec![],
+                        )?))
                 }
-                // Async acknowledgement, we don't write anything
-                _ => Ok(Response::new()),
             }
         }
-        // Something went horribly wrong.
-        SubMsgResult::Err(e) => {
-            let zkgm_ack = Ack {
-                tag: TAG_ACK_FAILURE,
-                inner_ack: Default::default(),
-            }
-            .abi_encode_params();
-            Ok(Response::new()
-                .add_attribute("fatal_error", to_json_string(&e)?)
-                .add_message(wasm_execute(
-                    &ibc_host,
-                    &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                        MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel_id,
-                            packet,
-                            acknowledgement: zkgm_ack.into(),
-                        },
-                    ),
-                    vec![],
-                )?))
+        TOKEN_INIT_REPLY_ID => {
+            let addr = reply
+                .result
+                .into_result()
+                .expect("token init only captures success case")
+                .events
+                .into_iter()
+                .find(|e| &e.ty == "instantiate")
+                .ok_or(ContractError::ContractCreationEventNotFound)?
+                .attributes
+                .into_iter()
+                .find(|a| &a.key == "_contract_address")
+                .ok_or(ContractError::ContractCreationEventNotFound)?
+                .value;
+
+            TOKEN_MINTER.save(deps.storage, &deps.api.addr_validate(&addr)?)?;
+
+            Ok(Response::new())
         }
+        _ => Err(ContractError::UnknownReply { id: reply.id }),
     }
 }
 
 #[allow(clippy::too_many_arguments)]
 fn transfer(
-    deps: DepsMut<TokenFactoryQuery>,
-    env: Env,
+    deps: DepsMut,
+    _: Env,
     info: MessageInfo,
     channel_id: u32,
     receiver: Bytes,
@@ -891,68 +948,78 @@ fn transfer(
     timeout_height: u64,
     timeout_timestamp: u64,
     salt: H256,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
+) -> Result<Response, ContractError> {
+    // NOTE(aeryz): We don't check whether the funds are provided here. We check it in the
+    // minter because cw20 token minter doesn't require funds to be given in the native form.
     if base_amount.is_zero() {
         return Err(ContractError::InvalidAmount);
     }
-    let contains_base_token = info
-        .funds
-        .iter()
-        .any(|coin| coin.denom == base_token && coin.amount == base_amount);
-    if !contains_base_token {
-        return Err(ContractError::MissingFunds);
-    }
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    // Transfers happen from the local chain which means the base token will always be utf8 string
+    let base_token_id = String::from_utf8_lossy(&query_wrapped_token_identifier(
+        deps.as_ref(),
+        &minter,
+        base_token.as_bytes(),
+    )?)
+    .to_string();
     // If the origin exists, the preimage exists
-    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
-    let mut messages = Vec::<CosmosMsg<TokenFactoryMsg>>::new();
+    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token_id.clone())?;
+    let mut messages = Vec::<CosmosMsg>::new();
     // TODO: handle forward path
-    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
+    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_id.clone())?;
     match origin {
         // Burn as we are going to unescrow on the counterparty
         Some(path)
             if path == Uint256::from(channel_id)
                 && unwrapped_asset == Some(quote_token.clone()) =>
         {
-            messages.push(
-                TokenFactoryMsg::BurnTokens {
-                    denom: base_token.clone(),
+            messages.push(make_wasm_msg(
+                WrappedTokenMsg::BurnTokens {
+                    denom: base_token_id.clone(),
                     amount: base_amount,
-                    burn_from_address: env.contract.address.into_string(),
-                }
-                .into(),
-            )
+                    burn_from_address: minter.to_string(),
+                    sender: info.sender.clone(),
+                },
+                &minter,
+                info.funds,
+            )?)
         }
         // Escrow and update the balance, the counterparty will mint the token
         _ => {
             origin = None;
-            CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
-                match balance {
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::Escrow {
+                    from: info.sender.to_string(),
+                    denom: base_token_id.clone(),
+                    recipient: minter.to_string(),
+                    amount: base_amount,
+                },
+                &minter,
+                info.funds,
+            )?);
+            CHANNEL_BALANCE.update(
+                deps.storage,
+                (channel_id, base_token_id.clone()),
+                |balance| match balance {
                     Some(value) => value
                         .checked_add(base_amount.into())
                         .map_err(|_| ContractError::InvalidChannelBalance),
                     None => Ok(base_amount.into()),
-                }
-            })?;
+                },
+            )?;
         }
     };
-    let denom_metadata =
-        deps.querier
-            .query::<MetadataResponse>(&QueryRequest::<TokenFactoryQuery>::Custom(
-                TokenFactoryQuery::Metadata {
-                    denom: base_token.clone(),
-                },
-            ));
-    let default_name = "".into();
-    let default_symbol = base_token.clone();
-    let (base_token_name, base_token_symbol) = match denom_metadata {
-        Ok(MetadataResponse {
-            metadata: Some(metadata),
-        }) => (
-            metadata.name.unwrap_or(default_name),
-            metadata.symbol.unwrap_or(default_symbol),
-        ),
-        _ => (default_name, default_symbol),
-    };
+    let MetadataResponse {
+        name: base_token_name,
+        symbol: base_token_symbol,
+    } = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
+        cosmwasm_std::WasmQuery::Smart {
+            contract_addr: minter.to_string(),
+            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
+                denom: base_token_id.clone(),
+            })?,
+        },
+    ))?;
     let config = CONFIG.load(deps.storage)?;
     messages.push(
         wasm_execute(
@@ -994,4 +1061,35 @@ fn transfer(
         .into(),
     );
     Ok(Response::new().add_messages(messages))
+}
+
+fn query_wrapped_token_identifier(deps: Deps, minter: &Addr, token: &[u8]) -> StdResult<Bytes> {
+    Ok(deps
+        .querier
+        .query::<TokenToIdentifierResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+            contract_addr: minter.to_string(),
+            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::TokenToIdentifier {
+                token: Binary(token.to_vec()),
+            })?,
+        }))?
+        .token_identifier
+        .to_vec()
+        .into())
+}
+
+#[cosmwasm_schema::cw_serde]
+pub struct MigrateMsg {}
+
+#[cosmwasm_std::entry_point]
+pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::default())
+}
+
+fn make_wasm_msg(
+    msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
+    minter: impl Into<String>,
+    funds: Vec<Coin>,
+) -> StdResult<CosmosMsg> {
+    let msg = msg.into();
+    Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
 }

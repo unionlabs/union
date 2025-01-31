@@ -4014,6 +4014,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw20"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "526e39bb20534e25a1cd0386727f0038f4da294e5e535729ba3ef54055246abd"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-utils 1.0.3",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw20-base"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17ad79e86ea3707229bf78df94e08732e8f713207b4a77b2699755596725e7d9"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "cw2 1.1.2",
+ "cw20",
+ "schemars",
+ "semver 1.0.22",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cw20-token-minter"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "cw20",
+ "cw20-base",
+ "serde",
+ "thiserror",
+ "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
+]
+
+[[package]]
 name = "cw721"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6230,12 +6275,14 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "ethabi",
  "hex",
+ "hex-literal",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
  "serde_json",
  "thiserror",
  "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
  "unionlabs",
 ]
 
@@ -7896,6 +7943,18 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "native-token-minter"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "thiserror",
+ "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
 ]
 
 [[package]]
@@ -12618,6 +12677,16 @@ dependencies = [
  "serde_json",
  "thiserror",
  "unionlabs",
+]
+
+[[package]]
+name = "ucs03-zkgm-token-minter-api"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "enumorph",
+ "token-factory-api",
 ]
 
 [[package]]
