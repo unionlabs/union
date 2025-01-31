@@ -421,6 +421,22 @@ pub mod cosmos {
             // @@protoc_insertion_point(cosmos.crypto.secp256r1)
         }
     }
+    pub mod evidence {
+        pub mod module {
+            #[cfg(feature = "cosmos+evidence+module+v1")]
+            // @@protoc_insertion_point(attribute:cosmos.evidence.module.v1)
+            pub mod v1 {
+                include!("cosmos.evidence.module.v1.rs");
+                // @@protoc_insertion_point(cosmos.evidence.module.v1)
+            }
+        }
+        #[cfg(feature = "cosmos+evidence+v1beta1")]
+        // @@protoc_insertion_point(attribute:cosmos.evidence.v1beta1)
+        pub mod v1beta1 {
+            include!("cosmos.evidence.v1beta1.rs");
+            // @@protoc_insertion_point(cosmos.evidence.v1beta1)
+        }
+    }
     pub mod ics23 {
         #[cfg(feature = "cosmos+ics23+v1")]
         // @@protoc_insertion_point(attribute:cosmos.ics23.v1)
@@ -721,6 +737,32 @@ pub mod ibc {
                 include!("ibc.lightclients.wasm.v1.rs");
                 // @@protoc_insertion_point(ibc.lightclients.wasm.v1)
             }
+        }
+    }
+}
+pub mod interchain_security {
+    pub mod ccv {
+        pub mod consumer {
+            #[cfg(feature = "interchain_security+ccv+consumer+v1")]
+            // @@protoc_insertion_point(attribute:interchain_security.ccv.consumer.v1)
+            pub mod v1 {
+                include!("interchain_security.ccv.consumer.v1.rs");
+                // @@protoc_insertion_point(interchain_security.ccv.consumer.v1)
+            }
+        }
+        pub mod provider {
+            #[cfg(feature = "interchain_security+ccv+provider+v1")]
+            // @@protoc_insertion_point(attribute:interchain_security.ccv.provider.v1)
+            pub mod v1 {
+                include!("interchain_security.ccv.provider.v1.rs");
+                // @@protoc_insertion_point(interchain_security.ccv.provider.v1)
+            }
+        }
+        #[cfg(feature = "interchain_security+ccv+v1")]
+        // @@protoc_insertion_point(attribute:interchain_security.ccv.v1)
+        pub mod v1 {
+            include!("interchain_security.ccv.v1.rs");
+            // @@protoc_insertion_point(interchain_security.ccv.v1)
         }
     }
 }

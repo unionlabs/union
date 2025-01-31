@@ -112,15 +112,15 @@ impl ::prost::Name for Misbehaviour {
 pub struct Header {
     #[prost(message, optional, tag = "1")]
     pub signed_header:
-        ::core::option::Option<super::super::super::super::tendermint::types::SignedHeader>,
+        ::core::option::Option<super::super::super::super::cometbft::types::v1::SignedHeader>,
     #[prost(message, optional, tag = "2")]
     pub validator_set:
-        ::core::option::Option<super::super::super::super::tendermint::types::ValidatorSet>,
+        ::core::option::Option<super::super::super::super::cometbft::types::v1::ValidatorSet>,
     #[prost(message, optional, tag = "3")]
     pub trusted_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
     #[prost(message, optional, tag = "4")]
     pub trusted_validators:
-        ::core::option::Option<super::super::super::super::tendermint::types::ValidatorSet>,
+        ::core::option::Option<super::super::super::super::cometbft::types::v1::ValidatorSet>,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";

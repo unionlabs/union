@@ -185,6 +185,16 @@ _: {
             src
           ];
         };
+        interchain-security = rec {
+          src = "${proto.interchain-security}/proto";
+          proto-deps = [
+            src
+            ibc-proto.src
+            google.src
+            cometbls.src
+            cosmos-sdk-evidence.src
+          ];
+        };
         cosmos-sdk = {
           src = "${proto.cosmossdk}/proto";
           proto-deps = [
@@ -209,6 +219,10 @@ _: {
         };
         cosmos-sdk-staking = {
           src = "${proto.cosmossdk}/x/staking/proto";
+          proto-deps = [ ];
+        };
+        cosmos-sdk-evidence = {
+          src = "${proto.cosmossdk}/x/evidence/proto";
           proto-deps = [ ];
         };
       };

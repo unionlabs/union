@@ -129,6 +129,8 @@ workspace = true
 "cosmos+crypto+multisig+v1beta1" = []
 "cosmos+crypto+secp256k1" = []
 "cosmos+crypto+secp256r1" = []
+"cosmos+evidence+module+v1" = []
+"cosmos+evidence+v1beta1" = ["cosmos+base+query+v1beta1", "google+protobuf"]
 "cosmos+ics23+v1" = []
 "cosmos+orm+module+v1alpha1" = []
 "cosmos+orm+query+v1alpha1" = ["cosmos+base+query+v1beta1", "google+protobuf"]
@@ -208,6 +210,25 @@ workspace = true
   "ibc+core+commitment+v1",
 ]
 "ibc+lightclients+wasm+v1" = ["cosmos+base+query+v1beta1", "ibc+core+client+v1"]
+"interchain_security+ccv+consumer+v1" = ["google+protobuf", "interchain_security+ccv+v1"]
+"interchain_security+ccv+provider+v1" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "cosmos+evidence+v1beta1",
+  "cosmos+staking+v1beta1",
+  "google+protobuf",
+  "ibc+core+client+v1",
+  "ibc+lightclients+tendermint+v1",
+  "interchain_security+ccv+v1",
+  "tendermint+crypto",
+  "tendermint+types",
+]
+"interchain_security+ccv+v1" = [
+  "cosmos+staking+v1beta1",
+  "google+protobuf",
+  "ibc+lightclients+tendermint+v1",
+  "tendermint+abci",
+]
 proto_full = [
   "amino",
   "capability+v1",
@@ -266,6 +287,8 @@ proto_full = [
   "cosmos+crypto+multisig+v1beta1",
   "cosmos+crypto+secp256k1",
   "cosmos+crypto+secp256r1",
+  "cosmos+evidence+module+v1",
+  "cosmos+evidence+v1beta1",
   "cosmos+ics23+v1",
   "cosmos+orm+module+v1alpha1",
   "cosmos+orm+query+v1alpha1",
@@ -303,6 +326,9 @@ proto_full = [
   "ibc+lightclients+solomachine+v3",
   "ibc+lightclients+tendermint+v1",
   "ibc+lightclients+wasm+v1",
+  "interchain_security+ccv+consumer+v1",
+  "interchain_security+ccv+provider+v1",
+  "interchain_security+ccv+v1",
   "tendermint+abci",
   "tendermint+blocksync",
   "tendermint+consensus",

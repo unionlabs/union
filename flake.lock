@@ -382,6 +382,22 @@
         "type": "github"
       }
     },
+    "interchain-security": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1736523957,
+        "narHash": "sha256-YgIyZo5fHMb3vdVyEWJDOCoDbKVxwT5rAQ/AIkxnnvE=",
+        "owner": "cosmos",
+        "repo": "interchain-security",
+        "rev": "3cd1a784e6ccaabd354becd33c62fe14afa070f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "interchain-security",
+        "type": "github"
+      }
+    },
     "nix-filter": {
       "locked": {
         "lastModified": 1705332318,
@@ -598,6 +614,7 @@
         "googleapis": "googleapis",
         "ibc-go": "ibc-go",
         "ics23": "ics23",
+        "interchain-security": "interchain-security",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
