@@ -5,9 +5,9 @@ use base58::ToBase58;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg, SubMsgResult,
-    Uint128, Uint256, WasmMsg,
+    to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin, CosmosMsg, Deps,
+    DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg,
+    SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -40,6 +40,7 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
+pub const CREATE_DENOM_REPLY_ID: u64 = 0xdead;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 
@@ -727,7 +728,7 @@ fn execute_fungible_asset_order(
             str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
-    let mut messages = Vec::<CosmosMsg>::new();
+    let mut messages = Vec::<SubMsg>::new();
     if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
         // TODO: handle forwarding path
         if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
@@ -736,24 +737,27 @@ fn execute_fungible_asset_order(
                 wrapped_denom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
-            messages.push(make_wasm_msg(
-                WrappedTokenMsg::CreateDenom {
-                    subdenom: wrapped_denom.clone(),
-                    metadata: Metadata {
-                        name: order.base_token_name,
-                        symbol: order.base_token_symbol,
+            messages.push(SubMsg::reply_on_success(
+                make_wasm_msg(
+                    WrappedTokenMsg::CreateDenom {
+                        subdenom: wrapped_denom.clone(),
+                        metadata: Metadata {
+                            name: order.base_token_name,
+                            symbol: order.base_token_symbol,
+                        },
                     },
-                },
-                &minter,
-                vec![],
-            )?);
+                    &minter,
+                    vec![],
+                )?,
+                CREATE_DENOM_REPLY_ID,
+            ));
             TOKEN_ORIGIN.save(
                 deps.storage,
                 wrapped_denom.clone(),
                 &Uint256::from_u128(packet.destination_channel_id as _),
             )?;
         };
-        messages.push(make_wasm_msg(
+        messages.push(SubMsg::new(make_wasm_msg(
             WrappedTokenMsg::MintTokens {
                 denom: wrapped_denom.clone(),
                 amount: quote_amount.into(),
@@ -761,9 +765,9 @@ fn execute_fungible_asset_order(
             },
             &minter,
             vec![],
-        )?);
+        )?));
         if fee_amount > 0 {
-            messages.push(make_wasm_msg(
+            messages.push(SubMsg::new(make_wasm_msg(
                 WrappedTokenMsg::MintTokens {
                     denom: wrapped_denom,
                     amount: fee_amount.into(),
@@ -771,7 +775,7 @@ fn execute_fungible_asset_order(
                 },
                 &minter,
                 vec![],
-            )?);
+            )?));
         }
     } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
         let quote_token = String::from_utf8(Vec::from(order.quote_token))
@@ -786,7 +790,7 @@ fn execute_fungible_asset_order(
                 None => Err(ContractError::InvalidChannelBalance),
             },
         )?;
-        messages.push(make_wasm_msg(
+        messages.push(SubMsg::new(make_wasm_msg(
             LocalTokenMsg::Unescrow {
                 denom: quote_token.clone(),
                 recipient: receiver.into_string(),
@@ -794,9 +798,9 @@ fn execute_fungible_asset_order(
             },
             &minter,
             vec![],
-        )?);
+        )?));
         if fee_amount > 0 {
-            messages.push(make_wasm_msg(
+            messages.push(SubMsg::new(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
                     denom: quote_token.clone(),
                     recipient: relayer.into_string(),
@@ -804,7 +808,7 @@ fn execute_fungible_asset_order(
                 },
                 minter,
                 vec![],
-            )?);
+            )?));
         }
     } else {
         return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
@@ -816,13 +820,34 @@ fn execute_fungible_asset_order(
         }
         .abi_encode_params()
         .into(),
-        Response::new().add_messages(messages),
+        Response::new().add_submessages(messages),
     ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
+        CREATE_DENOM_REPLY_ID => {
+            match reply
+                .result
+                .into_result()
+                .expect("replies only if success")
+                .events
+                .into_iter()
+                .find(|e| &e.ty == "wasm-cw20_token_creation")
+            {
+                Some(event) => {
+                    let attrs: Vec<Attribute> = event
+                        .attributes
+                        .into_iter()
+                        .filter(|a| &a.key == "cw20_token_address" || &a.key == "quote_token")
+                        .collect();
+                    Ok(Response::new()
+                        .add_event(Event::new("cw20_token_creation").add_attributes(attrs)))
+                }
+                None => Ok(Response::new()),
+            }
+        }
         EXECUTE_REPLY_ID => {
             let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
             let packet = EXECUTING_PACKET.load(deps.storage)?;
@@ -1063,4 +1088,16 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
+}
+
+#[test]
+fn ads() {
+    panic!(
+        "{}",
+        hex::encode(&predict_wrapped_denom(
+            "0".parse().unwrap(),
+            6,
+            b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into(),
+        ))
+    );
 }

@@ -241,9 +241,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
         ADDR_TO_DENOM.save(deps.storage, addr.clone(), &denom)?;
 
         Ok(Response::new().add_event(
-            Event::new("cw20_instantiate")
+            Event::new("cw20_token_creation")
                 .add_attribute("quote_token", denom)
-                .add_attribute("contract_address", addr),
+                .add_attribute("cw20_token_address", addr),
         ))
     } else {
         Err(Error::UnexpectedReply(reply.id))
@@ -306,15 +306,4 @@ fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {
             contract_addr: addr.to_string(),
             msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
         }))
-}
-
-/// Restricts the symbol to have a maximum of 12 characters. This restriction comes from
-/// CW20. We know that the symbol won't be smaller than 3 characters and it will always be
-/// UTF-8 thanks to the Cosmos SDK. So we only check the maximum character length.
-fn restrict_symbol(symbol: &str) -> String {
-    if symbol.len() > 12 {
-        symbol[..12].to_string()
-    } else {
-        symbol.to_string()
-    }
 }
