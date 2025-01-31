@@ -1,0 +1,40 @@
+[package]
+name    = "ethermint-light-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cometbft-types                = { workspace = true, features = ["hash"] }
+cosmwasm-std                  = { workspace = true, features = ["abort"] }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
+ics23                         = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+tendermint-light-client       = { workspace = true, features = ["library"] }
+tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+ethermint-light-client-types = { workspace = true, features = ["serde", "bincode"] }
+tendermint-verifier           = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true }
+
+[dev-dependencies]
+base64                = { workspace = true }
+ethereum-light-client = { workspace = true }
+lazy_static           = "1.4.0"
+serde_json            = { workspace = true }
+
+[features]
