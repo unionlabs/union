@@ -32,10 +32,6 @@ pub struct Args {
     #[arg(short, long, env = "HUBBLE_METRICS_PORT")]
     pub metrics_addr: Option<SocketAddr>,
 
-    /// Fetch the counterparty chain ids for all clients known to hubble.
-    #[arg(long)]
-    pub fetch_client_chain_ids: bool,
-
     /// The log format for Hubble.
     #[arg(
         global = true,
@@ -45,10 +41,6 @@ pub struct Args {
         default_value = "json"
     )]
     pub log_format: LogFormat,
-
-    /// List of URLs to include.
-    #[arg(short, long, env = "TOKENS_URLS")]
-    pub tokens_urls: TokensUrls,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
