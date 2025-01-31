@@ -11,7 +11,7 @@ use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     self,
-    encoding::{DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
     union::ics23,
@@ -33,8 +33,45 @@ async fn main() {
     Module::run().await
 }
 
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub enum SupportedIbcInterface {
+    IbcSolidity,
+    IbcMoveAptos,
+}
+
+impl TryFrom<String> for SupportedIbcInterface {
+    // TODO: Better error type here
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match &*value {
+            IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
+            IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
+            _ => Err(format!("unsupported IBC interface: `{value}`")),
+        }
+    }
+}
+
+impl SupportedIbcInterface {
+    fn as_str(&self) -> &'static str {
+        match self {
+            SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
+            SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
+        }
+    }
+}
+
+impl From<SupportedIbcInterface> for String {
+    fn from(value: SupportedIbcInterface) -> Self {
+        value.as_str().to_owned()
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct Module {}
+pub struct Module {
+    pub ibc_interface: SupportedIbcInterface,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -46,8 +83,9 @@ impl ClientModule for Module {
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_ICS23_ICS23)?;
         info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
-        info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)?;
-        Ok(Self {})
+        Ok(Self {
+            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
+        })
     }
 }
 
@@ -62,14 +100,26 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
-        ClientState::abi_decode_params(client_state, true).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => {
+                ClientState::abi_decode_params(client_state, true).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+            }
+            SupportedIbcInterface::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
+        }
     }
 
     pub fn make_height(revision_height: u64) -> Height {
@@ -85,7 +135,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Module::decode_client_state(&client_state)?;
+        let cs = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.l2_chain_id.to_string()),
@@ -108,7 +158,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(into_value(Module::decode_client_state(&client_state)?))
+        Ok(into_value(self.decode_client_state(&client_state)?))
     }
 
     #[instrument]
@@ -148,7 +198,10 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.abi_encode_params())
+            .and_then(|cs| match self.ibc_interface {
+                SupportedIbcInterface::IbcMoveAptos => Ok(cs.encode_as::<Bcs>()),
+                SupportedIbcInterface::IbcSolidity => Ok(cs.abi_encode_params()),
+            })
             .map(Into::into)
     }
 
@@ -183,12 +236,16 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .map(|header| header.encode_as::<EthAbi>())
+            .map(|header| match self.ibc_interface {
+                SupportedIbcInterface::IbcMoveAptos => header.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
+            })
             .map(Into::into)
     }
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
+        // TODO(aeryz): handle this for cosmos
         let proof = serde_json::from_value::<
             unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
         >(proof)
