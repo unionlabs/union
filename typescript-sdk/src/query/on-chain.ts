@@ -1,4 +1,6 @@
+import { ofetch } from "ofetch"
 import type { Prettify } from "../types.ts"
+import { Base64, Hex, Json } from "ox"
 
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"
@@ -32,6 +34,92 @@ type CosmosTransactionReceipt = {
       attributes: Array<{ key: string; value: string; index: boolean }>
     }>
   }
+}
+
+const CW20_PREFIXES = [
+  "\u0000\x07",
+  "\u0000\x08",
+  "\u0000\x09",
+  "\u0000\x0A",
+  "\u0000\x0B"
+] as const
+const CW20_HUMAN_PREFIXES = [
+  "balance",
+  "allowance",
+  "token_info",
+  "contract_info",
+  "allowance_spender"
+] as const
+const CW20_PREFIXES_MAP = {
+  balance: "\u0000\x07",
+  allowance: "\u0000\x08",
+  token_info: "\u0000\x09",
+  contract_info: "\u0000\x0A"
+} as const
+
+interface ContractStateResponse {
+  address: string
+  balance: string
+  contractInfo: { contract: string; version: string }
+  tokenInfo: {
+    name: string
+    symbol: string
+    decimals: number
+    total_supply: string
+    mint: string | null
+  }
+}
+
+export async function queryContractState({
+  contractAddress,
+  restUrl
+}: {
+  contractAddress: string
+  restUrl: string
+}) {
+  const data = await ofetch<{
+    models: Array<{ key: string; value: string }>
+    pagination: { next_key: string; total: string }
+  }>(`${restUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/state`)
+
+  return data.models.map((kv, index) => {
+    let keyDecoded = Hex.toString(`0x${kv.key}`)
+    let valueDecoded = Json.parse(Base64.toString(kv.value))
+
+    if (index === 0) {
+      // balance
+      const prefix = keyDecoded.slice(0, 9)
+      const address = keyDecoded.slice(9)
+      keyDecoded = prefix
+      valueDecoded = {
+        address,
+        amount: valueDecoded
+      }
+    }
+    return {
+      key: keyDecoded.replaceAll(CW20_PREFIXES_MAP["balance"], ""),
+      value: valueDecoded
+    }
+  })
+}
+
+/**
+ * check if Cosmos contract address is cw20 or regular token
+ * it calls `/cosmwasm/wasm/v1/contract/$address` to request token info
+ * if token info (name, symbol, etc.) is returned, it's a cw20 token
+ */
+export async function checkCosmosTokenType({
+  address,
+  restEndpoint
+}: { address: string; restEndpoint: string }) {
+  const query = { token_info: {} }
+  const base64Encoded = btoa(JSON.stringify(query))
+  console.info("base64Encoded", base64Encoded)
+  const response = await fetch(
+    `${restEndpoint}/cosmwasm/wasm/v1/contract/${address}/smart/${base64Encoded}`
+  )
+  const data = await response.json()
+  return data
 }
 
 /**
@@ -96,8 +184,8 @@ export async function getCosmosAccountTransactions({
   sent: CosmosAccountTransactions
   received: CosmosAccountTransactions
 }> {
-  const senderUrl = `${rpcUrl}/tx_search?query="transfer.sender='${address}'"`
-  const recipientUrl = `${rpcUrl}/tx_search?query="transfer.recipient='${address}'"`
+  const senderUrl = `${rpcUrl}/tx_search?query="transfer.sender='${address}'"&prove=false`
+  const recipientUrl = `${rpcUrl}/tx_search?query="transfer.recipient='${address}'"&prove=false`
   const [sent, received] = (await Promise.all([
     fetch(senderUrl, { headers: queryHeaders })
       .then(_ => _.json())
