@@ -84,7 +84,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         ]
       })
     },
-    c20IncreaseAllowance: async ({
+    cw20IncreaseAllowance: async ({
       contractAddress,
       amount,
       spender,
