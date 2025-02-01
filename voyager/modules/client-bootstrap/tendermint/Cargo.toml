@@ -15,7 +15,7 @@ workspace = true
 cometbft-rpc                  = { workspace = true }
 ics23                         = { workspace = true }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
-protos                        = { workspace = true }
+protos                        = { workspace = true, features = ["cosmos+staking+v1beta1", "interchain_security+ccv+consumer+v1"] }
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["proto", "serde"] }
