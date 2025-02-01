@@ -47,7 +47,7 @@
       "#*": ["./src/*"]
     }
   },
-  "exclude": ["**/dist/**"],
+  "exclude": ["**/_/**", "**/dist/**"],
   "include": ["src", "test", "scripts", "playground", "knip.json"],
   "files": ["reset.d.ts", "tsup.config.ts", "environment.d.ts", "vitest.config.ts"]
 }

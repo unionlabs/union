@@ -39,6 +39,7 @@
     "graphql-request": "^7.1.2",
     "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
+    "ox": "^0.6.9",
     "patch-package": "^8.0.0",
     "viem": "^2.22.17"
   },
@@ -47,7 +48,7 @@
     "@total-typescript/ts-reset": "^0.6.1",
     "@tsconfig/strictest": "^2.0.5",
     "@types/bun": "^1.2.1",
-    "@types/node": "^22.12.0",
+    "@types/node": "^22.13.0",
     "consola": "^3.4.0",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.3",
