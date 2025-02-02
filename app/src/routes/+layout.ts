@@ -5,7 +5,7 @@ export const trailingSlash = "ignore"
 import { fetchFeatures } from "$lib/queries/features"
 
 export const load = async () => {
-  const environment = import.meta.env.ENVIRONMENT.toUpperCase()
+  const environment = import.meta.env.VITE_ENVIRONMENT.toUpperCase()
   const features = await fetchFeatures(environment)
 
   return {
