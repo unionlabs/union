@@ -13,7 +13,6 @@ use crate::{
         ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     },
     data::Data,
-    rpc::ProofType,
     RawClientId, VoyagerMessage,
 };
 
@@ -82,10 +81,10 @@ pub struct ConsensusModuleInfo {
     pub chain_id: ChainId,
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
     pub consensus_type: ConsensusType,
-    // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily
-    // have the same client and consensus state types? /// The type of client this consensus
-    // module provides state for. #[arg(value_parser(|s: &str|
-    // ok(ClientType::new(s.to_owned()))))] pub client_type: ClientType,
+    // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily have the same client and consensus state types?
+    // /// The type of client this consensus module provides state for.
+    // #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
+    // pub client_type: ClientType,
 }
 
 impl ConsensusModuleInfo {
@@ -177,12 +176,20 @@ impl ClientModuleInfo {
 
     pub fn ensure_ibc_interface(
         &self,
-        ibc_interface: impl AsRef<str>,
+        expected_interfaces: impl IntoIterator<Item = &'static str>,
     ) -> Result<(), UnexpectedIbcInterfaceError> {
-        if ibc_interface.as_ref() != self.ibc_interface.as_str() {
+        let expected_interfaces: Vec<IbcInterface> = expected_interfaces
+            .into_iter()
+            .map(IbcInterface::new)
+            .collect();
+
+        if !expected_interfaces
+            .iter()
+            .any(|e| e.as_str() == self.ibc_interface.as_str())
+        {
             Err(UnexpectedIbcInterfaceError {
-                expected: self.ibc_interface.clone(),
-                found: ibc_interface.as_ref().to_owned(),
+                expected: expected_interfaces,
+                found: self.ibc_interface.to_string(),
             })
         } else {
             Ok(())
@@ -256,36 +263,28 @@ pub struct UnexpectedChainIdError {
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error(
-    "invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`"
-)]
+#[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedConsensusTypeError {
     pub expected: ConsensusType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error(
-    "invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`"
-)]
+#[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedClientTypeError {
     pub expected: ClientType,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error(
-    "invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`"
-)]
+#[error("invalid IBC interface: this module provides functionality for IBC interfaces `{expected}`, but the config specifies `{found}`", expected = expected.iter().map(|x| x.as_str()).collect::<Vec<_>>().join(","))]
 pub struct UnexpectedIbcInterfaceError {
-    pub expected: IbcInterface,
+    pub expected: Vec<IbcInterface>,
     pub found: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error(
-    "invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`"
-)]
+#[error("invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`")]
 pub struct UnexpectedIbcVersionIdError {
     pub expected: IbcSpecId,
     pub found: String,
@@ -359,18 +358,14 @@ pub trait ProofModule<V: IbcSpec> {
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the state as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(
-        &self,
-        at: Height,
-        path: V::StorePath,
-    ) -> RpcResult<(Value, ProofType)>;
+    async fn query_ibc_proof(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
 }
 
 /// Type-erased version of [`ProofModuleClient`].
 #[rpc(client, namespace = "proof")]
 pub trait RawProofModule {
     #[method(name = "queryIbcProof")]
-    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<(Value, ProofType)>;
+    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 }
 
 /// Client modules provide functionality to interact with a single light client
@@ -431,9 +426,7 @@ pub trait ConsensusModule {
     async fn query_latest_timestamp(&self, finalized: bool) -> RpcResult<Timestamp>;
 }
 
-/// Client bootstrap modules provide the initial client and consensus states for a client. This is
-/// notably separate from the [`ConsensusModule`], since it is possible for different client types
-/// (with different state types) to track the same consensus.
+/// Client bootstrap modules provide the initial client and consensus states for a client. This is notably separate from the [`ConsensusModule`], since it is possible for different client types (with different state types) to track the same consensus.
 #[rpc(client, server, namespace = "clientBootstrap")]
 pub trait ClientBootstrapModule {
     /// The client state of this chain at the specified [`Height`].
