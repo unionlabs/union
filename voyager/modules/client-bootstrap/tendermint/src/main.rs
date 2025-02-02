@@ -40,6 +40,8 @@ pub struct Module {
     pub chain_revision: u64,
     pub grpc_url: String,
 
+    pub ccv_consumer_chain: bool,
+
     pub ibc_host_contract_address: H256,
 }
 
@@ -48,6 +50,8 @@ pub struct Module {
 pub struct Config {
     pub rpc_url: String,
     pub grpc_url: String,
+    #[serde(default)]
+    pub ccv_consumer_chain: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -84,6 +88,7 @@ impl ClientBootstrapModule for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
+            ccv_consumer_chain: config.ccv_consumer_chain,
             ibc_host_contract_address: config
                 .ibc_host_contract_address
                 .map(|a| *a.data())
@@ -105,23 +110,51 @@ impl Module {
     pub fn make_height(&self, height: u64) -> Height {
         Height::new_with_revision(self.chain_revision, height)
     }
+
+    async fn fetch_unbonding_period(&self) -> std::time::Duration {
+        let unbonding_period = if self.ccv_consumer_chain {
+            let params =
+                protos::interchain_security::ccv::consumer::v1::query_client::QueryClient::connect(
+                    self.grpc_url.clone(),
+                )
+                .await
+                .unwrap()
+                .query_params(protos::interchain_security::ccv::consumer::v1::QueryParamsRequest {})
+                .await
+                .unwrap()
+                .into_inner()
+                .params
+                .unwrap();
+
+            params.unbonding_period.clone().unwrap()
+        } else {
+            let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+                self.grpc_url.clone(),
+            )
+            .await
+            .unwrap()
+            .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
+            .await
+            .unwrap()
+            .into_inner()
+            .params
+            .unwrap();
+
+            params.unbonding_time.clone().unwrap()
+        };
+
+        std::time::Duration::new(
+            unbonding_period.seconds.try_into().unwrap(),
+            unbonding_period.nanos.try_into().unwrap(),
+        )
+    }
 }
 
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .params
-        .unwrap();
+        let unbonding_period = self.fetch_unbonding_period().await;
 
         let commit = self
             .cometbft_client
@@ -130,23 +163,6 @@ impl ClientBootstrapModuleServer for Module {
             .unwrap();
 
         let height = commit.signed_header.header.height;
-
-        let unbonding_period = std::time::Duration::new(
-            params
-                .unbonding_time
-                .clone()
-                .unwrap()
-                .seconds
-                .try_into()
-                .unwrap(),
-            params
-                .unbonding_time
-                .clone()
-                .unwrap()
-                .nanos
-                .try_into()
-                .unwrap(),
-        );
 
         Ok(serde_json::to_value(ClientState {
             chain_id: self.chain_id.to_string(),

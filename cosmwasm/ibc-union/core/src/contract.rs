@@ -1779,6 +1779,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
             &CLIENT_TYPES.load(deps.storage, client_id)?,
         )?),
+        QueryMsg::GetClientImpl { client_id } => {
+            Ok(to_json_binary(&client_impl(deps, client_id)?)?)
+        }
+        QueryMsg::GetRegisteredClientType { client_type } => Ok(to_json_binary(
+            &CLIENT_REGISTRY.load(deps.storage, &client_type)?,
+        )?),
         QueryMsg::GetTimestampAtHeight { client_id, height } => Ok(to_json_binary(
             &get_timestamp_at_height(deps, client_id, height)?,
         )?),

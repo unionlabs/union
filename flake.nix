@@ -51,6 +51,10 @@
       url = "github:cosmos/ics23";
       flake = false;
     };
+    interchain-security = {
+      url = "github:cosmos/interchain-security";
+      flake = false;
+    };
     # for chains that require blst (babylon)
     blst = {
       url = "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
@@ -392,6 +396,7 @@
                 inherit (inputs) cometbls;
                 cometbls-lc = ./11-cometbls/proto;
                 inherit (inputs) cosmossdk;
+                inherit (inputs) interchain-security;
               };
 
               openapi = {
