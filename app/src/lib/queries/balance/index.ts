@@ -1,6 +1,6 @@
-import { isAddress, type Address } from "viem"
+import { type Address, isAddress } from "viem"
 import { bech32ToBech32Address } from "@unionlabs/client"
-import type { Chain, UserAddresses, ChainAsset, TokenInfo } from "$lib/types"
+import type { Chain, ChainAsset, TokenInfo, UserAddresses } from "$lib/types"
 import { erc20ReadMulticall } from "./evm/multicall.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { getAptosChainBalances } from "./aptos.ts"
@@ -161,6 +161,8 @@ export function userBalancesQuery({
         userAddr?.cosmos?.normalized,
         userAddr.aptos?.canonical
       ],
+      keepPreviousData: true,
+      enabled: Boolean(getAddressForChain(chain, userAddr)),
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
       queryFn: async () => {

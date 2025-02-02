@@ -1,8 +1,8 @@
 import { derived, type Readable } from "svelte/store"
-import type { Chain, UserAddresses } from "$lib/types"
+import type { Chain, ChainFeature, Ucs03Channel, UserAddresses } from "$lib/types"
 import { userAddress } from "./balances.ts"
-import type { BalanceData, userBalancesQuery } from "$lib/queries/balance"
-import type { UnwrapReadable } from "$lib/utilities/types.ts"
+import type { BalanceData } from "$lib/queries/balance"
+import { page } from "$app/stores"
 
 export type ChainBalances = {
   chainId: string
@@ -14,16 +14,25 @@ export type BalancesList = Array<ChainBalances>
 export interface ContextStore {
   chains: Array<Chain>
   userAddress: UserAddresses
-  balances: UnwrapReadable<ReturnType<typeof userBalancesQuery>>
+  ucs03channels: Array<Ucs03Channel>
 }
 
 export function createContextStore(
   chains: Array<Chain>,
-  balances: ReturnType<typeof userBalancesQuery>
+  ucs03channels: Array<Ucs03Channel>
 ): Readable<ContextStore> {
-  return derived([userAddress, balances], ([$userAddress, $balances]) => ({
-    chains,
-    userAddress: $userAddress,
-    balances: $balances
-  }))
+  return derived([userAddress, page], ([$userAddress, $page]) => {
+    const enabledChains = chains.filter(chain => {
+      const chainFeature = $page.data.features.find(
+        (feature: ChainFeature) => feature.chain_id === chain.chain_id
+      )
+      return chainFeature?.features[0]?.transfer_list
+    })
+
+    return {
+      chains: enabledChains,
+      userAddress: $userAddress,
+      ucs03channels
+    }
+  })
 }

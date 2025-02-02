@@ -12,7 +12,7 @@ import {
   createValidationStore,
   type ValidationStore
 } from "$lib/components/TransferFrom/transfer/validation.ts"
-import type { Chain } from "$lib/types"
+import type { Chain, Ucs03Channel } from "$lib/types"
 import type { userBalancesQuery } from "$lib/queries/balance/index.ts"
 
 export interface TransferStore {
@@ -24,11 +24,12 @@ export interface TransferStore {
 
 export function createTransferStore(
   chains: Array<Chain>,
-  balances: ReturnType<typeof userBalancesQuery>
+  balances: ReturnType<typeof userBalancesQuery>,
+  ucs03channels: Array<Ucs03Channel>
 ): TransferStore {
   const rawIntents = createRawIntentsStore()
-  const context = createContextStore(chains, balances)
-  const intents = createIntentStore(rawIntents, context)
+  const context = createContextStore(chains, ucs03channels)
+  const intents = createIntentStore(rawIntents, context, balances)
   const validation = createValidationStore(rawIntents, intents, context)
 
   return {

@@ -118,6 +118,7 @@ export type TokenRepresentation = {
   decimals: number
   sources: Array<unknown>
 }
+
 export type TokenInfo =
   | {
       quality_level: "GRAPHQL"

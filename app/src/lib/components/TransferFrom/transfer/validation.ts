@@ -3,13 +3,14 @@ import { derived } from "svelte/store"
 import type { IntentsStore } from "./intents.ts"
 import type { Chain } from "$lib/types"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
-import { isHex } from "viem"
+import { isHex, parseUnits } from "viem"
 import {
   evmChainId,
   aptosChainId,
   cosmosChainId,
   isValidEvmAddress,
-  isValidBech32Address
+  isValidBech32Address,
+  type getChannelInfo
 } from "@unionlabs/client"
 import type { FormFields, RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
@@ -19,9 +20,13 @@ export type FieldErrors = Partial<Record<keyof FormFields, string>>
 export interface ValidTransfer {
   sourceChain: Chain
   destinationChain: Chain
-  asset: string
+  baseTokens: Array<{ denom: string; balance: string }>
+  baseToken: { denom: string; balance: string }
+  channel: NonNullable<ReturnType<typeof getChannelInfo>>
   receiver: string
+  ucs03address: string
   amount: string
+  parsedAmount: bigint
   sender: string
 }
 
@@ -46,6 +51,7 @@ export function createValidationStore(
 ): Readable<ValidationStore> {
   const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const errors: FieldErrors = {}
+    let parsedAmount: bigint | undefined
 
     if ($rawIntents.source && !$intents.sourceChain) {
       errors.source = "Chain not supported"
@@ -73,27 +79,26 @@ export function createValidationStore(
     }
 
     // Required fields when asset is selected
-    if ($rawIntents.asset) {
+    if ($rawIntents.asset && $intents.baseToken) {
       if (!$rawIntents.amount) errors.amount = "Amount is required"
       if (!$rawIntents.receiver) errors.receiver = "Receiver is required"
 
-      // Amount validation
-      // if ($rawIntents.amount) {
-      //   try {
-      //     const parsedAmount = parseUnits(
-      //       $rawIntents.amount,
-      //       $intents.selectedAsset.metadata.decimals ?? 0
-      //     )
-      //     if (parsedAmount <= 0n) {
-      //       errors.amount = "Amount must be greater than 0"
-      //     }
-      //     if (parsedAmount > BigInt($intents.selectedAsset.balance)) {
-      //       errors.amount = "Amount exceeds balance"
-      //     }
-      //   } catch {
-      //     errors.amount = "Invalid amount"
-      //   }
-      // }
+      if ($rawIntents.amount) {
+        try {
+          parsedAmount = parseUnits(
+            $rawIntents.amount,
+            $intents.baseTokenInfo?.combined.decimals ?? 0
+          )
+          if (parsedAmount <= 0n) {
+            errors.amount = "Amount must be greater than 0"
+          }
+          if (parsedAmount > BigInt($intents.baseToken.balance)) {
+            errors.amount = "Amount exceeds balance"
+          }
+        } catch {
+          errors.amount = "Invalid amount"
+        }
+      }
 
       if ($rawIntents.receiver && $rawIntents.destination) {
         if (aptosChainId.includes($rawIntents.destination) && !isHex($rawIntents.receiver)) {
@@ -114,17 +119,26 @@ export function createValidationStore(
       }
     }
 
-    return errors
+    return { errors, parsedAmount }
   })
 
   const transfer = derived(
     [rawIntents, intents, context, errors],
     ([$rawIntents, $intents, $context, $errors]) => {
-      if (Object.keys($errors).length > 0) return undefined
+      if (Object.keys($errors.errors).length > 0) return undefined
 
-      if (!($intents.sourceChain && $intents.destinationChain)) {
+      if (
+        !(
+          $intents.sourceChain &&
+          $intents.destinationChain &&
+          $intents.baseToken &&
+          $intents.channel &&
+          $intents.ucs03address &&
+          $intents.receiver &&
+          $errors.parsedAmount
+        )
+      )
         return undefined
-      }
 
       const sender = userAddrOnChain($context.userAddress, $intents.sourceChain)
       if (!sender) return undefined
@@ -132,19 +146,31 @@ export function createValidationStore(
       return {
         sourceChain: $intents.sourceChain,
         destinationChain: $intents.destinationChain,
-        asset: $rawIntents.asset,
-        receiver: $rawIntents.receiver,
+        baseTokens: $intents.baseTokens,
+        baseToken: $intents.baseToken,
+        channel: $intents.channel,
+        receiver: $intents.receiver,
+        ucs03address: $intents.ucs03address,
         amount: $rawIntents.amount,
+        parsedAmount: $errors.parsedAmount,
         sender
       } as ValidTransfer
     }
   )
 
   return derived([transfer, errors], ([$transfer, $errors]): ValidationStore => {
-    const isValid = $transfer !== undefined
+    if ($transfer !== undefined) {
+      return {
+        transfer: $transfer,
+        errors: $errors.errors,
+        isValid: true as const
+      }
+    }
 
-    return isValid
-      ? { transfer: $transfer as ValidTransfer, errors: $errors, isValid: true }
-      : { transfer: undefined, errors: $errors, isValid: false }
+    return {
+      transfer: undefined,
+      errors: $errors.errors,
+      isValid: false as const
+    }
   })
 }
