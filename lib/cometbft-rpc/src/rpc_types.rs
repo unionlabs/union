@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use std::num::{NonZeroU32, NonZeroU64};
 
 use cometbft_types::{
     abci::{event::Event, exec_tx_result::ExecTxResult, response_query::QueryResponse},
@@ -137,6 +137,27 @@ pub struct GrpcAbciQueryResponse<T> {
     pub proof_ops: Option<ProofOps>,
     pub height: BoundedI64<0, { i64::MAX }>,
     pub codespace: String,
+}
+
+impl<R> GrpcAbciQueryResponse<R> {
+    pub fn into_result(self) -> Result<Option<R>, GrpcAbciQueryError> {
+        match NonZeroU32::new(self.code) {
+            Some(error_code) => Err(GrpcAbciQueryError {
+                error_code,
+                codespace: self.codespace,
+                log: self.log,
+            }),
+            None => Ok(self.value),
+        }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("grpc abci query error: {error_code}, {codespace}: {log}")]
+pub struct GrpcAbciQueryError {
+    pub error_code: NonZeroU32,
+    pub codespace: String,
+    pub log: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -11,6 +11,8 @@ pub struct InitMsg {
 
 #[cw_serde]
 pub struct Config {
+    /// The address to set as the owner of the minter.
+    pub admin: Addr,
     /// The address of the `ibc-union` contract running on this chain.
     pub ibc_host: Addr,
     /// The code id of the `ucs03-zkgm-token-minter-api` implementor. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.

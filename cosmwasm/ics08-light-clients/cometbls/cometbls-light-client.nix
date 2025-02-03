@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       crane,
-      lib,
       ensure-wasm-client-type,
       ...
     }:

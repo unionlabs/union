@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, num::NonZeroU32};
 
 use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
@@ -35,6 +35,7 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
+use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     state::{
@@ -97,20 +98,6 @@ pub mod events {
         pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
     }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn instantiate(
-    deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _msg: InitMsg,
-) -> Result<Response, ContractError> {
-    NEXT_CHANNEL_ID.save(deps.storage, &0)?;
-    NEXT_CONNECTION_ID.save(deps.storage, &0)?;
-    NEXT_CLIENT_ID.save(deps.storage, &0)?;
-
-    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -457,11 +444,29 @@ fn migrate_state(
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MigrateMsg {}
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct IbcUnionMigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::new())
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
+) -> Result<Response, ContractError> {
+    msg.run(deps, init, |_deps, _migrate, _version| {
+        Ok((Response::default(), None))
+    })
+}
+
+pub(crate) fn init(
+    deps: DepsMut<'_>,
+    InitMsg {}: InitMsg,
+) -> Result<(Response, Option<NonZeroU32>), ContractError> {
+    NEXT_CHANNEL_ID.save(deps.storage, &0)?;
+    NEXT_CONNECTION_ID.save(deps.storage, &0)?;
+    NEXT_CLIENT_ID.save(deps.storage, &0)?;
+
+    Ok((Response::default(), None))
 }
 
 fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {

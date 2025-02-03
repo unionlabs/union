@@ -194,13 +194,6 @@
         ./site/site.nix
         # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
-        ./cosmwasm/ibc-union/light-clients/ethereum/ethereum-light-client.nix
-        ./cosmwasm/ibc-union/light-clients/cometbls/cometbls-light-client.nix
-        ./cosmwasm/ibc-union/light-clients/tendermint/tendermint-light-client.nix
-        # ./cosmwasm/ibc-union/light-clients/scroll/scroll-light-client.nix
-        # ./cosmwasm/ibc-union/light-clients/arbitrum/arbitrum-light-client.nix
-        ./cosmwasm/ibc-union/light-clients/berachain/berachain-light-client.nix
-        ./cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt/state-lens-ics23-mpt-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix
         ./lib/linea-verifier/default.nix
         ./lib/linea-zktrie/default.nix

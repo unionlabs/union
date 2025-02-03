@@ -20,6 +20,7 @@ macros                         = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
+thiserror.workspace            = true
 tracing                        = { workspace = true }
 unionlabs                      = { workspace = true }
 

@@ -760,9 +760,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.93"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
+checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "aptos-aggregator"
@@ -1363,9 +1363,11 @@ dependencies = [
  "hex",
  "ibc-union-light-client",
  "ibc-union-msg",
+ "serde",
  "serde_json",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -2239,6 +2241,7 @@ dependencies = [
  "tendermint-verifier",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -3118,6 +3121,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "thiserror",
  "tokio",
  "tracing",
  "unionlabs",
@@ -3172,6 +3176,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -3358,6 +3363,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmos-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bip32",
+ "cometbft-rpc",
+ "num-rational 0.4.2",
+ "protos",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "tokio",
+ "tracing",
+ "unionlabs",
+]
+
+[[package]]
 name = "cosmos-sdk-event"
 version = "0.0.0"
 dependencies = [
@@ -3410,6 +3432,33 @@ dependencies = [
  "rayon",
  "sha2 0.10.8",
  "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-deployer"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bip32",
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "cosmos-client",
+ "cosmwasm-std 2.1.4",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "num-rational 0.4.2",
+ "protos",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "ucs03-zkgm",
+ "ucs03-zkgm-token-minter-api",
+ "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -3986,6 +4035,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-utils"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07dfee7f12f802431a856984a32bce1cb7da1e6c006b5409e3981035ce562dec"
+dependencies = [
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw2"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4014,28 +4076,43 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw20"
-version = "1.1.2"
+name = "cw2"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "526e39bb20534e25a1cd0386727f0038f4da294e5e535729ba3ef54055246abd"
+checksum = "b04852cd38f044c0751259d5f78255d07590d136b8a86d4e09efdd7666bd6d27"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-utils 1.0.3",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
+ "schemars",
+ "semver 1.0.22",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cw20"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a42212b6bf29bbdda693743697c621894723f35d3db0d5df930be22903d0e27c"
+dependencies = [
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-utils 2.0.0",
  "schemars",
  "serde",
 ]
 
 [[package]]
 name = "cw20-base"
-version = "1.1.2"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17ad79e86ea3707229bf78df94e08732e8f713207b4a77b2699755596725e7d9"
+checksum = "d6de8c32e100f1fca306972d86b617234a5e6b00594ea2b48716fd6804d4d95d"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "cw2 1.1.2",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
+ "cw2 2.0.0",
  "cw20",
  "schemars",
  "semver 1.0.22",
@@ -4047,9 +4124,9 @@ dependencies = [
 name = "cw20-token-minter"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "cw20",
  "cw20-base",
  "serde",
@@ -4429,6 +4506,7 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 name = "drip"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-graphql",
  "async-graphql-axum",
  "async-sqlite",
@@ -4437,6 +4515,7 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "cometbft-rpc",
+ "cosmos-client",
  "prost 0.12.6",
  "protos",
  "recaptcha-verify",
@@ -4792,6 +4871,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -4833,6 +4913,29 @@ dependencies = [
  "fixed-hash 0.8.0",
  "primitive-types 0.12.2",
  "uint",
+]
+
+[[package]]
+name = "ethermint-light-client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "cometbft-types",
+ "cosmwasm-std 2.1.4",
+ "ethereum-light-client",
+ "ethermint-light-client-types",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "tendermint-light-client",
+ "tendermint-light-client-types",
+ "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -6194,6 +6297,7 @@ dependencies = [
  "strum 0.26.3",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -6210,27 +6314,7 @@ dependencies = [
  "serde-utils",
  "thiserror",
  "unionlabs",
-]
-
-[[package]]
-name = "ibc-union-movement-lc"
-version = "0.0.0"
-dependencies = [
- "aptos-crypto",
- "aptos-types",
- "aptos-verifier",
- "bcs 0.1.6",
- "cosmwasm-std 2.1.4",
- "evm-storage-verifier",
- "hex-literal",
- "ibc-union-light-client",
- "ibc-union-msg",
- "movement-light-client-types",
- "rlp",
- "serde",
- "serde-utils",
- "thiserror",
- "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -6272,28 +6356,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
-]
-
-[[package]]
-name = "ibc-union-ucs03-zkgm"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "base58 0.2.0",
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "ethabi",
- "hex",
- "hex-literal",
- "ibc-union-msg",
- "ibc-union-spec",
- "serde",
- "serde_json",
- "thiserror",
- "token-factory-api",
- "ucs03-zkgm-token-minter-api",
- "unionlabs",
 ]
 
 [[package]]
@@ -7825,6 +7887,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-light-client"
+version = "0.0.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-types",
+ "aptos-verifier",
+ "bcs 0.1.6",
+ "cosmwasm-std 2.1.4",
+ "evm-storage-verifier",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "movement-light-client-types",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "thiserror",
+ "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
+]
+
+[[package]]
 name = "movement-light-client-types"
 version = "0.0.0"
 dependencies = [
@@ -7959,9 +8043,9 @@ dependencies = [
 name = "native-token-minter"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
  "thiserror",
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
@@ -11367,6 +11451,7 @@ dependencies = [
  "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -11769,6 +11854,7 @@ dependencies = [
  "tendermint-verifier",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -12073,8 +12159,8 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "token-factory-api"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
 ]
 
 [[package]]
@@ -12690,11 +12776,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucs03-zkgm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "base58 0.2.0",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
+ "ethabi",
+ "hex",
+ "hex-literal",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
+ "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
+]
+
+[[package]]
 name = "ucs03-zkgm-token-minter-api"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
  "enumorph",
  "token-factory-api",
 ]
@@ -12842,6 +12951,15 @@ dependencies = [
  "typenum",
  "unionlabs-primitives",
  "wasmparser",
+]
+
+[[package]]
+name = "unionlabs-cosmwasm-upgradable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.1.4",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

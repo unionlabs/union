@@ -1,0 +1,42 @@
+[package]
+name    = "tendermint-light-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.crane]
+test-include = ["cosmwasm/ibc-union/lightclient/tendermint/src/test"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterator"] }
+sha2         = { workspace = true }
+thiserror    = { workspace = true }
+
+cometbft-types                = { workspace = true, features = ["hash"] }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
+ics23                         = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+tendermint-verifier           = { workspace = true }
+unionlabs                     = { workspace = true }
+unionlabs-cosmwasm-upgradable = { workspace = true }
+
+[dev-dependencies]
+base64      = { workspace = true }
+lazy_static = "1.4.0"
+serde_json  = { workspace = true }
+
+
+[features]
+library = []

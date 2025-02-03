@@ -11,7 +11,7 @@ use ibc_union_msg::{
 
 use super::*;
 use crate::{
-    contract::{events, execute, instantiate},
+    contract::{events, execute, init},
     ContractError,
 };
 
@@ -58,15 +58,8 @@ fn register_client_fails_when_duplicate() {
 #[test]
 fn create_client_ok() {
     let mut deps = mock_dependencies();
-    let sender = mock_addr(SENDER);
 
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&sender, &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -84,15 +77,8 @@ fn create_client_ok() {
 #[test]
 fn create_client_commitments_saved() {
     let mut deps = mock_dependencies();
-    let sender = mock_addr(SENDER);
 
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&sender, &[]),
-        InitMsg {},
-    )
-    .expect("instantiate ok");
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -148,15 +134,8 @@ fn create_client_commitments_saved() {
 #[test]
 fn update_client_ok() {
     let mut deps = mock_dependencies();
-    let sender = mock_addr(SENDER);
 
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&sender, &[]),
-        InitMsg {},
-    )
-    .expect("instantiate ok");
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -206,15 +185,8 @@ fn update_client_ok() {
 #[test]
 fn update_client_ko() {
     let mut deps = mock_dependencies();
-    let sender = mock_addr(SENDER);
 
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&sender, &[]),
-        InitMsg {},
-    )
-    .expect("instantiate ok");
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -258,15 +230,8 @@ fn update_client_ko() {
 #[test]
 fn update_client_commitments_saved() {
     let mut deps = mock_dependencies();
-    let sender = mock_addr(SENDER);
 
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&sender, &[]),
-        InitMsg {},
-    )
-    .expect("instantiate ok");
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {

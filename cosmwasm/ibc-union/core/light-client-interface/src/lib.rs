@@ -3,21 +3,21 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
-    Response, StdError,
+    from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, QuerierWrapper, Response, StdError,
 };
 use cw_storage_plus::{Item, Map};
 use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
     VerifyCreationResponseEvent,
 };
-use msg::InstantiateMsg;
+use msg::InitMsg;
 use state::IBC_HOST;
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::{encoding::Base64, Bytes},
     ErrorReporter,
 };
+use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 pub mod msg;
 pub mod state;
@@ -47,10 +47,12 @@ pub enum DecodeError<T: IbcClient> {
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
 pub enum IbcClientError<T: IbcClient> {
-    #[error("decode error ({0:?})")]
-    Decode(#[from] DecodeError<T>),
     #[error("std error ({0:?})")]
     Std(#[from] StdError),
+    #[error("migration error")]
+    Migrate(#[from] UpgradeError),
+    #[error("decode error ({0:?})")]
+    Decode(#[from] DecodeError<T>),
     #[error("unexpected call from the host module ({0})")]
     UnexpectedCallDataFromHostModule(String),
     #[error("client state not found")]
@@ -234,11 +236,9 @@ pub trait IbcClient: Sized {
     ) -> Result<Self::ClientState, IbcClientError<Self>>;
 }
 
-pub fn instantiate<T: IbcClient>(
+pub fn init<T: IbcClient>(
     deps: DepsMut<T::CustomQuery>,
-    _env: Env,
-    _info: MessageInfo,
-    msg: InstantiateMsg,
+    msg: InitMsg,
 ) -> Result<Response, IbcClientError<T>> {
     IBC_HOST.save(deps.storage, &msg.ibc_host)?;
     Ok(Response::default())

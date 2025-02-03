@@ -17,7 +17,7 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use tracing::{debug, debug_span, instrument, Instrument};
+use tracing::{debug, debug_span, instrument, trace, Instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     option_unwrap,
@@ -148,7 +148,6 @@ impl Client {
         skip_all,
         fields(
             path = %path.as_ref(),
-            data = %::serde_utils::to_hex(data.as_ref()),
             height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
             %prove,
         )
@@ -160,6 +159,7 @@ impl Client {
         height: Option<BoundedI64<1>>,
         prove: bool,
     ) -> Result<AbciQueryResponse, JsonRpcError> {
+        trace!(data = %::serde_utils::to_hex(data.as_ref()), "data");
         debug!("fetching abci query");
 
         let res: AbciQueryResponse = self
@@ -182,12 +182,13 @@ impl Client {
             info = %res.response.info,
             index = %res.response.index,
             key = ?&res.response.key,
-            value = ?&res.response.value,
+            has_value = res.response.value.is_some(),
             height = %res.response.height,
             codespace = %res.response.codespace,
             proof_ops = ?res.response.proof_ops,
             "fetched abci query"
         );
+        trace!(value = ?&res.response.value, "value");
 
         Ok(res)
     }

@@ -10,7 +10,7 @@ use unionlabs::{
 };
 
 use crate::{
-    cosmos_sdk::{CosmosKeyring, CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
+    cosmos_sdk::{CosmosKeyring, GasConfig},
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance},
 };
 
@@ -128,26 +128,26 @@ impl Union {
 
 pub type UnionClientId = ClientId;
 
-impl CosmosSdkChain for Union {
-    fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
-        &self.checksum_cache
-    }
-}
+// impl CosmosSdkChain for Union {
+//     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
+//         &self.checksum_cache
+//     }
+// }
 
-impl CosmosSdkChainRpcs for Union {
-    fn tm_chain_id(&self) -> String {
-        self.chain_id.clone()
-    }
+// impl CosmosSdkChainRpcs for Union {
+//     fn tm_chain_id(&self) -> String {
+//         self.chain_id.clone()
+//     }
 
-    fn gas_config(&self) -> &GasConfig {
-        &self.gas_config
-    }
+//     fn gas_config(&self) -> &GasConfig {
+//         &self.gas_config
+//     }
 
-    fn grpc_url(&self) -> String {
-        self.grpc_url.clone()
-    }
+//     fn grpc_url(&self) -> String {
+//         self.grpc_url.clone()
+//     }
 
-    fn tm_client(&self) -> &Client {
-        &self.tm_client
-    }
-}
+//     fn tm_client(&self) -> &Client {
+//         &self.tm_client
+//     }
+// }

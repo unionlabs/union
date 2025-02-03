@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, DenomMetadataResponse,
-    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, ReplyOn, Response, StdResult,
-    SubMsg, WasmMsg,
+    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdResult, SubMsg,
+    WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
@@ -90,12 +90,7 @@ pub fn execute(
                     })?,
                     funds: vec![],
                 };
-                Response::new().add_submessage(SubMsg {
-                    id: 1,
-                    msg: msg.into(),
-                    gas_limit: None,
-                    reply_on: ReplyOn::Success,
-                })
+                Response::new().add_submessage(SubMsg::reply_on_success(msg, 1))
             }
             WrappedTokenMsg::MintTokens {
                 denom,

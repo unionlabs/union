@@ -1,0 +1,36 @@
+[package]
+name    = "arbitrum-light-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+arbitrum-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+arbitrum-verifier             = { workspace = true }
+cosmwasm-std                  = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+ethereum-light-client         = { workspace = true, features = ["library"] }
+ethereum-light-client-types   = { workspace = true }
+ibc-union-light-client        = { workspace = true }
+ibc-union-msg                 = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["ethabi"] }
+unionlabs-cosmwasm-upgradable = { workspace = true }
+
+[dev-dependencies]
+base64     = { workspace = true }
+hex        = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+library = []

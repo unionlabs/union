@@ -11,12 +11,9 @@ use axum::{
     routing::get,
     Router,
 };
-use chain_utils::cosmos_sdk::{
-    BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig,
-};
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
-use cometbft_rpc::Client as CmtClient;
+use cosmos_client::GasConfig;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
@@ -24,7 +21,6 @@ use tracing::{debug, error, info, info_span, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
     primitives::{encoding::HexUnprefixed, H256},
-    signer::CosmosSigner,
     ErrorReporter,
 };
 
@@ -174,10 +170,10 @@ async fn main() {
                             match send_res {
                                 Err(err) => {
                                     if i >= 5 {
-                                        break format!("ERROR: {}", ErrorReporter(err));
+                                        break format!("ERROR: {}", ErrorReporter(&*err));
                                     }
                                     warn!(
-                                        err = %ErrorReporter(err),
+                                        err = %ErrorReporter(&*err),
                                         attempt = i,
                                         "unable to submit transaction"
                                     );
@@ -295,8 +291,7 @@ pub struct Config {
 pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
-    pub ws_url: String,
-    pub grpc_url: String,
+    pub rpc_url: String,
     pub gas_config: GasConfig,
     pub signer: H256,
     pub coins: Vec<Coin>,
@@ -313,69 +308,34 @@ pub struct MaxRequestPolls(pub u32);
 // pub struct Bech32Prefix(pub String);
 pub struct CaptchaBypassSecret(pub String);
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct ChainClient {
     pub chain: Chain,
-    pub signer: CosmosSigner,
-    pub tm_client: CmtClient,
-}
-
-impl CosmosSdkChainRpcs for ChainClient {
-    fn tm_chain_id(&self) -> String {
-        self.chain.id.clone()
-    }
-
-    fn grpc_url(&self) -> String {
-        self.chain.grpc_url.clone()
-    }
-
-    fn tm_client(&self) -> &CmtClient {
-        &self.tm_client
-    }
-
-    fn gas_config(&self) -> &GasConfig {
-        &self.chain.gas_config
-    }
+    pub cosmos_ctx: cosmos_client::Ctx,
 }
 
 impl ChainClient {
     pub async fn new(chain: &Chain) -> Self {
-        let tm_client = CmtClient::new(chain.ws_url.clone())
-            .await
-            .expect("unable to create tm client");
+        let cosmos_ctx = cosmos_client::Ctx::new(
+            chain.rpc_url.clone(),
+            chain.signer,
+            chain.gas_config.clone(),
+        )
+        .await
+        .unwrap();
 
-        let chain_id = tm_client
-            .status()
-            .await
-            .expect("unable to fetch status")
-            .node_info
-            .network
-            .to_string();
+        let chain_id = cosmos_ctx.chain_id();
 
         // Check if we are connected to a chain with the correct chain_id
         assert_eq!(
             chain_id, chain.id,
             "ws_url {} is not for chain {}",
-            chain.ws_url, chain.id
+            chain.rpc_url, chain.id
         );
-
-        let bech32_prefix = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-            chain.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .bech32_prefix;
-
-        let signer = CosmosSigner::new_from_bytes(chain.signer, bech32_prefix.clone()).unwrap();
 
         Self {
             chain: chain.clone(),
-            signer,
-            tm_client,
+            cosmos_ctx,
         }
     }
 }
@@ -422,13 +382,13 @@ impl SendRequestAggregator for Vec<SendRequest> {
 
 impl ChainClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
-    async fn send(&self, requests: &Vec<SendRequest>) -> Result<H256, BroadcastTxCommitError> {
+    async fn send(&self, requests: &Vec<SendRequest>) -> anyhow::Result<H256> {
         let agg_reqs = requests.aggregate_by_denom();
 
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
             inputs: vec![protos::cosmos::bank::v1beta1::Input {
-                address: self.signer.to_string(),
+                address: self.cosmos_ctx.signer().to_string(),
                 coins: agg_reqs
                     .iter()
                     .map(|agg_req| protos::cosmos::base::v1beta1::Coin {
@@ -454,14 +414,15 @@ impl ChainClient {
             value: msg.encode_to_vec().into(),
         };
 
-        let (tx_hash, gas_used) = self
-            .broadcast_tx_commit(&self.signer, [msg], self.chain.memo.clone())
+        let (tx_hash, res) = self
+            .cosmos_ctx
+            .broadcast_tx_commit([msg], self.chain.memo.clone())
             .await?;
 
         info!(
             ?requests,
             %tx_hash,
-            %gas_used,
+            gas_used = %res.tx_result.gas_used,
             "submitted multisend"
         );
 

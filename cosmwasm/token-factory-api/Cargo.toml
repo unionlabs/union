@@ -12,5 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-schema = { version = "1.5" }
-cosmwasm-std    = { version = "1.5" }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }

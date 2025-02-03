@@ -4,11 +4,14 @@ pub mod msg;
 mod state;
 use cosmwasm_std::StdError;
 use thiserror::Error;
+use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error(transparent)]
     Std(#[from] StdError),
+    #[error("migration error")]
+    Migrate(#[from] UpgradeError),
     #[error("invalid ibc version, got {version}")]
     InvalidIbcVersion { version: String },
     #[error("invalid operation, sender must be ibc host")]

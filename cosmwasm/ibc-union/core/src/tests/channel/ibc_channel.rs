@@ -1,4 +1,3 @@
-use contract::instantiate;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
@@ -9,6 +8,7 @@ use ibc_union_msg::{
 use ibc_union_spec::types::Channel;
 
 use super::*;
+use crate::contract::init;
 
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
@@ -17,13 +17,7 @@ const VERSION: &str = "version";
 #[test]
 fn channel_open_init_ok() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -59,13 +53,7 @@ fn channel_open_init_ok() {
 #[test]
 fn channel_open_init_channel_claimed() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -92,13 +80,7 @@ fn channel_open_init_channel_claimed() {
 #[test]
 fn channel_open_init_commitment_saved() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -131,13 +113,7 @@ fn channel_open_init_commitment_saved() {
 #[test]
 fn channel_open_try_ok() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -180,13 +156,7 @@ fn channel_open_try_ok() {
 #[test]
 fn channel_open_try_invalid_state() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -238,13 +208,7 @@ fn channel_open_try_invalid_state() {
 #[test]
 fn channel_open_try_channel_claimed() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -292,13 +256,7 @@ fn channel_open_try_channel_claimed() {
 #[test]
 fn channel_open_try_commitment_saved() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -352,13 +310,7 @@ fn channel_open_try_commitment_saved() {
 #[test]
 fn channel_open_ack_ok() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -411,13 +363,7 @@ fn channel_open_ack_ok() {
 #[test]
 fn channel_open_ack_not_found() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -462,13 +408,7 @@ fn channel_open_ack_not_found() {
 #[test]
 fn channel_open_ack_commitment_saved() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -532,13 +472,7 @@ fn channel_open_ack_commitment_saved() {
 #[test]
 fn channel_open_confirm_ok() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -595,13 +529,7 @@ fn channel_open_confirm_ok() {
 #[test]
 fn channel_open_confirm_not_found() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -643,13 +571,7 @@ fn channel_open_confirm_not_found() {
 #[test]
 fn channel_open_confirm_commitment_saved() {
     let mut deps = mock_dependencies();
-    instantiate(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        InitMsg {},
-    )
-    .unwrap();
+    init(deps.as_mut(), InitMsg {}).unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {

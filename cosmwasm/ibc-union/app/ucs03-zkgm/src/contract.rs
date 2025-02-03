@@ -22,6 +22,7 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
 };
+use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     com::{
@@ -48,29 +49,18 @@ pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 /// Instantiate `ucs03-zkgm`.
 ///
 /// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][crate::msg::TokenMinterInitMsg]. The admin of the minter contract is set to the instantiator of `ucs03-zkgm`, under the assumption that the caller will also set themselves as admin, as it is not possible for a contract to check the admin of itself during instantiation.
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn instantiate(
-    deps: DepsMut,
-    _: Env,
-    info: MessageInfo,
-    msg: InitMsg,
-) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
 
     let msg = WasmMsg::Instantiate {
-        admin: Some(info.sender.to_string()),
+        admin: Some(msg.config.admin.to_string()),
         code_id: msg.config.token_minter_code_id,
         msg: to_json_binary(&msg.minter_init_msg)?,
         funds: vec![],
         label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
     };
 
-    Ok(Response::new().add_submessage(SubMsg {
-        id: TOKEN_INIT_REPLY_ID,
-        msg: msg.into(),
-        gas_limit: None,
-        reply_on: cosmwasm_std::ReplyOn::Success,
-    }))
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(msg, TOKEN_INIT_REPLY_ID)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -1069,7 +1059,7 @@ fn query_wrapped_token_identifier(deps: Deps, minter: &Addr, token: &[u8]) -> St
         .query::<TokenToIdentifierResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
             contract_addr: minter.to_string(),
             msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::TokenToIdentifier {
-                token: Binary(token.to_vec()),
+                token: Binary::new(token.to_vec()),
             })?,
         }))?
         .token_identifier
@@ -1077,12 +1067,24 @@ fn query_wrapped_token_identifier(deps: Deps, minter: &Addr, token: &[u8]) -> St
         .into())
 }
 
-#[cosmwasm_schema::cw_serde]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct MigrateMsg {}
 
-#[cosmwasm_std::entry_point]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::default())
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    msg: UpgradeMsg<InitMsg, MigrateMsg>,
+) -> Result<Response, ContractError> {
+    msg.run(
+        deps,
+        |deps, init_msg| {
+            let res = init(deps, init_msg)?;
+
+            Ok((res, None))
+        },
+        |_deps, _migrate_msg, _current_version| Ok((Response::default(), None)),
+    )
 }
 
 fn make_wasm_msg(

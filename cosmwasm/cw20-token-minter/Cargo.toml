@@ -11,11 +11,11 @@ version                = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-schema             = { version = "1.5" }
-cosmwasm-std                = { version = "1.5", features = ["cosmwasm_1_3"] }
-cw-storage-plus             = { version = "1.2" }
-cw20                        = "1.1.2"
-cw20-base                   = { version = "1.1.2", features = ["library"] }
+cosmwasm-schema             = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_3"] }
+cw-storage-plus             = { workspace = true }
+cw20                        = { version = "2.0" }
+cw20-base                   = { version = "2.0", features = ["library"] }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
