@@ -221,6 +221,3 @@ export const getChannelInfo = (
     destination_port_id
   }
 }
-function creatUnionClient(arg0: { chain: string; transport: import("viem").HttpTransport }) {
-  throw new Error("Function not implemented.")
-}
