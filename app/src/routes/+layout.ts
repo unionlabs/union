@@ -3,9 +3,10 @@ export const prerender = true
 export const trailingSlash = "ignore"
 
 import { fetchFeatures } from "$lib/queries/features"
+import { PUBLIC_ENVIRONMENT } from "$env/static/public"
 
 export const load = async () => {
-  const environment = import.meta.env.VITE_ENVIRONMENT.toUpperCase()
+  const environment = PUBLIC_ENVIRONMENT.toUpperCase();
   const features = await fetchFeatures(environment)
 
   return {
