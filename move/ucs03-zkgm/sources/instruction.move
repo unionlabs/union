@@ -1,5 +1,5 @@
 module zkgm::instruction {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
     use std::vector;
 
@@ -28,20 +28,20 @@ module zkgm::instruction {
     public fun encode(instruction: &Instruction): vector<u8> {
         let buf = vector::empty<u8>();
 
-        ethabi::encode_uint<u8>(&mut buf, instruction.version);
-        ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
-        ethabi::encode_bytes(&mut buf, &instruction.operand);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.version);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
+        zkgm_ethabi::encode_bytes(&mut buf, &instruction.operand);
 
         buf
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): Instruction {
-        let version = (ethabi::decode_uint(buf, index) as u8);
-        let opcode = (ethabi::decode_uint(buf, index) as u8);
+        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
+        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
         // skipping the pointer
         *index = *index + 0x20;
-        let operand = ethabi::decode_bytes(buf, index);
+        let operand = zkgm_ethabi::decode_bytes(buf, index);
         new(version, opcode, operand)
     }
 

@@ -1,5 +1,5 @@
 module zkgm::batch_ack {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
     use std::vector;
 
@@ -17,18 +17,18 @@ module zkgm::batch_ack {
 
     public fun encode(ack: &BatchAck): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         let ack_arr_len = vector::length(&ack.acknowledgements);
-        ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
-                ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                ethabi::encode_vector<u8>(
+                zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+                zkgm_ethabi::encode_vector<u8>(
                     &mut buf,
                     vector::borrow(&ack.acknowledgements, 0),
                     |some_variable, data| {
-                        ethabi::encode_uint<u8>(some_variable, *data);
+                        zkgm_ethabi::encode_uint<u8>(some_variable, *data);
                     }
                 );
                 return buf
@@ -39,23 +39,23 @@ module zkgm::batch_ack {
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let idx = 1;
         let prev_val = initial_stage;
-        ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+        zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
             let prev_length = vector::length(
                 vector::borrow(&ack.acknowledgements, idx - 1)
             );
-            ethabi::encode_uint<u32>(&mut buf, prev_val
+            zkgm_ethabi::encode_uint<u32>(&mut buf, prev_val
                 + 0x20 * (prev_length + 1 as u32));
             prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
             idx = idx + 1;
         };
         idx = 0;
         while (idx < ack_arr_len) {
-            ethabi::encode_vector<u8>(
+            zkgm_ethabi::encode_vector<u8>(
                 &mut buf,
                 vector::borrow(&ack.acknowledgements, idx),
                 |some_variable, data| {
-                    ethabi::encode_uint<u8>(some_variable, *data);
+                    zkgm_ethabi::encode_uint<u8>(some_variable, *data);
                 }
             );
             idx = idx + 1;
@@ -65,18 +65,18 @@ module zkgm::batch_ack {
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): BatchAck {
-        let main_arr_length = ethabi::decode_uint(buf, index);
+        let main_arr_length = zkgm_ethabi::decode_uint(buf, index);
         *index = *index + (0x20 * main_arr_length as u64);
 
         let idx = 0;
         let acknowledgements = vector::empty();
         while (idx < main_arr_length) {
             let inner_vec =
-                ethabi::decode_vector<u8>(
+                zkgm_ethabi::decode_vector<u8>(
                     buf,
                     index,
                     |buf, index| {
-                        (ethabi::decode_uint(buf, index) as u8)
+                        (zkgm_ethabi::decode_uint(buf, index) as u8)
                     }
                 );
             vector::push_back(&mut acknowledgements, inner_vec);
