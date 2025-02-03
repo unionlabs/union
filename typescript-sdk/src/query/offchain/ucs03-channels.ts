@@ -5,6 +5,7 @@ import { createPublicClient, fromHex, http, isAddress, toHex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -96,13 +97,10 @@ export const getQuoteToken = async (
   // if it is unknown, calculate the quotetoken
   // cosmos quote token prediction
   if (cosmosChainId.includes(channel.destination_chain_id)) {
-    // TODO: don't hardcode this endpoint.
-    let publicClient = await ResultAsync.fromPromise(
-      CosmWasmClient.connect("https://rpc.bbn-test-5.babylon.chain.kitchen"),
-      error => {
-        return new Error("failed to create public cosmwasm client", { cause: error })
-      }
-    )
+    let rpc = cosmosRpcs[channel.destination_chain_id as CosmosChainId] // as is valid bc of the check in the if statement.
+    let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
+      return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
+    })
 
     if (publicClient.isErr()) {
       return err(publicClient.error)
@@ -220,4 +218,7 @@ export const getChannelInfo = (
     destination_channel_id: rawChannel.destination_channel_id,
     destination_port_id
   }
+}
+function creatUnionClient(arg0: { chain: string; transport: import("viem").HttpTransport }) {
+  throw new Error("Function not implemented.")
 }
