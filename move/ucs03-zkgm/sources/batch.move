@@ -1,5 +1,5 @@
 module zkgm::batch {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Instruction, Self};
 
     use std::vector;
@@ -19,13 +19,13 @@ module zkgm::batch {
     public fun encode(pack: &Batch): vector<u8> {
         let buf = vector::empty<u8>();
 
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         let ack_arr_len = vector::length(&pack.instructions);
-        ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
 
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
-                ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+                zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
                 let instructions_encoded =
                     instruction::encode(vector::borrow(&pack.instructions, 0));
                 vector::append(&mut buf, instructions_encoded);
@@ -38,12 +38,12 @@ module zkgm::batch {
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let idx = 1;
         let prev_val = initial_stage;
-        ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+        zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
             let curr_instruction = vector::borrow(&pack.instructions, idx - 1);
             let prev_length =
                 ((vector::length(instruction::operand(curr_instruction)) / 32) as u32) + 1;
-            ethabi::encode_uint<u32>(
+            zkgm_ethabi::encode_uint<u32>(
                 &mut buf,
                 prev_val + (0x20 * 4) + ((prev_length * 0x20) as u32)
             );
@@ -63,16 +63,16 @@ module zkgm::batch {
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): Batch {
-        let main_arr_length = ethabi::decode_uint(buf, index);
+        let main_arr_length = zkgm_ethabi::decode_uint(buf, index);
         *index = *index + (0x20 * main_arr_length as u64);
 
         let idx = 0;
         let instructions = vector::empty();
         while (idx < main_arr_length) {
-            let version = (ethabi::decode_uint(buf, index) as u8);
-            let opcode = (ethabi::decode_uint(buf, index) as u8);
+            let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
+            let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
             *index = *index + 0x20;
-            let operand = ethabi::decode_bytes(buf, index);
+            let operand = zkgm_ethabi::decode_bytes(buf, index);
 
             let instruction = instruction::new((version as u8), (opcode as u8), operand);
 

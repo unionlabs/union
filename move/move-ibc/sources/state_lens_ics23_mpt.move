@@ -1,4 +1,4 @@
-module ibc::statelens_lc {
+module ibc::state_lens_ics23_mpt_lc {
     use std::vector;
     use std::string::String;
 

@@ -1,5 +1,5 @@
 module zkgm::acknowledgement {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
     use std::vector;
 
@@ -22,17 +22,17 @@ module zkgm::acknowledgement {
 
     public fun encode(ack: &Acknowledgement): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u256>(&mut buf, ack.tag);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
 
         let version_offset = 0x40;
-        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
 
-        ethabi::encode_vector<u8>(
+        zkgm_ethabi::encode_vector<u8>(
             &mut buf,
             &ack.inner_ack,
             |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
+                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -41,14 +41,14 @@ module zkgm::acknowledgement {
 
     public fun decode(buf: &vector<u8>): Acknowledgement {
         let index = 0x20;
-        let tag = ethabi::decode_uint(buf, &mut index);
+        let tag = zkgm_ethabi::decode_uint(buf, &mut index);
         index = index + 0x20;
         let inner_ack =
-            ethabi::decode_vector<u8>(
+            zkgm_ethabi::decode_vector<u8>(
                 buf,
                 &mut index,
                 |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
+                    (zkgm_ethabi::decode_uint(buf, index) as u8)
                 }
             );
 
