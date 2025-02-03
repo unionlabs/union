@@ -82,7 +82,7 @@ impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
             .join(",");
 
         format!(
-            r#"[.. | . as $o | $o."@type"? == "submit_tx" and [{chain_ids}] | any(. == $o."@value".chain_id)] | any"#,
+            r#"[.. | . as $o | $o."@type"? == "submit_tx" and ([{chain_ids}] | any(. == $o."@value".chain_id))] | any"#,
         )
     }
 }
