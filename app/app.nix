@@ -30,6 +30,7 @@ _: {
           inherit (packageJSON) version;
           nativeBuildInputs = deps;
           buildInputs = deps;
+          env.PUBLIC_ENVIRONMENT = builtins.getEnv "PUBLIC_ENVIRONMENT";
           installPhase = ''
             mkdir -p $out
             cp -r ./build/* $out
