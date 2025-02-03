@@ -75,7 +75,7 @@ const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union"),
   gasPrice: { amount: "0.025", denom: "muno" },
-  transport: http(" https://rpc.testnet-9.union.build")
+  transport: http("https://rpc.testnet-9.union.build")
 })
 
 const transfer = await unionClient.transferAsset({
