@@ -4836,28 +4836,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethermint-light-client"
-version = "0.0.0"
-dependencies = [
- "base64 0.21.7",
- "cometbft-types",
- "cosmwasm-std 2.1.4",
- "ethereum-light-client",
- "ethermint-light-client-types",
- "ibc-union-light-client",
- "ibc-union-msg",
- "ics23",
- "lazy_static",
- "serde",
- "serde_json",
- "tendermint-light-client",
- "tendermint-light-client-types",
- "tendermint-verifier",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "ethermint-light-client-types"
 version = "0.0.0"
 dependencies = [
