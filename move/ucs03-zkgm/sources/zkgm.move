@@ -1303,7 +1303,7 @@ module zkgm::zkgm_relay {
         abort E_INFINITE_GAME
     }
 
-    public fun on_packet<T: key, P: key + store + drop>(
+    public fun on_packet<T: key>(
         _store: Object<T>
     ): u64 acquires RelayStore, SignerRef {
         let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
