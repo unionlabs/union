@@ -239,10 +239,10 @@ state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
 
+ethermint-light-client-types  = { path = "lib/ethermint-light-client-types", default-features = false }
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
-ethermint-light-client-types = { path = "lib/ethermint-light-client-types", default-features = false }
 
 linea-light-client-types = { path = "lib/linea-light-client-types", default-features = false }
 linea-types              = { path = "lib/linea-types", default-features = false }
