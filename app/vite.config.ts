@@ -9,7 +9,7 @@ export default defineConfig(config => {
   const {
     INSPECT,
     NODE_ENV,
-    VITE_ENVIRONMENT,
+    ENVIRONMENT,
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
@@ -26,7 +26,7 @@ export default defineConfig(config => {
   if (INSPECT === "true") plugins.push(Inspect())
 
   // we want logs to show up in preview deployments for debugging
-  const dropLogStatements = config.mode === "build" && VITE_ENVIRONMENT === "production"
+  const dropLogStatements = config.mode === "build" && ENVIRONMENT === "production"
   return {
     plugins,
     build: { target: "es2020" },
