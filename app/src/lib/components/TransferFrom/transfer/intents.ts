@@ -113,17 +113,14 @@ export function createIntentStore(
     if (!$destinationChain) return null
     const userAddress = $context.userAddress
 
-    console.log("rpccc", $destinationChain.rpc_type)
 
     switch ($destinationChain.rpc_type) {
       case "evm": {
-        console.log("there")
         if (!userAddress.evm) return null
         return userAddress.evm.canonical
       }
       case "cosmos": {
         if (!userAddress.cosmos) return null
-        console.log("here", userAddress.cosmos.canonical)
         return bech32ToBech32Address({
           address: userAddress.cosmos.canonical,
           toPrefix: $destinationChain.addr_prefix
