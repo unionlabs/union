@@ -72,8 +72,6 @@ validation.subscribe(async data => {
     ucs03address: data.transfer.ucs03address
   })
 })
-
-$: console.log($validation.transfer)
 </script>
 
 <Cube>
