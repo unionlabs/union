@@ -30,6 +30,9 @@ pub trait VoyagerRpc {
     #[method(name = "info", with_extensions)]
     async fn info(&self) -> RpcResult<LoadedModulesInfo>;
 
+    #[method(name = "equivalentChainIds", with_extensions)]
+    async fn equivalent_chain_ids(&self, chain_id: ChainId) -> RpcResult<Vec<ChainId>>;
+
     // =========
     // consensus
     // =========

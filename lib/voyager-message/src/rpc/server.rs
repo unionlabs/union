@@ -605,6 +605,20 @@ impl VoyagerRpcServer for Server {
         Ok(self.modules()?.info())
     }
 
+    async fn equivalent_chain_ids(
+        &self,
+        _: &Extensions,
+        chain_id: ChainId,
+    ) -> RpcResult<Vec<ChainId>> {
+        Ok(self
+            .inner
+            .modules()?
+            .equivalent_chain_ids()
+            .equivalents(&chain_id)
+            .cloned()
+            .collect())
+    }
+
     // =========
     // CONSENSUS
     // =========

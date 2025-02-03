@@ -53,6 +53,7 @@ async fn main() {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
+    pub additional_chain_ids: Vec<ChainId>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -73,6 +74,8 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
+    #[serde(default)]
+    pub additional_chain_ids: Vec<ChainId>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -120,6 +123,7 @@ impl Plugin for Module {
 
         Ok(Self {
             chain_id,
+            additional_chain_ids: config.additional_chain_ids,
             ibc_handler_address: config.ibc_handler_address,
             multicall_address: config.multicall_address,
             provider,
@@ -149,7 +153,11 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: SubmitTxHook::filter(&config.chain_id),
+            interest_filter: SubmitTxHook::filter_many(
+                [&config.chain_id]
+                    .into_iter()
+                    .chain(&config.additional_chain_ids),
+            ),
         }
     }
 

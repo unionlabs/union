@@ -68,23 +68,21 @@ impl<'a, F: for<'b> Fn(&'b SubmitTx) -> Call> SubmitTxHook<'a, F> {
 
 impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
     pub fn filter(chain_id: &ChainId) -> String {
-        // if ."@type" == "data" then
-        //     ."@value" as $data |
-
-        //     # pull all transaction data messages
-        //     ($data."@type" == "identified_ibc_datagram"
-        //         and $data."@value".chain_id == "{chain_id}"
-        //         and $data."@value".message.ibc_spec_id == "{ibc_spec_id}")
-        //     or ($data."@type" == "identified_ibc_datagram_batch"
-        //         and $data."@value".chain_id == "{chain_id}"
-        //         and all($data."@value".message[] | select(.ibc_spec_id == "{ibc_spec_id}")))
-        // else
-        //     false
-        // end
-
         format!(
             r#"[.. | ."@type"? == "submit_tx" and ."@value".chain_id == "{}"] | any"#,
             chain_id
+        )
+    }
+
+    pub fn filter_many<'a>(chain_ids: impl IntoIterator<Item = &'a ChainId>) -> String {
+        let chain_ids = chain_ids
+            .into_iter()
+            .map(|c| format!(r#""{c}""#))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        format!(
+            r#"[.. | . as $o | $o."@type"? == "submit_tx" and [{chain_ids}] | any(. == $o."@value".chain_id)] | any"#,
         )
     }
 }

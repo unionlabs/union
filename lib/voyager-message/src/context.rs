@@ -34,7 +34,7 @@ use voyager_core::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 
 use crate::{
-    context::ibc_spec_handler::IbcSpecHandlers,
+    context::{equivalent_chain_ids::EquivalentChainIds, ibc_spec_handler::IbcSpecHandlers},
     core::{ChainId, ClientType, IbcInterface},
     module::{
         ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
@@ -76,6 +76,8 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
     client_consensus_types: HashMap<ClientType, ConsensusType>,
+
+    equivalent_chain_ids: EquivalentChainIds,
 
     // ibc version id => handler
     #[debug(skip)]
@@ -266,7 +268,7 @@ impl Context {
     pub async fn new(
         plugin_configs: Vec<PluginConfig>,
         module_configs: ModulesConfig,
-        equivalent_chain_ids: equivalent_chain_ids::EquivalentChainIds,
+        equivalent_chain_ids: EquivalentChainIds,
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
@@ -285,6 +287,7 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
+            equivalent_chain_ids,
             ibc_spec_handlers,
         };
 
@@ -372,8 +375,10 @@ impl Context {
                  ibc_spec_id,
              },
              rpc_client| {
-                for equivalent_chain_id in
-                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                for equivalent_chain_id in modules
+                    .equivalent_chain_ids
+                    .equivalents(chain_id)
+                    .chain([chain_id])
                 {
                     let prev = modules.state_modules.insert(
                         (equivalent_chain_id.clone(), ibc_spec_id.clone()),
@@ -403,8 +408,10 @@ impl Context {
                  ibc_spec_id,
              },
              rpc_client| {
-                for equivalent_chain_id in
-                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                for equivalent_chain_id in modules
+                    .equivalent_chain_ids
+                    .equivalents(chain_id)
+                    .chain([chain_id])
                 {
                     let prev = modules.proof_modules.insert(
                         (equivalent_chain_id.clone(), ibc_spec_id.clone()),
@@ -434,8 +441,10 @@ impl Context {
                  consensus_type,
              },
              rpc_client| {
-                for equivalent_chain_id in
-                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                for equivalent_chain_id in modules
+                    .equivalent_chain_ids
+                    .equivalents(chain_id)
+                    .chain([chain_id])
                 {
                     let prev = modules
                         .consensus_modules
@@ -525,8 +534,10 @@ impl Context {
                  chain_id,
              },
              rpc_client| {
-                for equivalent_chain_id in
-                    equivalent_chain_ids.equivalents(chain_id).chain([chain_id])
+                for equivalent_chain_id in modules
+                    .equivalent_chain_ids
+                    .equivalents(chain_id)
+                    .chain([chain_id])
                 {
                     let prev = modules.client_bootstrap_modules.insert(
                         (equivalent_chain_id.clone(), client_type.clone()),
@@ -702,6 +713,10 @@ impl Modules {
             client,
             client_bootstrap,
         }
+    }
+
+    pub fn equivalent_chain_ids(&self) -> &EquivalentChainIds {
+        &self.equivalent_chain_ids
     }
 
     pub fn chain_consensus_type<'a, 'b, 'c: 'a>(

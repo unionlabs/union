@@ -68,14 +68,15 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
-  "lib/ethereum-light-client-types",
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
   "lib/cometbls-light-client-types",
-  "lib/scroll-light-client-types",
   "lib/tendermint-light-client-types",
-  "lib/linea-light-client-types",
+  "lib/ethereum-light-client-types",
+  "lib/ethermint-light-client-types",
   "lib/movement-light-client-types",
+  "lib/linea-light-client-types",
+  "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
@@ -83,14 +84,15 @@ members = [
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
-  "cosmwasm/ibc-union/light-clients/ethereum",
   "cosmwasm/ibc-union/light-clients/arbitrum",
   "cosmwasm/ibc-union/light-clients/berachain",
   "cosmwasm/ibc-union/light-clients/cometbls",
-  "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
-  # "cosmwasm/ibc-union/light-clients/scroll",
-  "cosmwasm/ibc-union/light-clients/tendermint",
+  "cosmwasm/ibc-union/light-clients/ethereum",
   "cosmwasm/ibc-union/light-clients/ethermint",
+  "cosmwasm/ibc-union/light-clients/tendermint",
+  "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
+
+  # "cosmwasm/ibc-union/light-clients/scroll",
   # "cosmwasm/ibc-union/light-clients/linea",
 
   "cosmwasm/ibc-union/light-clients/movement",

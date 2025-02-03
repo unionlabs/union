@@ -735,6 +735,13 @@ impl VoyagerClient {
         Ok(ibc_proof)
     }
 
+    pub async fn equivalent_chain_ids(&self, chain_id: ChainId) -> RpcResult<Vec<ChainId>> {
+        self.0
+            .equivalent_chain_ids(chain_id)
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
     pub async fn client_info<V: IbcSpec>(
         &self,
         chain_id: ChainId,
