@@ -29,24 +29,28 @@ const transferContext: Writable<TransferContext | null> = writable(null)
 const debouncedGetQuoteToken = debouncePromise(getQuoteToken, 500)
 
 validation.subscribe(async data => {
-  transferArgs.set(null)
-
-  if (!data.isValid) {
+  if (
+    !data.transfer?.sourceChain ||
+    !data.transfer?.destinationChain ||
+    !data.transfer?.baseToken ||
+    !data.transfer?.channel
+  ) {
+    transferArgs.set(null)
     transferContext.set(null)
     return
   }
-
-  transferContext.set({
-    channel: data.transfer.channel,
-    sourceChain: data.transfer.sourceChain,
-    destinationChain: data.transfer.destinationChain
-  })
 
   const quoteToken = await debouncedGetQuoteToken(
     data.transfer.sourceChain.chain_id,
     data.transfer.baseToken.denom,
     data.transfer.channel
   )
+
+  transferContext.set({
+    channel: data.transfer.channel,
+    sourceChain: data.transfer.sourceChain,
+    destinationChain: data.transfer.destinationChain
+  })
 
   if (quoteToken.isErr()) {
     transferArgs.set(null)
@@ -68,6 +72,8 @@ validation.subscribe(async data => {
     ucs03address: data.transfer.ucs03address
   })
 })
+
+$: console.log($validation.transfer)
 </script>
 
 <Cube>

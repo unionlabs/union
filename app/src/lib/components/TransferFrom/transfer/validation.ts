@@ -30,8 +30,22 @@ export interface ValidTransfer {
   sender: string
 }
 
+// Modified PartialTransfer to use empty values instead of undefined
+export interface PartialTransfer {
+  sourceChain: Chain | null
+  destinationChain: Chain | null
+  baseTokens: Array<{ denom: string; balance: string }>
+  baseToken: { denom: string; balance: string } | null
+  channel: NonNullable<ReturnType<typeof getChannelInfo>> | null
+  receiver: string
+  ucs03address: string
+  amount: string
+  parsedAmount: bigint
+  sender: string
+}
+
 export interface InvalidValidationStore {
-  transfer: undefined
+  transfer: PartialTransfer
   errors: FieldErrors
   isValid: false
 }
@@ -51,7 +65,7 @@ export function createValidationStore(
 ): Readable<ValidationStore> {
   const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const errors: FieldErrors = {}
-    let parsedAmount: bigint | undefined
+    let parsedAmount: bigint = 0n
 
     if ($rawIntents.source && !$intents.sourceChain) {
       errors.source = "Chain not supported"
@@ -124,51 +138,93 @@ export function createValidationStore(
 
   const transfer = derived(
     [rawIntents, intents, context, errors],
-    ([$rawIntents, $intents, $context, $errors]) => {
-      if (Object.keys($errors.errors).length > 0) return undefined
+    ([$rawIntents, $intents, $context, $errors]): PartialTransfer => {
+      const partialTransfer: PartialTransfer = {
+        sourceChain: null,
+        destinationChain: null,
+        baseTokens: [],
+        baseToken: null,
+        channel: null,
+        receiver: "",
+        ucs03address: "",
+        amount: "",
+        parsedAmount: 0n,
+        sender: ""
+      }
 
-      if (
-        !(
-          $intents.sourceChain &&
-          $intents.destinationChain &&
-          $intents.baseToken &&
-          $intents.channel &&
-          $intents.ucs03address &&
-          $intents.receiver &&
-          $errors.parsedAmount
-        )
-      )
-        return undefined
+      if ($intents.sourceChain) {
+        partialTransfer.sourceChain = $intents.sourceChain
+      }
+      if ($intents.destinationChain) {
+        partialTransfer.destinationChain = $intents.destinationChain
+      }
+      if ($intents.baseTokens) {
+        partialTransfer.baseTokens = $intents.baseTokens
+      }
+      if ($intents.baseToken) {
+        partialTransfer.baseToken = $intents.baseToken
+      }
+      if ($intents.channel) {
+        partialTransfer.channel = $intents.channel
+      }
+      if ($intents.receiver) {
+        partialTransfer.receiver = $intents.receiver
+      }
+      if ($intents.ucs03address) {
+        partialTransfer.ucs03address = $intents.ucs03address
+      }
+      if ($rawIntents.amount) {
+        partialTransfer.amount = $rawIntents.amount
+      }
+      if ($errors.parsedAmount) {
+        partialTransfer.parsedAmount = $errors.parsedAmount
+      }
 
       const sender = userAddrOnChain($context.userAddress, $intents.sourceChain)
-      if (!sender) return undefined
+      if (sender) {
+        partialTransfer.sender = sender
+      }
 
-      return {
-        sourceChain: $intents.sourceChain,
-        destinationChain: $intents.destinationChain,
-        baseTokens: $intents.baseTokens,
-        baseToken: $intents.baseToken,
-        channel: $intents.channel,
-        receiver: $intents.receiver,
-        ucs03address: $intents.ucs03address,
-        amount: $rawIntents.amount,
-        parsedAmount: $errors.parsedAmount,
-        sender
-      } as ValidTransfer
+      // Check if we have all required fields for a valid transfer
+      if (
+        partialTransfer.sourceChain &&
+        partialTransfer.destinationChain &&
+        partialTransfer.baseToken &&
+        partialTransfer.channel &&
+        partialTransfer.ucs03address &&
+        partialTransfer.receiver &&
+        partialTransfer.parsedAmount &&
+        partialTransfer.sender &&
+        Object.keys($errors.errors).length === 0
+      ) {
+        return partialTransfer as ValidTransfer
+      }
+
+      return partialTransfer
     }
   )
 
   return derived([transfer, errors], ([$transfer, $errors]): ValidationStore => {
-    if ($transfer !== undefined) {
+    if (
+      $transfer.sourceChain &&
+      $transfer.destinationChain &&
+      $transfer.baseToken &&
+      $transfer.channel &&
+      $transfer.ucs03address &&
+      $transfer.receiver &&
+      $transfer.parsedAmount &&
+      $transfer.sender &&
+      Object.keys($errors.errors).length === 0
+    ) {
       return {
-        transfer: $transfer,
+        transfer: $transfer as ValidTransfer,
         errors: $errors.errors,
         isValid: true as const
       }
     }
 
     return {
-      transfer: undefined,
+      transfer: $transfer,
       errors: $errors.errors,
       isValid: false as const
     }
