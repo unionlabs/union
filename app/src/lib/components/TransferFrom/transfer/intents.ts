@@ -113,7 +113,6 @@ export function createIntentStore(
     if (!$destinationChain) return null
     const userAddress = $context.userAddress
 
-
     switch ($destinationChain.rpc_type) {
       case "evm": {
         if (!userAddress.evm) return null
