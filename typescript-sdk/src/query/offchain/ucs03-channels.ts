@@ -1,9 +1,9 @@
-import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, http, isAddress, toHex } from "viem"
+import { ucs03ZkgmAbi } from "../../abi/ucs-03.ts"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
-import { ucs03ZkgmAbi } from "#abi/ucs-03"
+import { evmChainFromChainId, GRAQPHQL_URL } from "../../mod.ts"
+import { createPublicClient, http, isAddress, toHex } from "viem"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {

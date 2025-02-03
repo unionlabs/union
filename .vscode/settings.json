@@ -60,6 +60,7 @@
   },
   "files.associations": {
     ".envrc": "dotenv",
+    "bun.lock": "jsonc",
     "biome.json": "jsonc",
     "*.css": "tailwindcss",
     ".vscode/*.json": "jsonc"

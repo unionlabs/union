@@ -35,8 +35,6 @@ type CosmosLocalTransferParams = Prettify<
   }
 >
 
-// type Cosmos
-
 /**
  * Make ICS-20 transfer:
  * - https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md
