@@ -43,6 +43,7 @@ jobs:
       - name: Fetch from Cache
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
@@ -88,6 +89,7 @@ jobs:
       - name: Fetch from Cache
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
@@ -116,6 +118,7 @@ jobs:
       - name: Fetch from Cache
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
@@ -144,6 +147,7 @@ jobs:
       - name: Fetch from Cache
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
