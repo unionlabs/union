@@ -122,123 +122,129 @@ impl TmBlockHandle {
             }
         })
     }
+}
 
-    // checking if the _contract_address of the event exists in active_contracts.
-    // evaluating a json like below. we only include if:
-    // - event type starts with 'wasm-'
-    // - event attribute with key '_contract_address' exist and it's value exists in provided active contracts
-    //
-    // {
-    //     "type": "wasm-packet_send",
-    //     "attributes": [
-    //       {
-    //         "key": "_contract_address",
-    //         "index": true,
-    //         "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-    //       },
-    //       ...
-    //
-    //     ]
-    // }
-    // or
-    // [
-    //    list of events as above (we ignore the arrays, because they are not related to a transaction)
-    // ]
-    //
-    fn should_include_event(&self, event: &PgEvent, active_contracts: &HashSet<String>) -> bool {
-        let reference = &self.reference;
+// checking if the _contract_address of the event exists in active_contracts.
+// evaluating a json like below. we only include if:
+// - event type starts with 'wasm-'
+// - event attribute with key '_contract_address' exist and it's value exists in provided active contracts
+//
+// {
+//     "type": "wasm-packet_send",
+//     "attributes": [
+//       {
+//         "key": "_contract_address",
+//         "index": true,
+//         "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+//       },
+//       ...
+//
+//     ]
+// }
+// or
+// [
+//    list of events as above (we ignore the arrays, because they are not related to a transaction)
+// ]
+//
+fn should_include_event(
+    reference: &BlockReference,
+    event_data: &Value,
+    active_contracts: &HashSet<String>,
+) -> bool {
+    // the event property that contains the wasm contract address that emitted the event
+    const TYPE: &str = "type";
 
-        // the event property that contains the wasm contract address that emitted the event
-        const TYPE: &str = "type";
+    // we only consider wasm events (that start with wasm-)
+    const TYPE_WASM_PREFIX: &str = "wasm-";
 
-        // we only consider wasm events (that start with wasm-)
-        const TYPE_WASM_PREFIX: &str = "wasm-";
+    // property that holds the event attributes
+    const ATTRIBUTES: &str = "attributes";
 
-        // property that holds the event attributes
-        const ATTRIBUTES: &str = "attributes";
+    // property that holds the attribute key
+    const ATTRIBUTE_KEY: &str = "key";
 
-        // property that holds the attribute key
-        const ATTRIBUTE_KEY: &str = "key";
+    // property that holds the attribute value
+    const ATTRIBUTE_VALUE: &str = "value";
 
-        // property that holds the attribute value
-        const ATTRIBUTE_VALUE: &str = "value";
+    // attribute we're looking for
+    const ATTRIBUTE_KEY_FOR_CONTRACT_ADDRESS: &str = "_contract_address";
 
-        // attribute we're looking for
-        const ATTRIBUTE_KEY_FOR_CONTRACT_ADDRESS: &str = "_contract_address";
+    let Value::Object(data) = event_data else {
+        trace!(
+            "{reference}: event is not of type object (probably a block event) => do not include"
+        );
+        return false;
+    };
 
-        let Value::Object(data) = &event.data else {
-            trace!("{reference}: event is not of type object (probably a block event) => do not include");
-            return false;
-        };
+    // 1. fetch the event type.
+    let Some(Value::String(event_type)) = data.get(TYPE) else {
+        trace!(
+            "{reference}: unexpected: event has no type with String value: {:?} => do not include",
+            data.get(TYPE)
+        );
+        return false;
+    };
 
-        // 1. fetch the event type.
-        let Some(Value::String(event_type)) = data.get(TYPE) else {
-            trace!(
-                "{reference}: unexpected: event has no type with String value: {:?} => do not include",
-                data.get(TYPE)
-            );
-            return false;
-        };
-
-        // 2. starts with 'wasm-'
-        if !event_type.starts_with(TYPE_WASM_PREFIX) {
-            trace!("{reference}: not a wasm event type: {event_type} => do not include");
-            return false;
-        }
-
-        // 3. fetch the attributes
-        let Some(Value::Array(event_attributes)) = data.get(ATTRIBUTES) else {
-            trace!(
-                "{reference}: unexpected: event has no attributes with Array value: {:?} => do not include",
-                data.get(ATTRIBUTES)
-            );
-            return false;
-        };
-
-        // 4. evaluate the attributes
-        for event_attribute in event_attributes {
-            let Value::Object(event_attribute) = event_attribute else {
-                trace!("{reference}: unexpected: event has attribute that is not an Object: {event_attribute:?}");
-                continue;
-            };
-
-            // 5. fetch the attribute with key
-            let Some(Value::String(key)) = event_attribute.get(ATTRIBUTE_KEY) else {
-                trace!(
-                    "{reference}: unexpected: event attribute no 'key' of type String: {:?}",
-                    event_attribute.get(ATTRIBUTE_KEY)
-                );
-                continue;
-            };
-
-            // 6. find '_contract_address' attribute
-            if ATTRIBUTE_KEY_FOR_CONTRACT_ADDRESS != key {
-                // not a contract address attribute => check next attribute
-                continue;
-            }
-
-            // 7. fetch the attribute value
-            let Some(Value::String(event_contract_address)) = event_attribute.get(ATTRIBUTE_VALUE)
-            else {
-                trace!(
-                    "{reference}: unexpected: event attribute no 'value' of type String: {:?}",
-                    event_attribute.get(ATTRIBUTE_VALUE)
-                );
-                continue;
-            };
-
-            // 8. check if active
-            let active = active_contracts.contains(event_contract_address);
-            trace!("{reference}: found event contract address: {event_contract_address} => include: {active}");
-
-            // found the contract address: include if active
-            return active;
-        }
-
-        trace!("{reference}: unexpected: there is no contract address in a wasm event => do not include");
-
-        false
+    // 2. starts with 'wasm-'
+    if !event_type.starts_with(TYPE_WASM_PREFIX) {
+        trace!("{reference}: not a wasm event type: {event_type} => do not include");
+        return false;
     }
+
+    // 3. fetch the attributes
+    let Some(Value::Array(event_attributes)) = data.get(ATTRIBUTES) else {
+        trace!(
+            "{reference}: unexpected: event has no attributes with Array value: {:?} => do not include",
+            data.get(ATTRIBUTES)
+        );
+        return false;
+    };
+
+    // 4. evaluate the attributes
+    for event_attribute in event_attributes {
+        let Value::Object(event_attribute) = event_attribute else {
+            trace!("{reference}: unexpected: event has attribute that is not an Object: {event_attribute:?}");
+            continue;
+        };
+
+        // 5. fetch the attribute with key
+        let Some(Value::String(key)) = event_attribute.get(ATTRIBUTE_KEY) else {
+            trace!(
+                "{reference}: unexpected: event attribute no 'key' of type String: {:?}",
+                event_attribute.get(ATTRIBUTE_KEY)
+            );
+            continue;
+        };
+
+        // 6. find '_contract_address' attribute
+        if ATTRIBUTE_KEY_FOR_CONTRACT_ADDRESS != key {
+            // not a contract address attribute => check next attribute
+            continue;
+        }
+
+        // 7. fetch the attribute value
+        let Some(Value::String(event_contract_address)) = event_attribute.get(ATTRIBUTE_VALUE)
+        else {
+            trace!(
+                "{reference}: unexpected: event attribute no 'value' of type String: {:?}",
+                event_attribute.get(ATTRIBUTE_VALUE)
+            );
+            continue;
+        };
+
+        // 8. check if active
+        let active = active_contracts.contains(event_contract_address);
+        trace!("{reference}: found event contract address: {event_contract_address} => include: {active}");
+
+        // found the contract address: include if active
+        return active;
+    }
+
+    trace!(
+        "{reference}: unexpected: there is no contract address in a wasm event => do not include"
+    );
+
+    false
 }
 
 #[async_trait]
@@ -269,7 +275,7 @@ impl BlockHandle for TmBlockHandle {
 
         let filtered_events = events
             .into_iter()
-            .filter(|event| self.should_include_event(event, &active_contracts))
+            .filter(|event| should_include_event(&self.reference, &event.data, &active_contracts))
             .collect_vec();
 
         let transaction_hashes_of_filtered_events = filtered_events
@@ -311,5 +317,174 @@ impl BlockHandle for TmBlockHandle {
 
         debug!("{}: done", reference);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use serde_json::{json, Value};
+    use time::OffsetDateTime;
+
+    use crate::indexer::{api::BlockReference, tendermint::block_handle::should_include_event};
+
+    #[tokio::test]
+    async fn true_when_contract_address_is_active() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(should_include);
+    }
+
+    #[tokio::test]
+    async fn false_when_contract_address_is_not_active() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "one-contract".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(!should_include);
+    }
+
+    #[tokio::test]
+    async fn false_when_there_is_no_contract_address_attribute() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "not-a-contract-address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(!should_include);
+    }
+
+    #[tokio::test]
+    async fn false_when_type_is_not_wasm() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasmXpacket_send", // wasm events start with `wasm-`.
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(!should_include);
+    }
+
+    #[tokio::test]
+    async fn false_when_data_is_array() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                [
+                    {
+                        "type": "wasm-packet_send",
+                        "attributes": [
+                        {
+                            "key": "_contract_address",
+                            "index": true,
+                            "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                        }
+                        ]
+                    }
+                ]
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(!should_include);
+    }
+
+    #[tokio::test]
+    async fn true_when_first_contract_address_is_active_others_are_ignored() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    },
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "ignored_contract_address"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(should_include);
+    }
+
+    fn get_should_include_event_result(data: &Value, contracts: &HashSet<String>) -> bool {
+        should_include_event(
+            &BlockReference::new(0, "hash".to_string(), OffsetDateTime::now_utc()),
+            data,
+            contracts,
+        )
     }
 }
