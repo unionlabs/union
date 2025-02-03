@@ -44,6 +44,11 @@ if (quoteToken.isErr()) {
 
 consola.info("quote token", quoteToken.value)
 
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.error("No quote token available")
+  process.exit(1)
+}
+
 const transferArgs = {
   baseToken: BASE_TOKEN,
   baseAmount: AMOUNT,
