@@ -8,7 +8,6 @@ use alloy::{
 };
 use axum::async_trait;
 use color_eyre::eyre::Report;
-use itertools::Itertools;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
@@ -16,15 +15,14 @@ use tracing::{debug, info, info_span, trace, Instrument};
 use crate::{
     indexer::{
         api::{
-            BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
-            IndexerError,
+            BlockHeight, BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError,
         },
         ethereum::{
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
-            postgres::transaction_filter,
+            postgres::active_contracts,
             provider::{Provider, RpcProviderId},
         },
     },
@@ -65,24 +63,18 @@ pub struct EthFetcherClient {
     pub transaction_filter: TransactionFilter,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug)]
 pub struct TransactionFilter {
-    pub address_filters: Vec<AddressFilter>,
+    pub chain_id: ChainId,
+    pub pg_pool: sqlx::PgPool,
 }
 impl TransactionFilter {
-    pub(crate) fn addresses_at(&self, height: BlockHeight) -> Vec<Address> {
-        self.address_filters
-            .iter()
-            .filter(|address_filter| address_filter.block_range.contains(height))
-            .map(|address_filter| address_filter.address)
-            .collect_vec()
+    pub(crate) async fn addresses_at(
+        &self,
+        height: BlockHeight,
+    ) -> Result<Vec<Address>, IndexerError> {
+        Ok(active_contracts(&mut self.pg_pool.begin().await?, self.chain_id.db, height).await?)
     }
-}
-
-#[derive(Clone, Debug, serde::Deserialize)]
-pub struct AddressFilter {
-    pub block_range: BlockRange,
-    pub address: Address,
 }
 
 impl Display for EthFetcherClient {
@@ -154,7 +146,10 @@ impl EthFetcherClient {
 
         info!("{}: fetch", block_reference);
 
-        let contract_addresses = self.transaction_filter.addresses_at(block_reference.height);
+        let contract_addresses = self
+            .transaction_filter
+            .addresses_at(block_reference.height)
+            .await?;
         debug!(
             "{}: contract-addresses: {:?}",
             block_reference, &contract_addresses
@@ -281,10 +276,9 @@ impl FetcherClient for EthFetcherClient {
                 .await?
                 .get_inner_logged();
 
-            let transaction_filter = transaction_filter(&pg_pool, chain_id.db).await?;
-            debug!("transaction-filter: {:?}", &transaction_filter);
-
             tx.commit().await?;
+
+            let transaction_filter = TransactionFilter { chain_id, pg_pool };
 
             Ok(EthFetcherClient {
                 chain_id,

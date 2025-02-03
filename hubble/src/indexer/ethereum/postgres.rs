@@ -1,16 +1,13 @@
-use alloy::network::AnyRpcBlock;
+use alloy::{network::AnyRpcBlock, primitives::Address};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
 use crate::{
     indexer::{
-        api::{BlockHash, BlockHeight, BlockRange},
-        ethereum::{
-            block_handle::{BlockInsert, TransactionInsert},
-            fetcher_client::{AddressFilter, TransactionFilter},
-        },
+        api::{BlockHash, BlockHeight},
+        ethereum::block_handle::{BlockInsert, TransactionInsert},
     },
     postgres::{schedule_replication_reset, ChainId, InsertMode},
 };
@@ -127,29 +124,28 @@ pub async fn delete_eth_log(
     Ok(())
 }
 
-pub async fn transaction_filter(
-    pg_pool: &PgPool,
+pub async fn active_contracts(
+    tx: &mut Transaction<'_, Postgres>,
     internal_chain_id: i32,
-) -> sqlx::Result<TransactionFilter> {
-    let address_filters = sqlx::query!(
+    height: BlockHeight,
+) -> sqlx::Result<Vec<Address>> {
+    let height: i64 = height.try_into().unwrap();
+
+    let result = sqlx::query!(
         r#"
-        SELECT start_height, end_height, address
-        FROM   v1_evm.contracts
-        WHERE  internal_chain_id = $1
+        SELECT    address
+        FROM      v1_evm.contracts
+        WHERE     internal_chain_id = $1
+        AND       $2 between start_height and end_height
         "#,
-        internal_chain_id
+        internal_chain_id,
+        height,
     )
-    .fetch_all(pg_pool)
+    .fetch_all(tx.as_mut())
     .await?
     .into_iter()
-    .map(|record| AddressFilter {
-        block_range: BlockRange {
-            start_inclusive: record.start_height.try_into().unwrap(),
-            end_exclusive: record.end_height.try_into().unwrap(),
-        },
-        address: record.address.parse().expect("address to be valid"),
-    })
-    .collect_vec();
+    .map(|record| record.address.parse().expect("address to be valid"))
+    .collect();
 
-    Ok(TransactionFilter { address_filters })
+    Ok(result)
 }

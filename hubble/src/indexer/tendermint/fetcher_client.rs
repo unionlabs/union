@@ -99,6 +99,7 @@ impl TmFetcherClient {
                 .sorted_by_key(|meta| meta.header.height)
                 .map(|meta| async move {
                     Ok(TmBlockHandle {
+                        internal_chain_id: self.chain_id.db,
                         reference: meta.block_reference()?,
                         details: match fetch_mode {
                             FetchMode::Lazy => BlockDetails::Lazy(Box::new(meta.into())),
@@ -321,6 +322,7 @@ impl TmFetcherClient {
                 );
 
                 Ok(TmBlockHandle {
+                    internal_chain_id: self.chain_id.db,
                     reference: header.block_reference()?,
                     details: match mode {
                         FetchMode::Lazy => BlockDetails::Lazy(Box::new(header)),

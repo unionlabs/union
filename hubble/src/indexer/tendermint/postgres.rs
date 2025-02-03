@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
@@ -154,7 +156,7 @@ pub async fn insert_batch_events(
     sqlx::query!("
         INSERT INTO v1_cosmos.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
-        ", 
+        ",
         &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
     .execute(tx.as_mut()).await?;
 
@@ -201,4 +203,30 @@ pub async fn delete_tm_block_transactions_events(
     schedule_replication_reset(tx, chain_id, height, "block reorg (delete)").await?;
 
     Ok(())
+}
+
+pub async fn active_contracts(
+    tx: &mut Transaction<'_, Postgres>,
+    internal_chain_id: i32,
+    height: BlockHeight,
+) -> sqlx::Result<HashSet<String>> {
+    let height: i64 = height.try_into().unwrap();
+
+    let result = sqlx::query!(
+        r#"
+        SELECT    address
+        FROM      v1_cosmos.contracts
+        WHERE     internal_chain_id = $1
+        AND       $2 between start_height and end_height
+        "#,
+        internal_chain_id,
+        height,
+    )
+    .fetch_all(tx.as_mut())
+    .await?
+    .into_iter()
+    .map(|record| record.address)
+    .collect();
+
+    Ok(result)
 }
