@@ -29,7 +29,6 @@ onMount(() => {
 })
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
-import { PUBLIC_ENVIRONMENT } from "$env/static/public"
 </script>
 
 <svelte:head>
@@ -57,7 +56,6 @@ import { PUBLIC_ENVIRONMENT } from "$env/static/public"
 />
 
 <LoadingBar />
-<p>{PUBLIC_ENVIRONMENT}</p>
 
 <QueryClientProvider client={queryClient}>
   <ModeWatcher defaultMode="system" />
