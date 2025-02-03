@@ -3,7 +3,7 @@ use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{IbcClient, IbcClientError};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-use ibc_union_spec::ConsensusStatePath;
+use ibc_union_spec::path::ConsensusStatePath;
 use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
