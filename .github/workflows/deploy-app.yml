@@ -22,13 +22,14 @@ env:
 
 jobs:
   deploy-preview:
-    runs-on: [ 'ubuntu-latest' ]
+    runs-on: ['ubuntu-latest']
     permissions:
       contents: read
       pull-requests: write
     env:
       npm_config_yes: true
       ENVIRONMENT: 'preview'
+      PUBLIC_ENVIRONMENT: 'preview'
     environment: 'app-preview'
     if: github.event_name == 'pull_request'
     steps:
@@ -41,9 +42,10 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
+        env:
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
-          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
+          nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
@@ -65,15 +67,16 @@ jobs:
           message: |
             # App 🤌
             ${{ env.DEPLOY_OUTPUT }}
-            
+
             **${{ env.LAST_UPDATED_AT }}**
           comment_tag: deploy-app-preview-result
 
   deploy-manual:
-    runs-on: [ 'ubuntu-latest' ]
+    runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
       ENVIRONMENT: 'preview'
+      PUBLIC_ENVIRONMENT: 'preview'
     if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
@@ -85,9 +88,10 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
+        env:
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
-          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
+          nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
@@ -96,10 +100,11 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app" deploy result
 
   deploy-staging:
-    runs-on: [ 'ubuntu-latest' ]
+    runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
       ENVIRONMENT: 'staging'
+      PUBLIC_ENVIRONMENT: 'staging'
     environment: 'app-staging'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -112,9 +117,10 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
+        env:
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
-          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
+          nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
@@ -123,10 +129,11 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result
 
   deploy-production:
-    runs-on: [ 'ubuntu-latest' ]
+    runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
       ENVIRONMENT: 'production'
+      PUBLIC_ENVIRONMENT: 'production'
     environment: 'app-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/release/app'
     steps:
@@ -139,9 +146,10 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
+        env:
+          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
-          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
+          nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
