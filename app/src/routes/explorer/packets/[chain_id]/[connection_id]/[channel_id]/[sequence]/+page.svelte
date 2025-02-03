@@ -18,8 +18,6 @@ const packetDetails = packetDetailsQuery(
 )
 </script>
 
-{JSON.stringify($packetDetails)}
-
 <ChainsGate let:chains>
   {#if $packetDetails.data}
     {#each $packetDetails.data.v1_ibc_union_packets as packetDetails}
