@@ -22,7 +22,7 @@ env:
 
 jobs:
   deploy-preview:
-    runs-on: ['ubuntu-latest']
+    runs-on: [ 'ubuntu-latest' ]
     permissions:
       contents: read
       pull-requests: write
@@ -45,6 +45,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
+          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
           nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
@@ -67,12 +68,12 @@ jobs:
           message: |
             # App 🤌
             ${{ env.DEPLOY_OUTPUT }}
-
+            
             **${{ env.LAST_UPDATED_AT }}**
           comment_tag: deploy-app-preview-result
 
   deploy-manual:
-    runs-on: ['ubuntu-latest']
+    runs-on: [ 'ubuntu-latest' ]
     env:
       npm_config_yes: true
       ENVIRONMENT: 'preview'
@@ -91,6 +92,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
+          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
           nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
@@ -100,7 +102,7 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app" deploy result
 
   deploy-staging:
-    runs-on: ['ubuntu-latest']
+    runs-on: [ 'ubuntu-latest' ]
     env:
       npm_config_yes: true
       ENVIRONMENT: 'staging'
@@ -120,6 +122,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
+          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
           nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
@@ -129,7 +132,7 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result
 
   deploy-production:
-    runs-on: ['ubuntu-latest']
+    runs-on: [ 'ubuntu-latest' ]
     env:
       npm_config_yes: true
       ENVIRONMENT: 'production'
@@ -149,9 +152,11 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
+          echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
           nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="app" --branch="main" deploy result
