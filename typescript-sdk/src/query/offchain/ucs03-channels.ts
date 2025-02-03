@@ -96,7 +96,6 @@ export const getQuoteToken = async (
   // if it is unknown, calculate the quotetoken
   // cosmos quote token prediction
   if (cosmosChainId.includes(channel.destination_chain_id)) {
-    console.log("lets go")
     // cosmos chain
     // get http endpoint
     // TODO: don't hardcode.
@@ -113,10 +112,16 @@ export const getQuoteToken = async (
 
     let client = publicClient.value
 
+    let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
+
     // TODO: don't haredcode this either.
     let predictedQuoteToken = await ResultAsync.fromPromise(
       client.queryContractSmart("bbn1mvvl3jvyn8dh9whfzkdzgedk56cjge7stsfwdjrcsvczns5waqzs6023q4", {
-        predict_wrapped_denom: { path: "0", channel: 2, token: "0x1234" }
+        predict_wrapped_denom: {
+          path: "0",
+          channel: channel.destination_channel_id,
+          token: baseToken
+        }
       }),
       error => {
         return new Error("failed to query predict wrapped denom", { cause: error })
@@ -131,7 +136,7 @@ export const getQuoteToken = async (
   }
 
   // evm quote token prediction
-  if (evmChainId.includes(source_chain_id)) {
+  if (evmChainId.includes(channel.destination_chain_id)) {
     const destinationChainClient = createPublicClient({
       chain: evmChainFromChainId(channel.destination_chain_id),
       transport: http()

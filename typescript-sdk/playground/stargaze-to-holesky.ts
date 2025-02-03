@@ -59,6 +59,11 @@ if (quoteToken.isErr()) {
   process.exit(1)
 }
 
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.error("No quote token available")
+  process.exit(1)
+}
+
 consola.info("quote token", quoteToken.value)
 
 if (!PRIVATE_KEY) {
@@ -84,8 +89,7 @@ const transfer = await stargazeClient.transferAsset({
 })
 
 if (transfer.isErr()) {
-  consola.info("transfer submission failed")
-  consola.error(transfer.error)
+  consola.error("transfer submission failed:", transfer.error)
   process.exit(1)
 }
 

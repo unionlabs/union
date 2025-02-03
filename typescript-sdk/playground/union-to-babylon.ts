@@ -60,34 +60,37 @@ if (quoteToken.isErr()) {
   process.exit(1)
 }
 
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.error("No quote token available")
+  process.exit(1)
+}
 consola.info("quote token", quoteToken.value)
 
-// if (!PRIVATE_KEY) {
-//   consola.error("no private key provided")
-//   process.exit(1)
-// }
+if (!PRIVATE_KEY) {
+  consola.error("no private key provided")
+  process.exit(1)
+}
 
-// const unionClient = createUnionClient({
-//   chainId: SOURCE_CHAIN_ID,
-//   account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union"),
-//   gasPrice: { amount: "0.025", denom: "muno" },
-//   transport: http(" https://rpc.union-testnet-9.union.chain.kitchen")
-// })
+const unionClient = createUnionClient({
+  chainId: SOURCE_CHAIN_ID,
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union"),
+  gasPrice: { amount: "0.025", denom: "muno" },
+  transport: http(" https://rpc.testnet-9.union.build")
+})
 
-// const transfer = await unionClient.transferAsset({
-//   baseToken: STARS_DENOM,
-//   baseAmount: AMOUNT,
-//   quoteToken: quoteToken.value.quote_token,
-//   quoteAmount: AMOUNT,
-//   receiver: RECEIVER,
-//   sourceChannelId: channel.source_channel_id,
-//   ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
-// })
+const transfer = await unionClient.transferAsset({
+  baseToken: STARS_DENOM,
+  baseAmount: AMOUNT,
+  quoteToken: quoteToken.value.quote_token,
+  quoteAmount: AMOUNT,
+  receiver: RECEIVER,
+  sourceChannelId: channel.source_channel_id,
+  ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
+})
 
-// if (transfer.isErr()) {
-//   consola.info("transfer submission failed")
-//   consola.error(transfer.error)
-//   process.exit(1)
-// }
+if (transfer.isErr()) {
+  consola.error("transfer submission failed:", transfer.error)
+  process.exit(1)
+}
 
-// consola.info("transfer tx hash", transfer.value)
+consola.info("transfer tx hash", transfer.value)
