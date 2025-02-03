@@ -1,5 +1,5 @@
 module zkgm::zkgm_packet {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Self, Instruction};
 
     use std::vector;
@@ -28,9 +28,9 @@ module zkgm::zkgm_packet {
 
     public fun encode(packet: &ZkgmPacket): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_bytes32(&mut buf, &packet.salt);
-        ethabi::encode_uint<u256>(&mut buf, packet.path);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
 
         let ins_buf = instruction::encode(&packet.instruction);
         vector::append(&mut buf, ins_buf);
@@ -40,8 +40,8 @@ module zkgm::zkgm_packet {
 
     public fun decode(buf: &vector<u8>): ZkgmPacket {
         let index = 0;
-        let salt = ethabi::decode_bytes32(buf, &mut index);
-        let path = ethabi::decode_uint(buf, &mut index);
+        let salt = zkgm_ethabi::decode_bytes32(buf, &mut index);
+        let path = zkgm_ethabi::decode_uint(buf, &mut index);
         // skipping the pointer
         index = index + 0x20;
         let instruction = instruction::decode(buf, &mut index);

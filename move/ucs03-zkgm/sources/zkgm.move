@@ -773,7 +773,7 @@ module zkgm::zkgm_relay {
                         contract_calldata: *multiplex::contract_calldata(&multiplex_packet)
                     }
                 );
-            engine_zkgm::dispatch(param, contract_address);
+            // engine_zkgm::dispatch(param, contract_address);
             return bcs::to_bytes(&ACK_SUCCESS)
         };
         let multiplex_ibc_packet =
@@ -796,7 +796,7 @@ module zkgm::zkgm_relay {
                 }
             );
 
-        engine_zkgm::dispatch(param, contract_address);
+        // engine_zkgm::dispatch(param, contract_address);
 
         let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
 
@@ -1010,7 +1010,7 @@ module zkgm::zkgm_relay {
             let contract_address =
                 from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
-            engine_zkgm::dispatch(param, contract_address);
+            // engine_zkgm::dispatch(param, contract_address);
         }
     }
 
@@ -1262,7 +1262,7 @@ module zkgm::zkgm_relay {
             let contract_address =
                 from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
-            engine_zkgm::dispatch(param, contract_address);
+            // engine_zkgm::dispatch(param, contract_address);
         }
     }
 
