@@ -37,7 +37,6 @@ func (app *UnionApp) setupUpgradeHandlers() {
 				app.configurator,
 				&upgrades.AppKeepers{
 					StakingKeeper: app.StakingKeeper,
-					TfKeeper:      &app.TfKeeper,
 				},
 			),
 		)

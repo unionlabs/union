@@ -7,14 +7,11 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
-
-	tfkeeper "union/x/tokenfactory/keeper"
 )
 
 type AppKeepers struct {
 	ConsensusKeeper *consensuskeeper.Keeper
 	StakingKeeper   *stakingkeeper.Keeper
-	TfKeeper        *tfkeeper.Keeper
 }
 
 // source: https://github.com/osmosis-labs/osmosis/blob/c783ef52af8617d3ec613d9ce9035386ba8d4a49/app/upgrades/types.go#L24
