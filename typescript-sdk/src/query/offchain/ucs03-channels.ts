@@ -1,7 +1,7 @@
 import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, http, isAddress, toHex } from "viem"
+import { createPublicClient, fromHex, http, isAddress, toHex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
@@ -96,13 +96,11 @@ export const getQuoteToken = async (
   // if it is unknown, calculate the quotetoken
   // cosmos quote token prediction
   if (cosmosChainId.includes(channel.destination_chain_id)) {
-    // cosmos chain
-    // get http endpoint
-    // TODO: don't hardcode.
+    // TODO: don't hardcode this endpoint.
     let publicClient = await ResultAsync.fromPromise(
       CosmWasmClient.connect("https://rpc.bbn-test-5.babylon.chain.kitchen"),
       error => {
-        return new Error("failed to create public cosmos client", { cause: error })
+        return new Error("failed to create public cosmwasm client", { cause: error })
       }
     )
 
@@ -114,9 +112,8 @@ export const getQuoteToken = async (
 
     let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
 
-    // TODO: don't haredcode this either.
     let predictedQuoteToken = await ResultAsync.fromPromise(
-      client.queryContractSmart("bbn1mvvl3jvyn8dh9whfzkdzgedk56cjge7stsfwdjrcsvczns5waqzs6023q4", {
+      client.queryContractSmart(fromHex(`0x${channel.destination_port_id}`, "string"), {
         predict_wrapped_denom: {
           path: "0",
           channel: channel.destination_channel_id,
