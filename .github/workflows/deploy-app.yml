@@ -41,18 +41,15 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
-        env:
-          ENVIRONMENT: ${{ env.ENVIRONMENT }}
-          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          nix build .#app
+          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="app" deploy result --env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} >> /tmp/app_deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="app" deploy result >> /tmp/app_deploy.txt
 
       - name: Set Deploy Output
         run: |
@@ -88,18 +85,15 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
-        env:
-          ENVIRONMENT: ${{ env.ENVIRONMENT }}
-          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          nix build .#app
+          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="app" deploy result --env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}
+        run: npx --yes wrangler@latest pages --project-name="app" deploy result
 
   deploy-staging:
     runs-on: [ 'ubuntu-latest' ]
@@ -118,18 +112,15 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
-        env:
-          ENVIRONMENT: ${{ env.ENVIRONMENT }}
-          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          nix build .#app
+          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result --env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}
+        run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result
 
   deploy-production:
     runs-on: [ 'ubuntu-latest' ]
@@ -148,15 +139,12 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
-        env:
-          ENVIRONMENT: ${{ env.ENVIRONMENT }}
-          PUBLIC_ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           echo "PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}" > app/.env
-          nix build .#app
+          env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }} nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="app" --branch="main" deploy result --env PUBLIC_ENVIRONMENT=${{ env.ENVIRONMENT }}
+        run: npx --yes wrangler@latest pages --project-name="app" --branch="main" deploy result
