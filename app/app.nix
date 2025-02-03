@@ -30,7 +30,10 @@ _: {
           inherit (packageJSON) version;
           nativeBuildInputs = deps;
           buildInputs = deps;
-          env.PUBLIC_ENVIRONMENT = builtins.getEnv "PUBLIC_ENVIRONMENT";
+          buildPhase = ''
+            export PUBLIC_ENVIRONMENT=''${PUBLIC_ENVIRONMENT}
+            npm run build
+          '';
           installPhase = ''
             mkdir -p $out
             cp -r ./build/* $out
