@@ -30,10 +30,6 @@ export default defineConfig(config => {
   return {
     plugins,
     build: { target: "es2020" },
-    define: {
-      "import.meta.env.VITE_ENVIRONMENT": JSON.stringify(VITE_ENVIRONMENT),
-      "import.meta.env.NODE_ENV": JSON.stringify(NODE_ENV)
-    },
     esbuild: {
       drop: dropLogStatements ? ["console", "debugger"] : []
     },

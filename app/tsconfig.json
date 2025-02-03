@@ -16,7 +16,12 @@
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
+    "types": [
+      "typed-query-selector/strict",
+      "unplugin-icons/types/svelte",
+      "@sveltejs/kit",
+      "vite/client"
+    ],
     "paths": {
       "$*": ["./src/*"]
     },
@@ -31,7 +36,7 @@
       }
     ]
   },
-  "include": ["src", "scripts"],
+  "include": ["src", "scripts", ".svelte-kit/ambient.d.ts"],
   "exclude": ["./src/lib/components/ui"],
   "files": [
     "reset.d.ts",
