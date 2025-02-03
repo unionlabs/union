@@ -112,20 +112,6 @@ import (
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm"
-	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
-	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-
-	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
-	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
-	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
-	ibcfeekeeper "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/keeper"
-	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -143,10 +129,6 @@ import (
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 	"union/docs"
 	unionstaking "union/x/staking"
-	tfmodule "union/x/tokenfactory"
-	tfbindings "union/x/tokenfactory/bindings"
-	tfkeeper "union/x/tokenfactory/keeper"
-	tftypes "union/x/tokenfactory/types"
 )
 
 const (
@@ -173,15 +155,12 @@ var (
 		pooltypes.ModuleName:               nil,
 		pooltypes.StreamAccount:            nil,
 		pooltypes.ProtocolPoolDistrAccount: nil,
-		icatypes.ModuleName:                nil,
 		minttypes.ModuleName:               {authtypes.Minter},
 		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                {authtypes.Burner},
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
-		ibcfeetypes.ModuleName:             nil,
 		wasmtypes.ModuleName:               {authtypes.Burner}, // TODO(aeryz): is this necessary?
-		tftypes.ModuleName:                 {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -233,16 +212,12 @@ type UnionApp struct {
 	AuthzKeeper           authzkeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	IBCFeeKeeper          ibcfeekeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	TransferKeeper        ibctransferkeeper.Keeper
-	WasmClientKeeper      ibcwasmkeeper.Keeper
-	ICAHostKeeper         icahostkeeper.Keeper
 	FeeGrantKeeper        feegrantkeeper.Keeper
 	GroupKeeper           groupkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	WasmKeeper            wasmkeeper.Keeper
-	TfKeeper              tfkeeper.Keeper
 	PoolKeeper            poolkeeper.Keeper
 
 	// make scoped keepers public for test purposes
@@ -312,9 +287,9 @@ func NewUnionApp(
 		authtypes.StoreKey, authz.ModuleName, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
-		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey,
-		icahosttypes.StoreKey, capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey,
-		consensusparamtypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
+		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		capabilitytypes.StoreKey, group.StoreKey,
+		consensusparamtypes.StoreKey, wasmtypes.StoreKey,
 		pooltypes.StoreKey, accounts.StoreKey,
 	)
 
@@ -324,7 +299,7 @@ func NewUnionApp(
 	}
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
-	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, tftypes.MemStoreKey)
+	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &UnionApp{
 		BaseApp:           bApp,
@@ -366,9 +341,7 @@ func NewUnionApp(
 
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
-	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasmtypes.ModuleName)
 
 	// add keepers
@@ -487,23 +460,12 @@ func NewUnionApp(
 	ibcKeeper.SetConsensusHost(ibcCometblsClient)
 	app.IBCKeeper = ibcKeeper
 
-	// IBC Fee Module keeper
-	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[ibcfeetypes.StoreKey]),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
-		app.AuthKeeper,
-		app.BankKeeper,
-	)
-
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
 		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCFeeKeeper, // ISC4 Wrapper: fee IBC middleware
+		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.PortKeeper,
 		app.AuthKeeper,
@@ -515,36 +477,6 @@ func NewUnionApp(
 	transferModule := transfer.NewAppModule(appCodec, app.TransferKeeper)
 	var transferIBCModule ibcporttypes.IBCModule
 	transferIBCModule = transfer.NewIBCModule(app.TransferKeeper)
-
-	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[icahosttypes.StoreKey]),
-		app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCFeeKeeper, // use ics29 fee as ics4Wrapper in middleware stack
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
-		app.AuthKeeper,
-		scopedICAHostKeeper,
-		app.MsgServiceRouter(),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
-
-	icaControllerKeeper := icacontrollerkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[icacontrollertypes.StoreKey]),
-		app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCFeeKeeper, // use ics29 fee as ics4Wrapper in middleware stack
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
-		scopedICAControllerKeeper,
-		app.MsgServiceRouter(),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
-	icaModule := ica.NewAppModule(appCodec, &icaControllerKeeper, &app.ICAHostKeeper)
-	var icaHostIBCModule ibcporttypes.IBCModule
-	icaHostIBCModule = icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -563,23 +495,6 @@ func NewUnionApp(
 	govRouter.
 		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
-
-	app.TfKeeper = tfkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[tftypes.StoreKey]),
-		app.GetSubspace(tftypes.ModuleName),
-		app.AuthKeeper,
-		app.BankKeeper,
-		app.PoolKeeper,
-	)
-	tfModule := tfmodule.NewAppModule(
-		appCodec,
-		app.TfKeeper,
-		app.AuthKeeper,
-		app.BankKeeper,
-	)
-
-	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&app.BankKeeper, &app.TfKeeper)...)
 
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -606,7 +521,7 @@ func NewUnionApp(
 		app.BankKeeper,
 		app.StakingKeeper,
 		distrkeeper.NewQuerier(app.DistrKeeper),
-		app.IBCFeeKeeper, // ISC4 Wrapper: fee IBC middleware
+		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.PortKeeper,
 		scopedWasmKeeper,
@@ -618,15 +533,6 @@ func NewUnionApp(
 		AllCapabilities(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmOpts...,
-	)
-
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
-		appCodec,
-		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
-		ibcKeeper.ClientKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		wasmer,
-		app.GRPCQueryRouter(),
 	)
 
 	govConfig := govkeeper.DefaultConfig()
@@ -647,12 +553,10 @@ func NewUnionApp(
 
 	// Create static IBC router, add transfer route, then set and seal it
 	var wasmStack ibcporttypes.IBCModule
-	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCFeeKeeper)
-	wasmStack = ibcfee.NewIBCMiddleware(wasmStack, app.IBCFeeKeeper)
+	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)
 
 	ibcRouter := ibcporttypes.NewRouter()
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(wasmtypes.ModuleName, wasmStack).
+	ibcRouter.AddRoute(wasmtypes.ModuleName, wasmStack).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -703,10 +607,7 @@ func NewUnionApp(
 		ibc.NewAppModule(appCodec, app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
-		ibcwasm.NewAppModule(appCodec, app.WasmClientKeeper),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AuthKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
-		icaModule,
-		tfModule,
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
 	)
@@ -737,17 +638,14 @@ func NewUnionApp(
 		govtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		icatypes.ModuleName,
 		genutiltypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		ibcwasmtypes.ModuleName,
 		group.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
-		tftypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -755,7 +653,6 @@ func NewUnionApp(
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		icatypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -766,14 +663,12 @@ func NewUnionApp(
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		ibcwasmtypes.ModuleName,
 		group.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
-		tftypes.ModuleName,
 		pooltypes.ModuleName,
 	)
 
@@ -793,10 +688,8 @@ func NewUnionApp(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
-		ibcwasmtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		icatypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
@@ -807,7 +700,6 @@ func NewUnionApp(
 		consensusparamtypes.ModuleName,
 		pooltypes.ModuleName,
 		wasmtypes.ModuleName,
-		tftypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -876,13 +768,6 @@ func NewUnionApp(
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register wasm snapshot extension: %s", err))
-		}
-
-		err = manager.RegisterExtensions(
-			ibcwasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmClientKeeper),
-		)
-		if err != nil {
-			panic(fmt.Errorf("failed to register ibc-wasm snapshot extension: %s", err))
 		}
 	}
 
@@ -1100,14 +985,11 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	paramsKeeper.Subspace(tftypes.ModuleName)
 
 	keyTable := ibcclienttypes.ParamKeyTable()
 	keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
 	paramsKeeper.Subspace(ibcexported.ModuleName).WithKeyTable(keyTable)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName).WithKeyTable(ibctransfertypes.ParamKeyTable())
-	paramsKeeper.Subspace(icacontrollertypes.SubModuleName).WithKeyTable(icacontrollertypes.ParamKeyTable())
-	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
 
 	return paramsKeeper
 }
