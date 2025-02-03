@@ -10,6 +10,8 @@ import CellOriginConnection from "$lib/components/table-cells/cell-origin-connec
 import { raise } from "$lib/utilities"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
+import { page } from "$app/stores"
+import type { ChainFeature } from "$lib/types.ts"
 
 let connections = createQuery({
   queryKey: ["connections"],
@@ -37,7 +39,17 @@ let connections = createQuery({
   }
 })
 
-let connectionsDataStore = derived(connections, $connections => $connections.data ?? [])
+let connectionsDataStore = derived([connections, page], ([$connections, $page]) => {
+  const enabledChainIds = $page.data.features
+    .filter((chain: ChainFeature) => chain.features[0]?.connection_list)
+    .map((chain: ChainFeature) => chain.chain_id)
+
+  return ($connections.data ?? []).filter(
+    connection =>
+      enabledChainIds.includes(connection.source.chain_id) &&
+      enabledChainIds.includes(connection.destination.chain_id)
+  )
+})
 
 type DataRow = UnwrapReadable<typeof connectionsDataStore>[number]
 

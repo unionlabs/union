@@ -118,6 +118,7 @@ export type TokenRepresentation = {
   decimals: number
   sources: Array<unknown>
 }
+
 export type TokenInfo =
   | {
       quality_level: "GRAPHQL"
@@ -154,4 +155,17 @@ export type TokenInfoMulti = {
     symbol: string
     wrapping: Array<Wrapping>
   }
+}
+
+export interface ChainFeature {
+  chain_id: string
+  features: Array<{
+    channel_list: boolean
+    connection_list: boolean
+    environment: string
+    index_status: boolean
+    packet_list: boolean
+    transfer_list: boolean
+    transfer_submission: boolean
+  }>
 }

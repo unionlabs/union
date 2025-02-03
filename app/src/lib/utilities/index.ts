@@ -63,6 +63,35 @@ export function debounce<T extends (...args: Array<any>) => void>(
   }
 }
 
+export function debouncePromise<T extends (...args: Array<any>) => Promise<any>>(
+  handler: T,
+  delay = 500
+): (...args: Parameters<T>) => Promise<any> {
+  let id: number
+  let currentPromise: Promise<any> | null = null
+
+  return (...args: Parameters<T>) => {
+    if (currentPromise) {
+      window.clearTimeout(id)
+    }
+
+    return new Promise((resolve, reject) => {
+      window.clearTimeout(id)
+      id = window.setTimeout(async () => {
+        try {
+          currentPromise = handler(...args)
+          const result = await currentPromise
+          currentPromise = null
+          resolve(result)
+        } catch (error) {
+          currentPromise = null
+          reject(error)
+        }
+      }, delay)
+    })
+  }
+}
+
 export function throttle(func: Function, limit: number) {
   let inThrottle: boolean
   return (...args: Array<any>) => {

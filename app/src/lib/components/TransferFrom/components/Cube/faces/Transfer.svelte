@@ -1,23 +1,17 @@
 <script lang="ts">
-import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
-import { derived, get, type Readable, writable, type Writable } from "svelte/store"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import { derived, get, writable, type Writable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
 import {
   type EvmChainId,
   createUnionClient,
   evmChainFromChainId,
-  type TransferAssetsParameters,
-  truncateAddress,
   type AptosBrowserWallet,
-  type ChainId,
   http,
   type CosmosChainId
 } from "@unionlabs/client"
-import { truncate } from "$lib/utilities/format.ts"
 import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
-import { getAddress, type HttpTransport, parseUnits } from "viem"
+import { type HttpTransport } from "viem"
 import { config, userAddrEvm } from "$lib/wallet/evm/config.ts"
 import { toast } from "svelte-sonner"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
@@ -25,28 +19,17 @@ import { stepAfter, stepBefore, type TransferState } from "$lib/transfer/transfe
 import { cosmosStore, getCosmosOfflineSigner, userAddrCosmos } from "$lib/wallet/cosmos"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { raise, sleep } from "$lib/utilities"
-import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { toIsoString } from "$lib/utilities/date.ts"
 import { goto } from "$app/navigation"
-import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import type { Step } from "$lib/stepper-types.ts"
-import Truncate from "$lib/components/truncate.svelte"
-import { type Chain, type Ucs03Channel } from "$lib/types"
+import { type Chain } from "$lib/types"
 import Token from "$lib/components/token.svelte"
 import Address from "$lib/components/address.svelte"
+import type { TransferArgs, TransferContext } from "$lib/components/TransferFrom/transfer/types.ts"
 
 export let chains: Array<Chain>
-export let channel: Ucs03Channel
-export let transferArgs: {
-  baseToken: string
-  baseAmount: bigint
-  quoteToken: string
-  quoteAmount: bigint
-  receiver: string
-  sourceChannelId: number
-  ucs03address: string
-}
+export let transferArgs: TransferArgs
+export let transferContext: TransferContext
 
 const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
@@ -56,10 +39,10 @@ let confirmed = false
 const transfer = async () => {
   confirmed = true
 
-  const sourceChain = chains.find(c => c.chain_id === channel.source_chain_id)
+  const sourceChain = chains.find(c => c.chain_id === transferContext.channel.source_chain_id)
   if (!sourceChain) return toast.error("no source chain found")
 
-  const destChain = chains.find(c => c.chain_id === channel.destination_chain_id)
+  const destChain = chains.find(c => c.chain_id === transferContext.channel.destination_chain_id)
   if (!destChain) return toast.error("no destination chain found")
 
   // let parsedAmount = parseUnits(
@@ -413,14 +396,14 @@ const stateToStatus = <K extends TransferState["kind"]>(
 
 let stepperSteps = derived(transferState, $transferState => {
   if ($transferState.kind === "PRE_TRANSFER") return [] // don"t generate steps before transfer is ready
-  const sourceChain = chains.find(c => c.chain_id === channel.source_chain_id)
+  const sourceChain = chains.find(c => c.chain_id === transferContext.channel.source_chain_id)
 
   if (!sourceChain) {
     toast.error("no source chain found")
     return []
   }
 
-  const destChain = chains.find(c => c.chain_id === channel.destination_chain_id)
+  const destChain = chains.find(c => c.chain_id === transferContext.channel.destination_chain_id)
   if (!destChain) {
     toast.error("no destination chain found")
     return []
@@ -620,20 +603,20 @@ let stepperSteps = derived(transferState, $transferState => {
     <div class="flex flex-col gap-6">
       <div>
         <h3 class="font-supermolot font-bold uppercase text-xl">Base Asset</h3>
-        <Token amount={transferArgs.baseAmount} denom={transferArgs.baseToken} chainId={channel.source_chain_id} {chains}/>
+        <Token amount={transferArgs.baseAmount} denom={transferArgs.baseToken} chainId={transferContext.channel.source_chain_id} {chains}/>
       </div>
       <div>
         <h3 class="font-supermolot font-bold uppercase text-xl">Quote Asset</h3>
-        <Token amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={channel.destination_chain_id} {chains}/>
+        <Token amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={transferContext.channel.destination_chain_id} {chains}/>
       </div>
       <div>
         <h3 class="font-supermolot font-bold uppercase text-xl">Recipient</h3>
-        <Address showChain showRaw address={transferArgs.receiver} {chains} chainId={channel.destination_chain_id}/>
+        <Address showChain showRaw address={transferArgs.receiver} {chains} chainId={transferContext.channel.destination_chain_id}/>
       </div>
     </div>
     <div class="flex flex-1 flex-col justify-end items-center">
 
-      <div class="flex gap-4 text-muted-foreground text-xs">{channel?.source_connection_id} | {channel?.source_channel_id} <ArrowRightIcon />{channel?.destination_connection_id} | {channel?.destination_channel_id}</div> 
+      <div class="flex gap-4 text-muted-foreground text-xs">{transferContext.channel?.source_connection_id} | {transferContext.channel?.source_channel_id} <ArrowRightIcon />{transferContext.channel?.destination_connection_id} | {transferContext.channel?.destination_channel_id}</div>
     </div>
 
     <Button

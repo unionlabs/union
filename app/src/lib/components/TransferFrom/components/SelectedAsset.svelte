@@ -6,11 +6,13 @@ import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents
 import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import Token from "$lib/components/token.svelte"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 
 interface Props {
   rawIntents: RawIntentsStore
   intents: Readable<IntentsStore>
   validation: Readable<ValidationStore>
+  context: Readable<ContextStore>
   onSelectAsset: () => void
 }
 
@@ -18,6 +20,7 @@ export let rawIntents: Props["rawIntents"]
 export let intents: Props["intents"]
 export let validation: Props["validation"]
 export let onSelectAsset: Props["onSelectAsset"]
+export let context: Props["context"]
 </script>
 
 <div class="flex flex-col w-full gap-2">
@@ -29,8 +32,8 @@ export let onSelectAsset: Props["onSelectAsset"]
           class="border-2 font-bold"
           on:click={onSelectAsset}
   >
-    {#if $rawIntents.asset && $intents.sourceChain}
-      <Token chains={$intents.chains} chainId={$intents.sourceChain.chain_id} denom={$rawIntents.asset}/>
+    {#if $rawIntents.asset}
+      <Token chains={$context.chains} chainId={$rawIntents.source} denom={$rawIntents.asset}/>
     {:else}
       Select Asset
     {/if}
