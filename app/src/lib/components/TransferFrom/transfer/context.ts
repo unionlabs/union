@@ -26,7 +26,7 @@ export function createContextStore(
       const chainFeature = $page.data.features.find(
         (feature: ChainFeature) => feature.chain_id === chain.chain_id
       )
-      return chainFeature?.features[0]?.transfer_list
+      return chainFeature?.features[0]?.transfer_submission
     })
 
     return {
