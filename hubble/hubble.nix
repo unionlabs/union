@@ -177,12 +177,6 @@
           default = "json";
           example = "plain";
         };
-        tokens_urls = mkOption {
-          type = types.nullOr (types.listOf types.str);
-          description = "List of tokenlist urls";
-          example = [ "https://static.optimism.io/optimism.tokenlist.json" ];
-          default = null;
-        };
       };
 
       config = mkIf cfg.enable {
@@ -200,15 +194,13 @@
                   filterNullValues = lib.attrsets.filterAttrsRecursive (_n: v: v != null);
                   indexersWithoutNulls = map filterNullValues cfg.indexers;
                   indexersJson = builtins.toJSON indexersWithoutNulls;
-                  tokensUrlsJson = builtins.toJSON cfg.tokens_urls;
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
                     --database-url "$(head -n 1 ${cfg.api-key-file})" \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
-                    --indexers '${indexersJson}' \
-                    --tokens-urls '${tokensUrlsJson}'
+                    --indexers '${indexersJson}'
                 '';
             };
           in
