@@ -111,34 +111,39 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
-    async fn fetch_unbonding_period(&self) -> std::time::Duration {
+    async fn fetch_unbonding_period(&self, height: Height) -> std::time::Duration {
         let unbonding_period = if self.ccv_consumer_chain {
-            let params =
-                protos::interchain_security::ccv::consumer::v1::query_client::QueryClient::connect(
-                    self.grpc_url.clone(),
+            let params = self
+                .cometbft_client
+                .grpc_abci_query::<_, protos::interchain_security::ccv::consumer::v1::QueryParamsResponse>(
+                    "/interchain_security.ccv.consumer.v1.Query/QueryParams",
+                    &protos::interchain_security::ccv::consumer::v1::QueryParamsRequest {},
+                    Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
+                    false,
                 )
                 .await
                 .unwrap()
-                .query_params(protos::interchain_security::ccv::consumer::v1::QueryParamsRequest {})
-                .await
+                .value
                 .unwrap()
-                .into_inner()
                 .params
                 .unwrap();
 
             params.unbonding_period.clone().unwrap()
         } else {
-            let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-                self.grpc_url.clone(),
-            )
-            .await
-            .unwrap()
-            .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-            .await
-            .unwrap()
-            .into_inner()
-            .params
-            .unwrap();
+            let params = self
+                .cometbft_client
+                .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
+                    "/cosmos.staking.v1beta1.Query/Params",
+                    &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
+                    Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
+                    false,
+                )
+                .await
+                .unwrap()
+                .value
+                .unwrap()
+                .params
+                .unwrap();
 
             params.unbonding_time.clone().unwrap()
         };
@@ -154,7 +159,7 @@ impl Module {
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let unbonding_period = self.fetch_unbonding_period().await;
+        let unbonding_period = self.fetch_unbonding_period(height).await;
 
         let commit = self
             .cometbft_client

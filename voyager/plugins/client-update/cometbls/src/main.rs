@@ -61,7 +61,6 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-    pub grpc_url: String,
 
     pub prover_endpoints: Vec<String>,
 }
@@ -72,7 +71,6 @@ pub struct Config {
     pub chain_id: ChainId,
 
     pub rpc_url: String,
-    pub grpc_url: String,
 
     pub prover_endpoints: Vec<String>,
 }
@@ -85,9 +83,14 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = cometbft_client
+            .status()
+            .await?
+            .node_info
+            .network
+            .to_string();
 
         if chain_id != config.chain_id.as_str() {
             return Err(format!(
@@ -111,11 +114,10 @@ impl Plugin for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             prover_endpoints: config.prover_endpoints,
-            grpc_url: config.grpc_url,
         })
     }
 

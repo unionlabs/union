@@ -225,3 +225,13 @@ impl IbcStorePathKey for BatchPacketsPath {
 
     type Value = H256;
 }
+
+#[test]
+fn connection_key() {
+    dbg!(ConnectionPath { connection_id: 3 }.key());
+    dbg!(ConnectionPath { connection_id: 1 }.key());
+    dbg!(ConnectionPath { connection_id: 2 }.key());
+    dbg!(ConnectionPath { connection_id: 3 }.key());
+    dbg!(ConnectionPath { connection_id: 4 }.key());
+    dbg!(ConnectionPath { connection_id: 5 }.key());
+}

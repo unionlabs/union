@@ -735,6 +735,13 @@ impl VoyagerClient {
         Ok(ibc_proof)
     }
 
+    pub async fn equivalent_chain_ids(&self, chain_id: ChainId) -> RpcResult<Vec<ChainId>> {
+        self.0
+            .equivalent_chain_ids(chain_id)
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
     pub async fn client_info<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -868,7 +875,7 @@ async fn run_server<
         std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
     };
 
-    debug!("connected to voyager socket");
+    trace!("connected to voyager socket");
 
     let module_server = match new(new_t).await {
         Ok(ctx) => ctx,

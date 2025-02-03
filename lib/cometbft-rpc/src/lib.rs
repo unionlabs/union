@@ -22,13 +22,13 @@ use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     option_unwrap,
     primitives::H256,
-    result_unwrap,
+    result_unwrap, ErrorReporter,
 };
 
 use crate::rpc_types::{
     AbciQueryResponse, AllValidatorsResponse, BlockResponse, BlockResultsResponse,
-    BlockchainResponse, BroadcastTxSyncResponse, CommitResponse, Order, StatusResponse, TxResponse,
-    TxSearchResponse, ValidatorsResponse,
+    BlockchainResponse, BroadcastTxSyncResponse, CommitResponse, GrpcAbciQueryResponse, Order,
+    StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -190,6 +190,50 @@ impl Client {
         );
 
         Ok(res)
+    }
+
+    // would be cool to somehow have this be generic and do decoding automatically
+    #[instrument(
+        skip_all,
+        fields(
+            path = %path.as_ref(),
+            // ?data,
+            height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
+            %prove,
+        )
+    )]
+    pub async fn grpc_abci_query<
+        Q: unionlabs::prost::Message,
+        R: unionlabs::prost::Message + Default,
+    >(
+        &self,
+        path: impl AsRef<str>,
+        data: &Q,
+        height: Option<BoundedI64<1>>,
+        prove: bool,
+    ) -> Result<GrpcAbciQueryResponse<R>, JsonRpcError> {
+        debug!("fetching grpc abci query");
+
+        let res = self
+            .abci_query(path, data.encode_to_vec(), height, prove)
+            .await?
+            .response;
+
+        Ok(GrpcAbciQueryResponse {
+            code: res.code,
+            log: res.log,
+            info: res.info,
+            index: res.index,
+            key: res.key,
+            value: res
+                .value
+                .map(|value| R::decode(&*value))
+                .transpose()
+                .map_err(|e| JsonRpcError::Custom(ErrorReporter(e).to_string()))?,
+            proof_ops: res.proof_ops,
+            height: res.height,
+            codespace: res.codespace,
+        })
     }
 
     pub async fn status(&self) -> Result<StatusResponse, JsonRpcError> {

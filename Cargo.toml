@@ -68,14 +68,15 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
-  "lib/ethereum-light-client-types",
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
   "lib/cometbls-light-client-types",
-  "lib/scroll-light-client-types",
   "lib/tendermint-light-client-types",
-  "lib/linea-light-client-types",
+  "lib/ethereum-light-client-types",
+  "lib/ethermint-light-client-types",
   "lib/movement-light-client-types",
+  "lib/linea-light-client-types",
+  "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
@@ -83,13 +84,15 @@ members = [
 
   # these will all be re enabled and updated once ethereum-light-client is updated
 
-  "cosmwasm/ibc-union/light-clients/ethereum",
   "cosmwasm/ibc-union/light-clients/arbitrum",
   "cosmwasm/ibc-union/light-clients/berachain",
   "cosmwasm/ibc-union/light-clients/cometbls",
-  "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
-  # "cosmwasm/ibc-union/light-clients/scroll",
+  "cosmwasm/ibc-union/light-clients/ethereum",
+  "cosmwasm/ibc-union/light-clients/ethermint",
   "cosmwasm/ibc-union/light-clients/tendermint",
+  "cosmwasm/ibc-union/light-clients/state-lens-ics23-mpt",
+
+  # "cosmwasm/ibc-union/light-clients/scroll",
   # "cosmwasm/ibc-union/light-clients/linea",
 
   "cosmwasm/ibc-union/light-clients/movement",
@@ -111,6 +114,7 @@ members = [
 
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
+  "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
   "voyager/modules/proof/movement",
 
@@ -118,6 +122,7 @@ members = [
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
+  "voyager/modules/client/ethermint",
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
   "voyager/modules/client/state-lens/ics23-smt",
@@ -126,6 +131,7 @@ members = [
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
+  "voyager/modules/client-bootstrap/ethermint",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
@@ -141,6 +147,7 @@ members = [
   "voyager/plugins/client-update/ethereum",
   "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
+  "voyager/plugins/client-update/ethermint",
   "voyager/plugins/client-update/state-lens",
 
   "voyager/plugins/periodic-client-update",
@@ -234,6 +241,7 @@ state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
 
+ethermint-light-client-types  = { path = "lib/ethermint-light-client-types", default-features = false }
 tendermint-light-client       = { path = "cosmwasm/ibc-union/light-clients/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }

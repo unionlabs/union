@@ -1,0 +1,24 @@
+[package]
+name    = "ethermint-light-client-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
+tendermint-light-client-types = { workspace = true }
+unionlabs-primitives          = { workspace = true }
+
+[features]
+default = []
+
+bincode = ["dep:bincode", "unionlabs-primitives/bincode", "tendermint-light-client-types/bincode"]
+serde   = ["tendermint-light-client-types/serde", "dep:serde"]
