@@ -49,7 +49,13 @@ module ibc::channel_handshake {
             );
 
         engine::dispatch<T>(
-            helpers::pack_channel_open_init_params(connection_id, channel_id, version)
+            helpers::pack_channel_open_try_params(
+                connection_id,
+                channel_id,
+                counterparty_channel_id,
+                version,
+                counterparty_version
+            )
         );
 
         dispatcher::delete_storage<T>();
