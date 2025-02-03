@@ -65,7 +65,7 @@ export function createValidationStore(
 ): Readable<ValidationStore> {
   const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
     const errors: FieldErrors = {}
-    let parsedAmount: bigint = 0n
+    let parsedAmount = 0n
 
     if ($rawIntents.source && !$intents.sourceChain) {
       errors.source = "Chain not supported"

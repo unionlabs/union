@@ -30,10 +30,12 @@ const debouncedGetQuoteToken = debouncePromise(getQuoteToken, 500)
 
 validation.subscribe(async data => {
   if (
-    !data.transfer?.sourceChain ||
-    !data.transfer?.destinationChain ||
-    !data.transfer?.baseToken ||
-    !data.transfer?.channel
+    !(
+      data.transfer?.sourceChain &&
+      data.transfer?.destinationChain &&
+      data.transfer?.baseToken &&
+      data.transfer?.channel
+    )
   ) {
     transferArgs.set(null)
     transferContext.set(null)
