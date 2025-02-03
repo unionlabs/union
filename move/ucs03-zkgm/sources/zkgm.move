@@ -611,7 +611,7 @@ module zkgm::zkgm_relay {
         };
     }
 
-    public fun on_recv_packet<T: key + store + drop>(
+    public fun on_recv_packet(
         ibc_packet: Packet, relayer: address, relayer_msg: vector<u8>
     ) acquires RelayStore, SignerRef {
         // We can call execute_internal directly
@@ -619,7 +619,7 @@ module zkgm::zkgm_relay {
         let zkgm_packet = zkgm_packet::decode(raw_zkgm_packet);
 
         let acknowledgement =
-            execute_internal<T>(
+            execute_internal(
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -641,7 +641,7 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun execute_internal<T: key + store + drop>(
+    fun execute_internal(
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -663,7 +663,7 @@ module zkgm::zkgm_relay {
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
             let decode_idx = 0x20;
-            execute_batch<T>(
+            execute_batch(
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -693,7 +693,7 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun execute_batch<T: key + store + drop>(
+    fun execute_batch(
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -709,7 +709,7 @@ module zkgm::zkgm_relay {
             let instruction = *vector::borrow(&instructions, i);
             vector::push_back(
                 &mut acks,
-                execute_internal<T>(
+                execute_internal(
                     ibc_packet,
                     relayer,
                     relayer_msg,
@@ -1315,7 +1315,7 @@ module zkgm::zkgm_relay {
                 zkgm_helpers::on_recv_packet_zkgm_deconstruct(
                     copyable_any::unpack<zkgm_helpers::RecvPacketParamsZKGM>(value)
                 );
-            on_recv_packet<P>(pack, relayer, relayer_msg);
+            on_recv_packet(pack, relayer, relayer_msg);
         } else if (type_name_output
             == std::type_info::type_name<zkgm_helpers::AcknowledgePacketParamsZKGM>()) {
             let (pack, acknowledgement, relayer) =
