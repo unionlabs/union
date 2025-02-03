@@ -10,6 +10,7 @@ use cw_storage_plus::Item;
 use ibc_union_msg::{
     lightclient::{
         QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+        VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
@@ -778,8 +779,17 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
+    let mut response = Response::new();
+    if let Some(events) = verify_creation_response.events {
+        response = response.add_events(
+            events
+                .into_iter()
+                .map(|e| make_verify_creation_event(client_id, e))
+                .collect::<Vec<_>>(),
+        );
+    }
     Ok(
-        Response::new().add_event(Event::new(events::client::CREATE).add_attributes([
+        response.add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),
             (events::attribute::CLIENT_ID, client_id.to_string()),
             (
@@ -1854,6 +1864,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             );
             Ok(to_json_binary(&commit)?)
         }
+    }
+}
+
+fn make_verify_creation_event(client_id: u32, event: VerifyCreationResponseEvent) -> Event {
+    match event {
+        VerifyCreationResponseEvent::CreateLensClient {
+            l1_client_id,
+            l2_client_id,
+            l2_chain_id,
+        } => Event::new("create_lens_client").add_attributes([
+            ("client_id", client_id.to_string()),
+            ("l1_client_id", l1_client_id.to_string()),
+            ("l2_client_id", l2_client_id.to_string()),
+            ("l2_chain_id", l2_chain_id),
+        ]),
     }
 }
 

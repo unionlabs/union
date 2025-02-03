@@ -1,8 +1,8 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::IbcClient;
-use ibc_union_msg::lightclient::Status;
+use ibc_union_light_client::{IbcClient, IbcClientError};
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
 use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
@@ -98,10 +98,17 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn verify_creation(
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<
+        Option<Vec<VerifyCreationResponseEvent>>,
+        IbcClientError<StateLensIcs23MptLightClient>,
+    > {
+        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
+            l1_client_id: client_state.l1_client_id,
+            l2_client_id: client_state.l2_client_id,
+            l2_chain_id: client_state.l2_chain_id.clone(),
+        }]))
     }
 
     fn verify_header(
