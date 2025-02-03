@@ -1,6 +1,5 @@
 import {
   cosmwasmTransfer,
-  ibcTransferSimulate,
   cosmwasmTransferSimulate,
   cosmosSameChainTransferSimulate
 } from "./transfer.ts"
@@ -228,32 +227,6 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           ]
         })
       }
-
-      if (destinationChainId === "union-testnet-8") {
-        if (!sourceChannel) return err(new Error("Source channel not found"))
-        const [account_] = await account.getAccounts()
-        if (!account) return err(new Error("No account found"))
-
-        const stamp = timestamp()
-
-        return await ibcTransferSimulate({
-          gasPrice,
-          account,
-          rpcUrl,
-          messageTransfers: [
-            {
-              sourceChannel: sourceChannel.toString(),
-              sourcePort: "transfer",
-              sender: account_?.address,
-              token: { denom: denomAddress, amount: amount.toString() },
-              timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-              receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-              memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
-            }
-          ]
-        })
-      }
-
       return err(new Error("Unsupported network"))
     }
   }))
