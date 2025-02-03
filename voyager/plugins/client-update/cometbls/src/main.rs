@@ -21,6 +21,7 @@ use galois_rpc::{
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use num_bigint::BigUint;
@@ -34,7 +35,7 @@ use voyager_message::{
     data::Data,
     hook::UpdateHook,
     module::{PluginInfo, PluginServer},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{
     call, data, defer, now, pass::PassResult, promise, seq, void, BoxDynError, Op, Visit,
@@ -420,7 +421,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Err(err) => panic!("prove request failed: {:?}", err),
                     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
                         error!(%message, "prove request failed");
-                        panic!()
+
+                        Err(ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("prove request failed: {message}"),
+                            None::<()>,
+                        ))
                     }
                     Ok(PollResponse::Done(ProveRequestDone { response })) => {
                         info!(prover = %prover_endpoint, "proof generated");
