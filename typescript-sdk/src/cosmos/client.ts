@@ -1,6 +1,5 @@
 import {
   cosmwasmTransfer,
-  ibcTransferSimulate,
   cosmwasmTransferSimulate,
   cosmosSameChainTransferSimulate
 } from "./transfer.ts"
@@ -16,14 +15,20 @@ import type {
 } from "../types.ts"
 
 export const cosmosChainId = [
-  "mocha-4",
   "elgafar-1",
   "osmo-test-5",
-  "union-testnet-8",
   "union-testnet-9",
   "stride-internal-1",
   "bbn-test-5"
 ] as const
+
+export const cosmosRpcs: Record<CosmosChainId, string> = {
+  "elgafar-1": "https://rpc.elgafar-1.stargaze.chain.kitchen",
+  "osmo-test-5": "https://rpc.osmo-test-5.osmosis.chain.kitchen",
+  "union-testnet-9": "https://rpc.union-testnet-9.union.chain.kitchen",
+  "stride-internal-1": "https://rpc.stride-internal-1.stride.chain.kitchen",
+  "bbn-test-5": "https://rpc.bbn-test-5.babylon.chain.kitchen"
+}
 
 export type CosmosChainId = `${(typeof cosmosChainId)[number]}`
 
@@ -222,32 +227,6 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           ]
         })
       }
-
-      if (destinationChainId === "union-testnet-8") {
-        if (!sourceChannel) return err(new Error("Source channel not found"))
-        const [account_] = await account.getAccounts()
-        if (!account) return err(new Error("No account found"))
-
-        const stamp = timestamp()
-
-        return await ibcTransferSimulate({
-          gasPrice,
-          account,
-          rpcUrl,
-          messageTransfers: [
-            {
-              sourceChannel: sourceChannel.toString(),
-              sourcePort: "transfer",
-              sender: account_?.address,
-              token: { denom: denomAddress, amount: amount.toString() },
-              timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-              receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-              memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
-            }
-          ]
-        })
-      }
-
       return err(new Error("Unsupported network"))
     }
   }))

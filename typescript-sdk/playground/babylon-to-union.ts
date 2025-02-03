@@ -36,11 +36,11 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const STARS_DENOM = "ustars"
-const AMOUNT = 420n
+const STARS_DENOM = "ubbn"
+const AMOUNT = 1n
 const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-const SOURCE_CHAIN_ID = "elgafar-1"
-const DESTINATION_CHAIN_ID = "17000"
+const SOURCE_CHAIN_ID = "bbn-test-5"
+const DESTINATION_CHAIN_ID = "union-testnet-9"
 
 const channels = await getRecommendedChannels()
 
@@ -63,7 +63,6 @@ if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
   consola.error("No quote token available")
   process.exit(1)
 }
-
 consola.info("quote token", quoteToken.value)
 
 if (!PRIVATE_KEY) {
@@ -71,14 +70,14 @@ if (!PRIVATE_KEY) {
   process.exit(1)
 }
 
-const stargazeClient = createUnionClient({
+const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
-  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "stars"),
-  gasPrice: { amount: "0.025", denom: "ustars" },
-  transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "bbn"),
+  gasPrice: { amount: "0.025", denom: "ubbn" },
+  transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen")
 })
 
-const transfer = await stargazeClient.transferAsset({
+const transfer = await unionClient.transferAsset({
   baseToken: STARS_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,

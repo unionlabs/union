@@ -1,9 +1,11 @@
-import { evmChainFromChainId, GRAQPHQL_URL } from "#mod"
+import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, http, isAddress, toHex } from "viem"
+import { createPublicClient, fromHex, http, isAddress, toHex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -92,50 +94,84 @@ export const getQuoteToken = async (
     }
   }
 
-  // HACK: to check evm vs cosmos we check if te destination chain id  is a number
-  if (!isPositiveInteger(channel.destination_chain_id)) {
-    // we do not support sending new assets to cosmos chains yet.
-    return ok({ type: "NO_QUOTE_AVAILABLE" })
-  }
-
   // if it is unknown, calculate the quotetoken
-  const destinationChainClient = createPublicClient({
-    chain: evmChainFromChainId(channel.destination_chain_id),
-    transport: http()
-  })
+  // cosmos quote token prediction
+  if (cosmosChainId.includes(channel.destination_chain_id)) {
+    let rpc = cosmosRpcs[channel.destination_chain_id as CosmosChainId] // as is valid bc of the check in the if statement.
+    let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
+      return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
+    })
 
-  // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
-  // we do this by calling the ucs03 instance on the counterparty chain.
-  let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
-
-  const predictedQuoteToken = await ResultAsync.fromPromise(
-    destinationChainClient.readContract({
-      address: `0x${channel.destination_port_id}`,
-      abi: ucs03ZkgmAbi,
-      functionName: "predictWrappedToken",
-      args: [0, channel.destination_channel_id, baseToken]
-    }),
-    error => {
-      return new Error("failed to get predict token using evm call", { cause: error })
+    if (publicClient.isErr()) {
+      return err(publicClient.error)
     }
-  )
 
-  if (predictedQuoteToken.isErr()) {
-    return err(predictedQuoteToken.error)
-  }
+    let client = publicClient.value
 
-  if (
-    !(
-      "value" in predictedQuoteToken &&
-      Array.isArray(predictedQuoteToken.value) &&
-      predictedQuoteToken.value.length > 0 &&
-      typeof predictedQuoteToken.value[0] === "string"
+    let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
+
+    let predictedQuoteToken = await ResultAsync.fromPromise(
+      client.queryContractSmart(fromHex(`0x${channel.destination_port_id}`, "string"), {
+        predict_wrapped_denom: {
+          path: "0",
+          channel: channel.destination_channel_id,
+          token: baseToken
+        }
+      }),
+      error => {
+        return new Error("failed to query predict wrapped denom", { cause: error })
+      }
     )
-  ) {
-    return err(new Error(`invalid evm predict token response ${predictedQuoteToken}`))
+
+    if (predictedQuoteToken.isErr()) {
+      return err(predictedQuoteToken.error)
+    }
+
+    return ok({ type: "NEW_WRAPPED", quote_token: toHex(predictedQuoteToken.value) })
   }
 
-  return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value[0] })
+  // evm quote token prediction
+  if (evmChainId.includes(channel.destination_chain_id)) {
+    const destinationChainClient = createPublicClient({
+      chain: evmChainFromChainId(channel.destination_chain_id),
+      transport: http()
+    })
+
+    // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
+    // we do this by calling the ucs03 instance on the counterparty chain.
+    let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
+
+    const predictedQuoteToken = await ResultAsync.fromPromise(
+      destinationChainClient.readContract({
+        address: `0x${channel.destination_port_id}`,
+        abi: ucs03ZkgmAbi,
+        functionName: "predictWrappedToken",
+        args: [0, channel.destination_channel_id, baseToken]
+      }),
+      error => {
+        return new Error("failed to get predict token using evm call", { cause: error })
+      }
+    )
+
+    if (predictedQuoteToken.isErr()) {
+      return err(predictedQuoteToken.error)
+    }
+
+    if (
+      !(
+        "value" in predictedQuoteToken &&
+        Array.isArray(predictedQuoteToken.value) &&
+        predictedQuoteToken.value.length > 0 &&
+        typeof predictedQuoteToken.value[0] === "string"
+      )
+    ) {
+      return err(new Error(`invalid evm predict token response ${predictedQuoteToken}`))
+    }
+
+    return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value[0] })
+  }
+
+  return err(new Error("unknown chain in token prediction"))
 }
 
 export const getRecommendedChannels = async () => {
