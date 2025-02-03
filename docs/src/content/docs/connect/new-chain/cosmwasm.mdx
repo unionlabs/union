@@ -239,6 +239,12 @@ First, register and create the CometBLS client on Stargaze.
       --gas-prices 1ustars \
       -y
     ```
+3. Query the transaction result to confirm success and find the client ID.
+    ```sh
+    ./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 \
+      --node $STARGAZE_RPC_URL
+    # client_id: 2
+    ```
 </Steps>
 
 Now, register and create the Tendermint client on Union.
@@ -270,19 +276,26 @@ Now, register and create the Tendermint client on Union.
       --gas-prices 1muno \
       -y
     ```
+3. Query the transaction result to confirm success and find the client ID.
+    ```sh
+    ./uniond query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 \
+      --node $UNION_RPC_URL
+    # client_id: 12
+    ```
 </Steps>
 
 ## Open the Connection
 
-Finally, the connection ceremony can begin.
+The connection ceremony can now begin.
 
 
 <Steps>
 1. To initiate the ceremony, send a `connection_open_init` message from Stargaze to Union.
+    The `client_id` should be the client ID from Stargaze and the `counterparty_client_id` should be the client ID from Union.
     ```sh
-    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"client_id":"","counterparty_client_id":"","relayer":""}' \
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"connection_open_init":{"client_id":"2","counterparty_client_id":"12","relayer":""}}' \
       --home ./union-home \
-      --node $UNION_RPC_URL \
+      --node $STARGAZE_RPC_URL \
       --chain-id union-testnet-9 \
       --from $KEY_NAME \
       --gas auto \
@@ -290,7 +303,30 @@ Finally, the connection ceremony can begin.
       --gas-prices 1muno \
       -y
     ```
-2. This will trigger a sequence of events that will eventually complete the connection ceremony.
+2. This will trigger a sequence of events that will eventually complete the connection ceremony (`connection_open_try`, `connection_open_ack`, and `connection_open_confirm`).
+
+    :::note
+    If a voyager instance is not already tracking both networks, the remainder of the messages will need to be sent manually. This includes `connection_open_try`, `connection_open_ack`, and `connection_open_confirm`.
+    :::
 </Steps>
 
 ## Open the Channel
+
+With a connection established, the two networks are now connected. You will still need to create a channel before sending messages between the networks.
+
+<Steps>
+1. Start the channel opening ceremony with a `channel_open_init` message.
+    The `port_id` should be the address of the ibc-union contract on Stargaze while the `counterparty_port_id` should be the address of ibc-union on Union.
+    ```sh
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"channel_open_init":{"port_id":"","counterparty_port_id":"","connection_id":"","version":"","relayer":""}}' \
+      --home ./starsd-home \
+      --node $UNION_RPC_URL \
+      --chain-id elgafar-1 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      -y
+    ```
+2. This will trigger a sequence of events that will eventually complete the channel open ceremony (`channel_open_try`, `channel_open_ack`, and `channel_open_confirm`).
+</Steps>
