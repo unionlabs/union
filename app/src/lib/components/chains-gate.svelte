@@ -1,11 +1,12 @@
 <script lang="ts">
-import type { Chain, Ucs03Channel } from "$lib/types"
+import type { Chain, Ucs03Channel, ChainFeature } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { recommendedUcs03ChannelsQuery } from "$lib/queries/channels"
 import { tokensQuery } from "$lib/queries/tokens"
 import { type Readable, derived } from "svelte/store"
 import { isHex } from "viem"
+import { page } from "$app/stores"
 
 let chains = chainsQuery()
 let ucs03channels = recommendedUcs03ChannelsQuery()
@@ -13,7 +14,7 @@ let ucs03channels = recommendedUcs03ChannelsQuery()
 const EMPTY_CHAINS: Array<Chain> = []
 const EMPTY_UCS03_CHANNELS: Array<Ucs03Channel> = []
 
-let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
+let checkedChains: Readable<Array<Chain>> = derived([chains, page], ([$chains, $page]) => {
   // this will never happen, but is needed to satisfy svelte's prop type checker
   if (
     !$chains?.data ||
@@ -23,42 +24,51 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   ) {
     return EMPTY_CHAINS
   }
-  return $chains.data.map(chain => {
-    let display_name = ""
 
-    if (chain.display_name === null) {
-      console.error("no display_name for chain", chain)
-    } else {
-      display_name = chain.display_name
-    }
+  return $chains.data
+    .map(chain => {
+      let display_name = ""
 
-    let rpcType = chain.rpc_type
-    if (!rpcType) console.error("no rpc type found")
+      if (chain.display_name === null) {
+        console.error("no display_name for chain", chain)
+      } else {
+        display_name = chain.display_name
+      }
 
-    let addr_prefix = ""
-    if (chain.addr_prefix === null) {
-      console.error("no addr_prefix for chain", chain)
-    } else {
-      addr_prefix = chain.addr_prefix
-    }
-    return {
-      chain_id: chain.chain_id,
-      enabled: chain.enabled,
-      enabled_staging: chain.enabled_staging,
-      display_name,
-      rpc_type: rpcType,
-      rpcs: chain.rpcs,
-      addr_prefix,
-      testnet: !!chain.testnet,
-      explorers: chain.explorers,
-      // this as statement should no longer be required in the next typescript release
-      tokens: chain.tokens,
-      // @deprecated
-      assets: chain.assets.filter(
-        asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
-      ) as Chain["assets"]
-    } as Chain
-  })
+      let rpcType = chain.rpc_type
+      if (!rpcType) console.error("no rpc type found")
+
+      let addr_prefix = ""
+      if (chain.addr_prefix === null) {
+        console.error("no addr_prefix for chain", chain)
+      } else {
+        addr_prefix = chain.addr_prefix
+      }
+
+      return {
+        chain_id: chain.chain_id,
+        enabled: chain.enabled,
+        enabled_staging: chain.enabled_staging,
+        display_name,
+        rpc_type: rpcType,
+        rpcs: chain.rpcs,
+        addr_prefix,
+        testnet: !!chain.testnet,
+        explorers: chain.explorers,
+        // this as statement should no longer be required in the next typescript release
+        tokens: chain.tokens,
+        // @deprecated
+        assets: chain.assets.filter(
+          asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
+        ) as Chain["assets"]
+      } as Chain
+    })
+    .filter(chain => {
+      const chainFeature = $page.data.features.find(
+        (feature: ChainFeature) => feature.chain_id === chain.chain_id
+      )
+      return chainFeature?.features[0]?.transfer_submission
+    })
 })
 
 let checkedUcs03Channels: Readable<Array<Ucs03Channel>> = derived(ucs03channels, $ucs03channels => {

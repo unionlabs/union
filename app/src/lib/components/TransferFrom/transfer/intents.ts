@@ -2,7 +2,7 @@ import { derived, type Readable } from "svelte/store"
 import type { Chain, TokenInfoMulti } from "$lib/types"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import { fromHex, isHex } from "viem"
+import { fromHex } from "viem"
 import {
   bech32AddressToHex,
   bech32ToBech32Address,
@@ -10,7 +10,6 @@ import {
   isValidBech32Address
 } from "@unionlabs/client"
 import { getTokenInfoSimple } from "$lib/components/TransferFrom/transfer/balances.ts"
-import type { userBalancesQuery } from "$lib/queries/balance"
 
 export type BaseToken = {
   denom: string
@@ -20,7 +19,6 @@ export type BaseToken = {
 export interface IntentsStore {
   sourceChain: Chain | null
   destinationChain: Chain | null
-  baseTokens: Array<BaseToken>
   baseToken: BaseToken | null
   baseTokenInfo: TokenInfoMulti | null
   channel: ReturnType<typeof getChannelInfo> | null
@@ -32,8 +30,7 @@ export interface IntentsStore {
 
 export function createIntentStore(
   rawIntents: RawIntentsStore,
-  context: Readable<ContextStore>,
-  balances: ReturnType<typeof userBalancesQuery>
+  context: Readable<ContextStore>
 ): Readable<IntentsStore> {
   const sourceChain = derived([rawIntents, context], ([$rawIntents, $context]) => {
     return $context.chains.find(chain => chain.chain_id === $rawIntents.source) ?? null
@@ -66,26 +63,11 @@ export function createIntentStore(
       : `0x${$channel.source_port_id}`
   })
 
-  const baseTokens = derived([balances, sourceChain], ([$balances, $sourceChain]) => {
-    if (!$sourceChain) return []
-    let balances = $balances.find(c => c.data?.chain_id === $sourceChain.chain_id)
-    return $sourceChain.tokens.map(token => ({
-      denom: token.denom,
-      balance: balances?.data?.balances[token.denom] ?? "0"
-    }))
-  })
-
   const baseToken = derived(
-    [rawIntents, baseTokens, sourceChain],
-    ([$rawIntents, $baseTokens, $sourceChain]) => {
+    [rawIntents, context, sourceChain],
+    ([$rawIntents, $context, $sourceChain]) => {
       if (!($rawIntents.asset && $sourceChain)) return null
-
-      const denom =
-        $sourceChain.rpc_type === "cosmos" && isHex($rawIntents.asset)
-          ? fromHex($rawIntents.asset, "string")
-          : $rawIntents.asset
-
-      return $baseTokens.find(token => token.denom === denom) ?? null
+      return $context.baseTokens.find(token => token.denom === $rawIntents.asset) ?? null
     }
   )
 
@@ -139,7 +121,6 @@ export function createIntentStore(
       sourceChain,
       destinationChain,
       channel,
-      baseTokens,
       baseToken,
       baseTokenInfo,
       receiver,
@@ -151,7 +132,6 @@ export function createIntentStore(
       $sourceChain,
       $destinationChain,
       $channel,
-      $baseTokens,
       $baseToken,
       $baseTokenInfo,
       $receiver,
@@ -160,7 +140,6 @@ export function createIntentStore(
     ]) => ({
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
-      baseTokens: $baseTokens,
       baseToken: $baseToken,
       baseTokenInfo: $baseTokenInfo,
       channel: $channel,

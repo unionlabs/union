@@ -17,8 +17,6 @@ export let amount: string | number | bigint | null = null
 export let userAmount: string | null = null
 export let expanded = false
 
-console.log(denom)
-
 $: chain = chains.find(c => c.chain_id === chainId) ?? null
 $: graphqlToken =
   chain?.tokens.find(t => t.denom?.toLowerCase() === (denom ?? "").toLowerCase()) ?? null

@@ -14,7 +14,7 @@ import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
 import Address from "$lib/components/address.svelte"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import type { TransferArgs } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { TransferArgs, TransferContext } from "$lib/components/TransferFrom/transfer/types.ts"
 
 interface Stores {
   rawIntents: RawIntentsStore

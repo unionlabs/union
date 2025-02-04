@@ -1,7 +1,7 @@
 <script lang="ts">
 import DebugBox from "$lib/components/TransferFrom/components/DebugBox/index.svelte"
 import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
-import { createTransferStore } from "$lib/components/TransferFrom/transfer"
+import { createTransferStores } from "$lib/components/TransferFrom/transfer"
 import Intent from "$lib/components/TransferFrom/components/Cube/faces/Intent.svelte"
 import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.svelte"
 import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
@@ -9,7 +9,7 @@ import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfe
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
-import { userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
+import { balanceStore, userAddress } from "$lib/components/TransferFrom/transfer/balances.ts"
 import { writable, type Writable } from "svelte/store"
 import { getQuoteToken } from "@unionlabs/client"
 import type { TransferArgs, TransferContext } from "$lib/components/TransferFrom/transfer/types.ts"
@@ -18,10 +18,17 @@ import { debouncePromise } from "$lib/utilities"
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
 
-let balances = userBalancesQuery({ chains, userAddr: $userAddress })
-const stores = createTransferStore(chains, balances, ucs03channels)
+// This is kinda ugly, but necessary to get tanstack reactivity in our .ts intent/validation funnel.
+// This keeps the query reactive in svelte land. We then update and pass a writable into createTransferStores.
+$: {
+  const query = userBalancesQuery({ chains, userAddr: $userAddress })
+  query.subscribe($balances => {
+    balanceStore.set($balances)
+  })
+}
+const stores = createTransferStores(chains, userAddress, balanceStore, ucs03channels)
 
-const { validation } = stores
+const { rawIntents, validation } = stores
 
 const transferArgs: Writable<TransferArgs | null> = writable(null)
 const transferContext: Writable<TransferContext | null> = writable(null)
@@ -31,8 +38,8 @@ const debouncedGetQuoteToken = debouncePromise(getQuoteToken, 500)
 validation.subscribe(async data => {
   if (
     !(
-      data.transfer?.sourceChain &&
       data.transfer?.destinationChain &&
+      data.transfer?.sourceChain &&
       data.transfer?.baseToken &&
       data.transfer?.channel
     )
@@ -42,17 +49,17 @@ validation.subscribe(async data => {
     return
   }
 
-  const quoteToken = await debouncedGetQuoteToken(
-    data.transfer.sourceChain.chain_id,
-    data.transfer.baseToken.denom,
-    data.transfer.channel
-  )
-
   transferContext.set({
     channel: data.transfer.channel,
     sourceChain: data.transfer.sourceChain,
     destinationChain: data.transfer.destinationChain
   })
+
+  const quoteToken = await debouncedGetQuoteToken(
+    data.transfer.sourceChain.chain_id,
+    data.transfer.baseToken.denom,
+    data.transfer.channel
+  )
 
   if (quoteToken.isErr()) {
     transferArgs.set(null)
