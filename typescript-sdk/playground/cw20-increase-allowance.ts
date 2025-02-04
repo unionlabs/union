@@ -35,7 +35,7 @@ const client = createUnionClient({
   transport: http("https://rpc.testnet-9.union.build")
 })
 
-const transaction = await client.c20IncreaseAllowance({
+const transaction = await client.cw20IncreaseAllowance({
   account: cosmosAccount,
   amount: 50n,
   gasPrice: { amount: "0.0025", denom: "muno" },
