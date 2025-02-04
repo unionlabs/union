@@ -2,15 +2,14 @@ import { derived, type Readable } from "svelte/store"
 import type { Chain, TokenInfoMulti } from "$lib/types"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import { fromHex, isHex } from "viem"
+import { fromHex } from "viem"
 import {
   bech32AddressToHex,
   bech32ToBech32Address,
   getChannelInfo,
   isValidBech32Address
 } from "@unionlabs/client"
-import {getTokenInfoSimple, userAddress} from "$lib/components/TransferFrom/transfer/balances.ts"
-import type { userBalancesQuery } from "$lib/queries/balance"
+import { getTokenInfoSimple } from "$lib/components/TransferFrom/transfer/balances.ts"
 
 export type BaseToken = {
   denom: string
@@ -31,7 +30,7 @@ export interface IntentsStore {
 
 export function createIntentStore(
   rawIntents: RawIntentsStore,
-  context: Readable<ContextStore>,
+  context: Readable<ContextStore>
 ): Readable<IntentsStore> {
   const sourceChain = derived([rawIntents, context], ([$rawIntents, $context]) => {
     return $context.chains.find(chain => chain.chain_id === $rawIntents.source) ?? null
@@ -64,18 +63,11 @@ export function createIntentStore(
       : `0x${$channel.source_port_id}`
   })
 
-
   const baseToken = derived(
     [rawIntents, context, sourceChain],
     ([$rawIntents, $context, $sourceChain]) => {
       if (!($rawIntents.asset && $sourceChain)) return null
-
-      const denom =
-        $sourceChain.rpc_type === "cosmos" && isHex($rawIntents.asset)
-          ? fromHex($rawIntents.asset, "string")
-          : $rawIntents.asset
-
-      return $context.baseTokens.find(token => token.denom === denom) ?? null
+      return $context.baseTokens.find(token => token.denom === $rawIntents.asset) ?? null
     }
   )
 

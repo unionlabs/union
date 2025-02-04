@@ -20,7 +20,6 @@ export type FieldErrors = Partial<Record<keyof FormFields, string>>
 export interface ValidTransfer {
   sourceChain: Chain
   destinationChain: Chain
-  baseTokens: Array<{ denom: string; balance: string }>
   baseToken: { denom: string; balance: string }
   channel: NonNullable<ReturnType<typeof getChannelInfo>>
   receiver: string
@@ -34,7 +33,6 @@ export interface ValidTransfer {
 export interface PartialTransfer {
   sourceChain: Chain | null
   destinationChain: Chain | null
-  baseTokens: Array<{ denom: string; balance: string }>
   baseToken: { denom: string; balance: string } | null
   channel: NonNullable<ReturnType<typeof getChannelInfo>> | null
   receiver: string
@@ -142,7 +140,6 @@ export function createValidationStore(
       const partialTransfer: PartialTransfer = {
         sourceChain: null,
         destinationChain: null,
-        baseTokens: [],
         baseToken: null,
         channel: null,
         receiver: "",
@@ -157,9 +154,6 @@ export function createValidationStore(
       }
       if ($intents.destinationChain) {
         partialTransfer.destinationChain = $intents.destinationChain
-      }
-      if ($intents.baseTokens) {
-        partialTransfer.baseTokens = $intents.baseTokens
       }
       if ($intents.baseToken) {
         partialTransfer.baseToken = $intents.baseToken

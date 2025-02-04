@@ -12,7 +12,7 @@ import {
   createValidationStore,
   type ValidationStore
 } from "$lib/components/TransferFrom/transfer/validation.ts"
-import type {Chain, Ucs03Channel, UserAddresses} from "$lib/types"
+import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
 import type { userBalancesQuery } from "$lib/queries/balance/index.ts"
 
 export interface TransferStore {
@@ -24,7 +24,7 @@ export interface TransferStore {
 
 export function createTransferStores(
   chains: Array<Chain>,
-  userAddress :Readable<UserAddresses>,
+  userAddress: Readable<UserAddresses>,
   balances: ReturnType<typeof userBalancesQuery>,
   ucs03channels: Array<Ucs03Channel>
 ): TransferStore {
