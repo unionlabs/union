@@ -9,13 +9,13 @@ import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents
 import { derived, writable } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
-import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 
 interface Props {
   stores: {
     rawIntents: RawIntentsStore
     intents: Readable<IntentsStore>
-    context: Readable<ContextStore>,
+    context: Readable<ContextStore>
   }
   rotateTo: (face: CubeFaces) => void
 }
