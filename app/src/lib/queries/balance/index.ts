@@ -5,6 +5,7 @@ import { erc20ReadMulticall } from "./evm/multicall.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { getAptosChainBalances } from "./aptos.ts"
 import { createQueries } from "@tanstack/svelte-query"
+import { errAsync, ok, ResultAsync, type Result } from "neverthrow"
 
 export type AssetMetadata = {
   denom: string
@@ -144,6 +145,9 @@ function getAddressForChain(chain: Chain, addresses: UserAddresses): string | nu
   }
 }
 
+export type Denom = string
+export type RawBalances = Record<Denom, string>
+
 export function userBalancesQuery({
   userAddr,
   chains
@@ -165,48 +169,60 @@ export function userBalancesQuery({
       enabled: Boolean(getAddressForChain(chain, userAddr)),
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
-      queryFn: async () => {
+      queryFn: async (): Promise<Result<RawBalances, Error>> => {
         const address = getAddressForChain(chain, userAddr)
-        if (!address) return null
-
-        let rawBalances: Record<string, string> = {}
+        if (!address) return errAsync(new Error(`no user address for chain ${chain.chain_id}`))
 
         if (chain.rpc_type === "evm") {
           const tokenList = chain.tokens.filter(tokens => isAddress(tokens.denom))
-          const multicallResults = await erc20ReadMulticall({
-            chainId: chain.chain_id,
-            functionNames: ["balanceOf"],
-            address: address as Address,
-            contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
-          })
-
-          multicallResults.forEach((result, index) => {
-            rawBalances[tokenList[index].denom] = result.balance?.toString() ?? "0"
-          })
-        } else if (chain.rpc_type === "cosmos") {
-          const url = chain.rpcs.find(rpc => rpc.type === "rest")?.url
-          if (!url) throw new Error(`No REST RPC available for chain ${chain.chain_id}`)
-
-          const bech32Address = bech32ToBech32Address({
-            toPrefix: chain.addr_prefix,
-            address: address
-          })
-
-          const cosmosBalances = await getCosmosChainBalances({ url, walletAddress: bech32Address })
-          cosmosBalances.forEach(balance => {
-            rawBalances[balance.address] = balance.balance.toString()
-          })
-        } else if (chain.rpc_type === "aptos") {
-          const url = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
-          if (!url) throw new Error(`No RPC available for chain ${chain.chain_id}`)
-
-          const aptosBalances = await getAptosChainBalances({ url, walletAddress: address })
-          aptosBalances.forEach(balance => {
-            rawBalances[balance.address] = balance.balance.toString()
-          })
+          return await ResultAsync.fromPromise(
+            erc20ReadMulticall({
+              chainId: chain.chain_id,
+              functionNames: ["balanceOf"],
+              address: address as Address,
+              contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
+            }),
+            error => new Error("error fetching evm balances", { cause: error })
+          ).andThen(multicallResultss =>
+            ok(
+              multicallResultss.reduce((acc, curr, index) => {
+                console.log({ curr })
+                if (curr.balance) {
+                  acc[tokenList[index].denom] = curr.balance.toString()
+                }
+                return acc
+              }, {})
+            )
+          )
         }
 
-        return { chain_id: chain.chain_id, balances: rawBalances }
+        return errAsync(new Error("unimplemented"))
+
+        // if (chain.rpc_type === "cosmos") {
+        //   const url = chain.rpcs.find(rpc => rpc.type === "rest")?.url
+        //   if (!url) throw new Error(`No REST RPC available for chain ${chain.chain_id}`)
+
+        //   const bech32Address = bech32ToBech32Address({
+        //     toPrefix: chain.addr_prefix,
+        //     address: address
+        //   })
+
+        //   const cosmosBalances = await getCosmosChainBalances({ url, walletAddress: bech32Address })
+        //   cosmosBalances.forEach(balance => {
+        //     rawBalances[balance.address] = balance.balance.toString()
+        //   })
+        // }
+        // if (chain.rpc_type === "aptos") {
+        //   const url = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
+        //   if (!url) throw new Error(`No RPC available for chain ${chain.chain_id}`)
+
+        //   const aptosBalances = await getAptosChainBalances({ url, walletAddress: address })
+        //   aptosBalances.forEach(balance => {
+        //     rawBalances[balance.address] = balance.balance.toString()
+        //   })
+        // }
+
+        // return { chain_id: chain.chain_id, balances: rawBalances }
       }
     }))
   })
