@@ -50,6 +50,7 @@ const CW20_HUMAN_PREFIXES = [
   "contract_info",
   "allowance_spender"
 ] as const
+
 const CW20_PREFIXES_MAP = {
   balance: "\u0000\x07",
   allowance: "\u0000\x08",
