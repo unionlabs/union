@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.54",
+  "version": "0.0.56",
   "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
