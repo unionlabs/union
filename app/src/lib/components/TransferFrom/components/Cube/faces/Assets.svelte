@@ -9,11 +9,13 @@ import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents
 import { derived, writable } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
+import type {ContextStore} from "$lib/components/TransferFrom/transfer/context.ts";
 
 interface Props {
   stores: {
     rawIntents: RawIntentsStore
     intents: Readable<IntentsStore>
+    context: Readable<ContextStore>,
   }
   rotateTo: (face: CubeFaces) => void
 }
@@ -22,10 +24,10 @@ export let chains: Array<Chain>
 export let stores: Props["stores"]
 export let rotateTo: Props["rotateTo"]
 
-let { rawIntents, intents } = stores
+let { rawIntents, intents, context } = stores
 
-let sortedTokens = derived([intents], ([$intents]) =>
-  $intents.baseTokens.toSorted((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)))
+let sortedTokens = derived([context], ([$context]) =>
+  $context.baseTokens.toSorted((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)))
 )
 
 function setAsset(denom: string) {

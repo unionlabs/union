@@ -9,7 +9,7 @@ import {
   getChannelInfo,
   isValidBech32Address
 } from "@unionlabs/client"
-import { getTokenInfoSimple } from "$lib/components/TransferFrom/transfer/balances.ts"
+import {getTokenInfoSimple, userAddress} from "$lib/components/TransferFrom/transfer/balances.ts"
 import type { userBalancesQuery } from "$lib/queries/balance"
 
 export type BaseToken = {
@@ -20,7 +20,6 @@ export type BaseToken = {
 export interface IntentsStore {
   sourceChain: Chain | null
   destinationChain: Chain | null
-  baseTokens: Array<BaseToken>
   baseToken: BaseToken | null
   baseTokenInfo: TokenInfoMulti | null
   channel: ReturnType<typeof getChannelInfo> | null
@@ -33,7 +32,6 @@ export interface IntentsStore {
 export function createIntentStore(
   rawIntents: RawIntentsStore,
   context: Readable<ContextStore>,
-  balances: ReturnType<typeof userBalancesQuery>
 ): Readable<IntentsStore> {
   const sourceChain = derived([rawIntents, context], ([$rawIntents, $context]) => {
     return $context.chains.find(chain => chain.chain_id === $rawIntents.source) ?? null
@@ -66,18 +64,10 @@ export function createIntentStore(
       : `0x${$channel.source_port_id}`
   })
 
-  const baseTokens = derived([balances, sourceChain], ([$balances, $sourceChain]) => {
-    if (!$sourceChain) return []
-    let balances = $balances.find(c => c.data?.chain_id === $sourceChain.chain_id)
-    return $sourceChain.tokens.map(token => ({
-      denom: token.denom,
-      balance: balances?.data?.balances[token.denom] ?? "0"
-    }))
-  })
 
   const baseToken = derived(
-    [rawIntents, baseTokens, sourceChain],
-    ([$rawIntents, $baseTokens, $sourceChain]) => {
+    [rawIntents, context, sourceChain],
+    ([$rawIntents, $context, $sourceChain]) => {
       if (!($rawIntents.asset && $sourceChain)) return null
 
       const denom =
@@ -85,7 +75,7 @@ export function createIntentStore(
           ? fromHex($rawIntents.asset, "string")
           : $rawIntents.asset
 
-      return $baseTokens.find(token => token.denom === denom) ?? null
+      return $context.baseTokens.find(token => token.denom === denom) ?? null
     }
   )
 
@@ -139,7 +129,6 @@ export function createIntentStore(
       sourceChain,
       destinationChain,
       channel,
-      baseTokens,
       baseToken,
       baseTokenInfo,
       receiver,
@@ -151,7 +140,6 @@ export function createIntentStore(
       $sourceChain,
       $destinationChain,
       $channel,
-      $baseTokens,
       $baseToken,
       $baseTokenInfo,
       $receiver,
@@ -160,7 +148,6 @@ export function createIntentStore(
     ]) => ({
       sourceChain: $sourceChain,
       destinationChain: $destinationChain,
-      baseTokens: $baseTokens,
       baseToken: $baseToken,
       baseTokenInfo: $baseTokenInfo,
       channel: $channel,

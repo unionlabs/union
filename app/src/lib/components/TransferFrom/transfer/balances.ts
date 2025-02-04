@@ -5,6 +5,14 @@ import { userAddressAptos } from "$lib/wallet/aptos"
 import { derived, type Readable, writable } from "svelte/store"
 import { type Address, hexToString, isHex } from "viem"
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall.ts"
+import type {QueryObserverResult} from "@tanstack/query-core";
+
+interface BalanceQueryResult {
+  chain_id: string
+  balances: Record<string, string>
+}
+
+export const balanceStore = writable<QueryObserverResult<BalanceQueryResult | null, Error>[]>([])
 
 export let userAddress: Readable<UserAddresses> = derived(
   [userAddrCosmos, userAddrEvm, userAddressAptos],
@@ -13,10 +21,6 @@ export let userAddress: Readable<UserAddresses> = derived(
     cosmos: $userAddrCosmos,
     aptos: $userAddressAptos
   })
-)
-
-export const balanceStore = writable<Array<{ chain_id: string; balances: Record<string, string> }>>(
-  []
 )
 
 export async function getTokenInfoSimple(

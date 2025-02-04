@@ -1,3 +1,5 @@
+//CURRENTLY NOT USED
+
 import {
   evmChainId,
   aptosChainId,
