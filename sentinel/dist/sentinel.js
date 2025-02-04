@@ -207,7 +207,7 @@ async function doTransfer(task) {
             return;
         }
         const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel);
-        consola.info("quoteToken: ", quoteToken, " chainId: ", sourceChainId, " denomAddr: ", task.denomAddress, " channel: ", channel);
+        consola.info("quoteToken: ", quoteToken, " chainId: ", sourceChainId, " denomAddr: ", task.denomAddress, " channel: ", channel, "sending amount:", random_amount);
         if (quoteToken.isErr()) {
             consola.info("could not get quote token");
             consola.error(quoteToken.error);

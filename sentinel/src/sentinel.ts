@@ -348,7 +348,9 @@ async function doTransfer(task: TransferConfig) {
       " denomAddr: ",
       task.denomAddress,
       " channel: ",
-      channel
+      channel,
+      "sending amount:",
+      random_amount
     )
 
     if (quoteToken.isErr()) {
