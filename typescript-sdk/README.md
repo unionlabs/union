@@ -83,3 +83,13 @@ if (transfer.isErr()) {
 
 console.info(transfer.value)
 ```
+
+## How to patch dependencies
+
+```sh
+npm install
+npm install --package-lock-only
+# edit node_modules/foo
+./node_modules/patch-package/index.js foo
+# a patch will be generated for foo in the patches/ dir
+```
