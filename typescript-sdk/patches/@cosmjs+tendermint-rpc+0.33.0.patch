@@ -29,7 +29,7 @@ index 29ec063..28a5c02 100644
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
-index 19df9de..c73c4ca 100644
+index 19df9de..0015044 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
 @@ -72,7 +72,7 @@ function decodePubkey(data) {
@@ -58,3 +58,16 @@ index 19df9de..c73c4ca 100644
              default:
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
+diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
+index 257b104..dbf2240 100644
+--- a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
++++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
+@@ -28,7 +28,7 @@ async function connectComet(endpoint) {
+     if (version.startsWith("0.37.")) {
+         out = tm37Client;
+     }
+-    else if (version.startsWith("0.38.")) {
++    else if (version.startsWith("0.38.") || version.startsWith("1.0.")) {
+         tm37Client.disconnect();
+         out = await comet38_1.Comet38Client.connect(endpoint);
+     }
