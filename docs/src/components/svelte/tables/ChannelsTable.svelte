@@ -12,7 +12,7 @@ import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.s
 
 const graphqlQuery = dedent /* GraphQL */`
     query ChannelsQuery {
-      data: v1_channels {
+      data: v1_ibc_union_channels {
         source_chain {
           chain_id
           display_name
