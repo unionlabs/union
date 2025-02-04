@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { err, ok, ResultAsync } from "neverthrow"
+import type { RawBalances } from "."
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -28,15 +29,19 @@ const fetchJson = (url: string) => {
 export function getCosmosChainBalances({
   url,
   walletAddress
-}: { url: string; walletAddress: string }): ResultAsync<
-  v.InferOutput<typeof cosmosBalancesResponseSchema>,
-  Error
-> {
+}: { url: string; walletAddress: string }): ResultAsync<RawBalances, Error> {
   url = url.startsWith("https") ? url : `https://${url}`
-  return fetchJson(`${url}/cosmos/bank/v1beta1/balances/${walletAddress}`).andThen(json => {
-    const result = v.safeParse(cosmosBalancesResponseSchema, json)
-    return result.success
-      ? ok(result.output)
-      : err(new Error("Validation failed:", { cause: result.issues }))
-  })
+  return fetchJson(`${url}/cosmos/bank/v1beta1/balances/${walletAddress}`)
+    .andThen(json => {
+      const result = v.safeParse(cosmosBalancesResponseSchema, json)
+      return result.success
+        ? ok(result.output)
+        : err(new Error("Validation failed:", { cause: result.issues }))
+    })
+    .map(balances =>
+      balances.balances.reduce((acc, cur) => {
+        acc[cur.denom] = cur.amount
+        return acc
+      }, {})
+    )
 }

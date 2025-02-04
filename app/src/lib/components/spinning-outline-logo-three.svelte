@@ -114,7 +114,6 @@ const render = (mode: string | undefined) => {
 
     renderer.render(scene, camera)
     requestAnimationFrame(animate)
-    // console.log(clock.elapsedTime);
   }
   requestAnimationFrame(animate)
 }
