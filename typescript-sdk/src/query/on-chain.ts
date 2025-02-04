@@ -97,17 +97,6 @@ export async function queryContractState({
         amount: valueDecoded
       }
     }
-    console.info(kv.key.includes('allowance'))
-    // if (index === 1 && kv.value.includes('allowance')) {
-    //   // allowance
-    //   const prefix = keyDecoded.slice(0, 10)
-    //   const address = keyDecoded.slice(10)
-    //   keyDecoded = prefix
-    //   valueDecoded = {
-    //     address,
-    //     amount: valueDecoded
-    //   }
-    // }
     return {
       key: keyDecoded.replaceAll(CW20_PREFIXES_MAP["balance"], ""),
       value: valueDecoded
