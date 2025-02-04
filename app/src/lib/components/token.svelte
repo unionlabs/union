@@ -41,7 +41,7 @@ $: tokenInfo = tokenInfoQuery(chainId, (denom ?? "").toLowerCase(), chains)
       {#if userAmount !== null}
         {userAmount}
       {/if}
-      <span class={cn("inline-flex gap-1 transition-colors", $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate
+      <span class={cn("inline-flex gap-1", $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate
               value={token.combined.symbol} type="symbol"/></b>
     <div class="text-muted-foreground text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}

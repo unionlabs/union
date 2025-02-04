@@ -25,7 +25,7 @@ const explorer = chain?.explorers?.at(0)?.address_url ?? null
 
 <!-- svelte-ignore a11y-interactive-supports-focus -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class={cn("flex flex-col text-xs transition-colors", $highlightItem?.kind === "address" && $highlightItem.address === address  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}
+<div class={cn("flex flex-col text-xs", $highlightItem?.kind === "address" && $highlightItem.address === address  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}
   on:mouseleave={() => highlightItem.set(null)}
   on:mouseenter={() => {
   highlightItem.set(address ? { kind: "address", address} : null)
