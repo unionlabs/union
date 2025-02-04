@@ -3,6 +3,7 @@ import { raise } from "$lib/utilities/index.ts"
 import { config } from "$lib/wallet/evm/config.ts"
 import { erc20Abi, getAddress, type Address } from "viem"
 import type { NoRepetition } from "$lib/utilities/types.ts"
+import { ResultAsync } from "neverthrow"
 
 /**
  * @example
@@ -54,7 +55,9 @@ export async function erc20ReadMulticall({
       const currentResult = accumulator.at(-1)
       const fn = functionNames[index % functionNames.length]
       if (!currentResult) return accumulator
-      currentResult[fn === "balanceOf" ? "balance" : fn] = result ?? (fn === "decimals" ? 0 : "")
+      if (result !== undefined) {
+        currentResult[fn === "balanceOf" ? "balance" : fn] = result ?? (fn === "decimals" ? 0 : "")
+      }
       return accumulator
     },
     [] as Array<Record<string, any>>

@@ -27,7 +27,15 @@ export let rotateTo: Props["rotateTo"]
 let { rawIntents, intents, context } = stores
 
 let sortedTokens = derived([context], ([$context]) =>
-  $context.baseTokens.toSorted((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)))
+  $context.baseTokens.toSorted((a, b) => {
+    if (a.balance.isErr()) {
+      return 1
+    }
+    if (b.balance.isErr()) {
+      return -1
+    }
+    return Number(BigInt(b.balance.value) - BigInt(a.balance.value))
+  })
 )
 
 function setAsset(denom: string) {
@@ -55,7 +63,14 @@ function setAsset(denom: string) {
             class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
             on:click={() => setAsset(token.denom)}
     >
-      <Token chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+      {#if token.balance.isOk() }
+        <Token chainId={$rawIntents.source} denom={token.denom} amount={token.balance.value} {chains}/>
+      {:else}
+        <div class="text-left">
+          <Token chainId={$rawIntents.source} denom={token.denom} {chains}/>
+          <div class="text-xs">{token.balance.error.message}</div>
+        </div>
+      {/if}
     </button>
   {/each}
   </div>
