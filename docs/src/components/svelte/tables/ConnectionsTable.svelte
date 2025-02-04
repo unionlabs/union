@@ -10,7 +10,7 @@ import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.s
 
 const graphqlQuery = dedent /* GraphQL */`
     query ConnectionsForDocs {
-      data: v1_connections {
+      data: v1_ibc_union_connections {
         source_chain {
           display_name
         }
