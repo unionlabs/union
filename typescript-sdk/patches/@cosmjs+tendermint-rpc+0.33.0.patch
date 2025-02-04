@@ -1,5 +1,5 @@
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
-index 29ec063..28a5c02 100644
+index 29ec063..56d44e3 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
 @@ -72,7 +72,7 @@ function decodePubkey(data) {
@@ -29,10 +29,32 @@ index 29ec063..28a5c02 100644
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
-index 9e50f2b..c09330a 100644
+index 9e50f2b..161629f 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
-@@ -91,6 +91,16 @@ function decodePubkey(data) {
+@@ -39,11 +39,17 @@ function decodeAbciQuery(data) {
+     };
+ }
+ function decodeAttribute(attribute) {
+-    return {
+-        key: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(attribute.key)),
+-        value: (0, encoding_1.fromBase64)((0, encodings_1.assertString)(attribute.value ?? "")),
+-    };
++    try {
++        return {
++            key: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(attribute.key ?? "")),
++            value: (0, encoding_1.fromBase64)((0, encodings_1.assertString)(attribute.value ?? "")),
++        };
++    }
++    catch {
++        return { key: "", value: "" };
++    }
+ }
++
+ function decodeAttributes(attributes) {
+     return (0, encodings_1.assertArray)(attributes).map(decodeAttribute);
+ }
+@@ -91,6 +97,16 @@ function decodePubkey(data) {
                      algorithm: "secp256k1",
                      data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(data.value)),
                  };
@@ -50,7 +72,7 @@ index 9e50f2b..c09330a 100644
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
-index 19df9de..0015044 100644
+index 19df9de..09ca2ed 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
 @@ -91,6 +91,16 @@ function decodePubkey(data) {
@@ -71,7 +93,7 @@ index 19df9de..0015044 100644
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
-index 257b104..dbf2240 100644
+index 257b104..6626da9 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
 @@ -28,7 +28,7 @@ async function connectComet(endpoint) {
