@@ -1,7 +1,8 @@
 import * as v from "valibot"
-import { err, ok, ResultAsync } from "neverthrow"
+import { err, errAsync, ok, ResultAsync } from "neverthrow"
 import type { RawBalances } from "."
 import { toHex } from "viem"
+import { isValidBech32Address } from "@unionlabs/client"
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -32,6 +33,8 @@ export function getCosmosChainBalances({
   walletAddress
 }: { url: string; walletAddress: string }): ResultAsync<RawBalances, Error> {
   url = url.startsWith("https") ? url : `https://${url}`
+  if (!isValidBech32Address(walletAddress))
+    return errAsync(new Error(`invalid cosmos wallet address provided: ${walletAddress}`))
   return fetchJson(`${url}/cosmos/bank/v1beta1/balances/${walletAddress}`)
     .andThen(json => {
       const result = v.safeParse(cosmosBalancesResponseSchema, json)
