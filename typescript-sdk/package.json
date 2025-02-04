@@ -41,14 +41,14 @@
     "ofetch": "^1.4.1",
     "ox": "^0.6.9",
     "patch-package": "^8.0.0",
-    "viem": "^2.22.17"
+    "viem": "^2.22.21"
   },
   "devDependencies": {
     "gql.tada": "^1.8.10",
     "@total-typescript/ts-reset": "^0.6.1",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/bun": "^1.2.1",
-    "@types/node": "^22.13.0",
+    "@types/bun": "^1.2.2",
+    "@types/node": "^22.13.1",
     "consola": "^3.4.0",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.3",
@@ -57,7 +57,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.4"
+    "vitest": "^3.0.5"
   },
   "repository": {
     "type": "git",
