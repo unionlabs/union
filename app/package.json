@@ -15,9 +15,6 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "temporal-polyfill": "^0.2.5",
-    "mode-watcher": "0.5.0",
-    "svelte-sonner": "^0.3.27",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
@@ -35,8 +32,12 @@
     "cmdk-sv": "^0.0.18",
     "gql.tada": "1.8.10",
     "graphql-request": "7.1.2",
+    "mode-watcher": "0.5.0",
+    "neverthrow": "^8.1.1",
     "svelte-persisted-store": "^0.11.0",
     "svelte-radix": "^1.1.1",
+    "svelte-sonner": "^0.3.27",
+    "temporal-polyfill": "^0.2.5",
     "three": "0.170.0",
     "valibot": "0.42.1",
     "vaul-svelte": "^0.3.2",
