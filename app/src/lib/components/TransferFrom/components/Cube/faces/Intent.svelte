@@ -107,28 +107,32 @@ let { rawIntents, intents, validation, context } = stores
         </div>
         {#if !$rawIntents.asset}
           <p class="text-xs">Select an asset</p>
+        {:else if !$rawIntents.source || !$rawIntents.destination}
+          <p class="text-xs">Select source and destination</p>
+        {:else if transferArgs === "NO_QUOTE_AVAILABLE"}
+          <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
+            currently not supported and will be enabled in an update soon.
+          </div>
+        {:else if !transferArgs}
+          <Button
+                  class="w-full mt-2"
+                  disabled={true}
+                  >        <LoadingDots/>
+          </Button>
         {:else}
-          {#if !transferArgs}
-            <LoadingDots/>
-          {:else if transferArgs === "NO_QUOTE_AVAILABLE"}
-            <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
-              currently not supported and will be enabled in an update soon.
-            </div>
-          {:else}
-            <div class="flex-1 flex flex-col items-center text-xs">
-              <Token userAmount={$rawIntents.amount} chainId={$rawIntents.destination} denom={transferArgs.quoteToken}
-                     chains={$context.chains}/>
-            </div>
-            {#if $validation.isValid}
-              <Address address={$intents.receiver} chains={$context.chains}
-                       chainId={$intents.channel.destination_chain_id}/>
-            {/if}
-            <Button
-                    class="w-full mt-2"
-                    disabled={!$validation.isValid}
-                    on:click={() => rotateTo("verifyFace")}>Transfer
-            </Button>
+          <div class="flex-1 flex flex-col items-center text-xs">
+            <Token chainId={$rawIntents.destination} denom={transferArgs.quoteToken}
+                   chains={$context.chains}/>
+          </div>
+          {#if $validation.isValid}
+            <Address address={$intents.receiver} chains={$context.chains}
+                     chainId={$intents.channel.destination_chain_id}/>
           {/if}
+          <Button
+                  class="w-full mt-2"
+                  disabled={!$validation.isValid}
+                  on:click={() => rotateTo("verifyFace")}>Transfer
+          </Button>
         {/if}
       </div>
     {/if}
