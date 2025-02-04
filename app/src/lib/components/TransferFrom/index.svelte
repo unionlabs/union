@@ -83,9 +83,6 @@ validation.subscribe(async data => {
 })
 </script>
 
-<pre>
-{#each $balances as balance}{JSON.stringify(balance.data, null, 2)}{/each}
-</pre>
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
     <Intent transferArgs={$transferArgs} {stores} {rotateTo}/>

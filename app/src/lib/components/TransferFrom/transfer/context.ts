@@ -2,10 +2,11 @@ import { derived, type Readable } from "svelte/store"
 import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
 import type { userBalancesQuery } from "$lib/queries/balance"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
+import { err, ok, type Result } from "neverthrow"
 
 export interface TokenBalance {
   denom: string
-  balance: string
+  balance: Result<string, Error>
 }
 
 export interface BalanceQueryResult {
@@ -34,7 +35,13 @@ export function createContextStore(
     const chainBalances = $balances.find(b => b.data?.chain_id === $rawIntents.source)?.data
     return sourceChain.tokens.map(token => ({
       denom: token.denom,
-      balance: chainBalances?.balances[token.denom] ?? "0"
+      balance:
+        chainBalances?.balances?.andThen(bal => {
+          if (bal[token.denom]) {
+            return ok(bal[token.denom])
+          }
+          return err(new Error("no balance for this asset"))
+        }) ?? err(new Error("chainbalances undefined"))
     }))
   })
 

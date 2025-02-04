@@ -5,7 +5,7 @@ import { erc20ReadMulticall } from "./evm/multicall.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { getAptosChainBalances } from "./aptos.ts"
 import { createQueries } from "@tanstack/svelte-query"
-import { errAsync, ok, ResultAsync, type Result } from "neverthrow"
+import { err, errAsync, ok, ResultAsync, type Result } from "neverthrow"
 
 export type AssetMetadata = {
   denom: string
@@ -169,34 +169,37 @@ export function userBalancesQuery({
       enabled: Boolean(getAddressForChain(chain, userAddr)),
       refetchInterval: 4_000,
       refetchOnWindowFocus: false,
-      queryFn: async (): Promise<Result<RawBalances, Error>> => {
+      queryFn: async (): Promise<{ chain_id: string; balances: Result<RawBalances, Error> }> => {
         const address = getAddressForChain(chain, userAddr)
         if (!address) return errAsync(new Error(`no user address for chain ${chain.chain_id}`))
 
         if (chain.rpc_type === "evm") {
           const tokenList = chain.tokens.filter(tokens => isAddress(tokens.denom))
-          return await ResultAsync.fromPromise(
-            erc20ReadMulticall({
-              chainId: chain.chain_id,
-              functionNames: ["balanceOf"],
-              address: address as Address,
-              contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
-            }),
-            error => new Error("error fetching evm balances", { cause: error })
-          ).andThen(multicallResultss =>
-            ok(
-              multicallResultss.reduce((acc, curr, index) => {
-                console.log({ curr })
-                if (curr.balance) {
-                  acc[tokenList[index].denom] = curr.balance.toString()
-                }
-                return acc
-              }, {})
+          return {
+            chain_id: chain.chain_id,
+            balances: await ResultAsync.fromPromise(
+              erc20ReadMulticall({
+                chainId: chain.chain_id,
+                functionNames: ["balanceOf"],
+                address: address as Address,
+                contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
+              }),
+              error => new Error("error fetching evm balances", { cause: error })
+            ).andThen(multicallResultss =>
+              ok(
+                multicallResultss.reduce((acc, curr, index) => {
+                  console.log({ curr })
+                  if (curr.balance) {
+                    acc[tokenList[index].denom] = curr.balance.toString()
+                  }
+                  return acc
+                }, {})
+              )
             )
-          )
+          }
         }
 
-        return errAsync(new Error("unimplemented"))
+        return { chain_id: chain.chain_id, balances: err(new Error("unimplemented")) }
 
         // if (chain.rpc_type === "cosmos") {
         //   const url = chain.rpcs.find(rpc => rpc.type === "rest")?.url
