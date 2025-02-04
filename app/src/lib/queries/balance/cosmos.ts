@@ -1,6 +1,7 @@
 import * as v from "valibot"
 import { err, ok, ResultAsync } from "neverthrow"
 import type { RawBalances } from "."
+import { toHex } from "viem"
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -40,7 +41,7 @@ export function getCosmosChainBalances({
     })
     .map(balances =>
       balances.balances.reduce((acc, cur) => {
-        acc[cur.denom] = cur.amount
+        acc[toHex(cur.denom)] = cur.amount
         return acc
       }, {})
     )
