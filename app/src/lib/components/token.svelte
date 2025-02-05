@@ -19,7 +19,10 @@ export let amount: string | number | bigint | null = null
 export let userAmount: string | null = null
 export let expanded = false
 
-let tokenInfo = derived(tokenInfos, $tokenInfos => $tokenInfos[chainId]?.[denom] ?? null)
+let tokenInfo = derived(
+  tokenInfos,
+  $tokenInfos => $tokenInfos[chainId]?.[denom.toLowerCase()] ?? null
+)
 
 onMount(() => {
   let chain = chains.find(c => c.chain_id === chainId) ?? null
@@ -27,7 +30,7 @@ onMount(() => {
     console.error("invalid chain in token component")
     return
   }
-  requestTokenInfo(chain, denom)
+  requestTokenInfo(chain, denom.toLowerCase())
 })
 </script>
 
@@ -75,7 +78,6 @@ onMount(() => {
             <div>Name: {token.graphql.primaryRepresentation.name}</div>
             <div>Symbol: {token.graphql.primaryRepresentation.symbol}</div>
             <div>Decimals: {token.graphql.primaryRepresentation.decimals}</div>
-            {#if token.graphql.cw20}blah{/if}
             {#if token.graphql.primaryRepresentation.sources}
               <div>Sources:
                 {#each token.graphql.primaryRepresentation.sources as source}<a class="underline"
@@ -103,3 +105,4 @@ onMount(() => {
     <Truncate value={denom} type="address"/>
   </div>
 {/if}
+
