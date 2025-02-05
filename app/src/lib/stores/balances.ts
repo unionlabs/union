@@ -10,7 +10,7 @@ export type Balance =
   | { kind: "balance"; amount: string | null; timestamp: number }
   | { kind: "error"; error: string; timestamp: number }
 
-type Balances = Record<ChainId, Record<Denom, Balance>>
+export type Balances = Record<ChainId, Record<Denom, Balance>>
 export let balances: Writable<Balances> = writable({})
 
 export function updateBalance(chain: ChainId, denom: Denom, balance: Balance) {

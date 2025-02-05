@@ -1,28 +1,30 @@
 <!-- ChainSelector.svelte -->
 <script lang="ts">
-import type { Readable } from "svelte/store"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import { Button } from "$lib/components/ui/button"
 import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
+import type { Chain } from "$lib/types.ts"
+import { page } from "$app/stores"
 
 interface Props {
-  stores: {
-    rawIntents: RawIntentsStore
-    context: Readable<ContextStore>
-  }
+  rawIntents: RawIntentsStore
+  chains: Array<Chain>
   rotateTo: (face: CubeFaces) => void
   selected: "source" | "destination"
 }
 
-export let stores: Props["stores"]
+export let rawIntents: Props["rawIntents"]
+export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
 export let selected: Props["selected"]
 
+$: enabledChains = chains.filter(chain =>
+  $page.data.features
+    .filter(f => f.features[0]?.transfer_submission)
+    .map(f => f.chain_id)
+    .includes(chain.chain_id)
+)
 let expandedChainId: string | null = null
-
-let { rawIntents, context } = stores
 
 function setChain(selected: "source" | "destination", chainId: string) {
   rawIntents.updateField(selected, chainId)
@@ -47,7 +49,7 @@ function toggleExpand(chainId: string) {
 
   <!-- Chain List -->
   <div class="flex flex-col h-full overflow-y-scroll">
-      {#each $context.chains as chain}
+      {#each enabledChains as chain}
         <div>
           <button
                   class="px-2 py-1 w-full hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"

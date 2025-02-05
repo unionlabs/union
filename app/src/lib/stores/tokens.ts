@@ -4,7 +4,7 @@ import type { ChainId, Denom } from "./balances.ts" // hack, move to proper plac
 import { hexToString, isHex, type Address } from "viem"
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
 
-type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
+export type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
 
 export type TokenInfo =
   | { kind: "loading" }

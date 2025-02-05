@@ -1,226 +1,172 @@
-import type { Readable } from "svelte/store"
-import { derived } from "svelte/store"
-import type { IntentsStore } from "./intents.ts"
-import type { Chain } from "$lib/types"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context"
+import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import { isValidBech32Address } from "@unionlabs/client"
 import { isHex, parseUnits } from "viem"
-import {
-  evmChainId,
-  aptosChainId,
-  cosmosChainId,
-  isValidEvmAddress,
-  isValidBech32Address,
-  type getChannelInfo
-} from "@unionlabs/client"
-import type { FormFields, RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents"
-import { userAddrOnChain } from "$lib/utilities/address.ts"
+import { evmChainId, aptosChainId, cosmosChainId, isValidEvmAddress } from "@unionlabs/client"
+import type { Chain } from "$lib/types"
+import type { Balances } from "$lib/stores/balances.ts"
+import type { UserAddresses } from "$lib/types"
+import type { getChannelInfo } from "@unionlabs/client"
+import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
-export interface ValidTransfer {
+export interface TransferArgs {
+  baseToken: string
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  ucs03address: string
+}
+
+export interface TransferContext {
+  channel: NonNullable<ReturnType<typeof getChannelInfo>>
   sourceChain: Chain
   destinationChain: Chain
-  baseToken: { denom: string; balance: string }
-  channel: NonNullable<ReturnType<typeof getChannelInfo>>
-  receiver: string
-  ucs03address: string
-  amount: string
-  parsedAmount: bigint
-  sender: string
 }
 
-// Modified PartialTransfer to use empty values instead of undefined
-export interface PartialTransfer {
-  sourceChain: Chain | null
-  destinationChain: Chain | null
-  baseToken: { denom: string; balance: string } | null
-  channel: NonNullable<ReturnType<typeof getChannelInfo>> | null
-  receiver: string
-  ucs03address: string
-  amount: string
-  parsedAmount: bigint
-  sender: string
-}
-
-export interface InvalidValidationStore {
-  transfer: PartialTransfer
+export interface InvalidValidationResult {
   errors: FieldErrors
   isValid: false
+  context: TransferContext | null
+  args: null
 }
 
-export interface ValidValidationStore {
-  transfer: ValidTransfer
+export interface ValidValidationResult {
   errors: FieldErrors
   isValid: true
+  context: TransferContext
+  args: TransferArgs
 }
 
-export type ValidationStore = InvalidValidationStore | ValidValidationStore
+export type ValidationResult = InvalidValidationResult | ValidValidationResult
 
-export function createValidationStore(
-  rawIntents: RawIntentsStore,
-  intents: Readable<IntentsStore>,
-  context: Readable<ContextStore>
-): Readable<ValidationStore> {
-  const errors = derived([rawIntents, intents, context], ([$rawIntents, $intents, $context]) => {
-    const errors: FieldErrors = {}
-    let parsedAmount = 0n
+export const checkValidation = (
+  rawIntents: FormFields,
+  intents: Intents,
+  _balances: Balances,
+  userAddress: UserAddresses
+): ValidationResult => {
+  const errors: FieldErrors = {}
+  let parsedAmount = 0n
 
-    if ($rawIntents.source && !$intents.sourceChain) {
-      errors.source = "Chain not supported"
+  if (rawIntents.source && !intents.sourceChain) {
+    errors.source = "Chain not supported"
+  }
+
+  if (rawIntents.destination && !intents.destinationChain) {
+    errors.destination = "Chain not supported"
+  }
+
+  if (intents.sourceChain) {
+    if (intents.sourceChain?.rpc_type === "evm" && !userAddress.evm) {
+      errors.source = "EVM wallet not connected"
     }
-
-    if ($rawIntents.destination && !$intents.destinationChain) {
-      errors.destination = "Chain not supported"
+    if (intents.sourceChain?.rpc_type === "cosmos" && !userAddress.cosmos) {
+      errors.source = "Cosmos wallet not connected"
     }
-
-    // Source chain wallet validation
-    if ($intents.sourceChain) {
-      if ($intents.sourceChain?.rpc_type === "evm" && !$context.userAddress.evm) {
-        errors.source = "EVM wallet not connected"
-      }
-      if ($intents.sourceChain?.rpc_type === "cosmos" && !$context.userAddress.cosmos) {
-        errors.source = "Cosmos wallet not connected"
-      }
-      if ($intents.sourceChain?.rpc_type === "aptos" && !$context.userAddress.aptos) {
-        errors.source = "Aptos wallet not connected"
-      }
+    if (intents.sourceChain?.rpc_type === "aptos" && !userAddress.aptos) {
+      errors.source = "Aptos wallet not connected"
     }
+  }
 
-    if ($rawIntents.source === $rawIntents.destination) {
-      errors.destination = "Source and destination chains must be different"
-    }
+  if (rawIntents.source === rawIntents.destination) {
+    errors.destination = "Source and destination chains must be different"
+  }
 
-    // Required fields when asset is selected
-    if ($rawIntents.asset && $intents.baseToken) {
-      if (!$rawIntents.amount) errors.amount = "Amount is required"
-      if (!$rawIntents.receiver) errors.receiver = "Receiver is required"
+  if (rawIntents.asset && intents.baseToken) {
+    if (!rawIntents.amount) errors.amount = "Amount is required"
+    if (!rawIntents.receiver) errors.receiver = "Receiver is required"
 
-      if ($rawIntents.amount) {
-        try {
-          parsedAmount = parseUnits(
-            $rawIntents.amount,
-            $intents.baseTokenInfo?.combined.decimals ?? 0
-          )
-          if (parsedAmount <= 0n) {
-            errors.amount = "Amount must be greater than 0"
-          }
-          if (parsedAmount > BigInt($intents.baseToken.balance)) {
-            errors.amount = "Amount exceeds balance"
-          }
-        } catch {
-          errors.amount = "Invalid amount"
+    if (rawIntents.amount) {
+      try {
+        parsedAmount = parseUnits(rawIntents.amount, intents.baseTokenInfo?.combined.decimals ?? 0)
+        if (parsedAmount <= 0n) {
+          errors.amount = "Amount must be greater than 0"
         }
-      }
-
-      if ($rawIntents.receiver && $rawIntents.destination) {
-        if (aptosChainId.includes($rawIntents.destination) && !isHex($rawIntents.receiver)) {
-          errors.receiver = "Invalid Aptos address"
+        if (parsedAmount > BigInt(intents.baseToken.balance)) {
+          errors.amount = "Amount exceeds balance"
         }
-        if (
-          evmChainId.includes($rawIntents.destination) &&
-          !isValidEvmAddress($rawIntents.receiver)
-        ) {
-          errors.receiver = "Invalid EVM address"
-        }
-        if (
-          cosmosChainId.includes($rawIntents.destination) &&
-          !isValidBech32Address($rawIntents.receiver)
-        ) {
-          errors.receiver = "Invalid Cosmos address"
-        }
+      } catch {
+        errors.amount = "Invalid amount"
       }
     }
 
-    return { errors, parsedAmount }
-  })
-
-  const transfer = derived(
-    [rawIntents, intents, context, errors],
-    ([$rawIntents, $intents, $context, $errors]): PartialTransfer => {
-      const partialTransfer: PartialTransfer = {
-        sourceChain: null,
-        destinationChain: null,
-        baseToken: null,
-        channel: null,
-        receiver: "",
-        ucs03address: "",
-        amount: "",
-        parsedAmount: 0n,
-        sender: ""
+    if (rawIntents.receiver && rawIntents.destination) {
+      if (aptosChainId.includes(rawIntents.destination) && !isHex(rawIntents.receiver)) {
+        errors.receiver = "Invalid Aptos address"
       }
-
-      if ($intents.sourceChain) {
-        partialTransfer.sourceChain = $intents.sourceChain
+      if (evmChainId.includes(rawIntents.destination) && !isValidEvmAddress(rawIntents.receiver)) {
+        errors.receiver = "Invalid EVM address"
       }
-      if ($intents.destinationChain) {
-        partialTransfer.destinationChain = $intents.destinationChain
-      }
-      if ($intents.baseToken) {
-        partialTransfer.baseToken = $intents.baseToken
-      }
-      if ($intents.channel) {
-        partialTransfer.channel = $intents.channel
-      }
-      if ($intents.receiver) {
-        partialTransfer.receiver = $intents.receiver
-      }
-      if ($intents.ucs03address) {
-        partialTransfer.ucs03address = $intents.ucs03address
-      }
-      if ($rawIntents.amount) {
-        partialTransfer.amount = $rawIntents.amount
-      }
-      if ($errors.parsedAmount) {
-        partialTransfer.parsedAmount = $errors.parsedAmount
-      }
-
-      const sender = userAddrOnChain($context.userAddress, $intents.sourceChain)
-      if (sender) {
-        partialTransfer.sender = sender
-      }
-
-      // Check if we have all required fields for a valid transfer
       if (
-        partialTransfer.sourceChain &&
-        partialTransfer.destinationChain &&
-        partialTransfer.baseToken &&
-        partialTransfer.channel &&
-        partialTransfer.ucs03address &&
-        partialTransfer.receiver &&
-        partialTransfer.parsedAmount &&
-        partialTransfer.sender &&
-        Object.keys($errors.errors).length === 0
+        cosmosChainId.includes(rawIntents.destination) &&
+        !isValidBech32Address(rawIntents.receiver)
       ) {
-        return partialTransfer as ValidTransfer
-      }
-
-      return partialTransfer
-    }
-  )
-
-  return derived([transfer, errors], ([$transfer, $errors]): ValidationStore => {
-    if (
-      $transfer.sourceChain &&
-      $transfer.destinationChain &&
-      $transfer.baseToken &&
-      $transfer.channel &&
-      $transfer.ucs03address &&
-      $transfer.receiver &&
-      $transfer.parsedAmount &&
-      $transfer.sender &&
-      Object.keys($errors.errors).length === 0
-    ) {
-      return {
-        transfer: $transfer as ValidTransfer,
-        errors: $errors.errors,
-        isValid: true as const
+        errors.receiver = "Invalid Cosmos address"
       }
     }
+  }
 
+  // Create context first if we have the required chain info
+  if (!(intents.sourceChain && intents.destinationChain && intents.channel)) {
     return {
-      transfer: $transfer,
-      errors: $errors.errors,
-      isValid: false as const
+      errors,
+      isValid: false,
+      context: null,
+      args: null
     }
-  })
+  }
+
+  const context: TransferContext = {
+    channel: intents.channel,
+    sourceChain: intents.sourceChain,
+    destinationChain: intents.destinationChain
+  }
+
+  // Check for errors before proceeding
+  if (Object.keys(errors).length > 0) {
+    return {
+      errors,
+      isValid: false,
+      context,
+      args: null
+    }
+  }
+
+  // Then check all required fields including quote token
+  if (
+    !(
+      intents.baseToken &&
+      intents.ucs03address &&
+      intents.receiver &&
+      parsedAmount &&
+      intents.quoteToken
+    )
+  ) {
+    return {
+      errors,
+      isValid: false,
+      context,
+      args: null
+    }
+  }
+
+  const args: TransferArgs = {
+    baseToken: intents.baseToken.denom,
+    baseAmount: parsedAmount,
+    quoteToken: intents.quoteToken,
+    quoteAmount: parsedAmount,
+    receiver: intents.receiver,
+    sourceChannelId: intents.channel.source_channel_id,
+    ucs03address: intents.ucs03address
+  }
+
+  return {
+    errors,
+    isValid: true,
+    context,
+    args
+  }
 }
