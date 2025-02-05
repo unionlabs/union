@@ -3,7 +3,7 @@ import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
 import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import type {RawIntentsStore} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
 import LoadingDots from "$lib/components/loading-dots.svelte"
 import Token from "$lib/components/token.svelte"
@@ -11,14 +11,13 @@ import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
 import Address from "$lib/components/address.svelte"
 import type { Intents, TransferArgs } from "$lib/components/TransferFrom/transfer/types.ts"
-import type {Chain} from "$lib/types.ts";
-import type {Readable} from "svelte/store";
+import type { Chain } from "$lib/types.ts"
+import type { Readable } from "svelte/store"
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents:  Intents
+  intents: Intents
   validation: any
-  transferArgs: TransferArgs | null
   chains: Array<Chain>
   rotateTo: (face: CubeFaces) => void
 }
@@ -28,7 +27,6 @@ export let intents: Props["intents"]
 export let validation: Props["validation"]
 export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
-export let transferArgs: Props["transferArgs"]
 </script>
 
 <div class="flex flex-col w-full h-full ">
@@ -38,7 +36,8 @@ export let transferArgs: Props["transferArgs"]
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
     <div class="flex flex-col gap-2">
-      <Direction {rawIntents} {intents} {validation}  getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
+      <Direction {rawIntents} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
+                 getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {intents} {validation} {rawIntents} {chains} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1 items-start">
         <Input
@@ -80,9 +79,12 @@ export let transferArgs: Props["transferArgs"]
                 on:input={event => rawIntents.updateField('receiver', event)}
         />
         {#if $rawIntents.receiver === intents.ownWallet}
-          <button class="text-xs text-muted-foreground" on:click={() => rawIntents.updateField("receiver", "")}>Reset</button>
-          {:else}
-          <button class="text-xs text-muted-foreground"  on:click={() => rawIntents.updateField('receiver', intents.ownWallet)}>Use connected wallet</button>
+          <button class="text-xs text-muted-foreground" on:click={() => rawIntents.updateField("receiver", "")}>Reset
+          </button>
+        {:else}
+          <button class="text-xs text-muted-foreground"
+                  on:click={() => rawIntents.updateField('receiver', intents.ownWallet)}>Use connected wallet
+          </button>
         {/if}
         {#if validation.errors.receiver}
           <span class="text-red-500 text-sm">{validation.errors.receiver}</span>
@@ -103,25 +105,20 @@ export let transferArgs: Props["transferArgs"]
           <p class="text-xs">Select an asset</p>
         {:else if !$rawIntents.source || !$rawIntents.destination}
           <p class="text-xs">Select source and destination</p>
-        {:else if transferArgs === "NO_QUOTE_AVAILABLE"}
+        {:else if validation.args === "NO_QUOTE_AVAILABLE"}
           <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
             currently not supported and will be enabled in an update soon.
           </div>
-        {:else if !intents}
-          <Button
-                  class="w-full mt-2"
-                  disabled={true}
-                  >        <LoadingDots/>
-          </Button>
-        {:else}
+        {:else if intents.quoteToken}
           <div class="flex-1 flex flex-col items-center text-xs">
             <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
           </div>
           {#if validation.isValid}
             <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
           {/if}
-          <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer</Button>
         {/if}
+        <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
+        </Button>
       </div>
     {/if}
   </div>

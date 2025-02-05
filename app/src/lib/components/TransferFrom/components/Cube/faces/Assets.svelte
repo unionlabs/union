@@ -1,15 +1,15 @@
 <script lang="ts">
-  import {type Readable, writable} from "svelte/store"
+import { type Readable, writable } from "svelte/store"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { derived } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
-import type {Intents} from "$lib/components/TransferFrom/transfer/types.ts";
+import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents:  Intents
+  intents: Intents
   validation: Readable<any>
   rotateTo: (face: CubeFaces) => void
 }
@@ -25,7 +25,7 @@ function setAsset(denom: string) {
   rotateTo("intentFace")
 }
 
-const hideZeroBalances = writable(true);
+const hideZeroBalances = writable(true)
 </script>
 
 <div class="flex flex-col h-full w-full">

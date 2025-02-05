@@ -1,7 +1,7 @@
 import type { getChannelInfo } from "@unionlabs/client"
-import type {Chain, UserAddresses} from "$lib/types.ts"
-import type {FormFields} from "$lib/components/TransferFrom/transfer/raw-intents.ts";
-import {Result} from "neverthrow";
+import type { Chain, UserAddresses } from "$lib/types.ts"
+import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { Result } from "neverthrow"
 
 export type TransferArgs =
   | {
@@ -29,13 +29,15 @@ export type BaseToken = {
 export interface Intents {
   sourceChain: Chain | null
   destinationChain: Chain | null
-  baseToken: BaseToken | null
-  baseTokens: BaseToken[]
-  channel: ReturnType<typeof getChannelInfo> | null
-  receiver: string
+  baseTokens: Array<{ denom: string; balance: string }>
+  baseToken: { denom: string; balance: string } | null
+  baseTokenInfo: TokenInfo | null
+  channel: NonNullable<ReturnType<typeof getChannelInfo>> | null
+  receiver: string | null
   ucs03address: string | null
   amount: string
   ownWallet: string | null
+  quoteToken: string | "NO_QUOTE_AVAILABLE" | null
 }
 
 export interface TokenInfo {
@@ -60,9 +62,11 @@ export interface ValidationContext {
   quoteToken: Result<QuoteResponse, Error> | null
 }
 
-export type QuoteResponse = {
-  quote_token: string
-  type: "UNWRAPPED" | "NEW_WRAPPED"
-} | {
-  type: "NO_QUOTE_AVAILABLE"
-}
+export type QuoteResponse =
+  | {
+      quote_token: string
+      type: "UNWRAPPED" | "NEW_WRAPPED"
+    }
+  | {
+      type: "NO_QUOTE_AVAILABLE"
+    }

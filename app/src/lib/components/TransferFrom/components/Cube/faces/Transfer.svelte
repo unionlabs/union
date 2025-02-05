@@ -31,6 +31,8 @@ export let chains: Array<Chain>
 export let transferArgs: TransferArgs
 export let transferContext: TransferContext
 
+$: console.log(transferArgs)
+$: console.log(transferContext)
 const REDIRECT_DELAY_MS = 5000
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
