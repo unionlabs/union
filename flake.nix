@@ -130,6 +130,10 @@
       url = "github:unionlabs/union/release/uniond/v0.25.0";
       flake = false;
     };
+    v0_26_0 = {
+      url = "github:unionlabs/union/release/uniond/v0.26.0";
+      flake = false;
+    };
   };
   outputs =
     inputs@{

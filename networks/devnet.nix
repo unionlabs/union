@@ -195,8 +195,8 @@
           app_state = {
             gov.params = {
               max_deposit_period = "12s";
-              voting_period = "18s";
-              expedited_voting_period = "6s";
+              voting_period = "60s";
+              expedited_voting_period = "30s";
             };
             tokenfactory.params = {
               denom_creation_fee = [
