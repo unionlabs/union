@@ -11456,7 +11456,7 @@ dependencies = [
 
 [[package]]
 name = "state-lens-ics23-smt-light-client"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "aptos-verifier",
  "bcs 0.1.6",
