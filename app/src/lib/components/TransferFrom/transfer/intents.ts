@@ -43,13 +43,19 @@ export const createIntents = (
       : `0x${channel.source_port_id}`)
     : null
 
-  const baseTokens = !sourceChain ? [] : sourceChain.tokens.map(token => {
-    const balance = balances[rawIntents.source]?.[token.denom];
-    return {
-      denom: token.denom,
-      balance: balance?.kind === "balance" ? balance.amount ?? "0" : "0"
-    };
-  });
+  const baseTokens = !sourceChain ? [] : sourceChain.tokens
+    .map(token => {
+      const balance = balances[rawIntents.source]?.[token.denom];
+      return {
+        denom: token.denom,
+        balance: balance?.kind === "balance" ? balance.amount ?? "0" : "0"
+      };
+    })
+    .sort((a, b) => {
+      const balanceA = BigInt(a.balance);
+      const balanceB = BigInt(b.balance);
+      return balanceB > balanceA ? 1 : balanceB < balanceA ? -1 : 0;
+    });
 
   const baseToken = (rawIntents.asset && sourceChain)
     ? baseTokens.find(token => token.denom === rawIntents.asset) ?? null
