@@ -4,13 +4,22 @@ import type { Chain } from "$lib/types"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { userAddress, balanceStore } from "$lib/components/TransferFrom/transfer/balances.ts"
 
-import { balances, queryBalances, updateBalance } from "$lib/stores/balances.ts"
+import {
+  balances,
+  deleteBalancesForRpcType,
+  queryBalances,
+  updateBalance
+} from "$lib/stores/balances.ts"
 import { onMount } from "svelte"
 
 export let chains: Array<Chain>
 
 balances.subscribe(x => console.log("updated", x))
 userAddress.subscribe(addr => {
+  console.log("new address", addr)
+  if (!addr.evm) {
+    deleteBalancesForRpcType(chains, "evm")
+  }
   chains
     .filter(chain => addr[chain.rpc_type])
     .forEach(chain => queryBalances(chain, addr[chain.rpc_type]?.canonical as string))

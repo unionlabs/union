@@ -20,6 +20,13 @@ export function updateBalance(chain: ChainId, denom: Denom, balance: Balance) {
   })
 }
 
+export function deleteBalancesForRpcType(chains: Array<Chain>, rpcType: string) {
+  balances.update(val => {
+    chains.filter(chain => chain.rpc_type === rpcType).forEach(chain => delete val[chain.chain_id])
+    return val
+  })
+}
+
 function updateBalanceObject(
   chain: ChainId,
   denom: Denom,
