@@ -85,6 +85,9 @@ export type ChainAsset = {
 
 export type ChainToken = {
   denom: string
+  cw20: {
+    cw20_token_address: string
+  } | null
   representations: Array<{
     name: string | null
     symbol: string | null
@@ -144,6 +147,9 @@ export type TokenInfoMulti = {
     primaryRepresentation: TokenRepresentation
     representations: Array<TokenRepresentation>
     wrapping: Array<Wrapping>
+    cw20: {
+      cw20_token_address: string
+    } | null
   } | null
   onchain: {
     decimals: number | null

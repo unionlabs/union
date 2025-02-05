@@ -32,6 +32,9 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
     }
     tokens {
       denom
+      cw20 {
+        cw20_token_address
+      }
       chain {
         chain_id
       }
