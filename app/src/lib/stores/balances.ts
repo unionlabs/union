@@ -41,8 +41,18 @@ function updateBalanceObject(
 }
 
 export async function queryBalances(chain: Chain, address: string) {
-  if (chain.rpc_type === "evm") {
-    await updateBalancesEvm(chain, address as Address)
+  switch (chain.rpc_type) {
+    case "evm":
+      await updateBalancesEvm(chain, address as Address)
+      break
+    case "cosmos":
+      console.error("cosmos balance fetching currently unsupported")
+      break
+    case "aptos":
+      console.error("aptos balance fetching currently unsupported")
+      break
+    default:
+      console.error("invalid rpc type in balance fetching")
   }
 }
 
