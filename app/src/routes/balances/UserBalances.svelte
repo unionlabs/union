@@ -9,18 +9,15 @@ import { onMount } from "svelte"
 
 export let chains: Array<Chain>
 
-onMount(() => {
-  queryBalances(
-    chains.find(c => c.chain_id === "17000"),
-    "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-  )
-  // updateBalance("union-testnet-9", "muno", { kind: "balance", amount: "10", timestamp: "" })
-  // updateBalance("elgafar-1", "stars", { kind: "balance", amount: "10", timestamp: "" })
-})
-
 balances.subscribe(x => console.log("updated", x))
+userAddress.subscribe(addr => {
+  chains
+    .filter(chain => addr[chain.rpc_type])
+    .forEach(chain => queryBalances(chain, addr[chain.rpc_type]?.canonical as string))
+})
 </script>
 
 <div class="space-y-6">
+  <pre>{JSON.stringify($userAddress, null, 2)}</pre>
   <pre>{JSON.stringify($balances, null, 2)}</pre>
 </div>
