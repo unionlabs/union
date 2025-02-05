@@ -80,16 +80,24 @@ export const checkValidation = (
     if (!rawIntents.receiver) errors.receiver = "Receiver is required"
 
     if (rawIntents.amount) {
-      try {
-        parsedAmount = parseUnits(rawIntents.amount, intents.baseTokenInfo?.combined.decimals ?? 0)
-        if (parsedAmount <= 0n) {
-          errors.amount = "Amount must be greater than 0"
+      const validNumberFormat = /^\d*\.?\d*$/.test(rawIntents.amount)
+      if (validNumberFormat) {
+        try {
+          parsedAmount = parseUnits(
+            rawIntents.amount,
+            intents.baseTokenInfo?.combined.decimals ?? 0
+          )
+          if (parsedAmount < 0n) {
+            errors.amount = "Amount must be greater than 0"
+          }
+          if (parsedAmount > BigInt(intents.baseToken.balance)) {
+            errors.amount = "Amount exceeds balance"
+          }
+        } catch {
+          errors.amount = "Invalid amount"
         }
-        if (parsedAmount > BigInt(intents.baseToken.balance)) {
-          errors.amount = "Amount exceeds balance"
-        }
-      } catch {
-        errors.amount = "Invalid amount"
+      } else {
+        errors.amount = "Invalid amount format"
       }
     }
 

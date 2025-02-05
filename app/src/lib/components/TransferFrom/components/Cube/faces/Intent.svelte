@@ -42,10 +42,8 @@ export let rotateTo: Props["rotateTo"]
       <div class="flex flex-col gap-1 items-start">
         <Input
                 id="amount"
-                type="number"
+                type="text"
                 name="amount"
-                minlength={1}
-                maxlength={64}
                 required={true}
                 disabled={!$rawIntents.asset}
                 autocorrect="off"
@@ -55,10 +53,20 @@ export let rotateTo: Props["rotateTo"]
                 inputmode="decimal"
                 data-field="amount"
                 autocapitalize="none"
-                pattern="^[0-9]*[.,]?[0-9]*$"
+                pattern="^[0-9]*[.]?[0-9]*$"
                 class="p-1 {validation.errors.amount ? 'border-red-500' : ''}"
                 value={$rawIntents.amount}
-                on:input={event => rawIntents.updateField('amount', event)}
+                on:input={(event) => {
+                      const input = event.currentTarget;
+                      const value = input.value;
+                      // Only allow numbers and a single decimal point
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        rawIntents.updateField('amount', event);
+                      } else {
+                        // If invalid input, revert to previous valid value
+                        input.value = $rawIntents.amount;
+                      }
+                    }}
         />
         {#if validation.errors.amount}
           <span class="text-red-500 text-sm">{validation.errors.amount}</span>
