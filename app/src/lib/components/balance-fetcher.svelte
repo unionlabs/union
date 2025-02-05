@@ -8,43 +8,23 @@ import { userAddressAptos } from "$lib/wallet/aptos"
 
 export let chains: Array<Chain>
 
-onMount(() => {
-  const unsubscribe = userAddrEvm.subscribe(evmAddr => {
-    if (!evmAddr) {
-      deleteBalancesForRpcType(chains, "evm")
-      return
-    }
-    chains
-      .filter(chain => chain.rpc_type === "evm")
-      .forEach(chain => queryBalances(chain, evmAddr.canonical))
+;[
+  { userAddr: userAddrCosmos, rpcType: "cosmos" },
+  { userAddr: userAddrEvm, rpcType: "evm" },
+  { userAddr: userAddressAptos, rpcType: "aptos" }
+].forEach(({ userAddr, rpcType }) => {
+  onMount(() => {
+    const unsubscribe = userAddr.subscribe(addr => {
+      if (!addr) {
+        deleteBalancesForRpcType(chains, rpcType)
+        return
+      }
+      chains
+        .filter(chain => chain.rpc_type === rpcType)
+        .forEach(chain => queryBalances(chain, addr.canonical))
+    })
+    return unsubscribe
   })
-  return unsubscribe
-})
-
-onMount(() => {
-  const unsubscribe = userAddrCosmos.subscribe(cosmosAddr => {
-    if (!cosmosAddr) {
-      deleteBalancesForRpcType(chains, "cosmos")
-      return
-    }
-    chains
-      .filter(chain => chain.rpc_type === "cosmos")
-      .forEach(chain => queryBalances(chain, cosmosAddr.canonical))
-  })
-  return unsubscribe
-})
-
-onMount(() => {
-  const unsubscribe = userAddressAptos.subscribe(aptosAddr => {
-    if (!aptosAddr) {
-      deleteBalancesForRpcType(chains, "aptos")
-      return
-    }
-    chains
-      .filter(chain => chain.rpc_type === "aptos")
-      .forEach(chain => queryBalances(chain, aptosAddr.canonical))
-  })
-  return unsubscribe
 })
 </script>
 
