@@ -5,7 +5,7 @@ import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.sv
 import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
 import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types.ts"
-import { derived, writable, type Writable } from "svelte/store"
+import { derived } from "svelte/store"
 import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
 import { createRawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
