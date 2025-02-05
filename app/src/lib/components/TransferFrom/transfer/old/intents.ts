@@ -1,0 +1,152 @@
+import { derived, type Readable } from "svelte/store"
+import type { Chain, TokenInfoMulti } from "$lib/types"
+import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import { fromHex } from "viem"
+import {
+  bech32AddressToHex,
+  bech32ToBech32Address,
+  getChannelInfo,
+  isValidBech32Address
+} from "@unionlabs/client"
+import { getTokenInfoSimple } from "$lib/components/TransferFrom/transfer/balances.ts"
+
+export type BaseToken = {
+  denom: string
+  balance: string
+}
+
+export interface IntentsStore {
+  sourceChain: Chain | null
+  destinationChain: Chain | null
+  baseToken: BaseToken | null
+  baseTokenInfo: TokenInfoMulti | null
+  channel: ReturnType<typeof getChannelInfo> | null
+  receiver: string
+  ucs03address: string | null
+  amount: string
+  ownWallet: string | null
+}
+
+export function createIntentStore(
+  rawIntents: RawIntentsStore,
+  context: Readable<ContextStore>
+): Readable<IntentsStore> {
+  const sourceChain = derived([rawIntents, context], ([$rawIntents, $context]) => {
+    return $context.chains.find(chain => chain.chain_id === $rawIntents.source) ?? null
+  })
+
+  const destinationChain = derived(
+    [rawIntents, context],
+    ([$intents, $context]) =>
+      $context.chains.find(chain => chain.chain_id === $intents.destination) ?? null
+  )
+
+  let channel = derived([rawIntents, context], ([$rawIntents, $context]) => {
+    if (!($rawIntents.source && $rawIntents.destination)) return null
+    return getChannelInfo($rawIntents.source, $rawIntents.destination, $context.ucs03channels)
+  })
+
+  const receiver = derived([rawIntents, destinationChain], ([$rawIntents, $destinationChain]) => {
+    if (!($destinationChain && $rawIntents.receiver)) return $rawIntents.receiver
+
+    return $destinationChain.rpc_type === "cosmos" && isValidBech32Address($rawIntents.receiver)
+      ? bech32AddressToHex({ address: $rawIntents.receiver })
+      : $rawIntents.receiver
+  })
+
+  const ucs03address = derived([sourceChain, channel], ([$sourceChain, $channel]) => {
+    if (!($sourceChain && $channel?.source_port_id)) return null
+
+    return $sourceChain.rpc_type === "cosmos"
+      ? fromHex(`0x${$channel.source_port_id}`, "string")
+      : `0x${$channel.source_port_id}`
+  })
+
+  const baseToken = derived(
+    [rawIntents, context, sourceChain],
+    ([$rawIntents, $context, $sourceChain]) => {
+      if (!($rawIntents.asset && $sourceChain)) return null
+      return $context.baseTokens.find(token => token.denom === $rawIntents.asset) ?? null
+    }
+  )
+
+  const baseTokenInfo = derived(
+    [baseToken, sourceChain, context],
+    ([$baseToken, $sourceChain, $context], set: (value: TokenInfoMulti | null) => void) => {
+      if ($baseToken === null || $sourceChain === null) {
+        set(null)
+        return
+      }
+
+      getTokenInfoSimple($sourceChain.chain_id, $baseToken.denom, $context.chains)
+        .then(tokenInfo => {
+          set(tokenInfo)
+        })
+        .catch(error => {
+          console.error("Error fetching token info:", error)
+          set(null)
+        })
+    },
+    null
+  )
+
+  const ownWallet = derived([destinationChain, context], ([$destinationChain, $context]) => {
+    if (!$destinationChain) return null
+    const userAddress = $context.userAddress
+
+    switch ($destinationChain.rpc_type) {
+      case "evm": {
+        if (!userAddress.evm) return null
+        return userAddress.evm.canonical
+      }
+      case "cosmos": {
+        if (!userAddress.cosmos) return null
+        return bech32ToBech32Address({
+          address: userAddress.cosmos.canonical,
+          toPrefix: $destinationChain.addr_prefix
+        })
+      }
+      case "aptos": {
+        return userAddress.aptos?.canonical ?? null
+      }
+      default:
+        return null
+    }
+  })
+
+  return derived(
+    [
+      rawIntents,
+      sourceChain,
+      destinationChain,
+      channel,
+      baseToken,
+      baseTokenInfo,
+      receiver,
+      ucs03address,
+      ownWallet
+    ],
+    ([
+      $rawIntents,
+      $sourceChain,
+      $destinationChain,
+      $channel,
+      $baseToken,
+      $baseTokenInfo,
+      $receiver,
+      $ucs03address,
+      $ownWallet
+    ]) => ({
+      sourceChain: $sourceChain,
+      destinationChain: $destinationChain,
+      baseToken: $baseToken,
+      baseTokenInfo: $baseTokenInfo,
+      channel: $channel,
+      receiver: $receiver,
+      ucs03address: $ucs03address,
+      amount: $rawIntents.amount,
+      ownWallet: $ownWallet
+    })
+  )
+}
