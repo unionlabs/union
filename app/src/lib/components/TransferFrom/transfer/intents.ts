@@ -11,10 +11,10 @@ import type {ChainBalance, Intents} from "$lib/components/TransferFrom/transfer/
 
 export const createIntents = (
   rawIntents: FormFields,
-  chains: Array<Chain>,
   balances: ChainBalance[],
-  ucs03channels: Array<Ucs03Channel>,
-  userAddress: UserAddresses
+  userAddress: UserAddresses,
+  chains: Array<Chain>,
+  ucs03channels: Array<Ucs03Channel>
 ): Intents => {
   // Source Chain
   const sourceChain = chains.find(chain => chain.chain_id === rawIntents.source) ?? null

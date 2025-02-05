@@ -1,31 +1,22 @@
 <script lang="ts">
 import type { Readable } from "svelte/store"
-import { truncate } from "$lib/utilities/format.ts"
-import { formatUnits } from "viem"
-import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import { derived, writable } from "svelte/store"
+import { derived } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
 
 interface Props {
-  stores: {
-    rawIntents: RawIntentsStore
-    intents: Readable<IntentsStore>
-    context: Readable<ContextStore>
-  }
+  rawIntents: RawIntentsStore
+  validation: Readable<any>
   rotateTo: (face: CubeFaces) => void
 }
 
 export let chains: Array<Chain>
-export let stores: Props["stores"]
+export let rawIntents: Props["rawIntents"]
 export let rotateTo: Props["rotateTo"]
 
-let { rawIntents, intents, context } = stores
-
+//TODO
 let sortedTokens = derived([context], ([$context]) =>
   $context.baseTokens.toSorted((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)))
 )

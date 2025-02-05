@@ -10,11 +10,8 @@
   import {userBalancesQuery} from "$lib/queries/balance"
   import {derived, writable, type Writable} from "svelte/store"
   import {getQuoteToken} from "@unionlabs/client"
-  import {Result} from "neverthrow";
-  import type {
-    BaseToken,
-    QuoteResponse,
-  } from "$lib/components/TransferFrom/transfer/types.ts"
+  import { Result } from "neverthrow";
+  import type { BaseToken, QuoteResponse,} from "$lib/components/TransferFrom/transfer/types.ts"
   import {createRawIntentsStore} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
   import {userAddrCosmos} from "$lib/wallet/cosmos"
   import {userAddrEvm} from "$lib/wallet/evm"
@@ -25,11 +22,8 @@
   export let chains: Array<Chain>
   export let ucs03channels: Array<Ucs03Channel>
 
-  // Raw stores
   const rawIntents = createRawIntentsStore()
-  const baseToken: Writable<BaseToken | null> = writable(null)
 
-  // User address derived store
   const userAddress = derived(
     [userAddrCosmos, userAddrEvm, userAddressAptos],
     ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
@@ -39,19 +33,14 @@
     })
   )
 
-  // Balances query
   $: balances = userBalancesQuery({chains, userAddr: $userAddress})
 
-  // Intent Store
-  const intents = derived([rawIntents, balances], ([$rawIntents, $balances]) => {
-    return createIntents($rawIntents, chains, $balances, ucs03channels, $userAddress)
+  const intents = derived([rawIntents, balances, userAddress], ([$rawIntents, $balances, $userAddress]) => {
+    return createIntents($rawIntents, $balances, $userAddress, chains, ucs03channels)
   })
 
-  // Quote Token Store - derived async
-  const quoteToken = derived<
-    typeof intents,
-    Result<QuoteResponse, Error> | null
-  >(intents, ($intents, set) => {
+  const baseToken: Writable<BaseToken | null> = writable(null)
+  const quoteToken = derived<typeof intents, Result<QuoteResponse, Error> | null>(intents, ($intents, set) => {
     if (!($intents.sourceChain && $intents.baseToken && $intents.channel)) {
       set(null)
       return
@@ -65,26 +54,26 @@
   }, null)
 
   const validation = derived([intents, balances, userAddress, quoteToken], ([$intents, $balances, $quoteToken]) => {
-    return checkValidation($intents, $balances, $userAddress,$quoteToken)
+    return checkValidation($rawIntents, $intents, $balances, $userAddress, $baseToken, $quoteToken)
   })
 
 </script>
 
 <Cube>
   <div slot="intent" let:rotateTo class="w-full h-full">
-    <Intent transferArgs={$transferArgs} {stores} {rotateTo}/>
+    <Intent transferArgs={$validation.args} {rawIntents} {intents} {validation} {chains} {rotateTo}/>
   </div>
 
   <div slot="source" let:rotateTo class="w-full h-full">
-    <Chains {stores} {rotateTo} selected="source"/>
+    <Chains {rawIntents} {chains} {rotateTo} selected="source"/>
   </div>
 
   <div slot="destination" let:rotateTo class="w-full h-full">
-    <Chains {stores} {rotateTo} selected="destination"/>
+    <Chains {rawIntents} {chains}  {rotateTo} selected="destination"/>
   </div>
 
   <div slot="assets" let:rotateTo class="w-full h-full">
-    <Assets {stores} {chains} {rotateTo}/>
+    <Assets {rawIntents} {chains} {rotateTo}/>
   </div>
 
   <div slot="transfer" let:rotateTo class="w-full h-full">
@@ -95,8 +84,8 @@
   </div>
 </Cube>
 
-<div class="absolute bottom-0 inset-x-0 text-center py-2">
-  {#if TRANSFER_DEBUG}
-    <DebugBox {stores}/>
-  {/if}
-</div>
+<!--<div class="absolute bottom-0 inset-x-0 text-center py-2">-->
+<!--  {#if TRANSFER_DEBUG}-->
+<!--    <DebugBox {stores}/>-->
+<!--  {/if}-->
+<!--</div>-->

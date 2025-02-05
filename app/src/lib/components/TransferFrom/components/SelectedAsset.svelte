@@ -1,26 +1,24 @@
 <script lang="ts">
-import type { Readable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
-import { truncate } from "$lib/utilities/format.ts"
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type {  RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import Token from "$lib/components/token.svelte"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts";
+import type { Chain } from "$lib/types.ts";
+import type {Readable} from "svelte/store";
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents: Readable<IntentsStore>
-  validation: Readable<ValidationStore>
-  context: Readable<ContextStore>
+  intents:  Readable<Intents>
+  validation: Readable<any>
+  chains: Array<Chain>
   onSelectAsset: () => void
 }
 
 export let rawIntents: Props["rawIntents"]
 export let intents: Props["intents"]
 export let validation: Props["validation"]
+export let chains: Props["chains"]
 export let onSelectAsset: Props["onSelectAsset"]
-export let context: Props["context"]
 </script>
 
 <div class="flex flex-col w-full gap-2">
@@ -33,7 +31,7 @@ export let context: Props["context"]
           on:click={onSelectAsset}
   >
     {#if $rawIntents.asset}
-      <Token chains={$context.chains} chainId={$rawIntents.source} denom={$rawIntents.asset}/>
+      <Token {chains} chainId={$rawIntents.source} denom={$rawIntents.asset}/>
     {:else}
       Select Asset
     {/if}

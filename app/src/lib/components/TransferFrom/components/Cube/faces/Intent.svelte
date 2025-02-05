@@ -1,39 +1,34 @@
 <script lang="ts">
 import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
 import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
-import type { Readable } from "svelte/store"
-import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
 import { Button } from "$lib/components/ui/button"
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type {RawIntentsStore} from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
 import LoadingDots from "$lib/components/loading-dots.svelte"
 import Token from "$lib/components/token.svelte"
 import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
 import Address from "$lib/components/address.svelte"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
-import type { TransferArgs, TransferContext } from "$lib/components/TransferFrom/transfer/types.ts"
-
-interface Stores {
-  rawIntents: RawIntentsStore
-  intents: Readable<IntentsStore>
-  validation: Readable<ValidationStore>
-  context: Readable<ContextStore>
-}
+import type { Intents, TransferArgs } from "$lib/components/TransferFrom/transfer/types.ts"
+import type {Chain} from "$lib/types.ts";
+import type {Readable} from "svelte/store";
 
 interface Props {
-  stores: Stores
-  rotateTo: (face: CubeFaces) => void
+  rawIntents: RawIntentsStore
+  intents:  Readable<Intents>
+  validation: Readable<any>
   transferArgs: TransferArgs | null
+  chains: Array<Chain>
+  rotateTo: (face: CubeFaces) => void
 }
 
-export let stores: Props["stores"]
+export let rawIntents: Props["rawIntents"]
+export let intents: Props["intents"]
+export let validation: Props["validation"]
+export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
 export let transferArgs: Props["transferArgs"]
-
-let { rawIntents, intents, validation, context } = stores
 </script>
 
 <div class="flex flex-col w-full h-full ">
@@ -43,9 +38,8 @@ let { rawIntents, intents, validation, context } = stores
   </div>
   <div class="flex flex-col h-full w-full justify-between p-4">
     <div class="flex flex-col gap-2">
-      <Direction {intents} {validation} {rawIntents} getSourceChain={() => rotateTo("sourceFace")}
-                 getDestinationChain={() => rotateTo("destinationFace")}/>
-      <SelectedAsset {intents} {validation} {rawIntents} {context} onSelectAsset={() => rotateTo("assetsFace")}/>
+      <Direction {rawIntents} {intents} {validation}  getSourceChain={() => rotateTo("sourceFace")} getDestinationChain={() => rotateTo("destinationFace")}/>
+      <SelectedAsset {intents} {validation} {rawIntents} {chains} onSelectAsset={() => rotateTo("assetsFace")}/>
       <div class="flex flex-col gap-1 items-start">
         <Input
                 id="amount"
@@ -97,8 +91,8 @@ let { rawIntents, intents, validation, context } = stores
     </div>
 
     {#if !$intents.channel}
-      <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, $context.chains)}
-        to {toDisplayName($rawIntents.destination, $context.chains)}</div>
+      <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
+        to {toDisplayName($rawIntents.destination, chains)}</div>
     {:else}
       <div class="flex flex-col gap-1 justify-end items-center">
         <div class="flex gap-4 text-muted-foreground text-xs">{$intents.channel.source_connection_id}
@@ -121,18 +115,12 @@ let { rawIntents, intents, validation, context } = stores
           </Button>
         {:else}
           <div class="flex-1 flex flex-col items-center text-xs">
-            <Token chainId={$rawIntents.destination} denom={transferArgs.quoteToken}
-                   chains={$context.chains}/>
+            <Token chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
           </div>
           {#if $validation.isValid}
-            <Address address={$intents.receiver} chains={$context.chains}
-                     chainId={$intents.channel.destination_chain_id}/>
+            <Address address={$intents.receiver} {chains} chainId={$intents.channel.destination_chain_id}/>
           {/if}
-          <Button
-                  class="w-full mt-2"
-                  disabled={!$validation.isValid}
-                  on:click={() => rotateTo("verifyFace")}>Transfer
-          </Button>
+          <Button class="w-full mt-2" disabled={!$validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer</Button>
         {/if}
       </div>
     {/if}

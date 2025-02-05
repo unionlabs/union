@@ -1,14 +1,13 @@
 <script lang="ts">
-import type { IntentsStore } from "../transfer/intents.ts"
 import type { Readable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
-import type { ValidationStore } from "$lib/components/TransferFrom/transfer/validation.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type {RawIntentsStore} from "$lib/components/TransferFrom/transfer/raw-intents.ts";
+import type {Intents} from "$lib/components/TransferFrom/transfer/types.ts";
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents: Readable<IntentsStore>
-  validation: Readable<ValidationStore>
+  intents:  Readable<Intents>
+  validation: Readable<any>
   getSourceChain: () => void
   getDestinationChain: () => void
 }
