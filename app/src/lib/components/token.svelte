@@ -4,11 +4,13 @@ import TokenQualityLevel from "$lib/components/token-quality-level.svelte"
 import Truncate from "./truncate.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 import { toDisplayName } from "$lib/utilities/chains.ts"
-import { formatUnits, parseUnits } from "viem"
-import { tokenInfoQuery } from "$lib/queries/tokens"
+import { formatUnits } from "viem"
 import LoadingDots from "./loading-dots.svelte"
 import { highlightItem } from "$lib/stores/highlight"
 import { cn } from "$lib/utilities/shadcn"
+import { derived } from "svelte/store"
+import { requestTokenInfo, tokenInfos } from "$lib/stores/tokens"
+import { onMount } from "svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -17,14 +19,20 @@ export let amount: string | number | bigint | null = null
 export let userAmount: string | null = null
 export let expanded = false
 
-$: chain = chains.find(c => c.chain_id === chainId) ?? null
-$: graphqlToken =
-  chain?.tokens.find(t => t.denom?.toLowerCase() === (denom ?? "").toLowerCase()) ?? null
-$: tokenInfo = tokenInfoQuery(chainId, (denom ?? "").toLowerCase(), chains)
+let tokenInfo = derived(tokenInfos, $tokenInfos => $tokenInfos[chainId]?.[denom] ?? null)
+
+onMount(() => {
+  let chain = chains.find(c => c.chain_id === chainId) ?? null
+  if (!chain) {
+    console.error("invalid chain in token component")
+    return
+  }
+  requestTokenInfo(chain, denom)
+})
 </script>
 
-{#if $tokenInfo.data}
-  {@const token = $tokenInfo.data}
+{#if $tokenInfo?.kind === "tokenInfo" && $tokenInfo.info != null}
+  {@const token = $tokenInfo.info}
   <!-- svelte-ignore a11y-interactive-supports-focus -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div

@@ -7,16 +7,6 @@ import type { Chain, TokenInfoMulti } from "$lib/types"
 import { erc20ReadMulticall } from "./balance/evm/multicall.ts"
 import { hexToString, isHex, type Address } from "viem"
 
-export const tokensQuery = () =>
-  createQuery({
-    queryKey: ["tokens"],
-    placeholderData: (previousData, _) => previousData,
-    queryFn: async () =>
-      (await request(URLS().GRAPHQL, tokensQueryDocument, {})).v1_ibc_union_tokens,
-    enabled: true,
-    refetchOnWindowFocus: false
-  })
-
 export const tokenInfoQuery = (chainId: string, denom: string, chains: Array<Chain>) =>
   createQuery({
     queryKey: ["token-info", chainId, denom],

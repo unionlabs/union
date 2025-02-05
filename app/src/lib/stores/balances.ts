@@ -3,9 +3,9 @@ import type { Chain } from "$lib/types"
 import { writable, type Writable } from "svelte/store"
 import { isAddress, type Address } from "viem"
 
-type ChainId = string
-type Denom = string
-type Balance =
+export type ChainId = string
+export type Denom = string
+export type Balance =
   | { kind: "loading" }
   | { kind: "balance"; amount: string | null; timestamp: number }
   | { kind: "error"; error: string; timestamp: number }
@@ -57,6 +57,32 @@ export async function queryBalances(chain: Chain, address: string) {
 }
 
 export async function updateBalancesEvm(chain: Chain, address: Address) {
+  const denoms = chain.tokens.filter(tokens => isAddress(tokens.denom)).map(token => token.denom)
+  balances.update(val => {
+    denoms.forEach(denom => updateBalanceObject(chain.chain_id, denom, { kind: "loading" }, val))
+    return val
+  })
+
+  const multicallResults = await erc20ReadMulticall({
+    chainId: chain.chain_id,
+    functionNames: ["balanceOf"],
+    address: address,
+    contractAddresses: denoms as Array<Address>
+  })
+
+  balances.update(val => {
+    multicallResults.forEach((result, index) => {
+      let balance: Balance =
+        result.balance !== undefined && result.balance.toString().length > 0
+          ? { kind: "balance", amount: result.balance.toString(), timestamp: Date.now() }
+          : { kind: "balance", amount: null, timestamp: Date.now() }
+      val = updateBalanceObject(chain.chain_id, denoms[index], balance, val)
+    })
+    return val
+  })
+}
+
+export async function updateBalancesCosmos(chain: Chain, address: Address) {
   const denoms = chain.tokens.filter(tokens => isAddress(tokens.denom)).map(token => token.denom)
   balances.update(val => {
     denoms.forEach(denom => updateBalanceObject(chain.chain_id, denom, { kind: "loading" }, val))
