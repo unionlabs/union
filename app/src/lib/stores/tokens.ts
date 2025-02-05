@@ -73,11 +73,15 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
       } & (typeof graphqlToken.representations)[number]
     >
 
+    if (graphqlToken.cw20) {
+      console.log("cw20 found", graphqlToken.cw20)
+    }
     if (fullRepresentations.length > 0) {
       tokenInfoMulti.graphql = {
         primaryRepresentation: fullRepresentations[0],
         representations: fullRepresentations,
-        wrapping: graphqlToken.wrapping
+        wrapping: graphqlToken.wrapping,
+        cw20: graphqlToken.cw20
       }
       tokenInfoMulti.combined.wrapping = graphqlToken.wrapping
     }

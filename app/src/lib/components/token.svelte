@@ -75,6 +75,7 @@ onMount(() => {
             <div>Name: {token.graphql.primaryRepresentation.name}</div>
             <div>Symbol: {token.graphql.primaryRepresentation.symbol}</div>
             <div>Decimals: {token.graphql.primaryRepresentation.decimals}</div>
+            {#if token.graphql.cw20}blah{/if}
             {#if token.graphql.primaryRepresentation.sources}
               <div>Sources:
                 {#each token.graphql.primaryRepresentation.sources as source}<a class="underline"
