@@ -42,7 +42,7 @@ _: {
       packages = {
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
-          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
+          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo124Module else goPkgs.buildGo124Module)
             (
               {
                 name = "uniond";
@@ -54,7 +54,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-NcTCWXTmjMYkv3cEgcIyhEy18ynELvceEdofBFQVlgM=";
+                vendorHash = "sha256-0uhfzmIzIgdwx+OBdCo48RnyAhQ4Yg2AMj7xsJdipO0=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
