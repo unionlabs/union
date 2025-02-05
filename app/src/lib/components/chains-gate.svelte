@@ -7,7 +7,7 @@ import { type Readable, derived } from "svelte/store"
 import { isHex } from "viem"
 import { page } from "$app/stores"
 
-let chains = chainsQuery()
+let chains = chainsQuery($page.data.environment)
 let ucs03channels = recommendedUcs03ChannelsQuery()
 
 const EMPTY_CHAINS: Array<Chain> = []
@@ -53,6 +53,7 @@ let checkedChains: Readable<Array<Chain>> = derived([chains, page], ([$chains, $
       addr_prefix,
       testnet: !!chain.testnet,
       explorers: chain.explorers,
+      features: chain.features,
       // this as statement should no longer be required in the next typescript release
       tokens: chain.tokens,
       // @deprecated

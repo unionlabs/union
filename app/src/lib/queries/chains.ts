@@ -4,12 +4,12 @@ import { chainsQueryDocument } from "$lib/graphql/queries/chains"
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 
-export const chainsQuery = () =>
+export const chainsQuery = (environment: string) =>
   createQuery({
     queryKey: ["chains"],
     placeholderData: (previousData, _) => previousData,
     queryFn: async () =>
-      (await request(URLS().GRAPHQL, chainsQueryDocument, {})).v1_ibc_union_chains,
+      (await request(URLS().GRAPHQL, chainsQueryDocument, { environment })).v1_ibc_union_chains,
     enabled: true,
     refetchInterval: 6_000,
     refetchOnWindowFocus: false

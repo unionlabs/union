@@ -5,13 +5,13 @@ export const trailingSlash = "ignore"
 import { fetchFeatures } from "$lib/queries/features"
 
 export const load = async ({ url }) => {
-  let environment = "development"
+  let environment = "DEVELOPMENT"
   if (url.host.startsWith("staging")) {
-    environment = "staging"
+    environment = "STAGING"
   } else if (url.host.startsWith("app")) {
-    environment = "production"
+    environment = "PRODUCTION"
   }
 
-  const features = await fetchFeatures(environment.toUpperCase())
-  return { features }
+  const features = await fetchFeatures(environment)
+  return { features, environment }
 }

@@ -1,7 +1,11 @@
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
+import * as v from "valibot"
 import type { Chain } from "$lib/types"
+import { bech32ToBech32Address } from "@unionlabs/client"
 import { writable, type Writable } from "svelte/store"
-import { isAddress, type Address } from "viem"
+import { fromHex, isAddress, toHex, type Address } from "viem"
+import { fetchJson } from "$lib/utilities/neverthrow"
+import { err, ok } from "neverthrow"
 
 export type ChainId = string
 export type Denom = string
@@ -46,7 +50,7 @@ export async function queryBalances(chain: Chain, address: string) {
       await updateBalancesEvm(chain, address as Address)
       break
     case "cosmos":
-      console.error("cosmos balance fetching currently unsupported")
+      await updateBalancesCosmos(chain, address)
       break
     case "aptos":
       console.error("aptos balance fetching currently unsupported")
@@ -82,28 +86,94 @@ export async function updateBalancesEvm(chain: Chain, address: Address) {
   })
 }
 
-export async function updateBalancesCosmos(chain: Chain, address: Address) {
-  const denoms = chain.tokens.filter(tokens => isAddress(tokens.denom)).map(token => token.denom)
+const cosmosBalancesResponseSchema = v.object({
+  balances: v.array(
+    v.object({
+      denom: v.string(),
+      amount: v.string()
+    })
+  )
+})
+
+export async function updateBalancesCosmos(chain: Chain, address: string) {
+  console.log(address)
+  const addr = bech32ToBech32Address({
+    address: address,
+    toPrefix: chain.addr_prefix
+  })
+  const denoms = chain.tokens.map(token => token.denom.toLowerCase())
   balances.update(val => {
     denoms.forEach(denom => updateBalanceObject(chain.chain_id, denom, { kind: "loading" }, val))
     return val
   })
 
-  const multicallResults = await erc20ReadMulticall({
-    chainId: chain.chain_id,
-    functionNames: ["balanceOf"],
-    address: address,
-    contractAddresses: denoms as Array<Address>
+  const url = chain.rpcs.find(rpc => rpc.type === "rest")?.url
+  if (!url) {
+    balances.update(val => {
+      denoms.forEach(denom =>
+        updateBalanceObject(
+          chain.chain_id,
+          denom,
+          {
+            kind: "error",
+            error: `No REST RPC available for chain ${chain.chain_id}`,
+            timestamp: Date.now()
+          },
+          val
+        )
+      )
+      return val
+    })
+    return
+  }
+
+  const response = await fetchJson(`${url}/cosmos/bank/v1beta1/balances/${addr}`).andThen(json => {
+    const result = v.safeParse(cosmosBalancesResponseSchema, json)
+    return result.success
+      ? ok(result.output)
+      : err(new Error("cosmos bank balances schema validation failed"))
   })
 
+  if (response.isErr()) {
+    balances.update(val => {
+      denoms.forEach(denom => {
+        updateBalanceObject(
+          chain.chain_id,
+          denom,
+          {
+            kind: "error",
+            error: response.error.message,
+            timestamp: Date.now()
+          },
+          val
+        )
+      })
+      return val
+    })
+    return
+  }
   balances.update(val => {
-    multicallResults.forEach((result, index) => {
-      let balance: Balance =
-        result.balance !== undefined && result.balance.toString().length > 0
-          ? { kind: "balance", amount: result.balance.toString(), timestamp: Date.now() }
-          : { kind: "balance", amount: null, timestamp: Date.now() }
-      val = updateBalanceObject(chain.chain_id, denoms[index], balance, val)
+    response.value.balances.forEach(({ denom, amount }) => {
+      updateBalanceObject(
+        chain.chain_id,
+        toHex(denom),
+        { kind: "balance", amount, timestamp: Date.now() },
+        val
+      )
     })
     return val
   })
+
+  console.log("valid balances", response)
+
+  // balances.update(val => {
+  //   multicallResults.forEach((result, index) => {
+  //     let balance: Balance =
+  //       result.balance !== undefined && result.balance.toString().length > 0
+  //         ? { kind: "balance", amount: result.balance.toString(), timestamp: Date.now() }
+  //         : { kind: "balance", amount: null, timestamp: Date.now() }
+  //     val = updateBalanceObject(chain.chain_id, denoms[index], balance, val)
+  //   })
+  //   return val
+  // })
 }

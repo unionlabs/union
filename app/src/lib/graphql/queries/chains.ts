@@ -1,10 +1,20 @@
 import { graphql } from "gql.tada"
 
-export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cached(ttl: 30) {
+export const chainsQueryDocument =
+  graphql(/* GraphQL */ `query ChainsQuery($environment: String!) @cached(ttl: 30) {
   v1_ibc_union_chains(order_by: {display_name: asc}) {
     display_name
     testnet
     chain_id
+    features(where: {environment: {_eq: $environment}}) {
+      channel_list
+      connection_list
+      environment
+      index_status
+      packet_list
+      transfer_list
+      transfer_submission
+    }    
     enabled
     rpc_type
     addr_prefix

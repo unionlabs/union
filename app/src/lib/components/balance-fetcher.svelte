@@ -19,7 +19,7 @@ export let chains: Array<Chain>
         return
       }
       chains
-        .filter(chain => chain.rpc_type === rpcType)
+        .filter(chain => chain.rpc_type === rpcType && chain.features[0].transfer_submission)
         .forEach(chain => queryBalances(chain, addr.canonical))
     })
     return unsubscribe
