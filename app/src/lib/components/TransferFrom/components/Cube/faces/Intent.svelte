@@ -107,7 +107,7 @@ export let transferArgs: Props["transferArgs"]
           <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
             currently not supported and will be enabled in an update soon.
           </div>
-        {:else if !transferArgs}
+        {:else if !intents}
           <Button
                   class="w-full mt-2"
                   disabled={true}
@@ -115,7 +115,7 @@ export let transferArgs: Props["transferArgs"]
           </Button>
         {:else}
           <div class="flex-1 flex flex-col items-center text-xs">
-            <Token chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
+            <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
           </div>
           {#if validation.isValid}
             <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>

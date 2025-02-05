@@ -7,8 +7,8 @@ import {
   getChannelInfo,
   isValidBech32Address
 } from "@unionlabs/client"
-import type { Intents} from "$lib/components/TransferFrom/transfer/types.ts";
-import type { Balances} from "$lib/stores/balances.ts";
+import type {Intents} from "$lib/components/TransferFrom/transfer/types.ts";
+import type {Balances} from "$lib/stores/balances.ts";
 
 export const createIntents = (
   rawIntents: FormFields,
