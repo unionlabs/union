@@ -56,6 +56,7 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
   }
 }
 
+// source: https://github.com/chainapsis/keplr-chain-registry/blob/main/cosmos/bbn-test.json
 export const babylonKeplrChaininfo: KeplrChainInfo = {
   chainId: "bbn-test-5",
   chainName: "Babylon Phase-2 Testnet",
