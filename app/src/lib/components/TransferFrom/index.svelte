@@ -31,22 +31,24 @@ const userAddress = derived(
 )
 
 const quoteToken = derived(
-  [rawIntents],
-  ([$rawIntents], set) => {
+  [
+    derived(rawIntents, $r => $r.source),
+    derived(rawIntents, $r => $r.asset),
+    derived(rawIntents, $r => $r.destination)
+  ],
+  ([$source, $asset, $destination], set) => {
     set(null)
 
-    if (!($rawIntents.source && $rawIntents.asset && ucs03channels)) {
-      set(null)
+    if (!($source && $asset && ucs03channels)) {
       return
     }
 
-    const channel = getChannelInfo($rawIntents.source, $rawIntents.destination, ucs03channels)
+    const channel = getChannelInfo($source, $destination, ucs03channels)
     if (!channel) {
-      set(null)
       return
     }
 
-    getQuoteToken($rawIntents.source, $rawIntents.asset, channel).then(quote => set(quote))
+    getQuoteToken($source, $asset, channel).then(quote => set(quote))
   },
   null
 )
