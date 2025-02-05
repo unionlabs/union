@@ -6,8 +6,8 @@ import type {Intents} from "$lib/components/TransferFrom/transfer/types.ts";
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents:  Readable<Intents>
-  validation: Readable<any>
+  intents:  Intents
+  validation: any
   getSourceChain: () => void
   getDestinationChain: () => void
 }
@@ -27,15 +27,15 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 font-bold"
           on:click={getSourceChain}
   >
-    {$intents?.sourceChain?.display_name
-      ? $intents.sourceChain.display_name.split(" ")[0]
+    {intents?.sourceChain?.display_name
+      ? intents.sourceChain.display_name.split(" ")[0]
       : $rawIntents.source
         ? $rawIntents.source
         : 'Source chain'
     }
   </Button>
-  {#if $validation.errors.source}
-    <p class="text-red-500 text-sm">{$validation.errors.source}</p>
+  {#if validation.errors.source}
+    <p class="text-red-500 text-sm">{validation.errors.source}</p>
   {/if}
   <Button
           variant="outline"
@@ -44,14 +44,14 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 font-bold"
           on:click={getDestinationChain}
   >
-    {$intents?.destinationChain?.display_name
-      ? $intents.destinationChain.display_name.split(" ")[0]
+    {intents?.destinationChain?.display_name
+      ? intents.destinationChain.display_name.split(" ")[0]
       : $rawIntents.destination
         ? $rawIntents.destination
         : "Destination chain"
     }
   </Button>
-  {#if $validation.errors.destination}
-    <p class="text-red-500 text-sm"> {$validation.errors.destination}</p>
+  {#if validation.errors.destination}
+    <p class="text-red-500 text-sm"> {validation.errors.destination}</p>
   {/if}
 </div>

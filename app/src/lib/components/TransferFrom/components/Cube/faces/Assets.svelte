@@ -5,21 +5,19 @@ import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-
 import { derived } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
+import type {Intents} from "$lib/components/TransferFrom/transfer/types.ts";
 
 interface Props {
   rawIntents: RawIntentsStore
+  intents:  Intents
   validation: Readable<any>
   rotateTo: (face: CubeFaces) => void
 }
 
 export let chains: Array<Chain>
 export let rawIntents: Props["rawIntents"]
+export let intents: Props["intents"]
 export let rotateTo: Props["rotateTo"]
-
-//TODO
-let sortedTokens = derived([context], ([$context]) =>
-  $context.baseTokens.toSorted((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)))
-)
 
 function setAsset(denom: string) {
   rawIntents.updateField("asset", denom)
@@ -41,7 +39,7 @@ function setAsset(denom: string) {
   </div>
 
   <div class="flex flex-col overflow-y-auto">
-  {#each $sortedTokens as token}
+  {#each intents.baseTokens ?? [] as token}
     <button
             class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
             on:click={() => setAsset(token.denom)}

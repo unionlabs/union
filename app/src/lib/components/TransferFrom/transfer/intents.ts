@@ -7,15 +7,17 @@ import {
   getChannelInfo,
   isValidBech32Address
 } from "@unionlabs/client"
-import type {ChainBalance, Intents} from "$lib/components/TransferFrom/transfer/types.ts";
+import type { Intents} from "$lib/components/TransferFrom/transfer/types.ts";
+import type { Balances} from "$lib/stores/balances.ts";
 
 export const createIntents = (
   rawIntents: FormFields,
-  balances: ChainBalance[],
+  balances: Balances,
   userAddress: UserAddresses,
   chains: Array<Chain>,
   ucs03channels: Array<Ucs03Channel>
 ): Intents => {
+
   // Source Chain
   const sourceChain = chains.find(chain => chain.chain_id === rawIntents.source) ?? null
 
@@ -41,22 +43,17 @@ export const createIntents = (
       : `0x${channel.source_port_id}`)
     : null
 
-  // Get base tokens directly from balances and chain data
-  const getBaseTokens = () => {
-    if (!sourceChain) return []
-
-    const chainBalances = balances.find(b => b.data?.chain_id === rawIntents.source)?.data
-    return sourceChain.tokens.map(token => ({
+  const baseTokens = !sourceChain ? [] : sourceChain.tokens.map(token => {
+    const balance = balances[rawIntents.source]?.[token.denom];
+    return {
       denom: token.denom,
-      balance: chainBalances?.balances[token.denom] ?? "0"
-    }))
-  }
+      balance: balance?.kind === "balance" ? balance.amount ?? "0" : "0"
+    };
+  });
 
-  // Base Token
-  const baseTokens = getBaseTokens()
-  const baseToken = rawIntents.asset && sourceChain
+  const baseToken = (rawIntents.asset && sourceChain)
     ? baseTokens.find(token => token.denom === rawIntents.asset) ?? null
-    : null
+    : null;
 
   // Own Wallet
   const ownWallet = (() => {

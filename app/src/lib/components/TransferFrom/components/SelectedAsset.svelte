@@ -4,12 +4,11 @@ import type {  RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw
 import Token from "$lib/components/token.svelte"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts";
 import type { Chain } from "$lib/types.ts";
-import type {Readable} from "svelte/store";
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents:  Readable<Intents>
-  validation: Readable<any>
+  intents:  Intents
+  validation: any
   chains: Array<Chain>
   onSelectAsset: () => void
 }
@@ -23,7 +22,7 @@ export let onSelectAsset: Props["onSelectAsset"]
 
 <div class="flex flex-col w-full gap-2">
   <Button
-          disabled={!$intents.sourceChain}
+          disabled={!intents.sourceChain}
           type="button"
           size="sm"
           variant="outline"
@@ -36,7 +35,7 @@ export let onSelectAsset: Props["onSelectAsset"]
       Select Asset
     {/if}
   </Button>
-  {#if $validation.errors.asset}
-    <p class="text-red-500 text-sm">{$validation.errors.asset}</p>
+  {#if validation.errors.asset}
+    <p class="text-red-500 text-sm">{validation.errors.asset}</p>
   {/if}
 </div>

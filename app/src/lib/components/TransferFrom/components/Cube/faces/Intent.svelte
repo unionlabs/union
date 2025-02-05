@@ -16,8 +16,8 @@ import type {Readable} from "svelte/store";
 
 interface Props {
   rawIntents: RawIntentsStore
-  intents:  Readable<Intents>
-  validation: Readable<any>
+  intents:  Intents
+  validation: any
   transferArgs: TransferArgs | null
   chains: Array<Chain>
   rotateTo: (face: CubeFaces) => void
@@ -57,47 +57,47 @@ export let transferArgs: Props["transferArgs"]
                 data-field="amount"
                 autocapitalize="none"
                 pattern="^[0-9]*[.,]?[0-9]*$"
-                class="p-1 {$validation.errors.amount ? 'border-red-500' : ''}"
+                class="p-1 {validation.errors.amount ? 'border-red-500' : ''}"
                 value={$rawIntents.amount}
                 on:input={event => rawIntents.updateField('amount', event)}
         />
-        {#if $validation.errors.amount}
-          <span class="text-red-500 text-sm">{$validation.errors.amount}</span>
+        {#if validation.errors.amount}
+          <span class="text-red-500 text-sm">{validation.errors.amount}</span>
         {/if}
         <Input
                 type="text"
                 id="receiver"
                 name="receiver"
                 required={true}
-                disabled={!$intents.destinationChain}
+                disabled={!intents.destinationChain}
                 autocorrect="off"
                 spellcheck="false"
                 autocomplete="off"
                 data-field="receiver"
-                class="p-1 disabled:bg-black/30 {$validation.errors.receiver ? 'border-red-500' : ''}"
+                class="p-1 disabled:bg-black/30 {validation.errors.receiver ? 'border-red-500' : ''}"
                 placeholder="Enter destination address"
                 value={$rawIntents.receiver}
                 on:input={event => rawIntents.updateField('receiver', event)}
         />
-        {#if $rawIntents.receiver === $intents.ownWallet}
+        {#if $rawIntents.receiver === intents.ownWallet}
           <button class="text-xs text-muted-foreground" on:click={() => rawIntents.updateField("receiver", "")}>Reset</button>
           {:else}
-          <button class="text-xs text-muted-foreground"  on:click={() => rawIntents.updateField('receiver', $intents.ownWallet)}>Use connected wallet</button>
+          <button class="text-xs text-muted-foreground"  on:click={() => rawIntents.updateField('receiver', intents.ownWallet)}>Use connected wallet</button>
         {/if}
-        {#if $validation.errors.receiver}
-          <span class="text-red-500 text-sm">{$validation.errors.receiver}</span>
+        {#if validation.errors.receiver}
+          <span class="text-red-500 text-sm">{validation.errors.receiver}</span>
         {/if}
       </div>
     </div>
 
-    {#if !$intents.channel}
+    {#if !intents.channel}
       <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
         to {toDisplayName($rawIntents.destination, chains)}</div>
     {:else}
       <div class="flex flex-col gap-1 justify-end items-center">
-        <div class="flex gap-4 text-muted-foreground text-xs">{$intents.channel.source_connection_id}
-          | {$intents.channel.source_channel_id}
-          <ArrowRightIcon/>{$intents.channel.destination_connection_id} | {$intents.channel.destination_channel_id}
+        <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
+          | {intents.channel.source_channel_id}
+          <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
         </div>
         {#if !$rawIntents.asset}
           <p class="text-xs">Select an asset</p>
@@ -117,10 +117,10 @@ export let transferArgs: Props["transferArgs"]
           <div class="flex-1 flex flex-col items-center text-xs">
             <Token chainId={$rawIntents.destination} denom={transferArgs.quoteToken} {chains}/>
           </div>
-          {#if $validation.isValid}
-            <Address address={$intents.receiver} {chains} chainId={$intents.channel.destination_chain_id}/>
+          {#if validation.isValid}
+            <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
           {/if}
-          <Button class="w-full mt-2" disabled={!$validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer</Button>
+          <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer</Button>
         {/if}
       </div>
     {/if}

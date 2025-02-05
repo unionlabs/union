@@ -16,6 +16,8 @@ import type {
   Intents, QuoteResponse, TransferArgs, TransferContext,
 } from "$lib/components/TransferFrom/transfer/types.ts"
 import type {UserAddresses} from "$lib/types"
+import {Result} from "neverthrow";
+import type {Balances} from "$lib/stores/balances.ts";
 
 export interface ValidationResult {
   errors: FieldErrors
@@ -27,10 +29,9 @@ export interface ValidationResult {
 export const checkValidation = (
   rawIntents: FormFields,
   intents: Intents,
-  balance: any,
+  balance: Balances,
   userAddress: UserAddresses,
-  baseTokenInfo: any,
-  quoteToken: QuoteResponse
+  quoteToken: Result<QuoteResponse, Error> | null
 ): ValidationResult => {
   const errors: FieldErrors = {}
   let parsedAmount = 0n
