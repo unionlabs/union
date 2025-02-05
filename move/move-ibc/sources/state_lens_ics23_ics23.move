@@ -1,11 +1,11 @@
 module ibc::state_lens_ics23_ics23_lc {
     use std::vector;
     use std::bcs;
-    use std::string::{Self, String};
+    use std::string::String;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
-    use std::timestamp;
-    use ibc::ics23;
+    // use std::timestamp;
+    // use ibc::ics23;
     use ibc::ethabi;
     use ibc::bcs_utils;
     use ibc::height::{Self, Height};
@@ -126,11 +126,11 @@ module ibc::state_lens_ics23_ics23_lc {
     }
 
     public fun verify_membership(
-        client_id: u32,
-        height: u64,
-        proof: vector<u8>,
-        key: vector<u8>,
-        value: vector<u8>
+        _client_id: u32,
+        _height: u64,
+        _proof: vector<u8>,
+        _key: vector<u8>,
+        _value: vector<u8>
     ): u64 /* acquires State */ {
         // let state = borrow_global<State>(get_client_address(client_id));
         // let consensus_state = smart_table::borrow(&state.consensus_states, height);

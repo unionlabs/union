@@ -4,20 +4,26 @@ module ibc::helpers {
     use std::copyable_any;
 
     struct RecvPacketParams has copy, drop, store {
-        packet: Packet
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>
     }
 
     struct RecvIntentPacketParams has copy, drop, store {
-        packet: Packet
+        packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>
     }
 
     struct AcknowledgePacketParams has copy, drop, store {
         packet: Packet,
-        acknowledgement: vector<u8>
+        acknowledgement: vector<u8>,
+        relayer: address
     }
 
     struct TimeoutPacketParams has copy, drop, store {
-        packet: Packet
+        packet: Packet,
+        relayer: address
     }
 
     struct ChannelOpenInitParams has copy, drop, store {
@@ -58,10 +64,10 @@ module ibc::helpers {
         on_channel_open_try: |u32, u32, u32, String, String|,
         on_channel_open_ack: |u32, u32, String|,
         on_channel_open_confirm: |u32|,
-        on_recv_packet: |Packet|,
-        on_recv_intent_packet: |Packet|,
-        on_acknowledge_packet: |Packet, vector<u8>|,
-        on_timeout_packet: |Packet|,
+        on_recv_packet: |Packet, address, vector<u8>|,
+        on_recv_intent_packet: |Packet, address, vector<u8>|,
+        on_acknowledge_packet: |Packet, vector<u8>, address|,
+        on_timeout_packet: |Packet, address|,
         on_channel_close_init: |u32|,
         on_channel_close_confirm: |u32|
     ): u64 {
@@ -69,31 +75,23 @@ module ibc::helpers {
         let type_name_output = *copyable_any::type_name(&value);
 
         if (type_name_output == std::type_info::type_name<RecvPacketParams>()) {
-            let (pack) =
-                on_recv_packet_deconstruct(
-                    copyable_any::unpack<RecvPacketParams>(value)
-                );
-            on_recv_packet(pack);
+            let (packet, relayer, relayer_msg) = on_recv_packet_deconstruct(copyable_any::unpack<RecvPacketParams>(value));
+            on_recv_packet(packet, relayer, relayer_msg);
         } else if (type_name_output
             == std::type_info::type_name<RecvIntentPacketParams>()) {
-            let (pack) =
-                on_recv_intent_packet_deconstruct(
-                    copyable_any::unpack<RecvIntentPacketParams>(value)
-                );
-            on_recv_intent_packet(pack);
+            let (packet, relayer, relayer_msg) = on_recv_intent_packet_deconstruct(copyable_any::unpack<RecvIntentPacketParams>(value));
+            on_recv_intent_packet(packet, relayer, relayer_msg);
         } else if (type_name_output
             == std::type_info::type_name<AcknowledgePacketParams>()) {
-            let (pack, acknowledgement) =
-                on_acknowledge_packet_deconstruct(
+            let (packet, acknowledgement, relayer) = on_acknowledge_packet_deconstruct(
                     copyable_any::unpack<AcknowledgePacketParams>(value)
                 );
-            on_acknowledge_packet(pack, acknowledgement);
+            on_acknowledge_packet(packet, acknowledgement, relayer);
         } else if (type_name_output == std::type_info::type_name<TimeoutPacketParams>()) {
-            let (pack) =
-                on_timeout_packet_deconstruct(
+            let (packet, relayer) = on_timeout_packet_deconstruct(
                     copyable_any::unpack<TimeoutPacketParams>(value)
                 );
-            on_timeout_packet(pack);
+            on_timeout_packet(packet, relayer);
         } else if (type_name_output
             == std::type_info::type_name<ChannelOpenInitParams>()) {
             let (connection_id, channel_id, version) =
@@ -214,23 +212,23 @@ module ibc::helpers {
     }
 
     public fun pack_acknowledge_packet_params(
-        packet: Packet, acknowledgement: vector<u8>
+        packet: Packet, acknowledgement: vector<u8>, relayer: address
     ): copyable_any::Any {
         copyable_any::pack<AcknowledgePacketParams>(
-            AcknowledgePacketParams { packet, acknowledgement }
+            AcknowledgePacketParams { packet, acknowledgement, relayer }
         )
     }
 
-    public fun pack_timeout_packet_params(packet: Packet): copyable_any::Any {
-        copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet })
+    public fun pack_timeout_packet_params(packet: Packet, relayer: address): copyable_any::Any {
+        copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet, relayer })
     }
 
-    public fun pack_recv_packet_params(packet: Packet): copyable_any::Any {
-        copyable_any::pack<RecvPacketParams>(RecvPacketParams { packet })
+    public fun pack_recv_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
+        copyable_any::pack<RecvPacketParams>(RecvPacketParams { packet, relayer, relayer_msg })
     }
 
-    public fun pack_recv_intent_packet_params(packet: Packet): copyable_any::Any {
-        copyable_any::pack<RecvIntentPacketParams>(RecvIntentPacketParams { packet })
+    public fun pack_recv_intent_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
+        copyable_any::pack<RecvIntentPacketParams>(RecvIntentPacketParams { packet, relayer, relayer_msg  })
     }
 
     public fun new_channel_open_confirm_params(channel_id: u32): ChannelOpenConfirmParams {
@@ -355,91 +353,67 @@ module ibc::helpers {
         param.channel_id
     }
 
-    public fun on_recv_packet_deconstruct(recv_param: RecvPacketParams): Packet {
-        let pack = get_packet_from_recv_param(&recv_param);
-        *pack
+    public fun on_recv_packet_deconstruct(recv_param: RecvPacketParams): (Packet, address, vector<u8>) {
+        (recv_param.packet, recv_param.relayer, recv_param.relayer_msg)
     }
 
     public fun on_recv_intent_packet_deconstruct(
         recv_intent_param: RecvIntentPacketParams
-    ): Packet {
-        let pack = get_packet_from_recv_intent_param(&recv_intent_param);
-        *pack
+    ): (Packet, address, vector<u8>) {
+        (recv_intent_param.packet, recv_intent_param.relayer, recv_intent_param.relayer_msg)
     }
 
     public fun on_acknowledge_packet_deconstruct(
         ack_param: AcknowledgePacketParams
-    ): (Packet, vector<u8>) {
-        let pack = get_packet_from_ack_param(&ack_param);
-        let acknowledgement = get_acknowledgement_from_ack_param(&ack_param);
-        (*pack, *acknowledgement)
+    ): (Packet, vector<u8>, address) {
+        (ack_param.packet, ack_param.acknowledgement, ack_param.relayer)
     }
 
     public fun on_timeout_packet_deconstruct(
         timeout_param: TimeoutPacketParams
-    ): Packet {
-        let pack = get_packet_from_timeout_param(&timeout_param);
-        *pack
+    ): (Packet, address) {
+        (timeout_param.packet, timeout_param.relayer)
     }
 
     public fun on_channel_open_init_deconstruct(
         init_param: ChannelOpenInitParams
     ): (u32, u32, String) {
-        let connection_id = get_connection_id_from_channel_open_init_param(&init_param);
-        let channel_id = get_channel_id_from_channel_open_init_param(&init_param);
-        let version = get_version_from_channel_open_init_param(&init_param);
-        (connection_id, channel_id, *version)
+        (init_param.connection_id, init_param.channel_id, init_param.version)
     }
 
     public fun on_channel_open_try_deconstruct(
         try_param: ChannelOpenTryParams
     ): (u32, u32, u32, String, String) {
-        let connection_id = get_connection_id_from_channel_open_try_param(&try_param);
-        let channel_id = get_channel_id_from_channel_open_try_param(&try_param);
-        let counterparty_channel_id =
-            get_counterparty_channel_id_from_channel_open_try_param(&try_param);
-        let version = get_version_from_channel_open_try_param(&try_param);
-        let counterparty_version =
-            get_counterparty_version_from_channel_open_try_param(&try_param);
         (
-            connection_id,
-            channel_id,
-            counterparty_channel_id,
-            *version,
-            *counterparty_version
+            try_param.connection_id,
+            try_param.channel_id,
+            try_param.counterparty_channel_id,
+            try_param.version,
+            try_param.counterparty_version
         )
     }
 
     public fun on_channel_open_ack_deconstruct(
         ack_param: ChannelOpenAckParams
     ): (u32, u32, String) {
-        let channel_id = get_channel_id_from_channel_open_ack_param(&ack_param);
-        let counterparty_version =
-            get_counterparty_version_from_channel_open_ack_param(&ack_param);
-        let counterparty_channel_id =
-            get_counterparty_channel_id_from_channel_open_ack_param(&ack_param);
-        (channel_id, counterparty_channel_id, *counterparty_version)
+        (ack_param.channel_id, ack_param.counterparty_channel_id, ack_param.counterparty_version)
     }
 
     public fun on_channel_open_confirm_deconstruct(
         confirm_param: ChannelOpenConfirmParams
     ): u32 {
-        let channel_id = get_channel_id_from_channel_open_confirm_param(&confirm_param);
-        channel_id
+        confirm_param.channel_id
     }
 
     public fun on_channel_close_init_deconstruct(
         close_init_param: ChannelCloseInitParams
     ): u32 {
-        let channel_id = get_channel_id_from_channel_close_init_param(&close_init_param);
-        channel_id
+        close_init_param.channel_id
     }
 
     public fun on_channel_close_confirm_deconstruct(
         close_confirm_param: ChannelCloseConfirmParams
     ): u32 {
-        let channel_id =
-            get_channel_id_from_channel_close_confirm_param(&close_confirm_param);
-        channel_id
+        close_confirm_param.channel_id
     }
 }

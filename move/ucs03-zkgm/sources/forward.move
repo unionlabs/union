@@ -3,7 +3,6 @@ module zkgm::forward {
     use zkgm::instruction::{Self, Instruction};
 
     use std::vector;
-    use std::string::{Self};
 
     struct Forward has copy, drop, store {
         channel_id: u32,
@@ -81,7 +80,7 @@ module zkgm::forward {
         };
 
         let ack_bytes = encode(&forward_data);
-        std::debug::print(&string::utf8(b"ack bytes: "));
+        std::debug::print(&std::string::utf8(b"ack bytes: "));
         std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 

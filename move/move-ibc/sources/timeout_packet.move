@@ -29,7 +29,7 @@ module ibc::timeout_packet {
                 _next_sequence_recv
             );
 
-        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet));
+        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet, @ibc));
 
         dispatcher::delete_storage<T>();
 

@@ -1,5 +1,4 @@
-module zkgm::zkgm_relay {
-    use zkgm::zkgm_helpers;
+module zkgm::ibc_app {
     use zkgm::dispatcher_zkgm;
     use zkgm::engine_zkgm;
     use zkgm::batch::{Self, Batch};
@@ -13,7 +12,6 @@ module zkgm::zkgm_relay {
     use zkgm::acknowledgement::{Self};
 
     use ibc::ibc;
-    use ibc::helpers;
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
     use ibc::commitment;
@@ -35,7 +33,7 @@ module zkgm::zkgm_relay {
 
     // Constants
     const ORDER_UNORDERED: u8 = 1;
-    const VERSION: vector<u8> = b"zkgm-zkgm-0";
+    const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
     const ACK_FAILURE: u256 = 0;
     const ACK_LENGTH: u64 = 1;
@@ -69,10 +67,10 @@ module zkgm::zkgm_relay {
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
 
-    struct ZKGMProof has drop, store, key {}
+    struct IbcAppWitness has drop, store, key {}
 
-    public(friend) fun new_ucs_relay_proof(): ZKGMProof {
-        ZKGMProof {}
+    public(friend) fun new_ucs_relay_proof(): IbcAppWitness {
+        IbcAppWitness {}
     }
 
     struct SignerRef has key {
@@ -162,11 +160,11 @@ module zkgm::zkgm_relay {
         let cb =
             function_info::new_function_info(
                 account,
-                string::utf8(b"zkgm_relay"),
+                string::utf8(b"ibc_app"),
                 string::utf8(b"on_packet")
             );
 
-        ibc::register_application<ZKGMProof>(account, cb, new_ucs_relay_proof());
+        ibc::register_application<IbcAppWitness>(account, cb, new_ucs_relay_proof());
     }
 
     // Initialize the RelayStore and SignerRef
@@ -203,6 +201,7 @@ module zkgm::zkgm_relay {
         data
     }
 
+    #[view]
     public fun predict_wrapped_token(
         path: u256, destination_channel: u32, token: vector<u8>
     ): (address, vector<u8>) {
@@ -210,6 +209,13 @@ module zkgm::zkgm_relay {
 
         let wrapped_address = object::create_object_address(&get_vault_addr(), salt);
         (wrapped_address, salt)
+    }
+
+    #[test]
+    fun see_predict() {
+        let (addr, salt) = predict_wrapped_token(0, 2, b"muno");
+        std::debug::print(&addr);
+        std::debug::print(&salt);
     }
 
     public fun deploy_token(salt: vector<u8>): address acquires SignerRef {
@@ -395,8 +401,6 @@ module zkgm::zkgm_relay {
                     operand
                 )
             );
-        let admin_balance =
-            primary_fungible_store::balance(signer::address_of(sender), asset);
 
         ibc::ibc::send_packet(
             &get_signer(),
@@ -635,7 +639,7 @@ module zkgm::zkgm_relay {
         } else {
             let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
             let return_value = acknowledgement::encode(&new_ack);
-            dispatcher_zkgm::set_return_value<ZKGMProof>(
+            dispatcher::set_return_value<IbcAppWitness>(
                 new_ucs_relay_proof(), return_value
             );
         }
@@ -773,7 +777,7 @@ module zkgm::zkgm_relay {
                         contract_calldata: *multiplex::contract_calldata(&multiplex_packet)
                     }
                 );
-            // engine_zkgm::dispatch(param, contract_address);
+            engine_zkgm::dispatch(param, contract_address);
             return bcs::to_bytes(&ACK_SUCCESS)
         };
         let multiplex_ibc_packet =
@@ -796,7 +800,7 @@ module zkgm::zkgm_relay {
                 }
             );
 
-        // engine_zkgm::dispatch(param, contract_address);
+        engine_zkgm::dispatch(param, contract_address);
 
         let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
 
@@ -888,6 +892,9 @@ module zkgm::zkgm_relay {
                         &get_signer(), asset, relayer, (fee as u64)
                     );
                 }
+            }
+            else {
+                abort E_ONLY_MAKER
             };
         };
         let new_asset_order_ack =
@@ -1010,7 +1017,7 @@ module zkgm::zkgm_relay {
             let contract_address =
                 from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
-            // engine_zkgm::dispatch(param, contract_address);
+            engine_zkgm::dispatch(param, contract_address);
         }
     }
 
@@ -1262,7 +1269,7 @@ module zkgm::zkgm_relay {
             let contract_address =
                 from_bcs::to_address(*multiplex::sender(&multiplex_packet));
 
-            // engine_zkgm::dispatch(param, contract_address);
+            engine_zkgm::dispatch(param, contract_address);
         }
     }
 
@@ -1303,95 +1310,26 @@ module zkgm::zkgm_relay {
         abort E_INFINITE_GAME
     }
 
-    public fun on_packet<T: key>(
-        _store: Object<T>
-    ): u64 acquires RelayStore, SignerRef {
-        let value: copyable_any::Any = dispatcher::get_data(new_ucs_relay_proof());
-        let type_name_output = *copyable_any::type_name(&value);
-
-        if (type_name_output
-            == std::type_info::type_name<zkgm_helpers::RecvPacketParamsZKGM>()) {
-            let (pack, relayer, relayer_msg) =
-                zkgm_helpers::on_recv_packet_zkgm_deconstruct(
-                    copyable_any::unpack<zkgm_helpers::RecvPacketParamsZKGM>(value)
-                );
-            on_recv_packet(pack, relayer, relayer_msg);
-        } else if (type_name_output
-            == std::type_info::type_name<zkgm_helpers::AcknowledgePacketParamsZKGM>()) {
-            let (pack, acknowledgement, relayer) =
-                zkgm_helpers::on_acknowledge_packet_deconstruct_zkgm(
-                    copyable_any::unpack<zkgm_helpers::AcknowledgePacketParamsZKGM>(value)
-                );
-            on_acknowledge_packet(pack, acknowledgement, relayer);
-        } else if (type_name_output
-            == std::type_info::type_name<zkgm_helpers::TimeoutPacketParamsZKGM>()) {
-            let (pack, relayer) =
-                zkgm_helpers::on_timeout_packet_deconstruct_zkgm(
-                    copyable_any::unpack<zkgm_helpers::TimeoutPacketParamsZKGM>(value)
-                );
-            on_timeout_packet(pack, relayer);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenInitParams>()) {
-            let (connection_id, channel_id, version) =
-                helpers::on_channel_open_init_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenInitParams>(value)
-                );
-            on_channel_open_init(connection_id, channel_id, version);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenTryParams>()) {
-            let (
-                connection_id,
-                channel_id,
-                counterparty_channel_id,
-                version,
-                counterparty_version
-            ) =
-                helpers::on_channel_open_try_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenTryParams>(value)
-                );
-            on_channel_open_try(
-                connection_id,
-                channel_id,
-                counterparty_channel_id,
-                version,
-                counterparty_version
-            );
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenAckParams>()) {
-            let (channel_id, counterparty_channel_id, counterparty_version) =
-                helpers::on_channel_open_ack_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenAckParams>(value)
-                );
-            on_channel_open_ack(
-                channel_id, counterparty_channel_id, counterparty_version
-            );
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelOpenConfirmParams>()) {
-            let channel_id =
-                helpers::on_channel_open_confirm_deconstruct(
-                    copyable_any::unpack<helpers::ChannelOpenConfirmParams>(value)
-                );
-            on_channel_open_confirm(channel_id);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelCloseInitParams>()) {
-            let channel_id =
-                helpers::on_channel_close_init_deconstruct(
-                    copyable_any::unpack<helpers::ChannelCloseInitParams>(value)
-                );
-            on_channel_close_init(channel_id);
-        } else if (type_name_output
-            == std::type_info::type_name<helpers::ChannelCloseConfirmParams>()) {
-            let channel_id =
-                helpers::on_channel_close_confirm_deconstruct(
-                    copyable_any::unpack<helpers::ChannelCloseConfirmParams>(value)
-                );
-            on_channel_close_confirm(channel_id);
-        } else {
-            std::debug::print(
-                &string::utf8(b"Invalid function type detected in on_packet function!")
-            );
-        };
-        0
+    public fun on_recv_intent_packet(_packet: Packet, _relayer: address, _relayer_msg: vector<u8>) {
+        abort E_INFINITE_GAME
+    }
+    
+    public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
+        ibc::helpers::on_packet(
+            new_ucs_relay_proof(),
+            |conn, chan, ver| on_channel_open_init(conn, chan, ver),
+            |conn, chan, count_chan, ver, count_ver| on_channel_open_try(
+                conn, chan, count_chan, ver, count_ver
+            ),
+            |chan, count, ver| on_channel_open_ack(chan, count, ver),
+            |chan| on_channel_open_confirm(chan),
+            |p, r, r_msg| on_recv_packet(p, r, r_msg),
+            |p, r, r_msg| on_recv_intent_packet(p, r, r_msg),
+            |p, d, r| on_acknowledge_packet(p, d, r),
+            |p, r| on_timeout_packet(p, r),
+            |chan| on_channel_close_init(chan),
+            |chan| on_channel_close_confirm(chan)
+        )
     }
 
     #[test]
@@ -1614,4 +1552,20 @@ module zkgm::zkgm_relay {
     //     // If the function reaches here without abort, all scenarios passed.
     //     std::debug::print(&string::utf8(b"test_transfer_scenarios passed!"));
     // }
+
+    #[test]
+    fun see_packet() {
+        let packet = x"53f247a39cb05a49ed206cdb7b09dad6a71b9eae2f49b3408be67510fd19b1cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000002c756e696f6e3164383467743663777839333873616e306874687a37793666307234663030676a717768353977000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000201363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b500000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002073b27231bc5dc074cbbe018f6414022f679f2f66ee521abf24fa3cca9ad54072";
+        let packet = zkgm_packet::decode(&packet);
+        let packet = fungible_asset_order::decode(instruction::operand(&zkgm_packet::instruction(&packet)));
+        let (wrapped_address, salt) =
+            predict_wrapped_token(
+                0,
+                2,
+                *fungible_asset_order::base_token(&packet)
+            );
+        let quote_token =
+            from_bcs::to_address(*fungible_asset_order::quote_token(&packet));
+        std::debug::print(&(wrapped_address == quote_token));
+    }
 }
