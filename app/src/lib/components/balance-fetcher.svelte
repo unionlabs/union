@@ -7,7 +7,6 @@ import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
 
 export let chains: Array<Chain>
-
 ;[
   { userAddr: userAddrCosmos, rpcType: "cosmos" },
   { userAddr: userAddrEvm, rpcType: "evm" },

@@ -1,8 +1,4 @@
 import { createQuery } from "@tanstack/svelte-query"
-import { tokensQueryDocument } from "$lib/graphql/queries/tokens"
-
-import { request } from "graphql-request"
-import { URLS } from "$lib/constants"
 import type { Chain, TokenInfoMulti } from "$lib/types"
 import { erc20ReadMulticall } from "./balance/evm/multicall.ts"
 import { hexToString, isHex, type Address } from "viem"
