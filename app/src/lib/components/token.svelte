@@ -90,7 +90,7 @@ onMount(() => {
         </section>
         {#if token.graphql}
           <section>
-            <h2 class="text-foreground">GrapqhQL</h2>
+            <h2 class="text-foreground">GraphQL</h2>
             <div>Name: {token.graphql.primaryRepresentation.name}</div>
             <div>Symbol: {token.graphql.primaryRepresentation.symbol}</div>
             <div>Decimals: {token.graphql.primaryRepresentation.decimals}</div>
