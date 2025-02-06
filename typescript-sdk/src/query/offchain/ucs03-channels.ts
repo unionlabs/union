@@ -1,7 +1,7 @@
 import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, fromHex, http, isAddress, isHex, toHex, type Hex } from "viem"
+import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"

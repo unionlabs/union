@@ -8,7 +8,6 @@ import {
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { UserOperationRejectedByPaymasterError } from "node_modules/viem/_types/account-abstraction/errors/bundler"
 
 // hack to encode bigints to json
 declare global {
