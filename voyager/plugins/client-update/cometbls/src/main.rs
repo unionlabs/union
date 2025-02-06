@@ -28,7 +28,7 @@ use num_bigint::BigUint;
 use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
-use unionlabs::bounded::BoundedI64;
+use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};
 use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientType},
@@ -147,6 +147,100 @@ impl Module {
     fn plugin_name(&self) -> String {
         plugin_name(&self.chain_id)
     }
+
+    async fn find_highest_update_height(&self, from: Height, to: Height) -> Height {
+        let sort = |mut validators: Vec<Validator>| {
+            validators.sort_by(|a, b| {
+                #[allow(clippy::collapsible_else_if)]
+                if a.voting_power == b.voting_power {
+                    if a.address < b.address {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                } else {
+                    if a.voting_power > b.voting_power {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                }
+            });
+            validators
+                .into_iter()
+                .map(|v| (v.address, v))
+                .collect::<HashMap<_, _>>()
+        };
+
+        let trusted_validators = self
+            .cometbft_client
+            .all_validators(Some(from.increment().height().try_into().unwrap()))
+            .await
+            .unwrap()
+            .validators;
+
+        let trusted_map = sort(trusted_validators);
+
+        // 1/3 of the trusted power must remain at H+k
+        let trusted_power_threshold = trusted_map
+            .values()
+            .map(|v| v.voting_power.inner())
+            .sum::<i64>()
+            / 3;
+
+        let mut low = from;
+        let mut high = to.increment();
+        while low < high {
+            let mid = Height::new((low.height() + high.height()) / 2);
+
+            // 1. fetch commit
+            let signed_header = self
+                .cometbft_client
+                .commit(Some(mid.height().try_into().unwrap()))
+                .await
+                .unwrap()
+                .signed_header;
+
+            // 2. fetch untrusted validators
+            let untrusted_validators = self
+                .cometbft_client
+                .all_validators(Some(mid.height().try_into().unwrap()))
+                .await
+                .unwrap()
+                .validators;
+
+            let untrusted_map = sort(untrusted_validators);
+
+            // 2. compute trusted power
+            let mut trusted_power = 0;
+            for sig in signed_header.commit.signatures.iter() {
+                if let CommitSig::Commit {
+                    validator_address, ..
+                } = sig
+                {
+                    let address = validator_address.as_encoding();
+                    match (trusted_map.get(address), untrusted_map.get(address)) {
+                        (Some(trusted_validator), Some(untrusted_validator))
+                            if trusted_validator.voting_power
+                                == untrusted_validator.voting_power =>
+                        {
+                            trusted_power += trusted_validator.voting_power.inner();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // 3. ensure trusted power is higher than threshold
+            if trusted_power > trusted_power_threshold {
+                low = mid.increment();
+            } else {
+                high = mid;
+            }
+        }
+
+        Height::new(low.height() - 1)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -200,6 +294,27 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 update_from,
                 update_to,
             }) => {
+                let update_to_highest = self
+                    .find_highest_update_height(update_from, update_to)
+                    .await;
+                if update_to_highest != update_to {
+                    let intermediate = call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchUpdate {
+                            update_from,
+                            update_to: update_to_highest,
+                        }),
+                    ));
+                    let continuation = call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchUpdate {
+                            update_from: update_to_highest,
+                            update_to,
+                        }),
+                    ));
+                    return Ok(seq([intermediate, continuation]));
+                }
+
                 let trusted_validators = self
                     .cometbft_client
                     .all_validators(Some(update_from.increment().height().try_into().unwrap()))
