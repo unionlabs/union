@@ -18,12 +18,7 @@ export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
 export let selected: Props["selected"]
 
-$: enabledChains = chains.filter(chain =>
-  $page.data.features
-    .filter(f => f.features[0]?.transfer_submission)
-    .map(f => f.chain_id)
-    .includes(chain.chain_id)
-)
+const enabledChains = chains.filter(chain => chain.features[0].transfer_submission)
 let expandedChainId: string | null = null
 
 function setChain(selected: "source" | "destination", chainId: string) {

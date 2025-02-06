@@ -2,7 +2,7 @@ import { graphql } from "gql.tada"
 
 export const chainsQueryDocument =
   graphql(/* GraphQL */ `query ChainsQuery($environment: String!) @cached(ttl: 30) {
-  v1_ibc_union_chains(order_by: {display_name: asc}) {
+  v1_ibc_union_chains(where: {enabled: {_eq: true}}, order_by: {display_name: asc}) {
     display_name
     testnet
     chain_id
@@ -15,6 +15,10 @@ export const chainsQueryDocument =
       transfer_list
       transfer_submission
     }    
+    relayer_status {
+      status
+      message
+    }
     enabled
     rpc_type
     addr_prefix
