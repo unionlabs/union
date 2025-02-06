@@ -14,3 +14,11 @@ let contractStateCw20 = await queryContractState({
   contractAddress: CW20_DENOM
 })
 consola.log("contract state cw20", contractStateCw20)
+
+const CW20_BABY_DENOM = "bbn192gwgengt32um4qshvhg5f3prtey2g6xmyrmkd87xvy59elaw5vs504zeg"
+
+let contractStateCw20baby = await queryContractState({
+  restUrl: "https://rest.bbn-test-5.babylon.chain.kitchen",
+  contractAddress: CW20_BABY_DENOM
+})
+consola.log("contract state cw20baby", contractStateCw20baby)
