@@ -2,7 +2,6 @@
 import { type Readable, writable } from "svelte/store"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import { derived } from "svelte/store"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
@@ -26,6 +25,11 @@ function setAsset(denom: string) {
 }
 
 const hideZeroBalances = writable(true)
+
+$: filteredTokens =
+  $hideZeroBalances && intents.baseTokens
+    ? intents.baseTokens.filter(token => token.balance !== "0")
+    : (intents.baseTokens ?? [])
 </script>
 
 <div class="flex flex-col h-full w-full">
@@ -44,21 +48,16 @@ const hideZeroBalances = writable(true)
     <button
             class="border-2 h-6 w-6 flex items-center justify-center"
             on:click={() => rotateTo("intentFace")}
-    >✕
-    </button>
+    >✕</button>
   </div>
 
-  <div class="flex flex-col overflow-y-auto gap-2 py-2">
-    {#each intents.baseTokens ?? [] as token}
-      {#if !$hideZeroBalances || token.balance !== "0"}
-        <button
-                class="px-4 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center"
-                on:click={() => setAsset(token.denom)}
-        >
-          <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
-        </button>
-      {/if}
+  <div class="flex flex-col overflow-y-auto">
+    {#each filteredTokens as token}
+      <button
+              class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
+              on:click={() => setAsset(token.denom)}
+      >
+        <Token chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+      </button>
     {/each}
   </div>
-</div>
-
