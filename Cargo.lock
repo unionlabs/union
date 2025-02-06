@@ -2106,12 +2106,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5024ee8015f02155eee35c711107ddd9a9bf3cb689cf2a9089c97e79b6e1ae83"
 
 [[package]]
-name = "base58"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
-
-[[package]]
 name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4124,6 +4118,7 @@ dependencies = [
 name = "cw20-token-minter"
 version = "0.0.0"
 dependencies = [
+ "alloy",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
@@ -4133,6 +4128,7 @@ dependencies = [
  "thiserror",
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
+ "unionlabs",
 ]
 
 [[package]]
@@ -8037,18 +8033,6 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
-]
-
-[[package]]
-name = "native-token-minter"
-version = "0.0.0"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "thiserror",
- "token-factory-api",
- "ucs03-zkgm-token-minter-api",
 ]
 
 [[package]]
@@ -12114,7 +12098,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01b874a4992538d4b2f4fbbac11b9419d685f4b39bdc3fed95b04e07bfd76040"
 dependencies = [
- "base58 0.1.0",
+ "base58",
  "hmac 0.7.1",
  "libsecp256k1 0.3.5",
  "memzero",
@@ -12780,7 +12764,6 @@ name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "base58 0.2.0",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",

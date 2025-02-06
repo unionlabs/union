@@ -1,23 +1,29 @@
+use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, DenomMetadataResponse,
-    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdResult, SubMsg,
+    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary, Coin,
+    DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdResult,
     WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
-    ExecuteMsg, LocalTokenMsg, MetadataResponse, QueryMsg, TokenToIdentifierResponse,
-    WrappedTokenMsg, CW20_QUOTE_TOKEN, CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
+    ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
+    WrappedTokenMsg,
 };
+use unionlabs::{ethereum::keccak256, primitives::H256};
 
 use crate::{
     error::Error,
-    state::{Config, ADDR_TO_DENOM, CONFIG, DENOM_TO_ADDR, DENOM_TO_BE_STORED},
+    state::{Config, CONFIG},
 };
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {
-    Cw20 { cw20_base_code_id: u64 },
+    Cw20 {
+        cw20_base_code_id: u64,
+        dummy_code_id: u64,
+        dummy_code_hash: H256,
+    },
 }
 
 #[entry_point]
@@ -25,13 +31,19 @@ pub fn instantiate(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    TokenMinterInitMsg::Cw20 { cw20_base_code_id }: TokenMinterInitMsg,
+    TokenMinterInitMsg::Cw20 {
+        cw20_base_code_id,
+        dummy_code_id,
+        dummy_code_hash,
+    }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
     CONFIG.save(
         deps.storage,
         &Config {
             admin: info.sender,
             cw20_base_code_id,
+            dummy_code_id,
+            dummy_code_hash,
         },
     )?;
     Ok(Response::default())
@@ -64,44 +76,45 @@ pub fn execute(
                 metadata,
                 subdenom: denom,
             } => {
-                // the first denom is always the same as the generated denom
-                DENOM_TO_BE_STORED.save(deps.storage, &denom)?;
                 let name = metadata.name;
                 // let symbol = metadata.symbol;
-                let msg = WasmMsg::Instantiate {
-                    admin: Some(env.contract.address.to_string()),
-                    code_id: config.cw20_base_code_id,
-                    label: denom.clone(),
-                    msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
-                        // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
-                        name: if name.is_empty() || name.len() > 50 {
-                            denom
-                        } else {
-                            name
-                        },
-                        symbol: "ZKGM".to_string(),
-                        decimals: 0,
-                        initial_balances: vec![],
-                        mint: Some(cw20::MinterResponse {
-                            minter: env.contract.address.to_string(),
-                            cap: None,
-                        }),
-                        marketing: None,
-                    })?,
-                    funds: vec![],
-                };
-                Response::new().add_submessage(SubMsg::reply_on_success(msg, 1))
+                Response::new()
+                    .add_message(WasmMsg::Instantiate2 {
+                        admin: Some(env.contract.address.to_string()),
+                        code_id: config.dummy_code_id,
+                        label: denom.clone(),
+                        msg: vec![].into(),
+                        funds: vec![],
+                        salt: denom.as_bytes().into(),
+                    })
+                    .add_message(WasmMsg::Migrate {
+                        contract_addr: denom.clone(),
+                        new_code_id: config.cw20_base_code_id,
+                        msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
+                            // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
+                            name: if name.is_empty() || name.len() > 50 {
+                                denom.clone()
+                            } else {
+                                name
+                            },
+                            symbol: "ZKGM".to_string(),
+                            decimals: 0,
+                            initial_balances: vec![],
+                            mint: Some(cw20::MinterResponse {
+                                minter: env.contract.address.to_string(),
+                                cap: None,
+                            }),
+                            marketing: None,
+                        })?,
+                    })
             }
             WrappedTokenMsg::MintTokens {
                 denom,
                 amount,
                 mint_to_address,
             } => {
-                let addr = DENOM_TO_ADDR
-                    .load(deps.storage, denom.clone())
-                    .map_err(|_| Error::CantMint(denom))?;
                 let msg = wasm_execute(
-                    addr,
+                    denom,
                     &cw20::Cw20ExecuteMsg::Mint {
                         recipient: mint_to_address,
                         amount,
@@ -116,11 +129,8 @@ pub fn execute(
                 sender,
                 ..
             } => {
-                let addr = DENOM_TO_ADDR
-                    .load(deps.storage, denom.clone())
-                    .map_err(|_| Error::CantMint(denom))?;
                 let msg = wasm_execute(
-                    addr,
+                    denom,
                     &cw20::Cw20ExecuteMsg::BurnFrom {
                         owner: sender.to_string(),
                         amount,
@@ -208,87 +218,63 @@ fn save_native_token(deps: DepsMut, token: &str) {
     );
 }
 
-#[entry_point]
-pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, Error> {
-    if reply.id == 1 {
-        let denom = DENOM_TO_BE_STORED
-            .load(deps.storage)
-            .map_err(|_| Error::DenomToStoreDoesNotExist)?;
-        let addr = reply
-            .result
-            .into_result()
-            .map_err(Error::SubMsgError)?
-            .events
-            .into_iter()
-            .find(|e| &e.ty == "instantiate")
-            .ok_or(Error::ContractCreationEventNotFound)?
-            .attributes
-            .into_iter()
-            .find(|a| &a.key == "_contract_address")
-            .ok_or(Error::ContractCreationEventNotFound)?
-            .value;
-
-        let addr = deps.api.addr_validate(&addr)?;
-
-        DENOM_TO_ADDR.save(deps.storage, denom.clone(), &addr)?;
-        ADDR_TO_DENOM.save(deps.storage, addr.clone(), &denom)?;
-
-        Ok(Response::new().add_event(
-            Event::new(CW20_TOKEN_CREATION_EVENT)
-                .add_attribute(CW20_QUOTE_TOKEN, denom)
-                .add_attribute(CW20_TOKEN_ADDRESS, addr),
-        ))
-    } else {
-        Err(Error::UnexpectedReply(reply.id))
+alloy::sol! {
+    struct WrappedTokenSalt {
+        uint256 path;
+        uint32 channel;
+        bytes token;
     }
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, Error> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
-        QueryMsg::TokenToIdentifier { token } => {
-            let token_identifier = match String::from_utf8(token.to_vec()) {
-                Ok(str_token) => ADDR_TO_DENOM
-                    .load(deps.storage, Addr::unchecked(str_token))
-                    .map(String::into_bytes)
-                    .map(Into::into)
-                    .unwrap_or(token),
-                // If the token is not a utf8 string, it means it's coming from
-                // a remote chain. This means it can't be a wrapped token anyways.
-                Err(_) => token,
-            };
+        QueryMsg::PredictWrappedToken {
+            path,
+            channel,
+            token,
+        } => {
+            let Config {
+                dummy_code_hash, ..
+            } = CONFIG.load(deps.storage)?;
+            let token_addr = instantiate2_address(
+                &dummy_code_hash.into_bytes(),
+                &deps.api.addr_canonicalize(env.contract.address.as_str())?,
+                &keccak256(
+                    WrappedTokenSalt {
+                        path: U256::from_be_bytes::<{ U256::BYTES }>(
+                            path.as_slice().try_into().expect("correctly encoded; qed"),
+                        ),
+                        channel,
+                        token: token.to_vec().into(),
+                    }
+                    .abi_encode_params(),
+                )
+                .into_bytes(),
+            )?;
 
-            Ok(to_json_binary(&TokenToIdentifierResponse {
-                token_identifier,
+            Ok(to_json_binary(&PredictWrappedTokenResponse {
+                wrapped_token: deps.api.addr_humanize(&token_addr)?.to_string(),
             })?)
         }
-        QueryMsg::Metadata { denom } => match DENOM_TO_ADDR.load(deps.storage, denom.clone()) {
-            Ok(addr) => {
-                let TokenInfoResponse { name, symbol, .. } = query_token_info(deps, addr.as_str())?;
+        QueryMsg::Metadata { denom } => match query_token_info(deps, &denom) {
+            Ok(TokenInfoResponse { name, symbol, .. }) => {
+                Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+            }
+            Err(_) => {
+                let denom_metadata = deps.querier.query(&QueryRequest::Bank(
+                    cosmwasm_std::BankQuery::DenomMetadata {
+                        denom: denom.clone(),
+                    },
+                ));
+
+                let (name, symbol) = match denom_metadata {
+                    Ok(DenomMetadataResponse { metadata, .. }) => (metadata.name, metadata.symbol),
+                    _ => (denom.clone(), denom.clone()),
+                };
 
                 Ok(to_json_binary(&MetadataResponse { name, symbol })?)
             }
-            Err(_) => match query_token_info(deps, &denom) {
-                Ok(TokenInfoResponse { name, symbol, .. }) => {
-                    Ok(to_json_binary(&MetadataResponse { name, symbol })?)
-                }
-                Err(_) => {
-                    let denom_metadata = deps.querier.query(&QueryRequest::Bank(
-                        cosmwasm_std::BankQuery::DenomMetadata {
-                            denom: denom.clone(),
-                        },
-                    ));
-
-                    let (name, symbol) = match denom_metadata {
-                        Ok(DenomMetadataResponse { metadata, .. }) => {
-                            (metadata.name, metadata.symbol)
-                        }
-                        _ => (denom.clone(), denom.clone()),
-                    };
-
-                    Ok(to_json_binary(&MetadataResponse { name, symbol })?)
-                }
-            },
         },
     }
 }

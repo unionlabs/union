@@ -11,6 +11,7 @@ version                = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
@@ -20,6 +21,7 @@ serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
+unionlabs                   = { workspace = true, features = ["schemars"] }
 
 [lints]
 workspace = true
