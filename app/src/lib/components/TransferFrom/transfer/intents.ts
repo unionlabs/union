@@ -81,6 +81,7 @@ export const createIntents = (
         ? "NO_QUOTE_AVAILABLE"
         : quoteToken.value.quote_token
     : null
+  console.log("quoteTokenDenom", quoteTokenDenom)
 
   // Own Wallet
   const ownWallet = (() => {
