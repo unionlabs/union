@@ -55,6 +55,7 @@ export type Chain = {
     address_url: string
   }>
   addr_prefix: string
+  features: ChainFeature["features"]
   assets: Array<ChainAsset>
   tokens: Array<ChainToken>
 }

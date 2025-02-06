@@ -56,6 +56,63 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
   }
 }
 
+// source: https://github.com/chainapsis/keplr-chain-registry/blob/main/cosmos/bbn-test.json
+export const babylonKeplrChaininfo: KeplrChainInfo = {
+  chainId: "bbn-test-5",
+  chainName: "Babylon Phase-2 Testnet",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+  rpc: "https://babylon-testnet-rpc.nodes.guru",
+  rest: "https://babylon-testnet-api.nodes.guru",
+  nodeProvider: {
+    name: "NodesGuru",
+    email: "security@nodes.guru",
+    website: "https://nodes.guru/"
+  },
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "bbn",
+    bech32PrefixAccPub: "bbnpub",
+    bech32PrefixValAddr: "bbnvaloper",
+    bech32PrefixValPub: "bbnvaloperpub",
+    bech32PrefixConsAddr: "bbnvalcons",
+    bech32PrefixConsPub: "bbnvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+      gasPriceStep: {
+        low: 0.007,
+        average: 0.007,
+        high: 0.01
+      }
+    }
+  ],
+  stakeCurrency: {
+    coinDenom: "BABY",
+    coinMinimalDenom: "ubbn",
+    coinDecimals: 6,
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png"
+  },
+  features: ["cosmwasm"]
+}
+
 //todo handle this for main-net
 export const unionLeapChainInfo: LeapExtendedInfo = {
   chainId: "union-testnet-9",
@@ -336,7 +393,8 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-9": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
-  "elgafar-1": elgafarKeplrChainInfo
+  "elgafar-1": elgafarKeplrChainInfo,
+  "bbn-test-5": babylonKeplrChaininfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {

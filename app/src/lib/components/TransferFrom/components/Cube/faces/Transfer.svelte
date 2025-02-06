@@ -11,7 +11,7 @@ import {
   type CosmosChainId
 } from "@unionlabs/client"
 import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
-import { type HttpTransport } from "viem"
+import { fromHex, type HttpTransport } from "viem"
 import { config, userAddrEvm } from "$lib/wallet/evm/config.ts"
 import { toast } from "svelte-sonner"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
@@ -159,6 +159,7 @@ const transfer = async () => {
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = getCosmosChainInfo(sourceChain.chain_id, connectedWallet)
 
+      toast.info("oof")
       if (chainInfo === null) {
         transferState.set({
           kind: "SWITCHING_TO_CHAIN",
@@ -198,10 +199,16 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           transport: http(`${rpcUrl}`),
           chainId: sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.025", denom: "ustars" } // TODO: don't hardcode
+          gasPrice: { amount: "0.025", denom: "ubbn" } // TODO: don't hardcode
         })
+        let realArgs = {
+          ...transferArgs,
+          baseToken: fromHex(transferArgs.baseToken, "string")
+        }
 
-        const transfer = await unionClient.transferAsset(transferArgs)
+        console.log("args", realArgs)
+        const transfer = await unionClient.transferAsset(realArgs)
+        console.log("output", transfer)
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
       } catch (error) {
