@@ -45,6 +45,8 @@ export {
 export {
   getCosmosHeight,
   queryContractState,
+  queryCosmosCW20AddressBalance,
+  queryCosmosC20TokenMetadata,
   getCosmosTransactionReceipt,
   getAptosAccountTransactions,
   getCosmosAccountTransactions

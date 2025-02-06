@@ -1,6 +1,9 @@
 import { ofetch } from "ofetch"
 import type { Prettify } from "../types.ts"
 import { Base64, Hex, Json } from "ox"
+import { ResultAsync, err, ok, type Result } from "neverthrow"
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { cosmosRpcs, type CosmosChainId } from "#cosmos/client.ts"
 
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"
@@ -34,6 +37,88 @@ type CosmosTransactionReceipt = {
       attributes: Array<{ key: string; value: string; index: boolean }>
     }>
   }
+}
+
+/**
+ * get the balance of a given address for a given cw20 contract
+ * @example
+ * ```ts
+ * const balance = await getCosmosCW20AddressBalance({
+ *   chainId: "bbn-test-5",
+ *   address: "bbn1xe0rnlh3u05qkwytkwmyzl86a0mvpwfxgf2t7u",
+ *   contractAddress: "bbn192gwgengt32um4qshvhg5f3prtey2g6xmyrmkd87xvy59elaw5vs504zeg",
+ * })
+ */
+export async function queryCosmosCW20AddressBalance({
+  address,
+  contractAddress,
+  chainId
+}: {
+  address: string
+  contractAddress: string
+  chainId: CosmosChainId
+}): Promise<Result<string, Error>> {
+  let rpc = cosmosRpcs[chainId] // as is valid bc of the check in the if statement.
+  let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
+    return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
+  })
+  if (publicClient.isErr()) return err(publicClient.error)
+
+  let client = publicClient.value
+  const balance = ResultAsync.fromPromise(
+    client.queryContractSmart(contractAddress, { balance: { address } }),
+    error => {
+      return new Error(`failed to query balance for contract ${contractAddress}`, { cause: error })
+    }
+  )
+
+  return balance.andThen(balance => ok(balance.balance))
+}
+
+/**
+ * get the metadata of a given cw20 contract
+ * @example
+ * ```ts
+ * const metadata = await queryCosmosC20TokenMetadata({
+ *   contractAddress: "bbn192gwgengt32um4qshvhg5f3prtey2g6xmyrmkd87xvy59elaw5vs504zeg",
+ *   chainId: "bbn-test-5"
+ * })
+ * ```
+ */
+export async function queryCosmosC20TokenMetadata({
+  contractAddress,
+  chainId
+}: {
+  contractAddress: string
+  chainId: CosmosChainId
+}): Promise<
+  Result<
+    {
+      name: string
+      symbol: string
+      decimals: number
+      total_supply: string
+    },
+    Error
+  >
+> {
+  let rpc = cosmosRpcs[chainId] // as is valid bc of the check in the if statement.
+  let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
+    return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
+  })
+  if (publicClient.isErr()) return err(publicClient.error)
+  let client = publicClient.value
+  const response = ResultAsync.fromPromise(
+    client.queryContractSmart(contractAddress, {
+      token_info: {}
+    }),
+    error => {
+      return new Error(`failed to query token info for contract ${contractAddress}`, {
+        cause: error
+      })
+    }
+  )
+  return response
 }
 
 const CW20_PREFIXES = [
