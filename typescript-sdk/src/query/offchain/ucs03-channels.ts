@@ -1,7 +1,7 @@
 import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
-import { createPublicClient, fromHex, http, isAddress, toHex } from "viem"
+import { createPublicClient, fromHex, http, isAddress, isHex, toHex, type Hex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
@@ -59,7 +59,7 @@ function isPositiveInteger(str: string): boolean {
 
 export const getQuoteToken = async (
   source_chain_id: string,
-  base_token: string,
+  base_token: Hex,
   channel: Channel
 ): Promise<
   Result<
@@ -112,7 +112,7 @@ export const getQuoteToken = async (
 
     let predictedQuoteToken = await ResultAsync.fromPromise(
       client.queryContractSmart(fromHex(`0x${channel.destination_port_id}`, "string"), {
-        predict_wrapped_denom: {
+        predict_wrapped_token: {
           path: "0",
           channel: channel.destination_channel_id,
           token: baseToken
@@ -121,13 +121,17 @@ export const getQuoteToken = async (
       error => {
         return new Error("failed to query predict wrapped denom", { cause: error })
       }
+    ).andThen(res =>
+      res?.wrapped_token && isHex(res?.wrapped_token) && res?.wrapped_token.length > 2
+        ? ok(res.wrapped_token)
+        : err(new Error(`no wrapped token in response: ${JSON.stringify(res)}`))
     )
 
     if (predictedQuoteToken.isErr()) {
       return err(predictedQuoteToken.error)
     }
 
-    return ok({ type: "NEW_WRAPPED", quote_token: toHex(predictedQuoteToken.value) })
+    return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value })
   }
 
   // evm quote token prediction

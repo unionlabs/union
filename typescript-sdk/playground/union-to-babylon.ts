@@ -1,4 +1,4 @@
-import { fromHex, http } from "viem"
+import { fromHex, http, toHex } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { createUnionClient, hexToBytes } from "#mod.ts"
@@ -8,6 +8,7 @@ import {
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { UserOperationRejectedByPaymasterError } from "node_modules/viem/_types/account-abstraction/errors/bundler"
 
 // hack to encode bigints to json
 declare global {
@@ -36,11 +37,13 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const STARS_DENOM = "muno"
+const MUNO_DENOM = "muno"
 const AMOUNT = 1n
-const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
+const RECEIVER = toHex("bbn1xe0rnlh3u05qkwytkwmyzl86a0mvpwfxgf2t7u")
 const SOURCE_CHAIN_ID = "union-testnet-9"
 const DESTINATION_CHAIN_ID = "bbn-test-5"
+
+const baseToken = toHex(MUNO_DENOM)
 
 const channels = await getRecommendedChannels()
 
@@ -52,7 +55,8 @@ if (channel === null) {
 
 consola.info("channel", channel)
 
-const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, STARS_DENOM, channel)
+consola.info("base token", baseToken)
+const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, baseToken, channel)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")
   consola.error(quoteToken.error)
@@ -78,7 +82,7 @@ const unionClient = createUnionClient({
 })
 
 const transfer = await unionClient.transferAsset({
-  baseToken: STARS_DENOM,
+  baseToken: MUNO_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,
