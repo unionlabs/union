@@ -36,13 +36,13 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const MUNO_DENOM = "union10y75w84ecnqwx4v8xdn00tppgxckxeu80n3nhy8qdt66slhrtevs789d4k"
+const CW20_DENOM = "union10y75w84ecnqwx4v8xdn00tppgxckxeu80n3nhy8qdt66slhrtevs789d4k"
 const AMOUNT = 12n
 const RECEIVER = toHex("bbn1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwplf2cja")
 const SOURCE_CHAIN_ID = "union-testnet-9"
 const DESTINATION_CHAIN_ID = "bbn-test-5"
 
-const baseToken = toHex(MUNO_DENOM)
+const baseToken = toHex(CW20_DENOM)
 
 const channels = await getRecommendedChannels()
 
@@ -82,7 +82,7 @@ const unionClient = createUnionClient({
 })
 
 const allowanceParams = {
-  contractAddress: MUNO_DENOM,
+  contractAddress: CW20_DENOM,
   amount: AMOUNT,
   spender: "union16ex34xjzhv729ygw2hyhdjdseemujesw2d73xgey3wc3mm36mc6s6ehah7" // found using read-contract-state.ts
 }
@@ -103,7 +103,7 @@ if (approveResponse.isErr()) {
 }
 
 const transfer = await unionClient.transferAsset({
-  baseToken: MUNO_DENOM,
+  baseToken: CW20_DENOM,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,
