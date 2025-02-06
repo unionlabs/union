@@ -44,6 +44,7 @@ export {
 } from "./utilities/address.ts"
 export {
   getCosmosHeight,
+  queryContractState,
   getCosmosTransactionReceipt,
   getAptosAccountTransactions,
   getCosmosAccountTransactions
