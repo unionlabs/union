@@ -148,6 +148,7 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
+    #[instrument(skip_all, fields(%from, %to))]
     async fn find_highest_update_height(&self, from: Height, to: Height) -> Height {
         let sort = |mut validators: Vec<Validator>| {
             validators.sort_by(|a, b| {
@@ -193,6 +194,8 @@ impl Module {
         while low < high {
             let mid = Height::new((low.height() + high.height()) / 2);
 
+            info!("fetching between {low} and {high}, mid = {mid}");
+
             // 1. fetch commit
             let signed_header = self
                 .cometbft_client
@@ -230,6 +233,8 @@ impl Module {
                     }
                 }
             }
+
+            info!(%trusted_power, %trusted_power_threshold);
 
             // 3. ensure trusted power is higher than threshold
             if trusted_power > trusted_power_threshold {
@@ -308,7 +313,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 update_from,
                 update_to,
             }) => {
-                if update_from == update_to {
+                if update_from.height() == update_to.height() {
+                    info!("update from {update_from} to {update_to} is a noop");
                     return Ok(noop());
                 }
 
