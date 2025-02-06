@@ -97,6 +97,7 @@ let processedTransfers = derived(
                   {#if transfer.base_amount && transfer.base_token}
                     <Token
                       expanded="true"
+                      highlightEnabled={false}
                       amount={transfer.base_amount}
                       denom={transfer.base_token}
                       chainId={transfer.source_chain_id}
@@ -106,6 +107,7 @@ let processedTransfers = derived(
                   {#if "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
                     <Token
                       expanded="true"
+                      highlightEnabled={false}
                       amount={transfer.quote_amount}
                       denom={transfer.quote_token}
                       chainId={transfer.destination_chain_id}
@@ -123,11 +125,11 @@ let processedTransfers = derived(
             <section class="flex flex-col lg:flex-row justify-between gap-8">
               <div class="flex-col text-muted-foreground">
                 <DetailsHeading>Sender</DetailsHeading>
-                <Address showRaw address={transfer.sender_normalized} {chains} chainId={transfer.source_chain_id}  />
+                <Address highlightEnabled={false} showRaw address={transfer.sender_normalized} {chains} chainId={transfer.source_chain_id}  />
               </div>
               <div class="lg:text-right flex-col text-muted-foreground">
                 <DetailsHeading>Receiver</DetailsHeading>
-                <Address showRaw address={transfer.receiver_normalized} {chains} chainId={transfer.destination_chain_id}  />
+                <Address highlightEnabled={false} showRaw address={transfer.receiver_normalized} {chains} chainId={transfer.destination_chain_id}  />
               </div>
             </section>
           </Card.Content>

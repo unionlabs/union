@@ -18,6 +18,8 @@ export let denom: string
 export let amount: string | number | bigint | null = null
 export let userAmount: string | null = null
 export let expanded = false
+export let highlightEnabled = true
+export let showWrapping = true
 
 let tokenInfo = derived(
   tokenInfos,
@@ -52,8 +54,9 @@ onMount(() => {
       {#if userAmount !== null}
         {userAmount}
       {/if}
-      <span class={cn("inline-flex gap-1 transition-colors", $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate
+      <span class={cn("inline-flex gap-1", highlightEnabled && $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate
               value={token.combined.symbol} type="symbol"/></b>
+              {#if showWrapping}
     <div class="text-muted-foreground text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
@@ -62,7 +65,7 @@ onMount(() => {
         chains,
       )}
       {/each}
-    </div></span>
+    </div>{/if}</span>
     </div>
     {#if expanded}
       <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
