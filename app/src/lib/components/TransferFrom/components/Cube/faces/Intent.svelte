@@ -5,14 +5,13 @@ import { Button } from "$lib/components/ui/button"
 import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
-import LoadingDots from "$lib/components/loading-dots.svelte"
 import Token from "$lib/components/token.svelte"
 import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
 import Address from "$lib/components/address.svelte"
-import type { Intents, TransferArgs } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
 import type { Chain } from "$lib/types.ts"
-import type { Readable } from "svelte/store"
+import TokenBalance from "$lib/components/TransferFrom/components/TokenBalance.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -39,6 +38,7 @@ export let rotateTo: Props["rotateTo"]
       <Direction {rawIntents} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
                  getDestinationChain={() => rotateTo("destinationFace")}/>
       <SelectedAsset {intents} {validation} {rawIntents} {chains} onSelectAsset={() => rotateTo("assetsFace")}/>
+      <TokenBalance {rawIntents} {intents} />
       <div class="flex flex-col gap-1 items-start">
         <Input
                 id="amount"
@@ -57,16 +57,18 @@ export let rotateTo: Props["rotateTo"]
                 class="p-1 {validation.errors.amount ? 'border-red-500' : ''}"
                 value={$rawIntents.amount}
                 on:input={(event) => {
-                      const input = event.currentTarget;
-                      const value = input.value;
-                      // Only allow numbers and a single decimal point
-                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                        rawIntents.updateField('amount', event);
-                      } else {
-                        // If invalid input, revert to previous valid value
-                        input.value = $rawIntents.amount;
-                      }
-                    }}
+                  const input = event.currentTarget;
+                  const value = input.value;
+                  if (value === '' || (/^\d*\.?\d*$/.test(value) &&
+                      (value.includes('.')
+                        ? value.split('.')[1].length <= (intents.baseTokenInfo?.combined.decimals ?? 0)
+                        : true)
+                  )) {
+                    rawIntents.updateField('amount', event);
+                  } else {
+                    input.value = $rawIntents.amount;
+                  }
+                }}
         />
         {#if validation.errors.amount}
           <span class="text-red-500 text-sm">{validation.errors.amount}</span>
