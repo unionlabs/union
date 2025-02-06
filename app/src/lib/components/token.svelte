@@ -20,6 +20,7 @@ export let userAmount: string | null = null
 export let expanded = false
 export let highlightEnabled = true
 export let showWrapping = true
+export let stackedView = false
 
 let tokenInfo = derived(
   tokenInfos,
@@ -57,6 +58,7 @@ onMount(() => {
       <span class={cn("inline-flex gap-1", highlightEnabled && $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b><Truncate
               value={token.combined.symbol} type="symbol"/></b>
               {#if showWrapping}
+    {#if !stackedView}
     <div class="text-muted-foreground text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
@@ -65,8 +67,19 @@ onMount(() => {
         chains,
       )}
       {/each}
-    </div>{/if}</span>
+    </div>{/if}{/if}</span>
     </div>
+    {#if stackedView}
+    <div class="text-muted-foreground text-xs flex gap-1 items-center -mt-1">
+      {toDisplayName(chainId, chains)}
+      {#each token.combined.wrapping as wrapping}
+        <ArrowLeftIcon/>{toDisplayName(
+        wrapping.unwrapped_chain.chain_id,
+        chains,
+      )}
+      {/each}
+      </div>
+    {/if}
     {#if expanded}
       <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
         <section>
