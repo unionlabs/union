@@ -61,3 +61,4 @@ $: filteredTokens =
       </button>
     {/each}
   </div>
+</div>
