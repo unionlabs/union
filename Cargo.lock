@@ -13415,7 +13415,6 @@ dependencies = [
  "cometbls-light-client-types",
  "enumorph",
  "galois-rpc",
- "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
