@@ -15,6 +15,7 @@ import { checkValidation } from "$lib/components/TransferFrom/transfer/validatio
 import { createIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
 import { balances } from "$lib/stores/balances.ts"
 import { tokenInfos } from "$lib/stores/tokens.ts"
+import { fromHex, type Hex } from "viem"
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -47,8 +48,16 @@ const quoteToken = derived(
     if (!channel) {
       return
     }
+    const sourceChain = chains.find(c => c.chain_id === $source)
 
-    getQuoteToken($source, $asset, channel).then(quote => set(quote))
+    if (!sourceChain) {
+      console.error("invalid source chain in quote token calculation")
+      return
+    }
+
+    const ass = sourceChain.rpc_type === "cosmos" ? fromHex($asset as Hex, "string") : $asset
+
+    getQuoteToken($source, ass, channel).then(quote => set(quote))
   },
   null
 )

@@ -159,7 +159,6 @@ const transfer = async () => {
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = getCosmosChainInfo(sourceChain.chain_id, connectedWallet)
 
-      toast.info("oof")
       if (chainInfo === null) {
         transferState.set({
           kind: "SWITCHING_TO_CHAIN",
