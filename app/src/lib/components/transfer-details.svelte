@@ -1,4 +1,6 @@
 <script lang="ts">
+import { Switch } from "$lib/components/ui/switch"
+import { Label } from "$lib/components/ui/label"
 import { page } from "$app/stores"
 import request from "graphql-request"
 import { transfersBySourceHashBaseQueryDocument } from "$lib/graphql/queries/transfer-details.ts"
@@ -8,7 +10,7 @@ import { URLS } from "$lib/constants"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { derived } from "svelte/store"
+import { derived, writable } from "svelte/store"
 import { raise } from "$lib/utilities"
 import Trace from "$lib/components/trace.svelte"
 import type { Chain } from "$lib/types"
@@ -19,6 +21,7 @@ import { formatUnits } from "viem"
 import PacketPath from "./packet-path.svelte"
 import Token from "./token.svelte"
 import Address from "./address.svelte"
+import { showTokenDetails } from "$lib/stores/user"
 
 // prefix a source with 0x if not there for cosmos tx hashes
 const source = $page.params.source.startsWith("0x")
@@ -91,31 +94,28 @@ let processedTransfers = derived(
             />
           </Card.Header>
           <Card.Content class="flex flex-col gap-8">
-            <section class="flex justify-between">
-              <div>
-                <div class="flex flex-col gap-6">
-                  {#if transfer.base_amount && transfer.base_token}
-                    <Token
-                      expanded="true"
-                      highlightEnabled={false}
-                      amount={transfer.base_amount}
-                      denom={transfer.base_token}
-                      chainId={transfer.source_chain_id}
-                      {chains}
-                    />
-                  {/if}
-                  {#if "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
-                    <Token
-                      expanded="true"
-                      highlightEnabled={false}
-                      amount={transfer.quote_amount}
-                      denom={transfer.quote_token}
-                      chainId={transfer.destination_chain_id}
-                      {chains}
-                    />
-                  {/if}
-                </div>
-              </div>
+            <section class={cn(!$showTokenDetails ? "items-center text-xl" : "", "flex flex-col gap-6")}>
+              {#if transfer.base_amount && transfer.base_token}
+                <Token
+                  expanded={$showTokenDetails}
+                  showWrapping={$showTokenDetails}
+                  highlightEnabled={false}
+                  amount={transfer.base_amount}
+                  denom={transfer.base_token}
+                  chainId={transfer.source_chain_id}
+                  {chains}
+                />
+              {/if}
+              {#if $showTokenDetails && "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
+                <Token
+                  expanded={$showTokenDetails}
+                  highlightEnabled={false}
+                  amount={transfer.quote_amount}
+                  denom={transfer.quote_token}
+                  chainId={transfer.destination_chain_id}
+                  {chains}
+                />
+              {/if}
             </section>
 
             <section>

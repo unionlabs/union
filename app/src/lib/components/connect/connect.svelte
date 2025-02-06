@@ -12,8 +12,7 @@ import { Switch } from "$lib/components/ui/switch"
 import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
-import { showUnsupported } from "$lib/stores/user.ts"
-import { crtEffectEnabled } from "$lib/stores/user.ts"
+import { crtEffectEnabled, showTokenDetails } from "$lib/stores/user.ts"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
@@ -131,8 +130,8 @@ $: if ($navigating) sheetOpen = false
       onDisconnectClick={cosmosStore.disconnect}
     />
     <div class="flex items-center space-x-2">
-      <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
-      <Label for="unsupported-assets">Show unverified assets</Label>
+      <Switch bind:checked={$showTokenDetails} id="show-token-details" />
+      <Label for="show-token-details">Show Token Details</Label>
     </div>
     <div class="mt-auto flex justify-between">
       <div class="flex items-center space-x-2">

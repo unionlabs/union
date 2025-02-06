@@ -13,5 +13,6 @@ function persistStore<T>(key: string, initial: T) {
   return store
 }
 
-export const showUnsupported = persistStore("show-unsupported", true)
+export const showUnsupported = persisted("show-unsupported", true)
 export const crtEffectEnabled = persisted("crt-effect-enabled", true)
+export const showTokenDetails = persisted("show-token-details", false)
