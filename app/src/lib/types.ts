@@ -45,7 +45,7 @@ export type Chain = {
   enabled: boolean
   enabled_staging: boolean
   relayer_status: {
-    status: string,
+    status: string
     message: string
   }
   rpc_type: "evm" | "cosmos" | "aptos"
