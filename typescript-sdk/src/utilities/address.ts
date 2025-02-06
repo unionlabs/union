@@ -72,6 +72,25 @@ export function isValidBech32Address(address: unknown): address is Bech32Address
 }
 
 /**
+ * check if a string is a valid bech32 contract address
+ * @example
+ * ```ts
+ * isValidBech32ContractAddress("union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sgf2v9u")
+ * ```
+ */
+export function isValidBech32ContractAddress(address: unknown): address is Bech32Address {
+  if (typeof address !== "string") return false
+
+  try {
+    const { prefix: _, words } = bech32.decode(address as Bech32Address)
+    // Contract addresses can have variable lengths, we just verify it's a valid bech32 encoding
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * truncate an address to a given length
  * @example
  * ```ts

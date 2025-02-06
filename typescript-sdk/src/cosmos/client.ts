@@ -1,7 +1,8 @@
 import {
   cosmwasmTransfer,
   cosmwasmTransferSimulate,
-  cosmosSameChainTransferSimulate
+  cosmosSameChainTransferSimulate,
+  ibcTransferSimulate
 } from "./transfer.ts"
 import { err, type Result } from "neverthrow"
 import { generateSalt, timestamp } from "../utilities/index.ts"
@@ -13,19 +14,22 @@ import type {
   TransferAssetParameters,
   TransferAssetsParametersLegacy
 } from "../types.ts"
+import { isValidBech32ContractAddress } from "#mod.ts"
 
 export const cosmosChainId = [
   "elgafar-1",
   "osmo-test-5",
   "union-testnet-9",
   "stride-internal-1",
-  "bbn-test-5"
+  "bbn-test-5",
+  "union-testnet-8"
 ] as const
 
 export const cosmosRpcs: Record<CosmosChainId, string> = {
   "elgafar-1": "https://rpc.elgafar-1.stargaze.chain.kitchen",
   "osmo-test-5": "https://rpc.osmo-test-5.osmosis.chain.kitchen",
   "union-testnet-9": "https://rpc.union-testnet-9.union.chain.kitchen",
+  "union-testnet-8": "https://rpc.union-testnet-8.union.chain.kitchen",
   "stride-internal-1": "https://rpc.stride-internal-1.stride.chain.kitchen",
   "bbn-test-5": "https://rpc.bbn-test-5.babylon.chain.kitchen"
 }
@@ -79,79 +83,43 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 salt: generateSalt()
               }
             },
-            funds: [{ amount: baseAmount.toString(), denom: baseToken }]
+            // If we are sending a CW20 (which is a valid bech32 address), then we do not need to attach native funds
+            funds: isValidBech32ContractAddress(baseToken)
+              ? []
+              : [{ amount: baseAmount.toString(), denom: baseToken }]
           }
         ]
       })
     },
-
-    transferAssetLegacy: async ({
-      memo: _memo,
+    cw20IncreaseAllowance: async ({
+      contractAddress,
       amount,
-      receiver,
-      denomAddress,
-      destinationChainId,
-      relayContractAddress,
+      spender,
       account = parameters.account,
       gasPrice = parameters.gasPrice
-    }: TransferAssetsParametersLegacy<CosmosChainId>): Promise<Result<string, Error>> => {
-      const sourceChainId = parameters.chainId
+    }: {
+      contractAddress: string
+      amount: bigint
+      spender: string
+      account?: OfflineSigner
+      gasPrice?: { amount: string; denom: string }
+    }): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
-
       if (!rpcUrl) return err(new Error("No cosmos RPC URL found"))
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      // if (sourceChainId === destinationChainId) {
-      //   const transfer = await cosmosSameChainTransfer({
-      //     rpcUrl,
-      //     account,
-      //     gasPrice,
-      //     receiver,
-      //     asset: { denom: denomAddress, amount: amount.toString() }
-      //   })
-      //   return transfer
-      // }
-
-      const stamp = timestamp()
-      const chainDetails = await getHubbleChainDetails({
-        sourceChainId,
-        destinationChainId
-      })
-
-      if (chainDetails.isErr()) return err(chainDetails.error)
-
-      const sourceChannel = chainDetails.value.sourceChannel
-      relayContractAddress ??= chainDetails.value.relayContractAddress
-
-      if (!sourceChannel) return err(new Error("Source channel not found"))
-      if (!relayContractAddress) return err(new Error("Relay contract address not found"))
-
-      const transfer = await cosmwasmTransfer({
+      return await cosmwasmTransfer({
         account,
         rpcUrl,
         gasPrice,
         instructions: [
           {
-            contractAddress: relayContractAddress,
-            msg: {
-              transfer: {
-                channel_id: sourceChannel,
-                receiver: receiver,
-                base_token: denomAddress,
-                base_amount: amount,
-                quote_token: "0x9EC5e8b3509162D12209A882e42A6A4Fd1751A84", // TODO: don't hardcode
-                quote_amount: amount,
-                timeout_height: 1000000000,
-                timeout_timestamp: 0,
-                salt: generateSalt()
-              }
-            },
-            funds: [{ amount: amount.toString(), denom: denomAddress }]
+            contractAddress,
+            msg: { increase_allowance: { spender, amount: amount.toString() } }
           }
         ]
       })
-      return transfer
     },
     simulateTransaction: async ({
       memo,
@@ -227,6 +195,32 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           ]
         })
       }
+
+      if (destinationChainId === "union-testnet-8") {
+        if (!sourceChannel) return err(new Error("Source channel not found"))
+        const [account_] = await account.getAccounts()
+        if (!(account && account_?.address)) return err(new Error("No account found"))
+
+        const stamp = timestamp()
+
+        return await ibcTransferSimulate({
+          gasPrice,
+          account,
+          rpcUrl,
+          messageTransfers: [
+            {
+              sourceChannel: sourceChannel.toString(),
+              sourcePort: "transfer",
+              sender: account_.address,
+              token: { denom: denomAddress, amount: amount.toString() },
+              timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
+              receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+              memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+            }
+          ]
+        })
+      }
+
       return err(new Error("Unsupported network"))
     }
   }))

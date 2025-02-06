@@ -38,7 +38,7 @@ const cliArgs = parseArgs({
 const PRIVATE_KEY = cliArgs.values["private-key"]
 const MUNO_DENOM = "muno"
 const AMOUNT = 12n
-const RECEIVER = toHex("bbn1xe0rnlh3u05qkwytkwmyzl86a0mvpwfxgf2t7u")
+const RECEIVER = toHex("bbn1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwplf2cja")
 const SOURCE_CHAIN_ID = "union-testnet-9"
 const DESTINATION_CHAIN_ID = "bbn-test-5"
 
