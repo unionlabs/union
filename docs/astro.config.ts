@@ -201,6 +201,27 @@ export default defineConfig({
                   label: "Apps",
                   items: [
                     {
+                      label: "New Chain",
+                      items: [
+                        {
+                          label: "Overview",
+                          link: "/connect/new-chain/overview"
+                        }
+                        // {
+                        //   label: "EVM",
+                        //   link: "/connect/new-chain/evm"
+                        // },
+                        // {
+                        //   label: "CosmWasm",
+                        //   link: "/connect/new-chain/cosmwasm"
+                        // },
+                        // {
+                        //   label: "Move",
+                        //   link: "/connect/new-chain/move"
+                        // }
+                      ]
+                    },
+                    {
                       label: "Asset Transfer",
                       items: [
                         {
@@ -228,10 +249,6 @@ export default defineConfig({
                     // }
                   ]
                 }
-                // {
-                //   label: "New Chain",
-                //   link: "/connect/new-chain"
-                // }
               ]
             },
             {
@@ -239,32 +256,6 @@ export default defineConfig({
               autogenerate: {
                 directory: "/concepts"
               }
-            },
-            {
-              label: "Connect",
-              items: [
-                {
-                  label: "New Chain",
-                  items: [
-                    {
-                      label: "Overview",
-                      link: "/connect/new-chain/overview"
-                    },
-                    {
-                      label: "EVM",
-                      link: "/connect/new-chain/evm"
-                    },
-                    {
-                      label: "CosmWasm",
-                      link: "/connect/new-chain/cosmwasm"
-                    },
-                    {
-                      label: "Move",
-                      link: "/connect/new-chain/move"
-                    }
-                  ]
-                }
-              ]
             },
             {
               label: "Infrastructure",
