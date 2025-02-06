@@ -1,0 +1,59 @@
+---
+title: "Connect an EVM Chain"
+---
+
+import { Tabs, LinkCard, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
+
+Connecting a new CosmWasm chain is easy and can be done in four simple steps documented here:
+
+<Steps>
+1. Upload `ibc-core` and `light-client` contracts.
+2. Configure the [Voyager](/architecture/voyager/overview) relayer.
+3. Open the connection.
+4. Send assets and data.
+</Steps>
+
+## Upload IBC Core and Light Clients
+
+Deployment of the Union EVM stack is fully automated. You can add a chain definition, and Union will generate deployment scripts for you. 
+
+<Steps>
+1. Clone `unionlabs/union`:
+
+   ```bash
+   git clone git@github.com:unionlabs/union
+   ```
+
+2. Add your chains configuration to [`evm/evm.nix`](https://github.com/unionlabs/union/blob/a408b8344d6c90791825e837d2be350809213695/evm/evm.nix#L214C9-L219C10). For example:
+
+   ```nix
+   {
+     network = "holesky";
+     rpc-url = "https://1rpc.io/holesky";
+     private-key = ''"$1"'';
+     extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+   }
+   ```
+
+3. Use the gernated reproducible deployment script.
+
+   ```bash
+   nix run github:unionlabs/union#eth-deploy-$NETWORK-full
+   ```
+   for example, if your network is `"holesky"` above, it will be:
+
+   ```bash
+   nix run github:unionlabs/union#eth-deploy-holesky-full $EVM_PRIVKEY $ETHERSCAN_API_KEY
+   ```
+
+   Providing an Etherscan API key is optional, but highly recommended as it will verify the uploaded contracts for you.
+</Steps>
+
+
+## Configure Voyager
+
+TODO
+
+## Open the Connection
+
+TODO

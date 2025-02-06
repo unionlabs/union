@@ -176,9 +176,23 @@ export default defineConfig({
             },
             {
               label: "Architecture",
-              autogenerate: {
-                directory: "/architecture"
-              }
+              items: [
+                {
+                  label: "CometBLS",
+                  link: "/architecture/cometbls"
+                },
+                {
+                  label: "Galois",
+                  link: "/architecture/galois"
+                },
+                {
+                  label: "Voyager",
+                  items: [
+                    { label: "Overview", link: "/architecture/voyager/overview" },
+                    { label: "Concepts", link: "/architecture/voyager/concepts" }
+                  ]
+                }
+              ]
             },
             {
               label: "Connect",
@@ -186,6 +200,27 @@ export default defineConfig({
                 {
                   label: "Apps",
                   items: [
+                    {
+                      label: "New Chain",
+                      items: [
+                        {
+                          label: "Overview",
+                          link: "/connect/new-chain/overview"
+                        }
+                        // {
+                        //   label: "EVM",
+                        //   link: "/connect/new-chain/evm"
+                        // },
+                        // {
+                        //   label: "CosmWasm",
+                        //   link: "/connect/new-chain/cosmwasm"
+                        // },
+                        // {
+                        //   label: "Move",
+                        //   link: "/connect/new-chain/move"
+                        // }
+                      ]
+                    },
                     {
                       label: "Asset Transfer",
                       items: [
@@ -214,10 +249,6 @@ export default defineConfig({
                     // }
                   ]
                 }
-                // {
-                //   label: "New Chain",
-                //   link: "/connect/new-chain"
-                // }
               ]
             },
             {

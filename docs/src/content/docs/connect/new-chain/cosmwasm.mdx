@@ -1,0 +1,332 @@
+---
+title: "Connect a CosmWasm Chain"
+description: "Connecting a CosmWasm chain to Union"
+template: doc
+---
+
+import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
+
+Connecting a new CosmWasm chain is easy and can be done in four simple steps documented here:
+
+<Steps>
+1. Upload `ibc-union` and `light-client` contracts.
+2. Configure the [Voyager](/architecture/voyager/overview) relayer.
+3. Create clients.
+3. Open the connection.
+4. Open the channel.
+5. Send assets and data.
+</Steps>
+
+## Upload ibc-union and Light Clients
+
+You'll need to upload two contracts:
+
+- [ibc-union](https://github.com/unionlabs/union/tree/main/cosmwasm/ibc-union/core): Union's modular IBC stack.
+- [cometbls-light-client](https://github.com/unionlabs/union/tree/main/cosmwasm/ibc-union/light-clients/cometbls): Light-client tracking [CometBLS](/architecture/cometbls) consensus.
+
+
+To upload [CosmWasm](https://cosmwasm.com/) contracts to your Cosmos chain, you need your chain's binary. We'll use `starsd` in this example. 
+
+
+```sh
+mkdir ./starsd-home
+./starsd init --chain-id elgafar-1 --home ./starsd-home $MONIKER
+./starsd keys add $KEY_NAME --home ./starsd-home
+# this will give you your address: stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4
+```
+
+### Upload & Deploy ibc-union
+
+Before anything else, the `ibc-union` contract needs to be deployed on the new chain, in this case: Stargaze.
+
+<Steps>
+0. Build ibc-union
+   ```sh
+   nix build github:unionlabs/union#ibc-union -L
+   ```
+1. Upload ibc-union
+   ```sh
+   ./starsd tx wasm store ./contracts/union_ibc.wasm
+     --from $KEY_NAME \
+     --home ./starsd-home \
+     --gas auto \
+     --gas-adjustment 1.4 \
+     --gas-prices 1ustars \
+     --node $STARGAZE_RPC_URL \
+     --chain-id elgafar-1 \
+     -y
+   # => tx_hash: C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977
+   ```
+2. Query ibc-union's code_id
+   ```sh
+   ./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 \
+     --node $STARGAZE_RPC_URL
+   # => code_id: 5011
+   ```
+3. Instantiate ibc-union
+   ```sh
+   ./starsd tx wasm instantiate 5011 '{}' \
+     --node $STARGAZE_RPC_URL \
+     --home ./starsd-home \
+     --from $KEY_NAME \
+     --gas auto \
+     --gas-adjustment 1.4 \
+     --gas-prices 1ustars \
+     --label ibc-union-1 \
+     --admin stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4 \
+     --chain-id elgafar-1 \
+     -y
+   # => txhash: D3E0D991E3874C83B43E0828C693F8E0A1E2A8C8CB518DFFF2F5F87FB6E1A7BC
+   ```
+   :::note
+   `stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4` is only an example address, please use the address associated with your `KEY_NAME`
+   :::
+4. Query the ibc-union contract address
+   ```sh
+   ./starsd query tx D3E0D991E3874C83B43E0828C693F8E0A1E2A8C8CB518DFFF2F5F87FB6E1A7BC \
+     --node $STARGAZE_RPC_URL
+   # => contract_address: stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm
+   ```
+</Steps>
+
+### Upload and deploy Light Clients
+
+A client will need to be created on both the new chain and Union. A CometBLS client will be deployed to the new chain to track Union. Then, in this example, a Tendermint client will be deployed onto Union to track the new chain.
+
+First, deploy the contract to the new chain, in this case: Stargaze.
+
+<Steps>
+0. Build cosmwasm-light-client
+    ```sh
+    nix build github:unionlabs/union#cometbls-light-client -L
+    ```
+1. Upload `cometbls-light-client` contract
+    ```sh
+    ./starsd tx wasm store ./contracts/cometbls_light_client.wasm \
+      --from $KEY_NAME \
+      --home ./starsd-home \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      --node $STARGAZE_RPC_URL \
+      --chain-id elgafar-1 \
+      -y
+    # => tx_hash: 187227FF10BA93B75063C9E72FBB188FA6403F43CFA80346DFC1B2F268C7C022
+    ```
+2. Query `cometbls-light-client` code_id
+    ```sh
+    ./starsd query tx 187227FF10BA93B75063C9E72FBB188FA6403F43CFA80346DFC1B2F268C7C022 \
+      --node $STARGAZE_RPC_URL
+    # => code_id: 5012
+    ```
+3. Instantiate `cometbls-light-client`, specifying the ibc-union address
+    ```sh
+    ./starsd tx wasm instantiate 5012 '{"ibc_host": "stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm"}' \
+      --node $STARGAZE_RPC_URL \
+      --home ./starsd-home \
+      --from $KEY_NAME \
+      --gas auto
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      --label cosmwasm-union-testnet-9-1 \
+      --admin stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4 \
+      --chain-id elgafar-1 \
+      -y
+    # => tx_hash: 7B6874CD6D68B735230E4F4F5C80BC92CF1AF690605C799569C01CCB7C403019
+    ```
+    :::note
+    `stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4` is only an example address, please use the address associated with your `KEY_NAME`
+    :::
+4. Query the `cometbls-light-client` contract address
+    ```sh
+    ./starsd query tx 7B6874CD6D68B735230E4F4F5C80BC92CF1AF690605C799569C01CCB7C403019 \
+      --node $STARGAZE_RPC_URL
+    # => contract_address: stars16khctrjjnm5nn5503hhqlcu7h4pngzpzc5g3d4ej25pz47eqsnjqdctmt7
+    ````
+</Steps>
+
+Now deploy a new client on Union.
+
+<Steps>
+0. Build tendermint-light-client
+    ```sh
+    nix build github:unionlabs/union#tendermint-light-client -L
+    ```
+1. Upload `tendermint-light-client` contract
+    ```sh
+    ./uniond tx wasm store ./contracts/tendermint_light_client.wasm \
+      --from $KEY_NAME \
+      --home ./union-home \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1muno \
+      --node $UNION_RPC_URL \
+      --chain-id union-testnet-9 \
+      -y
+    # => tx_hash: 187227FF10BA93B75063C9E72FBB188FA6403F43CFA80346DFC1B2F268C7C022
+    ```
+2. Query `tendermint-light-client` code_id
+    ```sh
+    ./uniond query tx 187227FF10BA93B75063C9E72FBB188FA6403F43CFA80346DFC1B2F268C7C022 \
+      --node $UNION_RPC_URL
+    # => code_id: 5012
+    ```
+3. Instantiate `tendermint-light-client`, specifying the ibc-union address
+    ```sh
+    ./uniond tx wasm instantiate 5012 '{"ibc_host": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"}' \
+      --node $UNION_RPC_URL \
+      --home ./union-home \
+      --from $KEY_NAME \
+      --gas auto
+      --gas-adjustment 1.4 \
+      --gas-prices 1muno \
+      --label tendermint-elgafar-1-1 \
+      --admin union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2 \
+      --chain-id union-testnet-1 \
+      -y
+    # => tx_hash: 7B6874CD6D68B735230E4F4F5C80BC92CF1AF690605C799569C01CCB7C403019
+    ```
+    :::note
+    `union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2` is only an example address, please use the address associated with your `KEY_NAME`
+    :::
+4. Query the `tendermint-light-client` contract address
+    ```sh
+    ./uniond query tx 7B6874CD6D68B735230E4F4F5C80BC92CF1AF690605C799569C01CCB7C403019 \
+      --node $UNION_RPC_URL
+    # => contract_address: union16khctrjjnm5nn5503hhqlcu7h4pngzpzc5g3d4ej25pz47eqsnjqdctmt7
+    ````
+</Steps>
+
+## Configure Voyager
+
+If you're not relying on an existing relayer or if you're expanding an existing relayer to handle this connection, you may need to reconfigure Voyager. Setting up Voyager is outside the scope of this tutorial, but you can find an example configuration below.
+
+[Voyager config](/voyager-example-config.jsonc)
+
+## Create Light Clients with ibc-union
+
+Next, the light client types will need to be registered with `ibc-union` on each chain, then the clients can be created within `ibc-union`.
+:::note
+While you may need to create multiple clients of the same type on a chain, you only need to register the client type once per `ibc-union` deployment. Attempting to register the client type again will result in an error.
+:::
+
+First, register and create the CometBLS client on Stargaze.
+
+<Steps>
+1. Register the `cometbls-light-client` to `ibc-union`:
+    ```sh
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"register_client":{"client_type":"cometbls","client_address":"stars16khctrjjnm5nn5503hhqlcu7h4pngzpzc5g3d4ej25pz47eqsnjqdctmt7"}}' \
+      --home ./starsd-home \
+      --node $STARGAZE_RPC_URL \
+      --chain-id elgafar-1 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      -y
+    ```
+2. Create the `cometbls-light-client` with `ibc-union` on Stargaze.
+
+   The values for `client_state_bytes` and `consensus_state_bytes` can be obtained from Voyager with the client-bootstrap module.
+    ```sh
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"create_client":{"client_type":"cometbls","client_state_bytes":"","consensus_state_bytes":"","relayer":""}}' \
+      --home ./starsd-home \
+      --node $STARGAZE_RPC_URL \
+      --chain-id elgafar-1 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      -y
+    ```
+3. Query the transaction result to confirm success and find the client ID.
+    ```sh
+    ./starsd query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 \
+      --node $STARGAZE_RPC_URL
+    # client_id: 2
+    ```
+</Steps>
+
+Now, register and create the Tendermint client on Union.
+
+<Steps>
+1. Register the `tendermint-light-client` to `ibc-union`:
+    ```sh
+    ./union tx wasm execute union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme '{"register_client":{"client_type":"tendermint","client_address":"union16khctrjjnm5nn5503hhqlcu7h4pngzpzc5g3d4ej25pz47eqsnjqdctmt7"}}' \
+      --home ./union-home \
+      --node $UNION_RPC_URL \
+      --chain-id union-testnet-9 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1muno \
+      -y
+    ```
+2. Create the `tendermint-light-client` with `ibc-union` on Union.
+
+   The values for `client_state_bytes` and `consensus_state_bytes` can be obtained from Voyager with the client-bootstrap module.
+    ```sh
+    ./uniond tx wasm execute union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme '{"create_client":{"client_type":"tendermint","client_state_bytes":"","consensus_state_bytes":"","relayer":""}}' \
+      --home ./union-home \
+      --node $UNION_RPC_URL \
+      --chain-id union-testnet-9 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1muno \
+      -y
+    ```
+3. Query the transaction result to confirm success and find the client ID.
+    ```sh
+    ./uniond query tx C6D45BE9A40F92D82E94C0B4D2AFA48812A9FE28E5761700E496ED29F8D53977 \
+      --node $UNION_RPC_URL
+    # client_id: 12
+    ```
+</Steps>
+
+## Open the Connection
+
+The connection ceremony can now begin.
+
+
+<Steps>
+1. To initiate the ceremony, send a `connection_open_init` message from Stargaze to Union.
+    The `client_id` should be the client ID from Stargaze and the `counterparty_client_id` should be the client ID from Union.
+    ```sh
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"connection_open_init":{"client_id":"2","counterparty_client_id":"12","relayer":""}}' \
+      --home ./union-home \
+      --node $STARGAZE_RPC_URL \
+      --chain-id union-testnet-9 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1muno \
+      -y
+    ```
+2. This will trigger a sequence of events that will eventually complete the connection ceremony (`connection_open_try`, `connection_open_ack`, and `connection_open_confirm`).
+
+    :::note
+    If a voyager instance is not already tracking both networks, the remainder of the messages will need to be sent manually. This includes `connection_open_try`, `connection_open_ack`, and `connection_open_confirm`.
+    :::
+</Steps>
+
+## Open the Channel
+
+With a connection established, the two networks are now connected. You will still need to create a channel before sending messages between the networks.
+
+<Steps>
+1. Start the channel opening ceremony with a `channel_open_init` message.
+    The `port_id` should be the address of the ibc-union contract on Stargaze while the `counterparty_port_id` should be the address of ibc-union on Union.
+    ```sh
+    ./starsd tx wasm execute stars1s0x3yq0pmltxq56f4yppgmd02ret3uj5k9ftj6ug9c7lc379sw7qv396zm '{"channel_open_init":{"port_id":"","counterparty_port_id":"","connection_id":"","version":"","relayer":""}}' \
+      --home ./starsd-home \
+      --node $UNION_RPC_URL \
+      --chain-id elgafar-1 \
+      --from $KEY_NAME \
+      --gas auto \
+      --gas-adjustment 1.4 \
+      --gas-prices 1ustars \
+      -y
+    ```
+2. This will trigger a sequence of events that will eventually complete the channel open ceremony (`channel_open_try`, `channel_open_ack`, and `channel_open_confirm`).
+</Steps>
