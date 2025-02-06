@@ -55,9 +55,7 @@ const quoteToken = derived(
       return
     }
 
-    const ass = sourceChain.rpc_type === "cosmos" ? fromHex($asset as Hex, "string") : $asset
-
-    getQuoteToken($source, ass, channel).then(quote => set(quote))
+    getQuoteToken($source, $asset, channel).then(quote => set(quote))
   },
   null
 )
