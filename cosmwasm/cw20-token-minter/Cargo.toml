@@ -23,5 +23,8 @@ token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true, features = ["schemars"] }
 
+[dev-dependencies]
+hex-literal = { workspace = true }
+
 [lints]
 workspace = true

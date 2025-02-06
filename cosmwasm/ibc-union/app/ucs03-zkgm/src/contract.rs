@@ -761,6 +761,9 @@ fn execute_fungible_asset_order(
                             name: order.base_token_name,
                             symbol: order.base_token_symbol,
                         },
+                        path: path.to_be_bytes_vec().into(),
+                        channel: packet.destination_channel_id,
+                        token: Vec::from(order.base_token.clone()).into(),
                     },
                     &minter,
                     vec![],
@@ -1096,13 +1099,4 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
-}
-
-#[test]
-fn see_predict() {
-    let predict = predict_wrapped_denom("0".parse().unwrap(), 27, b"muno".into());
-    panic!(
-        "predict:{}",
-        Bytes::<unionlabs::primitives::encoding::HexPrefixed>::new(predict.as_bytes().to_vec())
-    );
 }

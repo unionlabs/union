@@ -75,17 +75,32 @@ pub fn execute(
             WrappedTokenMsg::CreateDenom {
                 metadata,
                 subdenom: denom,
+                path,
+                channel,
+                token,
             } => {
                 let name = metadata.name;
-                // let symbol = metadata.symbol;
                 Response::new()
                     .add_message(WasmMsg::Instantiate2 {
                         admin: Some(env.contract.address.to_string()),
                         code_id: config.dummy_code_id,
                         label: denom.clone(),
-                        msg: vec![].into(),
+                        msg: to_json_binary(&cosmwasm_std::Empty {})?,
                         funds: vec![],
-                        salt: denom.as_bytes().into(),
+                        salt: Binary(
+                            keccak256(
+                                (
+                                    U256::from_be_bytes::<{ U256::BYTES }>(
+                                        path.as_slice().try_into().expect("correctly encoded; qed"),
+                                    ),
+                                    channel,
+                                    token.to_vec(),
+                                )
+                                    .abi_encode_params(),
+                            )
+                            .into_bytes()
+                            .to_vec(),
+                        ),
                     })
                     .add_message(WasmMsg::Migrate {
                         contract_addr: denom.clone(),
@@ -93,7 +108,7 @@ pub fn execute(
                         msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
                             // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
                             name: if name.is_empty() || name.len() > 50 {
-                                denom.clone()
+                                "ZKGM".into()
                             } else {
                                 name
                             },
@@ -218,14 +233,6 @@ fn save_native_token(deps: DepsMut, token: &str) {
     );
 }
 
-alloy::sol! {
-    struct WrappedTokenSalt {
-        uint256 path;
-        uint32 channel;
-        bytes token;
-    }
-}
-
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
@@ -241,14 +248,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
                 &dummy_code_hash.into_bytes(),
                 &deps.api.addr_canonicalize(env.contract.address.as_str())?,
                 &keccak256(
-                    WrappedTokenSalt {
-                        path: U256::from_be_bytes::<{ U256::BYTES }>(
+                    (
+                        U256::from_be_bytes::<{ U256::BYTES }>(
                             path.as_slice().try_into().expect("correctly encoded; qed"),
                         ),
                         channel,
-                        token: token.to_vec().into(),
-                    }
-                    .abi_encode_params(),
+                        token.to_vec(),
+                    )
+                        .abi_encode_params(),
                 )
                 .into_bytes(),
             )?;

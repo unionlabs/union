@@ -36,6 +36,9 @@ pub enum WrappedTokenMsg {
         subdenom: String,
         // TODO: upgrade tokenfactory to handle this
         metadata: Metadata,
+        path: Binary,
+        channel: u32,
+        token: Binary,
     },
     MintTokens {
         denom: String,

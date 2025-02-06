@@ -1,0 +1,32 @@
+[package]
+name = "cw20-base"
+version = "0.0.0"
+authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
+edition = "2021"
+description = "Basic implementation of a CosmWasm-20 compliant token"
+license = "Apache-2.0"
+repository = "https://github.com/CosmWasm/cw-plus"
+homepage = "https://cosmwasm.com"
+documentation = "https://docs.cosmwasm.com"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cw2 = "2.0.0"
+cw20 = "2.0.0"
+cw-storage-plus = { workspace = true }
+cosmwasm-std = { workspace = true }
+schemars = { workspace = true }
+semver = "1"
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cw-multi-test = "2.0.0"
+cw-utils = "2.0.0"
