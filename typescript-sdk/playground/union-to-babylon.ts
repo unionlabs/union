@@ -38,7 +38,7 @@ const cliArgs = parseArgs({
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
 const MUNO_DENOM = "muno"
-const AMOUNT = 1n
+const AMOUNT = 12n
 const RECEIVER = toHex("bbn1xe0rnlh3u05qkwytkwmyzl86a0mvpwfxgf2t7u")
 const SOURCE_CHAIN_ID = "union-testnet-9"
 const DESTINATION_CHAIN_ID = "bbn-test-5"
@@ -56,6 +56,7 @@ if (channel === null) {
 consola.info("channel", channel)
 
 consola.info("base token", baseToken)
+
 const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, baseToken, channel)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")

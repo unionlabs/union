@@ -108,14 +108,12 @@ export const getQuoteToken = async (
 
     let client = publicClient.value
 
-    let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
-
     let predictedQuoteToken = await ResultAsync.fromPromise(
       client.queryContractSmart(fromHex(`0x${channel.destination_port_id}`, "string"), {
         predict_wrapped_token: {
           path: "0",
           channel: channel.destination_channel_id,
-          token: baseToken
+          token: base_token
         }
       }),
       error => {
@@ -143,14 +141,13 @@ export const getQuoteToken = async (
 
     // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
     // we do this by calling the ucs03 instance on the counterparty chain.
-    let baseToken = isAddress(base_token) ? base_token : toHex(base_token)
 
     const predictedQuoteToken = await ResultAsync.fromPromise(
       destinationChainClient.readContract({
         address: `0x${channel.destination_port_id}`,
         abi: ucs03ZkgmAbi,
         functionName: "predictWrappedToken",
-        args: [0, channel.destination_channel_id, baseToken]
+        args: [0, channel.destination_channel_id, base_token]
       }),
       error => {
         return new Error("failed to get predict token using evm call", { cause: error })
