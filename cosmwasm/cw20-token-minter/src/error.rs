@@ -1,3 +1,4 @@
+use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::{Instantiate2AddressError, StdError};
 use ucs03_zkgm_token_minter_api::WrappedTokenMsg;
 
@@ -32,4 +33,7 @@ pub enum Error {
 
     #[error(transparent)]
     Instantiate2Error(#[from] Instantiate2AddressError),
+
+    #[error("{0:?}")]
+    U256Parse(ParseError),
 }

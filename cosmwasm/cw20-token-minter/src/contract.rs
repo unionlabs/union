@@ -81,47 +81,48 @@ pub fn execute(
             } => {
                 let name = metadata.name;
                 Response::new()
-                    .add_message(WasmMsg::Instantiate2 {
-                        admin: Some(env.contract.address.to_string()),
-                        code_id: config.dummy_code_id,
-                        label: denom.clone(),
-                        msg: to_json_binary(&cosmwasm_std::Empty {})?,
-                        funds: vec![],
-                        salt: Binary(
-                            keccak256(
-                                (
-                                    U256::from_be_bytes::<{ U256::BYTES }>(
-                                        path.as_slice().try_into().expect("correctly encoded; qed"),
-                                    ),
-                                    channel,
-                                    token.to_vec(),
-                                )
-                                    .abi_encode_params(),
-                            )
-                            .into_bytes()
-                            .to_vec(),
-                        ),
-                    })
-                    .add_message(WasmMsg::Migrate {
-                        contract_addr: denom.clone(),
-                        new_code_id: config.cw20_base_code_id,
-                        msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
-                            // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set. if it is missing, we use the symbol instead.
-                            name: if name.is_empty() || name.len() > 50 {
-                                "ZKGM".into()
-                            } else {
-                                name
-                            },
-                            symbol: "ZKGM".to_string(),
-                            decimals: 0,
-                            initial_balances: vec![],
-                            mint: Some(cw20::MinterResponse {
-                                minter: env.contract.address.to_string(),
-                                cap: None,
-                            }),
-                            marketing: None,
-                        })?,
-                    })
+                    .add_message(
+                        // Instantiating the dummy contract first to be able to get the deterministic address
+                        WasmMsg::Instantiate2 {
+                            admin: Some(env.contract.address.to_string()),
+                            code_id: config.dummy_code_id,
+                            label: denom.clone(),
+                            msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                            funds: vec![],
+                            salt: Binary(calculate_salt(
+                                U256::from_be_bytes::<{ U256::BYTES }>(
+                                    path.as_slice().try_into().expect("correctly encoded; qed"),
+                                ),
+                                channel,
+                                token.to_vec(),
+                            )),
+                        },
+                    )
+                    .add_message(
+                        // Then migrating to the actual `cw20_base` contract. Note that this contract has a custom
+                        // migrate entrypoint where it expects `InstantiateMsg` and calls the its `instantiate` function
+                        // in the `migrate` function
+                        WasmMsg::Migrate {
+                            contract_addr: denom.clone(),
+                            new_code_id: config.cw20_base_code_id,
+                            msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
+                                // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
+                                name: if name.is_empty() || name.len() > 50 {
+                                    "ZKGM".into()
+                                } else {
+                                    name
+                                },
+                                symbol: "ZKGM".to_string(),
+                                decimals: 0,
+                                initial_balances: vec![],
+                                mint: Some(cw20::MinterResponse {
+                                    minter: env.contract.address.to_string(),
+                                    cap: None,
+                                }),
+                                marketing: None,
+                            })?,
+                        },
+                    )
             }
             WrappedTokenMsg::MintTokens {
                 denom,
@@ -247,17 +248,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             let token_addr = instantiate2_address(
                 &dummy_code_hash.into_bytes(),
                 &deps.api.addr_canonicalize(env.contract.address.as_str())?,
-                &keccak256(
-                    (
-                        U256::from_be_bytes::<{ U256::BYTES }>(
-                            path.as_slice().try_into().expect("correctly encoded; qed"),
-                        ),
-                        channel,
-                        token.to_vec(),
-                    )
-                        .abi_encode_params(),
-                )
-                .into_bytes(),
+                &calculate_salt(
+                    path.parse::<U256>().map_err(Error::U256Parse)?,
+                    channel,
+                    token.to_vec(),
+                ),
             )?;
 
             Ok(to_json_binary(&PredictWrappedTokenResponse {
@@ -292,4 +287,10 @@ fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {
             contract_addr: addr.to_string(),
             msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
         }))
+}
+
+fn calculate_salt(path: U256, channel: u32, token: Vec<u8>) -> Vec<u8> {
+    keccak256((path, channel, token.to_vec()).abi_encode_params())
+        .into_bytes()
+        .to_vec()
 }

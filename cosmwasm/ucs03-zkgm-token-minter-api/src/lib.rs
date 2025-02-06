@@ -68,7 +68,7 @@ pub enum QueryMsg {
         denom: String,
     },
     PredictWrappedToken {
-        path: Binary,
+        path: String,
         channel: u32,
         token: Binary,
     },

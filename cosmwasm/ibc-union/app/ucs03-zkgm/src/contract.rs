@@ -1,6 +1,6 @@
 use core::str;
 
-use alloy::sol_types::SolValue;
+use alloy::{primitives::U256, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -580,7 +580,7 @@ fn execute_internal(
 fn query_predict_wrapped_token(
     deps: Deps,
     minter: &Addr,
-    path: Vec<u8>,
+    path: U256,
     channel: u32,
     token: Bytes,
 ) -> StdResult<String> {
@@ -591,7 +591,7 @@ fn query_predict_wrapped_token(
                 contract_addr: minter.to_string(),
                 msg: to_json_binary(
                     &ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedToken {
-                        path: Binary::new(path),
+                        path: path.to_string(),
                         channel,
                         token: Binary::new(token.to_vec()),
                     },
@@ -719,7 +719,7 @@ fn execute_fungible_asset_order(
     relayer: Addr,
     _relayer_msg: Bytes,
     _salt: H256,
-    path: alloy::primitives::U256,
+    path: U256,
     order: FungibleAssetOrder,
 ) -> Result<(Bytes, Response), ContractError> {
     if order.quote_amount > order.base_amount {
@@ -730,7 +730,7 @@ fn execute_fungible_asset_order(
     let wrapped_denom = query_predict_wrapped_token(
         deps.as_ref(),
         &minter,
-        path.to_be_bytes_vec(),
+        path,
         packet.destination_channel_id,
         Vec::from(order.base_token.clone()).into(),
     )?;
