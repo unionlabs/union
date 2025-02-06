@@ -8,6 +8,8 @@ import {
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { queryContractState } from "#query/on-chain"
+import { SiweInvalidMessageFieldError } from "viem/siwe"
 
 // hack to encode bigints to json
 declare global {
@@ -36,13 +38,13 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const MUNO_DENOM = "muno"
+const WRASPPED_MUNO_DENOM_CW20 = "bbn1e9ycc775kxv7klq5eh9vznjslps3tqt3f2ttku8ptky9qqt6ecjqn570rp"
 const AMOUNT = 12n
-const RECEIVER = toHex("bbn1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwplf2cja")
-const SOURCE_CHAIN_ID = "union-testnet-9"
-const DESTINATION_CHAIN_ID = "bbn-test-5"
+const RECEIVER = toHex("union1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwpzq6pr4")
+const SOURCE_CHAIN_ID = "bbn-test-5"
+const DESTINATION_CHAIN_ID = "union-testnet-9"
 
-const baseToken = toHex(MUNO_DENOM)
+const baseToken = toHex(WRASPPED_MUNO_DENOM_CW20)
 
 const channels = await getRecommendedChannels()
 
@@ -76,13 +78,38 @@ if (!PRIVATE_KEY) {
 
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
-  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union"),
-  gasPrice: { amount: "0.025", denom: "muno" },
-  transport: http("https://rpc.testnet-9.union.build")
+  account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "bbn"),
+  gasPrice: { amount: "0.025", denom: "ubbn" },
+  transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen")
 })
 
+const CW20_TOKEN_MINTER = "bbn143365ksyxj0zxj26djqsjltscty75qdlpwry6yxhr8ckzhq92xas8pz8sn"
+
+const allowanceParams = {
+  contractAddress: WRASPPED_MUNO_DENOM_CW20,
+  amount: AMOUNT,
+  spender: CW20_TOKEN_MINTER
+}
+consola.info("allowance params", allowanceParams)
+
+const approveResponse = await unionClient.cw20IncreaseAllowance(allowanceParams)
+consola.info("approval", approveResponse)
+
+let contractSTate = await queryContractState({
+  restUrl: "https://rest.bbn-test-5.babylon.chain.kitchen",
+  contractAddress: WRASPPED_MUNO_DENOM_CW20
+})
+consola.log("contract state", contractSTate)
+
+if (approveResponse.isErr()) {
+  consola.error(approveResponse.error)
+  process.exit(1)
+}
+
+consola.info("approval tx hash", approveResponse.value)
+
 const transfer = await unionClient.transferAsset({
-  baseToken: MUNO_DENOM,
+  baseToken: WRASPPED_MUNO_DENOM_CW20,
   baseAmount: AMOUNT,
   quoteToken: quoteToken.value.quote_token,
   quoteAmount: AMOUNT,

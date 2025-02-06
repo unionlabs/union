@@ -39,6 +39,7 @@ export {
   isValidEvmAddress,
   isValidCosmosTxHash,
   isValidBech32Address,
+  isValidBech32ContractAddress,
   extractBech32AddressPrefix
 } from "./utilities/address.ts"
 export {

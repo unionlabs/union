@@ -14,6 +14,7 @@ import type {
   TransferAssetParameters,
   TransferAssetsParametersLegacy
 } from "../types.ts"
+import { isValidBech32ContractAddress } from "#mod.ts"
 
 export const cosmosChainId = [
   "elgafar-1",
@@ -82,7 +83,10 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 salt: generateSalt()
               }
             },
-            funds: [{ amount: baseAmount.toString(), denom: baseToken }]
+            // If we are sending a CW20 (which is a valid bech32 address), then we do not need to attach native funds
+            funds: isValidBech32ContractAddress(baseToken)
+              ? []
+              : [{ amount: baseAmount.toString(), denom: baseToken }]
           }
         ]
       })
