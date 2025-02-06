@@ -164,7 +164,7 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
     return val
   })
 
-  console.log("valid balances", response)
+  console.log("valid balances", response.value.balances.at(0))
 
   // balances.update(val => {
   //   multicallResults.forEach((result, index) => {
