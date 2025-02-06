@@ -3,6 +3,7 @@ import type { Readable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import ChainDetails from "$lib/chain-details.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -28,7 +29,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           on:click={getSourceChain}
   >
     {intents?.sourceChain?.display_name
-      ? intents.sourceChain.display_name.split(" ")[0]
+      ? intents.sourceChain.display_name
       : $rawIntents.source
         ? $rawIntents.source
         : 'Source chain'
@@ -45,7 +46,7 @@ export let getDestinationChain: Props["getDestinationChain"]
           on:click={getDestinationChain}
   >
     {intents?.destinationChain?.display_name
-      ? intents.destinationChain.display_name.split(" ")[0]
+      ? intents.destinationChain.display_name
       : $rawIntents.destination
         ? $rawIntents.destination
         : "Destination chain"
