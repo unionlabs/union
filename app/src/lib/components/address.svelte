@@ -36,7 +36,7 @@ const explorer = chain?.explorers?.at(0)?.address_url ?? null
       invalid chain {chainId}
     {:else}
       {#if !explorer}
-        {parsedAddress}
+        <Truncate value={parsedAddress} type="address"/>
       {:else}
         <a class="underline" on:click={(e) => e.stopPropagation()} href={`${explorer}${parsedAddress}`}><Truncate class="underline" value={parsedAddress} type="address"/></a>
       {/if}{#if showChain}<span class="text-muted-foreground flex gap-1"><ArrowLeftIcon />{toDisplayName(

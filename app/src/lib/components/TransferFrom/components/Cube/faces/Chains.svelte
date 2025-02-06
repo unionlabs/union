@@ -5,6 +5,7 @@ import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/typ
 import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
 import type { Chain } from "$lib/types.ts"
 import { page } from "$app/stores"
+import ChainDetails from "$lib/chain-details.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -50,8 +51,8 @@ function toggleExpand(chainId: string) {
                   class="px-2 py-1 w-full hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
                   on:click={() => setChain(selected, chain.chain_id)}
           >
-            <div class="flex items-center gap-2">
-              <span>{chain.display_name}</span>
+            <div class="flex items-center gap-2 font-supermolot font-semibold">
+              <ChainDetails {chains} chainId={chain.chain_id}/>
             </div>
           </button>
 

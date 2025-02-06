@@ -3,6 +3,7 @@ import type { Readable } from "svelte/store"
 import { Button } from "$lib/components/ui/button"
 import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import ChainDetails from "$lib/chain-details.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -27,12 +28,13 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 font-bold"
           on:click={getSourceChain}
   >
-    {intents?.sourceChain?.display_name
-      ? intents.sourceChain.display_name.split(" ")[0]
-      : $rawIntents.source
-        ? $rawIntents.source
-        : 'Source chain'
-    }
+    {#if intents?.sourceChain}
+      <ChainDetails chain={intents.sourceChain}/>
+    {:else}
+        {$rawIntents.source
+                ? $rawIntents.source
+                : 'Source chain'}
+    {/if}
   </Button>
   {#if validation.errors.source}
     <p class="text-red-500 text-sm">{validation.errors.source}</p>
@@ -44,12 +46,13 @@ export let getDestinationChain: Props["getDestinationChain"]
           class="border-2 font-bold"
           on:click={getDestinationChain}
   >
-    {intents?.destinationChain?.display_name
-      ? intents.destinationChain.display_name.split(" ")[0]
-      : $rawIntents.destination
-        ? $rawIntents.destination
-        : "Destination chain"
-    }
+    {#if intents?.destinationChain}
+      <ChainDetails chain={intents.destinationChain}/>
+    {:else}
+        {$rawIntents.destination
+                ? $rawIntents.destination
+                : 'Destination chain'}
+    {/if}
   </Button>
   {#if validation.errors.destination}
     <p class="text-red-500 text-sm"> {validation.errors.destination}</p>

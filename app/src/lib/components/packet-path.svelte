@@ -3,6 +3,7 @@ import { cn } from "$lib/utilities/shadcn"
 import type { Chain } from "$lib/types"
 import { toDisplayName } from "$lib/utilities/chains"
 import MoveRightIcon from "virtual:icons/lucide/move-right"
+import ChainDetails from "$lib/chain-details.svelte"
 export let chains: Array<Chain>
 export let packet: {
   source_chain_id: string
@@ -19,7 +20,7 @@ export let packet: {
     <h2
       class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
-      {toDisplayName(packet.source_chain_id, chains)}
+      <ChainDetails {chains} chainId={packet.source_chain_id}/>
     </h2>
     <div class="flex divide-x-2 divide-muted-background">
     <a 
@@ -54,7 +55,7 @@ export let packet: {
     <h2
       class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
-      {toDisplayName(packet.destination_chain_id, chains)}
+      <ChainDetails {chains} chainId={packet.destination_chain_id}/>
     </h2>
     <div class="flex justify-end divide-x-2 divide-muted-background">
     <a 

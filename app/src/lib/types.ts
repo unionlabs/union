@@ -44,6 +44,10 @@ export type Chain = {
   testnet: boolean
   enabled: boolean
   enabled_staging: boolean
+  relayer_status: {
+    status: string
+    message: string
+  }
   rpc_type: "evm" | "cosmos" | "aptos"
   rpcs: Array<{
     type: string
