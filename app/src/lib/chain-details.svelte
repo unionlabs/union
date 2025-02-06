@@ -8,7 +8,7 @@ import TokenQualityLevel from "./components/token-quality-level.svelte"
 export let chains: Array<Chain> | null = null
 export let chainId: string | null = null
 export let chain: Chain | null = null
-const ch = chain ? chain : chains?.find(c => c.chain_id === chainId)
+$: ch = chain ? chain : chains?.find(c => c.chain_id === chainId)
 </script>
 
 <span class="inline-flex items-center gap-1">

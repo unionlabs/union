@@ -29,11 +29,13 @@ export let getDestinationChain: Props["getDestinationChain"]
           on:click={getSourceChain}
   >
     {#if intents?.sourceChain}
-      <ChainDetails chain={intents.sourceChain}/>
+      {#key intents?.sourceChain}
+        <ChainDetails chain={intents.sourceChain}/>
+      {/key}
     {:else}
-        {$rawIntents.source
-                ? $rawIntents.source
-                : 'Source chain'}
+      {$rawIntents.source
+        ? $rawIntents.source
+        : 'Source chain'}
     {/if}
   </Button>
   {#if validation.errors.source}
@@ -49,9 +51,9 @@ export let getDestinationChain: Props["getDestinationChain"]
     {#if intents?.destinationChain}
       <ChainDetails chain={intents.destinationChain}/>
     {:else}
-        {$rawIntents.destination
-                ? $rawIntents.destination
-                : 'Destination chain'}
+      {$rawIntents.destination
+        ? $rawIntents.destination
+        : 'Destination chain'}
     {/if}
   </Button>
   {#if validation.errors.destination}
