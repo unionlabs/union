@@ -1,5 +1,5 @@
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
-index 29ec063..56d44e3 100644
+index 29ec063..28a5c02 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
 @@ -72,7 +72,7 @@ function decodePubkey(data) {
@@ -28,53 +28,19 @@ index 29ec063..56d44e3 100644
              default:
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
-diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
-index 9e50f2b..161629f 100644
---- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
-+++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint34/adaptor/responses.js
-@@ -39,11 +39,17 @@ function decodeAbciQuery(data) {
-     };
- }
- function decodeAttribute(attribute) {
--    return {
--        key: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(attribute.key)),
--        value: (0, encoding_1.fromBase64)((0, encodings_1.assertString)(attribute.value ?? "")),
--    };
-+    try {
-+        return {
-+            key: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(attribute.key ?? "")),
-+            value: (0, encoding_1.fromBase64)((0, encodings_1.assertString)(attribute.value ?? "")),
-+        };
-+    }
-+    catch {
-+        return { key: "", value: "" };
-+    }
- }
-+
- function decodeAttributes(attributes) {
-     return (0, encodings_1.assertArray)(attributes).map(decodeAttribute);
- }
-@@ -91,6 +97,16 @@ function decodePubkey(data) {
-                     algorithm: "secp256k1",
-                     data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(data.value)),
-                 };
-+            case "tendermint/PubKeyBn254":
-+                return {
-+                    algorithm: "bn254",
-+                    data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(data.value)),
-+                };
-+            case "cometbft/PubKeyBn254":
-+                return {
-+                    algorithm: "bn254",
-+                    data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(data.value)),
-+                };
-             default:
-                 throw new Error(`unknown pubkey type: ${data.type}`);
-         }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
-index 19df9de..09ca2ed 100644
+index 19df9de..0015044 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
+@@ -72,7 +72,7 @@ function decodePubkey(data) {
+     if ("Sum" in data) {
+         // we don't need to check type because we're checking algorithm
+         const [[algorithm, value]] = Object.entries(data.Sum.value);
+-        (0, utils_1.assert)(algorithm === "ed25519" || algorithm === "secp256k1", `unknown pubkey type: ${algorithm}`);
++        (0, utils_1.assert)(algorithm === "ed25519" || algorithm === "secp256k1" || algorithm === "bn254", `unknown pubkey type: ${algorithm}`);
+         return {
+             algorithm,
+             data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(value)),
 @@ -91,6 +91,16 @@ function decodePubkey(data) {
                      algorithm: "secp256k1",
                      data: (0, encoding_1.fromBase64)((0, encodings_1.assertNotEmpty)(data.value)),
@@ -93,7 +59,7 @@ index 19df9de..09ca2ed 100644
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
 diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
-index 257b104..6626da9 100644
+index 257b104..dbf2240 100644
 --- a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
 +++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
 @@ -28,7 +28,7 @@ async function connectComet(endpoint) {
